@@ -16,6 +16,7 @@ return args.FirstOrDefault() switch
 {
     "new-game" => NewGame(args),
     "extract" => Extract(args),
+    "extract-comlink" => ComlinkExtractor.Extract(args),
     "digest" => Digest(args),
     _ => Usage(),
 };
@@ -33,8 +34,11 @@ static int Usage()
               [--search <turn:definition+definition...>,...]
               [--finance <turn:sector>,...]
               [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture]
+              [--comlink <script file>]
+              [--draw-values <hex address>=<int32>[/<int32>...],...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
+          Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
           Rechaos.OriginalProbe digest --fixture <fixture.json> --run <n> --screens <SCR-ID>,...
         """);
     return 2;
@@ -75,7 +79,9 @@ static int NewGame(string[] args)
         IntOption(args, "--time-limit"),
         Option(args, "--expire-turns")?.Split(',').Select(value =>
             int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray(),
-        args.Contains("--capture"));
+        Option(args, "--comlink") is { } script ? File.ReadAllLines(script) : null,
+        args.Contains("--capture"),
+        Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null);
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
@@ -84,6 +90,11 @@ static int NewGame(string[] args)
     if (hash != OriginalAddresses.ExecutableSha256)
     {
         Console.Error.WriteLine($"{executable} is not BLD-GOG-EN-1.1 (SHA-256 {hash}).");
+        return 1;
+    }
+    if (settings.DrawValues is { } drawn && DrawValuesProblem(drawn, settings.Humans, executable) is { } problem)
+    {
+        Console.Error.WriteLine(problem);
         return 1;
     }
 
@@ -103,11 +114,9 @@ static int Extract(string[] args)
     var screens = CaptureScreen.Load(Option(args, "--screens"));
     if (Array.IndexOf(args, "--screens") is var at and >= 0)
         args = args.Where((_, index) => index != at && index != at + 1).ToArray();
-    var experiment = Option(args, "--experiment");
-    var output = Option(args, "--out");
-    var runs = args.Skip(1).Where((_, i) => i >= 4).ToArray();
-    if (experiment is null || output is null || runs.Length == 0 || args[1] != "--experiment" || args[3] != "--out")
+    if (StateExtractor.ExtractArguments(args) is not { } arguments)
         return Usage();
+    var (experiment, output, runs) = arguments;
 
     var runArray = new JsonArray();
     var seeds = new JsonArray();
@@ -137,26 +146,11 @@ static int Extract(string[] args)
         runArray.Add(extracted);
     }
 
-    var fixture = new JsonObject
-    {
-        ["experiment"] = experiment,
-        ["build"] = "BLD-GOG-EN-1.1",
-        ["starting_state"] = null,
-        ["recording_xxh3"] = null,
-        ["clock"] = "roll",
-        ["inputs"] = new JsonArray(
-        [
-            new JsonObject { ["tick"] = 0, ["name"] = "command", ["value"] = "File, New Game (0x8101)" },
-            .. settings!.Select(setting => new JsonObject { ["tick"] = 0, ["name"] = "setup", ["value"] = setting }),
-            new JsonObject { ["tick"] = 0, ["name"] = "left_click", ["value"] = "Begin (416, 397)" },
-            // An order is written and a Done pressed once the planning phase has settled, at the
-            // roll count its run gives in done_at_roll.
-            .. turns!.Select(turn => new JsonObject { ["tick"] = null, ["name"] = turn.Name, ["value"] = turn.Value }),
-        ]),
-        ["seeds"] = seeds,
-        ["runs"] = runArray,
-    };
-    File.WriteAllText(output, StateExtractor.Serialize(fixture) + "\n");
+    // An order is written and a Done pressed once the planning phase has settled, at the roll count
+    // its run gives in done_at_roll.
+    StateExtractor.WriteFixture(output, experiment, "roll", settings!,
+        turns!.Select(turn => new JsonObject { ["tick"] = null, ["name"] = turn.Name, ["value"] = turn.Value }),
+        seeds, runArray);
     Console.WriteLine($"Wrote {runs.Length} runs to {output}.");
     return 0;
 }
@@ -221,6 +215,37 @@ static IReadOnlyList<ProbeFinance> ParseFinance(string value) =>
         return new ProbeFinance(parts[0], parts[1]);
     }).ToArray();
 
+// --draw-values address=value/value...,... writes 32-bit values whenever the planning-entry function
+// starts drawing the console, the nth value at its nth call (ProbeDrawValue).
+static IReadOnlyList<ProbeDrawValue> ParseDrawValues(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split('=');
+        if (parts.Length != 2) throw new FormatException($"A drawn value needs an address and a value: {entry}");
+        var address = parts[0].StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? parts[0][2..] : parts[0];
+        return new ProbeDrawValue(
+            uint.Parse(address, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture),
+            parts[1].Split('/').Select(number => int.Parse(number, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
+    }).ToArray();
+
+// The calls of the planning-entry function are counted over every human's entries, and each
+// human's console draws its own slot, so with a second human the nth value would not reach the nth
+// entry of the seat it was meant for. An address outside the writable sections would overwrite
+// code or a constant instead of a value the console draws.
+static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnlyList<HumanSlot>? humans, string executable)
+{
+    if (humans is { Count: > 1 })
+        return "--draw-values counts the planning entries of one human; give at most one --humans slot.";
+    var writable = PeSection.Read(executable, out _).Where(section => section.IsWritable).ToArray();
+    foreach (var value in values)
+    {
+        if (!writable.Any(section => value.Address >= section.VirtualAddress
+            && (ulong)value.Address + 4 <= (ulong)section.VirtualAddress + section.VirtualSize))
+            return $"--draw-values address 0x{value.Address:X8} does not lie in a writable section of the executable.";
+    }
+    return null;
+}
+
 // --families turn:player:slot:family,... writes a planning record's family; --raiders
 // turn:player,... sets a player's raider_mode (ProbePlanning).
 static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders)
@@ -251,8 +276,4 @@ static uint? HexOption(string[] args, string name) =>
             System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture)
         : null;
 
-static string? Option(string[] args, string name)
-{
-    var at = Array.IndexOf(args, name);
-    return at >= 0 && at + 1 < args.Length ? args[at + 1] : null;
-}
+static string? Option(string[] args, string name) => StateExtractor.Option(args, name);

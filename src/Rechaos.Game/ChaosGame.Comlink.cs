@@ -64,8 +64,14 @@ public sealed partial class ChaosGame
 
     private void OpenComlinkSend(ClientScreen returnScreen)
     {
-        if (_state is null || PlanningViewer is null) return;
+        if (_state is null || PlanningViewer is not { } sender) return;
         if (!ComlinkAvailable()) return;
+        // RULE-COMLINK-002: with no other human still in the match the panel does not open.
+        if (!_state.HasComlinkRecipient(sender))
+        {
+            PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+            return;
+        }
         _managementReturnScreen = returnScreen;
         Array.Fill(_comlinkRecipients, false);
         _comlinkEditor.Clear();
@@ -96,7 +102,7 @@ public sealed partial class ChaosGame
             CloseComlink();
             return;
         }
-        // Original Send handler 0x0045EAB1 (FND-COMLINK-005) submits on Execute. Enter moves its
+        // Original Send handler 0x0045EAB1 (FND-COMLINK-010) submits on Execute. Enter moves its
         // four-row editor cursor, so it must never dispatch a message here.
         if (Pressed(keyboard, Keys.Execute))
         {
@@ -176,6 +182,9 @@ public sealed partial class ChaosGame
                 _comlinkRecipients[recipient] = !_comlinkRecipients[recipient];
                 _comlinkStatus = string.Empty;
             }
+            // SCR-COMLINK-002, EXP-COMLINK-001: the card of a player who cannot take a message,
+            // the sender's own included, is refused with the rejected-input sound.
+            else PlayGeneralSound(GeneralSoundSlot.RejectedInput);
         }
         else if (ComlinkSendLayout.Cancel.Contains(point))
             BeginComlinkSendButton(ComlinkSendButton.Cancel);
@@ -219,9 +228,7 @@ public sealed partial class ChaosGame
     private bool EligibleComlinkRecipient(int playerIndex)
     {
         if (_state is null || PlanningViewer is not { } sender) return false;
-        var player = _state.Players.FirstOrDefault(value => value.Id.Value == playerIndex);
-        return player is not null && player.Id != sender
-            && player.Setup.Controller == PlayerController.Human;
+        return _state.IsComlinkRecipient(sender, new PlayerId(playerIndex));
     }
 
     private void MoveComlinkCursor(int delta)

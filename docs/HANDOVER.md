@@ -118,10 +118,11 @@ used by the shared template. What the original does now lives only in
   FND-OBJECTIVE-003 settles the scenario numbering: Greed is 0 and Kill 'Em
   All 4, and it explains why FND-SETUP-009 and FND-SETUP-012 read 0 as Kill
   'Em All.
-- Copy the setup capture
-  `artifacts/reference-captures/smoke/20260913-211908-368-checkpoint/frame-01.png`
-  to `GAME_DIR/captures/a83f82a2aab84d9a1e0e9de626409149.png` once `GAME_DIR`
-  exists; FND-SETUP-012 names it by that hash.
+- FND-SETUP-012's setup capture is kept as
+  `GAME_DIR/captures/a83f82a2aab84d9a1e0e9de626409149`. Every file under
+  `GAME_DIR/captures/` is named by its xxh3 alone, with no extension, as the
+  documentation standard names them; `OriginalGameFiles` refuses a copy kept
+  as `<xxh3>.png`.
 
 ### Working with the spec
 
@@ -868,6 +869,13 @@ EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-011 are recorded,
 up to twenty-five turns, and every run replays exactly. The probe runs the
 original silent unless `--sound` is given.
 
+- `--comlink` drives a match with several humans through a script of Comlink
+  steps: it presses Ready on each handoff card, opens View and Send, presses
+  their controls, types with posted `WM_KEYDOWN` messages and presses Done.
+  EXP-COMLINK-001 and EXP-COMLINK-002 use it, and
+  `OriginalComlinkExperimentTests` plays the same steps in the rebuild. The
+  same handoff and panel handling can drive other panels of several humans.
+
 - EXP-TURN-010's first run diverged at call 11610 until FND-AI-069: the sector
   selector's common block multiplies table element `x * 9 + y` instead of the
   visited sector, every mode reads the owner query, and mode 6 ends after its
@@ -888,17 +896,30 @@ original silent unless `--sound` is given.
   calls of EXP-TURN-010 now replay to the end of both runs. An Attack order
   needs the target's roster slot, which a state dump (`--dump-at-roll`) of a
   run with the same seed gives.
-- No screen row is `validated` yet. The harness exists: `new-game --capture`
-  takes the drawing area at the dump, `extract --screens` or `digest` records
-  each element's digest in the fixture, and `ScreenCaptureTests` renders the
-  replayed endpoint with `--reference-frame` and compares each element,
-  reporting one the original drew solid white as unverified
+- EXP-UI-001 captures the first planning entry of two seeds, and
+  `ScreenCaptureTests` finds no differing element of SCR-UI-003 or
+  SCR-HIRE-002 in either; SCR-HIRE-002 is `validated`, and SCR-UI-003 lists the
+  test but stays `supported` while its code is `partial`. The harness:
+  `new-game --capture` takes the drawing area at the dump, `extract --screens`
+  or `digest` records each element's digest in the fixture, and
+  `ScreenCaptureTests` renders the replayed endpoint with `--reference-frame`
+  and compares each element
   ([VALIDATION.md](VALIDATION.md#screens-against-captures-of-the-original)).
   The reference frame shows only the city at a planning entry with no panel
-  open, and only SCR-UI-003 and SCR-HIRE-002 have element files. Try a
-  DirectDraw wrapper such as DDrawCompat beside the staged executable, since
-  the white rectangles look like failed blits, and check that it leaves a
-  recorded run's rolls unchanged.
+  open, and only SCR-UI-003 and SCR-HIRE-002 have element files. EXP-TURN-041's
+  capture of the final view differs in the marker, the Done light and the
+  calendar companion because the reference frame draws a planning entry, and
+  EXP-TURN-042's shows the Events panel; both bitmaps are kept under
+  `GAME_DIR/captures/` for when the reference frame can draw those states.
+  The white areas the original leaves on Windows 11 (the selected sector and
+  the corners around the grid tabs) stay unverified: DDrawCompat did not
+  remove them, since the windowed original draws with GDI only
+  (docs/DECISIONS.md, 2026-10-05).
+- EXP-UI-002 uses `--draw-values` to make the console draw a score of 700000
+  and a cash of 690000 over an earlier `80000`: a number cell copied from
+  source column 516 leaves the screen unchanged, and one from column 510 takes
+  its two left pixel columns from the sheet and leaves the rest. RULE-UI-004
+  does not cite it yet.
 - A modal panel the probe does not know stalls a run until someone presses its
   Exit; the probe knows Combat Results and Last Turn Events. Run recordings
   from PowerShell with the compatibility layers in `__COMPAT_LAYER`, one at a

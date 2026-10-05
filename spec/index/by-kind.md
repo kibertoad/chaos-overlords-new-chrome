@@ -46,7 +46,7 @@
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | Sector record, one per city sector | supported |
 | [FMT-STATE-003](../formats/FMT-STATE-003.md) | Per-gang combat record of the last resolution | supported |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | Site slot in a sector record | supported |
-| [FMT-STATE-005](../formats/FMT-STATE-005.md) | Comlink message record | supported |
+| [FMT-STATE-005](../formats/FMT-STATE-005.md) | Comlink message record | established |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | Last Turn report record | supported |
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | supported |
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | Combat result row of one sector | supported |
@@ -118,11 +118,11 @@
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | Detailed Combat plays the viewer's fights sector by sector, one clip per attack | supported |
 | [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | supported |
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | supported |
-| [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | supported |
-| [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox | supported |
-| [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn | supported |
-| [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | supported |
-| [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | supported |
+| [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | established |
+| [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox | established |
+| [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn | established |
+| [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | established |
+| [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | established |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | established |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | established |
@@ -223,7 +223,7 @@
 
 ## findings
 
-367 entries.
+368 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -355,11 +355,12 @@
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls | recorded |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
 | [FND-COMLINK-004](../findings/FND-COMLINK-004.md) | Comlink View marks the shown message read and draws it from a self-contained 166-byte record | recorded |
-| [FND-COMLINK-005](../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer | recorded |
+| [FND-COMLINK-005](../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer | superseded |
 | [FND-COMLINK-006](../findings/FND-COMLINK-006.md) | Comlink messages are stored only on the recipient's computer, cleared when the match loop starts, and read messages at the front of an inbox are dropped when its player finishes planning | recorded |
 | [FND-COMLINK-007](../findings/FND-COMLINK-007.md) | Comlink Send tests player_active and players_human, starts from a blank draft, wraps the cursor between rows, and View draws a 64-by-64 portrait; the positions of both panels' fields | recorded |
 | [FND-COMLINK-008](../findings/FND-COMLINK-008.md) | The Send panel builds a message in a 166-byte buffer, with 160 characters from space to Z filled with spaces and no terminator, a signed turn, and a last byte nothing writes | recorded |
 | [FND-COMLINK-009](../findings/FND-COMLINK-009.md) | A message recorded for the active player while the View panel is open makes the panel redraw the shown message with the new count | recorded |
+| [FND-COMLINK-010](../findings/FND-COMLINK-010.md) | Comlink Send edits a fixed grid of four rows of 40 characters from space to Z, wraps the cursor between rows, and switches the caret every third tick of a 6 Hz timer | recorded |
 | [FND-CONTROL-001](../findings/FND-CONTROL-001.md) | The Control pass pools strength per player, settles sectors in ascending order and keeps a neutral candidate ahead of zero-margin ties | recorded |
 | [FND-CONTROL-002](../findings/FND-CONTROL-002.md) | Inside the whole-turn resolver only Crackdown neutralization and a Control win write a sector's owner | recorded |
 | [FND-CONTROL-003](../findings/FND-CONTROL-003.md) | Control settles only sectors with a Control order and no police, adds the defenders, Income and Support to the owner's pool, and subtracts Income and Support from every pool | recorded |
@@ -597,10 +598,12 @@
 
 ## experiments
 
-97 entries.
+101 entries.
 
 | ID | Title | Status |
 |---|---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | Do the Comlink panels of a local game with three humans store, cap, show, mark and drop messages as the spec gives? | recorded |
+| [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | Are Comlink Send and View both refused when the only human has no one to write to and no messages? | recorded |
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | What does a new local game draw from the generator, and what state does its first planning phase start from? | recorded |
 | [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | Does a new local Armageddon game with two humans draw and start as the spec gives? | recorded |
 | [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | Does a new local Greed game at Homicidal Maniac with a four-year limit draw and start as the spec gives? | recorded |
@@ -698,6 +701,8 @@
 | [EXP-TURN-091](../experiments/EXP-TURN-091.md) | Does a family-0 computer gang whose weight-10 attack draw fails its strength test give up the Attack, as the spec gives? | recorded |
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs, as the spec gives? | recorded |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs in Big Man, as the spec gives? | recorded |
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? | recorded |
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? | recorded |
 
 ## bugs
 

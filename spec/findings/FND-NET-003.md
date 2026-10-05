@@ -72,7 +72,7 @@ progress to 0 and every other seat's to 100, and sets a seat to 100 when its
 connection finishes.
 
 Spinner. On each raised timer-0 flag (`0x004328BE`, 1000 / 6 = 166 ms per
-FND-COMLINK-005) the frame counter advances by one from 0 to 14 and wraps to
+FND-COMLINK-010) the frame counter advances by one from 0 to 14 and wraps to
 0, and cell `(48 * frame, 72, 48, 48)` of surface 7, where `DATA/PX16/PX00138`
 is loaded at y 72, is copied to `(224, 72, 48, 48)` (`0x0046D612`); the
 transfer path `0x0040CED0` does the same.

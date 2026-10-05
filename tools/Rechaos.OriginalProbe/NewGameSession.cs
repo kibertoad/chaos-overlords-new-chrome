@@ -70,6 +70,20 @@ internal sealed record ProbeFinance(int Turn, int Sector)
 }
 
 /// <summary>
+/// 32-bit values the probe writes at <paramref name="Address"/> when the planning-entry function
+/// starts to draw the console (FND-UI-040): the first at its first call, the second at its second,
+/// and the last at every later call. The console then draws a number the match would not reach,
+/// such as a score whose first glyph cell lies outside the glyph sheet (RULE-UI-004), over what an
+/// earlier call drew. The write changes the match from then on, so a run that uses it is not
+/// replayed. The calls are counted over every human's entries, so the probe takes it with one
+/// human only.
+/// </summary>
+internal sealed record ProbeDrawValue(uint Address, IReadOnlyList<int> Values)
+{
+    public override string ToString() => $"draw_value 0x{Address:X8} {string.Join("/", Values)}";
+}
+
+/// <summary>
 /// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
 /// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
 /// Combat Results function returns at once when no fight qualifies.
@@ -92,7 +106,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
-    bool Capture = false)
+    IReadOnlyList<string>? Comlink = null, bool Capture = false, IReadOnlyList<ProbeDrawValue>? DrawValues = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -102,6 +116,8 @@ internal sealed record NewGameSettings(
         if (Mentality is { } mentality) yield return $"mentality {mentality}";
         if (TurnLimit is { } turns) yield return $"turn_limit {turns}";
         if (TimeLimit is { } limit) yield return $"planning_limit_choice {limit}";
+        if (Comlink is not null) yield return "pref_slide_panels 0";
+        foreach (var value in DrawValues ?? []) yield return value.ToString();
         if (Humans is null) yield break;
         foreach (var human in Humans)
             yield return human.Modifier is null
@@ -166,14 +182,15 @@ internal sealed record ProbeTrace(
     List<FinanceRecord>? Finance = null,
     List<PanelRecord>? Panels = null,
     CityMarkers? Markers = null,
-    List<TimerRecord>? Timers = null);
+    List<TimerRecord>? Timers = null,
+    List<ComlinkStep>? Comlink = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
 /// the given settings, presses Done as many times as asked, and dumps the writable sections once
 /// the planning phase that follows waits for the first human.
 /// </summary>
-internal sealed class NewGameSession(
+internal sealed partial class NewGameSession(
     string executable, string gameDirectory, string outputDirectory, TimeSpan timeout, NewGameSettings settings)
     : IDisposable
 {
@@ -223,6 +240,18 @@ internal sealed class NewGameSession(
             _process.SetBreakpoint(OriginalAddresses.SiteMarker, OnSiteMarker, quiet: true);
         }
         if (settings.ExpireTurns is { Count: > 0 }) ArmTimer();
+        if (settings.Comlink is not null) ArmComlink();
+        if (settings.DrawValues is { Count: > 0 } drawValues)
+        {
+            var call = 0;
+            _process.SetBreakpoint(OriginalAddresses.PlanningEntryDraw, _ =>
+            {
+                foreach (var value in drawValues)
+                    _process.Write(value.Address, BitConverter.GetBytes(value.Values[Math.Min(call, value.Values.Count - 1)]));
+                _notes.Add($"Planning-entry draw {call} after roll {_rolls.Count}.");
+                call++;
+            });
+        }
 
         var window = IntPtr.Zero;
         if (!_process.RunUntil(() => (window = _process.FindMainWindow()) != IntPtr.Zero, timeout))
@@ -260,6 +289,14 @@ internal sealed class NewGameSession(
             () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
             timeout);
         if (!settled) return Finish(false, "The new match never settled.", rollsBeforeBegin);
+
+        if (settings.Comlink is not null)
+        {
+            var failure = RunComlink(window);
+            if (failure is not null) return Finish(false, failure, rollsBeforeBegin);
+            DumpWritableSections();
+            return Finish(true, null, rollsBeforeBegin);
+        }
 
         // Each Done ends the human's planning with no orders; the next planning phase has begun
         // when elapsed_turns has moved on and the rolls have stopped again.
@@ -628,7 +665,8 @@ internal sealed class NewGameSession(
         _process.Write(OriginalAddresses.PrefFullScreen, [0]);
         _process.Write(OriginalAddresses.PrefFullScreenCopy, [0]);
         if (!settings.Sound) Mute();
-        if (settings.EndTurns == 0) return;
+        if (settings.Comlink is not null) _process.Write(OriginalAddresses.PrefSlidePanels, BitConverter.GetBytes(0));
+        if (settings.EndTurns == 0 && settings.Comlink is null) return;
         _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(0));
         _process.Write(OriginalAddresses.PrefDetailedCombat, BitConverter.GetBytes(0));
     }
@@ -809,7 +847,7 @@ internal sealed class NewGameSession(
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
             _endgame, _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels, _lastRedraw,
-            _timers.Count == 0 ? null : _timers);
+            _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink);
     }
 
     private static void Click(IntPtr window, int x, int y)

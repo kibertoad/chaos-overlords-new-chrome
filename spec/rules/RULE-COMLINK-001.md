@@ -4,7 +4,7 @@ title: Storing a Comlink message keeps each player's newest 16 messages
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-001, FND-COMLINK-006, FND-COMLINK-009, FND-AUDIO-002, FND-AUDIO-012, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-COMLINK-001, FND-COMLINK-006, FND-COMLINK-009, FND-AUDIO-002, FND-AUDIO-012, SRC-MANUAL-GOG, FND-EXE-004, EXP-COMLINK-001]
 conflicting: []
 split_with: []
 related: [FMT-STATE-005]
@@ -98,6 +98,14 @@ None known.
 
 ## Open questions
 
+- No run reaches the branches for a recipient on another computer: the
+  packet of type 10 sent in place of storing, and its arrival
+  [FND-COMLINK-006]. EXP-COMLINK-001 is a local game.
+- No run reaches the move of `comlink_cursor` back one place when a message
+  is dropped. It needs a recipient whose cursor is above 0, so one whose
+  View is in use while a message arrives, which only a network game gives
+  [FND-COMLINK-006]. EXP-COMLINK-001 drops messages only from inboxes whose
+  cursor is 0.
 - The glossary reads the flag at `0x00482178` as `local_game`; its use here,
   sending every message for a player not at this computer to connection 0,
   fits a network client better (FND-COMLINK-006).

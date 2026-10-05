@@ -58,6 +58,29 @@ public sealed class ComlinkTests
             match.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], "\t").Code);
     }
 
+    // RULE-COMLINK-002: only another human still in the match can take a message, so with the other
+    // human eliminated Send has no recipient and a message to that player is refused.
+    [Fact]
+    public void AnEliminatedHumanCannotTakeAMessage()
+    {
+        MatchPlayerSetup[] players =
+        [
+            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(1), "TWO", PlayerController.Human)
+        ];
+        var match = OriginalMatchFactory.Create(BundledOriginalData.Load(),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+        match.FinishUpkeep();
+        Assert.True(match.HasComlinkRecipient(new PlayerId(0)));
+        Assert.False(match.IsComlinkRecipient(new PlayerId(0), new PlayerId(0)));
+
+        match.FindPlayer(new PlayerId(1))!.Status = PlayerStatus.Eliminated;
+
+        Assert.False(match.HasComlinkRecipient(new PlayerId(0)));
+        Assert.Equal(ComlinkValidationCode.RecipientNotActive,
+            match.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], "HELLO").Code);
+    }
+
     // RULE-COMLINK-007: ending planning drops the read messages at the front, up to the first
     // unread one; a read message after it stays.
     [Fact]

@@ -27,6 +27,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [BUG-OPTIONS-002](../bugs/BUG-OPTIONS-002.md) | builds |
 | [BUG-SAVE-001](../bugs/BUG-SAVE-001.md) | builds |
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | builds |
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | builds |
+| [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | builds |
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | builds |
 | [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | builds |
 | [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | builds |
@@ -124,6 +126,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-091](../experiments/EXP-TURN-091.md) | builds |
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | builds |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | builds |
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | builds |
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -281,6 +285,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-COMLINK-007](../findings/FND-COMLINK-007.md) | builds, locations |
 | [FND-COMLINK-008](../findings/FND-COMLINK-008.md) | builds, locations |
 | [FND-COMLINK-009](../findings/FND-COMLINK-009.md) | builds, locations |
+| [FND-COMLINK-010](../findings/FND-COMLINK-010.md) | builds, locations |
 | [FND-CONTROL-001](../findings/FND-CONTROL-001.md) | builds, locations |
 | [FND-CONTROL-002](../findings/FND-CONTROL-002.md) | builds, locations |
 | [FND-CONTROL-003](../findings/FND-CONTROL-003.md) | builds, locations |
@@ -865,14 +870,38 @@ None.
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | body |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | body |
 
+## EXP-COMLINK-001
+
+| Cited by | In |
+|---|---|
+| [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | body |
+| [FMT-STATE-005](../formats/FMT-STATE-005.md) | body, evidence |
+| [FND-COMLINK-010](../findings/FND-COMLINK-010.md) | body |
+| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | body, evidence |
+| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | body, evidence |
+| [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | evidence |
+| [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | evidence |
+| [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | evidence |
+| [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | body, evidence |
+| [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | body, evidence |
+
+## EXP-COMLINK-002
+
+| Cited by | In |
+|---|---|
+| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | body, evidence |
+| [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | evidence |
+
 ## EXP-SETUP-001
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
 | [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | body |
 | [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body, evidence |
@@ -1020,6 +1049,7 @@ None.
 | [EXP-TURN-091](../experiments/EXP-TURN-091.md) | body |
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | body |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | body |
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 
 ## EXP-TURN-002
 
@@ -1894,6 +1924,16 @@ None.
 |---|---|
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
 
+## EXP-UI-001
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
+
+## EXP-UI-002
+
+None.
+
 ## FMT-AUDIO-001
 
 | Cited by | In |
@@ -2232,6 +2272,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: comlink_draft | glossary |
 | glossary: comlink_messages | glossary |
@@ -3423,6 +3464,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FND-UI-042](../findings/FND-UI-042.md) | body |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | evidence |
@@ -3824,6 +3866,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | glossary: comlink_count | glossary |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | evidence |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
@@ -3834,6 +3877,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | glossary: comlink_eligible | glossary |
 | glossary: comlink_selected | glossary |
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | evidence |
@@ -3858,12 +3902,8 @@ None.
 
 | Cited by | In |
 |---|---|
-| [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | body |
-| [FND-NET-003](../findings/FND-NET-003.md) | body |
-| glossary: comlink_draft_column | glossary |
-| glossary: comlink_draft_row | glossary |
-| [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | evidence |
-| [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
+| [FND-COMLINK-010](../findings/FND-COMLINK-010.md) | body |
 
 ## FND-COMLINK-006
 
@@ -3889,6 +3929,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [FND-COMLINK-009](../findings/FND-COMLINK-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | glossary: comlink_draft_column | glossary |
@@ -3899,7 +3940,7 @@ None.
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | body, evidence |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | evidence |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | evidence |
-| [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | body, evidence |
+| [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | evidence |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 | [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | body, evidence |
@@ -3909,6 +3950,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [FMT-STATE-005](../formats/FMT-STATE-005.md) | body, evidence |
 
 ## FND-COMLINK-009
@@ -3919,6 +3961,18 @@ None.
 | glossary: comlink_view_refresh | glossary |
 | [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | body, evidence |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
+
+## FND-COMLINK-010
+
+| Cited by | In |
+|---|---|
+| [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | body |
+| [FND-COMLINK-005](../findings/FND-COMLINK-005.md) | superseded_by |
+| [FND-NET-003](../findings/FND-NET-003.md) | body |
+| glossary: comlink_draft_column | glossary |
+| glossary: comlink_draft_row | glossary |
+| [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | evidence |
+| [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 
 ## FND-CONTROL-001
 
@@ -4368,6 +4422,7 @@ None.
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | body |
 | [FND-COMLINK-006](../findings/FND-COMLINK-006.md) | body |
 | [FND-COMLINK-008](../findings/FND-COMLINK-008.md) | body |
+| [FND-COMLINK-010](../findings/FND-COMLINK-010.md) | body |
 | [FND-CONTROL-003](../findings/FND-CONTROL-003.md) | body |
 | [FND-DATA-007](../findings/FND-DATA-007.md) | body |
 | [FND-DATA-008](../findings/FND-DATA-008.md) | body |
@@ -4774,6 +4829,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | body |
@@ -5264,6 +5320,7 @@ None.
 |---|---|
 | [BUG-OPTIONS-001](../bugs/BUG-OPTIONS-001.md) | evidence |
 | [BUG-OPTIONS-002](../bugs/BUG-OPTIONS-002.md) | evidence |
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
 | [FND-FINANCE-001](../findings/FND-FINANCE-001.md) | body |
 | [FND-GANG-002](../findings/FND-GANG-002.md) | body |
@@ -6012,6 +6069,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | body, evidence |
 
 ## FND-SETUP-017
@@ -6543,6 +6601,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-015](../findings/FND-UI-015.md) | body |
@@ -6590,6 +6649,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body, evidence |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
@@ -6606,6 +6666,7 @@ None.
 | glossary: loaded_game_kind | glossary |
 | glossary: pointer_x | glossary |
 | glossary: pointer_y | glossary |
+| [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | body, evidence |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | evidence |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | evidence |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | evidence |
@@ -6650,6 +6711,7 @@ None.
 |---|---|
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | body |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | body |
+| [FND-COMLINK-010](../findings/FND-COMLINK-010.md) | body |
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | body |
 | [FND-UI-026](../findings/FND-UI-026.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
@@ -6740,6 +6802,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [FND-AUDIO-010](../findings/FND-AUDIO-010.md) | body |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
 | [FND-UI-015](../findings/FND-UI-015.md) | body |
@@ -6824,6 +6887,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
@@ -6840,6 +6904,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -6849,6 +6914,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [FND-UI-042](../findings/FND-UI-042.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
@@ -7647,6 +7713,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | body, related |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | body, related |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | body, related |
@@ -7658,6 +7725,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | body |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | body |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | body |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, related |
@@ -7674,6 +7742,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | body |
 | [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | related |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, related |
 
@@ -7693,6 +7762,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | glossary: comlink_messages | glossary |
 | [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | body |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | body |
@@ -7929,6 +7999,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | glossary: present | glossary |
 | [RULE-GFX-003](../rules/RULE-GFX-003.md) | related |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | body, related |
@@ -8221,6 +8292,7 @@ None.
 | [EXP-TURN-010](../experiments/EXP-TURN-010.md) | body |
 | [EXP-TURN-021](../experiments/EXP-TURN-021.md) | body |
 | [EXP-TURN-084](../experiments/EXP-TURN-084.md) | body |
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | body |
 | glossary: roll | glossary |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | related |
@@ -8578,6 +8650,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
 | glossary: modifier_cells | glossary |
 | glossary: number_cells | glossary |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | body |
@@ -8808,6 +8881,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, related |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, related |
 
@@ -8922,6 +8996,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
+| [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, related |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | related |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, related |

@@ -54,7 +54,7 @@ environment: null
 ## Interpretation
 
 A recipient target is the 100-by-32 name and portrait area, inset one pixel
-inside a 105-by-34 card. Enter does not send a message (FND-COMLINK-005).
+inside a 105-by-34 card. Enter does not send a message (FND-COMLINK-010).
 
 ## Alternatives
 

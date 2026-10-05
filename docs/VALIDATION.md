@@ -376,8 +376,9 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--sound] [--capture]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--draw-values <hex address>=<int32>[/<int32>...],...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
+dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
 `new-game` switches full screen off in memory, silences the game unless
@@ -449,6 +450,16 @@ rebuild's projection of the same panel.
 planning time runs out; the fixture lists each as a `wait` input and records
 the planning clock of each such turn as `timers` (RULE-TIMER-002,
 RULE-TIMER-003).
+`--draw-values` writes 32-bit values into memory each time the planning-entry
+function `fn_0046FD80` starts to draw the console (FND-UI-040): the nth value
+at its nth call and the last at every later one. It makes the console draw a
+number the match would not reach over what an earlier entry drew, as
+EXP-UI-002 does with the score and cash. The calls are counted over every
+human's planning entries and each human's console draws its own slot, so the
+probe refuses `--draw-values` with more than one `--humans` slot, and it
+refuses an address outside the executable's writable sections. The fixture
+lists each as a `setup` input; the values change the match, so such a run is
+not replayed.
 Each run records the roll count at every press as `done_at_roll`. `--seed` writes the given value over the argument of `srand`, so
 a recorded run can be played again, and `--dump-at-roll` copies the writable
 sections and the top of the stack at the entry of that call of `roll`, counted
@@ -492,6 +503,24 @@ police events, and compares the records of the gangs that fought,
 EXP-TURN fixtures against the rebuild and names the first roll whose bound or
 result differs, with the original's call instruction, then compares the state
 and, where the fixture has them, the reports.
+
+`--comlink` replaces the Done presses with a script of Comlink steps, one per
+line, for a match with several humans (EXP-COMLINK-001). `visit p` waits for
+player p's handoff card, presses Ready and closes the planning entry panels;
+`view` and `send` press the two parts of the console's Comlink control;
+`next`, `prev` and `dismiss` press the View panel's controls; `card p`,
+`press send` and `press cancel` press the Send panel's; `type` posts a
+`WM_KEYDOWN` for each character, with `{BACK}`, `{ENTER}`, `{LEFT}`, `{UP}`,
+`{RIGHT}`, `{DOWN}` and `{EXEC}` for those keys; `dump` keeps the state; and
+`done` presses Done. The probe also switches Slide Panels off in memory, so
+a panel takes presses as soon as its handler runs. After each step it keeps
+the panels open, the effect slots played, each message View showed with the
+cursor and the numbers drawn, each drop of read messages at the end of a
+player's planning, the Send panel's selection and draft, and every player's
+Comlink counts, cursors, pending flag and message records (FMT-STATE-005).
+`extract-comlink` writes those as the steps of a fixture, and
+`OriginalComlinkExperimentTests` plays the same steps in the rebuild and
+compares them after each one.
 
 ## Static binary research
 
@@ -591,9 +620,18 @@ cannot be named yet. Each rectangle comes from the entry's Position column.
 The bitmap holds the game's art, so it never goes into the repository. When
 `GAME_DIR` is set, `extract` copies it to `GAME_DIR/captures/<xxh3>`, the
 directory `OriginalGameFiles` reads captures from; otherwise it prints where to
-copy it. A capture recorded before the element digests existed, such as those
-of EXP-TURN-041 and EXP-TURN-042, gets them from that copy without another run
-of the original:
+copy it. Every file there is named by its xxh3 alone, with no extension, as the
+documentation standard names them, and `OriginalGameFiles` refuses a copy kept
+under another name such as `<xxh3>.png` instead of skipping the test.
+
+Captures are taken without a DirectDraw wrapper (docs/DECISIONS.md,
+2026-10-05). DDrawCompat beside the staged copy left the rolls and the state of
+a recorded run unchanged but did not remove the white areas: windowed, the
+original draws with GDI and never uses DirectDraw (FND-GFX-004).
+
+A capture recorded before the element digests existed, such as those of
+EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
+`GAME_DIR/captures/` without another run of the original:
 
 ```powershell
 $env:GAME_DIR = 'D:\original-files'

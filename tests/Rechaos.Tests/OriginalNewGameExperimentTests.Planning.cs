@@ -68,8 +68,9 @@ public sealed partial class OriginalNewGameExperimentTests
             // that. The rebuild starts every record at -1 or the gang's sector where the original
             // holds 0, which no reader sees, so only the active gangs of computer players whose
             // flag a pass has handled are compared; a gang hired since the last pass is still
-            // flagged.
-            if (player.Setup.Controller == PlayerController.Human) continue;
+            // flagged. Before a player's first pass (ai_started 0, as at the first planning entry of
+            // EXP-UI-001) no pass has written any of its records.
+            if (player.Setup.Controller == PlayerController.Human || !planning.HasPlanned(player.Id)) continue;
             for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
             {
                 if (!player.Gangs[gangSlot].IsActive || planning.NeedsFamily(player.Id, gangSlot)) continue;
