@@ -71,12 +71,8 @@ public sealed class PanelSlideTransition
     /// </summary>
     public void BeginOrderPanel(ClientScreen previous, TimeSpan now)
     {
-        if (now < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(now));
+        Begin(previous, ClientScreen.Commands, now);
         _screen = ClientScreen.Commands;
-        _startOffset = StartOffset;
-        _started = now;
-        Previous = previous;
-        PanelArea = PanelAreaFor(ClientScreen.Commands);
     }
 
     /// <summary>

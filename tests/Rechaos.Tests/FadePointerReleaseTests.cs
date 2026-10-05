@@ -74,7 +74,7 @@ public sealed class FadePointerReleaseTests
     private static MouseState Mouse(ButtonState left, ButtonState right) =>
         new(10, 10, 0, left, ButtonState.Released, right, ButtonState.Released, ButtonState.Released);
     private static void Cancel(ChaosGame game, MouseState mouse) =>
-        Method("CancelSwallowedPointerReleases").Invoke(game, [mouse]);
+        Method("UpdatePointerDuringFade").Invoke(game, [mouse]);
     private static void Release(ChaosGame game, Point point, bool rightButton) =>
         Method("CompletePointerRelease").Invoke(game, [true, point, rightButton]);
     private static MethodInfo Method(string name) => typeof(ChaosGame).GetMethod(name,

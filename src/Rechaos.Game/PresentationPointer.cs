@@ -18,7 +18,9 @@ public enum PointerShape
 /// no input (EXP-UI-022), so from the Done press to the next human planning entry the player sees
 /// the hourglass. The rebuild does a stretch inside one update and plans the computers in the next,
 /// so between updates it shows the shape <see cref="Idle"/> gives: the hourglass while a
-/// computer's planning is still to run.
+/// computer's planning is still to run. A music fade can hold that planning back while it
+/// dispatches messages (FND-AUDIO-016), and a pointer moved then shows the arrow
+/// (<see cref="PointerMoved"/>).
 /// </remarks>
 public sealed class PresentationPointer
 {
@@ -26,6 +28,7 @@ public sealed class PresentationPointer
     private readonly Func<PointerShape> _idle;
     private int _busyDepth;
     private PointerShape? _shown;
+    private bool _movedSinceWork;
 
     public PresentationPointer(Action<PointerShape> apply, Func<PointerShape>? idle = null)
     {
@@ -55,26 +58,50 @@ public sealed class PresentationPointer
     /// </remarks>
     public IDisposable Busy()
     {
-        if (_busyDepth++ == 0) Show(PointerShape.Hourglass);
+        if (_busyDepth++ == 0)
+        {
+            _movedSinceWork = false;
+            Show(PointerShape.Hourglass);
+        }
         return new BusyScope(this);
+    }
+
+    /// <summary>
+    /// A pointer move the window handled while it dispatched messages: shows the arrow until the
+    /// next busy scope, as the original's answer to each pointer message does (RULE-UI-007).
+    /// </summary>
+    public void PointerMoved()
+    {
+        _movedSinceWork = true;
+        if (_busyDepth == 0) Show(PointerShape.Arrow);
     }
 
     /// <summary>Shows the idle shape unless a busy scope is open.</summary>
     public void Refresh()
     {
-        if (_busyDepth == 0) Show(_idle());
+        if (_busyDepth == 0) Show(IdleShape());
+    }
+
+    private PointerShape IdleShape()
+    {
+        var shape = _idle();
+        // A move counts only while the hourglass waits; once the idle shape is the arrow, the
+        // next hourglass needs a move of its own to be replaced.
+        if (shape == PointerShape.Arrow) _movedSinceWork = false;
+        return _movedSinceWork ? PointerShape.Arrow : shape;
     }
 
     private void Show(PointerShape shape)
     {
         if (_shown == shape) return;
-        _shown = shape;
+        // Remembered only once applied, so a shape that failed to apply is tried again.
         _apply(shape);
+        _shown = shape;
     }
 
     private void EndBusy()
     {
-        if (--_busyDepth == 0) Show(_idle());
+        if (--_busyDepth == 0) Show(IdleShape());
     }
 
     private sealed class BusyScope(PresentationPointer owner) : IDisposable

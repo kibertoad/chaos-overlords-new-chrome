@@ -919,8 +919,8 @@ Whether the original shows the count is not recorded.
   quitting from the Escape menu (DEV-UI-011), the options from the Options screen, Help Topics
   with F1 (DEV-HELP-001), full screen with F11 (DEV-OPTIONS-003), and About, which shows the
   credits screen, with Shift+F1. On the title screen, buttons for New Game, Load, Online,
-  Options, Help, Intro and Quit stand in for the menu, drawn over the title art with the rebuild's name,
-  its credit line and a box for notices left by the previous screen. Ctrl+H and Ctrl+J open the
+  Options, Help, Intro and Quit stand in for the menu, drawn over the title art with the rebuild's
+  name, its credit line and a box for notices left by the previous screen. Ctrl+H and Ctrl+J open the
   Online screen, where hosting and joining happen, and Enter and F9 also start a new game and
   open a saved one. A left press on the title outside the buttons does nothing, where the
   original's title loop takes a press anywhere as New Game.
@@ -958,7 +958,9 @@ Whether the original shows the count is not recorded.
 - Reason: The order menus of a gang card and of the group order strip are a panel the rebuild
   draws at (248,50,174,400), listing the same orders, where the original opens a Windows popup
   menu at the card's corner or at (290,65). An order the rules refuse for the gang is refused when
-  it is chosen, with a message on the console.
+  it is chosen, with a message on the console. The panel opens and closes without sliding and
+  without a sound, as the popup does (FND-UI-057), and the order panel chosen from it slides in
+  with the panel-open sound (RULE-UI-003).
 - Setting: None
 - Default: mandatory
 - Justification: The rebuild draws the whole game in its own window without the Windows frame
@@ -1008,16 +1010,18 @@ Whether the original shows the count is not recorded.
 - Replaces: RULE-GFX-002
 - Reason: The 640-by-460 drawing area is drawn into a resizable window. The window opens at the
   largest whole multiple of the area, up to 2, that fits in nine tenths of the display; a resized
-  window draws the area at the largest scale that fits, whole or not, and letterboxes it. Full screen is a borderless window at the
-  desktop's mode in 32-bit colour, with no menu bar above the area, and it stays open when it
-  loses focus. The original sizes a window under the Windows menu bar, or switches the display to
-  640 by 480 at 8 or 16 bits and minimizes itself when it loses focus.
+  window draws the area at the largest scale that fits, whole or not, and letterboxes it. Full
+  screen is a borderless window at the desktop's mode in 32-bit colour, with no menu bar above the
+  area, and it stays open when it loses focus. The original sizes a window under the Windows menu
+  bar, or switches the display to 640 by 480 at 8 or 16 bits and minimizes itself when it loses
+  focus.
 - Setting: None
 - Default: mandatory
-- Justification: Every pixel of the drawing area is the original's, repeated at a whole multiple.
-  At one to one the area is a small patch on a current display, and many current drivers no longer
-  offer 640 by 480 at 8 or 16 bits, so a mode-switch setting would offer a mode the display may
-  refuse. No rule depends on the window.
+- Justification: Every pixel of the drawing area is the original's. The window opens at a whole
+  multiple, which keeps each pixel square, and only a window the player resizes scales by a
+  fraction. At one to one the area is a small patch on a current display, and many current
+  drivers no longer offer 640 by 480 at 8 or 16 bits, so a mode-switch setting would offer a mode
+  the display may refuse. No rule depends on the window.
 - Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs
 - Dropped: no
 
@@ -1059,15 +1063,16 @@ Whether the original shows the count is not recorded.
 - Reason: The original opens its registry key read-only for loading and for writing, so no option
   is ever saved, and a missing value takes the previous value's data from a shared buffer. The
   rebuild writes a checked per-user file in one step. A file that is missing, unreadable or of an
-  unknown version, or that lacks a field its version has, is read as the defaults as a whole, so no
-  option takes another's value; a field a later version added takes its own default.
+  unknown version, or that lacks a field its version requires, is read as the defaults as a whole,
+  so no option takes another's value. A field a later version added takes its own default when an
+  older file is upgraded, and the lobby presentation, Intro only once and the preferred scenario,
+  which a file of the current version may leave out, take their own defaults when it does.
 - Setting: None
 - Default: mandatory
 - Justification: The Options menu was written to keep the player's choices, and the original loses
   them only because of the two bugs. Nobody gains from choosing the options again at every launch.
 - Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs,
-  tests/Rechaos.Tests/GamePreferencesStoreTests.cs,
-  tests/Rechaos.Tests/NativeAudioLevelApplicationTests.cs
+  tests/Rechaos.Tests/GamePreferencesStoreTests.cs
 - Dropped: no
 
 ## DEV-OPTIONS-002

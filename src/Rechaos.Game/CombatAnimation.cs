@@ -305,12 +305,14 @@ public sealed class CombatAnimationPlayer
 
     /// <summary>
     /// Puts the playing clip at <paramref name="tick"/> without advancing through the ticks before
-    /// it, for a frame drawn at a captured tick of the original's clip (FND-COMBAT-016).
+    /// it, for a frame drawn at a captured tick of the original's clip (FND-COMBAT-016). A clip whose
+    /// hold flag is cleared ends on tick 16, so it shows only ticks 0 to 15.
     /// </summary>
     public void ShowTick(int tick)
     {
-        if (tick < 0 || tick >= CombatAnimationRouting.CompletionTick) throw new ArgumentOutOfRangeException(nameof(tick));
-        if (Active is not null) TimelineTick = tick;
+        if (Active is not { } clip) return;
+        if (tick < 0 || tick >= clip.CompletionTick) throw new ArgumentOutOfRangeException(nameof(tick));
+        TimelineTick = tick;
     }
 
     public void Clear()
