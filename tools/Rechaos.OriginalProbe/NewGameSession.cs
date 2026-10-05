@@ -91,7 +91,8 @@ internal sealed record NewGameSettings(
     bool TraceHires = false, int? Seed = null, int? DumpAtRoll = null, uint? TraceCalls = null,
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
-    IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null)
+    IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
+    bool Capture = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -345,6 +346,7 @@ internal sealed class NewGameSession(
         }
 
         DumpWritableSections();
+        if (settings.Capture) CaptureDrawingArea(window);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -692,6 +694,112 @@ internal sealed class NewGameSession(
             File.WriteAllBytes(Path.Combine(outputDirectory, name), bytes);
             _notes.Add($"Dumped {section.Name} at 0x{section.VirtualAddress:X8}, {section.VirtualSize} bytes, to {name}.");
         }
+    }
+
+    // RULE-GFX-002: the 640-by-460 drawing area starts at the client area's top-left corner. The
+    // capture is written twice from the window's device context. PrintWindow is unsuitable here:
+    // it can repaint over animation drawn directly to the window rather than its backing surface.
+    private void CaptureDrawingArea(IntPtr window)
+    {
+        const int width = 640, height = 460;
+        // A smaller client area leaves part of the copy outside the window, and that part is not
+        // the original's drawing.
+        if (!Native.GetClientRect(window, out var client)
+            || client.Right - client.Left < width || client.Bottom - client.Top < height)
+        {
+            _notes.Add($"Capture rejected: the client area is {client.Right - client.Left} by "
+                + $"{client.Bottom - client.Top}, smaller than the {width}-by-{height} drawing area.");
+            return;
+        }
+        _notes.Add($"Client area {client.Right - client.Left} by {client.Bottom - client.Top}.");
+        // FND-UI-038: the counter increments after drawing. Require two agreeing window copies
+        // and a stable counter; a repainting capture cannot use this frame relationship. The
+        // pump's counter, which picks the selected-sector frame and the lights' blink phase
+        // (FND-UI-017, FND-EVENT-006), is kept as read; which of its values a capture shows is
+        // not recorded yet.
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            var before = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
+            var pumpBefore = _process.ReadInt32(OriginalAddresses.PumpCounter);
+            var copiesAgree = CaptureDrawingArea(window, width, height);
+            var after = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
+            var pumpAfter = _process.ReadInt32(OriginalAddresses.PumpCounter);
+            if (before != after || pumpBefore != pumpAfter || !copiesAgree) continue;
+            _notes.Add($"marker_frame {(before + 11) % 12}");
+            _notes.Add($"pump_counter {pumpBefore}");
+            return;
+        }
+        _notes.Add("Capture rejected: a counter moved or the synchronized copies disagreed.");
+    }
+
+    private bool CaptureDrawingArea(IntPtr window, int width, int height)
+    {
+        byte[]? firstCopy = null;
+        var copiesAgree = false;
+        foreach (var name in new[] { "capture-blt.bmp", "capture-blt-repeat.bmp" })
+        {
+            var info = new byte[40];
+            BitConverter.GetBytes(40).CopyTo(info, 0);
+            BitConverter.GetBytes(width).CopyTo(info, 4);
+            BitConverter.GetBytes(-height).CopyTo(info, 8);
+            BitConverter.GetBytes((short)1).CopyTo(info, 12);
+            BitConverter.GetBytes((short)32).CopyTo(info, 14);
+            var screen = Native.GetDC(window);
+            var memory = IntPtr.Zero;
+            var bitmap = IntPtr.Zero;
+            var old = IntPtr.Zero;
+            try
+            {
+                if (screen == IntPtr.Zero) throw new InvalidOperationException("Cannot acquire the capture window DC.");
+                if (firstCopy is null)
+                {
+                    const int bitsPixel = 12, planes = 14;
+                    var hostDepth = Native.GetDeviceCaps(screen, bitsPixel) * Native.GetDeviceCaps(screen, planes);
+                    var gameDepth = _process.ReadInt32(OriginalAddresses.DisplayDepth);
+                    _notes.Add($"Capture depths: original records {gameDepth}; probe window DC reports {hostDepth}.");
+                    if (gameDepth != hostDepth)
+                        _notes.Add("Capture depth mismatch: evaluate colour-key conversion before accepting presentation evidence.");
+                }
+                memory = Native.CreateCompatibleDC(screen);
+                if (memory == IntPtr.Zero) throw new InvalidOperationException("Cannot create the capture memory DC.");
+                bitmap = Native.CreateDIBSection(screen, info, 0, out var bits, IntPtr.Zero, 0);
+                if (bitmap == IntPtr.Zero || bits == IntPtr.Zero)
+                    throw new InvalidOperationException("Cannot allocate the capture bitmap.");
+                old = Native.SelectObject(memory, bitmap);
+                if (old == IntPtr.Zero || old == new IntPtr(-1))
+                    throw new InvalidOperationException("Cannot select the capture bitmap.");
+                var ok = Native.BitBlt(memory, 0, 0, width, height, screen, 0, 0, 0x00CC0020);
+                if (!ok) throw new InvalidOperationException($"{name}: the copy failed.");
+                // CreateDIBSection requires GDI drawing to finish before its bits are read directly.
+                // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-createdibsection
+                if (!Native.GdiFlush()) throw new InvalidOperationException($"{name}: flushing the copy failed.");
+                var pixels = new byte[width * height * 4];
+                System.Runtime.InteropServices.Marshal.Copy(bits, pixels, 0, pixels.Length);
+                if (firstCopy is null) firstCopy = pixels;
+                else copiesAgree = firstCopy.AsSpan().SequenceEqual(pixels);
+                WriteBitmap(Path.Combine(outputDirectory, name), width, height, pixels);
+            }
+            finally
+            {
+                if (old != IntPtr.Zero && old != new IntPtr(-1)) Native.SelectObject(memory, old);
+                if (bitmap != IntPtr.Zero) Native.DeleteObject(bitmap);
+                if (memory != IntPtr.Zero) Native.DeleteDC(memory);
+                if (screen != IntPtr.Zero) Native.ReleaseDC(window, screen);
+            }
+        }
+        return copiesAgree;
+    }
+
+    private static void WriteBitmap(string path, int width, int height, byte[] topDownBgra)
+    {
+        using var stream = File.Create(path);
+        using var writer = new BinaryWriter(stream);
+        writer.Write((byte)'B'); writer.Write((byte)'M');
+        writer.Write(54 + topDownBgra.Length); writer.Write(0); writer.Write(54);
+        writer.Write(40); writer.Write(width); writer.Write(-height);
+        writer.Write((short)1); writer.Write((short)32); writer.Write(0);
+        writer.Write(topDownBgra.Length); writer.Write(0); writer.Write(0); writer.Write(0); writer.Write(0);
+        writer.Write(topDownBgra);
     }
 
     private ProbeTrace Finish(bool dumped, string? note, int rollsBeforeBegin = 0)

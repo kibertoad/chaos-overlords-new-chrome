@@ -25,7 +25,8 @@ public sealed partial class ChaosGame
     /// until a showing is recorded, and later runs reach them through the title screen.</summary>
     private void InitializeIntroMovies()
     {
-        if (IntroMoviePolicy.PlaysAtStartup(_introOnlyOnce, _introMoviesSeen)) BeginIntroMovies();
+        if (_referenceFrame is null && IntroMoviePolicy.PlaysAtStartup(_introOnlyOnce, _introMoviesSeen))
+            BeginIntroMovies();
     }
 
     private void ReplayIntroMovies()

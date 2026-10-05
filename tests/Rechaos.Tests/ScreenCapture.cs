@@ -1,0 +1,321 @@
+using System.Diagnostics;
+using System.Text.Json;
+using Microsoft.Xna.Framework;
+using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
+using Rechaos.Game;
+using Xunit;
+
+namespace Rechaos.Tests;
+
+/// <summary>
+/// A 640-by-460 frame as 0x00RRGGBB values from the top row down: a capture of the original taken
+/// with the probe's <c>new-game --capture</c>, or a frame the rebuild drew with
+/// <c>--reference-frame</c>. Both write 32-bit bitmaps.
+/// </summary>
+public sealed class ScreenFrame
+{
+    public const int Width = 640;
+    public const int Height = 460;
+    public const uint White = 0xFFFFFF;
+
+    public ScreenFrame(uint[] pixels)
+    {
+        if (pixels.Length != Width * Height)
+            throw new ArgumentException($"A frame holds {Width * Height} pixels, not {pixels.Length}.", nameof(pixels));
+        Pixels = pixels;
+    }
+
+    public uint[] Pixels { get; }
+
+    public uint this[int x, int y] => Pixels[y * Width + x];
+
+    public static ScreenFrame ReadBitmap(byte[] bytes)
+    {
+        var offset = BitConverter.ToInt32(bytes, 10);
+        var width = BitConverter.ToInt32(bytes, 18);
+        var height = BitConverter.ToInt32(bytes, 22);
+        var depth = BitConverter.ToInt16(bytes, 28);
+        if (bytes[0] != 'B' || bytes[1] != 'M' || width != Width || Math.Abs(height) != Height || depth != 32)
+            throw new InvalidDataException($"Not a {Width}-by-{Height} 32-bit bitmap ({width} by {height} at {depth} bits).");
+        var pixels = new uint[Width * Height];
+        for (var row = 0; row < Height; row++)
+        {
+            // A negative height stores the top row first.
+            var y = height < 0 ? row : Height - 1 - row;
+            for (var x = 0; x < Width; x++)
+                pixels[y * Width + x] = BitConverter.ToUInt32(bytes, offset + (row * Width + x) * 4) & White;
+        }
+        return new ScreenFrame(pixels);
+    }
+
+    /// <summary>
+    /// The digest of a rectangle, as the probe's <c>extract</c> writes it into a fixture: the xxh3
+    /// of its pixels as red, green and blue bytes, row by row from the top and left to right.
+    /// </summary>
+    public string Digest(Rectangle rect)
+    {
+        var rgb = new byte[rect.Width * rect.Height * 3];
+        var at = 0;
+        for (var y = rect.Top; y < rect.Bottom; y++)
+        for (var x = rect.Left; x < rect.Right; x++)
+        {
+            var pixel = this[x, y];
+            rgb[at++] = (byte)(pixel >> 16);
+            rgb[at++] = (byte)(pixel >> 8);
+            rgb[at++] = (byte)pixel;
+        }
+        return SpecHash.Xxh3(rgb);
+    }
+}
+
+/// <summary>One element of a screen entry at the rectangle a capture recorded for it.</summary>
+public sealed record CapturedElement(string Screen, string Element, Rectangle Rect, string Xxh3, int White)
+{
+    public int Area => Rect.Width * Rect.Height;
+}
+
+/// <summary>
+/// A capture of the original recorded in an experiment fixture: the run whose endpoint it shows,
+/// the xxh3 of the bitmap kept under <c>GAME_DIR/captures/</c>, the Overlord bar's marker frame
+/// (FND-UI-038) and the elements it is compared at.
+/// </summary>
+public sealed record ScreenCaptureRecord(
+    string Experiment, int Run, string Xxh3, int MarkerFrame, IReadOnlyList<string> Screens,
+    IReadOnlyList<CapturedElement> Elements)
+{
+    public override string ToString() => $"{Experiment} run {Run}";
+
+    // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
+    private static readonly Lazy<IReadOnlyList<ScreenCaptureRecord>> All = new(Load);
+
+    /// <summary>Every capture the experiment fixtures beside the test binary record.</summary>
+    public static IReadOnlyList<ScreenCaptureRecord> LoadAll() => All.Value;
+
+    private static IReadOnlyList<ScreenCaptureRecord> Load()
+    {
+        var directory = Path.Combine(AppContext.BaseDirectory, "spec", "experiments");
+        var records = new List<ScreenCaptureRecord>();
+        foreach (var file in Directory.EnumerateFiles(directory, "EXP-*.json").Order(StringComparer.Ordinal))
+        {
+            using var fixture = JsonDocument.Parse(File.ReadAllText(file));
+            var experiment = fixture.RootElement.GetProperty("experiment").GetString()!;
+            var run = 0;
+            foreach (var recorded in fixture.RootElement.GetProperty("runs").EnumerateArray())
+            {
+                if (recorded.TryGetProperty("capture", out var capture))
+                    records.Add(Parse(experiment, run, capture));
+                run++;
+            }
+        }
+        return records;
+    }
+
+    public static ScreenCaptureRecord Parse(string experiment, int run, JsonElement capture)
+    {
+        var screens = new List<string>();
+        var elements = new List<CapturedElement>();
+        // A capture recorded before element digests were taken has no screens until the probe's
+        // digest command adds them.
+        var recorded = capture.TryGetProperty("screens", out var list) ? list.EnumerateArray().ToArray() : [];
+        foreach (var screen in recorded)
+        {
+            var id = screen.GetProperty("screen").GetString()!;
+            screens.Add(id);
+            foreach (var element in screen.GetProperty("elements").EnumerateArray())
+            {
+                var rect = element.GetProperty("rect").EnumerateArray().Select(value => value.GetInt32()).ToArray();
+                elements.Add(new CapturedElement(id, element.GetProperty("element").GetString()!,
+                    new Rectangle(rect[0], rect[1], rect[2], rect[3]),
+                    element.GetProperty("xxh3").GetString()!, element.GetProperty("white").GetInt32()));
+            }
+        }
+        return new ScreenCaptureRecord(experiment, run, capture.GetProperty("xxh3").GetString()!,
+            capture.GetProperty("marker_frame").GetInt32(), screens, elements);
+    }
+}
+
+/// <summary>An area of a screen the rebuild draws differently on purpose, under a deviation.</summary>
+public sealed record CaptureMask(string Deviation, Rectangle Rect);
+
+/// <summary>
+/// The areas each screen's comparison leaves out, each under the deviation that draws it. A mask
+/// covers only what the rebuild adds or replaces; everything else on the screen is compared.
+/// </summary>
+public static class ScreenCaptureMasks
+{
+    public static readonly IReadOnlyDictionary<string, IReadOnlyList<CaptureMask>> ByScreen =
+        new Dictionary<string, IReadOnlyList<CaptureMask>>
+        {
+            ["SCR-UI-003"] =
+            [
+                // DEV-UI-006: the cash row shows the unspent cash and the change next to the cash.
+                new("DEV-UI-006", StatusConsoleLayout.Cash),
+                // DEV-UI-023: the key line along the bottom of the city map, one 7-pixel text row.
+                new("DEV-UI-023", new Rectangle(2, 439, 432, 7)),
+            ],
+            ["SCR-HIRE-002"] = [],
+        };
+
+    /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
+    public static IReadOnlyList<CaptureMask> For(IEnumerable<string> screens) =>
+        screens.SelectMany(screen => ByScreen.TryGetValue(screen, out var masks)
+            ? masks
+            : throw new InvalidOperationException(
+                $"{screen} has no entry in ScreenCaptureMasks; add one, empty when no deviation draws on it.")).ToArray();
+}
+
+public enum ElementVerdict
+{
+    /// <summary>Every compared pixel is the original's.</summary>
+    Matches,
+    /// <summary>Some compared pixel differs from the original's.</summary>
+    Differs,
+    /// <summary>Nothing in the rectangle could be compared.</summary>
+    Unverified,
+}
+
+/// <summary>
+/// The comparison of one element. <see cref="Unverified"/> counts the pixels that were not
+/// compared because the original drew them exact white where the rebuild does not, and
+/// <see cref="Masked"/> the pixels a deviation covers.
+/// </summary>
+public sealed record ElementComparison(
+    CapturedElement Element, ElementVerdict Verdict, int Differing, int Unverified, int Masked, string Note)
+{
+    public override string ToString() =>
+        $"{Element.Screen} {Element.Element} {Element.Rect}: {Verdict}"
+        + (Differing > 0 ? $", {Differing} differing" : "")
+        + (Unverified > 0 ? $", {Unverified} unverified" : "")
+        + (Masked > 0 ? $", {Masked} masked" : "")
+        + (Note.Length > 0 ? $" ({Note})" : "");
+}
+
+public static class ScreenComparison
+{
+    /// <summary>
+    /// Compares an element's rectangle in the rebuild's frame with the original. With the capture
+    /// at hand every pixel outside the masks is compared, and a pixel the original drew exact
+    /// white is counted as unverified unless the rebuild drew it white too: on Windows 11 the
+    /// original leaves solid white rectangles where a blit failed (FND-UI-041), and what belongs
+    /// there is unknown. An element the original drew wholly white is unverified. Without the
+    /// capture only the digest is compared, which needs a rectangle with no white and no mask.
+    /// </summary>
+    public static ElementComparison Compare(
+        CapturedElement element, ScreenFrame? original, ScreenFrame rebuild, IReadOnlyList<CaptureMask> masks)
+    {
+        var rect = element.Rect;
+        var covering = masks.Where(mask => mask.Rect.Intersects(rect)).ToArray();
+        var masked = 0;
+        for (var y = rect.Top; y < rect.Bottom; y++)
+        for (var x = rect.Left; x < rect.Right; x++)
+            if (covering.Any(mask => mask.Rect.Contains(x, y))) masked++;
+        var maskNote = covering.Length == 0 ? "" : "masked by " + string.Join(", ", covering.Select(mask => mask.Deviation).Distinct());
+
+        if (element.White == element.Area)
+            return new(element, ElementVerdict.Unverified, 0, element.Area, masked,
+                Join("the original drew it solid white", maskNote));
+
+        if (original is null)
+        {
+            if (element.White > 0 || masked > 0)
+                return new(element, ElementVerdict.Unverified, 0, element.Area - masked, masked,
+                    Join($"the capture is needed: {element.White} white pixels", maskNote));
+            return rebuild.Digest(rect) == element.Xxh3
+                ? new(element, ElementVerdict.Matches, 0, 0, 0, "digest")
+                : new(element, ElementVerdict.Differs, -1, 0, 0, "digest differs");
+        }
+
+        var digest = original.Digest(rect);
+        if (digest != element.Xxh3)
+            throw new InvalidDataException(
+                $"{element.Screen} {element.Element}: the capture's rectangle has xxh3 {digest}, the fixture {element.Xxh3}.");
+
+        int differing = 0, unverified = 0;
+        for (var y = rect.Top; y < rect.Bottom; y++)
+        for (var x = rect.Left; x < rect.Right; x++)
+        {
+            if (covering.Any(mask => mask.Rect.Contains(x, y))) continue;
+            var theirs = original[x, y];
+            var ours = rebuild[x, y];
+            if (theirs == ours) continue;
+            if (theirs == ScreenFrame.White) unverified++;
+            else differing++;
+        }
+        var verdict = differing > 0 ? ElementVerdict.Differs
+            : unverified == element.Area - masked ? ElementVerdict.Unverified
+            : ElementVerdict.Matches;
+        return new(element, verdict, differing, unverified, masked, maskNote);
+    }
+
+    private static string Join(string first, string second) => second.Length == 0 ? first : $"{first}; {second}";
+}
+
+/// <summary>
+/// Draws a match state in the rebuild: writes it as a native save and runs the game with
+/// <c>--reference-frame</c>, which shows the save at its planning entry, writes the drawing area
+/// and exits. Skips the test when no asset pack is installed beside the test binary or in the
+/// player's application data, since the frame is drawn from the original's art.
+/// </summary>
+public static class RebuildFrame
+{
+    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(90);
+
+    public static ScreenFrame Render(MatchState state, int? markerFrame)
+    {
+        var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+        if (!File.Exists(Path.Combine(assets, "manifest.json")))
+            Assert.Skip($"No asset pack is installed at {assets}.");
+
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-screen-capture-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var save = Path.Combine(directory, "state.rchsave");
+            var frame = Path.Combine(directory, "frame.bmp");
+            NativeSaveStore.SaveAtomic(save, state);
+            var start = GameStartInfo();
+            foreach (var argument in new[] { "--assets", assets, "--reference-frame", save, frame })
+                start.ArgumentList.Add(argument);
+            if (markerFrame is { } marker)
+            {
+                start.ArgumentList.Add("--marker-frame");
+                start.ArgumentList.Add(marker.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            using var process = Process.Start(start) ?? throw new InvalidOperationException("The game did not start.");
+            var error = new System.Text.StringBuilder();
+            process.ErrorDataReceived += (_, line) => { lock (error) error.AppendLine(line.Data); };
+            process.BeginErrorReadLine();
+            if (!process.WaitForExit(Timeout))
+            {
+                process.Kill(entireProcessTree: true);
+                throw new TimeoutException($"The game did not write the frame within {Timeout.TotalSeconds} seconds.");
+            }
+            // Waits for the redirected error stream to drain as well.
+            process.WaitForExit();
+            if (process.ExitCode != 0 || !File.Exists(frame))
+                throw new InvalidOperationException($"The game exited with {process.ExitCode} and no frame. {error}");
+            return ScreenFrame.ReadBitmap(File.ReadAllBytes(frame));
+        }
+        finally
+        {
+            try { Directory.Delete(directory, recursive: true); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+    }
+
+    // The game's apphost beside the test binary, or the shared host with its assembly.
+    private static ProcessStartInfo GameStartInfo()
+    {
+        var host = Path.Combine(AppContext.BaseDirectory, OperatingSystem.IsWindows() ? "Rechaos.Game.exe" : "Rechaos.Game");
+        var start = File.Exists(host)
+            ? new ProcessStartInfo(host)
+            : new ProcessStartInfo("dotnet") { ArgumentList = { Path.Combine(AppContext.BaseDirectory, "Rechaos.Game.dll") } };
+        start.UseShellExecute = false;
+        start.RedirectStandardError = true;
+        start.WorkingDirectory = AppContext.BaseDirectory;
+        return start;
+    }
+}

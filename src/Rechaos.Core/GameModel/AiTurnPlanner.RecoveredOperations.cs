@@ -127,9 +127,10 @@ public static partial class AiTurnPlanner
         Func<int, int, int, int, int, int, bool> acceptsComparison,
         int? strengthTestSlot = null)
     {
-        // Families 12 and 13/14 clamp their pool before they get here and the other callers only
-        // reach this with a hostile list they have already found non-empty. Say so out loud, so a
-        // future caller meets a named precondition rather than a divide by zero inside the RNG.
+        // Families 13 and 14 make their empty-pool roll(0) without coming here (RULE-AI-031), and
+        // the other callers only reach this with a hostile list they have already found non-empty.
+        // Say so out loud, so a future caller meets a named precondition rather than an index past
+        // the end of the pool.
         if (targetPool.Count == 0)
             throw new InvalidOperationException("A recovered attack draw needs a non-empty target pool.");
         var ordinal = state.Random.NextInclusive(targetPool.Count);

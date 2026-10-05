@@ -169,10 +169,10 @@ remaining is even, so it alternates between fighting and Control. A gang with
 Force below 5, or one whose draws found no gang, never attacks: it heals when
 Force is below 10 and effective Heal is at least -3, and otherwise the handler
 writes nothing, so the planned action stays None (FND-AI-062). A neutral
-objective has no owner's gangs to draw, so the gang heals or does nothing on
-even turns. After the draws the last drawn gang is attacked even when every
-strength test failed, and the strength test can be made on a different gang
-from the one attacked (BUG-AI-003). In a scenario other than 6 and 8 no sector
+objective has no owner's gangs to draw, so on even turns the gang makes its
+one `roll(0)` and then heals or does nothing. After the draws the last drawn
+gang is attacked even when every strength test failed, and the strength test
+can be made on a different gang from the one attacked (BUG-AI-003). In a scenario other than 6 and 8 no sector
 is an objective, and the gang writes Move with the planned target left from the
 start of the turn, sector 0.
 

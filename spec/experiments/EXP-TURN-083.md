@@ -45,11 +45,12 @@ list of unreached planner branches each match took.
 
 The run made 1435 calls of `roll` over eight Done presses. At the end
 `elapsed_turns` is 8 and no player's `controller` has changed. At the end
-player 2's gang in roster slot 1 stands in sector 10 at Force 9 with Influence
-1, its planning record holds a planned Influence on site slot 2
-(FMT-STATE-007), sector 10 is neutral, and that site is complete: the sector
-record holds a Tolerance one below its base and a Support of 1
-(FMT-STATE-002). The eighth turn rolls 75 dice at `0x00475FBB` before the hire
+player 2's gang in roster slot 1 stands in sector 10, its Force plus
+effective Influence making a pool of 10 (FMT-STATE-001, FMT-DATA-002), its
+planning record holds a planned Influence on site slot 2 (FMT-STATE-007),
+sector 10 is neutral, and that site is complete: the sector record's
+Tolerance and Support hold that site's contributions (FMT-STATE-002,
+FMT-DATA-001). The eighth turn rolls 75 dice at `0x00475FBB` before the hire
 draws: two Influence pools of 10, one of 13, the Heal pools and the 27 of the
 attack on the human gang.
 

@@ -17,7 +17,7 @@ internal sealed class StateExtractor
 
     private StateExtractor(byte[] data) => _data = data;
 
-    public static JsonObject ExtractRun(string runDirectory)
+    public static JsonObject ExtractRun(string runDirectory, IReadOnlyList<CaptureScreen> screens)
     {
         var trace = JsonNode.Parse(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
         var extractor = new StateExtractor(File.ReadAllBytes(Path.Combine(runDirectory, $"data-{DataStart:X8}.bin")));
@@ -100,6 +100,10 @@ internal sealed class StateExtractor
             }
             run["timers"] = timers;
         }
+        // --capture: the drawing area at the dump, with a digest of each screen element's rectangle
+        // (CaptureFixture).
+        if (CaptureFixture.Extract(runDirectory, trace, screens) is { } capture)
+            run["capture"] = capture;
         return run;
     }
 

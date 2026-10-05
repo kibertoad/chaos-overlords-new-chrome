@@ -230,11 +230,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         RuntimeDiagnostics? diagnostics = null,
         string? screenshotFolder = null,
         bool originalComputerMoves = false,
-        bool originalComputerHires = false)
+        bool originalComputerHires = false,
+        ReferenceFrameRequest? referenceFrame = null)
     {
         _assetRoot = assetRoot;
         _originalComputerMoves = originalComputerMoves;
         _originalComputerHires = originalComputerHires;
+        _referenceFrame = referenceFrame;
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;
         _screens.Changed += (previous, current) => _diagnostics?.Write(
@@ -265,7 +267,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
                 _showEndgameStats = false;
         };
-        var userDataRoot = Path.Combine(
+        var userDataRoot = _referenceFrame?.UserDataDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords");
         _saveDirectory = userDataRoot;
@@ -308,14 +310,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // 1366x768 laptop or a 1080p panel at 150% scaling cannot show a 920-pixel-tall window, and
         // the DONE button ends up below the screen edge. Draw and input already letterbox from the
         // viewport, so any size works; the window just has to fit on the display it opens on.
-        var (backBufferWidth, backBufferHeight) = PreferredBackBufferSize();
+        var (backBufferWidth, backBufferHeight) = _referenceFrame is null
+            ? PreferredBackBufferSize()
+            : (VirtualInput.Width, VirtualInput.Height);
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = backBufferWidth,
             PreferredBackBufferHeight = backBufferHeight,
             SynchronizeWithVerticalRetrace = true,
             HardwareModeSwitch = false,
-            IsFullScreen = _fullscreen
+            IsFullScreen = _fullscreen && _referenceFrame is null
         };
         // Ticking on without focus is what keeps background online notices, the planning timer and
         // the autosave serviced; the redraw is the expensive part, and BeginDraw spaces that out
@@ -440,7 +444,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     protected override void Update(GameTime gameTime)
     {
         _autoSave.Pump();
-        _inputTime = gameTime.TotalGameTime;
+        _inputTime = _referenceFrame is null ? gameTime.TotalGameTime : TimeSpan.Zero;
+        if (UpdateReferenceFrame())
+        {
+            base.Update(gameTime);
+            return;
+        }
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
         // The rebuild's window shortcuts are not game events, so a fade does not swallow them.

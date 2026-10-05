@@ -1827,6 +1827,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-AI-004](../rules/RULE-AI-004.md) | body |
 | [RULE-AI-031](../rules/RULE-AI-031.md) | body, evidence |
 | [RULE-RNG-002](../rules/RULE-RNG-002.md) | evidence |
 
@@ -1847,7 +1848,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | evidence |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | body, evidence |
 
 ## EXP-TURN-088
 
@@ -1904,6 +1905,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FND-DATA-011](../findings/FND-DATA-011.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
@@ -1924,6 +1926,7 @@ None.
 | [EXP-TURN-068](../experiments/EXP-TURN-068.md) | body |
 | [EXP-TURN-069](../experiments/EXP-TURN-069.md) | body |
 | [EXP-TURN-070](../experiments/EXP-TURN-070.md) | body |
+| [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body |
 | [FND-AI-054](../findings/FND-AI-054.md) | body |
 | [FND-AI-064](../findings/FND-AI-064.md) | body |
@@ -2022,6 +2025,7 @@ None.
 | [EXP-TURN-065](../experiments/EXP-TURN-065.md) | body |
 | [EXP-TURN-067](../experiments/EXP-TURN-067.md) | body |
 | [EXP-TURN-070](../experiments/EXP-TURN-070.md) | body |
+| [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
 | [EXP-TURN-090](../experiments/EXP-TURN-090.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
@@ -2938,7 +2942,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-AI-031](../findings/FND-AI-031.md) | superseded_by |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | body, evidence |
 
 ## FND-AI-050
 
@@ -3145,7 +3149,7 @@ None.
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | body, evidence |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
 
 ## FND-AI-073
@@ -7335,6 +7339,7 @@ None.
 | glossary: objective_site | glossary |
 | glossary: on_objective | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
+| [RULE-AI-004](../rules/RULE-AI-004.md) | body |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | body |
 

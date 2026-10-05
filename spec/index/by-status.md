@@ -16,7 +16,7 @@
 
 ## supported
 
-156 entries.
+157 entries.
 
 | ID | Title |
 |---|---|
@@ -68,6 +68,7 @@
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle |
@@ -179,7 +180,7 @@
 
 ## established
 
-85 entries.
+84 entries.
 
 | ID | Title |
 |---|---|
@@ -199,7 +200,6 @@
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them |
 | [RULE-AI-027](../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three |
@@ -774,7 +774,6 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-AI-017](../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves |
-| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them |
 | [RULE-AI-027](../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three |
@@ -904,6 +903,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-020](../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported |
+| [RULE-AI-023](../rules/RULE-AI-023.md) | Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them | supported |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported |

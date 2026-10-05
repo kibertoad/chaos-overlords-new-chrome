@@ -538,11 +538,23 @@ public sealed partial class ChaosGame
             ["seed"] = setup.InitialSeed.ToString()
         });
         var created = OriginalMatchFactory.Create(_definitions, setup);
+        EnterNewMatch(created, advanceToPlanning: !_debugPhaseStepping);
+    }
+
+    /// <summary>
+    /// Puts a newly created match on screen at its first planning entry. A match that already
+    /// stands at that entry, as a reference frame's does, is shown without advancing it.
+    /// </summary>
+    private void EnterNewMatch(MatchState created, bool advanceToPlanning)
+    {
         ReplaceMatch(created, new MatchActions(new MatchReplayRecorder(created)));
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: false);
-        if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
-        if (!_debugPhaseStepping) PrepareCurrentHireOffers();
-        _cursor = _state.Players[0].Gangs[0].SectorId;
+        if (advanceToPlanning) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
+        if (advanceToPlanning) PrepareCurrentHireOffers();
+        // A reference frame's save may stand where player 0 has lost every gang.
+        _cursor = _state.Players[0].Gangs.Count > 0
+            ? _state.Players[0].Gangs[0].SectorId
+            : Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
         _selectedGangIndex = 0;
         _message = string.Empty;
         _combatPresentationProgress.Clear();
@@ -554,7 +566,8 @@ public sealed partial class ChaosGame
         _resumedMatchTurn = null;
         _continuePlanningEntryAfterGameInfo = false;
         _deferComlinkAlertUntilPlanningVisible = false;
-        PresentHotSeatPlanningEntry();
+        if (_referenceFrame is not null) PresentReferenceFramePlanningEntry();
+        else PresentHotSeatPlanningEntry();
     }
 
     private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)

@@ -3,4 +3,10 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- The xxh3 of the documentation standard, at the version Rechaos.Core and the tests use. -->
+    <PackageReference Include="System.IO.Hashing" Version="10.0.12" />
+    <!-- The screen elements the extract command digests a capture at (CaptureScreen). -->
+    <None Include="Screens/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
