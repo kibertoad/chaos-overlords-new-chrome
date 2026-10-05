@@ -128,6 +128,17 @@ internal sealed class StateExtractor
             run["sound_calls"] = new JsonArray(soundCalls.Select(call => (JsonNode)new JsonArray(
                 call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Slot"]!.GetValue<int>(),
                 (int)call["Call"]!.GetValue<uint>())).ToArray());
+        // RULE-VIDEO-001: each intro movie with its header's frame count, the frame counter at each
+        // frame shown, the milliseconds from the first frame to each, and the counter at its close.
+        if (trace["IntroMovies"] is JsonArray introMovies)
+            run["intro_movies"] = new JsonArray(introMovies.Select(movie => (JsonNode)new JsonObject
+            {
+                ["name"] = movie!["Name"]!.GetValue<string>(),
+                ["frames"] = movie["Frames"]!.GetValue<int>(),
+                ["shown"] = new JsonArray(movie["Shown"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+                ["milliseconds"] = new JsonArray(movie["Milliseconds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<long>()).ToArray()),
+                ["closed_at"] = movie["ClosedAt"]!.GetValue<int>(),
+            }).ToArray());
         // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
         if (trace["HireSteps"] is JsonArray hireSteps)
             run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject

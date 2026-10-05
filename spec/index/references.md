@@ -171,6 +171,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | builds |
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | builds |
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | builds |
+| [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -1290,6 +1291,7 @@ None.
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | body |
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | body |
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
+| [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | body |
 
 ## EXP-TURN-002
 
@@ -2409,6 +2411,12 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
+
+## EXP-VIDEO-001
+
+| Cited by | In |
+|---|---|
+| [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | evidence |
 
 ## FMT-AUDIO-001
 
@@ -7736,6 +7744,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | body |
 | [FMT-VIDEO-001](../formats/FMT-VIDEO-001.md) | body, evidence |
 | glossary: movie_frame_count | glossary |
 | [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | evidence |
@@ -7744,6 +7753,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | body |
 | [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
@@ -9566,6 +9576,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
+| [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | body |
 | glossary: intro_tick | glossary |
 | glossary: MovieAreaCleared | glossary |
 | glossary: MovieFrameShown | glossary |

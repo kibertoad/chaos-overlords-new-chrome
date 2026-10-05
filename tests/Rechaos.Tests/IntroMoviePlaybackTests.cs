@@ -42,6 +42,20 @@ public sealed class IntroMoviePlaybackTests
         Assert.Equal(2, timeline.FrameIndex);
     }
 
+    // RULE-VIDEO-001, EXP-VIDEO-001: the last frame stays up for a frame time before the movie ends.
+    [Fact]
+    public void TheLastFrameStaysUpForOneFrameTime()
+    {
+        var timeline = new SmackerPlaybackTimeline(3, TimeSpan.FromMilliseconds(100));
+
+        Assert.Equal(new SmackerTimelineAdvance(1, false), timeline.Advance(TimeSpan.Zero));
+        Assert.Equal(new SmackerTimelineAdvance(2, false), timeline.Advance(TimeSpan.FromMilliseconds(200)));
+        Assert.Equal(2, timeline.FrameIndex);
+        Assert.Equal(new SmackerTimelineAdvance(0, false), timeline.Advance(TimeSpan.FromMilliseconds(99)));
+        Assert.Equal(new SmackerTimelineAdvance(0, true), timeline.Advance(TimeSpan.FromMilliseconds(1)));
+        Assert.Equal(2, timeline.FrameIndex);
+    }
+
     [Fact]
     public void TimelineCanBeSkippedWithoutAdvancingMoreFrames()
     {

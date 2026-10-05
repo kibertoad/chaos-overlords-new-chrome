@@ -99,6 +99,12 @@ public sealed partial class OriginalNewGameExperimentTests
     // effect slot and the address of the call.
     private sealed record RecordedSoundCall(int AfterRoll, int Done, int Slot, int Call);
 
+    // A movie the intro played (FND-VIDEO-002): its name, its header's frame count, the movie
+    // slot's frame counter at each frame shown, the milliseconds from the first frame to each, and
+    // the counter when the slot was closed.
+    private sealed record RecordedIntroMovie(
+        string Name, int Frames, IReadOnlyList<int> Shown, IReadOnlyList<long> Milliseconds, int ClosedAt);
+
     // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
     // (FND-HIRE-001, FND-HIRE-008).
@@ -267,6 +273,13 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? soundCalls.EnumerateArray().Select(call => new RecordedSoundCall(
                     call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
                 : null;
+            IntroMovies = run.TryGetProperty("intro_movies", out var introMovies)
+                ? introMovies.EnumerateArray().Select(movie => new RecordedIntroMovie(
+                    movie.GetProperty("name").GetString()!, movie.GetProperty("frames").GetInt32(),
+                    movie.GetProperty("shown").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+                    movie.GetProperty("milliseconds").EnumerateArray().Select(value => value.GetInt64()).ToArray(),
+                    movie.GetProperty("closed_at").GetInt32())).ToArray()
+                : null;
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.
             SearchFilter = inputs.EnumerateArray()
@@ -316,6 +329,8 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedPointerCall>? PointerCalls { get; }
         // Null when the run did not record the play helper.
         public IReadOnlyList<RecordedSoundCall>? SoundCalls { get; }
+        // Null when the run held the button through the intro.
+        public IReadOnlyList<RecordedIntroMovie>? IntroMovies { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedHireStep> HireSteps { get; }
         public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }

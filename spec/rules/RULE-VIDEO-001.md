@@ -4,7 +4,7 @@ title: The intro plays the logos movie and then the intro movie, each ended by t
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-VIDEO-002, FND-VIDEO-003, FND-VIDEO-001, FND-PLATFORM-012, FND-UI-023, FND-EXE-004]
+evidence: [FND-VIDEO-002, FND-VIDEO-003, FND-VIDEO-001, FND-PLATFORM-012, FND-UI-023, FND-EXE-004, EXP-VIDEO-001]
 conflicting: []
 split_with: []
 related: [FMT-VIDEO-001, RULE-AUDIO-003]
