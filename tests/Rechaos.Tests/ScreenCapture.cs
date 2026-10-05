@@ -274,6 +274,8 @@ public static class ScreenCaptureMasks
                 new("DEV-UI-006", StatusConsoleLayout.Cash),
                 // DEV-UI-023: the key line along the bottom of the city map, one 7-pixel text row.
                 new("DEV-UI-023", new Rectangle(2, 439, 432, 7)),
+                // DEV-UI-007 turns Tolerance orange only while the queued Chaos can set off a
+                // Crackdown, which no city capture shows, so Tolerance is compared here.
             ],
             ["SCR-HIRE-002"] = [],
             // DEV-FINANCE-001 changes the Equipment field only while a Sell of several items is queued.
