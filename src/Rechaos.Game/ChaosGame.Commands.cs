@@ -472,14 +472,14 @@ public sealed partial class ChaosGame
         for (var slot = 0; slot < MatchLimits.SitesPerSector; slot++)
         {
             var site = sector.Sites.Single(value => value.Slot == slot);
-            var destination = InfluenceCommandLayout.Site(slot);
-            if (_sitePortraits is not null)
-                batch.Draw(_sitePortraits, destination,
-                    OriginalSpriteLayout.SitePortrait(site.DefinitionId), Color.White);
             var targetId = actor.SectorId * MatchLimits.SitesPerSector + slot;
-            if (_commandTargetCursor >= 0
-                && _commandTargetOptions[_commandTargetCursor].Target.Id == targetId)
-                DrawBorder(batch, pixel, destination, Color.White, 2);
+            // FND-INFLUENCE-002: the handler draws a site as completed when its progress equals
+            // the definition's Resistance, the rebuild's remaining Resistance of 0, whether or not
+            // the site has been activated for the owner yet. The order validator refuses the
+            // same sites, so a site drawn as completed is never one that can be picked.
+            DrawInfluenceSite(batch, pixel, site, InfluenceCommandLayout.SiteHit(slot),
+                site.Resistance == 0,
+                _commandTargetCursor >= 0 && _commandTargetOptions[_commandTargetCursor].Target.Id == targetId);
         }
         DrawCommandPanelFaces(batch);
     }

@@ -73,15 +73,22 @@ internal sealed partial class NewGameSession
             if (_process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0)
                 heldCounter = _process.ReadInt32(OriginalAddresses.PumpCounter);
         }, quiet: true);
-        // FND-UI-052: the frame pointer of Item Information's handler while it runs. Its frame
-        // local is read from memory around the capture, since a breakpoint's report reaches the
-        // probe only after the game has gone on drawing.
-        uint? itemHandler = null;
-        _process.SetBreakpoint(OriginalAddresses.ItemFrameStarts, context => itemHandler = context.Ebp, quiet: true);
-        _process.SetBreakpoint(OriginalAddresses.ItemInformationReturns, _ => itemHandler = null, quiet: true);
-        int? ItemFrame() => itemHandler is { } frame
-            ? _process.ReadInt32(frame - OriginalAddresses.ItemFrameLocal)
-            : null;
+        // FND-UI-052, FND-UI-053: the frame local of the last of Item Information, Sell and Give
+        // to open, while it runs. It is read from memory around the capture, since a breakpoint's
+        // report reaches the probe only after the game has gone on drawing.
+        // A return pops the entries down to its own handler's, so a handler whose return went
+        // unseen cannot leave its frame to be read by a later shot.
+        var itemHandlers = new Stack<(uint Starts, uint Address)>();
+        foreach (var (starts, local, returns) in OriginalAddresses.ItemFrameHandlers)
+        {
+            _process.SetBreakpoint(starts, context => itemHandlers.Push((starts, context.Ebp - local)), quiet: true);
+            _process.SetBreakpoint(returns, _ =>
+            {
+                if (itemHandlers.Any(entry => entry.Starts == starts))
+                    while (itemHandlers.Pop().Starts != starts) { }
+            }, quiet: true);
+        }
+        int? ItemFrame() => itemHandlers.TryPeek(out var top) ? _process.ReadInt32(top.Address) : null;
         foreach (var step in settings.OrderSteps!)
         {
             if (step.Kind == "shot")
@@ -99,7 +106,7 @@ internal sealed partial class NewGameSession
                     itemFrame = ItemFrame() == itemBefore ? itemBefore : null;
                 } while (itemBefore is not null && itemFrame is null && ++itemAttempts < 5);
                 if (itemBefore is not null && itemFrame is null)
-                    _notes.Add($"{file}: the Item Information frame moved during each capture.");
+                    _notes.Add($"{file}: the item pictures' frame moved during each capture.");
                 var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
                         _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,

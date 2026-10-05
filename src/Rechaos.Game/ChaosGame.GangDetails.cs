@@ -396,6 +396,15 @@ public sealed partial class ChaosGame
         DrawNativeFixedWidthValue(font, batch, value, left, y, width);
     }
 
+    /// <summary>FND-UI-019: string cells are copied opaquely, like the numeric cells.</summary>
+    private static void DrawOpaqueText(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, string text, int left, int y)
+    {
+        batch.Draw(pixel, new Rectangle(left, y, text.Length * OriginalFontLayout.CellWidth,
+            OriginalFontLayout.GlyphHeight), Color.Black);
+        font.Draw(batch, text, new Vector2(left, y), Color.Lime, 1);
+    }
+
     private static void DrawGangPanelValue(
         PixelFont font, SpriteBatch batch, string text, int left, int y)
     {

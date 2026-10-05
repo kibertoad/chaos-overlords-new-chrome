@@ -14,12 +14,22 @@ public sealed partial class ChaosGame
         _itemDetailsId = itemId;
         _itemDetailsOpenedAt = PresentationDrawTime;
         _itemDetailsReturnScreen = returnScreen;
+        // FND-UI-053, FND-SELL-001, FND-GIVE-001: Sell and Give call Item Information from their
+        // own loop, so their frame local does not step while it runs.
+        if (returnScreen is ClientScreen.Sell or ClientScreen.Give)
+            _equipmentRotationHeld = _eventPump.Ticks - _equipmentRotationStart;
         _screens.Show(ClientScreen.ItemInformation);
     }
 
     private void CloseItemDetails()
     {
         var returnScreen = _itemDetailsReturnScreen;
+        // FND-UI-053: Sell and Give go on from the frame they held when Item Information opened.
+        // As for the gang panel below, the item panel's last pass took the tick a held exit face
+        // kept (FND-UI-047).
+        if (_equipmentRotationHeld is { } held)
+            _equipmentRotationStart = _eventPump.TicksAfterHold(_inputTime) - held;
+        _equipmentRotationHeld = null;
         _itemDetailsId = null;
         _itemDetailsReturnScreen = ClientScreen.Commands;
         // FND-GANG-006: the gang information panel's rotation restarts at frame 0 when the item's

@@ -213,6 +213,8 @@ public sealed partial class ChaosGame
         _giveGang = gang.Id;
         _giveReturnScreen = returnScreen;
         _giveRepeats = repeat;
+        _equipmentRotationStart = _eventPump.Ticks;
+        _equipmentRotationHeld = null;
         _screens.Show(ClientScreen.Give);
     }
 
@@ -434,8 +436,9 @@ public sealed partial class ChaosGame
                     EquipmentGiveLayout.RecipientForceSource(recipient.Force), Color.White);
         }
         if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, EquipmentGiveLayout.RecipientPortrait(slot),
-                OriginalSpriteLayout.GangPortrait(recipient.DefinitionId), Color.White);
+            // SCR-GIVE-001, EXP-UI-010: the 64-by-64 portrait halved as the original's stretch does.
+            _scaledGangPortraits.Draw(batch, _gangPortraits,
+                OriginalSpriteLayout.GangPortrait(recipient.DefinitionId), EquipmentGiveLayout.RecipientPortrait(slot));
         if (_itemPortraits is not null)
         {
             var items = EquippedItems(recipient);

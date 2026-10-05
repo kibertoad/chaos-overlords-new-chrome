@@ -100,7 +100,7 @@ public sealed record ScreenCaptureRecord(
     /// </summary>
     public int? FrameCounter { get; init; } = PumpCounter;
 
-    /// <summary>FND-UI-052: the frame of Item Information's rotating item, when a shot shows it.</summary>
+    /// <summary>FND-UI-052, FND-UI-053: the frame of the rotating item pictures a shot shows.</summary>
     public int? ItemFrame { get; init; }
 
     public override string ToString() => Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
@@ -301,6 +301,9 @@ public static class ScreenCaptureMasks
             ["SCR-RESEARCH-001"] = [new CaptureMask("DEV-RESEARCH-001", new Rectangle(388, 149, 44, 144))],
             ["SCR-UI-006"] = [],
             ["SCR-GANG-001"] = [],
+            ["SCR-GIVE-001"] = [],
+            ["SCR-SELL-001"] = [],
+            ["SCR-INFLUENCE-001"] = [],
             ["SCR-GANG-002"] = [],
         };
 

@@ -726,16 +726,17 @@ slide-in sets the flag that stops it, and keeps the pump's counter read there;
 the frame counter is that value while the flag is set, the pump counter when it
 is clear, and null when the probe could not tell. A panel that slides in over
 another finds the flag set and leaves the counter as it was. While Item
-Information is open the shot also keeps `item_frame`, the frame of its
-rotating item, read from the handler's local before and after the capture,
-which is taken again when the two reads differ (FND-UI-052). `extract` gives that
+Information, Sell or Give is open the shot also keeps `item_frame`, the frame
+of its rotating items, read from the handler's local before and after the
+capture, which is taken again when the two reads differ (FND-UI-052,
+FND-UI-053). `extract` gives that
 order step a `capture` object as above and a `screens` string naming the
 screens it is compared at. The steps before it bring the screen up: `open:s`
 double-clicks sector `s` on the city map, `dbl:x:y` double-clicks the window
 point `(x, y)` as `open` does (FND-UI-020), `strip:x:y:0` presses a point,
 `card` a sector card's point, `back` the detailed sector screen's back
 control and `exit` the Exit of the panel the planning entry left open.
-EXP-UI-006 to EXP-UI-009 are taken this way.
+EXP-UI-006 to EXP-UI-010 are taken this way.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
@@ -770,7 +771,8 @@ planning entry selects in place of the sector the rebuild keeps for the player
 second and fourth of the capture's `lamps`, the bytes that say the Events and
 the Comlink lamp were drawn lit, which pick the blink phase of those lights in
 place of the clock's (FND-EVENT-006). `--item-frame` passes `item_frame`, the
-frame Item Information's rotating item is drawn at (FND-UI-052). The blinking
+frame the rotating items of Item Information, Sell and Give are drawn at
+(FND-UI-052, FND-UI-053). The blinking
 and cycling parts of the screen stay at time zero however many clicks were
 made: the marker is drawn at `--marker-frame`, or at its first frame without it.
 `--reference-clicks` lists the presses that take the rebuild from the planning

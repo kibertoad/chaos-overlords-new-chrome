@@ -23,8 +23,8 @@ namespace Rechaos.Game;
 /// (FND-UI-048), in place of the clock's.
 /// </param>
 /// <param name="ItemFrame">
-/// The frame of Item Information's rotating item the capture showed (FND-UI-052), in place of
-/// the one the clock gives.
+/// The frame of the rotating item pictures of Item Information, Sell or Give the capture showed
+/// (FND-UI-052, FND-UI-053), in place of the one the clock gives.
 /// </param>
 /// <param name="SelectedSector">
 /// The sector the capture had selected (FND-SAVE-003), in place of the one the planning entry
@@ -124,7 +124,7 @@ public sealed record ReferenceFrameRequest(
         int? itemFrame = null;
         if (item >= 0)
         {
-            // FND-UI-052: the item turns through its fifteen frames.
+            // FND-UI-052, FND-UI-053: the items turn through their fifteen frames.
             if (!int.TryParse(Operand(args, item + 1),
                     System.Globalization.NumberStyles.None,
                     System.Globalization.CultureInfo.InvariantCulture, out var value)
