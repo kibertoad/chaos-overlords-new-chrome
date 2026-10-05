@@ -88,7 +88,10 @@ public sealed partial class OriginalNewGameExperimentTests
         }
     }
 
-    /// <summary>Closes the window of a headless game and says whether the close was held back.</summary>
+    /// <summary>
+    /// Closes the window of a headless game, which is File, Exit (RULE-UI-014), and says whether
+    /// the close was held back.
+    /// </summary>
     internal static bool ClosingIsCancelled(ChaosGame game)
     {
         var args = new ExitingEventArgs();

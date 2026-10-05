@@ -166,17 +166,42 @@ public sealed class ProgramShellParityTests
     }
 
     [Fact]
-    public void ShiftChangesOnlyTheThirteenKeysOfTheOriginalsTable()
+    public void ShiftChangesOnlyTheSixteenKeysOfTheOriginalsTable()
     {
-        // RULE-UI-014: Shift gives the United States shifted character for the digits and
-        // ' , . / ; =, and letters always come out in upper case.
-        Assert.True(OriginalTextInput.TryCharacter(Keys.OemMinus, shift: true, out var minus));
-        Assert.Equal('-', minus);
-        Assert.True(OriginalTextInput.TryCharacter(Keys.OemPlus, shift: true, out var plus));
-        Assert.Equal('+', plus);
-        Assert.True(OriginalTextInput.TryCharacter(Keys.D2, shift: true, out var at));
-        Assert.Equal('@', at);
-        Assert.True(OriginalTextInput.TryCharacter(Keys.Q, shift: false, out var letter));
-        Assert.Equal('Q', letter);
+        // RULE-UI-014, FND-UI-020: with Shift held the sixteen keys of the original's table give
+        // the United States shifted character, minus keeps its own, and letters always come out
+        // in upper case.
+        (Keys Key, char Plain, char Shifted)[] table =
+        [
+            (Keys.OemQuotes, '\'', '"'), (Keys.OemComma, ',', '<'), (Keys.OemPeriod, '.', '>'),
+            (Keys.OemQuestion, '/', '?'), (Keys.OemSemicolon, ';', ':'), (Keys.OemPlus, '=', '+'),
+            (Keys.D0, '0', ')'), (Keys.D1, '1', '!'), (Keys.D2, '2', '@'), (Keys.D3, '3', '#'),
+            (Keys.D4, '4', '$'), (Keys.D5, '5', '%'), (Keys.D6, '6', '^'), (Keys.D7, '7', '&'),
+            (Keys.D8, '8', '*'), (Keys.D9, '9', '('),
+            (Keys.OemMinus, '-', '-')
+        ];
+        foreach (var (key, plain, shifted) in table)
+        {
+            Assert.True(OriginalTextInput.TryCharacter(key, shift: false, out var unshifted));
+            Assert.Equal(plain, unshifted);
+            Assert.True(OriginalTextInput.TryCharacter(key, shift: true, out var withShift));
+            Assert.Equal(shifted, withShift);
+        }
+        for (var key = Keys.A; key <= Keys.Z; key++)
+        {
+            Assert.True(OriginalTextInput.TryCharacter(key, shift: false, out var letter));
+            Assert.Equal((char)('A' + (key - Keys.A)), letter);
+            Assert.True(OriginalTextInput.TryCharacter(key, shift: true, out var shiftedLetter));
+            Assert.Equal(letter, shiftedLetter);
+        }
+    }
+
+    [Fact]
+    public void ClosingTheWindowWithNoMatchInPlayQuitsAtOnce()
+    {
+        // RULE-UI-013, RULE-UI-014: a closed window is File, Exit, which on the title, or once the
+        // match is no longer in play, sets quit_requested without asking.
+        var game = DeviationBehaviourTests.HeadlessGame();
+        Assert.False(OriginalNewGameExperimentTests.ClosingIsCancelled(game));
     }
 }
