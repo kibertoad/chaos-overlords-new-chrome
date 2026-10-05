@@ -25,8 +25,9 @@ public sealed partial class ChaosGame
     /// until a showing is recorded, and later runs reach them through the title screen.</summary>
     private void InitializeIntroMovies()
     {
-        // RULE-UI-013: a start that opens a save named on the command line skips the intro.
-        if (_referenceFrame is null && _startupSavePath is null
+        // RULE-UI-013: a start that has loaded the save named on the command line skips the intro;
+        // one whose file did not load plays it.
+        if (_referenceFrame is null && _state is null
             && IntroMoviePolicy.PlaysAtStartup(_introOnlyOnce, _introMoviesSeen))
             BeginIntroMovies();
     }

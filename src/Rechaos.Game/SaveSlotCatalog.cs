@@ -252,6 +252,23 @@ public static class SaveSlotCatalog
             : null;
     }
 
+    /// <summary>
+    /// Loads the save at <paramref name="savePath"/> for play, with the selected sectors its
+    /// sidecar keeps for the generation that was loaded.
+    /// </summary>
+    /// <remarks>
+    /// A load that fell back to the backup plays an older generation than the one the sidecar
+    /// describes, and the sidecar still matches the primary when the repair failed, so such a load
+    /// takes no selection. The sidecar is read straight after the load so that, under the
+    /// autosave's lock, no other copy can promote a newer generation between the two reads.
+    /// </remarks>
+    public static (NativeSaveLoadResult Loaded, IReadOnlyList<int>? SelectedSectors) LoadForPlay(
+        string savePath, OriginalData definitions)
+    {
+        var loaded = NativeSaveStore.LoadRecoveringBackup(savePath, definitions);
+        return (loaded, loaded.RecoveredFromBackup ? null : ReadSelectedSectors(savePath));
+    }
+
     /// <summary>Writes the rolling autosave's browser sidecar after its primary is durable.</summary>
     /// <param name="row">The row captured by <see cref="DescribeAutoSave"/> for these bytes.</param>
     public static void WriteAutoSaveMetadata(

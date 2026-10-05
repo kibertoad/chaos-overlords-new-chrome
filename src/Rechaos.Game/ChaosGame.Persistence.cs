@@ -14,12 +14,9 @@ public sealed partial class ChaosGame
         if (_state is null) return null;
         try
         {
-            // FND-SAVE-003: the save keeps every player's selected sector, the planning player's
-            // as it stands.
-            if (_state.Coordinator.ActivePlayer is { } active) _planningSelections.Store(active, _cursor);
             var summary = SaveSlotCatalog.Save(
                 _saveDirectory, slot, name, _state, _session is not null, HotSeatJournal,
-                _planningSelections.Snapshot());
+                SelectedSectorsToSave(_state));
             // RULE-UI-015: a written save marks the match saved; the autosave does not.
             _actions?.MarkSaved();
             _message = "GAME SAVED";
@@ -38,29 +35,40 @@ public sealed partial class ChaosGame
         }
     }
 
+    /// <summary>
+    /// FND-SAVE-003: every player's selected sector as a save keeps it, the planning player's as
+    /// it stands. Outside a human's planning the cursor is not the active player's, and
+    /// FinishPlanningTurn has already kept the selection the last planner left.
+    /// </summary>
+    private IReadOnlyList<int> SelectedSectorsToSave(MatchState state)
+    {
+        if (state.Coordinator is { Phase: TurnPhase.Command, ActivePlayer: { } active }
+            && state.FindPlayer(active)?.Setup.Controller == PlayerController.Human)
+            _planningSelections.Store(active, _cursor);
+        return _planningSelections.Snapshot();
+    }
+
     /// <summary>The save named on the command line, opened at start (StartupSave).</summary>
     private readonly string? _startupSavePath;
 
     /// <summary>
     /// RULE-UI-013, FND-PLATFORM-009: opens the save named on the command line and goes straight
-    /// to its match. A file that cannot be loaded leaves the title with the load's message.
+    /// to its match. A file that cannot be loaded leaves the title with the load's message, and
+    /// the intro plays as on a start that names no file.
     /// </summary>
     private void OpenStartupSave()
     {
         if (_startupSavePath is not { } path || _referenceFrame is not null) return;
-        var loaded = AdoptLoadedMatch(
-            () => NativeSaveStore.LoadRecoveringBackup(path, _definitions!).State,
+        AdoptLoadedMatch(
+            () => SaveSlotCatalog.LoadForPlay(path, _definitions!),
             match => MatchJournalStore.TryResumeOnto(MatchJournalStore.PathFor(path), match),
-            null,
-            () => SaveSlotCatalog.ReadSelectedSectors(path));
-        if (loaded) CloseSaveBrowserAfterLoad();
+            null);
     }
 
     private bool LoadGameFromSlot(int slot) => AdoptLoadedMatch(
-        () => SaveSlotCatalog.Load(_saveDirectory, slot, _definitions!),
+        () => SaveSlotCatalog.LoadForPlay(SaveSlotCatalog.SavePath(_saveDirectory, slot), _definitions!),
         loaded => SaveSlotCatalog.LoadJournal(_saveDirectory, slot, loaded),
-        _saveSlots[slot],
-        () => SaveSlotCatalog.ReadSelectedSectors(SaveSlotCatalog.SavePath(_saveDirectory, slot)));
+        _saveSlots[slot]);
 
     /// <summary>
     /// Loads the browser's automatic row: the rolling autosave, or the crash-recovery save when
@@ -82,18 +90,19 @@ public sealed partial class ChaosGame
         _autoSave.ForgetVerifiedPrimary();
         var path = _automaticRowPath ?? _autoSavePath;
         return AdoptLoadedMatch(
-            () => _autoSave.Load(
-                () => NativeSaveStore.LoadRecoveringBackup(path, _definitions!).State),
+            () => _autoSave.Load(() => SaveSlotCatalog.LoadForPlay(path, _definitions!)),
             _ => null,
-            _saveSlots[SaveSlotCatalog.AutoSaveRow],
-            () => SaveSlotCatalog.ReadSelectedSectors(path));
+            _saveSlots[SaveSlotCatalog.AutoSaveRow]);
     }
 
+    /// <param name="summary">
+    /// The browser's row for the file, whose recovery flags give the message; without one, as for
+    /// the save named on the command line, the load's own flags give it.
+    /// </param>
     private bool AdoptLoadedMatch(
-        Func<MatchState> load,
+        Func<(NativeSaveLoadResult Loaded, IReadOnlyList<int>? SelectedSectors)> load,
         Func<MatchState, MatchReplayRecorder?> journal,
-        SaveSlotSummary? summary,
-        Func<IReadOnlyList<int>?>? selectedSectors = null)
+        SaveSlotSummary? summary)
     {
         if (_session is not null) return false;
         if (_definitions is null) return false;
@@ -101,7 +110,10 @@ public sealed partial class ChaosGame
         using var busy = _pointer.Busy();
         try
         {
-            var loaded = load();
+            var (result, selectedSectors) = load();
+            var loaded = result.State;
+            var recovered = summary?.RecoveredFromBackup ?? result.RecoveredFromBackup;
+            var repaired = summary?.PrimaryRepaired ?? result.PrimaryRepaired;
             // The save is the match; the companion journal, when the slot has one that belongs to
             // it, is only how it got there — the history from the first turn, which is what lets a
             // bug report filed after a load reproduce the whole session rather than the tail of it.
@@ -109,11 +121,11 @@ public sealed partial class ChaosGame
             AdoptMatch(
                 loaded,
                 journal(loaded) ?? new MatchReplayRecorder(loaded),
-                summary?.RecoveredFromBackup == true
-                    ? summary.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
+                recovered
+                    ? repaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
                     : string.Empty,
                 enteredFromSave: true,
-                selectedSectors?.Invoke());
+                selectedSectors);
             return true;
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -193,6 +205,21 @@ public sealed partial class ChaosGame
             if (_state is null || _session is not null) return null;
             var path = SaveSlotCatalog.CrashRecoveryPath(_saveDirectory);
             NativeSaveStore.SaveAtomic(path, _state);
+            // FND-SAVE-003: the selections go into a sidecar, as the autosave's do. The save is
+            // already on disk, so a sidecar that cannot be written costs only the selections.
+            try
+            {
+                SaveSlotCatalog.WriteAutoSaveMetadata(
+                    path, SaveSlotCatalog.DescribeAutoSave(_state, SelectedSectorsToSave(_state)),
+                    _state.Definitions);
+            }
+            catch (Exception exception)
+            {
+                _diagnostics?.Write("crash.recovery.sidecar.failed", new Dictionary<string, string?>
+                {
+                    ["error"] = exception.ToString()
+                });
+            }
             return path;
         }
         catch (Exception exception)

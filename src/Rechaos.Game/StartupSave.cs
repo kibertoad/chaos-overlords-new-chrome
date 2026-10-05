@@ -22,7 +22,7 @@ public static class StartupSave
                 if (args[index] == "--assets") index++;
                 continue;
             }
-            return args[index].Length == 0 ? null : Path.GetFullPath(args[index]);
+            return string.IsNullOrWhiteSpace(args[index]) ? null : Path.GetFullPath(args[index]);
         }
         return null;
     }

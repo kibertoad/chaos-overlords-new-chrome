@@ -69,10 +69,55 @@ public sealed partial class DeviationBehaviourTests
             Assert.Equal(40, restored.For(match.Players[0].Id, -1));
             Assert.Equal(41, restored.For(match.Players[1].Id, -1));
 
+            Assert.Equal(41, SaveSlotCatalog.LoadForPlay(path, match.Definitions).SelectedSectors![1]);
+
             File.SetLastWriteTimeUtc(path, File.GetLastWriteTimeUtc(path).AddMinutes(1));
             Assert.Null(SaveSlotCatalog.ReadSelectedSectors(path));
             restored.Restore(match, null);
             Assert.Equal(match.Players[0].Gangs[0].SectorId, restored.For(match.Players[0].Id, -1));
+
+            // A load that falls back to the backup plays another generation, so it takes no
+            // selection even while the sidecar still matches the damaged primary.
+            SaveSlotCatalog.Save(directory.FullName, 0, "SELECTION", match, online: false,
+                selectedSectors: memory.Snapshot());
+            var written = File.GetLastWriteTimeUtc(path);
+            var bytes = File.ReadAllBytes(path);
+            Array.Fill(bytes, (byte)0xFF);
+            File.WriteAllBytes(path, bytes);
+            File.SetLastWriteTimeUtc(path, written);
+            Assert.NotNull(SaveSlotCatalog.ReadSelectedSectors(path));
+            var fallback = SaveSlotCatalog.LoadForPlay(path, match.Definitions);
+            Assert.True(fallback.Loaded.RecoveredFromBackup);
+            Assert.Null(fallback.SelectedSectors);
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TheCrashRecoverySaveKeepsTheSelectedSectors()
+    {
+        // DEV-SAVE-001, FND-SAVE-003: the crash-recovery save writes the selections into its
+        // sidecar, as a slot save and the autosave do.
+        var match = NativeSaveSerializerTests.CreateMatch();
+        var directory = Directory.CreateTempSubdirectory("rechaos-dev-crash-");
+        try
+        {
+            var game = LeavePromptTests.GameFor(
+                match, new MatchActions(new MatchReplayRecorder(match)), directory.FullName);
+            var memory = (PlanningSelectionMemory)Field("_planningSelections").GetValue(game)!;
+            memory.Reset(match);
+            memory.Store(match.Players[0].Id, 40);
+            memory.Store(match.Players[1].Id, 41);
+            Field("_cursor").SetValue(game, 40);
+            var path = game.TryWriteCrashRecoverySave();
+            Assert.Equal(SaveSlotCatalog.CrashRecoveryPath(directory.FullName), path);
+            var selected = SaveSlotCatalog.ReadSelectedSectors(path!);
+            Assert.NotNull(selected);
+            Assert.Equal(40, selected[0]);
+            Assert.Equal(41, selected[1]);
         }
         finally
         {

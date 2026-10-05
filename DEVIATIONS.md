@@ -130,8 +130,9 @@ Made a setting that starts off on 2026-09-25, and switched to start on on 2026-0
 - Reason: The rebuild neither reads nor writes the original's save files. It keeps its own save
   format, with a version number and bounded readers. Each player's selected sector
   (`cursor_sectors`, FND-SAVE-003) goes into the small file the save browser keeps beside each
-  save, and a load restores it from there; a save whose companion file is missing or belongs to
-  another file loads with every player on the sector of its roster slot 0, as a new match starts.
+  save, the autosave and the crash-recovery save, and a load restores it from there. A save whose
+  companion file is missing or belongs to another file, and a load that falls back to the backup
+  generation, start every player on the sector of its roster slot 0, as a new match starts.
   An online match the client takes up or resumes starts every player on that sector too, since
   the server keeps no selection (DEV-NET-001).
 - Setting: None

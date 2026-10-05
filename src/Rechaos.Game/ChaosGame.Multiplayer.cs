@@ -428,8 +428,8 @@ public sealed partial class ChaosGame
             state.Events.LastOrDefault()?.Sequence ?? -1);
         ResetTransientMatchUi();
         _siteSearchSelections.Reset();
-        // FND-SAVE-003, DEV-SAVE-001: a match taken up here keeps no selection, so every player
-        // starts on the sector of its roster slot 0.
+        // FND-SAVE-003, DEV-SAVE-001: every player starts on the sector of its roster slot 0. An
+        // online match taken up keeps no selection; a local load restores its own afterwards.
         _planningSelections.Reset(state);
         _lastTurnEventArchive.Clear();
     }
