@@ -242,11 +242,9 @@ public sealed partial class ChaosGame
             return;
         }
         var options = _commandOptions.Where(command => command.Action == action).ToArray();
-        // FND-UI-021, EXP-UI-011: the original's menu never greys Research, so a gang with nothing
-        // to research still opens the panel, with an empty list.
-        var opensEmpty = options.Length == 0 && !_bulkCommand && _commandGang is not null
-            && CommandOverlayLayout.OpensWithoutTargets(action);
-        if (options.Length == 0 && !opensEmpty)
+        // FND-UI-021, EXP-UI-011: the original's menu never greys Equip, Move or Research, so a
+        // gang with nothing to choose still opens their panels, with an empty list.
+        if (!CommandOverlayLayout.Offers(action, options, singleGang: _commandGang is not null))
         {
             RejectInput($"{action.ToString().ToUpperInvariant()} IS NOT AVAILABLE");
             return;
@@ -264,7 +262,7 @@ public sealed partial class ChaosGame
                 return;
             }
             _commandTargetAction = action;
-            _commandTargetGang = options.Length > 0 ? options[0].Gang : _commandGang!.Value;
+            _commandTargetGang = _commandGang ?? options[0].Gang;
             _commandTargetOptions = action == GangAction.Attack && _state is not null
                 ? AttackTargetRoster.Order(_state, options)
                 : options;
@@ -380,9 +378,7 @@ public sealed partial class ChaosGame
             var action = actions[index];
             var row = CommandOverlayLayout.ActionRow(index);
             // RULE-TURN-005, EXP-TURN-095: the original's menus never grey None.
-            var available = action == GangAction.None
-                || _commandOptions.Any(command => command.Action == action)
-                || (!_bulkCommand && _commandGang is not null && CommandOverlayLayout.OpensWithoutTargets(action));
+            var available = CommandOverlayLayout.Offers(action, _commandOptions, singleGang: _commandGang is not null);
             if (index == _commandCursor)
                 batch.Draw(pixel, row, new Color(65, 35, 25));
             if (action is GangAction.None or GangAction.Terminate)
