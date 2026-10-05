@@ -376,7 +376,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--draw-values <hex address>=<int32>[/<int32>...],...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--draw-values <hex address>=<int32>[/<int32>...],...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -450,6 +450,18 @@ rebuild's projection of the same panel.
 planning time runs out; the fixture lists each as a `wait` input and records
 the planning clock of each such turn as `timers` (RULE-TIMER-002,
 RULE-TIMER-003).
+`--equip-lists` reads the item lists of the Equip panel after the dump: at
+the next `PeekMessageA` call of the message pump (FND-UI-020) the probe saves
+the thread context and calls the list builder `fn_0043F136` (FND-EQUIP-008)
+for each category of each living gang of the first human, with the Tech Level
+of the gang's definition, as the panel does. The builder's research test reads
+`active_player`, so the probe sets it to that human for the calls and puts it
+back with the context afterwards. The
+fixture holds the items of each list, in entry order, as `equip_lists`; the
+replay compares them with the rebuild's legal Equip orders of the gang in that
+category (RULE-EQUIP-004). The fixture does not name the player, and the
+replay takes the lowest human slot, so the probe refuses `--equip-lists` when
+the first `--humans` slot is not the lowest.
 `--draw-values` writes 32-bit values into memory each time the planning-entry
 function `fn_0046FD80` starts to draw the console (FND-UI-040): the nth value
 at its nth call and the last at every later one. It makes the console draw a

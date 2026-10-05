@@ -50,6 +50,21 @@ internal static class OriginalAddresses
     // planning loop in fn_0046FD80.
     public const uint PlanningTimeCheck = 0x0041BDD5;
 
+    // FND-EQUIP-008: the Equip panel's list builder, called as (category, tech_level, player,
+    // roster slot), the sixteen INT32 entries it fills, the 16-bit Tech Level of the gang
+    // definition records, 156 bytes apart, and the panel's own instruction that loads the Tech
+    // Level for the call, which the probe uses as the return address of its own calls.
+    public const uint EquipListBuilder = 0x0043F136;
+    public const uint EquipListEntries = 0x004948A8;
+    public const int EquipListLength = 16;
+    public const uint GangDefinitionTechLevel = 0x004A2882;
+    public const int GangDefinitionSize = 156;
+    public const uint EquipListReturn = 0x0043DE80;
+
+    // FND-UI-020: the PeekMessageA calls of the two message pumps, which every screen and panel
+    // loop of the main thread goes through.
+    public static readonly uint[] PumpPeeks = [0x0045C1DA, 0x0045C2E7];
+
     // FND-TIMER-001, FND-TIMER-003, EXP-TURN-046: planning_limit_choice, which the match entry maps to
     // planning_limit_ms; in the start helper fn_0041B8BC, the instruction that stores timer_ms in
     // planning_start_ms; in the drawing helper fn_0041B8FC, the instruction after the width is

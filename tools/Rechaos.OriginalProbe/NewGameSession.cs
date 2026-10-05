@@ -107,7 +107,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
-    IReadOnlyList<ProbeDrawValue>? DrawValues = null)
+    IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -185,7 +185,8 @@ internal sealed record ProbeTrace(
     List<PanelRecord>? Panels = null,
     CityMarkers? Markers = null,
     List<TimerRecord>? Timers = null,
-    List<ComlinkStep>? Comlink = null);
+    List<ComlinkStep>? Comlink = null,
+    List<EquipListRecord>? EquipLists = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -390,6 +391,7 @@ internal sealed partial class NewGameSession(
 
         DumpWritableSections();
         if (settings.Capture) CaptureDrawingArea(window);
+        if (settings.EquipLists && !RecordEquipLists()) return Finish(false, "The Equip lists were not built.", rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -506,9 +508,13 @@ internal sealed partial class NewGameSession(
         endgame.Kinds.Add(kind);
     }
 
+    // The player whose orders, hires, Search filter and Equip lists the probe writes and reads:
+    // the first --humans entry, or slot 0 when the option is left out.
+    private int FirstHuman => settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+
     private void WriteSearch(ProbeSearch write)
     {
-        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var human = FirstHuman;
         foreach (var definition in write.Definitions)
             _process.Write(OriginalAddresses.SearchFilters
                 + (uint)(human * OriginalAddresses.SiteDefinitionCount + definition), [1]);
@@ -578,7 +584,7 @@ internal sealed partial class NewGameSession(
 
     private void WriteOrder(ProbeOrder order)
     {
-        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var human = FirstHuman;
         var record = OriginalAddresses.GangRecords
             + (uint)(human * OriginalAddresses.PlayerGangStride + order.Slot * OriginalAddresses.GangRecordSize);
         _process.Write(record + 7, [
@@ -589,7 +595,7 @@ internal sealed partial class NewGameSession(
 
     private void WriteHire(ProbeHire hire)
     {
-        var human = settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+        var human = FirstHuman;
         _process.Write(OriginalAddresses.HireOrders + (uint)(human * 3 + hire.OfferSlot), [(byte)hire.Sector]);
         _notes.Add($"hire after roll {_rolls.Count}: {hire}");
     }
@@ -862,7 +868,8 @@ internal sealed partial class NewGameSession(
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
             _endgame, _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels, _lastRedraw,
-            _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink);
+            _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
+            _equipLists.Count == 0 ? null : _equipLists);
     }
 
     private static void Click(IntPtr window, int x, int y)
