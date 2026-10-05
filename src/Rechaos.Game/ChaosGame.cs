@@ -174,8 +174,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private ComlinkSendButton? _pressedComlinkSendButton;
     private readonly ComlinkAlertCadence _comlinkAlertCadence = new();
     private readonly BackgroundRedrawCadence _backgroundRedrawCadence = new();
-    private readonly PresentationPointer _pointer = new(shape =>
-        Mouse.SetCursor(shape == PointerShape.Hourglass ? MouseCursor.Wait : MouseCursor.Arrow));
+    private readonly PresentationPointer _pointer;
     private string _comlinkStatus = string.Empty;
     private int _giveCursor;
     private IReadOnlyList<GangId> _sectorGangRoster = [];
@@ -241,6 +240,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _originalComputerMoves = originalComputerMoves;
         _originalComputerHires = originalComputerHires;
         _referenceFrame = referenceFrame;
+        _pointer = new(shape => Mouse.SetCursor(shape == PointerShape.Hourglass ? MouseCursor.Wait : MouseCursor.Arrow),
+            () => ComputerTurnsCanRun() ? PresentationPointer.Idle(_state!) : PointerShape.Arrow);
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;
         _screens.Changed += (previous, current) => _diagnostics?.Write(
@@ -815,6 +816,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private void EndUpdate(GameTime gameTime, KeyboardState keyboard, MouseState mouse)
     {
         FlushScenarioPreference();
+        _pointer.Refresh();
         _previousKeyboard = keyboard;
         _previousMouse = mouse;
         base.Update(gameTime);

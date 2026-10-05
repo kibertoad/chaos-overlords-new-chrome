@@ -106,6 +106,29 @@ public sealed class ProgramShellParityTests
         }
     }
 
+    [Fact]
+    public void TheHourglassStaysUpWhileAComputersPlanningWaits()
+    {
+        // RULE-UI-007, EXP-UI-022: between updates the pointer shows the idle shape, and a busy
+        // scope that ends while a computer's planning waits leaves the hourglass up.
+        var shown = new List<PointerShape>();
+        var idle = PointerShape.Hourglass;
+        var pointer = new PresentationPointer(shown.Add, () => idle);
+
+        using (pointer.Busy())
+        {
+        }
+        pointer.Refresh();
+        Assert.Equal([PointerShape.Hourglass], shown);
+
+        idle = PointerShape.Arrow;
+        using (pointer.Busy())
+            pointer.Refresh();
+        Assert.Equal([PointerShape.Hourglass, PointerShape.Arrow], shown);
+        pointer.Refresh();
+        Assert.Equal([PointerShape.Hourglass, PointerShape.Arrow], shown);
+    }
+
     [Theory]
     [InlineData(0, 0)]
     [InlineData(639, 459)]

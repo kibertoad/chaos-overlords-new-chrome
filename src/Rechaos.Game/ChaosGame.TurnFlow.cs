@@ -171,6 +171,16 @@ public sealed partial class ChaosGame
         }
     }
 
+    // The computers plan in a local match on its own screens, while no menu, hand-off card or
+    // elimination card waits for the human.
+    [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(_state), nameof(_actions))]
+    private bool ComputerTurnsCanRun() =>
+        _session is null && !_gameMenuOpen && _state is not null && _actions is not null
+        && _screens.Current is not (ClientScreen.Title or ClientScreen.Options or ClientScreen.Help
+            or ClientScreen.Setup or ClientScreen.Online or ClientScreen.Lobby
+            or ClientScreen.Endgame or ClientScreen.Elimination)
+        && _eliminationHandoffPlayer is null;
+
     /// <summary>
     /// Plays out the computer players of a hot-seat match.
     /// </summary>
@@ -181,12 +191,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void RunComputerTurns()
     {
-        if (_session is not null || _gameMenuOpen) return;
-        if (_state is null || _actions is null
-            || _screens.Current is ClientScreen.Title or ClientScreen.Options or ClientScreen.Help
-                or ClientScreen.Setup or ClientScreen.Online or ClientScreen.Lobby
-                or ClientScreen.Endgame or ClientScreen.Elimination
-            || _eliminationHandoffPlayer is not null) return;
+        if (!ComputerTurnsCanRun()) return;
         var acted = false;
         var startingTurn = _state.Coordinator.Turn;
         // A computer's planning and the resolution it ends in run below in this one update, under

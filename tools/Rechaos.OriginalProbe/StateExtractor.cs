@@ -116,6 +116,12 @@ internal sealed class StateExtractor
                 ["returned"] = presentation["Returned"]!.GetValue<bool>(),
                 ["sounds"] = new JsonArray(presentation["Sounds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
             }).ToArray());
+        // RULE-UI-007: each call of the cursor helper as after_roll, done, shape, force and the
+        // call's address (FND-UI-034).
+        if (trace["PointerCalls"] is JsonArray pointerCalls)
+            run["pointer_calls"] = new JsonArray(pointerCalls.Select(call => (JsonNode)new JsonArray(
+                call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Shape"]!.GetValue<int>(),
+                call["Force"]!.GetValue<int>(), (int)call["Call"]!.GetValue<uint>())).ToArray());
         // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
         if (trace["HireSteps"] is JsonArray hireSteps)
             run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject
