@@ -66,13 +66,13 @@ public sealed partial class OriginalNewGameExperimentTests
     // was passed (-1 for the City variant) and the nine numbers it drew (FND-FINANCE-003).
     private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
 
-    // A click the probe posted after the dump, whether the Search panel was open after it, the
-    // active player and the whole search_filters table (FND-SEARCH-001, FND-SEARCH-002).
     // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
     // (FND-HIRE-001, FND-HIRE-008).
     private sealed record RecordedHireStep(int Slot, int Sector, IReadOnlyList<int> Orders);
 
+    // A click the probe posted after the dump, whether the Search panel was open after it, the
+    // active player and the whole search_filters table (FND-SEARCH-001, FND-SEARCH-002).
     private sealed record RecordedSearchClick(int X, int Y, bool PanelOpen, int ActivePlayer, IReadOnlyList<int> Filters);
 
     // A call of a planning entry panel: its name, the roll count when it was called and whether it

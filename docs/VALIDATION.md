@@ -459,12 +459,15 @@ console and Search panel hit tests and compares the tables (RULE-SEARCH-001).
 `--hire-steps` works the Hire dock after the dump: `reject:s` clicks offer
 slot `s`'s Reject cross, `drag:s:sector` presses on the offer's portrait and
 releases over the sector's city map cell, and `exit` presses a result panel's
-Exit. The Hire handler follows the two pointer points the window procedure
-keeps (FND-UI-020), one of them taken from the desktop cursor, so a drag
-writes both points itself and posts only the button messages. The probe keeps
-`hire_orders` after each step as `hire_steps`, and keeps the panel calls as
-they stood at the dump; the replay takes each step through the rebuild's
-dock and compares the orders (RULE-HIRE-003).
+Exit, skipped when no panel is open. A step that makes the original roll ends
+the run as not dumped. The Hire handler follows the two pointer points the
+window procedure keeps (FND-UI-020), one of them taken from the desktop
+cursor, so a drag writes both points itself, again just before the release,
+and posts only the button messages. The probe keeps `hire_orders` after each
+step as `hire_steps`, and keeps the panel calls as they stood at the dump; the
+replay passes each press and release point to the rebuild's dock and city map
+hit tests, takes each step through the rebuild's dock and compares the orders
+(RULE-HIRE-003).
 `--draw-values` writes 32-bit values into memory each time the planning-entry
 function `fn_0046FD80` starts to draw the console (FND-UI-040): the nth value
 at its nth call and the last at every later one. It makes the console draw a

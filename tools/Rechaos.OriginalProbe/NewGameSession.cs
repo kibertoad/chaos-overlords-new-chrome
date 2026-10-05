@@ -138,8 +138,9 @@ internal sealed record NewGameSettings(
     }
 
     /// <summary>
-    /// The orders and Done presses after the first planning phase, one input each: an order is
-    /// named <c>order</c> and a Done press <c>left_click</c>.
+    /// The orders and Done presses after the first planning phase, then the presses after the dump,
+    /// one input each: an order is named <c>order</c>, a press <c>left_click</c> and a hire step's
+    /// drag <c>drag</c>.
     /// </summary>
     public IEnumerable<(string Name, string Value)> DescribeTurns()
     {
@@ -411,8 +412,8 @@ internal sealed partial class NewGameSession(
         if (settings.Capture) CaptureDrawingArea(window);
         if (settings.SearchClicks is { Count: > 0 } && !RecordSearchClicks(window))
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
-        if (settings.HireSteps is { Count: > 0 } && !RecordHireSteps(window))
-            return Finish(false, "The original exited during the hire steps.", rollsBeforeBegin);
+        if (settings.HireSteps is { Count: > 0 } && RecordHireSteps(window) is { } stopped)
+            return Finish(false, stopped, rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -891,9 +892,13 @@ internal sealed partial class NewGameSession(
 
     private static void Click(IntPtr window, int x, int y)
     {
-        var position = (IntPtr)((y << 16) | (x & 0xFFFF));
+        var position = PointParameter(x, y);
         Native.PostMessageW(window, Native.WmMouseMove, IntPtr.Zero, position);
         Native.PostMessageW(window, Native.WmLButtonDown, 1, position);
         Native.PostMessageW(window, Native.WmLButtonUp, IntPtr.Zero, position);
     }
+
+    // A client point as the mouse messages carry it in lParam, and as the window procedure keeps
+    // it: x in the low 16 bits, y in the high 16 (FND-UI-020).
+    private static IntPtr PointParameter(int x, int y) => (IntPtr)((y << 16) | (x & 0xFFFF));
 }
