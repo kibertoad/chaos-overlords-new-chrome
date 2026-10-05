@@ -69,8 +69,12 @@ public sealed partial class ChaosGame
     /// gangs of the player whose turn it is, during planning.
     /// </summary>
     private bool ShowsGroupOrderStrip(MatchState state, PlayerId viewer, IReadOnlyList<MatchGangState> cards) =>
+        ShowsGroupOrderStrip(state, PlanningViewer, viewer, cards);
+
+    internal static bool ShowsGroupOrderStrip(
+        MatchState state, PlayerId? planningViewer, PlayerId viewer, IReadOnlyList<MatchGangState> cards) =>
         state.Coordinator.Phase == TurnPhase.Command
-        && PlanningViewer == viewer
+        && planningViewer == viewer
         && cards.Count >= 2
         && cards[0].Owner == viewer;
 

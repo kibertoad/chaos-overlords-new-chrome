@@ -43,16 +43,16 @@ public sealed partial class ChaosGame
     private void OpenGroupCommands(MatchState state, PlayerId playerId, bool repeat)
     {
         if (!CanOpenCommands(out _)) return;
-        _bulkCommandGangs = GroupOrderGangs(state, playerId).Select(gang => gang.Id).ToArray();
+        _bulkCommandGangs = GroupOrderGangs(state, playerId, _cursor).Select(gang => gang.Id).ToArray();
         _commandOptions = BulkGangCommands.Options(
             state, playerId, _bulkCommandGangs, repeat, group: true);
         ShowCommandOverlay(repeat, ClientScreen.Sector, bulk: true, group: true);
     }
 
     /// <summary>FND-TURN-009: every one of the player's gangs in the sector, in roster order.</summary>
-    private IReadOnlyList<MatchGangState> GroupOrderGangs(MatchState state, PlayerId playerId) =>
+    internal static IReadOnlyList<MatchGangState> GroupOrderGangs(MatchState state, PlayerId playerId, int sector) =>
         state.FindPlayer(playerId)!.Gangs
-            .Where(gang => gang.IsActive && gang.SectorId == _cursor)
+            .Where(gang => gang.IsActive && gang.SectorId == sector)
             .ToArray();
 
     private bool CanOpenCommands(out PlayerId playerId)
@@ -300,37 +300,47 @@ public sealed partial class ChaosGame
     private void CancelSelectedCommand()
     {
         if (_state is null || PlanningViewer is not { } playerId || _actions is null) return;
-        if (_groupCommand)
+        IReadOnlyList<GangId> gangs;
+        if (_groupCommand) gangs = _bulkCommandGangs;
+        else if (SelectedGang(_state.FindPlayer(playerId)!) is { } gang) gangs = [gang.Id];
+        else return;
+        var (cancelled, refusal) = CancelOrders(_state, gangs, gang => _actions.Cancel(playerId, gang));
+        if (refusal is not null)
         {
-            CancelGroupCommands(playerId);
+            RejectInput(refusal);
             return;
         }
-        var gang = SelectedGang(_state.FindPlayer(playerId)!);
-        if (gang is null) return;
-        var result = _actions.Cancel(playerId, gang.Id);
-        ReportInputResult(result.Accepted, result.Validation.Message);
-        if (result.Accepted) _screens.Show(_commandReturnScreen);
+        ReportInputResult(true, string.Empty);
+        if (_groupCommand && cancelled > 0) _message = CityStatusMessage.RequireFit($"ORDERS CANCELLED FOR {cancelled}");
+        _screens.Show(_commandReturnScreen);
     }
 
     /// <summary>
-    /// RULE-TURN-005: None from a group menu clears the order of every gang in the sector.
+    /// RULE-TURN-005, EXP-TURN-095: None cancels the order of each of the gangs that has one, a
+    /// gang's own menu for its gang and a group menu for every gang in the sector. The original
+    /// offers None with no order to cancel too, and then leaves every gang as it was. Returns how
+    /// many orders were cancelled and, when every order there was to cancel was refused, the first
+    /// refusal, which keeps the menu open.
     /// </summary>
-    private void CancelGroupCommands(PlayerId playerId)
+    internal static (int Cancelled, string? Refusal) CancelOrders(
+        MatchState state, IEnumerable<GangId> gangs, Func<GangId, CommandSubmissionResult> cancel)
     {
         var cancelled = 0;
-        foreach (var gang in _bulkCommandGangs)
-            if (_state!.FindGang(gang)?.QueuedCommand is not null
-                && _actions!.Cancel(playerId, gang).Accepted)
-                cancelled++;
-        if (cancelled == 0)
+        string? refusal = null;
+        foreach (var gang in gangs)
         {
-            RejectInput("NO ORDERS TO CANCEL");
-            return;
+            if (state.FindGang(gang)?.QueuedCommand is null) continue;
+            var result = cancel(gang);
+            if (result.Accepted) cancelled++;
+            else refusal ??= result.Validation.Message;
         }
-        AcceptInput();
-        _message = CityStatusMessage.RequireFit($"ORDERS CANCELLED FOR {cancelled}");
-        _screens.Show(_commandReturnScreen);
+        return (cancelled, cancelled == 0 ? refusal : null);
     }
+
+    /// <summary>RULE-TURN-005, EXP-TURN-095: whether the command panel offers an order, given the
+    /// commands the gangs may take. The original's menus never grey None.</summary>
+    internal static bool OffersAction(GangAction action, IEnumerable<GameCommand> options) =>
+        action == GangAction.None || options.Any(command => command.Action == action);
 
     private void BackFromCommands()
     {
@@ -355,9 +365,6 @@ public sealed partial class ChaosGame
         var gang = _groupCommand
             ? _bulkCommandGangs.Select(state.FindGang).FirstOrDefault(found => found is not null)
             : SelectedGang(state.FindPlayer(ViewingPlayer(state))!);
-        var canCancel = _groupCommand
-            ? _bulkCommandGangs.Any(id => state.FindGang(id)?.QueuedCommand is not null)
-            : gang?.QueuedCommand is not null;
 
         var panel = CommandOverlayLayout.Panel;
         batch.Draw(pixel, panel, new Color(12, 18, 18, 246));
@@ -370,9 +377,7 @@ public sealed partial class ChaosGame
         {
             var action = actions[index];
             var row = CommandOverlayLayout.ActionRow(index);
-            var available = action == GangAction.None
-                ? canCancel
-                : _commandOptions.Any(command => command.Action == action);
+            var available = OffersAction(action, _commandOptions);
             if (index == _commandCursor)
                 batch.Draw(pixel, row, new Color(65, 35, 25));
             if (action is GangAction.None or GangAction.Terminate)
