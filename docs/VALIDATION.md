@@ -376,7 +376,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -450,6 +450,25 @@ rebuild's projection of the same panel.
 planning time runs out; the fixture lists each as a `wait` input and records
 the planning clock of each such turn as `timers` (RULE-TIMER-002,
 RULE-TIMER-003).
+`--equip-lists` reads the item lists of the Equip panel after the dump: at
+the next `PeekMessageA` call of the message pump (FND-UI-020) the probe saves
+the thread context and calls the list builder `fn_0043F136` (FND-EQUIP-008)
+for each category of each living gang of the first human, with the Tech Level
+of the gang's definition, as the panel does. The builder's research test reads
+`active_player`, so the probe sets it to that human for the calls and puts it
+back with the context afterwards. The
+fixture holds the items of each list, in entry order, as `equip_lists`; the
+replay compares them with the rebuild's legal Equip orders of the gang in that
+category (RULE-EQUIP-004).
+`--attack-lists` does the same with the Attack picker's roster builder
+`fn_0043D132` (FND-ATTACK-006), for each other player and each living gang of
+the first human, with the gang's sector. The builder tests what `active_player`
+sees, so the probe sets it in the same way. The fixture holds the roster slots
+of each list as `attack_lists`; the replay compares them with the gangs the
+rebuild's Attack picker shows for that opponent (RULE-ATTACK-002). Neither
+fixture names the player, and the replay takes the lowest human slot, so the
+probe refuses `--equip-lists` and `--attack-lists` when the first `--humans`
+slot is not the lowest.
 `--search-clicks` posts a left-button press and release at each client point
 after the dump, lets the original run for half a second after each, and keeps
 the whole `search_filters` table, the active player and whether the Search
@@ -459,12 +478,15 @@ console and Search panel hit tests and compares the tables (RULE-SEARCH-001).
 `--hire-steps` works the Hire dock after the dump: `reject:s` clicks offer
 slot `s`'s Reject cross, `drag:s:sector` presses on the offer's portrait and
 releases over the sector's city map cell, and `exit` presses a result panel's
-Exit. The Hire handler follows the two pointer points the window procedure
-keeps (FND-UI-020), one of them taken from the desktop cursor, so a drag
-writes both points itself and posts only the button messages. The probe keeps
-`hire_orders` after each step as `hire_steps`, and keeps the panel calls as
-they stood at the dump; the replay takes each step through the rebuild's
-dock and compares the orders (RULE-HIRE-003).
+Exit, skipped when no panel is open. A step that makes the original roll ends
+the run as not dumped. The Hire handler follows the two pointer points the
+window procedure keeps (FND-UI-020), one of them taken from the desktop
+cursor, so a drag writes both points itself, again just before the release,
+and posts only the button messages. The probe keeps `hire_orders` after each
+step as `hire_steps`, and keeps the panel calls as they stood at the dump; the
+replay passes each press and release point to the rebuild's dock and city map
+hit tests, takes each step through the rebuild's dock and compares the orders
+(RULE-HIRE-003).
 `--order-steps` works the detailed sector screen after the dump: `open:n`
 double-clicks city sector `n`, `card:n:x:y:command` presses card `n` at
 `(x, y)` within the card, `strip:x:y:command` presses the window at `(x, y)`,

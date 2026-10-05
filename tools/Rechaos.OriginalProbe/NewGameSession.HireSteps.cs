@@ -19,14 +19,21 @@ internal sealed partial class NewGameSession
     // RULE-HIRE-003, FND-HIRE-008: once the dump is taken, the probe drags offers and presses their
     // Reject crosses with posted mouse messages, as a player does on the console's Hire dock, and
     // keeps hire_orders after each step. An order only takes effect at resolution, which no step
-    // reaches, so the steps leave the dumped state as it was.
-    private bool RecordHireSteps(IntPtr window)
+    // reaches, so the steps leave the dumped state as it was; a step that makes the original roll
+    // has gone past it, and ends the run as not dumped. Returns why the steps stopped, or null.
+    private string? RecordHireSteps(IntPtr window)
     {
+        var rollsAtDump = _rolls.Count;
         foreach (var step in settings.HireSteps!)
         {
             _postDumpStep++;
             if (step.Slot == -1)
-                Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
+            {
+                // With no panel open the Exit point lies on the city map, where a press would select
+                // a sector and a second one open the sector view.
+                if (_panelsOpen > 0) Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
+                else _notes.Add("exit after the dump skipped: no panel was open");
+            }
             else if (step.Sector == -2)
                 Click(window, OriginalAddresses.HireRejectX(step.Slot), OriginalAddresses.HireRejectY);
             else
@@ -43,23 +50,28 @@ internal sealed partial class NewGameSession
                 _process.Pump(TimeSpan.FromSeconds(0.2));
                 PointerAt(toX, toY);
                 _process.Pump(TimeSpan.FromSeconds(0.3));
+                // A WM_MOUSEMOVE the system sends meanwhile puts the desktop cursor in both points,
+                // so they are written again just before the release is read.
+                PointerAt(toX, toY);
                 Post(window, Native.WmLButtonUp, 0, toX, toY);
             }
             _process.Pump(TimeSpan.FromSeconds(0.8));
-            if (_process.Exited) return false;
+            if (_process.Exited) return "The original exited during the hire steps.";
+            if (_rolls.Count != rollsAtDump)
+                return $"The original called roll {_rolls.Count - rollsAtDump} time(s) during the hire step {step}.";
             _hireSteps.Add(new HireStepRecord(step.Slot, step.Sector,
                 _process.Read(OriginalAddresses.HireOrders, 18).Select(value => (int)(sbyte)value).ToList()));
         }
-        return true;
+        return null;
     }
 
     private void PointerAt(int x, int y)
     {
-        var point = BitConverter.GetBytes((y << 16) | (x & 0xFFFF));
+        var point = BitConverter.GetBytes(PointParameter(x, y).ToInt32());
         _process.Write(OriginalAddresses.PointerClientPoint, point);
         _process.Write(OriginalAddresses.PointerScreenPoint, point);
     }
 
     private static void Post(IntPtr window, uint message, int buttons, int x, int y) =>
-        Native.PostMessageW(window, message, buttons, (IntPtr)((y << 16) | (x & 0xFFFF)));
+        Native.PostMessageW(window, message, buttons, PointParameter(x, y));
 }
