@@ -180,6 +180,98 @@ public sealed partial class OriginalNewGameExperimentTests
         }
     }
 
+    public static TheoryData<string, int> EquipListRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                if (runs[run].EquipLists.Count > 0 && !KnownDivergences.ContainsKey((experiment, run)))
+                    data.Add(experiment, run);
+        return data;
+    }
+
+    // RULE-EQUIP-004: at the endpoint the probe called the original's Equip list builder for every
+    // category of every living gang of the human (FND-EQUIP-008). The rebuild offers the same items,
+    // in item record order, as its legal Equip commands of the gang in that category, and gives the
+    // gang the Tech Level the builder was passed.
+    [Theory]
+    [MemberData(nameof(EquipListRuns))]
+    public void TheEquipListOffersTheOriginalsItems(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var match = StartMatch(recorded, out _);
+        var human = recorded.Humans[0];
+        var gangs = match.Players[human.Value].Gangs;
+        // The probe builds lists for every living gang, so the recorded slots are the living ones.
+        Assert.Equal(
+            Enumerable.Range(0, gangs.Count).Where(slot => gangs[slot].IsActive),
+            recorded.EquipLists.Select(list => list.Slot).Distinct());
+        foreach (var lists in recorded.EquipLists.GroupBy(list => list.Slot))
+        {
+            var gang = gangs[lists.Key];
+            var equips = CommandOptionCatalog.LegalCommands(match, human, gang.Id)
+                .Where(command => command.Action == GangAction.Equip)
+                .ToArray();
+            foreach (var list in lists)
+            {
+                Assert.Equal(list.TechLevel, match.Definitions.Gangs[gang.DefinitionId].TechLevel);
+                var offered = equips
+                    .Where(command => EquipmentCommandLayout.CategoryForItemType(match.Definitions.Items[command.Target.Id].Type) == list.Category)
+                    .Select(command => command.Target.Id)
+                    .ToArray();
+                Assert.True(list.Items.SequenceEqual(offered),
+                    $"slot {list.Slot} category {list.Category}: the original lists [{string.Join(" ", list.Items)}], the rebuild [{string.Join(" ", offered)}]");
+            }
+        }
+    }
+
+    public static TheoryData<string, int> AttackListRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                if (runs[run].AttackLists.Count > 0 && !KnownDivergences.ContainsKey((experiment, run)))
+                    data.Add(experiment, run);
+        return data;
+    }
+
+    // RULE-ATTACK-002: at the endpoint the probe called the Attack picker's roster builder for every
+    // other player and every living gang of the human, with the gang's sector (FND-ATTACK-006). The
+    // rebuild's picker shows the same opponent's gangs, by roster slot, in the same cells. Its
+    // options are the gang's legal Attack orders, which also refuse an undetected target when an
+    // order is submitted (DEV-ATTACK-002); the picker never offers one either way.
+    [Theory]
+    [MemberData(nameof(AttackListRuns))]
+    public void TheAttackPickerOffersTheOriginalsTargets(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var match = StartMatch(recorded, out _);
+        var human = recorded.Humans[0];
+        var gangs = match.Players[human.Value].Gangs;
+        // The probe builds a list for every other player and every living gang, so the recorded
+        // slots are the living ones and each has one list per opponent.
+        Assert.Equal(
+            Enumerable.Range(0, gangs.Count).Where(slot => gangs[slot].IsActive),
+            recorded.AttackLists.Select(list => list.Slot).Distinct());
+        foreach (var lists in recorded.AttackLists.GroupBy(list => list.Slot))
+        {
+            var gang = gangs[lists.Key];
+            Assert.Equal(Enumerable.Range(0, 6).Where(player => player != human.Value), lists.Select(list => list.Opponent));
+            var options = AttackTargetRoster.Order(match, CommandOptionCatalog.LegalCommands(match, human, gang.Id)
+                .Where(command => command.Action == GangAction.Attack));
+            foreach (var list in lists)
+            {
+                Assert.Equal(list.Sector, gang.SectorId);
+                var roster = match.Players[list.Opponent].Gangs.ToList();
+                var offered = AttackPicker.TargetCells(match, options, new PlayerId(list.Opponent))
+                    .Select(cell => roster.FindIndex(target => target.Id.Value == options[cell].Target.Id))
+                    .ToArray();
+                Assert.True(list.Targets.SequenceEqual(offered),
+                    $"slot {list.Slot} opponent {list.Opponent}: the original lists [{string.Join(" ", list.Targets)}], the rebuild [{string.Join(" ", offered)}]");
+            }
+        }
+    }
+
     public static TheoryData<string, int> FinanceRuns()
     {
         var data = new TheoryData<string, int>();
