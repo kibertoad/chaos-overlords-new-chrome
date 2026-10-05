@@ -172,6 +172,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | builds |
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | builds |
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | builds |
+| [EXP-UI-025](../experiments/EXP-UI-025.md) | builds |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
@@ -1293,6 +1294,7 @@ None.
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | body |
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
+| [EXP-UI-025](../experiments/EXP-UI-025.md) | body |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | body |
 
 ## EXP-TURN-002
@@ -2419,6 +2421,12 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | evidence |
+
+## EXP-UI-025
+
+| Cited by | In |
+|---|---|
+| [RULE-UI-003](../rules/RULE-UI-003.md) | evidence |
 
 ## EXP-VIDEO-001
 
@@ -7181,6 +7189,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-025](../experiments/EXP-UI-025.md) | body |
 | [FND-HIRE-009](../findings/FND-HIRE-009.md) | body |
 | [FND-INFLUENCE-003](../findings/FND-INFLUENCE-003.md) | body |
 | [FND-OPTIONS-002](../findings/FND-OPTIONS-002.md) | body |
@@ -9446,6 +9455,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-025](../experiments/EXP-UI-025.md) | body |
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | glossary: slide_step | glossary |
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | body |

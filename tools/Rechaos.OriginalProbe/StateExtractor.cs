@@ -148,6 +148,15 @@ internal sealed class StateExtractor
             run["waits"] = new JsonArray(waits.Select(wait => (JsonNode)new JsonArray(
                 wait!["Ticks"]!.GetValue<int>(), (int)wait["Call"]!.GetValue<uint>(),
                 wait["Started"]!.GetValue<long>(), wait["Returned"]!.GetValue<long>())).ToArray());
+        // RULE-UI-003: from the dump on, each slide-in as the benchmark count, the travel and the
+        // offset of each copy (FND-UI-011).
+        if (trace["Slides"] is JsonArray slides)
+            run["slides"] = new JsonArray(slides.Select(slide => (JsonNode)new JsonObject
+            {
+                ["benchmark"] = slide!["Benchmark"]!.GetValue<int>(),
+                ["travel"] = slide["Travel"]!.GetValue<int>(),
+                ["offsets"] = new JsonArray(slide["Offsets"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+            }).ToArray());
         // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
         if (trace["HireSteps"] is JsonArray hireSteps)
             run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject

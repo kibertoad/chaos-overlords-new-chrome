@@ -271,6 +271,7 @@ public sealed partial class ChaosGame
             _choosingCommandTarget = true;
             _commandPanelFace = CommandPanelFaceState.NotDrawn;
             _pressedCommandPanelButton = null;
+            if (_slidePanels) _panelSlideTransition.BeginOrderPanel(_commandReturnScreen, _inputTime);
             if (action == GangAction.Equip) OpenEquipmentPurchasePanel();
             else if (action == GangAction.Research) OpenResearchPanel();
             else if (action == GangAction.Move) OpenMovementPanel();

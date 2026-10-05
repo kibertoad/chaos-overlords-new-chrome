@@ -614,7 +614,7 @@
 
 ## experiments
 
-146 entries.
+147 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -763,6 +763,7 @@
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | When does the original show the hourglass during a local match with one human? | recorded |
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | Does the victory splash look the same in the rebuild when one player is left? | recorded |
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | How long do the original's presentation waits last against its six-per-second clock? | recorded |
+| [EXP-UI-025](../experiments/EXP-UI-025.md) | Which copies does the original make when a panel slides in? | recorded |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | How many steps does the intro show of each movie when it plays out? | recorded |
 
 ## bugs

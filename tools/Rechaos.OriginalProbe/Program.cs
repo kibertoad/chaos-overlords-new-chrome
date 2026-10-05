@@ -40,7 +40,7 @@ static int Usage()
               [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
               [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|wait:ms|type:TEXT|shot:SCR-ID+...>,...] [--gang-markers]
               [--title-capture] [--credits-capture] [--setup-capture] [--setup-steps <strip:x:y|drag:x:y:x2:y2|shot>,...]
-              [--detailed-combat] [--pointer] [--sounds] [--watch-intro] [--waits]
+              [--detailed-combat] [--pointer] [--sounds] [--watch-intro] [--waits] [--slides]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -102,7 +102,8 @@ static int NewGame(string[] args)
         args.Contains("--pointer"),
         args.Contains("--sounds"),
         args.Contains("--watch-intro"),
-        args.Contains("--waits"));
+        args.Contains("--waits"),
+        args.Contains("--slides"));
     // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
     // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
     // A first slot that is not the lowest would compare one player's lists with another player's
