@@ -594,10 +594,13 @@ their rectangles, worked out for the state the capture shows, are in
 `tools/Rechaos.OriginalProbe/Screens/<SCR ID>.json`; a screen with no such file
 cannot be named yet. Each rectangle comes from the entry's Position column, and
 an element whose position the entry does not give is left out of the list.
-`ScreenElementListTests` checks every list: it names its screen entry, each
-rectangle lies inside the 640-by-460 drawing area, and each element's name is a
-row of the entry's Drawn elements table, or that row's name followed by a comma
-and the index or field it stands for.
+`ScreenElementListTests` checks every list: it names its screen entry, the
+screen has an entry in `ScreenCaptureMasks`, each rectangle lies inside the
+640-by-460 drawing area, and each element's name, up to its first comma, is the
+name of a row of the entry's Drawn elements table or that row name's part
+before its own first comma, so `Offer portrait, slot 0` cites the row
+`Offer portrait, one per offer slot`. The index or field after the comma is not
+checked.
 
 The bitmap holds the game's art, so it never goes into the repository. When
 `GAME_DIR` is set, `extract` copies it to `GAME_DIR/captures/<xxh3>`, the

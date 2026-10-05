@@ -6,8 +6,9 @@ namespace Rechaos.Tests;
 /// <summary>
 /// The element lists in tools/Rechaos.OriginalProbe/Screens, which the probe digests a capture
 /// at (docs/VALIDATION.md, "Screens against captures of the original"). Each list names its screen
-/// entry, every rectangle lies inside the 640-by-460 drawing area (RULE-GFX-002), and every element
-/// names a row of the entry's Drawn elements table, with an index or field after a comma.
+/// entry, which has masks, every rectangle lies inside the 640-by-460 drawing area (RULE-GFX-002),
+/// and every element's name, up to its first comma, is the name of a row of the entry's Drawn
+/// elements table or that row name's part before its own first comma.
 /// </summary>
 public sealed class ScreenElementListTests
 {
@@ -27,6 +28,8 @@ public sealed class ScreenElementListTests
         using var list = JsonDocument.Parse(File.ReadAllText(
             Path.Combine(AppContext.BaseDirectory, "Screens", $"{screen}.json")));
         Assert.Equal(screen, list.RootElement.GetProperty("screen").GetString());
+        // A capture digested at this list is compared under the screen's masks (ScreenCaptureTests).
+        Assert.True(ScreenCaptureMasks.ByScreen.ContainsKey(screen), $"{screen} has no entry in ScreenCaptureMasks.");
         var rows = DrawnElementRows(screen);
         var elements = list.RootElement.GetProperty("elements").EnumerateArray().ToArray();
         Assert.NotEmpty(elements);
@@ -52,15 +55,13 @@ public sealed class ScreenElementListTests
     public void AnElementCitesTheRowItsNameBeginsWith(string element, string row, bool cites) =>
         Assert.Equal(cites, Cites(element, [row]));
 
-    // An element cites a row when its name is the row's, when its name before the first comma is
-    // the row's, or when the row's name continues that stem after a comma.
+    // An element cites a row when its name before the first comma is the row's name, or when the
+    // row's name continues that stem after a comma. What follows the element's comma is not checked.
     private static bool Cites(string element, IReadOnlyCollection<string> rows)
     {
         var comma = element.IndexOf(", ", StringComparison.Ordinal);
         var stem = comma < 0 ? element : element[..comma];
-        return rows.Any(row => row == element || row == stem
-                               || row.StartsWith(stem + ",", StringComparison.Ordinal)
-                               || element.StartsWith(row + ", ", StringComparison.Ordinal));
+        return rows.Any(row => row == stem || row.StartsWith(stem + ",", StringComparison.Ordinal));
     }
 
     private static IReadOnlyList<string> DrawnElementRows(string screen)
