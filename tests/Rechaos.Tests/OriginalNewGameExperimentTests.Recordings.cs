@@ -99,6 +99,10 @@ public sealed partial class OriginalNewGameExperimentTests
     // effect slot and the address of the call.
     private sealed record RecordedSoundCall(int AfterRoll, int Done, int Slot, int Call);
 
+    // A call of the presentation wait (FND-TIMER-002): its argument, the call's address, and the
+    // milliseconds of its start and return on the clock the run's ticks are timed with.
+    private sealed record RecordedWait(int Ticks, int Call, long Started, long Returned);
+
     // A movie the intro played (FND-VIDEO-002): its name, its header's frame count, the movie
     // slot's frame counter at each frame shown, the milliseconds from the first frame to each, and
     // the counter when the slot was closed.
@@ -280,6 +284,13 @@ public sealed partial class OriginalNewGameExperimentTests
                     movie.GetProperty("milliseconds").EnumerateArray().Select(value => value.GetInt64()).ToArray(),
                     movie.GetProperty("closed_at").GetInt32())).ToArray()
                 : null;
+            Ticks = run.TryGetProperty("ticks", out var ticks)
+                ? ticks.EnumerateArray().Select(tick => tick.GetInt64()).ToArray()
+                : null;
+            Waits = run.TryGetProperty("waits", out var waits)
+                ? waits.EnumerateArray().Select(wait => new RecordedWait(
+                    wait[0].GetInt32(), wait[1].GetInt32(), wait[2].GetInt64(), wait[3].GetInt64())).ToArray()
+                : null;
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.
             SearchFilter = inputs.EnumerateArray()
@@ -329,6 +340,10 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedPointerCall>? PointerCalls { get; }
         // Null when the run did not record the play helper.
         public IReadOnlyList<RecordedSoundCall>? SoundCalls { get; }
+        // Null when the run did not record the presentation clock: the milliseconds of each tick of
+        // timer slot 0 from the dump on, and each call of the wait.
+        public IReadOnlyList<long>? Ticks { get; }
+        public IReadOnlyList<RecordedWait>? Waits { get; }
         // Null when the run held the button through the intro.
         public IReadOnlyList<RecordedIntroMovie>? IntroMovies { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
