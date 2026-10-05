@@ -81,12 +81,18 @@ public sealed record CapturedElement(string Screen, string Element, Rectangle Re
 /// bitmap kept under <c>GAME_DIR/captures/</c>, the Overlord bar's marker frame (FND-UI-038), the
 /// elements it is compared at, and the clicks that take the rebuild from the endpoint to the same
 /// screen. <see cref="Unreplayable"/> says why no clicks can, when that is so.
+/// <see cref="WhiteKeyed"/> is set when the fixture lists the setup input <c>key_colour</c>: the
+/// probe's <c>--white-key</c> gave the original's keyed copies the white a 32-bit surface holds
+/// (FND-PLATFORM-014), so the capture's exact white is the white the original means to draw.
 /// </summary>
 public sealed record ScreenCaptureRecord(
     string Experiment, int Run, string Xxh3, int MarkerFrame, IReadOnlyList<string> Screens,
-    IReadOnlyList<CapturedElement> Elements, int Step = -1, IReadOnlyList<ReferenceClick>? Clicks = null,
-    string? Unreplayable = null, int? PumpCounter = null, int? SelectedSector = null)
+    IReadOnlyList<CapturedElement> Elements, bool WhiteKeyed = false, int Step = -1,
+    IReadOnlyList<ReferenceClick>? Clicks = null, string? Unreplayable = null, int? PumpCounter = null,
+    int? SelectedSector = null, ReferenceLamps? Lamps = null)
 {
+    private const string KeyColourInput = "key_colour ";
+
     /// <summary>
     /// FND-UI-048, FND-UI-051: the counter whose selection frame the capture shows. A shot records
     /// it as <c>frame_counter</c>, null when a panel stopped the frame before the probe watched; an
@@ -113,20 +119,28 @@ public sealed record ScreenCaptureRecord(
         {
             using var fixture = JsonDocument.Parse(File.ReadAllText(file));
             var experiment = fixture.RootElement.GetProperty("experiment").GetString()!;
+            var whiteKeyed = IsWhiteKeyed(fixture.RootElement);
             var run = 0;
             foreach (var recorded in fixture.RootElement.GetProperty("runs").EnumerateArray())
             {
                 if (recorded.TryGetProperty("capture", out var capture))
-                    records.Add(Parse(experiment, run, capture));
+                    records.Add(Parse(experiment, run, capture, whiteKeyed));
                 if (recorded.TryGetProperty("order_steps", out var steps))
-                    records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray()));
+                    records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray(), whiteKeyed));
                 run++;
             }
         }
         return records;
     }
 
-    public static ScreenCaptureRecord Parse(string experiment, int run, JsonElement capture)
+    /// <summary>Whether a fixture's inputs hold the <c>key_colour</c> setup input of <c>--white-key</c>.</summary>
+    public static bool IsWhiteKeyed(JsonElement fixture) =>
+        fixture.TryGetProperty("inputs", out var inputs)
+        && inputs.EnumerateArray().Any(input =>
+            input.GetProperty("name").GetString() == "setup"
+            && input.GetProperty("value").GetString()!.StartsWith(KeyColourInput, StringComparison.Ordinal));
+
+    public static ScreenCaptureRecord Parse(string experiment, int run, JsonElement capture, bool whiteKeyed = false)
     {
         var screens = new List<string>();
         var elements = new List<CapturedElement>();
@@ -145,23 +159,29 @@ public sealed record ScreenCaptureRecord(
                     element.GetProperty("xxh3").GetString()!, element.GetProperty("white").GetInt32()));
             }
         }
-        return new ScreenCaptureRecord(experiment, run, capture.GetProperty("xxh3").GetString()!,
-            capture.GetProperty("marker_frame").GetInt32(), screens, elements,
+        var record = new ScreenCaptureRecord(experiment, run, capture.GetProperty("xxh3").GetString()!,
+            capture.GetProperty("marker_frame").GetInt32(), screens, elements, whiteKeyed,
             PumpCounter: capture.TryGetProperty("pump_counter", out var pump) && pump.ValueKind == JsonValueKind.Number
                 ? pump.GetInt32()
                 : null,
             SelectedSector: capture.TryGetProperty("selected_sector", out var selected)
                             && selected.ValueKind == JsonValueKind.Number
                 ? selected.GetInt32()
+                : null,
+            // FND-EVENT-006: each light's flag, then the byte that says its lamp is drawn lit.
+            Lamps: capture.TryGetProperty("lamps", out var lamps) && lamps.ValueKind == JsonValueKind.Array
+                && lamps.EnumerateArray().Select(value => value.GetInt32()).ToArray() is [_, var events, _, var comlink]
+                ? new ReferenceLamps(events != 0, comlink != 0)
                 : null)
         {
-            FrameCounter = capture.TryGetProperty("frame_counter", out var frame)
-                ? frame.ValueKind == JsonValueKind.Number ? frame.GetInt32() : null
-                : pump.ValueKind == JsonValueKind.Number ? pump.GetInt32() : null,
             ItemFrame = capture.TryGetProperty("item_frame", out var item) && item.ValueKind == JsonValueKind.Number
                 ? item.GetInt32()
                 : null,
         };
+        // Without frame_counter the record keeps the pump's counter as its frame counter.
+        return capture.TryGetProperty("frame_counter", out var frame)
+            ? record with { FrameCounter = frame.ValueKind == JsonValueKind.Number ? frame.GetInt32() : null }
+            : record;
     }
 
     // The captures shot steps of --order-steps took after the dump. The rebuild reaches each one's
@@ -186,7 +206,8 @@ public sealed record ScreenCaptureRecord(
         return null;
     }
 
-    private static IEnumerable<ScreenCaptureRecord> StepCaptures(string experiment, int run, JsonElement[] steps)
+    private static IEnumerable<ScreenCaptureRecord> StepCaptures(
+        string experiment, int run, JsonElement[] steps, bool whiteKeyed)
     {
         var clicks = new List<ReferenceClick>();
         string? unreplayable = null;
@@ -222,10 +243,10 @@ public sealed record ScreenCaptureRecord(
                     clicks.Add(new ReferenceClick(new Point(Number("x"), Number("y")), Double: true));
                     break;
                 case "back":
-                    clicks.Add(new ReferenceClick(new Point(4 + 16, 394 + 31)));
+                    clicks.Add(new ReferenceClick(SectorDetailLayout.Back.Center));
                     break;
                 case "shot" when step.TryGetProperty("capture", out var capture):
-                    yield return Parse(experiment, run, capture) with
+                    yield return Parse(experiment, run, capture, whiteKeyed) with
                     {
                         Step = index, Clicks = clicks.ToArray(), Unreplayable = unreplayable,
                     };
@@ -326,9 +347,14 @@ public static class ScreenComparison
     /// original leaves solid white rectangles where a blit failed (FND-UI-041), and what belongs
     /// there is unknown. An element the original drew wholly white is unverified. Without the
     /// capture only the digest is compared, which needs a rectangle with no white and no mask.
+    /// In a <paramref name="whiteKeyed"/> capture the keyed copies left out their white
+    /// (FND-PLATFORM-014), so exact white is compared like any other colour: a pixel the original
+    /// drew white and the rebuild did not differs, and the digest alone suffices for an element
+    /// with white pixels and no mask.
     /// </summary>
     public static ElementComparison Compare(
-        CapturedElement element, ScreenFrame? original, ScreenFrame rebuild, IReadOnlyList<CaptureMask> masks)
+        CapturedElement element, ScreenFrame? original, ScreenFrame rebuild, IReadOnlyList<CaptureMask> masks,
+        bool whiteKeyed = false)
     {
         var rect = element.Rect;
         var covering = masks.Where(mask => mask.Rect.Intersects(rect)).ToArray();
@@ -338,13 +364,13 @@ public static class ScreenComparison
             if (covering.Any(mask => mask.Rect.Contains(x, y))) masked++;
         var maskNote = covering.Length == 0 ? "" : "masked by " + string.Join(", ", covering.Select(mask => mask.Deviation).Distinct());
 
-        if (element.White == element.Area)
+        if (element.White == element.Area && !whiteKeyed)
             return new(element, ElementVerdict.Unverified, 0, element.Area, masked,
                 Join("the original drew it solid white", maskNote));
 
         if (original is null)
         {
-            if (element.White > 0 || masked > 0)
+            if ((element.White > 0 && !whiteKeyed) || masked > 0)
                 return new(element, ElementVerdict.Unverified, 0, element.Area - masked, masked,
                     Join($"the capture is needed: {element.White} white pixels", maskNote));
             return rebuild.Digest(rect) == element.Xxh3
@@ -365,7 +391,7 @@ public static class ScreenComparison
             var theirs = original[x, y];
             var ours = rebuild[x, y];
             if (theirs == ours) continue;
-            if (theirs == ScreenFrame.White) unverified++;
+            if (theirs == ScreenFrame.White && !whiteKeyed) unverified++;
             else differing++;
         }
         var verdict = differing > 0 ? ElementVerdict.Differs
@@ -395,7 +421,7 @@ public static class RebuildFrame
 
     public static ScreenFrame Render(
         MatchState state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
-        int? pumpCounter = null, int? selectedSector = null, int? itemFrame = null)
+        int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -431,6 +457,11 @@ public static class RebuildFrame
             {
                 start.ArgumentList.Add("--pump-counter");
                 start.ArgumentList.Add(counter.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (lamps is not null)
+            {
+                start.ArgumentList.Add("--lamps");
+                start.ArgumentList.Add(lamps.ToString());
             }
             if (clicks is { Count: > 0 })
             {

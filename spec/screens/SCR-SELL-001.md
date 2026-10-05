@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EQUIP-004, FND-EXE-004, FND-SELL-001, FND-SELL-002, FND-OPTIONS-001, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-004, FND-EXE-004, FND-SELL-001, FND-SELL-002, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-UI-047]
 conflicting: []
 split_with: []
 related: [RULE-SELL-001, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
@@ -67,6 +67,11 @@ None.
 
 The panel slides in and out as the shared panels do, in about a quarter of a
 second (FND-OPTIONS-001), as RULE-UI-003 describes.
+
+The item pictures share one frame counter that steps on each tick of the
+presentation clock the panel takes. While Cancel or Sell is held with the
+pointer, the counter stops; the pass that ends with the release takes one tick
+if any fell during the hold and loses the others (FND-UI-047).
 
 ## Differences between builds
 

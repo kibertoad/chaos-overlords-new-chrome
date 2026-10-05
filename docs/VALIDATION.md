@@ -755,7 +755,8 @@ save, and starts the game with
 
 ```text
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
-    [--pump-counter <0-7>] [--selected-sector <0-63>] [--item-frame <0-14>]
+    [--pump-counter <0-7>] [--selected-sector <0-63>] [--lamps <0|1>,<0|1>]
+    [--item-frame <0-14>]
     [--reference-clicks <x:y[:2]>,...]
 ```
 
@@ -765,8 +766,13 @@ bitmap before it exits. `--pump-counter` passes the capture's `frame_counter`, o
 `pump_counter` when the fixture has none, which picks the selected-sector frame
 drawn (FND-UI-048). `--selected-sector` passes `selected_sector`, which the
 planning entry selects in place of the sector the rebuild keeps for the player
-(FND-SAVE-003); a save holds no selection (DEV-SAVE-001). `--item-frame` passes
-`item_frame`, the frame Item Information's rotating item is drawn at.
+(FND-SAVE-003); a save holds no selection (DEV-SAVE-001). `--lamps` passes the
+second and fourth of the capture's `lamps`, the bytes that say the Events and
+the Comlink lamp were drawn lit, which pick the blink phase of those lights in
+place of the clock's (FND-EVENT-006). `--item-frame` passes `item_frame`, the
+frame Item Information's rotating item is drawn at (FND-UI-052). The blinking
+and cycling parts of the screen stay at time zero however many clicks were
+made: the marker is drawn at `--marker-frame`, or at its first frame without it.
 `--reference-clicks` lists the presses that take the rebuild from the planning
 entry to a shot step's screen, `:2` marking a double-click. They run on a clock
 of their own, one button edge every 50 ms, wait while a pressed face or a flash
@@ -789,14 +795,19 @@ The test then compares each element:
 - An element the original drew wholly in exact white is unverified: in a
   capture taken without `--white-key`, a keyed copy on Windows 11 draws solid
   white where its image should show through (FND-PLATFORM-014), and what
-  belongs there is unknown. The test does not read the `key_colour` setup
-  input, so it treats the white of a `--white-key` capture the same way.
+  belongs there is unknown.
 - With the capture under `GAME_DIR/captures/`, every pixel outside the masks is
   compared. A pixel the original drew exact white is counted as unverified
   unless the rebuild drew it white as well. The element matches when no
   compared pixel differs.
 - Without the capture, an element with no white pixel and no mask is compared
   by its digest, and any other element is unverified.
+- A fixture whose inputs hold the setup input `key_colour`, written by
+  `--white-key`, has no white left by a keyed copy, so its exact white is
+  compared like any other colour: a pixel the original drew white and the
+  rebuild did not differs, and without the capture an element with white
+  pixels and no mask is compared by its digest. EXP-UI-003 is compared this
+  way.
 - `ScreenCaptureMasks` lists, for each screen, the rectangles a deviation draws
   over, each under the ID of the deviation. All the masks of the screens a
   capture names apply to the whole frame. `EveryMaskCitesADeviationFromItsScreen`

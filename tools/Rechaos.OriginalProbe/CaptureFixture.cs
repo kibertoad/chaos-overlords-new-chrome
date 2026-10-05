@@ -80,13 +80,12 @@ internal static class CaptureFixture
             shot["SelectedSector"]?.GetValue<int>(), CaptureScreen.Load(screens));
         // FND-UI-048, FND-UI-051: the counter whose selection frame the capture shows: the pump's,
         // or the one at the slide-in of the panel open over the city. A panel the probe did not
-        // see slide in leaves it unknown.
-        if (record is not null)
-        {
-            record["frame_counter"] = shot["FrameCounter"] is JsonNode frame ? frame.GetValue<int>() : null;
-            // FND-UI-052: the frame of Item Information's rotating item, when the panel is open.
-            if (shot["ItemFrame"] is JsonNode item) record["item_frame"] = item.GetValue<int>();
-        }
+        // see slide in leaves it unknown. A shot recorded before the probe read it has no such
+        // field, and its record leaves frame_counter out so the comparison takes the pump's.
+        if (record is not null && shot.AsObject().TryGetPropertyValue("FrameCounter", out var frame))
+            record["frame_counter"] = frame is null ? null : frame.GetValue<int>();
+        // FND-UI-052: the frame of Item Information's rotating item, when the panel is open.
+        if (record is not null && shot["ItemFrame"] is JsonNode item) record["item_frame"] = item.GetValue<int>();
         return record;
     }
 

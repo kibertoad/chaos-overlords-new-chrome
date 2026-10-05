@@ -12,7 +12,7 @@ public sealed partial class ChaosGame
     private void OpenItemDetails(short itemId, ClientScreen returnScreen = ClientScreen.Commands)
     {
         _itemDetailsId = itemId;
-        _itemDetailsOpenedAt = _inputTime;
+        _itemDetailsOpenedAt = PresentationDrawTime;
         _itemDetailsReturnScreen = returnScreen;
         _screens.Show(ClientScreen.ItemInformation);
     }
@@ -22,6 +22,11 @@ public sealed partial class ChaosGame
         var returnScreen = _itemDetailsReturnScreen;
         _itemDetailsId = null;
         _itemDetailsReturnScreen = ClientScreen.Commands;
+        // FND-GANG-006: the gang information panel's rotation restarts at frame 0 when the item's
+        // panel returns to it. A release of the held exit face leaves the kept tick to the item
+        // panel's last pass (FND-UI-047), so the gang panel's counter does not take it.
+        if (returnScreen == ClientScreen.Gang)
+            _gangDetailsAnimationStart = _eventPump.TicksAfterHold(_inputTime);
         _screens.Show(returnScreen);
     }
 
@@ -47,10 +52,12 @@ public sealed partial class ChaosGame
         if (itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, ItemInformationLayout.Portrait,
+                // FND-UI-047: the rotation stops while the exit face is held. FND-UI-052: it starts
+                // from frame 0 when the panel opens, or at the frame the reference frame's capture showed.
                 _referenceFrame?.ItemFrame is { } frame
                     ? ItemRotationPresentation.Frame(frame)
-                    : ItemRotationPresentation.Frame(_inputTime < _itemDetailsOpenedAt
-                        ? TimeSpan.Zero : _inputTime - _itemDetailsOpenedAt), Color.White);
+                    : ItemRotationPresentation.Frame(PresentationDrawTime < _itemDetailsOpenedAt
+                        ? TimeSpan.Zero : PresentationDrawTime - _itemDetailsOpenedAt), Color.White);
         else if (_itemPortraits is not null)
             batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,
                 OriginalSpriteLayout.ItemPortrait(item.Id), Color.White);
@@ -109,7 +116,7 @@ public sealed partial class ChaosGame
         var display = NativeTwoCellNumberPresentation.Format(value, kind);
         font.DrawNumber(batch, display,
             new Vector2(GangInformationLayout.ValueTextLeft(left, display.Digits), y),
-            display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime);
+            display.IsNegative ? Color.Red : Color.Lime);
     }
 
     private static void ClearItemValueField(SpriteBatch batch, Texture2D pixel, int left, int y) =>
