@@ -629,7 +629,10 @@ public sealed partial class OriginalNewGameExperimentTests
             for (var run = 0; run < runs.Length; run++)
                 // The probe breaks on the handlers at every local human's planning entry, and the
                 // replay compares only the first human's, so a run with several humans is left out.
-                if (runs[run].Panels is not null && runs[run].Humans.Count == 1
+                // With Detailed Combat switched on the planning entry calls the presentation in place
+                // of the Combat Results handler (FND-COMBAT-010), so a run that recorded clips is
+                // left out too; DetailedCombatPlaysTheOriginalsClips compares those entries.
+                if (runs[run].Panels is not null && runs[run].Humans.Count == 1 && runs[run].CombatClips is null
                     && !KnownDivergences.ContainsKey((experiment, run)))
                     data.Add(experiment, run);
         return data;
