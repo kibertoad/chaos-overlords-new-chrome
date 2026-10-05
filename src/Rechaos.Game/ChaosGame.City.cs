@@ -215,7 +215,7 @@ public sealed partial class ChaosGame
                 CityMapLayout.Bounds with { X = 0, Y = 0 }, CityMapLayout.Bounds.Location);
             if (_uiKeyedSprites is not null)
                 batch.Draw(_uiKeyedSprites, CityMapLayout.Destination(_cursor),
-                    CityMapLayout.SelectionFrameSource(CityMapLayout.SelectionFrame(_inputTime)), Color.White);
+                    CityMapLayout.SelectionFrameSource(CityMapLayout.SelectionFrame(_eventPump.Time)), Color.White);
             else
                 DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
             // FND-UI-037: the city-cell flash lightens the cell copied from the map, markers
@@ -287,14 +287,14 @@ public sealed partial class ChaosGame
             new Vector2(438, 354), Color.Gold, 1);
         if (_state is not null && PlanningViewer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
-            && PresentationClock.BlinkLit(_inputTime))
+            && PresentationClock.BlinkLit(_eventPump.Time))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
         if (_state is not null && PlanningViewer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
-            && PresentationClock.BlinkLit(_inputTime))
+            && PresentationClock.BlinkLit(_eventPump.Time))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
-        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(_inputTime))
+        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(_eventPump.Time))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)

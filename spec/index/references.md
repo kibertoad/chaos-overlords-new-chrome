@@ -487,6 +487,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-043](../findings/FND-UI-043.md) | body, builds, locations |
 | [FND-UI-044](../findings/FND-UI-044.md) | builds, locations |
 | [FND-UI-045](../findings/FND-UI-045.md) | builds, locations |
+| [FND-UI-046](../findings/FND-UI-046.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -4029,6 +4030,7 @@ None.
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
 | [FND-COMLINK-007](../findings/FND-COMLINK-007.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [FND-UI-046](../findings/FND-UI-046.md) | body |
 | glossary: events_page | glossary |
 | glossary: events_seen | glossary |
 | glossary: events_unviewed | glossary |
@@ -4181,6 +4183,7 @@ None.
 | [FND-UI-043](../findings/FND-UI-043.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
 | [FND-UI-045](../findings/FND-UI-045.md) | body |
+| [FND-UI-046](../findings/FND-UI-046.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -6385,6 +6388,7 @@ None.
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | body |
 | [FND-UI-026](../findings/FND-UI-026.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
+| [FND-UI-046](../findings/FND-UI-046.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | glossary: blit_benchmark_count | glossary |
 | glossary: comlink_alert_repeat | glossary |
@@ -6474,6 +6478,7 @@ None.
 | [FND-AUDIO-010](../findings/FND-AUDIO-010.md) | body |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
 | [FND-UI-015](../findings/FND-UI-015.md) | body |
+| [FND-UI-046](../findings/FND-UI-046.md) | body |
 | glossary: ControlArtDrawn | glossary |
 | glossary: left_button_down | glossary |
 | glossary: pointer_x | glossary |
@@ -6599,15 +6604,24 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-046](../findings/FND-UI-046.md) | body |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body, evidence |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | body, evidence |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | body, evidence |
+| [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
 
 ## FND-UI-045
 
 | Cited by | In |
 |---|---|
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
+
+## FND-UI-046
+
+| Cited by | In |
+|---|---|
+| [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | body, evidence |
+| [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
 
 ## FND-UPKEEP-001
 

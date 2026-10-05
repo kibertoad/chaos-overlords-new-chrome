@@ -4,7 +4,7 @@ title: The planning clock bar and its warning sounds
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-001, FND-TIMER-003, FND-UI-023, FND-UI-044, FND-EXE-004, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052]
+evidence: [FND-TIMER-001, FND-TIMER-003, FND-UI-023, FND-UI-044, FND-UI-046, FND-EXE-004, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005, RULE-UI-008]
@@ -74,11 +74,13 @@ is taken from the whole percent elapsed, not from the remaining time directly.
   to six ticks later.
 - Ticks the pump misses are lost (RULE-UI-008), so the redraw rate can fall
   below once a second on a busy machine.
-- While an offer of the Hire dock, a control taken by the held-button helper or
-  a gang card's portrait is held under the left button, the game runs a loop
-  that dispatches window messages without calling the pump, so the bar is not
-  redrawn and no warning sounds until the button comes up; the countdown then
-  takes at most the one tick the timer flag kept (FND-UI-044).
+- While an offer of the Hire dock, a console tile, a control taken by the
+  held-button helper, a page arrow of Last Turn Events or a gang card's
+  portrait is held under the pointer, the game runs a loop that dispatches
+  window messages without calling the pump, so the bar is not redrawn and no
+  warning sounds until the button comes up. No such loop clears the timer
+  flag, so the countdown then takes the one tick the flag kept, and only that
+  one, whatever the length of the hold (FND-UI-044, FND-UI-046).
 - The bar is the rectangle `(520,336)-(580,339)`: the full bar's first `width`
   columns, then the empty bar's remaining columns.
 

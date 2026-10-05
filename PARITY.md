@@ -14,16 +14,16 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `unknown` | 0 |
 | `sourced` | 0 |
 | `supported` | 5 |
-| `established` | 1 |
+| `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 85 |
-| `validated` | 132 |
+| `implemented` | 84 |
+| `validated` | 134 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 6 |
-| `complete` | 217 |
+| `partial` | 5 |
+| `complete` | 218 |
 
 ## DATA
 
@@ -419,7 +419,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|---|---|---|---|---|---|
 | `RULE-TIMER-001` | Planning time limit chosen for a match | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | validated | EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052 compare the stored limit for the 30-second, 2-minute and 5-minute choices. |
 | `RULE-TIMER-002` | A human planning turn ends when its time limit passes | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs, tests/Rechaos.Tests/PlanningTimerLoopTests.cs | None | validated | The turn ends once the elapsed whole milliseconds exceed the limit, compared with EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052 through the rebuild's PlanningTimer. On expiry the rebuild submits the finish-planning operation without the idle-gang warning. The limit is tested only on the city and the detailed sector view, with no idle-gang warning open and no offer, reject cross, console tile, back control or gang held, so a panel open at the limit keeps the turn going until it closes; the bar is left as last drawn when planning ends. A gang is held from a left press on its card's portrait until the button comes up, moved or not, as the original's command handler holds it (FND-UI-044); PlanningTimerLoopTests checks both phases of the hold. |
-| `RULE-TIMER-003` | The planning clock bar and its warning sounds | established | partial | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs | None | established | The bar is redrawn on every sixth presentation tick and keeps its width in between. EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052 drive the rebuild's PlanningTimer through every recorded redraw and compare its width and warning slot. Past the limit with a panel open the empty bar is redrawn with no warning. Partial: while an offer, a held control or a gang card's portrait is held, the original does not call the pump, so the bar stops and no warning sounds until the release (FND-UI-044); the rebuild keeps redrawing and sounding through the hold. |
+| `RULE-TIMER-003` | The planning clock bar and its warning sounds | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs, tests/Rechaos.Tests/PlanningTimerPolicyTests.cs, tests/Rechaos.Tests/EventPumpClockTests.cs | None | validated | The bar is redrawn on every sixth presentation tick and keeps its width in between. EXP-TURN-046, EXP-TURN-047 and EXP-TURN-052 drive the rebuild's PlanningTimer through every recorded redraw and compare its width and warning slot. Past the limit with a panel open the empty bar is redrawn with no warning. While an offer, a console tile, a held-button face, an event page arrow or a gang card's portrait is held under the left button, the countdown takes the ticks of the rebuild's event pump clock, which stops for the hold and takes one tick on the first pass after the release (FND-UI-044, FND-UI-046); EventPumpClockTests checks the bar and warnings through a hold and which holds stop the pump. |
 | `RULE-TIMER-004` | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported | complete | None | `DEV-TIMER-001` | implemented | No wait depends on the machine (DEV-TIMER-001). Pressed key faces and the city, site and sector-cell flashes wait on 166 ms ticks. Each flash shows the lit copy, the normal image, the lit copy and the normal image, lightens its area with white through bitmap 143 and its black edge, and draws the labels, frame and meter unlit over it (FND-UI-037). |
 
 ## UI
@@ -433,7 +433,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-005` | Lengths of the site progress and Force meters | supported | complete | None | None | implemented | Site meters truncate progress * 100 / Resistance (100 at Resistance 0) and Force meters are Force * 6 pixels, checked by SectorMeterLengthTests. |
 | `RULE-UI-006` | Choosing a sector's gang-status marker | supported | complete | None | None | implemented | Frames and the one saved cell that loses frame 8 follow the rule. Enemy sight and presence come from a snapshot kept for each planning entry, and the idle test and incoming hires are read live. |
 | `RULE-UI-007` | The pointer shape | supported | complete | None | None | implemented | The stock arrow shows at all times, and the hourglass while a city is set up, a game is loaded or a turn is resolved. |
-| `RULE-UI-008` | The presentation timer | supported | complete | None | `DEV-TIMER-001` | implemented | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). |
+| `RULE-UI-008` | The presentation timer | supported | complete | tests/Rechaos.Tests/EventPumpClockTests.cs | `DEV-TIMER-001` | validated | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). The steps the event pump drives (the planning bar and its warnings, the console lights, the selection frame, the Comlink alert repeat and the music poll) read an event pump clock that stops while a hold keeps the original out of the pump and keeps one tick of the hold, as FND-UI-046 records; EventPumpClockTests checks it against those findings. A panel's own slot-0 animation is not stopped by a hold inside it. |
 | `RULE-UI-009` | The texts of the Game Information panel | supported | complete | tests/Rechaos.Tests/ExecutableStringTableTests.cs | `DEV-AI-003` | validated | Every text is the executable's string the rule names, compared with BLD-GOG-EN-1.1's string table. With Advanced AI on, the Mentality field adds the AI policy (DEV-AI-003). |
 | `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | complete | None | None | implemented | The cards list the viewed player's visible gangs and Gangs in Sector the active player's gangs, both in roster slot order, checked by SectorOpponentGangsTests and GangInformationRosterTests. |
 | `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | The sector code, the Income word of string resource `0x11 + income` and two-cell Tolerance, Support and Cash from x 568, unclamped, so a value past 99 shows RULE-UI-004's leading quotient; Support and Cash are 0 unless the active player owns the sector. |

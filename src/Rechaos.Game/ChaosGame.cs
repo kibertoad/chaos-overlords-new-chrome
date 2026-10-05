@@ -213,6 +213,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private MouseState _previousMouse;
     private readonly CombatPresentationProgress _combatPresentationProgress = new();
     private TimeSpan _inputTime;
+    private readonly EventPumpClock _eventPump = new();
     private ClientScreen _gangDetailsReturnScreen = ClientScreen.City;
     private GangId? _gangDetailsInstanceId;
     private short? _gangDetailsDefinitionId;
@@ -439,6 +440,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     {
         _autoSave.Pump();
         _inputTime = gameTime.TotalGameTime;
+        _eventPump.Update(_inputTime, HoldsPointerOutsideEventPump());
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
         // The rebuild's window shortcuts are not game events, so a fade does not swallow them.
@@ -472,7 +474,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             EndUpdate(gameTime, keyboard, mouse);
             return;
         }
-        UpdateComlinkAlert(gameTime.TotalGameTime);
+        UpdateComlinkAlert(_eventPump.Time);
         UpdateComlinkCaret(gameTime.TotalGameTime);
         PumpBugReportSend();
         // Before the planning timer, so a turn that resolved on the server is adopted even on the

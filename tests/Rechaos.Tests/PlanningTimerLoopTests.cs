@@ -20,6 +20,7 @@ public sealed class PlanningTimerLoopTests
         GC.SuppressFinalize(game);
         Field("_screens").SetValue(game, new ScreenRouter());
         Field("_planningTimer").SetValue(game, new PlanningTimer());
+        Field("_eventPump").SetValue(game, new EventPumpClock());
         Field("_state").SetValue(game, state);
         var router = (ScreenRouter)Field("_screens").GetValue(game)!;
         var timer = (PlanningTimer)Field("_planningTimer").GetValue(game)!;
@@ -66,6 +67,7 @@ public sealed class PlanningTimerLoopTests
         GC.SuppressFinalize(game);
         Field("_screens").SetValue(game, new ScreenRouter());
         Field("_planningTimer").SetValue(game, new PlanningTimer());
+        Field("_eventPump").SetValue(game, new EventPumpClock());
         Field("_state").SetValue(game, state);
         var router = (ScreenRouter)Field("_screens").GetValue(game)!;
         var timer = (PlanningTimer)Field("_planningTimer").GetValue(game)!;

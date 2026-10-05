@@ -201,22 +201,30 @@ public sealed class PlanningTimer
         _pausedElapsed = now - _start;
     }
 
-    public void Resume(TimeSpan now)
+    public void Resume(TimeSpan now) => Resume(now, PresentationClock.Ticks(now));
+
+    /// <summary>
+    /// Resumes a paused turn, dropping the presentation ticks up to <paramref name="tick"/>, the
+    /// count the caller advances the clock with.
+    /// </summary>
+    public void Resume(TimeSpan now, long tick)
     {
         if (!IsActive || _pausedElapsed is not { } elapsed) return;
         _start = now - elapsed;
         _pausedElapsed = null;
-        _lastTick = PresentationClock.Ticks(now);
+        _lastTick = tick;
     }
 
     public PlanningTimerSignal Advance(TimeSpan now) => Advance(now, PresentationClock.Ticks(now));
 
     /// <summary>
     /// Counts the presentation ticks up to <paramref name="tick"/> and redraws the bar when the
-    /// countdown runs out. Tests pass the tick themselves to replay a recorded run of the original,
-    /// whose ticks do not fall on exact multiples of the period.
+    /// countdown runs out. The game passes the ticks its event pump has taken, which stop while a
+    /// hold keeps the pump from running (<see cref="EventPumpClock"/>). Tests pass the tick
+    /// themselves to replay a recorded run of the original, whose ticks do not fall on exact
+    /// multiples of the period.
     /// </summary>
-    internal PlanningTimerSignal Advance(TimeSpan now, long tick)
+    public PlanningTimerSignal Advance(TimeSpan now, long tick)
     {
         if (_pausedElapsed is not null) return PlanningTimerSignal.None;
         var signal = PlanningTimerSignal.None;
@@ -380,6 +388,27 @@ public sealed partial class ChaosGame
         && _pressedPanelFace is null
         && _draggedGangId is null;
 
+    /// <summary>
+    /// Whether a press holds the game in a loop of the original that dispatches window messages
+    /// without calling the event pump, so the steps the pump drives stop (<see cref="EventPumpClock"/>).
+    /// They are the Hire handler's two loops for an offer and its reject cross (FND-HIRE-008), the
+    /// individual command handler's loops for a gang card's portrait (FND-UI-044), the console tile
+    /// helper (FND-UI-032), the Last Turn Events page arrows (FND-EVENT-005) and the held-button
+    /// helper behind the faces of the panels, the Comlink Send panel, the attack picker and the
+    /// sector view's back control (FND-UI-046). Each loop runs until the left button comes up, so
+    /// the rebuild's right-button hold of the back control does not count.
+    /// </summary>
+    private bool HoldsPointerOutsideEventPump() =>
+        _draggedHireDefinitionId is not null
+        || _pressedHireRejectSlot is not null
+        || _draggedGangId is not null
+        || _pressedCityConsoleControl is not null
+        || _pressedEventsButton is not null
+        || _pressedCommandPanelButton is not null
+        || _pressedComlinkSendButton is not null
+        || _pressedAttackFace is not null
+        || _pressedPanelFace is not null && !_pressedPanelFaceByRightButton;
+
     /// <summary>The screens that are not the match, where no planning clock is drawn or run.</summary>
     private bool LeftMatchScreen() =>
         _screens.Current is ClientScreen.Title or ClientScreen.Setup
@@ -391,7 +420,7 @@ public sealed partial class ChaosGame
         if (!_planningTimer.IsActive)
         {
             // The redraw countdown runs on the presentation ticks of untimed turns too.
-            _planningTimer.Advance(now);
+            _planningTimer.Advance(now, _eventPump.Ticks);
             return false;
         }
         if (_state?.Coordinator.ActivePlayer is not { } playerId
@@ -403,7 +432,7 @@ public sealed partial class ChaosGame
             return false;
         }
 
-        switch (_planningTimer.Advance(now))
+        switch (_planningTimer.Advance(now, _eventPump.Ticks))
         {
             case PlanningTimerSignal.LongWarning:
                 PlayGeneralSound(GeneralSoundSlot.CountdownWarning);

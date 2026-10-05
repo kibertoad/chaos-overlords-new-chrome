@@ -123,7 +123,7 @@ public sealed partial class ChaosGame
         _saveBrowserMode = SaveBrowserMode.None;
         _editingSaveName = false;
         _saveName.IsFocused = false;
-        _planningTimer.Resume(_inputTime);
+        _planningTimer.Resume(_inputTime, _eventPump.Ticks);
         _message = string.Empty;
     }
 
