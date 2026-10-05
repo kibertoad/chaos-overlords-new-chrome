@@ -43,14 +43,13 @@ public sealed class PixelFont
 
     /// <summary>
     /// RULE-UI-004: draws formatted cells from <paramref name="position"/>, the left edge of the
-    /// first drawn cell. A leading quotient past the font strip is the raw <c>PX00129</c> cell the
-    /// original copies, or a blank cell when that lies past the bitmap.
+    /// first drawn cell. A leading quotient off the font strip is the raw <c>PX00129</c> cell the
+    /// original copies (FND-UI-045), or a blank cell when that cell is not wholly inside the bitmap.
     /// </summary>
     public void DrawNumber(SpriteBatch batch, NativeTwoCellNumberPresentation.Value display,
         Vector2 position, Color color)
     {
         Draw(batch, display.Digits, position, color, 1);
-        // PLACEHOLDER: RULE-UI-004 - a cell past the bitmap's right edge is left blank.
         if (display.OffStripGlyph is { } glyph
             && NativeTwoCellNumberPresentation.AtlasCell(glyph, display.IsNegative, _uiAtlas.Width) is { } source)
             batch.Draw(_uiAtlas, new Rectangle((int)position.X, (int)position.Y, source.Width, source.Height),

@@ -54,6 +54,40 @@ public sealed class PlanningTimerLoopTests
         Assert.True(AtPlanningLoopPass(game));
     }
 
+    [Fact]
+    public void AGangHeldOnTheSectorViewDefersTheExpiryUntilItIsLetGo()
+    {
+        // FND-UI-044: a left press on the portrait of one of the player's cards waits in the
+        // individual command handler for the pointer to move two pixels or the button to come up,
+        // then follows the dragged gang until the button comes up, pumping window messages only.
+        // The planning loop's expiry test runs again after the handler returns.
+        var state = OriginalNewGameExperimentTests.ReplayedMatch("EXP-SETUP-001", 0);
+        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
+        GC.SuppressFinalize(game);
+        Field("_screens").SetValue(game, new ScreenRouter());
+        Field("_planningTimer").SetValue(game, new PlanningTimer());
+        Field("_state").SetValue(game, state);
+        var router = (ScreenRouter)Field("_screens").GetValue(game)!;
+        var timer = (PlanningTimer)Field("_planningTimer").GetValue(game)!;
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        var pastLimit = TimeSpan.FromSeconds(31);
+        router.Show(ClientScreen.Sector);
+
+        // Pressed, not yet moved: the handler's first wait loop.
+        Field("_draggedGangId").SetValue(game, new GangId(0));
+        Assert.False(UpdatePlanningTimer(game, pastLimit));
+        Assert.True(timer.IsActive);
+        Assert.True(timer.HasExpired(pastLimit));
+        // Moved past the press point: the drag loop.
+        Field("_gangDragStarted").SetValue(game, true);
+        Assert.False(UpdatePlanningTimer(game, pastLimit));
+        Assert.True(timer.IsActive);
+
+        Field("_gangDragStarted").SetValue(game, false);
+        Field("_draggedGangId").SetValue(game, null);
+        Assert.True(AtPlanningLoopPass(game));
+    }
+
     private static bool UpdatePlanningTimer(ChaosGame game, TimeSpan now) =>
         (bool)Method("UpdatePlanningTimer").Invoke(game, [now])!;
 

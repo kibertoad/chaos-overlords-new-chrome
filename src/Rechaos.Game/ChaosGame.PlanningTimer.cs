@@ -367,7 +367,9 @@ public sealed partial class ChaosGame
     /// (SCR-UI-003, SCR-UI-004). A panel runs its own loop, and so does the Hire handler from a
     /// press on an offer or its reject cross until the button is released (FND-HIRE-008), as do
     /// the console tile helper (FND-UI-032) and the sector view's back control (FND-UI-015); the
-    /// idle-gang warning is answered before the test.
+    /// idle-gang warning is answered before the test. A left press on the portrait of one of the
+    /// player's gang cards runs the individual command handler's own loop until the button is
+    /// released, whether or not the gang is dragged (FND-UI-044).
     /// </summary>
     private bool AtPlanningLoopPass() =>
         _screens.Current is ClientScreen.City or ClientScreen.Sector
@@ -376,8 +378,6 @@ public sealed partial class ChaosGame
         && _pressedHireRejectSlot is null
         && _pressedCityConsoleControl is null
         && _pressedPanelFace is null
-        // PLACEHOLDER: RULE-TIMER-002. How the original starts a gang drag is not recorded
-        // (FND-TURN-009); a held gang is taken to run in its handler as a held offer does.
         && _draggedGangId is null;
 
     /// <summary>The screens that are not the match, where no planning clock is drawn or run.</summary>

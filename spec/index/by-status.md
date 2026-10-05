@@ -293,7 +293,7 @@
 
 ## recorded
 
-429 entries.
+431 entries.
 
 | ID | Title |
 |---|---|
@@ -721,6 +721,8 @@
 | [FND-UI-041](../findings/FND-UI-041.md) | The running original draws the completed-match calendar companion in its final city view |
 | [FND-UI-042](../findings/FND-UI-042.md) | The seeded completed match enters its final city without an open report panel |
 | [FND-UI-043](../findings/FND-UI-043.md) | Local human planning completion clears the seat's waiting light |
+| [FND-UI-044](../findings/FND-UI-044.md) | A left press on a gang card's portrait holds the individual command handler in its own loops until the button is released, so the planning loop does not run while a gang is held |
+| [FND-UI-045](../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file |

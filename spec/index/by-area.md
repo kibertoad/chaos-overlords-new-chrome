@@ -866,6 +866,8 @@
 | [FND-UI-041](../findings/FND-UI-041.md) | The running original draws the completed-match calendar companion in its final city view | recorded |
 | [FND-UI-042](../findings/FND-UI-042.md) | The seeded completed match enters its final city without an open report panel | recorded |
 | [FND-UI-043](../findings/FND-UI-043.md) | Local human planning completion clears the seat's waiting light | recorded |
+| [FND-UI-044](../findings/FND-UI-044.md) | A left press on a gang card's portrait holds the individual command handler in its own loops until the button is released, so the planning loop does not run while a gang is held | recorded |
+| [FND-UI-045](../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits | recorded |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |

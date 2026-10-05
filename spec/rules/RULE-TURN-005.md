@@ -4,7 +4,7 @@ title: Giving a gang an order replaces its whole previous order, one-off or recu
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-002, FND-TURN-009, FND-HIDE-001, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-TURN-002, FND-TURN-009, FND-UI-044, FND-HIDE-001, SRC-MANUAL-GOG, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -98,7 +98,10 @@ the order is chosen; the turn-start cleanup clears what it writes there
 A gang can also be given a recurring Influence without the menu: pointing at
 an unfinished site of a sector the player owns, through the gang command's
 second input path, writes Influence into `action` and `repeat_action` and the
-site slot into `target` and `repeat_target` (FND-TURN-009).
+site slot into `target` and `repeat_target` (FND-TURN-009). That path is a
+drag of the gang's portrait on the detailed sector screen with the left
+button, which starts once the pointer has moved two pixels from the press and
+gives its order where the button comes up (FND-UI-044).
 
 Bribe and Snitch are never offered as recurring. If a recurring value of 2 or
 13 were stored some other way, the turn-start cleanup would keep it forever
@@ -118,7 +121,5 @@ None known.
 
 ## Open questions
 
-- How the player starts the gang command's second input path (a drag of the
-  gang is the likely reading) has not been read (FND-TURN-009).
 - The computer players' orders are written by their own code, which this rule
   does not cover.

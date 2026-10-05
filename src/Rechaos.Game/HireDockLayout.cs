@@ -62,11 +62,16 @@ public static class HireDockLayout
     /// places after <c>0</c> in the strip, followed by its last digit. A negative amount gives
     /// the digits of its magnitude, which the caller draws in red.
     /// </summary>
-    public static string PriceText(int amount)
+    public static string PriceText(int amount) => PriceCells(amount).Digits;
+
+    /// <summary>
+    /// The two price cells as <see cref="PixelFont.DrawNumber"/> draws them, so a quotient off the
+    /// font strip is copied from <c>PX00129</c> as on every other panel (RULE-UI-004).
+    /// </summary>
+    public static NativeTwoCellNumberPresentation.Value PriceCells(int amount)
     {
-        return NativeTwoCellNumberPresentation
-            .Format(amount, NativeTwoCellNumberPresentation.Kind.Baseline)
-            .Digits.PadLeft(2, '0');
+        var display = NativeTwoCellNumberPresentation.Format(amount, NativeTwoCellNumberPresentation.Kind.Baseline);
+        return display with { Digits = display.Digits.PadLeft(2, '0') };
     }
 
     public static IReadOnlyList<HireDockEntry?> Project(

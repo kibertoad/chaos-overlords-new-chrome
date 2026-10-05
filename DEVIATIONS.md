@@ -906,8 +906,10 @@ Whether the original shows the count is not recorded.
 - Setting: None
 - Default: mandatory
 - Justification: It adds a shortcut to orders the card's menu already gives, and each drop is
-  validated as the menu's order would be. The original has a second input path for gang orders
-  that the spec has not read (RULE-TURN-005), so this drag is the rebuild's own until it is.
+  validated as the menu's order would be. The original has its own drag of the portrait
+  (FND-UI-044), which gives a one-off Move to an enabled neighbour and a recurring Influence of an
+  unfinished site of an owned sector (FND-TURN-009); the rebuild's drop rules have not yet been
+  compared with it.
 - Dropped: no
 
 ## DEV-UI-023

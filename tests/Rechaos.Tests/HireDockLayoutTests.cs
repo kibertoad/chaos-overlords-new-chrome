@@ -22,9 +22,11 @@ public sealed class HireDockLayoutTests
         Assert.Equal("<3", HireDockLayout.PriceText(123));
         // FND-UI-006: a negative value shows its magnitude; the colour carries the sign.
         Assert.Equal("07", HireDockLayout.PriceText(-7));
-        // A quotient past the last glyph of the strip has nothing to draw.
-        // RULE-UI-004: an off-strip leading glyph leaves a blank text placeholder.
+        // RULE-UI-004: a quotient past the strip's last character leaves a blank in the text and
+        // is drawn from the raw PX00129 cell of glyph 16 + 43.
         Assert.Equal(" 0", HireDockLayout.PriceText(430));
+        Assert.Equal(59, HireDockLayout.PriceCells(430).OffStripGlyph);
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value("06", false, false), HireDockLayout.PriceCells(6));
     }
 
     [Fact]
