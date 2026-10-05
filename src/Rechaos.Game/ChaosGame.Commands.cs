@@ -468,8 +468,12 @@ public sealed partial class ChaosGame
         {
             var site = sector.Sites.Single(value => value.Slot == slot);
             var targetId = actor.SectorId * MatchLimits.SitesPerSector + slot;
+            // FND-INFLUENCE-002: the handler draws a site as completed when its progress equals
+            // the definition's Resistance, the rebuild's remaining Resistance of 0, whether or not
+            // the site has been activated for the owner yet. The order validator refuses the
+            // same sites, so a site drawn as completed is never one that can be picked.
             DrawInfluenceSite(batch, pixel, site, InfluenceCommandLayout.SiteHit(slot),
-                SiteControlRules.IsComplete(site, state.Definitions.Site(site.DefinitionId)),
+                site.Resistance == 0,
                 _commandTargetCursor >= 0 && _commandTargetOptions[_commandTargetCursor].Target.Id == targetId);
         }
         DrawCommandPanelFaces(batch);

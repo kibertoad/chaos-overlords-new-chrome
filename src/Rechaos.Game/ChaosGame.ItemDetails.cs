@@ -17,9 +17,26 @@ public sealed partial class ChaosGame
         _screens.Show(ClientScreen.ItemInformation);
     }
 
+    /// <summary>
+    /// FND-UI-052, FND-UI-053: the frame of a rotating item picture whose panel opened at
+    /// <paramref name="openedAt"/> and last stepped at <paramref name="steppedUntil"/> (now when
+    /// null), or the frame a reference capture recorded.
+    /// </summary>
+    private Rectangle ItemRotationFrame(TimeSpan openedAt, TimeSpan? steppedUntil = null)
+    {
+        if (_referenceFrame?.ItemFrame is { } frame) return ItemRotationPresentation.Frame(frame);
+        var until = steppedUntil ?? _inputTime;
+        return ItemRotationPresentation.Frame(until < openedAt ? TimeSpan.Zero : until - openedAt);
+    }
+
     private void CloseItemDetails()
     {
         var returnScreen = _itemDetailsReturnScreen;
+        // FND-UI-053, FND-SELL-001, FND-GIVE-001: Sell and Give call Item Information from
+        // their own loop, so their frame local does not step while it runs and their pictures
+        // go on from the frame they held when it opened.
+        if (returnScreen is ClientScreen.Sell or ClientScreen.Give)
+            _equipmentRotationOpenedAt += _inputTime - _itemDetailsOpenedAt;
         _itemDetailsId = null;
         _itemDetailsReturnScreen = ClientScreen.Commands;
         _screens.Show(returnScreen);
@@ -46,11 +63,8 @@ public sealed partial class ChaosGame
         ClearItemInformationFields(batch, pixel);
         if (itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
-            batch.Draw(rotation, ItemInformationLayout.Portrait,
-                _referenceFrame?.ItemFrame is { } frame
-                    ? ItemRotationPresentation.Frame(frame)
-                    : ItemRotationPresentation.Frame(_inputTime < _itemDetailsOpenedAt
-                        ? TimeSpan.Zero : _inputTime - _itemDetailsOpenedAt), Color.White);
+            batch.Draw(rotation, ItemInformationLayout.Portrait, ItemRotationFrame(_itemDetailsOpenedAt),
+                Color.White);
         else if (_itemPortraits is not null)
             batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,
                 OriginalSpriteLayout.ItemPortrait(item.Id), Color.White);

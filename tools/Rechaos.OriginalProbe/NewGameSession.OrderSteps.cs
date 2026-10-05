@@ -74,13 +74,19 @@ internal sealed partial class NewGameSession
         // FND-UI-052, FND-UI-053: the frame local of the last of Item Information, Sell and Give
         // to open, while it runs. It is read from memory around the capture, since a breakpoint's
         // report reaches the probe only after the game has gone on drawing.
-        var itemHandlers = new Stack<uint>();
+        // A return pops the entries down to its own handler's, so a handler whose return went
+        // unseen cannot leave its frame to be read by a later shot.
+        var itemHandlers = new Stack<(uint Starts, uint Address)>();
         foreach (var (starts, local, returns) in OriginalAddresses.ItemFrameHandlers)
         {
-            _process.SetBreakpoint(starts, context => itemHandlers.Push(context.Ebp - local), quiet: true);
-            _process.SetBreakpoint(returns, _ => itemHandlers.TryPop(out var _), quiet: true);
+            _process.SetBreakpoint(starts, context => itemHandlers.Push((starts, context.Ebp - local)), quiet: true);
+            _process.SetBreakpoint(returns, _ =>
+            {
+                if (itemHandlers.Any(entry => entry.Starts == starts))
+                    while (itemHandlers.Pop().Starts != starts) { }
+            }, quiet: true);
         }
-        int? ItemFrame() => itemHandlers.TryPeek(out var address) ? _process.ReadInt32(address) : null;
+        int? ItemFrame() => itemHandlers.TryPeek(out var top) ? _process.ReadInt32(top.Address) : null;
         foreach (var step in settings.OrderSteps!)
         {
             if (step.Kind == "shot")

@@ -116,7 +116,7 @@ public sealed record ReferenceFrameRequest(
         int? itemFrame = null;
         if (item >= 0)
         {
-            // FND-UI-052: the item turns through its fifteen frames.
+            // FND-UI-052, FND-UI-053: the items turn through their fifteen frames.
             if (!int.TryParse(Operand(args, item + 1),
                     System.Globalization.NumberStyles.None,
                     System.Globalization.CultureInfo.InvariantCulture, out var value)

@@ -238,12 +238,10 @@ public sealed partial class ChaosGame
                 continue;
             }
             ItemDefinition item = state.Definitions.Items[itemId];
-            // FND-UI-019: the name and price cells are copied opaquely, so they hide the
-            // placeholder digits of the panel art.
+            // FND-UI-019, FND-UI-004: the name and price cells are copied opaquely, so they hide
+            // the placeholder digits of the panel art.
             var name = EquipmentSellLayout.NameOrigin(slot);
-            batch.Draw(pixel, new Rectangle(name.X, name.Y, item.Name.Length * OriginalFontLayout.CellWidth,
-                OriginalFontLayout.GlyphHeight), Color.Black);
-            font.Draw(batch, item.Name, name.ToVector2(), Color.Lime, 1);
+            DrawOpaqueText(batch, pixel, font, item.Name, name.X, name.Y);
             var price = EquipmentSellLayout.PriceField(slot);
             DrawOpaqueNativeFixedWidthValue(batch, pixel, font, EquipmentRules.SaleValue(item), price.X, price.Y, 2);
         }
@@ -258,7 +256,7 @@ public sealed partial class ChaosGame
     }
 
     // FND-UI-053: the Sell and Give panels turn every item picture together from frame 0 when
-    // they open.
+    // they open, and hold the frame while Item Information, drawn over them, runs.
     private TimeSpan _equipmentRotationOpenedAt;
 
     /// <summary>The current 48-by-48 frame of an item's 15-frame strip.</summary>
@@ -266,10 +264,8 @@ public sealed partial class ChaosGame
     {
         if (itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
-            batch.Draw(rotation, destination, _referenceFrame?.ItemFrame is { } frame
-                ? ItemRotationPresentation.Frame(frame)
-                : ItemRotationPresentation.Frame(_inputTime < _equipmentRotationOpenedAt
-                    ? TimeSpan.Zero : _inputTime - _equipmentRotationOpenedAt), Color.White);
+            batch.Draw(rotation, destination, ItemRotationFrame(_equipmentRotationOpenedAt,
+                _itemDetailsId is not null ? _itemDetailsOpenedAt : null), Color.White);
     }
 
     private static short?[] EquippedItems(MatchGangState gang) =>
