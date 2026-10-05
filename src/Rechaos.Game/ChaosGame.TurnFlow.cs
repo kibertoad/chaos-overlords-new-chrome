@@ -8,6 +8,7 @@ public sealed partial class ChaosGame
 {
     private static readonly Rectangle HandoffReady = HandoffLayout.Ready;
     private Texture2D? _handoffPanel;
+    private readonly PlanningSelectionMemory _planningSelections = new();
 
     private void AdvanceTurn()
     {
@@ -59,6 +60,8 @@ public sealed partial class ChaosGame
             return;
         }
 
+        // FND-SAVE-003: the selection the player leaves is kept for its next planning.
+        _planningSelections.Store(playerId, _cursor);
         PlanningAdvance advance;
         // The original shows the hourglass while it resolves a turn (RULE-UI-007).
         using (_pointer.Busy())
@@ -258,7 +261,6 @@ public sealed partial class ChaosGame
                  && _state.Coordinator.ActivePlayer is { } nextPlayer
                  && _state.FindPlayer(nextPlayer)!.Setup.Controller == PlayerController.Human)
         {
-            _cursor = _state.FindPlayer(nextPlayer)!.Gangs.FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
             PresentHotSeatPlanningEntry();
         }
         else
@@ -302,6 +304,8 @@ public sealed partial class ChaosGame
             return;
         }
 
+        // FND-SAVE-003: the player's planning starts on the sector it left selected.
+        _cursor = _planningSelections.For(playerId, _cursor);
         if (HotSeatHandoffPresentation.RequiresPrivateHandoff(_state))
         {
             _screens.Show(ClientScreen.Handoff);

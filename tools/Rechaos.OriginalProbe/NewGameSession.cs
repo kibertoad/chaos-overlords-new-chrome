@@ -418,7 +418,13 @@ internal sealed partial class NewGameSession(
         DumpWritableSections();
         _gangMarkersDumped = true;
         _panelsAtDump = [.. _panels];
-        if (settings.Capture) CaptureDrawingArea(window);
+        if (settings.Capture && CaptureDrawingArea(window, "capture-blt") is var (marker, pump, lamps, selected))
+        {
+            _notes.Add($"marker_frame {marker}");
+            _notes.Add($"pump_counter {pump}");
+            _notes.Add($"lamps {string.Join(' ', lamps)}");
+            _notes.Add($"selected_sector {selected}");
+        }
         if (settings.EquipLists && !RecordEquipLists()) return Finish(false, "The Equip lists were not built.", rollsBeforeBegin);
         if (settings.AttackLists && !RecordAttackLists()) return Finish(false, "The Attack lists were not built.", rollsBeforeBegin);
         if (settings.SearchClicks is { Count: > 0 } && !RecordSearchClicks(window))
@@ -806,7 +812,11 @@ internal sealed partial class NewGameSession(
     // RULE-GFX-002: the 640-by-460 drawing area starts at the client area's top-left corner. The
     // capture is written twice from the window's device context. PrintWindow is unsuitable here:
     // it can repaint over animation drawn directly to the window rather than its backing surface.
-    private void CaptureDrawingArea(IntPtr window)
+    // The copies are <file>.bmp and <file>-repeat.bmp; the result is the marker frame and the
+    // pump's counter they show, with the control lights' bytes and the selected sector, null when
+    // no two agreeing copies were taken.
+    private (int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector)? CaptureDrawingArea(
+        IntPtr window, string file)
     {
         const int width = 640, height = 460;
         // A smaller client area leaves part of the copy outside the window, and that part is not
@@ -816,34 +826,42 @@ internal sealed partial class NewGameSession(
         {
             _notes.Add($"Capture rejected: the client area is {client.Right - client.Left} by "
                 + $"{client.Bottom - client.Top}, smaller than the {width}-by-{height} drawing area.");
-            return;
+            return null;
         }
         _notes.Add($"Client area {client.Right - client.Left} by {client.Bottom - client.Top}.");
         // FND-UI-038: the counter increments after drawing. Require two agreeing window copies
         // and a stable counter; a repainting capture cannot use this frame relationship. The
         // pump's counter, which picks the selected-sector frame and the lights' blink phase
-        // (FND-UI-017, FND-EVENT-006), is kept as read; which of its values a capture shows is
-        // not recorded yet.
+        // (FND-UI-017, FND-EVENT-006), is kept as read: the frame on screen is the one drawn
+        // for the counter less one (FND-UI-048).
         for (var attempt = 0; attempt < 10; attempt++)
         {
             var before = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
             var pumpBefore = _process.ReadInt32(OriginalAddresses.PumpCounter);
-            var copiesAgree = CaptureDrawingArea(window, width, height);
+            var copiesAgree = CaptureDrawingArea(window, file, width, height);
             var after = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
             var pumpAfter = _process.ReadInt32(OriginalAddresses.PumpCounter);
             if (before != after || pumpBefore != pumpAfter || !copiesAgree) continue;
-            _notes.Add($"marker_frame {(before + 11) % 12}");
-            _notes.Add($"pump_counter {pumpBefore}");
-            return;
+            // FND-EVENT-006: whether each light is wanted and whether the pump last drew it lit.
+            int[] lamps =
+            [
+                _process.Read(OriginalAddresses.EventsPending, 1)[0],
+                _process.Read(OriginalAddresses.EventsLampDrawn, 1)[0],
+                _process.Read(OriginalAddresses.ComlinkPending, 1)[0],
+                _process.Read(OriginalAddresses.ComlinkLampDrawn, 1)[0],
+            ];
+            // FND-SAVE-003: the sector the city frames and the console's sector values show.
+            return ((before + 11) % 12, pumpBefore, lamps, _process.ReadInt32(OriginalAddresses.SelectedSector));
         }
-        _notes.Add("Capture rejected: a counter moved or the synchronized copies disagreed.");
+        _notes.Add($"Capture {file} rejected: a counter moved or the synchronized copies disagreed.");
+        return null;
     }
 
-    private bool CaptureDrawingArea(IntPtr window, int width, int height)
+    private bool CaptureDrawingArea(IntPtr window, string file, int width, int height)
     {
         byte[]? firstCopy = null;
         var copiesAgree = false;
-        foreach (var name in new[] { "capture-blt.bmp", "capture-blt-repeat.bmp" })
+        foreach (var name in new[] { file + ".bmp", file + "-repeat.bmp" })
         {
             var info = new byte[40];
             BitConverter.GetBytes(40).CopyTo(info, 0);

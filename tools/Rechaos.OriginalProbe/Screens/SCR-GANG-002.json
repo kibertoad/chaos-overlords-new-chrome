@@ -1,0 +1,9 @@
+{
+  "screen": "SCR-GANG-002",
+  "state": "A planning entry of player 0 with the gang information panel open",
+  "elements": [
+    {"element": "Gang information panel for a hired gang", "rect": [0, 0, 640, 460]},
+    {"element": "Portrait", "rect": [130, 141, 64, 64]},
+    {"element": "Equipment", "rect": [392, 141, 48, 176]}
+  ]
+}

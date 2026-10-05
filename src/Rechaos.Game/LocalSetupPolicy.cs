@@ -7,11 +7,13 @@ public static class LocalSetupPolicy
     public const int DefaultHumanPlayerCount = 1;
     public const int MaximumPlayerNameCharacters = 10;
 
+    // FND-SETUP-017, EXP-UI-006: string 61, which ends in a space and a number sign, then the
+    // slot's number from 1.
     public static string DefaultPlayerName(int playerIndex)
     {
         if (playerIndex is < 0 or >= MatchLimits.PlayerCount)
             throw new ArgumentOutOfRangeException(nameof(playerIndex));
-        return $"PLAYER#{playerIndex + 1}";
+        return $"PLAYER #{playerIndex + 1}";
     }
 
     /// <summary>

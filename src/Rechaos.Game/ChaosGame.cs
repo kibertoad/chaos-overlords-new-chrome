@@ -166,9 +166,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _eventCursor;
     private readonly HashSet<int> _eventViewedPages = [];
     private readonly LastTurnEventArchive _lastTurnEventArchive = new();
-    private int _siteSearchCursor;
-    private readonly SiteSearchSelectionState _siteSearchSelections = new();
-    private readonly IndexedDoubleClickTracker _siteSearchClicks = new();
     private FinanceScope _financeScope = FinanceScope.City;
     private int _comlinkCursor;
     private readonly bool[] _comlinkRecipients = new bool[MatchLimits.PlayerCount];
@@ -266,6 +263,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _sectorNeighborClicks.Cancel();
             _sectorGangClicks.Cancel();
             _siteSearchClicks.Cancel();
+            _heldSelectionFrame = HeldSelectionFrame(previous, current, _heldSelectionFrame, SelectionFrameShown());
             if (_slidePanels)
                 _panelSlideTransition.Begin(previous, current, _inputTime, _gangDetailsCompact);
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
@@ -451,7 +449,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     protected override void Update(GameTime gameTime)
     {
         _autoSave.Pump();
-        _inputTime = _referenceFrame is null ? gameTime.TotalGameTime : TimeSpan.Zero;
+        _inputTime = _referenceFrame is null ? gameTime.TotalGameTime : _referenceClock;
         _eventPump.Update(_inputTime, OutsideEventPump());
         if (UpdateReferenceFrame())
         {

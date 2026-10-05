@@ -31,9 +31,10 @@ public sealed class ExecutableStringTableTests
     public void DrawnStringsCoverEveryNumberTheEntriesName()
     {
         // RULE-UI-009 reads 1 to 10 and 0x2E to 0x3C, SCR-EVENT-001 reads 33 to 44, FND-UI-040
-        // reads 19.
+        // reads 19 and FND-UI-049 reads 30 to 32.
         var expected = Enumerable.Range(1, 10)
             .Append(19)
+            .Concat(Enumerable.Range(30, 3))
             .Concat(Enumerable.Range(33, 12))
             .Concat(Enumerable.Range(0x2E, 0x3C - 0x2E + 1));
         Assert.Equal(expected.Order(), ExecutableStrings.Drawn.Keys.Order());

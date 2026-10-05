@@ -49,7 +49,7 @@ public sealed partial class ChaosGame
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, ItemInformationLayout.Portrait,
                 // FND-UI-047: the rotation stops while the exit face is held.
-                ItemRotationPresentation.Frame(_eventPump.Time), Color.White);
+                ItemRotationPresentation.Frame(PresentationDrawTime), Color.White);
         else if (_itemPortraits is not null)
             batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,
                 OriginalSpriteLayout.ItemPortrait(item.Id), Color.White);
@@ -108,7 +108,7 @@ public sealed partial class ChaosGame
         var display = NativeTwoCellNumberPresentation.Format(value, kind);
         font.DrawNumber(batch, display,
             new Vector2(GangInformationLayout.ValueTextLeft(left, display.Digits), y),
-            display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime);
+            display.IsNegative ? Color.Red : Color.Lime);
     }
 
     private static void ClearItemValueField(SpriteBatch batch, Texture2D pixel, int left, int y) =>

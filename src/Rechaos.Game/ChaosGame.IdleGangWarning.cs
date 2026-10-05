@@ -163,7 +163,7 @@ public sealed partial class ChaosGame
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Cancel, "CANCEL", false);
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Ok, "OK", true);
         }
-        if (!IdleGangWarningLayout.LineShown(_eventPump.Time))
+        if (!IdleGangWarningLayout.LineShown(PresentationDrawTime))
             batch.Draw(pixel, IdleGangWarningLayout.BlinkingLine, Color.Black);
     }
 }

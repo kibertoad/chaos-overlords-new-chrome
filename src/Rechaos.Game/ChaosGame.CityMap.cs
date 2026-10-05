@@ -49,6 +49,11 @@ public sealed partial class ChaosGame
         }
         // The markers have no drawn stand-in: without the sheet the map carries none, as before.
         if (_uiKeyedSprites is null) return;
+        // FND-UI-050: police presence puts a badge over the site markers, under the gang marker.
+        for (var sectorId = 0; sectorId < state.Sectors.Count; sectorId++)
+            if (state.Sectors[sectorId].CrackdownTurnsRemaining > 0)
+                map.Draw(_uiKeyedSprites, OriginalSpriteLayout.PoliceBadge,
+                    CityMapLayout.MapArea(PoliceBadgeLayout.Destination(sectorId)));
         // RULE-UI-006: the markers the map keeps through the planning phase, and outside it those of
         // a draw of every sector in number order.
         var markerFrames = state.Coordinator.Phase == TurnPhase.Command
@@ -124,14 +129,18 @@ public sealed partial class ChaosGame
         SpriteBatch batch, Texture2D pixel, MatchState state, PlayerId? viewed, IReadOnlyList<bool>? seatsSeen)
     {
         if (_uiSprites is null) return;
-        var markerFrame = _referenceFrame?.MarkerFrame ?? _overlordMarkerClock.Frame(_inputTime);
+        // FND-UI-038: the reference frame draws the marker frame its capture recorded, or the
+        // first one, whatever its clicks advanced the clock to.
+        var markerFrame = _referenceFrame is null
+            ? _overlordMarkerClock.Frame(_inputTime)
+            : _referenceFrame.MarkerFrame ?? ActivePlayerMarkerPresentation.Frame(TimeSpan.Zero);
         for (var seat = 0; seat < MatchLimits.PlayerCount; seat++)
         {
             var player = state.Players.FirstOrDefault(candidate => candidate.Id.Value == seat);
             if (player is null || player.Status == PlayerStatus.Eliminated)
             {
                 batch.Draw(_uiSprites, OverlordBarLayout.EmptySeat(seat),
-                    OverlordBarLayout.EmptySeatSource(ActivePlayerMarkerPresentation.EmptySeatFrame(_inputTime)),
+                    OverlordBarLayout.EmptySeatSource(ActivePlayerMarkerPresentation.EmptySeatFrame(PresentationInputTime)),
                     Color.White);
                 continue;
             }

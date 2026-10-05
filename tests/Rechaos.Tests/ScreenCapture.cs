@@ -77,19 +77,30 @@ public sealed record CapturedElement(string Screen, string Element, Rectangle Re
 
 /// <summary>
 /// A capture of the original recorded in an experiment fixture: the run whose endpoint it shows,
-/// the xxh3 of the bitmap kept under <c>GAME_DIR/captures/</c>, the Overlord bar's marker frame
-/// (FND-UI-038) and the elements it is compared at. <see cref="WhiteKeyed"/> is set when the
-/// fixture lists the setup input <c>key_colour</c>: the probe's <c>--white-key</c> gave the
-/// original's keyed copies the white a 32-bit surface holds (FND-PLATFORM-014), so the capture's
-/// exact white is the white the original means to draw.
+/// or the order step after which a <c>shot</c> step took it (-1 for the endpoint), the xxh3 of the
+/// bitmap kept under <c>GAME_DIR/captures/</c>, the Overlord bar's marker frame (FND-UI-038), the
+/// elements it is compared at, and the clicks that take the rebuild from the endpoint to the same
+/// screen. <see cref="Unreplayable"/> says why no clicks can, when that is so.
+/// <see cref="WhiteKeyed"/> is set when the fixture lists the setup input <c>key_colour</c>: the
+/// probe's <c>--white-key</c> gave the original's keyed copies the white a 32-bit surface holds
+/// (FND-PLATFORM-014), so the capture's exact white is the white the original means to draw.
 /// </summary>
 public sealed record ScreenCaptureRecord(
     string Experiment, int Run, string Xxh3, int MarkerFrame, IReadOnlyList<string> Screens,
-    IReadOnlyList<CapturedElement> Elements, bool WhiteKeyed = false)
+    IReadOnlyList<CapturedElement> Elements, bool WhiteKeyed = false, int Step = -1,
+    IReadOnlyList<ReferenceClick>? Clicks = null, string? Unreplayable = null, int? PumpCounter = null,
+    int? SelectedSector = null, ReferenceLamps? Lamps = null)
 {
     private const string KeyColourInput = "key_colour ";
 
-    public override string ToString() => $"{Experiment} run {Run}";
+    /// <summary>
+    /// FND-UI-048, FND-UI-051: the counter whose selection frame the capture shows. A shot records
+    /// it as <c>frame_counter</c>, null when a panel stopped the frame before the probe watched; an
+    /// older capture records only the pump's counter.
+    /// </summary>
+    public int? FrameCounter { get; init; } = PumpCounter;
+
+    public override string ToString() => Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
 
     // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
     private static readonly Lazy<IReadOnlyList<ScreenCaptureRecord>> All = new(Load);
@@ -111,6 +122,8 @@ public sealed record ScreenCaptureRecord(
             {
                 if (recorded.TryGetProperty("capture", out var capture))
                     records.Add(Parse(experiment, run, capture, whiteKeyed));
+                if (recorded.TryGetProperty("order_steps", out var steps))
+                    records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray(), whiteKeyed));
                 run++;
             }
         }
@@ -143,8 +156,74 @@ public sealed record ScreenCaptureRecord(
                     element.GetProperty("xxh3").GetString()!, element.GetProperty("white").GetInt32()));
             }
         }
-        return new ScreenCaptureRecord(experiment, run, capture.GetProperty("xxh3").GetString()!,
-            capture.GetProperty("marker_frame").GetInt32(), screens, elements, whiteKeyed);
+        var record = new ScreenCaptureRecord(experiment, run, capture.GetProperty("xxh3").GetString()!,
+            capture.GetProperty("marker_frame").GetInt32(), screens, elements, whiteKeyed,
+            PumpCounter: capture.TryGetProperty("pump_counter", out var pump) && pump.ValueKind == JsonValueKind.Number
+                ? pump.GetInt32()
+                : null,
+            SelectedSector: capture.TryGetProperty("selected_sector", out var selected)
+                            && selected.ValueKind == JsonValueKind.Number
+                ? selected.GetInt32()
+                : null,
+            // FND-EVENT-006: each light's flag, then the byte that says its lamp is drawn lit.
+            Lamps: capture.TryGetProperty("lamps", out var lamps) && lamps.ValueKind == JsonValueKind.Array
+                && lamps.EnumerateArray().Select(value => value.GetInt32()).ToArray() is [_, var events, _, var comlink]
+                ? new ReferenceLamps(events != 0, comlink != 0)
+                : null);
+        // Without frame_counter the record keeps the pump's counter as its frame counter.
+        return capture.TryGetProperty("frame_counter", out var frame)
+            ? record with { FrameCounter = frame.ValueKind == JsonValueKind.Number ? frame.GetInt32() : null }
+            : record;
+    }
+
+    // The captures shot steps of --order-steps took after the dump. The rebuild reaches each one's
+    // screen from the endpoint by the same presses: a double-click at the centre of the opened
+    // sector's cell (FND-UI-015), a press at a card's or the window's point, a double-click at a
+    // window's point, and the back control.
+    // Its reference frame never opens the result panels the planning entry would open first, so
+    // the presses of their Exit are left out. A press that opened one of the original's popup
+    // menus has no counterpart, since the rebuild's orders are a panel (DEV-UI-021).
+    private static IEnumerable<ScreenCaptureRecord> StepCaptures(
+        string experiment, int run, JsonElement[] steps, bool whiteKeyed)
+    {
+        var clicks = new List<ReferenceClick>();
+        string? unreplayable = null;
+        for (var index = 0; index < steps.Length; index++)
+        {
+            var step = steps[index];
+            int Number(string name) => step.GetProperty(name).GetInt32();
+            if (step.GetProperty("menu").GetInt32() > 0)
+                unreplayable ??= $"step {index} opened popup menu {step.GetProperty("menu").GetInt32()}, which the rebuild draws as a panel (DEV-UI-021)";
+            switch (step.GetProperty("kind").GetString())
+            {
+                case "open":
+                    var sector = Number("target");
+                    clicks.Add(new ReferenceClick(
+                        new Point(2 + 54 * (sector % 8) + 27, 42 + 52 * (sector / 8) + 26), Double: true));
+                    break;
+                case "card":
+                    var card = Number("target");
+                    clicks.Add(new ReferenceClick(new Point(
+                        SectorGangCardLayout.Left + card % 2 * SectorGangCardLayout.ColumnStride + Number("x"),
+                        SectorGangCardLayout.Top + card / 2 * SectorGangCardLayout.RowStride + Number("y"))));
+                    break;
+                case "strip":
+                    clicks.Add(new ReferenceClick(new Point(Number("x"), Number("y"))));
+                    break;
+                case "dbl":
+                    clicks.Add(new ReferenceClick(new Point(Number("x"), Number("y")), Double: true));
+                    break;
+                case "back":
+                    clicks.Add(new ReferenceClick(SectorDetailLayout.Back.Center));
+                    break;
+                case "shot" when step.TryGetProperty("capture", out var capture):
+                    yield return Parse(experiment, run, capture, whiteKeyed) with
+                    {
+                        Step = index, Clicks = clicks.ToArray(), Unreplayable = unreplayable,
+                    };
+                    break;
+            }
+        }
     }
 }
 
@@ -170,6 +249,24 @@ public static class ScreenCaptureMasks
             ["SCR-HIRE-002"] = [],
             // DEV-FINANCE-001 changes the Equipment field only while a Sell of several items is queued.
             ["SCR-FINANCE-001"] = [],
+            ["SCR-UI-004"] =
+            [
+                // DEV-UI-006: the console's cash row is the city screen's.
+                new("DEV-UI-006", StatusConsoleLayout.Cash),
+                // DEV-UI-007: the Tolerance value turns orange when the queued Chaos can set off a
+                // Crackdown.
+                new("DEV-UI-007", new Rectangle(StatusConsoleLayout.SectorValueLeft, StatusConsoleLayout.SectorValueY(2),
+                    16, 7)),
+            ],
+            ["SCR-UI-005"] = [],
+            ["SCR-UI-007"] = [],
+            ["SCR-UI-008"] = [],
+            ["SCR-EVENT-001"] = [],
+            ["SCR-COMBAT-001"] = [],
+            ["SCR-OBJECTIVE-001"] = [],
+            ["SCR-SEARCH-001"] = [],
+            ["SCR-HIRE-001"] = [],
+            ["SCR-GANG-002"] = [],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
@@ -281,7 +378,15 @@ public static class RebuildFrame
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(90);
 
-    public static ScreenFrame Render(MatchState state, int? markerFrame)
+    /// <summary>
+    /// Names a directory the rebuild's frames are copied to, as <c>&lt;name&gt;.bmp</c>, for comparing
+    /// them with the captures by eye.
+    /// </summary>
+    public const string KeepFramesVariable = "RECHAOS_KEEP_FRAMES";
+
+    public static ScreenFrame Render(
+        MatchState state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
+        int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -303,6 +408,26 @@ public static class RebuildFrame
                 start.ArgumentList.Add("--marker-frame");
                 start.ArgumentList.Add(marker.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
+            if (selectedSector is { } sector)
+            {
+                start.ArgumentList.Add("--selected-sector");
+                start.ArgumentList.Add(sector.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (pumpCounter is { } counter)
+            {
+                start.ArgumentList.Add("--pump-counter");
+                start.ArgumentList.Add(counter.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (lamps is not null)
+            {
+                start.ArgumentList.Add("--lamps");
+                start.ArgumentList.Add(lamps.ToString());
+            }
+            if (clicks is { Count: > 0 })
+            {
+                start.ArgumentList.Add("--reference-clicks");
+                start.ArgumentList.Add(string.Join(",", clicks));
+            }
             using var process = Process.Start(start) ?? throw new InvalidOperationException("The game did not start.");
             var error = new System.Text.StringBuilder();
             process.ErrorDataReceived += (_, line) => { lock (error) error.AppendLine(line.Data); };
@@ -316,6 +441,11 @@ public static class RebuildFrame
             process.WaitForExit();
             if (process.ExitCode != 0 || !File.Exists(frame))
                 throw new InvalidOperationException($"The game exited with {process.ExitCode} and no frame. {error}");
+            if (name is not null && Environment.GetEnvironmentVariable(KeepFramesVariable) is { Length: > 0 } keep)
+            {
+                Directory.CreateDirectory(keep);
+                File.Copy(frame, Path.Combine(keep, name + ".bmp"), overwrite: true);
+            }
             return ScreenFrame.ReadBitmap(File.ReadAllBytes(frame));
         }
         finally

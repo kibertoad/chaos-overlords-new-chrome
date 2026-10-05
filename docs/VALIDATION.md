@@ -674,9 +674,13 @@ run whose two copies agree:
 - `area`: `[0, 0, 640, 460]`;
 - `marker_frame`: the marker frame the capture shows;
 - `pump_counter`: the value of the pump's counter `0x00487804`, which held
-  still across both copies as well; the selected-sector frame is the counter
-  divided by 4 and bit 0 paces the control lights' blink (FND-UI-017,
-  FND-EVENT-006);
+  still across both copies as well. The pump draws the selected-sector frame
+  for its counter and then advances it, so the frame on screen is
+  `((n + 7) % 8) / 4` for a counter `n` (FND-UI-017, FND-UI-048);
+- `lamps`: the Events light's flag `0x00487814` and the byte `0x00487818` the
+  pump sets when it draws that lamp, then the Comlink light's `0x0048781C` and
+  `0x00487820` (FND-EVENT-006), read with the copies. Captures taken before
+  the probe read them have none;
 - `screens`: for each screen named, its elements, each with the element's name
   as the entry's Drawn elements table gives it, its `rect` `[x, y, width,
   height]`, the `xxh3` of the rectangle's pixels and `white`, the number of
@@ -691,7 +695,8 @@ an element whose position the entry does not give is left out of the list.
 `ScreenElementListTests` checks every list: it names its screen entry, the
 screen has an entry in `ScreenCaptureMasks`, each rectangle lies inside the
 640-by-460 drawing area, and each element names a row of the entry's Drawn
-elements table. The name is the row's own, or the row's name (or that name's
+elements table, or is named after the entry's title and covers the whole
+drawing area. The name is the row's own, or the row's name (or that name's
 part before its own comma) followed by a comma and either an index such as
 `slot 0` or a field or variant that the row's Element or Shows cell names as a
 whole word: `Offer portrait, slot 0` cites the row
@@ -709,6 +714,24 @@ Captures are taken without a DirectDraw wrapper (docs/DECISIONS.md,
 2026-10-05). DDrawCompat beside the staged copy left the rolls and the state of
 a recorded run unchanged but did not remove the white areas: windowed, the
 original draws with GDI and never uses DirectDraw (FND-GFX-004).
+
+A capture can also be taken after the dump, as a step of `--order-steps`:
+`shot:SCR-A+SCR-B` copies the drawing area as `--capture` does and keeps
+`capture-step-<n>.bmp` and its repeat, where `n` is the step's index, with the
+marker frame, the pump's counter, the light bytes (`lamps`), the selected
+sector `0x004ABC80` (`selected_sector`) and the frame counter
+(`frame_counter`). While a panel that slid in is open the pump draws no
+selection frame (FND-UI-051), so the probe breaks at `0x004196E4`, where the
+slide-in sets the flag that stops it, and keeps the pump's counter read there;
+the frame counter is that value while the flag is set, the pump counter when it
+is clear, and null when the probe could not tell. `extract` gives that
+order step a `capture` object as above and a `screens` string naming the
+screens it is compared at. The steps before it bring the screen up: `open:s`
+double-clicks sector `s` on the city map, `dbl:x:y` double-clicks the window
+point `(x, y)` as `open` does (FND-UI-020), `strip:x:y:0` presses a point,
+`card` a sector card's point, `back` the detailed sector screen's back
+control and `exit` the Exit of the panel the planning entry left open.
+EXP-UI-006 to EXP-UI-008 are taken this way.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
@@ -728,11 +751,36 @@ save, and starts the game with
 
 ```text
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
+    [--pump-counter <0-7>] [--selected-sector <0-63>] [--lamps <0|1>,<0|1>]
+    [--reference-clicks <x:y[:2]>,...]
 ```
 
 which shows the save at its planning entry in a 640-by-460 window, holds the
 presentation clock at zero, draws three frames and writes the third as a
-bitmap before it exits. Preferences, saves and logs of that run go to a
+bitmap before it exits. `--pump-counter` passes the capture's `frame_counter`, or its
+`pump_counter` when the fixture has none, which picks the selected-sector frame
+drawn (FND-UI-048). `--selected-sector` passes `selected_sector`, which the
+planning entry selects in place of the sector the rebuild keeps for the player
+(FND-SAVE-003); a save holds no selection (DEV-SAVE-001). `--lamps` passes the
+second and fourth of the capture's `lamps`, the bytes that say the Events and
+the Comlink lamp were drawn lit, which pick the blink phase of those lights in
+place of the clock's (FND-EVENT-006). The blinking and cycling parts of the
+screen stay at time zero however many clicks were made: the marker is drawn at
+`--marker-frame`, or at its first frame without it.
+`--reference-clicks` lists the presses that take the rebuild from the planning
+entry to a shot step's screen, `:2` marking a double-click. They run on a clock
+of their own, one button edge every 50 ms, wait while a pressed face or a flash
+holds the input (RULE-TIMER-004), and the frame is drawn 20 updates after the
+last one. Panels are drawn in place, without the slide. For a shot step the test
+works the presses out from the order steps before it: a double-click at the
+centre of the opened sector's cell for `open`, the step's point for `dbl` and
+`strip`, a card's point for `card` and `(20, 425)` for `back`. It leaves out
+`exit`, since the reference frame does not draw the planning entry's panels. A
+step that opened one of the original's popup menus makes the capture
+unreplayable, and the test skips it, because the rebuild's orders are a panel
+(DEV-UI-021). With `RECHAOS_KEEP_FRAMES` set to a directory, the test copies
+each frame the rebuild drew there as `<experiment>-<run>-<step>.bmp`, step -1
+being the endpoint. Preferences, saves and logs of that run go to a
 `rechaos-reference-frame-*` directory beside the bitmap, never to the player's.
 The test then compares each element:
 
@@ -774,18 +822,23 @@ named in its Notes.
 
 ### What the reference frame shows
 
-The reference frame shows the city screen and its console (SCR-UI-003,
-SCR-HIRE-002) of the player whose planning entry the run ends at, with no panel
-open and no pointer. It skips the hand-off card, Combat Results and Last Turn
-Events that the planning entry would open first. A capture taken with a panel
-open, at the final view or during a drag cannot be compared until the reference
-frame can open that panel or state. The selected-sector outline cycles through
-two frames on the pump's counter (FND-UI-017). The reference frame draws the
-first frame, and draws the Events and Comlink lights in the lit half of their
-blink whenever they are on. A capture records the counter as `pump_counter`,
-but whether the frame on screen was drawn at that value or the one before is
-not recorded, so a capture showing the second outline frame differs in the
-outline's 200 border pixels until a capture settles it.
+The reference frame starts at the city screen and its console (SCR-UI-003,
+SCR-HIRE-002) of the player whose planning entry the run ends at, with no
+pointer, and then makes the scripted presses. It does not draw the hand-off
+card, Combat Results or Last Turn Events that the planning entry would open
+first, but it closes Last Turn Events as a press of its Exit after the first
+page would: the Events light stays on only while the player has another report
+to see (RULE-EVENT-005). EXP-UI-007's capture, after the original's planning
+entry showed its one report and the Exit closed the panel, has the light's
+flag clear. A capture taken with Combat Results or Last Turn Events open, at
+the final view, during a drag or with a popup menu open cannot be compared.
+
+The selected-sector outline cycles through two frames on the pump's counter
+(FND-UI-017), and the reference frame draws the one the capture's
+`pump_counter` gives (FND-UI-048); without one it draws the first. It draws the
+Events and Comlink lights in the lit half of their blink whenever they are on.
+No capture yet shows a light lit, so which counter values the lit half covers
+has not been compared.
 
 ## Fixture classes
 

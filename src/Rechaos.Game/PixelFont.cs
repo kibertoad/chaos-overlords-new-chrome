@@ -49,11 +49,38 @@ public sealed class PixelFont
     public void DrawNumber(SpriteBatch batch, NativeTwoCellNumberPresentation.Value display,
         Vector2 position, Color color)
     {
+        if (display.IsDim)
+        {
+            // The dim 0 is a cell of the art of its own, not the digit in another colour
+            // (EXP-UI-006).
+            var cell = NativeTwoCellNumberPresentation.DimZeroCell;
+            batch.Draw(_uiAtlas, new Rectangle((int)position.X, (int)position.Y, cell.Width, cell.Height),
+                cell, Color.White);
+            return;
+        }
         Draw(batch, display.Digits, position, color, 1);
         if (display.OffStripGlyph is { } glyph
             && NativeTwoCellNumberPresentation.AtlasCell(glyph, display.IsNegative, _uiAtlas.Width) is { } source)
             batch.Draw(_uiAtlas, new Rectangle((int)position.X, (int)position.Y, source.Width, source.Height),
                 source, Color.White);
+    }
+
+    /// <summary>
+    /// Copies each character's cell of the PX00129 strip whose top-left corner is
+    /// <paramref name="strip"/>, as the original's text draw does, from <paramref name="position"/>.
+    /// Characters outside the strip leave their cell untouched.
+    /// </summary>
+    public void Copy(SpriteBatch batch, string text, Point position, Point strip)
+    {
+        foreach (var character in text)
+        {
+            if (OriginalFontLayout.TryGlyph(character, out var glyph)
+                && glyph.X < OriginalFontLayout.AtlasBounds.Width)
+                batch.Draw(_uiAtlas,
+                    new Rectangle(position.X, position.Y, glyph.Width, glyph.Height),
+                    new Rectangle(strip.X + glyph.X, strip.Y + glyph.Y, glyph.Width, glyph.Height), Color.White);
+            position.X += OriginalFontLayout.CellWidth;
+        }
     }
 
     public void Draw(SpriteBatch batch, string text, Vector2 position, Color color, int scale)

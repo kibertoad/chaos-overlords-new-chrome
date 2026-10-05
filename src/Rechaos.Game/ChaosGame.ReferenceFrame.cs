@@ -14,8 +14,30 @@ namespace Rechaos.Game;
 /// The frame of the Overlord bar's marker the capture showed (FND-UI-038), in place of the one
 /// the clock gives.
 /// </param>
-public sealed record ReferenceFrameRequest(string SavePath, string OutputPath, int? MarkerFrame = null)
+/// <param name="Clicks">
+/// Left-button clicks made on the planning entry before the frame is drawn, in order, so the
+/// frame can show a panel or view a capture of the original was taken with.
+/// </param>
+/// <param name="PumpCounter">
+/// The pump's counter the capture recorded (FND-UI-017), which picks the selection frame drawn
+/// (FND-UI-048), in place of the clock's.
+/// </param>
+/// <param name="SelectedSector">
+/// The sector the capture had selected (FND-SAVE-003), in place of the one the planning entry
+/// restores, since the save does not keep it (DEV-SAVE-001).
+/// </param>
+/// <param name="Lamps">
+/// Whether the capture showed the Events and Comlink lamps drawn lit (FND-EVENT-006), which picks
+/// the blink phase of those lights in place of the clock's.
+/// </param>
+public sealed record ReferenceFrameRequest(
+    string SavePath, string OutputPath, int? MarkerFrame = null, IReadOnlyList<ReferenceClick>? Clicks = null,
+    int? PumpCounter = null, int? SelectedSector = null, ReferenceLamps? Lamps = null)
 {
+    private const string Usage =
+        "Usage: --reference-frame <save> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
+        + " [--selected-sector <0-63>] [--lamps <0|1>,<0|1>] [--reference-clicks <x:y[:2]>,...]";
+
     // Keep captures independent of the player's preferences, recovery files and saves. The
     // directory sits beside the bitmap and is kept after exit, so a failed run can be diagnosed
     // from its logs and the caller removes it with the bitmap.
@@ -27,19 +49,31 @@ public sealed record ReferenceFrameRequest(string SavePath, string OutputPath, i
     {
         var reference = Array.IndexOf(args, "--reference-frame");
         var marker = Array.IndexOf(args, "--marker-frame");
+        var clicks = Array.IndexOf(args, "--reference-clicks");
+        var pump = Array.IndexOf(args, "--pump-counter");
+        var selected = Array.IndexOf(args, "--selected-sector");
+        var lamps = Array.IndexOf(args, "--lamps");
         if (reference < 0)
         {
+            if (selected >= 0) throw new ArgumentException("--selected-sector requires --reference-frame.");
             if (marker >= 0) throw new ArgumentException("--marker-frame requires --reference-frame.");
+            if (clicks >= 0) throw new ArgumentException("--reference-clicks requires --reference-frame.");
+            if (pump >= 0) throw new ArgumentException("--pump-counter requires --reference-frame.");
+            if (lamps >= 0) throw new ArgumentException("--lamps requires --reference-frame.");
             return null;
         }
         if (Array.LastIndexOf(args, "--reference-frame") != reference
-            || (marker >= 0 && Array.LastIndexOf(args, "--marker-frame") != marker))
+            || (marker >= 0 && Array.LastIndexOf(args, "--marker-frame") != marker)
+            || (clicks >= 0 && Array.LastIndexOf(args, "--reference-clicks") != clicks)
+            || (pump >= 0 && Array.LastIndexOf(args, "--pump-counter") != pump)
+            || (selected >= 0 && Array.LastIndexOf(args, "--selected-sector") != selected)
+            || (lamps >= 0 && Array.LastIndexOf(args, "--lamps") != lamps))
             throw new ArgumentException("Capture options may only be supplied once.");
         static string Operand(string[] values, int index)
         {
             if (index >= values.Length || string.IsNullOrWhiteSpace(values[index])
                 || values[index].StartsWith("--", StringComparison.Ordinal))
-                throw new ArgumentException("Usage: --reference-frame <save> <bitmap> [--marker-frame <0-11>]");
+                throw new ArgumentException(Usage);
             return values[index];
         }
         var save = Path.GetFullPath(Operand(args, reference + 1));
@@ -58,8 +92,68 @@ public sealed record ReferenceFrameRequest(string SavePath, string OutputPath, i
         if (string.Equals(save, output, OperatingSystem.IsWindows()
                 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
             throw new ArgumentException("The capture bitmap must not overwrite the input save.");
-        return new ReferenceFrameRequest(save, output, frame);
+        int? counter = null;
+        if (pump >= 0)
+        {
+            // FND-UI-017: the pump counts from 0 to 7.
+            if (!int.TryParse(Operand(args, pump + 1),
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value)
+                || value is < 0 or > 7)
+                throw new ArgumentException("--pump-counter must be between 0 and 7.");
+            counter = value;
+        }
+        int? sector = null;
+        if (selected >= 0)
+        {
+            if (!int.TryParse(Operand(args, selected + 1),
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value)
+                || value >= MatchLimits.SectorCount)
+                throw new ArgumentException("--selected-sector must be between 0 and 63.");
+            sector = value;
+        }
+        return new ReferenceFrameRequest(save, output, frame,
+            clicks >= 0 ? ReferenceClick.ParseList(Operand(args, clicks + 1)) : null, counter, sector,
+            lamps >= 0 ? ReferenceLamps.Parse(Operand(args, lamps + 1)) : null);
     }
+}
+
+/// <summary>
+/// Whether the Events and the Comlink lamp were drawn lit when the capture was taken: the bytes
+/// <c>0x00487818</c> and <c>0x00487820</c> the pump sets when it draws a lamp lit and clears when
+/// it restores the control (FND-EVENT-006).
+/// </summary>
+public sealed record ReferenceLamps(bool Events, bool Comlink)
+{
+    public static ReferenceLamps Parse(string value) => value.Split(',') switch
+    {
+        ["0" or "1", "0" or "1"] parts => new ReferenceLamps(parts[0] == "1", parts[1] == "1"),
+        _ => throw new ArgumentException("--lamps is <events>,<comlink>, each 0 or 1."),
+    };
+
+    public override string ToString() => $"{(Events ? 1 : 0)},{(Comlink ? 1 : 0)}";
+}
+
+/// <summary>A left-button click at a point of the drawing area, made twice for a double-click.</summary>
+public sealed record ReferenceClick(Point Point, bool Double = false)
+{
+    public static IReadOnlyList<ReferenceClick> ParseList(string value) =>
+        value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+        {
+            var numbers = entry.Split(':').Select(part => int.TryParse(part, System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture, out var number) ? number : -1).ToArray();
+            return numbers switch
+            {
+                [>= 0 and < VirtualInput.Width, >= 0 and < VirtualInput.Height] =>
+                    new ReferenceClick(new Point(numbers[0], numbers[1])),
+                [>= 0 and < VirtualInput.Width, >= 0 and < VirtualInput.Height, 2] =>
+                    new ReferenceClick(new Point(numbers[0], numbers[1]), Double: true),
+                _ => throw new ArgumentException($"A reference click is x:y or x:y:2 inside the drawing area: {entry}"),
+            };
+        }).ToArray();
+
+    public override string ToString() => $"{Point.X}:{Point.Y}" + (Double ? ":2" : "");
 }
 
 public sealed partial class ChaosGame
@@ -68,38 +162,142 @@ public sealed partial class ChaosGame
     // settled.
     private const int ReferenceFrameWarmUpDraws = 3;
 
+    // The scripted clicks run on a clock of their own, one button edge per update, and the frame
+    // is drawn once the last one has had a second to settle, so a pressed face's wait and a
+    // flash (RULE-TIMER-004) are over.
+    private static readonly TimeSpan ReferenceClickStep = TimeSpan.FromMilliseconds(50);
+    private const int ReferenceSettleUpdates = 20;
+
     private readonly ReferenceFrameRequest? _referenceFrame;
     private int _referenceFrameDraws = -1;
+    private IReadOnlyList<(Point Point, bool Press)> _referenceEdges = [];
+    private int _referenceEdge;
+    private int _referenceSettled;
+    private TimeSpan _referenceClock;
 
     /// <summary>
-    /// Enters the saved match once and then takes the update loop over, so no input and no clock
-    /// moves the screen while the frame is drawn.
+    /// Enters the saved match once and then takes the update loop over, so no input but the
+    /// scripted clicks and no clock but theirs moves the screen while the frame is drawn.
     /// </summary>
     private bool UpdateReferenceFrame()
     {
         if (_referenceFrame is null) return false;
         if (_referenceFrameDraws < 0 && _definitions is not null)
         {
+            // Panels are drawn in place, as the original's captures show them once slid in.
+            _slidePanels = false;
+            _panelSlideTransition.Clear();
             EnterNewMatch(NativeSaveStore.Load(_referenceFrame.SavePath, _definitions), advanceToPlanning: false);
+            _referenceEdges = (_referenceFrame.Clicks ?? [])
+                .SelectMany(click => Enumerable.Repeat(click.Point, click.Double ? 2 : 1))
+                .SelectMany(point => new[] { (point, true), (point, false) })
+                .ToArray();
             _referenceFrameDraws = 0;
+            return true;
         }
+        if (_referenceFrameDraws >= 0 && !ReferenceClicksSettled) StepReferenceClicks();
         return true;
     }
 
+    private bool ReferenceClicksSettled =>
+        _referenceEdges.Count == 0 || _referenceSettled >= ReferenceSettleUpdates;
+
+    private void StepReferenceClicks()
+    {
+        _referenceClock += ReferenceClickStep;
+        _inputTime = _referenceClock;
+        _eventPump.Update(_inputTime, OutsideEventPump());
+        // A pressed face or a flash takes the input of the frames it waits through.
+        if (UpdateTickedPresentation()) return;
+        if (_referenceEdge < _referenceEdges.Count)
+        {
+            var (point, press) = _referenceEdges[_referenceEdge++];
+            if (press)
+            {
+                _dragPoint = point;
+                HandleClick(point);
+            }
+            else
+            {
+                CompletePointerRelease(pointerMapped: true, point, rightButton: false);
+            }
+            return;
+        }
+        _referenceSettled++;
+    }
+
+    /// <summary>
+    /// The time the blinking and cycling parts of the screen (the item rotation and the idle-gang
+    /// warning's line among them) are drawn at: the reference frame draws them as at time zero,
+    /// whatever its clicks advanced the clock to.
+    /// </summary>
+    private TimeSpan PresentationDrawTime => _referenceFrame is null ? _eventPump.Time : TimeSpan.Zero;
+
+    /// <summary>
+    /// FND-UI-051: the selection frame a slid-in panel holds, the one shown when it came in, or
+    /// null while no panel is open.
+    /// </summary>
+    private int? _heldSelectionFrame;
+
+    /// <summary>
+    /// The time the empty seats' animation is drawn at: the reference frame draws it as at time
+    /// zero, so the frame does not depend on how many clicks it made.
+    /// </summary>
+    private TimeSpan PresentationInputTime => _referenceFrame is null ? _inputTime : TimeSpan.Zero;
+
+    /// <summary>
+    /// Whether a light whose flag is set is in its lit phase (FND-EVENT-006): the phase the
+    /// reference frame's capture recorded for its lamp, otherwise the clock's.
+    /// </summary>
+    private bool LampInLitPhase(bool? recorded) => recorded ?? PresentationClock.BlinkLit(PresentationDrawTime);
+
+    /// <summary>
+    /// The selection frame the pump has drawn last (FND-UI-017): the one for the reference frame's
+    /// recorded counter (FND-UI-048), otherwise the one a slid-in panel holds (FND-UI-051), otherwise
+    /// the one for the clock.
+    /// </summary>
+    private int SelectionFrameShown() => _referenceFrame?.PumpCounter is { } counter
+        ? CityMapLayout.SelectionFrameAfterPass(counter)
+        : _heldSelectionFrame ?? CityMapLayout.SelectionFrame(PresentationDrawTime);
+
+    /// <summary>
+    /// FND-UI-051: the frame held after the screen moves from <paramref name="previous"/> to
+    /// <paramref name="current"/>. A panel coming in holds the frame <paramref name="shown"/>; a
+    /// panel replacing another keeps the held one, as no pass of the pump runs between the
+    /// slide-out and the slide-in; any other screen releases it.
+    /// </summary>
+    public static int? HeldSelectionFrame(ClientScreen previous, ClientScreen current, int? held, int shown) =>
+        !PanelSlideTransition.IsPanel(current) ? null
+        : PanelSlideTransition.IsPanel(previous) ? held ?? shown
+        : shown;
+
     /// <summary>
     /// Shows the city of the player whose planning entry the save stands at. The hand-off card,
-    /// Combat Results and Last Turn Events that the planning entry would open first are skipped,
-    /// because the comparison only covers the city screen and its console. Hire offers, the
-    /// Comlink alert and the planning timer are prepared as the planning entry prepares them when
-    /// it goes straight to the city.
+    /// Combat Results and Last Turn Events that the planning entry would open first are not drawn,
+    /// because the comparison only covers the city screen and its console, but Last Turn Events is
+    /// closed as a press of its Exit closes it: its first page counts as shown, so the Events light
+    /// stays lit only while another report is unseen (RULE-EVENT-005). Hire offers, the Comlink
+    /// alert and the planning timer are prepared as the planning entry prepares them when it goes
+    /// straight to the city.
     /// </summary>
     private void PresentReferenceFramePlanningEntry()
     {
-        if (PlanningViewer is { } playerId
-            && _state?.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human)
+        if (PlanningViewer is { } playerId && _state is { } state
+            && state.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human)
         {
             PrepareCurrentHireOffers();
+            if (_referenceFrame?.SelectedSector is { } selected)
+                _planningSelections.Store(playerId, selected);
+            // FND-SAVE-003: the planning player's own sector, as PresentHotSeatPlanningEntry picks it.
+            _cursor = _planningSelections.For(playerId, _cursor);
             _deferComlinkAlertUntilPlanningVisible = true;
+            _managementReturnScreen = ClientScreen.City;
+            if (LastTurnReports(state, playerId).Count > 0)
+            {
+                BeginEventReview(ReviewableReports(state, playerId).Count);
+                CloseEvents();
+                return;
+            }
             _screens.Show(ClientScreen.City);
             CompletePlanningEntryPresentation();
             return;
@@ -109,7 +307,7 @@ public sealed partial class ChaosGame
 
     private void CaptureReferenceFrame()
     {
-        if (_referenceFrame is null || _referenceFrameDraws < 0) return;
+        if (_referenceFrame is null || _referenceFrameDraws < 0 || !ReferenceClicksSettled) return;
         if (++_referenceFrameDraws < ReferenceFrameWarmUpDraws) return;
         var width = GraphicsDevice.PresentationParameters.BackBufferWidth;
         var height = GraphicsDevice.PresentationParameters.BackBufferHeight;

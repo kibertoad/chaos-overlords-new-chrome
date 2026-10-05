@@ -66,8 +66,15 @@ public sealed partial class ChaosGame
         if (_sitePortraits is not null)
             batch.Draw(_sitePortraits, SiteInformationLayout.Portrait,
                 OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
+        if (_uiKeyedSprites is not null)
+            batch.Draw(_uiKeyedSprites, SiteInformationLayout.Portrait,
+                SiteInformationLayout.PortraitFrameSource, Color.White);
         font.Draw(batch, definition.Name,
             new Vector2(SiteInformationLayout.NameLeft, 151), Color.Lime, 1);
+        // FND-UI-049: the special effect's line, label and amount in one string.
+        if (definition.Special != 0)
+            font.Draw(batch, ExecutableStrings.Get(SiteInformationLayout.SpecialStringBase + definition.Special),
+                SiteInformationLayout.SpecialLine, Color.Lime, 1);
 
         int[] data =
         [
