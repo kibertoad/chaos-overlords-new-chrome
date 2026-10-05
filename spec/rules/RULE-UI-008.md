@@ -4,7 +4,7 @@ title: The presentation timer
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-001, FND-PLATFORM-006, FND-TIMER-002, FND-UI-023, FND-EXE-004]
+evidence: [FND-UI-001, FND-PLATFORM-006, FND-TIMER-002, FND-UI-023, FND-UI-044, FND-UI-046, FND-AUDIO-017, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -54,6 +54,19 @@ clock read and clear `presentation_tick_pending`.
   Last Turn Events, Sell, Give and Research panels (FND-UI-023). The pump's
   planning bar and Comlink block reads it only while the byte `g_00487830` is
   set, and the pump clears it only when its caller asks.
+- While an offer, a console tile, a held-button face, a page arrow of Last
+  Turn Events or a gang card's portrait is held under the pointer, the game
+  runs a loop that never calls the pump and leaves `presentation_tick_pending`
+  alone (FND-UI-044, FND-UI-046). The pump's steps stop for the hold; on its
+  first call after the release the pump takes the one tick the flag kept, and
+  the other ticks of the hold are lost. A panel that animates on the clock in
+  its own loop (the Last Turn Events frames, the Item Information rotation, the
+  Comlink Send caret, Sell, Give and Research) stops in the same way while one
+  of its faces is held (FND-UI-046).
+- A CD fade runs inside the pump's music poll or mute command and leaves
+  `presentation_tick_pending` alone, so the pump's steps stop for it in the
+  same way: the pump takes one tick of the fade when it returns, and the other
+  two or more are lost (FND-AUDIO-016, FND-AUDIO-017).
 
 ## What the sources say
 
@@ -65,4 +78,6 @@ None known.
 
 ## Open questions
 
-None.
+- What a panel that animates on the clock in its own loop does with the tick
+  the flag kept when a hold of one of its faces ends is not recorded
+  (FND-UI-046).

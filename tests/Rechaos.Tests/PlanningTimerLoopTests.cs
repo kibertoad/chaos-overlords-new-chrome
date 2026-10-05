@@ -107,6 +107,7 @@ public sealed class PlanningTimerLoopTests
         var timer = new PlanningTimer();
         Field("_screens").SetValue(game, router);
         Field("_planningTimer").SetValue(game, timer);
+        Field("_eventPump").SetValue(game, new EventPumpClock());
         Field("_state").SetValue(game, state);
         timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
         return (game, router, timer);
