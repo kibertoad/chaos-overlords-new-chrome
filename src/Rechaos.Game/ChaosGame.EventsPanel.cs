@@ -292,7 +292,7 @@ public sealed partial class ChaosGame
     {
         if (!_deferComlinkAlertUntilPlanningVisible) return;
         _deferComlinkAlertUntilPlanningVisible = false;
-        UpdateComlinkAlert(_inputTime, enteringPlanning: true);
+        UpdateComlinkAlert(_eventPump.Time, enteringPlanning: true);
         StartPlanningTimer(_inputTime);
     }
 

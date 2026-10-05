@@ -931,14 +931,21 @@ Whether the original shows the count is not recorded.
 ## DEV-UI-022
 
 - Departs from: SCR-UI-004
-- Reason: Dragging the portrait of one of the player's gang cards onto the 3-by-3 display gives
-  that gang a Move to the neighbouring sector it is dropped on, or a recurring Control when it is
-  dropped on its own sector. The sectors the gang may move to are highlighted during the drag.
+- Reason: The original's drag of a gang card's portrait (FND-UI-044) gives a one-off Move to an
+  enabled neighbour of the nine-sector display or a recurring Influence of an unfinished site of
+  an owned sector (FND-TURN-009). The rebuild's drag also gives an Attack when dropped on an enemy
+  gang's card and a recurring Control when dropped on the gang's own sector, highlights the
+  sectors the gang may move to while it is dragged, and drops the drag without an order on Escape
+  or a right press. The hold itself, from the press until the left button comes up, and the
+  distance the pointer moves before the drag starts are the original's.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a shortcut to orders the card's menu already gives, and each drop is
-  validated as the menu's order would be. The original has a second input path for gang orders
-  that the spec has not read (RULE-TURN-005), so this drag is the rebuild's own until it is.
+- Justification: Each extra drop gives an order the card's menu already gives, validated as the
+  menu's order would be, so the drag changes how an order is entered and never which orders are
+  possible or what they do; the original's Move and Influence drops are kept. A setting could only
+  take the extra drop targets, the highlight and the cancel away, which no rule or strategy
+  depends on. The original's drop rules have not yet been compared case by case with the
+  rebuild's.
 - Dropped: no
 
 ## DEV-UI-023
@@ -992,12 +999,15 @@ Whether the original shows the count is not recorded.
 - Departs from: RULE-TIMER-004, RULE-UI-008, RULE-UI-003
 - Reason: The panel slide takes its step from a fixed benchmark of 84 copies a second where the
   original measures the machine for one second at startup. Presentation ticks are counted from the
-  game clock, so a tick that falls during a long frame is counted rather than lost.
+  game clock, so a tick that falls during a long frame is counted rather than lost. The ticks a
+  pointer hold or a soundtrack fade keeps from the event pump are dropped as in the original
+  (FND-UI-046, FND-AUDIO-017).
 - Setting: None
 - Default: mandatory
 - Justification: The original's slide speed depends on the machine it runs on, which AGENTS.md
-  lets the rebuild fix; 84 copies a second gives the original's 16-pixel step. A tick is lost in
-  the original only when the machine stalls, and no rule reads the ticks.
+  lets the rebuild fix; 84 copies a second gives the original's 16-pixel step. Apart from a
+  pointer hold and a soundtrack fade, which the rebuild reproduces, a tick is lost in the original
+  only when the machine stalls, and no rule reads the ticks.
 - Dropped: no
 
 ## DEV-OPTIONS-001

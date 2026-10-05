@@ -911,10 +911,14 @@ original silent unless `--sound` is given.
   calendar companion because the reference frame draws a planning entry, and
   EXP-TURN-042's shows the Events panel; both bitmaps are kept under
   `GAME_DIR/captures/` for when the reference frame can draw those states.
-  The white areas the original leaves on Windows 11 (the selected sector and
-  the corners around the grid tabs) stay unverified: DDrawCompat did not
-  remove them, since the windowed original draws with GDI only
-  (docs/DECISIONS.md, 2026-10-05).
+  Take new captures with `--white-key`: the white areas (the selected sector
+  and the corners around the grid tabs) are the keyed copies drawn opaque on a
+  32-bit desktop (FND-PLATFORM-014), and the option removes them without
+  changing a run's rolls or state. At the first planning entry one exact-white
+  pixel, at `(250,16)`, stays, and what draws it is not known. DDrawCompat did
+  not remove them, since the windowed original draws with GDI only
+  (docs/DECISIONS.md, 2026-10-05). Captures already recorded keep their white
+  areas until they are taken again.
 - EXP-UI-002 uses `--draw-values` to make the console draw a score of 700000
   and a cash of 690000 over an earlier `80000`: a number cell copied from
   source column 516 leaves the screen unchanged, and one from column 510 takes

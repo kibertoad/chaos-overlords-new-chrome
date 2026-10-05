@@ -29,8 +29,8 @@ public sealed partial class ChaosGame
             // drawn as its magnitude from the red row.
             var definition = state.Definitions.Gang(entry.GangDefinitionId);
             var price = HireRules.InitialCost(definition);
-            font.Draw(batch, HireDockLayout.PriceText(price),
-                HireDockLayout.Price(slot).ToVector2(), price < 0 ? Color.Red : Color.Lime, 1);
+            font.DrawNumber(batch, HireDockLayout.PriceCells(price),
+                HireDockLayout.Price(slot).ToVector2(), price < 0 ? Color.Red : Color.Lime);
         }
     }
 

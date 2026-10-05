@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
@@ -201,20 +202,28 @@ public sealed class PlanningTimer
         _pausedElapsed = now - _start;
     }
 
-    public void Resume(TimeSpan now)
+    public void Resume(TimeSpan now) => Resume(now, PresentationClock.Ticks(now));
+
+    /// <summary>
+    /// Resumes a paused turn, dropping the presentation ticks up to <paramref name="tick"/>, the
+    /// count the caller advances the clock with.
+    /// </summary>
+    public void Resume(TimeSpan now, long tick)
     {
         if (!IsActive || _pausedElapsed is not { } elapsed) return;
         _start = now - elapsed;
         _pausedElapsed = null;
-        _lastTick = PresentationClock.Ticks(now);
+        _lastTick = tick;
     }
 
     public PlanningTimerSignal Advance(TimeSpan now) => Advance(now, PresentationClock.Ticks(now));
 
     /// <summary>
     /// Counts the presentation ticks up to <paramref name="tick"/> and redraws the bar when the
-    /// countdown runs out. Tests pass the tick themselves to replay a recorded run of the original,
-    /// whose ticks do not fall on exact multiples of the period.
+    /// countdown runs out. The game passes the ticks its event pump has taken, which stop while a
+    /// hold keeps the pump from running (<see cref="EventPumpClock"/>). Tests pass the tick
+    /// themselves to replay a recorded run of the original, whose ticks do not fall on exact
+    /// multiples of the period.
     /// </summary>
     internal PlanningTimerSignal Advance(TimeSpan now, long tick)
     {
@@ -367,18 +376,68 @@ public sealed partial class ChaosGame
     /// (SCR-UI-003, SCR-UI-004). A panel runs its own loop, and so does the Hire handler from a
     /// press on an offer or its reject cross until the button is released (FND-HIRE-008), as do
     /// the console tile helper (FND-UI-032) and the sector view's back control (FND-UI-015); the
-    /// idle-gang warning is answered before the test.
+    /// idle-gang warning is answered before the test. A left press on the portrait of one of the
+    /// player's gang cards runs the individual command handler's own loop until the button is
+    /// released, whether or not the gang is dragged (FND-UI-044). The original's hold loops end only
+    /// when the button comes up, so a hold the rebuild's Escape or right press lets go of keeps the
+    /// test from running until then.
     /// </summary>
     private bool AtPlanningLoopPass() =>
         _screens.Current is ClientScreen.City or ClientScreen.Sector
         && !_idleGangWarningOpen
-        && _draggedHireDefinitionId is null
-        && _pressedHireRejectSlot is null
-        && _pressedCityConsoleControl is null
-        && _pressedPanelFace is null
-        // PLACEHOLDER: RULE-TIMER-002. How the original starts a gang drag is not recorded
-        // (FND-TURN-009); a held gang is taken to run in its handler as a held offer does.
-        && _draggedGangId is null;
+        && !HoldsCityPointer()
+        && _pressedPanelFace is null;
+
+    /// <summary>
+    /// The presses on the city and the sector view that hold the original in a loop of its own
+    /// until the left button comes up, so that neither the planning loop
+    /// (<see cref="AtPlanningLoopPass"/>) nor the event pump (<see cref="HoldsPointerOutsideEventPump"/>)
+    /// runs: an offer and its reject cross (FND-HIRE-008), a console tile (FND-UI-032) and a gang
+    /// card's portrait (FND-UI-044). A hold the rebuild's Escape or right press lets go of still
+    /// counts until the button comes up, since the original's loop ends only then.
+    /// </summary>
+    private bool HoldsCityPointer() =>
+        _draggedHireDefinitionId is not null
+        || _pressedHireRejectSlot is not null
+        || _pressedCityConsoleControl is not null
+        || _draggedGangId is not null
+        || _leftHoldOutlivesCancel;
+
+    /// <summary>
+    /// Whether a press holds the game in a loop of the original that dispatches window messages
+    /// without calling the event pump, so the steps the pump drives stop (<see cref="EventPumpClock"/>).
+    /// They are the Hire handler's two loops for an offer and its reject cross (FND-HIRE-008), the
+    /// individual command handler's loops for a gang card's portrait (FND-UI-044), the console tile
+    /// helper (FND-UI-032), the Last Turn Events page arrows (FND-EVENT-005) and the held-button
+    /// helper behind the faces of the panels, the Comlink Send panel, the attack picker and the
+    /// sector view's back control (FND-UI-046). Each loop runs until the left button comes up, so
+    /// the rebuild's right-button hold of the back control does not count.
+    /// </summary>
+    private bool HoldsPointerOutsideEventPump() =>
+        HoldsCityPointer()
+        || _pressedEventsButton is not null
+        || _pressedCommandPanelButton is not null
+        || _pressedComlinkSendButton is not null
+        || _pressedAttackFace is not null
+        || _pressedPanelFace is not null && !_pressedPanelFaceByRightButton;
+
+    /// <summary>
+    /// Whether the original would be in a loop that does not call the event pump: a pointer hold
+    /// (<see cref="HoldsPointerOutsideEventPump"/>) or a soundtrack fade. The fade runs inside the
+    /// pump's music step and leaves timer slot 0 alone, so the pump takes no tick until it ends
+    /// and then takes the one the flag kept (FND-AUDIO-017).
+    /// </summary>
+    private bool OutsideEventPump() => HoldsPointerOutsideEventPump() || _soundtrackFade is not null;
+
+    /// <summary>
+    /// Called by a cancel that lets go of one of the holds <see cref="HoldsCityPointer"/> lists,
+    /// so the planning loop and the event pump stay out until the left button comes up (FND-UI-044,
+    /// FND-HIRE-008).
+    /// </summary>
+    private void KeepLeftHoldUntilRelease()
+    {
+        if (_previousMouse.LeftButton == ButtonState.Pressed) _leftHoldOutlivesCancel = true;
+    }
 
     /// <summary>The screens that are not the match, where no planning clock is drawn or run.</summary>
     private bool LeftMatchScreen() =>
@@ -391,7 +450,7 @@ public sealed partial class ChaosGame
         if (!_planningTimer.IsActive)
         {
             // The redraw countdown runs on the presentation ticks of untimed turns too.
-            _planningTimer.Advance(now);
+            _planningTimer.Advance(now, _eventPump.Ticks);
             return false;
         }
         if (_state?.Coordinator.ActivePlayer is not { } playerId
@@ -403,7 +462,7 @@ public sealed partial class ChaosGame
             return false;
         }
 
-        switch (_planningTimer.Advance(now))
+        switch (_planningTimer.Advance(now, _eventPump.Ticks))
         {
             case PlanningTimerSignal.LongWarning:
                 PlayGeneralSound(GeneralSoundSlot.CountdownWarning);

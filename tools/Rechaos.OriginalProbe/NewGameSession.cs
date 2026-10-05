@@ -106,8 +106,8 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
-    IReadOnlyList<string>? Comlink = null, bool Capture = false, IReadOnlyList<ProbeDrawValue>? DrawValues = null,
-    bool EquipLists = false)
+    IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
+    IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -118,6 +118,7 @@ internal sealed record NewGameSettings(
         if (TurnLimit is { } turns) yield return $"turn_limit {turns}";
         if (TimeLimit is { } limit) yield return $"planning_limit_choice {limit}";
         if (Comlink is not null) yield return "pref_slide_panels 0";
+        if (WhiteKey) yield return "key_colour RGB(255,255,255)";
         foreach (var value in DrawValues ?? []) yield return value.ToString();
         if (Humans is null) yield break;
         foreach (var human in Humans)
@@ -229,6 +230,10 @@ internal sealed partial class NewGameSession(
         _process.SetBreakpoint(OriginalAddresses.LocalSetup, _ => _setupReached = true);
         if (settings.TraceHires) _process.SetBreakpoint(OriginalAddresses.HireOrderCheck, TraceHire);
         if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
+        // FND-PLATFORM-014: on a 32-bit desktop the keyed copies key nothing, so the white the
+        // key should drop is drawn. --white-key passes the white a 32-bit surface holds instead.
+        // Quiet, because the keyed copies run on every animation tick of a waiting planning phase.
+        if (settings.WhiteKey) _process.SetBreakpoint(OriginalAddresses.KeyColourCall, UseThirtyTwoBitKey, quiet: true);
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
         if (settings.Finance is { Count: > 0 })
@@ -602,6 +607,13 @@ internal sealed partial class NewGameSession(
         _notes.Add($"planning after roll {_rolls.Count}: {write}");
     }
 
+    private void UseThirtyTwoBitKey(BreakContext context)
+    {
+        // At the call instruction the device context is at [esp] and the colour at [esp + 4].
+        if (_process.ReadInt32(context.Esp + 4) == OriginalAddresses.SixteenBitWhiteKey)
+            _process.Write(context.Esp + 4, BitConverter.GetBytes(OriginalAddresses.ThirtyTwoBitWhite));
+    }
+
     // --seed replaces the clock value the process start passes to srand, so a run can be repeated.
     private void SeedGenerator(BreakContext context)
     {
@@ -799,7 +811,9 @@ internal sealed partial class NewGameSession(
                     var gameDepth = _process.ReadInt32(OriginalAddresses.DisplayDepth);
                     _notes.Add($"Capture depths: original records {gameDepth}; probe window DC reports {hostDepth}.");
                     if (gameDepth != hostDepth)
-                        _notes.Add("Capture depth mismatch: evaluate colour-key conversion before accepting presentation evidence.");
+                        _notes.Add(settings.WhiteKey
+                            ? "Capture depth mismatch: --white-key passed RGB(255,255,255) for the 16-bit key (FND-PLATFORM-014)."
+                            : "Capture depth mismatch: evaluate colour-key conversion before accepting presentation evidence.");
                 }
                 memory = Native.CreateCompatibleDC(screen);
                 if (memory == IntPtr.Zero) throw new InvalidOperationException("Cannot create the capture memory DC.");

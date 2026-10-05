@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
 | 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
 | 2026-10-05 | [Switch DEV-AI-008 off from the command line only](#2026-10-05--switch-dev-ai-008-off-from-the-command-line-only) |
 | 2026-10-04 | [Switch DEV-AI-007 off from the command line only](#2026-10-04--switch-dev-ai-007-off-from-the-command-line-only) |
@@ -42,6 +43,25 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-05 — Capture the original with the 32-bit white key
+
+- Decision: the probe takes captures of the original for screen comparisons with `--white-key`,
+  which hands the keyed mask compositor the white a 32-bit surface holds in place of the 16-bit
+  key. A capture taken without it keeps its white areas, and `ScreenCaptureTests` goes on
+  reporting them as unverified.
+- Reason: the solid white areas the original leaves on Windows 11 are its keyed copies drawn
+  opaque. Its surfaces follow the 32-bit desktop, where the 16-bit key `RGB(255,252,255)`
+  matches no pixel (FND-PLATFORM-014). With the key replaced, EXP-SETUP-001's setup (seed 52421)
+  drew 1 exact-white pixel where it drew 5089, and showed the selected sector's interior and the
+  edge tabs' labels in place of white. That run and EXP-TURN-041's configuration made the same
+  310 and 10647 rolls as their fixtures and reached the same 2760 and 4331 end-state values: the
+  key reaches the drawing and nothing else. A DirectDraw wrapper cannot help, since the windowed
+  original draws with GDI only (FND-GFX-004): DDrawCompat left the same 5089 white pixels (the
+  next decision, which still holds for the wrapper). No compatibility layer changed the result.
+- Boundary: the write changes one argument of one `SetBkColor` call and only when it is the
+  16-bit key. A capture shows what the original draws on a 16-bit display only where the key is
+  the difference; FND-PLATFORM-014 records the capture of the first planning entry only.
 
 ## 2026-10-05 — Take captures of the original without a DirectDraw wrapper
 

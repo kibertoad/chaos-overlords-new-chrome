@@ -27,6 +27,12 @@ internal static class OriginalAddresses
     // FND-PLATFORM-009: the depth returned by display setup, used to choose the image set.
     public const uint DisplayDepth = 0x0048787C;
 
+    // FND-PLATFORM-014: the SetBkColor call of the keyed mask compositor that passes the 16-bit
+    // key RGB(255,252,255), which a 32-bit surface never holds.
+    public const uint KeyColourCall = 0x00427C84;
+    public const int SixteenBitWhiteKey = 0x00FFFCFF;
+    public const int ThirtyTwoBitWhite = 0x00FFFFFF;
+
     // FND-OPTIONS-001, FND-OPTIONS-002: Warn if Idle Gangs, which asks before Done ends a turn
     // with a gang left idle (RULE-OPTIONS-003), and Detailed Combat, which plays combat as the
     // detailed presentation.

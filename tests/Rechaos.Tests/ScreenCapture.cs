@@ -155,6 +155,8 @@ public static class ScreenCaptureMasks
                 new("DEV-UI-023", new Rectangle(2, 439, 432, 7)),
             ],
             ["SCR-HIRE-002"] = [],
+            // DEV-FINANCE-001 changes the Equipment field only while a Sell of several items is queued.
+            ["SCR-FINANCE-001"] = [],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>

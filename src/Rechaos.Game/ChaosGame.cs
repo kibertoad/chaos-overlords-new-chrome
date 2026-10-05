@@ -207,12 +207,18 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Point _gangPressPoint;
     private bool _gangDragStarted;
     private SectorGangDragProjection? _gangDragProjection;
+    /// <summary>
+    /// Set when a cancel lets go of a hold the planning loop does not run through while the left
+    /// button is still down, and cleared when it comes up (FND-UI-044, FND-HIRE-008).
+    /// </summary>
+    private bool _leftHoldOutlivesCancel;
     private Point _dragPoint;
     private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
     private readonly CombatPresentationProgress _combatPresentationProgress = new();
     private TimeSpan _inputTime;
+    private readonly EventPumpClock _eventPump = new();
     private ClientScreen _gangDetailsReturnScreen = ClientScreen.City;
     private GangId? _gangDetailsInstanceId;
     private short? _gangDetailsDefinitionId;
@@ -445,6 +451,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     {
         _autoSave.Pump();
         _inputTime = _referenceFrame is null ? gameTime.TotalGameTime : TimeSpan.Zero;
+        _eventPump.Update(_inputTime, OutsideEventPump());
         if (UpdateReferenceFrame())
         {
             base.Update(gameTime);
@@ -483,7 +490,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             EndUpdate(gameTime, keyboard, mouse);
             return;
         }
-        UpdateComlinkAlert(gameTime.TotalGameTime);
+        UpdateComlinkAlert(_eventPump.Time);
         UpdateComlinkCaret(gameTime.TotalGameTime);
         PumpBugReportSend();
         // Before the planning timer, so a turn that resolved on the server is adopted even on the
@@ -805,14 +812,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 _message = string.Empty;
             }
             else if (_draggedGangId is not null && !_gangDragStarted
-                     && DragMoved(_gangPressPoint, virtualPoint))
+                     && GangDragMoved(_gangPressPoint, virtualPoint))
             {
                 StartGangDrag();
                 _message = string.Empty;
             }
         }
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released)
+        {
+            _leftHoldOutlivesCancel = false;
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: false);
+        }
         if (_previousMouse.RightButton == ButtonState.Pressed && mouse.RightButton == ButtonState.Released)
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: true);
         CaptureNewCombatAnimations();
@@ -827,9 +837,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _previousMouse = mouse;
         base.Update(gameTime);
     }
-
-    private static bool DragMoved(Point press, Point current) =>
-        Math.Abs(current.X - press.X) >= 4 || Math.Abs(current.Y - press.Y) >= 4;
 
     private void HandleClick(Point point)
     {

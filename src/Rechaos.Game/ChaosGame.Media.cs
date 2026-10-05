@@ -60,7 +60,7 @@ public sealed partial class ChaosGame
     private void UpdateSoundtrack(GameTime gameTime)
     {
         var poll = _soundtrackFade is null && _soundtrackRestartPoll.Advance(
-            _soundtrackEnabled, _soundtrackFocus.WindowActive, gameTime.TotalGameTime);
+            _soundtrackEnabled, _soundtrackFocus.WindowActive, _eventPump.Time);
         try
         {
             if (AdvanceSoundtrackFade(gameTime.TotalGameTime)) return;

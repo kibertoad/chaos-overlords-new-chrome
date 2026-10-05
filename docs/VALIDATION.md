@@ -376,7 +376,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--equip-lists] [--draw-values <hex address>=<int32>[/<int32>...],...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--draw-values <hex address>=<int32>[/<int32>...],...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -604,6 +604,18 @@ depth of its own device context; a capture whose depths differ is recorded as
 such. PrintWindow is not used: the timer draws the marker straight to the
 window, and a repainting copy loses it.
 
+Add `--white-key` as well (docs/DECISIONS.md, 2026-10-05). On a 32-bit desktop
+the original's keyed copies key nothing and draw the white they should leave
+out, which is where the solid white areas of Windows 11 come from
+(FND-PLATFORM-014). The option puts a breakpoint on the `SetBkColor` call of the
+keyed mask compositor and, whenever that call passes the 16-bit key
+`RGB(255,252,255)`, writes `RGB(255,255,255)`, the white a 32-bit surface holds,
+over the argument. The fixture lists it as the setup input `key_colour
+RGB(255,255,255)`. The rolls and the state of a run do not depend on it.
+The breakpoint stops the original on every keyed copy, and the runs that
+checked the option had no planning time limit; whether it moves the timer
+records of a run with `--time-limit` has not been checked.
+
 `extract --screens SCR-UI-003,SCR-HIRE-002` adds a `capture` object to each
 run whose two copies agree:
 
@@ -623,7 +635,17 @@ The digest of a rectangle is the xxh3 of its pixels as red, green and blue
 bytes, row by row from the top and left to right. The elements of a screen and
 their rectangles, worked out for the state the capture shows, are in
 `tools/Rechaos.OriginalProbe/Screens/<SCR ID>.json`; a screen with no such file
-cannot be named yet. Each rectangle comes from the entry's Position column.
+cannot be named yet. Each rectangle comes from the entry's Position column, and
+an element whose position the entry does not give is left out of the list.
+`ScreenElementListTests` checks every list: it names its screen entry, the
+screen has an entry in `ScreenCaptureMasks`, each rectangle lies inside the
+640-by-460 drawing area, and each element names a row of the entry's Drawn
+elements table. The name is the row's own, or the row's name (or that name's
+part before its own comma) followed by a comma and either an index such as
+`slot 0` or a field or variant that the row's Element or Shows cell names as a
+whole word: `Offer portrait, slot 0` cites the row
+`Offer portrait, one per offer slot`, and `Value fields, Gang Upkeep` cites
+`Value fields`, whose Shows cell lists Gang Upkeep.
 
 The bitmap holds the game's art, so it never goes into the repository. When
 `GAME_DIR` is set, `extract` copies it to `GAME_DIR/captures/<xxh3>`, the
@@ -663,9 +685,11 @@ bitmap before it exits. Preferences, saves and logs of that run go to a
 `rechaos-reference-frame-*` directory beside the bitmap, never to the player's.
 The test then compares each element:
 
-- An element the original drew wholly in exact white is unverified: on Windows
-  11 the original leaves solid white rectangles where a copy to the screen
-  failed (FND-UI-041), and what belongs there is unknown.
+- An element the original drew wholly in exact white is unverified: in a
+  capture taken without `--white-key`, a keyed copy on Windows 11 draws solid
+  white where its image should show through (FND-PLATFORM-014), and what
+  belongs there is unknown. The test does not read the `key_colour` setup
+  input, so it treats the white of a `--white-key` capture the same way.
 - With the capture under `GAME_DIR/captures/`, every pixel outside the masks is
   compared. A pixel the original drew exact white is counted as unverified
   unless the rebuild drew it white as well. The element matches when no
