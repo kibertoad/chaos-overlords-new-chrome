@@ -3,6 +3,7 @@
   "state": "The city screen of player 0 with the idle gang warning open after a Done press",
   "elements": [
     {"element": "Idle gang warning panel", "rect": [0, 0, 640, 460]},
-    {"element": "Warning panel with its wording, Cancel above OK", "rect": [104, 124, 344, 209]}
+    {"element": "Warning panel with its wording, Cancel above OK", "rect": [104, 124, 344, 209]},
+    {"element": "Warning line", "rect": [269, 169, 97, 9]}
   ]
 }

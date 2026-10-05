@@ -459,17 +459,18 @@ public static class ObjectiveSectorMarkerPresentation
     }
 }
 
-/// <summary>FND-UI-050: where the city map puts a sector's police badge.</summary>
+/// <summary>
+/// FND-UI-050: the city map puts a sector's police badge at map <c>(53c + 9, 51r + 14)</c>, 5
+/// pixels right of and 11 below the corner of its cell.
+/// </summary>
 public static class PoliceBadgeLayout
 {
+    public static Point CellOffset => new(9 - CityMapLayout.GridInsetX, 14 - CityMapLayout.GridInsetY);
+
     public static Rectangle Destination(int sectorId)
     {
-        _ = CityMapLayout.Source(sectorId);
-        return new Rectangle(
-            CityMapLayout.Left + sectorId % MatchLimits.BoardWidth * CityMapLayout.ColumnStride + 9,
-            CityMapLayout.Top + sectorId / MatchLimits.BoardWidth * CityMapLayout.RowStride + 14,
-            20,
-            28);
+        var sector = CityMapLayout.Destination(sectorId);
+        return new Rectangle(sector.X + CellOffset.X, sector.Y + CellOffset.Y, 20, 28);
     }
 }
 
@@ -584,10 +585,22 @@ public static class CommandOverlayLayout
         or GangAction.Move or GangAction.Research or GangAction.Sell;
 
     /// <summary>
-    /// FND-UI-021, EXP-UI-011: menu 1 never greys Research, and its panel opens with an empty list
-    /// when the gang has nothing to research.
+    /// FND-UI-021: menu 1 greys only Attack, Control, Influence, Heal, Sell and Give, so it never
+    /// greys Equip, Move or Research, and their panels open with an empty list when the gang has
+    /// nothing to choose (EXP-UI-011 shows it for Research).
     /// </summary>
-    public static bool OpensWithoutTargets(GangAction action) => action == GangAction.Research;
+    public static bool OpensWithoutTargets(GangAction action) =>
+        action is GangAction.Equip or GangAction.Move or GangAction.Research;
+
+    /// <summary>
+    /// Whether the order panel offers <paramref name="action"/>, given the orders the rules allow:
+    /// None always (RULE-TURN-005, EXP-TURN-095), any order with a legal command, and for one gang
+    /// an order whose panel opens without targets.
+    /// </summary>
+    public static bool Offers(GangAction action, IEnumerable<GameCommand> options, bool singleGang) =>
+        action == GangAction.None
+        || options.Any(command => command.Action == action)
+        || (singleGang && OpensWithoutTargets(action));
 
     public static IReadOnlyList<GangAction> ActionsFor(bool recurring) => recurring
         ? Actions.Where(action => action == GangAction.None || CommandRules.CanRepeat(action)).ToArray()
@@ -833,7 +846,6 @@ public static partial class PlayerPortraitLayout
     public static Rectangle SetupLarge(int player) => Player(player, 397, 89, 83, 64, 64, rowStride: 74);
     public static Rectangle Previous(int player) => Player(player, 399, 109, 83, 12, 18, rowStride: 74);
     public static Rectangle Next(int player) => Player(player, 447, 109, 83, 12, 18, rowStride: 74);
-    public static Rectangle Name(int player) => Player(player, 397, 153, 83, 64, 8, rowStride: 74);
 
     private static Rectangle Player(
         int player,

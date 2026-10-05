@@ -131,15 +131,25 @@ public static class AttackCommandLayout
     }
 
     /// <summary>
-    /// SCR-ATTACK-001, FND-ATTACK-004: a target's item icons, 65 rows below its portrait's top.
-    /// FND-ATTACK-007: the second and third are 19 pixels wide, and the original's squeeze of the
-    /// 20-pixel icon into them keeps its first 19 columns (EXP-UI-011).
+    /// SCR-ATTACK-001, FND-ATTACK-004: the 20-by-20 double-click rectangle of a target's item icon,
+    /// 65 rows below its portrait's top.
     /// </summary>
     public static Rectangle TargetItem(int targetSlot, int itemSlot)
     {
         if (itemSlot is < 0 or >= EquippedItemCount) throw new ArgumentOutOfRangeException(nameof(itemSlot));
         var portrait = TargetPortrait(targetSlot);
-        return new Rectangle(portrait.X + itemSlot * 22, portrait.Y + 65, itemSlot == 0 ? 20 : 19, 20);
+        return new Rectangle(portrait.X + itemSlot * 22, portrait.Y + 65, 20, 20);
+    }
+
+    /// <summary>
+    /// SCR-ATTACK-001, FND-ATTACK-007: the box a target's item icon is drawn in. The second and
+    /// third are 19 pixels wide, and the original's squeeze of the 20-pixel icon into them keeps
+    /// its first 19 columns (EXP-UI-011). The double-click rectangle stays 20 wide.
+    /// </summary>
+    public static Rectangle TargetItemBox(int targetSlot, int itemSlot)
+    {
+        var hit = TargetItem(targetSlot, itemSlot);
+        return itemSlot == 0 ? hit : hit with { Width = 19 };
     }
 
     /// <summary>SCR-ATTACK-001, FND-ATTACK-002: the marker on the chosen target, 8 right of and 2 below the cell's corner.</summary>

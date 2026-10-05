@@ -28,12 +28,7 @@ internal sealed partial class NewGameSession
         {
             _postDumpStep++;
             if (step.Slot == -1)
-            {
-                // With no panel open the Exit point lies on the city map, where a press would select
-                // a sector and a second one open the sector view.
-                if (_panelsOpen > 0) Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
-                else _notes.Add("exit after the dump skipped: no panel was open");
-            }
+                PressExitAfterDump(window);
             else if (step.Sector == -2)
                 Click(window, OriginalAddresses.HireRejectX(step.Slot), OriginalAddresses.HireRejectY);
             else

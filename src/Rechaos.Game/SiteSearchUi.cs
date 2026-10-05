@@ -19,11 +19,7 @@ public static class SiteSearchLayout
     public const int NameCharacters = 15;
 
     /// <summary>FND-SEARCH-001: row <paramref name="index"/>'s 20-by-14 marker icon.</summary>
-    public static Rectangle Icon(int index)
-    {
-        if (index is < 0 or >= MaximumSites) throw new ArgumentOutOfRangeException(nameof(index));
-        return new Rectangle(206 + index / RowsPerColumn * 116, 146 + index % RowsPerColumn * 15, 20, 14);
-    }
+    public static Rectangle Icon(int index) => new(Site(index).Location, new Point(20, 14));
 
     /// <summary>FND-SEARCH-001: the icon of site definition <paramref name="definition"/> in PX00150.</summary>
     public static Rectangle IconSource(int definition)
@@ -244,12 +240,9 @@ public static class CitySiteMarkerProjection
         ArgumentNullException.ThrowIfNull(marker);
         if (marker.SiteDefinitionId is < 0 or >= SiteSearchLayout.MaximumSites)
             throw new ArgumentOutOfRangeException(nameof(marker));
-        return new Rectangle(
-            marker.SiteDefinitionId % SiteSearchLayout.RowsPerColumn * 20,
-            marker.SiteDefinitionId / SiteSearchLayout.RowsPerColumn * 14
-                + (marker.Controlled ? 0 : 28),
-            20,
-            14);
+        // The uncontrolled icons sit in the two rows below the controlled ones Search draws.
+        var icon = SiteSearchLayout.IconSource(marker.SiteDefinitionId);
+        return marker.Controlled ? icon : icon with { Y = icon.Y + 28 };
     }
 
     public static Rectangle Destination(CitySiteMarker marker)

@@ -16,8 +16,9 @@ fixture: EXP-UI-013.json
 ## Question
 
 At the second planning entry of a Siege match, scenario 6, does the city
-screen draw the pylons of RULE-UI-012 on each player's headquarters sector, and the rest of the
-city screen, with the same pixels in the rebuild as in the original?
+screen draw the pylons of RULE-UI-012 on each player's headquarters sector,
+and the rest of the city screen, with the same pixels in the rebuild as in the
+original?
 
 ## Setup
 
@@ -34,7 +35,8 @@ The shot is taken and its counters read as in EXP-UI-009.
 
 The run made 423 calls of `roll`. The shot was kept at step 2, with marker
 frame 4, pump counter 1, frame counter 1, sector 54 selected and every light
-byte 0. The capture shows two grey pylons on each player's headquarters sector.
+byte 0. The capture shows two gray pylons on each player's headquarters
+sector.
 
 ## Results
 

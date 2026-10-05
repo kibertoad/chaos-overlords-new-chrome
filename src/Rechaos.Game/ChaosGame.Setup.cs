@@ -720,11 +720,20 @@ public sealed partial class ChaosGame
                         PlayerPortraitLayout.Next(index), left: false, Color.Lime);
                 }
             }
-            var label = _configuringOnlineLobby ? onlinePlayers[index].DisplayName : _editingPlayerName == index
-                ? _setupNameEditor.Text + ((int)(_inputTime.TotalMilliseconds / 350) % 2 == 0 ? "_" : "")
+            // An online seat shows the ten-character projection its overlord plays under, which
+            // fits the card as a local name does; the lobby's display name can run to 32 characters.
+            var text = _configuringOnlineLobby ? OriginalPlayerName.Project(onlinePlayers[index].DisplayName)
+                : _editingPlayerName == index
+                ? _setupNameEditor.Text
                 : _playerNames[index];
-            // FND-SETUP-014: the name in the screen's green, centred on the card.
-            var name = SetupPlayerCardArtLayout.NameStart(index, label.Length);
+            var label = _editingPlayerName == index && !_configuringOnlineLobby
+                && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0
+                ? text + "_"
+                : text;
+            // FND-SETUP-014: the name in the screen's green, centred on the card. The blinking
+            // cursor of the rebuild's name editor is left out of the centring, so the name holds
+            // still while it blinks.
+            var name = SetupPlayerCardArtLayout.NameStart(index, text.Length);
             font.Draw(batch, label, new Vector2(name.X, name.Y), Color.Lime, 1);
         }
         if (_setupPlayerDragStarted && _draggedSetupPlayerSlot is { } dragged

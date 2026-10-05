@@ -304,57 +304,51 @@ internal sealed partial class NewGameSession(
         // RULE-VIDEO-001: a movie ends when left_button_down is set at one of its 10 Hz ticks, so a
         // posted press and release is missed. The probe holds the button in memory until the setup
         // screen opens; the title then takes File, New Game.
-        // --title-capture and --credits-capture: New Game waits until the title has drawn its art
-        // (FND-UI-055) and the drawing area has been copied, and for the credits until About has
-        // shown them (FND-UI-007) and they have been copied and closed.
-        var titleShown = false;
-        var titleTaken = !settings.TitleCapture && !settings.CreditsCapture && !settings.SetupCapture;
-        if (!titleTaken)
-            _process.SetBreakpoint(OriginalAddresses.TitleArtLoaded, _ => titleShown = true, oneShot: true);
+        // --title-capture, --credits-capture and --setup-capture: New Game waits until the title has
+        // drawn its art (FND-UI-055) and the drawing area has been copied, and for the credits until
+        // About has shown them (FND-UI-007) and they have been copied and closed.
         var nextPoke = DateTime.MinValue;
-        bool reached;
-        while (true)
+        if (settings.TitleCapture || settings.CreditsCapture || settings.SetupCapture)
         {
-            reached = _process.RunUntil(() =>
+            var titleShown = false;
+            _process.SetBreakpoint(OriginalAddresses.TitleArtLoaded, _ => titleShown = true, oneShot: true);
+            var titleReached = _process.RunUntil(() =>
             {
-                if (_setupReached || (!titleTaken && titleShown)) return true;
+                if (titleShown) return true;
                 if (DateTime.UtcNow < nextPoke) return false;
                 nextPoke = DateTime.UtcNow.AddSeconds(0.5);
                 _process.Write(OriginalAddresses.LeftButtonDown, [1]);
-                if (titleTaken)
-                    Native.PostMessageW(window, Native.WmCommand, OriginalAddresses.NewGameCommand, IntPtr.Zero);
                 return false;
             }, timeout);
-            if (!reached || _setupReached || titleTaken) break;
             _process.Write(OriginalAddresses.LeftButtonDown, [0]);
+            if (!titleReached) return Finish(false, "The title art was never loaded.");
             _process.Pump(TimeSpan.FromSeconds(2));
-            if (settings.TitleCapture)
-            {
-                if (!_setupReached && CaptureDrawingArea(window, "title-capture", CaptureFixture.Width, CaptureFixture.Height))
-                    _notes.Add(CaptureFixture.BeforeMatchNote("title"));
-                else
-                    _notes.Add("The title was not captured.");
-            }
+            if (settings.TitleCapture) CaptureBeforeMatch(window, "title");
             if (settings.CreditsCapture) CaptureCredits(window);
             if (settings.SetupCapture)
             {
-                // FND-OPTIONS-001: the objective, Mentality and planning limit setup opens with take
-                // their initialized values, as when the registry key holds none.
+                // FND-OPTIONS-001: the objective, Mentality and planning limit take their
+                // initialized values, as when the registry key holds none, so setup opens with them.
                 _process.Write(OriginalAddresses.PreferredScenario, BitConverter.GetBytes(0));
                 _process.Write(OriginalAddresses.Mentality, BitConverter.GetBytes(1));
                 _process.Write(OriginalAddresses.PlanningLimitChoice, BitConverter.GetBytes(0));
             }
-            titleTaken = true;
         }
+        var reached = _process.RunUntil(() =>
+        {
+            if (_setupReached) return true;
+            if (DateTime.UtcNow < nextPoke) return false;
+            nextPoke = DateTime.UtcNow.AddSeconds(0.5);
+            _process.Write(OriginalAddresses.LeftButtonDown, [1]);
+            Native.PostMessageW(window, Native.WmCommand, OriginalAddresses.NewGameCommand, IntPtr.Zero);
+            return false;
+        }, timeout);
         _process.Write(OriginalAddresses.LeftButtonDown, [0]);
         if (!reached) return Finish(false, "The setup screen never opened.");
 
         _process.Pump(TimeSpan.FromSeconds(2));
         // --setup-capture: the setup screen as New Game opened it, before the settings are written.
-        if (settings.SetupCapture)
-            _notes.Add(CaptureDrawingArea(window, "setup-capture", CaptureFixture.Width, CaptureFixture.Height)
-                ? CaptureFixture.BeforeMatchNote("setup")
-                : "The setup screen was not captured.");
+        if (settings.SetupCapture) CaptureBeforeMatch(window, "setup");
         var choicesBeforeSteps = SetupChoicesLeftToPresses();
         RecordSetupSteps(window, settings.SetupSteps);
         if (SetupStepsNote(choicesBeforeSteps) is { } setupStepsNote) _notes.Add(setupStepsNote);
@@ -467,6 +461,7 @@ internal sealed partial class NewGameSession(
         }
 
         DumpWritableSections();
+        _gangMarkersDumped = true;
         _panelsAtDump = [.. _panels];
         if (settings.Capture && CaptureDrawingArea(window, "capture-blt") is var (marker, pump, lamps, selected))
         {
@@ -481,8 +476,8 @@ internal sealed partial class NewGameSession(
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
         if (settings.HireSteps is { Count: > 0 } && RecordHireSteps(window) is { } stopped)
             return Finish(false, stopped, rollsBeforeBegin);
-        if (settings.OrderSteps is { Count: > 0 } && !RecordOrderSteps(window))
-            return Finish(false, "The original exited during the order steps.", rollsBeforeBegin);
+        if (settings.OrderSteps is { Count: > 0 } && RecordOrderSteps(window) is { } orderStepsStopped)
+            return Finish(false, orderStepsStopped, rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -572,6 +567,21 @@ internal sealed partial class NewGameSession(
         }
 
         return _panelsOpen == 0;
+    }
+
+    // An Exit press of a step after the dump. With no panel open the Exit point lies on the city
+    // map, where a press would select a sector and a second one open the sector view, so the
+    // press is skipped. A press that closes a panel counts as for ClosePanels, so the panel is
+    // recorded as shown.
+    private void PressExitAfterDump(IntPtr window)
+    {
+        if (_panelsOpen == 0)
+        {
+            _notes.Add("exit after the dump skipped: no panel was open");
+            return;
+        }
+        _exitPresses++;
+        Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
     }
 
     // FND-AWARDS-005: the renderer's first call, kept until it returns.
@@ -853,17 +863,8 @@ internal sealed partial class NewGameSession(
     private (int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector)? CaptureDrawingArea(
         IntPtr window, string file)
     {
-        const int width = 640, height = 460;
-        // A smaller client area leaves part of the copy outside the window, and that part is not
-        // the original's drawing.
-        if (!Native.GetClientRect(window, out var client)
-            || client.Right - client.Left < width || client.Bottom - client.Top < height)
-        {
-            _notes.Add($"Capture rejected: the client area is {client.Right - client.Left} by "
-                + $"{client.Bottom - client.Top}, smaller than the {width}-by-{height} drawing area.");
-            return null;
-        }
-        _notes.Add($"Client area {client.Right - client.Left} by {client.Bottom - client.Top}.");
+        const int width = CaptureFixture.Width, height = CaptureFixture.Height;
+        if (!ClientAreaHoldsDrawingArea(window)) return null;
         // FND-UI-038: the counter increments after drawing. Require two agreeing window copies
         // and a stable counter; a repainting capture cannot use this frame relationship. The
         // pump's counter, which picks the selected-sector frame and the lights' blink phase

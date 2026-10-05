@@ -1,7 +1,7 @@
 namespace Rechaos.OriginalProbe;
 
-// The screens new-game copies before the match: the credits and the setup steps. The title and
-// the setup screen as it opens are copied in the session's run itself.
+// The screens new-game copies before the match: the title, the credits and the setup screen
+// (FND-UI-055), and the setup screen after presses on it.
 internal sealed partial class NewGameSession
 {
     // --credits-capture: Help, About from the title (FND-UI-007). The breakpoint after the load of
@@ -17,10 +17,7 @@ internal sealed partial class NewGameSession
             return;
         }
         _process.Pump(TimeSpan.FromSeconds(2));
-        if (CaptureDrawingArea(window, "credits-capture", CaptureFixture.Width, CaptureFixture.Height))
-            _notes.Add(CaptureFixture.BeforeMatchNote("credits"));
-        else
-            _notes.Add("The credits were not captured.");
+        CaptureBeforeMatch(window, "credits");
         Native.PostMessageW(window, Native.WmKeyDown, 0x20, IntPtr.Zero);
         Native.PostMessageW(window, Native.WmKeyUp, 0x20, IntPtr.Zero);
         _process.Pump(TimeSpan.FromSeconds(2));
@@ -66,12 +63,14 @@ internal sealed partial class NewGameSession
             }
             else if (step.Kind == "drag")
                 Drag(window, step.X, step.Y, step.Target, step.Choice);
-            else if (CaptureDrawingArea(window, $"setup-step-{index}", CaptureFixture.Width, CaptureFixture.Height))
+            else if (ClientAreaHoldsDrawingArea(window)
+                     && CaptureDrawingArea(window, $"setup-step-{index}", CaptureFixture.Width, CaptureFixture.Height))
                 _notes.Add(CaptureFixture.SetupStepNote(index));
             else
                 _notes.Add($"Setup step {index} was not captured.");
         }
     }
+
     // The setup choices the run's own settings leave as the screen holds them (ApplySettings), read
     // before and after the setup steps.
     private List<(string Name, byte[] Value)> SetupChoicesLeftToPresses()
@@ -106,5 +105,32 @@ internal sealed partial class NewGameSession
         return changed.Length == 0
             ? null
             : $"The setup steps left the {string.Join(", ", changed)} changed, which the run's settings do not set.";
+    }
+
+    // --title-capture, --credits-capture, --setup-capture: copies the screen shown before the match
+    // as <name>-capture.bmp and notes it for extract when two agreeing copies were taken.
+    private void CaptureBeforeMatch(IntPtr window, string name)
+    {
+        if (ClientAreaHoldsDrawingArea(window)
+            && CaptureDrawingArea(window, $"{name}-capture", CaptureFixture.Width, CaptureFixture.Height))
+            _notes.Add(CaptureFixture.BeforeMatchNote(name));
+        else
+            _notes.Add($"The {name} screen was not captured.");
+    }
+
+    // A smaller client area leaves part of the copy outside the window, and that part is not the
+    // original's drawing.
+    private bool ClientAreaHoldsDrawingArea(IntPtr window)
+    {
+        const int width = CaptureFixture.Width, height = CaptureFixture.Height;
+        if (!Native.GetClientRect(window, out var client)
+            || client.Right - client.Left < width || client.Bottom - client.Top < height)
+        {
+            _notes.Add($"Capture rejected: the client area is {client.Right - client.Left} by "
+                + $"{client.Bottom - client.Top}, smaller than the {width}-by-{height} drawing area.");
+            return false;
+        }
+        _notes.Add($"Client area {client.Right - client.Left} by {client.Bottom - client.Top}.");
+        return true;
     }
 }
