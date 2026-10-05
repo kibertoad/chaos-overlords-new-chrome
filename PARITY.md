@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 42 |
-| `validated` | 175 |
+| `implemented` | 41 |
+| `validated` | 176 |
 
 | Code | Rows |
 |---|---|
@@ -132,7 +132,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-SETUP-008` | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-011 and EXP-TURN-031 compare, at every planning entry of one local human, whether Combat Results and then Last Turn Events are shown. The Ready card, Game Information after a load, the Comlink alert and several local humans are not compared. |
 | `RULE-SETUP-009` | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported | complete | None | None | implemented | None |
 | `RULE-SETUP-010` | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported | complete | None | None | implemented | The rebuild's online lobby keeps its own seats and does not edit the local roster; entering one still resets the local roster to one human, as the original's lobby reset does. |
-| `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | None | `DEV-SETUP-002` | implemented | The left panel follows FND-SETUP-013: its rectangles, the refusal area of the time limit, the pressed images and push cue, the commit on release inside, and the light sprite. The stored scenario preference belongs to RULE-SETUP-002. |
+| `SCR-SETUP-001` | Full local game setup screen with scenario, settings and six player cards | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-SETUP-002` | validated | The left panel follows FND-SETUP-013: its rectangles, the refusal area of the time limit, the pressed images and push cue, the commit on release inside, and the light sprite. The scenario's title and description follow FND-SETUP-019, and the cards' colour bars and names FND-SETUP-014. The stored scenario preference belongs to RULE-SETUP-002. ScreenCaptureTests compares the setup screen New Game first opens with the EXP-UI-015 capture, and no element differs. |
 | `SCR-SETUP-002` | Hot-seat handoff card that waits for the next local player to press Ready | supported | complete | None | `DEV-SETUP-002` | implemented | None |
 
 ## CITY

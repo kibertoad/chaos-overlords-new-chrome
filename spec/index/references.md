@@ -474,6 +474,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-SETUP-016](../findings/FND-SETUP-016.md) | builds, locations |
 | [FND-SETUP-017](../findings/FND-SETUP-017.md) | builds, locations |
 | [FND-SETUP-018](../findings/FND-SETUP-018.md) | builds, locations |
+| [FND-SETUP-019](../findings/FND-SETUP-019.md) | builds, locations |
 | [FND-SNITCH-001](../findings/FND-SNITCH-001.md) | builds, locations |
 | [FND-STATE-001](../findings/FND-STATE-001.md) | builds, locations |
 | [FND-STATE-002](../findings/FND-STATE-002.md) | builds, locations |
@@ -2210,6 +2211,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-055](../findings/FND-UI-055.md) | body |
+| [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, evidence |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | body, evidence |
 | [SCR-UI-002](../screens/SCR-UI-002.md) | body, evidence |
 
@@ -5650,6 +5652,7 @@ None.
 | [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | body |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-FINANCE-001](../findings/FND-FINANCE-001.md) | body |
 | [FND-GANG-002](../findings/FND-GANG-002.md) | body |
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | body |
@@ -6364,6 +6367,7 @@ None.
 | [EXP-TURN-008](../experiments/EXP-TURN-008.md) | body |
 | [FND-OBJECTIVE-003](../findings/FND-OBJECTIVE-003.md) | body |
 | [FND-SETUP-018](../findings/FND-SETUP-018.md) | body |
+| [FND-SETUP-019](../findings/FND-SETUP-019.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | glossary: portrait | glossary |
 | glossary: preferred_scenario | glossary |
@@ -6378,6 +6382,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | body |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, evidence |
 
@@ -6436,6 +6441,13 @@ None.
 | [RULE-AI-010](../rules/RULE-AI-010.md) | body, evidence |
 | [RULE-AI-011](../rules/RULE-AI-011.md) | evidence |
 | [RULE-AI-031](../rules/RULE-AI-031.md) | body, evidence |
+
+## FND-SETUP-019
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
+| [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, evidence |
 
 ## FND-SNITCH-001
 
@@ -7400,6 +7412,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
+| [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | evidence |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | evidence |
 | [SCR-UI-002](../screens/SCR-UI-002.md) | evidence |
 
@@ -9457,6 +9470,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [FND-SETUP-013](../findings/FND-SETUP-013.md) | body |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | body, related |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | body |

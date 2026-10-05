@@ -69,22 +69,29 @@ internal static class CaptureFixture
     }
 
     /// <summary>
-    /// The record of the title screen <c>new-game --title-capture</c> copied before New Game,
-    /// compared at SCR-UI-001. The title has no marker, so its marker frame is 0.
+    /// The screens <c>new-game</c> copies before the match, with the option that asks for each and
+    /// the screen entry it is compared at (FND-UI-055): the title screen, the credits from Help,
+    /// About, and the setup screen as New Game opens it.
     /// </summary>
-    public static JsonObject? ExtractTitle(string runDirectory, JsonNode trace) =>
-        trace["Notes"]!.AsArray().Any(note => note!.GetValue<string>() == "title_capture title-capture")
-            ? Extract(Path.Combine(runDirectory, "title-capture.bmp"), 0, null, null, null, CaptureScreen.Load("SCR-UI-001"))
-            : null;
+    public static readonly IReadOnlyList<(string Name, string Screen)> BeforeMatch =
+        [("title", "SCR-UI-001"), ("credits", "SCR-UI-002"), ("setup", "SCR-SETUP-001")];
+
+    /// <summary>The note a run records when it has copied the screen <paramref name="name"/>.</summary>
+    public static string BeforeMatchNote(string name) => $"{name}_capture {name}-capture";
 
     /// <summary>
-    /// The record of the credits <c>new-game --credits-capture</c> copied from Help, About before
-    /// New Game, compared at SCR-UI-002 with marker frame 0.
+    /// The record of each screen of <see cref="BeforeMatch"/> the run copied, keyed
+    /// <c>&lt;name&gt;_capture</c>. These screens have no marker, so the marker frame is 0.
     /// </summary>
-    public static JsonObject? ExtractCredits(string runDirectory, JsonNode trace) =>
-        trace["Notes"]!.AsArray().Any(note => note!.GetValue<string>() == "credits_capture credits-capture")
-            ? Extract(Path.Combine(runDirectory, "credits-capture.bmp"), 0, null, null, null, CaptureScreen.Load("SCR-UI-002"))
-            : null;
+    public static IEnumerable<(string Key, JsonObject Capture)> ExtractBeforeMatch(string runDirectory, JsonNode trace)
+    {
+        var notes = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>()).ToHashSet();
+        foreach (var (name, screen) in BeforeMatch)
+            if (notes.Contains(BeforeMatchNote(name))
+                && Extract(Path.Combine(runDirectory, $"{name}-capture.bmp"), 0, null, null, null,
+                    CaptureScreen.Load(screen)) is { } capture)
+                yield return ($"{name}_capture", capture);
+    }
 
     /// <summary>
     /// The record of a capture <c>shot</c> step of <c>--order-steps</c> took after the dump, compared

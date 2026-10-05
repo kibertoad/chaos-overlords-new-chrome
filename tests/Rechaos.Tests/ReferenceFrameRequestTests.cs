@@ -26,20 +26,19 @@ public sealed class ReferenceFrameRequestTests
         Assert.Null(next.MarkerFrame);
     }
 
-    // SCR-UI-001: "title" in place of the save asks for the title screen.
-    [Fact]
-    public void TheTitleOperandNamesNoSave()
+    // SCR-UI-001, SCR-UI-002, SCR-SETUP-001: a screen's name in place of the save asks for that
+    // screen.
+    [Theory]
+    [InlineData("title")]
+    [InlineData("credits")]
+    [InlineData("setup")]
+    public void AScreenOperandNamesNoSave(string screen)
     {
         var request = Assert.IsType<ReferenceFrameRequest>(ReferenceFrameRequest.ParseArguments(
-            ["--reference-frame", ReferenceFrameRequest.TitleOperand, "frame.bmp"]));
-        Assert.True(request.Title);
-        Assert.Equal(ReferenceFrameRequest.TitleOperand, request.SavePath);
-        Assert.False(request.Credits);
-        Assert.False(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.Title);
-        // SCR-UI-002: "credits" asks for the credits over the title screen.
-        var credits = ReferenceFrameRequest.ParseArguments(["--reference-frame", ReferenceFrameRequest.CreditsOperand, "frame.bmp"])!;
-        Assert.True(credits.Title);
-        Assert.True(credits.Credits);
+            ["--reference-frame", screen, "frame.bmp"]));
+        Assert.Equal(screen, request.Screen);
+        Assert.Equal(screen, request.SavePath);
+        Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.Screen);
     }
 
     public static TheoryData<string[]> InvalidRequests => new()

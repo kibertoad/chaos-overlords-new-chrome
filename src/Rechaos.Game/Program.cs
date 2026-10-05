@@ -19,9 +19,9 @@ GameCulture.Apply();
 
 string? assetRoot = null;
 var platformSmokeTest = args.Contains("--platform-smoke-test", StringComparer.OrdinalIgnoreCase);
-// --reference-frame <save|title|credits> <bitmap> [--marker-frame <n>] [--reference-clicks <x:y[:2]>,...]:
-// show the save at the planning entry it stands at, the title screen or the credits, make the clicks,
-// write the drawing area and exit (ReferenceFrameRequest).
+// --reference-frame <save|title|credits|setup> <bitmap> [--marker-frame <n>] [--reference-clicks <x:y[:2]>,...]:
+// show the save at the planning entry it stands at, or the screen named in its place, make the
+// clicks, write the drawing area and exit (ReferenceFrameRequest).
 ReferenceFrameRequest? referenceFrame;
 try
 {

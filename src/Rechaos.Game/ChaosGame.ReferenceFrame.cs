@@ -9,9 +9,8 @@ namespace Rechaos.Game;
 /// area to a file, for tests that compare the rebuild's screens with captures of the original.
 /// </summary>
 /// <param name="SavePath">
-/// A native save of a match standing at a planning entry, as a replayed experiment run ends,
-/// <c>title</c> for the title screen (SCR-UI-001), or <c>credits</c> for the credits opened over
-/// it (SCR-UI-002).
+/// A native save of a match standing at a planning entry, as a replayed experiment run ends, or
+/// one of <see cref="ScreenOperands"/> for a screen shown before a match.
 /// </param>
 /// <param name="OutputPath">The 640-by-460, 32-bit, top-down bitmap to write.</param>
 /// <param name="MarkerFrame">
@@ -39,14 +38,15 @@ public sealed record ReferenceFrameRequest(
     string SavePath, string OutputPath, int? MarkerFrame = null, IReadOnlyList<ReferenceClick>? Clicks = null,
     int? PumpCounter = null, int? SelectedSector = null, int? ItemFrame = null)
 {
-    /// <summary>The operand that asks for the title screen in place of a save.</summary>
-    public const string TitleOperand = "title";
-
-    /// <summary>The operand that asks for the credits over the title screen in place of a save.</summary>
-    public const string CreditsOperand = "credits";
+    /// <summary>
+    /// The operands that ask for a screen shown before a match in place of a save: the title
+    /// screen (SCR-UI-001), the credits over it (SCR-UI-002) and the local setup New Game opens
+    /// first (SCR-SETUP-001).
+    /// </summary>
+    public static readonly IReadOnlyList<string> ScreenOperands = ["title", "credits", "setup"];
 
     private const string Usage =
-        "Usage: --reference-frame <save|title|credits> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
+        "Usage: --reference-frame <save|title|credits|setup> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
         + " [--selected-sector <0-63>] [--item-frame <0-14>] [--reference-clicks <x:y[:2]>,...]";
 
     // Keep captures independent of the player's preferences, recovery files and saves. The
@@ -56,11 +56,8 @@ public sealed record ReferenceFrameRequest(
         Path.GetDirectoryName(Path.GetFullPath(OutputPath))!,
         "rechaos-reference-frame-" + Guid.NewGuid().ToString("N"));
 
-    /// <summary>Whether the frame is the title screen, or the credits over it, rather than a saved match.</summary>
-    public bool Title => SavePath is TitleOperand or CreditsOperand;
-
-    /// <summary>Whether the frame shows the credits.</summary>
-    public bool Credits => SavePath == CreditsOperand;
+    /// <summary>The screen shown before a match the frame draws, or null for a saved match.</summary>
+    public string? Screen => ScreenOperands.Contains(SavePath) ? SavePath : null;
 
     public static ReferenceFrameRequest? ParseArguments(string[] args)
     {
@@ -94,7 +91,7 @@ public sealed record ReferenceFrameRequest(
             return values[index];
         }
         var source = Operand(args, reference + 1);
-        var save = source is TitleOperand or CreditsOperand ? source : Path.GetFullPath(source);
+        var save = ScreenOperands.Contains(source) ? source : Path.GetFullPath(source);
         var output = Path.GetFullPath(Operand(args, reference + 2));
         int? frame = null;
         if (marker >= 0)
@@ -188,8 +185,9 @@ public sealed partial class ChaosGame
     private TimeSpan _referenceClock;
 
     /// <summary>
-    /// Enters the saved match, or shows the title screen or the credits, once and then takes the update loop over, so no input but the
-    /// scripted clicks and no clock but theirs moves the screen while the frame is drawn.
+    /// Enters the saved match, or shows the screen named in its place, once and then takes the
+    /// update loop over, so no input but the scripted clicks and no clock but theirs moves the
+    /// screen while the frame is drawn.
     /// </summary>
     private bool UpdateReferenceFrame()
     {
@@ -199,12 +197,22 @@ public sealed partial class ChaosGame
             // Panels are drawn in place, as the original's captures show them once slid in.
             _slidePanels = false;
             _panelSlideTransition.Clear();
-            if (_referenceFrame.Title)
+            switch (_referenceFrame.Screen)
             {
-                _screens.Show(ClientScreen.Title);
-                if (_referenceFrame.Credits) OpenCredits();
+                case "title":
+                    _screens.Show(ClientScreen.Title);
+                    break;
+                case "credits":
+                    _screens.Show(ClientScreen.Title);
+                    OpenCredits();
+                    break;
+                case "setup":
+                    OpenNewGameSetup();
+                    break;
+                default:
+                    EnterNewMatch(NativeSaveStore.Load(_referenceFrame.SavePath, _definitions), advanceToPlanning: false);
+                    break;
             }
-            else EnterNewMatch(NativeSaveStore.Load(_referenceFrame.SavePath, _definitions), advanceToPlanning: false);
             _referenceEdges = (_referenceFrame.Clicks ?? [])
                 .SelectMany(click => Enumerable.Repeat(click.Point, click.Double ? 2 : 1))
                 .SelectMany(point => new[] { (point, true), (point, false) })

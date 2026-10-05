@@ -119,7 +119,7 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false,
     IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
     IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false,
-    bool CreditsCapture = false)
+    bool CreditsCapture = false, bool SetupCapture = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -298,7 +298,7 @@ internal sealed partial class NewGameSession(
         // (FND-UI-055) and the drawing area has been copied, and for the credits until About has
         // shown them (FND-UI-007) and they have been copied and closed.
         var titleShown = false;
-        var titleTaken = !settings.TitleCapture && !settings.CreditsCapture;
+        var titleTaken = !settings.TitleCapture && !settings.CreditsCapture && !settings.SetupCapture;
         if (!titleTaken)
             _process.SetBreakpoint(OriginalAddresses.TitleArtLoaded, _ => titleShown = true, oneShot: true);
         var nextPoke = DateTime.MinValue;
@@ -321,17 +321,30 @@ internal sealed partial class NewGameSession(
             if (settings.TitleCapture)
             {
                 if (!_setupReached && CaptureDrawingArea(window, "title-capture", CaptureFixture.Width, CaptureFixture.Height))
-                    _notes.Add("title_capture title-capture");
+                    _notes.Add(CaptureFixture.BeforeMatchNote("title"));
                 else
                     _notes.Add("The title was not captured.");
             }
             if (settings.CreditsCapture) CaptureCredits(window);
+            if (settings.SetupCapture)
+            {
+                // FND-OPTIONS-001: the objective, Mentality and planning limit setup opens with take
+                // their initialized values, as when the registry key holds none.
+                _process.Write(OriginalAddresses.PreferredScenario, BitConverter.GetBytes(0));
+                _process.Write(OriginalAddresses.Mentality, BitConverter.GetBytes(1));
+                _process.Write(OriginalAddresses.PlanningLimitChoice, BitConverter.GetBytes(0));
+            }
             titleTaken = true;
         }
         _process.Write(OriginalAddresses.LeftButtonDown, [0]);
         if (!reached) return Finish(false, "The setup screen never opened.");
 
         _process.Pump(TimeSpan.FromSeconds(2));
+        // --setup-capture: the setup screen as New Game opened it, before the settings are written.
+        if (settings.SetupCapture)
+            _notes.Add(CaptureDrawingArea(window, "setup-capture", CaptureFixture.Width, CaptureFixture.Height)
+                ? CaptureFixture.BeforeMatchNote("setup")
+                : "The setup screen was not captured.");
         var rollsBeforeBegin = _rolls.Count;
         ApplySettings();
         Click(window, OriginalAddresses.BeginX, OriginalAddresses.BeginY);
@@ -880,7 +893,7 @@ internal sealed partial class NewGameSession(
         }
         _process.Pump(TimeSpan.FromSeconds(2));
         if (CaptureDrawingArea(window, "credits-capture", CaptureFixture.Width, CaptureFixture.Height))
-            _notes.Add("credits_capture credits-capture");
+            _notes.Add(CaptureFixture.BeforeMatchNote("credits"));
         else
             _notes.Add("The credits were not captured.");
         Native.PostMessageW(window, Native.WmKeyDown, 0x20, IntPtr.Zero);

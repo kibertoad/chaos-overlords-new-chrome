@@ -180,12 +180,9 @@ internal sealed class StateExtractor
         // (CaptureFixture).
         if (CaptureFixture.Extract(runDirectory, trace, screens) is { } capture)
             run["capture"] = capture;
-        // --title-capture: the title screen before New Game (FND-UI-055).
-        if (CaptureFixture.ExtractTitle(runDirectory, trace) is { } title)
-            run["title_capture"] = title;
-        // --credits-capture: the credits from Help, About (FND-UI-007).
-        if (CaptureFixture.ExtractCredits(runDirectory, trace) is { } credits)
-            run["credits_capture"] = credits;
+        // --title-capture, --credits-capture, --setup-capture: the screens before the match.
+        foreach (var (key, before) in CaptureFixture.ExtractBeforeMatch(runDirectory, trace))
+            run[key] = before;
         return run;
     }
 

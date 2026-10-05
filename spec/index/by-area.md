@@ -322,6 +322,7 @@
 | [FND-SETUP-016](../findings/FND-SETUP-016.md) | The handoff card is drawn at 266,130 with the next player's colour, name and portrait, and only its Ready button or a menu command closes it | recorded |
 | [FND-SETUP-017](../findings/FND-SETUP-017.md) | The setup reset gives every slot the name string 61 plus its number, one human in slot 0 with portrait 0, and portrait 15 to the empty slots | recorded |
 | [FND-SETUP-018](../findings/FND-SETUP-018.md) | Every match entry sets the turn limit to 65535 when the scenario number is above 3 | recorded |
+| [FND-SETUP-019](../findings/FND-SETUP-019.md) | The setup screen breaks the scenario description at the last space at or before the 37th character and starts the next line after it | recorded |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | established |
 | [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | established |
@@ -879,7 +880,7 @@
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | Does the idle gang warning look the same in the rebuild? | recorded |
 | [EXP-UI-013](../experiments/EXP-UI-013.md) | Does the rebuild mark the objective sectors of Siege on the city map as the original does? | recorded |
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | Does the rebuild mark the objective sectors of Big Man on the city map as the original does? | recorded |
-| [EXP-UI-015](../experiments/EXP-UI-015.md) | Do the title screen and the credits look the same in the rebuild? | recorded |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | Do the title screen, the credits and the setup screen look the same in the rebuild? | recorded |
 | [FND-UI-001](../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |

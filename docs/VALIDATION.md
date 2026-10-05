@@ -746,7 +746,12 @@ gives the run a `title_capture` object, compared at SCR-UI-001, with marker
 frame 0. `--credits-capture` then posts Help, About, copies the credits once
 the breakpoint after their load (FND-UI-055) has been hit, and closes them with
 the space bar; `extract` gives the run a `credits_capture` object, compared at
-SCR-UI-002. EXP-UI-015 is taken this way.
+SCR-UI-002. `--setup-capture` writes the initialized values of the objective,
+Mentality and planning limit options (FND-OPTIONS-001) before New Game, so the
+setup screen opens as it does when the registry key holds none, and copies the
+setup screen two seconds after it opens, before the run writes its own
+settings; `extract` gives the run a `setup_capture` object, compared at
+SCR-SETUP-001. EXP-UI-015 is taken this way.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
@@ -788,16 +793,17 @@ works the presses out from the order steps before it: a double-click at the
 centre of the opened sector's cell for `open`, the step's point for `dbl` and
 `strip`, a card's point for `card` and `(20, 425)` for `back`. It leaves out
 `exit`, since the reference frame does not draw the planning entry's panels.
-For a `title_capture` the test passes `title` in place of the save, and for a
-`credits_capture` `credits`; the game draws its title screen, or the credits
-over it, without a match.
+For a `title_capture`, `credits_capture` or `setup_capture` the test passes
+`title`, `credits` or `setup` in place of the save; the game draws its title
+screen, the credits over it, or the local setup as New Game first opens it,
+without a match.
 The rebuild's orders are a panel (DEV-UI-021): a `card` step whose menu 1
 choice runs a picker (Attack, Equip, Give, Influence, Move, Research or Sell,
 FND-UI-021) becomes the card press and a press on that order's row of the
 panel. Any other step that opened a popup menu makes the capture
 unreplayable, and the test skips it. With `RECHAOS_KEEP_FRAMES` set to a directory, the test copies
 each frame the rebuild drew there as `<experiment>-<run>-<step>.bmp`, step -1
-being the endpoint, `title` the title screen and `credits` the credits. Preferences, saves and logs of that run go to a
+being the endpoint, and as `<experiment>-<run>-<screen>.bmp` for a screen before the match. Preferences, saves and logs of that run go to a
 `rechaos-reference-frame-*` directory beside the bitmap, never to the player's.
 The test then compares each element:
 

@@ -223,7 +223,7 @@
 
 ## findings
 
-380 entries.
+381 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -525,6 +525,7 @@
 | [FND-SETUP-016](../findings/FND-SETUP-016.md) | The handoff card is drawn at 266,130 with the next player's colour, name and portrait, and only its Ready button or a menu command closes it | recorded |
 | [FND-SETUP-017](../findings/FND-SETUP-017.md) | The setup reset gives every slot the name string 61 plus its number, one human in slot 0 with portrait 0, and portrait 15 to the empty slots | recorded |
 | [FND-SETUP-018](../findings/FND-SETUP-018.md) | Every match entry sets the turn limit to 65535 when the scenario number is above 3 | recorded |
+| [FND-SETUP-019](../findings/FND-SETUP-019.md) | The setup screen breaks the scenario description at the last space at or before the 37th character and starts the next line after it | recorded |
 | [FND-SNITCH-001](../findings/FND-SNITCH-001.md) | Snitch subtracts 3 from Tolerance with no cash test, and after the instant phase every Tolerance below 1 becomes 1 | recorded |
 | [FND-STATE-001](../findings/FND-STATE-001.md) | City generation stores Income and Tolerance in sector bytes 1 and 2, and the refresh before planning rebuilds bytes 3 to 6, 0x0D, 0x0E and 0x16 to 0x23 from them and the completed sites | recorded |
 | [FND-STATE-002](../findings/FND-STATE-002.md) | The gang record holds the player at byte 0, the definition at byte 1 and Force at byte 3, its statistics follow the definition's order, and each picker's target bytes are read back by the resolver | recorded |
@@ -738,7 +739,7 @@
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | Does the idle gang warning look the same in the rebuild? | recorded |
 | [EXP-UI-013](../experiments/EXP-UI-013.md) | Does the rebuild mark the objective sectors of Siege on the city map as the original does? | recorded |
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | Does the rebuild mark the objective sectors of Big Man on the city map as the original does? | recorded |
-| [EXP-UI-015](../experiments/EXP-UI-015.md) | Do the title screen and the credits look the same in the rebuild? | recorded |
+| [EXP-UI-015](../experiments/EXP-UI-015.md) | Do the title screen, the credits and the setup screen look the same in the rebuild? | recorded |
 
 ## bugs
 
