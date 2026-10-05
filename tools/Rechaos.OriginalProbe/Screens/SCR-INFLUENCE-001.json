@@ -1,0 +1,11 @@
+{
+  "screen": "SCR-INFLUENCE-001",
+  "state": "The detailed sector screen of player 0 with the Influence picker open and no site chosen",
+  "elements": [
+    {"element": "Influence picker for choosing one of the sector's three sites", "rect": [0, 0, 640, 460]},
+    {"element": "Gang portrait", "rect": [130, 141, 64, 64]},
+    {"element": "Site picture, slot 0", "rect": [210, 141, 120, 64]},
+    {"element": "Site picture, slot 1", "rect": [312, 197, 120, 64]},
+    {"element": "Site picture, slot 2", "rect": [210, 251, 120, 64]}
+  ]
+}

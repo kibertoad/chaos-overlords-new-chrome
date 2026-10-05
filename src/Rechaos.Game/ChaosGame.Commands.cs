@@ -467,14 +467,10 @@ public sealed partial class ChaosGame
         for (var slot = 0; slot < MatchLimits.SitesPerSector; slot++)
         {
             var site = sector.Sites.Single(value => value.Slot == slot);
-            var destination = InfluenceCommandLayout.Site(slot);
-            if (_sitePortraits is not null)
-                batch.Draw(_sitePortraits, destination,
-                    OriginalSpriteLayout.SitePortrait(site.DefinitionId), Color.White);
             var targetId = actor.SectorId * MatchLimits.SitesPerSector + slot;
-            if (_commandTargetCursor >= 0
-                && _commandTargetOptions[_commandTargetCursor].Target.Id == targetId)
-                DrawBorder(batch, pixel, destination, Color.White, 2);
+            DrawInfluenceSite(batch, pixel, site, InfluenceCommandLayout.SiteHit(slot),
+                SiteControlRules.IsComplete(site, state.Definitions.Site(site.DefinitionId)),
+                _commandTargetCursor >= 0 && _commandTargetOptions[_commandTargetCursor].Target.Id == targetId);
         }
         DrawCommandPanelFaces(batch);
     }

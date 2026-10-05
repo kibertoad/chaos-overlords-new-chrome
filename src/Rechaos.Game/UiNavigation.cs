@@ -749,17 +749,17 @@ public static class InfluenceCommandLayout
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 
-    public static Rectangle Site(int slot) => slot switch
-    {
-        0 => SharedPanelLayout.At(105, 16, 120, 64),
-        1 => SharedPanelLayout.At(208, 73, 120, 64),
-        2 => SharedPanelLayout.At(105, 130, 120, 64),
-        _ => throw new ArgumentOutOfRangeException(nameof(slot))
-    };
+    /// <summary>
+    /// FND-INFLUENCE-002: the site picture frame over a site that is not completed, the frame over
+    /// a completed one, and the frame of the chosen site, all from <c>PX00129</c> keyed on white.
+    /// </summary>
+    public static Rectangle SiteFrameSource => new(242, 299, 120, 64);
+    public static Rectangle CompletedSiteFrameSource => new(362, 299, 120, 64);
+    public static Rectangle ChosenSiteFrameSource => new(0, 235, 120, 64);
 
     /// <summary>
-    /// FND-INFLUENCE-001: native Influence handler 0x0043F692's half-open site selection targets.
-    /// These differ slightly from the staggered card artwork apertures.
+    /// FND-INFLUENCE-001, FND-INFLUENCE-002: native Influence handler 0x0043F692's half-open site
+    /// selection targets, which are also where it draws each slot's picture (EXP-UI-010).
     /// </summary>
     public static Rectangle SiteHit(int slot) => slot switch
     {

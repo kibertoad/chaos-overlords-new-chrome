@@ -223,7 +223,7 @@
 
 ## findings
 
-375 entries.
+377 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -444,6 +444,7 @@
 | [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | The Influence picker draws each site slot as a PX02000 picture with a keyed PX00129 frame, dims completed sites, and shows the chosen slot from a prepared highlighted copy | recorded |
 | [FND-INFLUENCE-003](../findings/FND-INFLUENCE-003.md) | The Influence picker sits at screen (104,124), confirms with a control or Enter only when a site is chosen, cancels with a control or Escape, and preselects a pending Influence order | recorded |
 | [FND-INFLUENCE-004](../findings/FND-INFLUENCE-004.md) | At difficulty band 0 the Influence resolver keeps the dice pool in the local that holds the site's progress | recorded |
+| [FND-INFLUENCE-005](../findings/FND-INFLUENCE-005.md) | The Influence panel selects pattern 147 before it draws the sites, so a completed site shows through the dense pattern | recorded |
 | [FND-MOVE-001](../findings/FND-MOVE-001.md) | The Terminate pass runs before the Move pass, and Move destinations are normalized per player to at most six gangs a sector | recorded |
 | [FND-MOVE-002](../findings/FND-MOVE-002.md) | The Move panel maps a 162-by-156 area into a three-by-three grid of neighboring sectors | recorded |
 | [FND-MOVE-003](../findings/FND-MOVE-003.md) | The Terminate and Move passes skip inactive gangs, the destination is target, and selector mode 0 draws one of the eight neighbours, which the Move repair stores as the new destination | recorded |
@@ -597,6 +598,7 @@
 | [FND-UI-050](../findings/FND-UI-050.md) | The city compositor keys a police badge over every sector with police presence, after the site markers and before the gang-status marker | recorded |
 | [FND-UI-051](../findings/FND-UI-051.md) | While a slid-in panel is open the pump leaves the selection frame as it was when the panel came in | recorded |
 | [FND-UI-052](../findings/FND-UI-052.md) | Item Information keeps its frame in a local that starts at 0 and steps once each time the animation flag is taken | recorded |
+| [FND-UI-053](../findings/FND-UI-053.md) | The Sell and Give panels turn their item pictures with a frame local that starts at 0, as Item Information does | recorded |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
@@ -605,7 +607,7 @@
 
 ## experiments
 
-119 entries.
+120 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -728,6 +730,7 @@
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | Do the detailed sector screen, Site Information, Gangs in Sector and the Sector Financial panel look the same in the rebuild for a sector under police presence? | recorded |
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | Do the console's Events, Combat Results, Rankings, Search and Hire panels and the Gang Information panel of a hire offer look the same in the rebuild? | recorded |
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | Do the Move, Equip and Research panels, and the Item Information and compact Gang Information panels Equip opens, look the same in the rebuild? | recorded |
+| [EXP-UI-010](../experiments/EXP-UI-010.md) | Do the Give, Sell and Influence panels look the same in the rebuild? | recorded |
 
 ## bugs
 

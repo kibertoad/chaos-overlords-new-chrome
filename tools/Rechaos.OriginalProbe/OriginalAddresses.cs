@@ -221,11 +221,14 @@ internal static class OriginalAddresses
     public const uint SelectionFrameHeld = 0x004854C8;
     public const uint PanelHoldsSelectionFrame = 0x004196E4;
 
-    // FND-UI-052: Item Information sets its frame local [ebp-0x134] to 0 at 0x0044B6AC and
-    // returns at 0x0044C475.
-    public const uint ItemFrameStarts = 0x0044B6AC;
-    public const uint ItemFrameLocal = 0x134;
-    public const uint ItemInformationReturns = 0x0044C475;
+    // FND-UI-052, FND-UI-053: where Item Information, Sell and Give set their frame local to 0,
+    // the local's offset below ebp, and where each handler returns.
+    public static readonly (uint Starts, uint Local, uint Returns)[] ItemFrameHandlers =
+    [
+        (0x0044B6AC, 0x134, 0x0044C475),
+        (0x00443BD1, 0x28, 0x00445654),
+        (0x00445A63, 0x2C, 0x00447ADA),
+    ];
     public const uint Cash = 0x004A25E8;
 
     // FND-OPTIONS-001: Slide Panels, read by the panel helpers that slide a panel in and out.

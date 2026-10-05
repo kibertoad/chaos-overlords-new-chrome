@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EQUIP-003, FND-GIVE-001, FND-GIVE-002, FND-GIVE-003, FND-GFX-006, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-EQUIP-003, FND-GIVE-001, FND-GIVE-002, FND-GIVE-003, FND-GFX-006, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004, FND-UI-053, EXP-UI-010]
 conflicting: []
 split_with: []
 related: [RULE-GIVE-001, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
@@ -17,7 +17,7 @@ related: [RULE-GIVE-001, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
 |---|---|---|---|---|---|
 | Panel | `DATA/PX08/PX05015` | None | `(104, 124, 344, 209)`, the shared panel position | While the panel is open | FND-EQUIP-003, FND-OPTIONS-001 |
 | Giver portrait | `DATA/PX08/Px03000` 64-by-64 cell of the giver's definition | None | `(130, 141, 64, 64)` | While the panel is open | FND-GIVE-001 |
-| Item pictures | The item's 720-by-48 strip `PX04xxx` (resource 4000 plus the item's `id`), 15 frames of 48 by 48 | The acting gang's weapon, armor and miscellaneous item, each one pixel inside its target cell, animated | `(209, 141, 48, 48)`, `(209, 205, 48, 48)` and `(209, 269, 48, 48)` | For each filled slot | FND-EQUIP-003, FND-GIVE-001 |
+| Item pictures | The item's 720-by-48 strip `PX04xxx` (resource 4000 plus the item's `id`), 15 frames of 48 by 48 | The acting gang's weapon, armor and miscellaneous item, each one pixel inside its target cell, animated together from frame 0 when the panel opens | `(209, 141, 48, 48)`, `(209, 205, 48, 48)` and `(209, 269, 48, 48)` | For each filled slot | FND-EQUIP-003, FND-GIVE-001, FND-UI-053 |
 | Recipient list | None: nothing fills the list area, so the panel image shows where no card is drawn | None | `(312, 139, 97, 178)` | While the panel is open | FND-GIVE-003 |
 | Recipient card | `DATA/PX16/PX00129` card `(0,560,97,34)` | Up to five of the player's other gangs in the giver's sector, in roster order | `(312, 139 + 36 * n, 97, 34)`, `n` from 0 to 4 | While the panel is open | FND-EQUIP-003, FND-GIVE-001, FND-GIVE-002 |
 | Recipient portrait | `DATA/PX16/PX03000` 64-by-64 cell of the gang's definition, scaled to 32 by 32 | None | `(313, 140 + 36 * n, 32, 32)` | For each card | FND-GIVE-002 |

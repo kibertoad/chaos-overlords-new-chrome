@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 52 |
-| `validated` | 165 |
+| `implemented` | 49 |
+| `validated` | 168 |
 
 | Code | Rows |
 |---|---|
@@ -166,7 +166,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-INFLUENCE-001` | Each Influence gang rolls on its own and adds its successes to the site's progress at once | supported | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-AI-002` | validated | A computer player's planned Influence in a sector it does not control gives no command (DEV-AI-002). EXP-TURN-023 checks a Goon computer player's Influence, whose progress is its pool plus its successes (BUG-INFLUENCE-001). EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 reach the three bands, a site already complete that rolls nothing, completed sites, and Goon Influences whose progress jumps ahead and falls back. EXP-TURN-069 reaches a pool of 0 or less at band 1. No recorded run reaches one at band 0, where a negative pool leaves negative progress. EXP-TURN-083 records the original resolving a computer's Influence in a neutral sector, which the rebuild drops (DEV-AI-002). |
-| `SCR-INFLUENCE-001` | Influence picker for choosing one of the sector's three sites | supported | complete | None | None | implemented | None |
+| `SCR-INFLUENCE-001` | Influence picker for choosing one of the sector's three sites | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | Site pictures, the completed site through pattern 147 (FND-INFLUENCE-005), frames, faces and keys follow the original. ScreenCaptureTests compares the picker with one completed site and no site chosen in the EXP-UI-010 capture with the original, and no element differs; no capture shows the chosen frame. |
 
 ## HEAL
 
@@ -245,14 +245,14 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-GIVE-001` | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | None | validated | EXP-TURN-027 replays a human's Give of a weapon and an armor to a gang hired the turn before, and EXP-TURN-030 a swap by two Gives, then two Gives to one gang that buys a weapon in the same turn. |
-| `SCR-GIVE-001` | Give panel | supported | complete | None | `DEV-GIVE-001` | implemented | The recipient cards, eligibility, marks, faces and keys follow the original. The list has no background fill, and ineligible cards are blacked out through bitmap 146 from the card's corner (FND-GIVE-003). |
+| `SCR-GIVE-001` | Give panel | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-GIVE-001` | validated | The recipient cards, eligibility, marks, faces and keys follow the original. The list has no background fill, and ineligible cards are blacked out through bitmap 146 from the card's corner (FND-GIVE-003). ScreenCaptureTests compares the panel with one recipient and no item selected in the EXP-UI-010 capture with the original, drawing the recorded item frame (FND-UI-053), and no element differs; no capture shows a selection, a chosen recipient or a dimmed card. |
 
 ## SELL
 
 | Spec ID | Title | Spec status | Code | Tests | Deviations | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | `RULE-SELL-001` | Sell removes every selected item but pays half the Cost of only the last selected slot | established | complete | tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs | `DEV-EQUIP-001` | validated | Keeps BUG-SELL-001: a multi-item Sell pays only the last selected slot, so no deviation covers it. EXP-TURN-016 sells a weapon, an armor and a miscellaneous item in one order. |
-| `SCR-SELL-001` | Sell panel | supported | complete | None | None | implemented | Pictures, names, half prices, highlight, faces and keys follow the original; the rebuild's extra keys are DEV-UI-010. |
+| `SCR-SELL-001` | Sell panel | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | Pictures, names, half prices, highlight, faces and keys follow the original; the rebuild's extra keys are DEV-UI-010. Names and prices are drawn in opaque cells over the panel image's placeholder digits (FND-UI-019). ScreenCaptureTests compares the panel with one empty slot and no item selected in the EXP-UI-010 capture with the original, drawing the recorded item frame (FND-UI-053), and no element differs; no capture shows the highlight. |
 
 ## TERMINATE
 

@@ -190,6 +190,44 @@ public sealed partial class ChaosGame
             .FirstOrDefault(index => _commandTargetOptions[index].Target.Id == queued.Target.Id, -1);
     }
 
+    // FND-INFLUENCE-002, FND-INFLUENCE-005: the mode 0 copy of a completed site keeps the picture
+    // where pattern 147 takes the source and the black underneath elsewhere, by screen phase.
+    private readonly Dictionary<(int X, int Y), Texture2D> _influenceCompletedMasks = [];
+
+    /// <summary>
+    /// SCR-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-005, EXP-UI-010: a completed site is its
+    /// picture through pattern 147 on black under the completed frame; another site is its picture
+    /// under the site frame, or under the chosen frame once chosen.
+    /// </summary>
+    private void DrawInfluenceSite(
+        SpriteBatch batch, Texture2D pixel, MatchSiteState site, Rectangle destination, bool completed, bool chosen)
+    {
+        if (completed) batch.Draw(pixel, destination, Color.Black);
+        if (_sitePortraits is not null)
+            batch.Draw(_sitePortraits, destination, OriginalSpriteLayout.SitePortrait(site.DefinitionId), Color.White);
+        if (completed) batch.Draw(InfluenceCompletedMask(destination), destination, Color.White);
+        if (_uiKeyedSprites is not null)
+            batch.Draw(_uiKeyedSprites, destination,
+                completed ? InfluenceCommandLayout.CompletedSiteFrameSource
+                : chosen ? InfluenceCommandLayout.ChosenSiteFrameSource
+                : InfluenceCommandLayout.SiteFrameSource, Color.White);
+    }
+
+    private Texture2D InfluenceCompletedMask(Rectangle destination)
+    {
+        var phase = (destination.X & 7, destination.Y & 1);
+        if (_influenceCompletedMasks.TryGetValue(phase, out var mask)) return mask;
+        var pixels = new Color[destination.Width * destination.Height];
+        for (var y = 0; y < destination.Height; y++)
+        for (var x = 0; x < destination.Width; x++)
+            pixels[y * destination.Width + x] = OriginalPatternMask.PreservesDestination(
+                OriginalPatternMask.Dense, destination.X + x, destination.Y + y) ? Color.Black : Color.Transparent;
+        mask = new Texture2D(GraphicsDevice, destination.Width, destination.Height);
+        mask.SetData(pixels);
+        _influenceCompletedMasks[phase] = mask;
+        return mask;
+    }
+
     private void HandleEquipmentCommandClick(Point point)
     {
         if (CommandPanelFaces.ButtonAt(point) is { } button)

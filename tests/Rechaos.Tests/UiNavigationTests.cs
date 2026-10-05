@@ -72,9 +72,9 @@ public sealed partial class UiNavigationTests
     public void InfluencePickerUsesOriginalStaggeredSiteLayout()
     {
         Assert.Equal(new Rectangle(130, 141, 64, 64), InfluenceCommandLayout.Portrait);
-        Assert.Equal(new Rectangle(209, 140, 120, 64), InfluenceCommandLayout.Site(0));
-        Assert.Equal(new Rectangle(312, 197, 120, 64), InfluenceCommandLayout.Site(1));
-        Assert.Equal(new Rectangle(209, 254, 120, 64), InfluenceCommandLayout.Site(2));
+        Assert.Equal(new Rectangle(210, 141, 120, 64), InfluenceCommandLayout.SiteHit(0));
+        Assert.Equal(new Rectangle(312, 197, 120, 64), InfluenceCommandLayout.SiteHit(1));
+        Assert.Equal(new Rectangle(210, 251, 120, 64), InfluenceCommandLayout.SiteHit(2));
     }
 
     [Fact]

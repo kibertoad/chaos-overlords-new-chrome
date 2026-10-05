@@ -84,7 +84,8 @@ internal static class CaptureFixture
         if (record is not null)
         {
             record["frame_counter"] = shot["FrameCounter"] is JsonNode frame ? frame.GetValue<int>() : null;
-            // FND-UI-052: the frame of Item Information's rotating item, when the panel is open.
+            // FND-UI-052, FND-UI-053: the frame of the rotating item pictures of Item Information,
+            // Sell or Give, when one is open.
             if (shot["ItemFrame"] is JsonNode item) record["item_frame"] = item.GetValue<int>();
         }
         return record;

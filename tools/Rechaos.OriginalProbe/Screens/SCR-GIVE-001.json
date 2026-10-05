@@ -1,0 +1,12 @@
+{
+  "screen": "SCR-GIVE-001",
+  "state": "The detailed sector screen of player 0 with the Give panel open for a gang carrying items and no item chosen",
+  "elements": [
+    {"element": "Give panel", "rect": [0, 0, 640, 460]},
+    {"element": "Giver portrait", "rect": [130, 141, 64, 64]},
+    {"element": "Item pictures, slot 0", "rect": [209, 141, 48, 48]},
+    {"element": "Item pictures, slot 1", "rect": [209, 205, 48, 48]},
+    {"element": "Item pictures, slot 2", "rect": [209, 269, 48, 48]},
+    {"element": "Recipient list", "rect": [312, 139, 97, 178]}
+  ]
+}

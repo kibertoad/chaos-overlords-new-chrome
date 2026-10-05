@@ -23,8 +23,8 @@ namespace Rechaos.Game;
 /// (FND-UI-048), in place of the clock's.
 /// </param>
 /// <param name="ItemFrame">
-/// The frame of Item Information's rotating item the capture showed (FND-UI-052), in place of
-/// the one the clock gives.
+/// The frame of the rotating item pictures of Item Information, Sell or Give the capture showed
+/// (FND-UI-052, FND-UI-053), in place of the one the clock gives.
 /// </param>
 /// <param name="SelectedSector">
 /// The sector the capture had selected (FND-SAVE-003), in place of the one the planning entry

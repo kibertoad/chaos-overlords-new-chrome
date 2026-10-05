@@ -71,15 +71,16 @@ internal sealed partial class NewGameSession
             if (_process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0)
                 heldCounter = _process.ReadInt32(OriginalAddresses.PumpCounter);
         }, quiet: true);
-        // FND-UI-052: the frame pointer of Item Information's handler while it runs. Its frame
-        // local is read from memory around the capture, since a breakpoint's report reaches the
-        // probe only after the game has gone on drawing.
-        uint? itemHandler = null;
-        _process.SetBreakpoint(OriginalAddresses.ItemFrameStarts, context => itemHandler = context.Ebp, quiet: true);
-        _process.SetBreakpoint(OriginalAddresses.ItemInformationReturns, _ => itemHandler = null, quiet: true);
-        int? ItemFrame() => itemHandler is { } frame
-            ? _process.ReadInt32(frame - OriginalAddresses.ItemFrameLocal)
-            : null;
+        // FND-UI-052, FND-UI-053: the frame local of the last of Item Information, Sell and Give
+        // to open, while it runs. It is read from memory around the capture, since a breakpoint's
+        // report reaches the probe only after the game has gone on drawing.
+        var itemHandlers = new Stack<uint>();
+        foreach (var (starts, local, returns) in OriginalAddresses.ItemFrameHandlers)
+        {
+            _process.SetBreakpoint(starts, context => itemHandlers.Push(context.Ebp - local), quiet: true);
+            _process.SetBreakpoint(returns, _ => itemHandlers.TryPop(out var _), quiet: true);
+        }
+        int? ItemFrame() => itemHandlers.TryPeek(out var address) ? _process.ReadInt32(address) : null;
         foreach (var step in settings.OrderSteps!)
         {
             if (step.Kind == "shot")
@@ -90,7 +91,7 @@ internal sealed partial class NewGameSession
                 var area = CaptureDrawingArea(window, file);
                 var itemFrame = ItemFrame() == itemBefore ? itemBefore : null;
                 if (itemBefore is not null && itemFrame is null)
-                    _notes.Add($"{file}: the Item Information frame moved during the capture.");
+                    _notes.Add($"{file}: the item pictures' frame moved during the capture.");
                 var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
                         _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,
