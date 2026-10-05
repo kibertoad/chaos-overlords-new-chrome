@@ -388,7 +388,7 @@ public sealed partial class ChaosGame
         var display = NativeTwoCellNumberPresentation.Format(value, kind, width);
         font.DrawNumber(batch, display,
             new Vector2(left + (width - display.Digits.Length) * OriginalFontLayout.CellWidth, y),
-            display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime);
+            display.IsNegative ? Color.Red : Color.Lime);
     }
 
     /// <summary>FND-UI-004: numeric cells are opaque, including their blank pixels.</summary>

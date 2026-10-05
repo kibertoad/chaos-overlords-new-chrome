@@ -124,6 +124,17 @@ public sealed partial class ChaosGame
         DrawSectorGangsPanel(batch, pixel, font, state);
     }
 
+    /// <summary>
+    /// FND-UI-014, FND-UI-025: a sector's cell of the unmarked copy of the city map, framed in
+    /// black, so it shows the sector's terrain without its owner's colour or any marker.
+    /// </summary>
+    private void DrawUnmarkedSectorCell(SpriteBatch batch, Texture2D pixel, int sectorId, Rectangle destination)
+    {
+        if (_cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)] is { } neutral)
+            batch.Draw(neutral, destination, CityMapLayout.Source(sectorId), Color.White);
+        DrawBorder(batch, pixel, destination, Color.Black, 1);
+    }
+
     private void DrawSectorGangsPanel(
         SpriteBatch batch,
         Texture2D pixel,
@@ -131,11 +142,7 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawPanelArtwork(batch, pixel, _sectorGangsBackground, SectorGangsLayout.Panel);
-        // FND-UI-014, FND-UI-025: the cell comes from the unmarked copy of the city map, so it shows
-        // the sector's terrain without its owner's colour or any marker.
-        if (_cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)] is { } neutral)
-            batch.Draw(neutral, SectorGangsLayout.SectorTile, CityMapLayout.Source(_sectorGangSector), Color.White);
-        DrawBorder(batch, pixel, SectorGangsLayout.SectorTile, Color.Black, 1);
+        DrawUnmarkedSectorCell(batch, pixel, _sectorGangSector, SectorGangsLayout.SectorTile);
         font.Draw(batch, SectorGangsLayout.SectorCodeText(_sectorGangSector),
             SectorGangsLayout.SectorCode.ToVector2(), Color.Lime, 1);
         foreach (var entry in _sectorGangRoster.Take(SectorGangsLayout.MaximumGangCount)

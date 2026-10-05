@@ -781,7 +781,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.A)) SelectAllSiteSearch();
                     if (Pressed(keyboard, Keys.N)) ClearSiteSearch();
                     if (Pressed(keyboard, Keys.Enter)) ApplySiteSearch();
-                    if (Pressed(keyboard, Keys.Back)) CancelSiteSearch();
+                    if (Pressed(keyboard, Keys.Back)) CloseSiteSearch();
                     break;
             }
         }
