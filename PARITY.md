@@ -16,8 +16,8 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 25 |
-| `validated` | 192 |
+| `implemented` | 24 |
+| `validated` | 193 |
 
 | Code | Rows |
 |---|---|
@@ -381,7 +381,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-COMLINK-005` | Showing a Comlink message marks it read and dates it from its turn | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | None |
 | `RULE-COMLINK-006` | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | None |
 | `RULE-COMLINK-007` | When a player finishes planning, the read messages at the front of the inbox are dropped | established | complete | tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs | None | validated | None |
-| `SCR-COMLINK-001` | Comlink View panel | supported | complete | None | `DEV-COMLINK-001` | implemented | None |
+| `SCR-COMLINK-001` | Comlink View panel | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | `DEV-COMLINK-001` | validated | The number and count, the arrow faces, the date, the sender's name, colour strip and stretched portrait, and the four message rows follow FND-COMLINK-007. ScreenCaptureTests compares the panel opened on a message one human sent another in the EXP-UI-021 capture with the original, and no element differs. No capture shows several messages, a step between them or a pressed face. |
 | `SCR-COMLINK-002` | Comlink Send panel | supported | complete | tests/Rechaos.Tests/ScreenCaptureTests.cs | None | validated | ScreenCaptureTests compares the panel just opened, with the caret inverse, and after a press on the other human's card, which frames it and draws the Send face enabled, with the EXP-UI-016 captures and the caret phase they recorded, and no element differs; no capture shows typed text, the caret plain, a pressed button or an empty slot. |
 
 ## SEARCH

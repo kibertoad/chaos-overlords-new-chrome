@@ -145,6 +145,7 @@ internal sealed class StateExtractor
                     ["choice"] = probeStep["Choice"]!.GetValue<int>(),
                     ["menu"] = step["Menu"]!.GetValue<int>(),
                 };
+                if (probeStep["Text"] is JsonNode text) record["text"] = text.GetValue<string>();
                 if (step["Items"] is JsonArray items)
                     record["items"] = new JsonArray(items.Select(Integers).ToArray());
                 record["city_view"] = step["CityView"]!.GetValue<bool>();

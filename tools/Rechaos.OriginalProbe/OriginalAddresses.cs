@@ -276,6 +276,8 @@ internal static class OriginalAddresses
     // FND-SETUP-016: the handoff card's presenter, which takes the next player's slot and returns
     // once Ready, (270, 241, 100, 48) on the screen, is released inside.
     public const uint HandoffCard = 0x004396C0;
+    // FND-RNG-006: the call of roll that draws a hire offer at each player's planning entry.
+    public const uint HireOfferDraw = 0x0047172A;
     public const int ReadyX = 270 + 50;
     public const int ReadyY = 241 + 24;
 

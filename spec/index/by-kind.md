@@ -614,7 +614,7 @@
 
 ## experiments
 
-140 entries.
+141 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -758,6 +758,7 @@
 | [EXP-UI-018](../experiments/EXP-UI-018.md) | Does the elimination card look the same in the rebuild? | recorded |
 | [EXP-UI-019](../experiments/EXP-UI-019.md) | Does the Detailed Combat panel look the same in the rebuild through a clip of the viewer's gang attacking another gang? | recorded |
 | [EXP-UI-020](../experiments/EXP-UI-020.md) | Does the Detailed Combat panel look the same in the rebuild through a police clip? | recorded |
+| [EXP-UI-021](../experiments/EXP-UI-021.md) | Does the Comlink View panel look the same in the rebuild for a message one human sent another? | recorded |
 
 ## bugs
 

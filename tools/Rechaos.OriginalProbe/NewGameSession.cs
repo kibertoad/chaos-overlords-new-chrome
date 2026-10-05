@@ -182,7 +182,7 @@ internal sealed record NewGameSettings(
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
         foreach (var step in OrderSteps ?? [])
-            yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", _ => "left_click" },
+            yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", "type" => "key", _ => "left_click" },
                 $"{step} after the dump");
     }
 }

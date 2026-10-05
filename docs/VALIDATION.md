@@ -787,7 +787,7 @@ save, and starts the game with
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
     [--pump-counter <0-7>] [--selected-sector <0-63>] [--lamps <0|1>,<0|1>]
     [--item-frame <0-14>] [--clip-tick <0-21>]
-    [--reference-clicks <x:y[:2]|x:y>x:y>,...]
+    [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]
 ```
 
 which shows the save at its planning entry in a 640-by-460 window, holds the
@@ -808,14 +808,16 @@ shows (FND-COMBAT-016), which the clip the clicks started is drawn at. The blink
 and cycling parts of the screen stay at time zero however many clicks were
 made: the marker is drawn at `--marker-frame`, or at its first frame without it.
 `--reference-clicks` lists the presses that take the rebuild from the planning
-entry to a shot step's screen, `:2` marking a double-click. They run on a clock
+entry to a shot step's screen, `:2` marking a double-click, and `'TEXT` text
+typed into the Comlink Send panel a character at a time. They run on a clock
 of their own, one button edge every 50 ms, wait while a pressed face or a flash
 holds the input (RULE-TIMER-004), and the frame is drawn 20 updates after the
 last one. Panels are drawn in place, without the slide. For a shot step the test
 works the presses out from the order steps before it: a double-click at the
 centre of the opened sector's cell for `open`, the step's point for `dbl` and
-`strip`, a card's point for `card` and `(20, 425)` for `back`. It leaves out
-`exit`, since the reference frame does not draw the planning entry's panels.
+`strip`, a card's point for `card`, `(20, 425)` for `back` and the step's text
+for `type`. It leaves out `wait`, which presses nothing, and `exit`, since the
+reference frame does not draw the planning entry's panels.
 For a `title_capture`, `credits_capture` or `setup_capture` the test passes
 `title`, `credits` or `setup` in place of the save; the game draws its title
 screen, the credits over it, or the local setup as New Game first opens it,

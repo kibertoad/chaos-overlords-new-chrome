@@ -160,6 +160,17 @@ public sealed class ReferenceFrameRequestTests
         Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.ItemFrame);
     }
 
+    // RULE-COMLINK-006: typed text runs between the clicks, as the Send panel takes keys.
+    [Fact]
+    public void TypedTextIsReadBetweenTheClicks()
+    {
+        var clicks = ReferenceClick.ParseList("576:166,'MEET ME 0700,250:190");
+        Assert.Equal("MEET ME 0700", clicks[1].Text);
+        Assert.Equal("576:166,'MEET ME 0700,250:190", string.Join(",", clicks));
+        Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("'lower"));
+        Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("'"));
+    }
+
     // FND-COMBAT-016: the screen shows a clip's ticks 0 to 21.
     [Fact]
     public void TheClipTickIsReadAsGiven()

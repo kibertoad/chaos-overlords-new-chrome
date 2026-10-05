@@ -38,7 +38,7 @@ static int Usage()
               [--draw-values <hex address>=<int32>[/<int32>...],...]
               [--equip-lists] [--attack-lists] [--search-clicks <x:y>,...]
               [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
-              [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|wait:ms|shot:SCR-ID+...>,...] [--gang-markers]
+              [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|wait:ms|type:TEXT|shot:SCR-ID+...>,...] [--gang-markers]
               [--title-capture] [--credits-capture] [--setup-capture] [--setup-steps <strip:x:y|drag:x:y:x2:y2|shot>,...]
               [--detailed-combat]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
@@ -264,6 +264,10 @@ static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
         // shot:SCR-ID+SCR-ID names the screen entries the capture is compared at.
         if (parts is ["shot", var screens] && screens.Length > 0)
             return new ProbeOrderStep("shot", -1, 0, 0, 0, screens.Replace('+', ','));
+        // type:TEXT presses a key for each character: upper-case letters, digits and spaces.
+        if (parts is ["type", var text] && text.Length > 0
+            && text.All(character => character is ' ' or (>= '0' and <= '9') or (>= 'A' and <= 'Z')))
+            return new ProbeOrderStep("type", -1, 0, 0, 0, Text: text);
         var numbers = parts.Skip(1).Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
         return parts[0] switch
         {
@@ -276,7 +280,7 @@ static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
                 new ProbeOrderStep("dbl", -1, numbers[0], numbers[1], 0),
             "back" or "exit" or "warn" when numbers is [] => new ProbeOrderStep(parts[0], -1, 0, 0, 0),
             "wait" when numbers is [> 0] => new ProbeOrderStep("wait", -1, 0, 0, numbers[0]),
-            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn, wait:ms or shot:SCR-ID+...: {entry}"),
+            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn, wait:ms, type:TEXT or shot:SCR-ID+...: {entry}"),
         };
     }).ToArray();
 
