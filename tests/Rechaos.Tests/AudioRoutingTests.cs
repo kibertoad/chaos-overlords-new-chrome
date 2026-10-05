@@ -67,7 +67,19 @@ public sealed class AudioRoutingTests
         Assert.Equal([GeneralSoundSlot.PanelClose],
             AudioRouting.PanelTransitionSounds(ClientScreen.Gang, ClientScreen.City, true));
         Assert.Equal([GeneralSoundSlot.PanelClose, GeneralSoundSlot.PanelOpen],
+            AudioRouting.PanelTransitionSounds(ClientScreen.Commands, ClientScreen.Site, true,
+                orderPanelShown: true));
+        // DEV-UI-021, FND-UI-057: the order list stands in for the original's silent order popup,
+        // so it neither opens nor closes with a panel sound.
+        Assert.Equal([GeneralSoundSlot.PanelOpen],
             AudioRouting.PanelTransitionSounds(ClientScreen.Commands, ClientScreen.Site, true));
+        Assert.Empty(AudioRouting.PanelTransitionSounds(ClientScreen.City, ClientScreen.Commands, true));
+        Assert.Empty(AudioRouting.PanelTransitionSounds(ClientScreen.Commands, ClientScreen.City, true));
+        Assert.Equal([GeneralSoundSlot.PanelClose],
+            AudioRouting.PanelTransitionSounds(ClientScreen.Commands, ClientScreen.Sector, true,
+                orderPanelShown: true));
+        Assert.Equal([GeneralSoundSlot.PanelClose],
+            AudioRouting.PanelTransitionSounds(ClientScreen.Gang, ClientScreen.Commands, true));
         Assert.Empty(AudioRouting.PanelTransitionSounds(ClientScreen.City, ClientScreen.Sector, false));
         Assert.Empty(AudioRouting.PanelTransitionSounds(ClientScreen.City, ClientScreen.Handoff, true));
     }

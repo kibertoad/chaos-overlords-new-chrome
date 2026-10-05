@@ -93,6 +93,12 @@ internal static class OriginalAddresses
     // RULE-TIMER-004, FND-TIMER-002: the timer callback and the presentation wait.
     public const uint TimerCallback = 0x004327C0;
     public const uint PresentationWait = 0x00464CD9;
+    // RULE-UI-003, FND-UI-011, FND-UI-056, EXP-UI-025: the panel-open helper, the copy in its
+    // slide loop and its last copy, and the startup benchmark count it divides.
+    public const uint PanelOpenHelper = 0x0041953E;
+    public const uint SlideCopy = 0x0041965D;
+    public const uint SlideFinalCopy = 0x004196DC;
+    public const uint BlitBenchmarkCount = 0x004981F8;
     // RULE-VIDEO-001, FND-VIDEO-002, EXP-VIDEO-001: the frame helper's call of SmackDoFrame, the
     // close helper fn_0040DD7B, movie slot 0's frame counter and Smack handle, and the movie name
     // the intro copies.

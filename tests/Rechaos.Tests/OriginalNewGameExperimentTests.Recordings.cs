@@ -103,6 +103,10 @@ public sealed partial class OriginalNewGameExperimentTests
     // milliseconds of its start and return on the clock the run's ticks are timed with.
     private sealed record RecordedWait(int Ticks, int Call, long Started, long Returned);
 
+    // A slide-in of the panel-open helper (FND-UI-011): the benchmark count it read, its travel and
+    // the offset of each copy.
+    private sealed record RecordedSlide(int Benchmark, int Travel, IReadOnlyList<int> Offsets);
+
     // A movie the intro played (FND-VIDEO-002): its name, its header's frame count, the movie
     // slot's frame counter at each frame shown, the milliseconds from the first movie's first frame
     // to each, and the counter when the slot was closed.
@@ -299,6 +303,11 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? waits.EnumerateArray().Select(wait => new RecordedWait(
                     wait[0].GetInt32(), wait[1].GetInt32(), wait[2].GetInt64(), wait[3].GetInt64())).ToArray()
                 : null;
+            Slides = run.TryGetProperty("slides", out var slides)
+                ? slides.EnumerateArray().Select(slide => new RecordedSlide(
+                    slide.GetProperty("benchmark").GetInt32(), slide.GetProperty("travel").GetInt32(),
+                    slide.GetProperty("offsets").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : null;
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.
             SearchFilter = inputs.EnumerateArray()
@@ -355,6 +364,8 @@ public sealed partial class OriginalNewGameExperimentTests
         // timer slot 0 from the dump on, and each call of the wait.
         public IReadOnlyList<long>? Ticks { get; }
         public IReadOnlyList<RecordedWait>? Waits { get; }
+        // Null when the run did not record the slides.
+        public IReadOnlyList<RecordedSlide>? Slides { get; }
         // Null when the run held the button through the intro.
         public IReadOnlyList<RecordedIntroMovie>? IntroMovies { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
