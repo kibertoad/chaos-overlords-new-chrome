@@ -212,7 +212,7 @@ public sealed partial class ChaosGame
                 batch.Draw(_uiSprites, AttackCommandLayout.TargetCard(cell),
                     AttackCommandLayout.TargetCardSource, Color.White);
             DrawAttackGang(batch, candidate, AttackCommandLayout.TargetPortrait(cell),
-                itemSlot => AttackCommandLayout.TargetItem(cell, itemSlot),
+                itemSlot => AttackCommandLayout.TargetItemBox(cell, itemSlot),
                 () => DrawAttackTargetForce(batch, pixel, candidate, cell));
         }
 

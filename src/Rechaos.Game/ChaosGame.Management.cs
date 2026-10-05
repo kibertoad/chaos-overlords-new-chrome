@@ -21,19 +21,13 @@ public sealed partial class ChaosGame
         int? sectorId = _financeScope == FinanceScope.Sector ? _cursor : null;
         var projection = FinanceProjection.Project(state, player, sectorId);
         ClearFinanceFields(batch, pixel);
+        // FND-FINANCE-002, FND-UI-025, EXP-UI-007: the Sector variant copies the sector's cell
+        // from the unmarked copy of the city map, as Gangs in Sector does, and frames it in black.
         if (sectorId is { } tileSector)
-        {
-            // FND-FINANCE-002, FND-UI-025, EXP-UI-007: the Sector variant copies the sector's cell
-            // from the unmarked copy of the city map, as Gangs in Sector does, and frames it in black.
-            if (_cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)] is { } neutral)
-                batch.Draw(neutral, FinanceLayout.SectorTile, CityMapLayout.Source(tileSector), Color.White);
-            DrawBorder(batch, pixel, FinanceLayout.SectorTile, Color.Black, 1);
-        }
+            DrawUnmarkedSectorCell(batch, pixel, tileSector, FinanceLayout.SectorTile);
         else if (_uiSprites is not null)
-        {
             batch.Draw(_uiSprites, FinanceLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
-        }
         int[] rows =
         [
             projection.GangUpkeep,
@@ -83,7 +77,7 @@ public sealed partial class ChaosGame
         {
             var row = SiteSearchLayout.Site(index);
             var selected = selection.Contains(sites[index].Id);
-            // DEV-SEARCH-001: the keyboard's row is outlined once a key has moved it.
+            // DEV-SEARCH-001: the keyboard's row is outlined once a key has moved or flipped it.
             if (_siteSearchCursorShown && index == _siteSearchCursor) DrawBorder(batch, pixel, row, Color.Gold, 1);
             // FND-SEARCH-001, FND-SEARCH-004: the definition's marker icon, then the first 15
             // characters of its name, from the plain font when selected and the row at (152,274)
@@ -98,8 +92,13 @@ public sealed partial class ChaosGame
         }
     }
 
-    // DEV-SEARCH-001: whether a key has moved the Search panel's keyboard row since it opened.
+    // DEV-SEARCH-001: whether a key has moved or flipped the Search panel's keyboard row since it
+    // opened.
     private bool _siteSearchCursorShown;
+
+    private int _siteSearchCursor;
+    private readonly SiteSearchSelectionState _siteSearchSelections = new();
+    private readonly IndexedDoubleClickTracker _siteSearchClicks = new();
 
     private void OpenSiteSearch(ClientScreen returnScreen)
     {
@@ -123,6 +122,8 @@ public sealed partial class ChaosGame
     {
         var rows = SiteSearchRows();
         if (_siteSearchCursor >= rows.Length) return;
+        // DEV-SEARCH-001: the row Space flips is outlined, so the key never acts on a row it hides.
+        _siteSearchCursorShown = true;
         SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
             new SiteSearchPress(SiteSearchControl.Row, _siteSearchCursor), rows);
     }
@@ -148,8 +149,6 @@ public sealed partial class ChaosGame
         _message = string.Empty;
         CloseSiteSearch();
     }
-
-    private void CancelSiteSearch() => CloseSiteSearch();
 
     // FND-SEARCH-004: closing the panel draws the whole city again, gang-status markers included
     // (RULE-UI-006).
