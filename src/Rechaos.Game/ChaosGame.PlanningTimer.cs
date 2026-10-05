@@ -224,7 +224,7 @@ public sealed class PlanningTimer
     /// themselves to replay a recorded run of the original, whose ticks do not fall on exact
     /// multiples of the period.
     /// </summary>
-    public PlanningTimerSignal Advance(TimeSpan now, long tick)
+    internal PlanningTimerSignal Advance(TimeSpan now, long tick)
     {
         if (_pausedElapsed is not null) return PlanningTimerSignal.None;
         var signal = PlanningTimerSignal.None;
@@ -382,11 +382,21 @@ public sealed partial class ChaosGame
     private bool AtPlanningLoopPass() =>
         _screens.Current is ClientScreen.City or ClientScreen.Sector
         && !_idleGangWarningOpen
-        && _draggedHireDefinitionId is null
-        && _pressedHireRejectSlot is null
-        && _pressedCityConsoleControl is null
-        && _pressedPanelFace is null
-        && _draggedGangId is null;
+        && !HoldsCityPointer()
+        && _pressedPanelFace is null;
+
+    /// <summary>
+    /// The presses on the city and the sector view that hold the original in a loop of its own
+    /// until the left button comes up, so that neither the planning loop
+    /// (<see cref="AtPlanningLoopPass"/>) nor the event pump (<see cref="HoldsPointerOutsideEventPump"/>)
+    /// runs: an offer and its reject cross (FND-HIRE-008), a console tile (FND-UI-032) and a gang
+    /// card's portrait (FND-UI-044).
+    /// </summary>
+    private bool HoldsCityPointer() =>
+        _draggedHireDefinitionId is not null
+        || _pressedHireRejectSlot is not null
+        || _pressedCityConsoleControl is not null
+        || _draggedGangId is not null;
 
     /// <summary>
     /// Whether a press holds the game in a loop of the original that dispatches window messages
@@ -399,15 +409,20 @@ public sealed partial class ChaosGame
     /// the rebuild's right-button hold of the back control does not count.
     /// </summary>
     private bool HoldsPointerOutsideEventPump() =>
-        _draggedHireDefinitionId is not null
-        || _pressedHireRejectSlot is not null
-        || _draggedGangId is not null
-        || _pressedCityConsoleControl is not null
+        HoldsCityPointer()
         || _pressedEventsButton is not null
         || _pressedCommandPanelButton is not null
         || _pressedComlinkSendButton is not null
         || _pressedAttackFace is not null
         || _pressedPanelFace is not null && !_pressedPanelFaceByRightButton;
+
+    /// <summary>
+    /// Whether the original would be in a loop that does not call the event pump: a pointer hold
+    /// (<see cref="HoldsPointerOutsideEventPump"/>) or a soundtrack fade. The fade runs inside the
+    /// pump's music step and leaves timer slot 0 alone, so the pump takes no tick until it ends
+    /// and then takes the one the flag kept (FND-AUDIO-017).
+    /// </summary>
+    private bool OutsideEventPump() => HoldsPointerOutsideEventPump() || _soundtrackFade is not null;
 
     /// <summary>The screens that are not the match, where no planning clock is drawn or run.</summary>
     private bool LeftMatchScreen() =>

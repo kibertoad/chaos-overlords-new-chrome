@@ -13,17 +13,17 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 |---|---|
 | `unknown` | 0 |
 | `sourced` | 0 |
-| `supported` | 5 |
+| `supported` | 6 |
 | `established` | 0 |
 | `disputed` | 0 |
 | `implemented` | 84 |
-| `validated` | 134 |
+| `validated` | 133 |
 
 | Code | Rows |
 |---|---|
 | `missing` | 0 |
-| `partial` | 5 |
-| `complete` | 218 |
+| `partial` | 6 |
+| `complete` | 217 |
 
 ## DATA
 
@@ -433,7 +433,7 @@ worked out from the other columns, and `node tools/check-spec.mjs` checks all of
 | `RULE-UI-005` | Lengths of the site progress and Force meters | supported | complete | None | None | implemented | Site meters truncate progress * 100 / Resistance (100 at Resistance 0) and Force meters are Force * 6 pixels, checked by SectorMeterLengthTests. |
 | `RULE-UI-006` | Choosing a sector's gang-status marker | supported | complete | None | None | implemented | Frames and the one saved cell that loses frame 8 follow the rule. Enemy sight and presence come from a snapshot kept for each planning entry, and the idle test and incoming hires are read live. |
 | `RULE-UI-007` | The pointer shape | supported | complete | None | None | implemented | The stock arrow shows at all times, and the hourglass while a city is set up, a game is loaded or a turn is resolved. |
-| `RULE-UI-008` | The presentation timer | supported | complete | tests/Rechaos.Tests/EventPumpClockTests.cs | `DEV-TIMER-001` | validated | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). The steps the event pump drives (the planning bar and its warnings, the console lights, the selection frame, the Comlink alert repeat and the music poll) read an event pump clock that stops while a hold keeps the original out of the pump and keeps one tick of the hold, as FND-UI-046 records; EventPumpClockTests checks it against those findings. A panel's own slot-0 animation is not stopped by a hold inside it. |
+| `RULE-UI-008` | The presentation timer | supported | partial | tests/Rechaos.Tests/EventPumpClockTests.cs | `DEV-TIMER-001` | supported | Combat frames, the caret, the item rotation, the console lights, the idle-warning line and the Comlink alert step on one 166 ms clock (DEV-TIMER-001 for how ticks are counted). The steps the event pump drives (the planning bar and its warnings, the console lights, the selection frame, the Comlink alert repeat and the music poll) read an event pump clock that stops while a hold or a soundtrack fade keeps the original out of the pump and keeps one tick of it, as FND-UI-046 and FND-AUDIO-017 record; EventPumpClockTests checks it against those findings. Partial: a panel's own slot-0 animation (the Last Turn Events frames, the Item Information rotation, the Comlink Send caret, Sell, Give and Research) keeps running while one of its faces is held, where the original stops it (FND-UI-046). |
 | `RULE-UI-009` | The texts of the Game Information panel | supported | complete | tests/Rechaos.Tests/ExecutableStringTableTests.cs | `DEV-AI-003` | validated | Every text is the executable's string the rule names, compared with BLD-GOG-EN-1.1's string table. With Advanced AI on, the Mentality field adds the AI policy (DEV-AI-003). |
 | `RULE-UI-010` | Which gangs the detailed sector cards and Gangs in Sector list | supported | complete | None | None | implemented | The cards list the viewed player's visible gangs and Gangs in Sector the active player's gangs, both in roster slot order, checked by SectorOpponentGangsTests and GangInformationRosterTests. |
 | `RULE-UI-011` | The sector values on the main console | supported | complete | None | `DEV-UI-007` | implemented | The sector code, the Income word of string resource `0x11 + income` and two-cell Tolerance, Support and Cash from x 568, unclamped, so a value past 99 shows RULE-UI-004's leading quotient; Support and Cash are 0 unless the active player owns the sector. |

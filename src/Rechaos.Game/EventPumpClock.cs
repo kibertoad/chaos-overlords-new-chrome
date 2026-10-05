@@ -18,6 +18,10 @@ namespace Rechaos.Game;
 /// it on its first call after the release; the other ticks of the hold are lost, and every step
 /// the pump drives stays that many ticks behind the game clock from then on.
 /// </para>
+/// <para>
+/// A soundtrack fade stops <see cref="Time"/> in the same way: it runs inside the pump's music
+/// step and leaves timer slot 0 alone (FND-AUDIO-017).
+/// </para>
 /// </remarks>
 public sealed class EventPumpClock
 {
@@ -35,8 +39,8 @@ public sealed class EventPumpClock
     public long Ticks => PresentationClock.Ticks(Time);
 
     /// <summary>
-    /// One pass of the game loop. <paramref name="holding"/> says whether a hold that keeps the
-    /// pump from running is in progress.
+    /// One pass of the game loop. <paramref name="holding"/> says whether a hold or a fade that
+    /// keeps the pump from running is in progress.
     /// </summary>
     public void Update(TimeSpan now, bool holding)
     {

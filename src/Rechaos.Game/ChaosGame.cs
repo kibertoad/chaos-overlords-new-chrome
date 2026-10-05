@@ -440,7 +440,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     {
         _autoSave.Pump();
         _inputTime = gameTime.TotalGameTime;
-        _eventPump.Update(_inputTime, HoldsPointerOutsideEventPump());
+        _eventPump.Update(_inputTime, OutsideEventPump());
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
         // The rebuild's window shortcuts are not game events, so a fade does not swallow them.
