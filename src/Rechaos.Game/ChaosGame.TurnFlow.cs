@@ -171,8 +171,8 @@ public sealed partial class ChaosGame
         }
     }
 
-    // The computers plan in a local match on its own screens, while no menu, hand-off card or
-    // elimination card waits for the human.
+    // The computers plan in a local match on its own screens, while no menu, elimination card or
+    // elimination hand-off card waits for the human.
     [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(_state), nameof(_actions))]
     private bool ComputerTurnsCanRun() =>
         _session is null && !_gameMenuOpen && _state is not null && _actions is not null
@@ -196,11 +196,7 @@ public sealed partial class ChaosGame
         var startingTurn = _state.Coordinator.Turn;
         // A computer's planning and the resolution it ends in run below in this one update, under
         // the hourglass the original shows while it resolves a turn (RULE-UI-007).
-        using var busy = _state.Coordinator.Phase == TurnPhase.Command
-            && _state.Coordinator.ActivePlayer is { } firstPlayer
-            && _state.FindPlayer(firstPlayer)!.Setup.Controller == PlayerController.Computer
-                ? _pointer.Busy()
-                : null;
+        using var busy = PresentationPointer.Idle(_state) == PointerShape.Hourglass ? _pointer.Busy() : null;
         while (_state.Coordinator.ActivePlayer is { } playerId)
         {
             var player = _state.FindPlayer(playerId)!;

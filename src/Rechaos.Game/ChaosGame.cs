@@ -241,7 +241,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _originalComputerHires = originalComputerHires;
         _referenceFrame = referenceFrame;
         _pointer = new(shape => Mouse.SetCursor(shape == PointerShape.Hourglass ? MouseCursor.Wait : MouseCursor.Arrow),
-            () => ComputerTurnsCanRun() ? PresentationPointer.Idle(_state!) : PointerShape.Arrow);
+            () => ComputerTurnsCanRun() ? PresentationPointer.Idle(_state) : PointerShape.Arrow);
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;
         _screens.Changed += (previous, current) => _diagnostics?.Write(
@@ -472,7 +472,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             UpdateSoundtrack(gameTime);
             if (_soundtrackFade is not null)
             {
-                CancelSwallowedPointerReleases(mouse);
+                UpdatePointerDuringFade(mouse);
                 EndUpdate(gameTime, keyboard, mouse);
                 return;
             }
@@ -487,7 +487,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (!soundtrackUpdated) UpdateSoundtrack(gameTime);
         if (_soundtrackFade is not null)
         {
-            CancelSwallowedPointerReleases(mouse);
+            UpdatePointerDuringFade(mouse);
             EndUpdate(gameTime, keyboard, mouse);
             return;
         }

@@ -129,6 +129,39 @@ public sealed class ProgramShellParityTests
         Assert.Equal([PointerShape.Hourglass, PointerShape.Arrow], shown);
     }
 
+    [Fact]
+    public void APointerMovedWhileTheHourglassWaitsShowsTheArrowUntilTheNextWork()
+    {
+        // RULE-UI-007, FND-AUDIO-016: a music fade dispatches messages while a computer's planning
+        // waits, and each pointer message selects the arrow until the planning selects the
+        // hourglass again.
+        var shown = new List<PointerShape>();
+        var idle = PointerShape.Hourglass;
+        var pointer = new PresentationPointer(shown.Add, () => idle);
+
+        pointer.Refresh();
+        pointer.PointerMoved();
+        pointer.Refresh();
+        Assert.Equal([PointerShape.Hourglass, PointerShape.Arrow], shown);
+
+        using (pointer.Busy())
+        {
+        }
+        pointer.Refresh();
+        Assert.Equal([PointerShape.Hourglass, PointerShape.Arrow, PointerShape.Hourglass], shown);
+
+        // A move while the idle shape is the arrow is spent once the hourglass waits again.
+        idle = PointerShape.Arrow;
+        pointer.Refresh();
+        pointer.PointerMoved();
+        pointer.Refresh();
+        idle = PointerShape.Hourglass;
+        pointer.Refresh();
+        Assert.Equal(
+            [PointerShape.Hourglass, PointerShape.Arrow, PointerShape.Hourglass, PointerShape.Arrow, PointerShape.Hourglass],
+            shown);
+    }
+
     [Theory]
     [InlineData(0, 0)]
     [InlineData(639, 459)]
