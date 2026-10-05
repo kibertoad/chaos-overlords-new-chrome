@@ -376,7 +376,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sounds] [--watch-intro] [--waits] [--slides]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -518,14 +518,16 @@ of the call. The fixture holds them as `pointer_calls`; the replay checks that
 every roll from the setup's hourglass on is made under the hourglass and
 compares the rebuild's pointer at each planning entry and after each Done press
 (RULE-UI-007, EXP-UI-022).
-`--sounds` logs every call of the play helper `fn_0045851A` (FND-AUDIO-006)
-with the rolls and Done presses before it, its slot and the address of the
-call; with `--sound` the effects wrapper's calls are logged too. The fixture
-holds them as `sound_calls` (RULE-AUDIO-006, EXP-AUDIO-001).
+`--sound-calls` logs every call of the play helper `fn_0045851A`
+(FND-AUDIO-006) with the rolls and Done presses before it, its slot and the
+address of the call; with `--sound` the effects wrapper's calls are logged too.
+The fixture holds them as `sound_calls` but does not record `--sound`, and the
+replay expects the push cue of Begin and of each Done press, so record with
+both flags (RULE-AUDIO-006, EXP-AUDIO-001).
 `--watch-intro` lets both intro movies play out before the button is held and
 logs each frame the frame helper shows, with the movie's name, its header's
-frame count, the slot's frame counter and the time from its first frame, and
-the counter when the movie is closed. The fixture holds them as
+frame count, the slot's frame counter and the time from the first movie's first
+frame, and the counter when the movie is closed. The fixture holds them as
 `intro_movies` (RULE-VIDEO-001, EXP-VIDEO-001).
 `--waits` logs, from the dump on, each tick of the presentation clock, timer
 slot 0, and each call of the wait `fn_00464CD9` with its argument, the address
@@ -842,8 +844,8 @@ last one. Panels are drawn in place, without the slide. For a shot step the test
 works the presses out from the order steps before it: a double-click at the
 centre of the opened sector's cell for `open`, the step's point for `dbl` and
 `strip`, a card's point for `card`, `(20, 425)` for `back` and the step's text
-for `type`. It leaves out `exit`, since the reference frame does not draw the
-planning entry's panels, and `wait`.
+for `type`. It leaves out `wait`, which presses nothing, and `exit`, since the
+reference frame does not draw the planning entry's panels.
 For a `title_capture`, `credits_capture` or `setup_capture` the test passes
 `title`, `credits` or `setup` in place of the save; the game draws its title
 screen, the credits over it, or the local setup as New Game first opens it,

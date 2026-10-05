@@ -34,17 +34,21 @@ public sealed partial class ChaosGame
         Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute);
 
     /// <summary>
-    /// A button let go while the music fade blocks game events: lets go of what its press holds
-    /// without completing it.
+    /// The pointer while the music fade blocks game events: a move shows the arrow, and a button let
+    /// go lets go of what its press holds without completing it.
     /// </summary>
     /// <remarks>
-    /// FND-AUDIO-016: the fade dispatches window messages without running the game's event step, so
-    /// the release does nothing in the game. The press still has to end, or the control would stay
-    /// held until some later release, possibly on another screen. It ends as a release outside the
-    /// window does, which every held control already takes as a cancel.
+    /// FND-AUDIO-016: the fade dispatches window messages without running the game's event step.
+    /// Each pointer message the window handles selects the arrow (RULE-UI-007), so a pointer moved
+    /// during a fade that holds a computer's planning back shows the arrow until that planning
+    /// selects the hourglass again. A release does nothing in the game, but the press still has to
+    /// end, or the control would stay held until some later release, possibly on another screen. It
+    /// ends as a release outside the window does, which every held control already takes as a
+    /// cancel.
     /// </remarks>
-    private void CancelSwallowedPointerReleases(MouseState mouse)
+    private void UpdatePointerDuringFade(MouseState mouse)
     {
+        if (mouse.Position != _previousMouse.Position) _pointer.PointerMoved();
         if (PointerButtonEdges.Released(mouse.LeftButton, _previousMouse.LeftButton))
             CompletePointerRelease(pointerMapped: false, Point.Zero, rightButton: false);
         if (PointerButtonEdges.Released(mouse.RightButton, _previousMouse.RightButton))

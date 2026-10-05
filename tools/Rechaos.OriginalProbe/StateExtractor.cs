@@ -129,7 +129,8 @@ internal sealed class StateExtractor
                 call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Slot"]!.GetValue<int>(),
                 (int)call["Call"]!.GetValue<uint>())).ToArray());
         // RULE-VIDEO-001: each intro movie with its header's frame count, the frame counter at each
-        // frame shown, the milliseconds from the first frame to each, and the counter at its close.
+        // frame shown, the milliseconds from the first movie's first frame to each, and the counter at
+        // its close.
         if (trace["IntroMovies"] is JsonArray introMovies)
             run["intro_movies"] = new JsonArray(introMovies.Select(movie => (JsonNode)new JsonObject
             {

@@ -959,7 +959,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | evidence |
+| [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | body, evidence |
 
 ## EXP-COMBAT-001
 
@@ -2404,6 +2404,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | evidence |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | evidence |
 
 ## EXP-UI-022
@@ -2416,6 +2417,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 
 ## EXP-UI-024
@@ -2435,7 +2437,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | evidence |
+| [RULE-VIDEO-001](../rules/RULE-VIDEO-001.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
