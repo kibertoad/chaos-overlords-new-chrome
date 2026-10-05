@@ -1,0 +1,12 @@
+{
+  "screen": "SCR-HIRE-002",
+  "state": "A planning entry of player 0 with no panel open",
+  "elements": [
+    {"element": "Offer portrait, slot 0", "rect": [440, 373, 64, 64]},
+    {"element": "Offer portrait, slot 1", "rect": [506, 373, 64, 64]},
+    {"element": "Offer portrait, slot 2", "rect": [572, 373, 64, 64]},
+    {"element": "Offer price, slot 0", "rect": [450, 440, 12, 7]},
+    {"element": "Offer price, slot 1", "rect": [516, 440, 12, 7]},
+    {"element": "Offer price, slot 2", "rect": [582, 440, 12, 7]}
+  ]
+}
