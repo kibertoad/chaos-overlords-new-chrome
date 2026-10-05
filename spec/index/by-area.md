@@ -482,6 +482,9 @@
 
 | ID | Title | Status |
 |---|---|---|
+| [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | Which items does the Equip list offer gangs carrying items, with little research done? | recorded |
+| [EXP-EQUIP-002](../experiments/EXP-EQUIP-002.md) | Which items does the Equip list offer a Tech Level 0 gang, and items the player cannot afford? | recorded |
+| [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | Which items does the Equip list offer late in a match, with most research done? | recorded |
 | [FND-EQUIP-001](../findings/FND-EQUIP-001.md) | A Factory lowers an item's price by its cost divided by three, truncated | recorded |
 | [FND-EQUIP-002](../findings/FND-EQUIP-002.md) | The transaction pass visits gangs by player and roster slot, holds gifts until the player's scan ends, and pays a multi-item Sell once | recorded |
 | [FND-EQUIP-003](../findings/FND-EQUIP-003.md) | The Give panel's item targets are 52-by-52 cells on a 64-pixel pitch, with up to five recipients in the same panel | recorded |
@@ -495,7 +498,7 @@
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | established |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | established |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | established |
-| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported |
+| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | established |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | Equip panel | supported |
 
 ## GIVE

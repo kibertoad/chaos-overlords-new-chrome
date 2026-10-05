@@ -36,6 +36,7 @@ static int Usage()
               [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture]
               [--comlink <script file>]
               [--draw-values <hex address>=<int32>[/<int32>...],...]
+              [--equip-lists]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -81,7 +82,8 @@ static int NewGame(string[] args)
             int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray(),
         Option(args, "--comlink") is { } script ? File.ReadAllLines(script) : null,
         args.Contains("--capture"),
-        Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null);
+        Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null,
+        args.Contains("--equip-lists"));
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).

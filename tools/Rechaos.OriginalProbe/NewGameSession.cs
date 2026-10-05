@@ -106,7 +106,8 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeOrder>? Orders = null, bool Sound = false, IReadOnlyList<ProbeHire>? Hires = null,
     IReadOnlyList<ProbePlanning>? Planning = null, IReadOnlyList<ProbeFinance>? Finance = null,
     IReadOnlyList<ProbeSearch>? Search = null, int? TimeLimit = null, IReadOnlyList<int>? ExpireTurns = null,
-    IReadOnlyList<string>? Comlink = null, bool Capture = false, IReadOnlyList<ProbeDrawValue>? DrawValues = null)
+    IReadOnlyList<string>? Comlink = null, bool Capture = false, IReadOnlyList<ProbeDrawValue>? DrawValues = null,
+    bool EquipLists = false)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
@@ -183,7 +184,8 @@ internal sealed record ProbeTrace(
     List<PanelRecord>? Panels = null,
     CityMarkers? Markers = null,
     List<TimerRecord>? Timers = null,
-    List<ComlinkStep>? Comlink = null);
+    List<ComlinkStep>? Comlink = null,
+    List<EquipListRecord>? EquipLists = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -384,6 +386,7 @@ internal sealed partial class NewGameSession(
 
         DumpWritableSections();
         if (settings.Capture) CaptureDrawingArea(window);
+        if (settings.EquipLists && !RecordEquipLists()) return Finish(false, "The Equip lists were not built.", rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -847,7 +850,8 @@ internal sealed partial class NewGameSession(
         if (_process.Exited) _notes.Add($"The process exited with code 0x{_process.ExitCode:X8}.");
         return new ProbeTrace(executable, settings, _seed, _rolls, rollsBeforeBegin, _rollsAtDone, dumped, _notes,
             _endgame, _finance.Count == 0 ? null : _finance, _panels.Count == 0 ? null : _panels, _lastRedraw,
-            _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink);
+            _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
+            _equipLists.Count == 0 ? null : _equipLists);
     }
 
     private static void Click(IntPtr window, int x, int y)

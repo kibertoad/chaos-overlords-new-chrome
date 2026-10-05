@@ -16,7 +16,7 @@
 
 ## supported
 
-151 entries.
+150 entries.
 
 | ID | Title |
 |---|---|
@@ -90,7 +90,6 @@
 | [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages |
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message |
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin |
-| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution |
 | [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded |
 | [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | A Hire refused because the player has the most gangs allowed is reported to its player |
@@ -174,7 +173,7 @@
 
 ## established
 
-90 entries.
+91 entries.
 
 | ID | Title |
 |---|---|
@@ -218,6 +217,7 @@
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete |
+| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
 | [RULE-EVENT-004](../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
@@ -294,12 +294,15 @@
 
 ## recorded
 
-454 entries.
+457 entries.
 
 | ID | Title |
 |---|---|
 | [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | Do the Comlink panels of a local game with three humans store, cap, show, mark and drop messages as the spec gives? |
 | [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | Are Comlink Send and View both refused when the only human has no one to write to and no messages? |
+| [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | Which items does the Equip list offer gangs carrying items, with little research done? |
+| [EXP-EQUIP-002](../experiments/EXP-EQUIP-002.md) | Which items does the Equip list offer a Tech Level 0 gang, and items the player cannot afford? |
+| [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | Which items does the Equip list offer late in a match, with most research done? |
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | What does a new local game draw from the generator, and what state does its first planning phase start from? |
 | [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | Does a new local Armageddon game with two humans draw and start as the spec gives? |
 | [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | Does a new local Greed game at Homicidal Maniac with a four-year limit draw and start as the spec gives? |
@@ -803,6 +806,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete |
+| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
 | [RULE-EVENT-004](../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
@@ -952,7 +956,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin | supported |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector | established |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | established |
-| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | supported |
+| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | established |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | established |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution | supported |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | established |

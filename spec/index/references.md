@@ -29,6 +29,9 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | builds |
 | [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | builds |
 | [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | builds |
+| [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | builds |
+| [EXP-EQUIP-002](../experiments/EXP-EQUIP-002.md) | builds |
+| [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | builds |
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | builds |
 | [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | builds |
 | [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | builds |
@@ -888,6 +891,26 @@ None.
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | body, evidence |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | evidence |
 
+## EXP-EQUIP-001
+
+| Cited by | In |
+|---|---|
+| [EXP-EQUIP-002](../experiments/EXP-EQUIP-002.md) | body |
+| [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | body |
+| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | body, evidence |
+
+## EXP-EQUIP-002
+
+| Cited by | In |
+|---|---|
+| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | body, evidence |
+
+## EXP-EQUIP-003
+
+| Cited by | In |
+|---|---|
+| [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | body, evidence |
+
 ## EXP-SETUP-001
 
 | Cited by | In |
@@ -960,6 +983,9 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | body |
+| [EXP-EQUIP-002](../experiments/EXP-EQUIP-002.md) | body |
+| [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | body |
 | [EXP-TURN-002](../experiments/EXP-TURN-002.md) | body |
 | [EXP-TURN-003](../experiments/EXP-TURN-003.md) | body |
 | [EXP-TURN-004](../experiments/EXP-TURN-004.md) | body |
@@ -1360,6 +1386,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | body |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
 
 ## EXP-TURN-027
@@ -1388,6 +1415,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | body |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | evidence |
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | evidence |
 
@@ -1772,6 +1800,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-EQUIP-002](../experiments/EXP-EQUIP-002.md) | body |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | body, evidence |
 
 ## EXP-TURN-072
@@ -2222,6 +2251,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-EQUIP-002](../experiments/EXP-EQUIP-002.md) | body |
 | [EXP-TURN-048](../experiments/EXP-TURN-048.md) | body |
 | [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
@@ -4203,6 +4233,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | body |
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | body, evidence |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
@@ -6628,6 +6659,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
+| [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | body |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body, evidence |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
@@ -7774,6 +7806,9 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-EQUIP-001](../experiments/EXP-EQUIP-001.md) | body |
+| [EXP-EQUIP-002](../experiments/EXP-EQUIP-002.md) | body |
+| [EXP-EQUIP-003](../experiments/EXP-EQUIP-003.md) | body |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | body |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | body, related |
 
