@@ -646,7 +646,7 @@ public static class ComlinkSendLayout
     }
 
     /// <summary>
-    /// PX00129 source used by native caret helper <c>0x0046023C</c> (FND-COMLINK-005). The normal
+    /// PX00129 source used by native caret helper <c>0x0046023C</c> (FND-COMLINK-010). The normal
     /// glyph strip is row zero; the same glyphs at y=441 carry the inverse cell.
     /// Only the original strip has that inverse row, so the supplemental glyphs
     /// drawn after it (the status console's brackets) have no caret cell.

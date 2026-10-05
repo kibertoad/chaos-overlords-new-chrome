@@ -376,8 +376,9 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--sound] [--capture] [--draw-values <hex address>=<int32>[/<int32>...],...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--draw-values <hex address>=<int32>[/<int32>...],...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
+dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
 `new-game` switches full screen off in memory, silences the game unless
@@ -502,6 +503,24 @@ police events, and compares the records of the gangs that fought,
 EXP-TURN fixtures against the rebuild and names the first roll whose bound or
 result differs, with the original's call instruction, then compares the state
 and, where the fixture has them, the reports.
+
+`--comlink` replaces the Done presses with a script of Comlink steps, one per
+line, for a match with several humans (EXP-COMLINK-001). `visit p` waits for
+player p's handoff card, presses Ready and closes the planning entry panels;
+`view` and `send` press the two parts of the console's Comlink control;
+`next`, `prev` and `dismiss` press the View panel's controls; `card p`,
+`press send` and `press cancel` press the Send panel's; `type` posts a
+`WM_KEYDOWN` for each character, with `{BACK}`, `{ENTER}`, `{LEFT}`, `{UP}`,
+`{RIGHT}`, `{DOWN}` and `{EXEC}` for those keys; `dump` keeps the state; and
+`done` presses Done. The probe also switches Slide Panels off in memory, so
+a panel takes presses as soon as its handler runs. After each step it keeps
+the panels open, the effect slots played, each message View showed with the
+cursor and the numbers drawn, each drop of read messages at the end of a
+player's planning, the Send panel's selection and draft, and every player's
+Comlink counts, cursors, pending flag and message records (FMT-STATE-005).
+`extract-comlink` writes those as the steps of a fixture, and
+`OriginalComlinkExperimentTests` plays the same steps in the rebuild and
+compares them after each one.
 
 ## Static binary research
 

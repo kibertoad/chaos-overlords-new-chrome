@@ -1,10 +1,10 @@
 ---
 id: RULE-COMLINK-003
 title: Sending a Comlink message stores a copy for each selected recipient
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-001, FND-COMLINK-003, FND-COMLINK-006, FND-COMLINK-007, SRC-MANUAL-GOG]
+evidence: [FND-COMLINK-001, FND-COMLINK-003, FND-COMLINK-006, FND-COMLINK-007, SRC-MANUAL-GOG, EXP-COMLINK-001]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-001, FMT-STATE-005]

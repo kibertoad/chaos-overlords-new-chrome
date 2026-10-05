@@ -159,4 +159,19 @@ public sealed class ComlinkUiTests
         cadence.Advance(ComlinkCaretCadence.TimerEventInterval * 6);
         Assert.False(cadence.UsesInverseGlyph);
     }
+
+    [Fact]
+    public void SendCaretFirstPhaseEndsOnTheThirdSharedTickAfterOpening()
+    {
+        // SCR-COMLINK-002, FND-COMLINK-010: timer 0 is not restarted when the panel opens, so a
+        // panel opened part-way through a period switches on the third tick after the opening.
+        var interval = ComlinkCaretCadence.TimerEventInterval;
+        var cadence = new ComlinkCaretCadence();
+        cadence.Reset(interval * 10 + interval / 2);
+
+        cadence.Advance(interval * 12);
+        Assert.False(cadence.UsesInverseGlyph);
+        cadence.Advance(interval * 13);
+        Assert.True(cadence.UsesInverseGlyph);
+    }
 }
