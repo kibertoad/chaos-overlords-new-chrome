@@ -28,10 +28,10 @@ internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector)
 }
 
 /// <summary>
-/// A computer player's planning state written before a Done press, for branches no local match
-/// reaches: family 99 or less writes the <c>family</c> of the player's planning record in the slot
-/// (FMT-STATE-007), <see cref="Raider"/> sets the player's byte of <c>raider_mode</c>, which a
-/// takeover of a network seat sets (RULE-AI-027), and <see cref="Retired"/> clears the player's
+/// A player's state written before a Done press, for branches no local match reaches: family 99
+/// or less writes the <c>family</c> of a computer player's planning record in the slot
+/// (FMT-STATE-007), <see cref="Raider"/> sets a computer player's byte of <c>raider_mode</c>, which
+/// a takeover of a network seat sets (RULE-AI-027), and <see cref="Retired"/> clears the player's
 /// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006).
 /// </summary>
 internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family)
@@ -527,7 +527,8 @@ internal sealed partial class NewGameSession(
             return Finish(false, stopped, rollsBeforeBegin);
         if (settings.OrderSteps is { Count: > 0 } && RecordOrderSteps(window) is { } orderStepsStopped)
             return Finish(false, orderStepsStopped, rollsBeforeBegin);
-        if (settings.Closes is { Count: > 0 }) RecordCloses(window);
+        if (settings.Closes is { Count: > 0 } && RecordCloses(window) is { } closesStopped)
+            return Finish(false, closesStopped, rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 

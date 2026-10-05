@@ -108,8 +108,8 @@ public sealed partial class OriginalNewGameExperimentTests
     private sealed record RecordedSlide(int Benchmark, int Travel, IReadOnlyList<int> Offsets);
 
     // A movie the intro played (FND-VIDEO-002): its name, its header's frame count, the movie
-    // slot's frame counter at each frame shown, the milliseconds from the first frame to each, and
-    // the counter when the slot was closed.
+    // slot's frame counter at each frame shown, the milliseconds from the first movie's first frame
+    // to each, and the counter when the slot was closed.
     private sealed record RecordedIntroMovie(
         string Name, int Frames, IReadOnlyList<int> Shown, IReadOnlyList<long> Milliseconds, int ClosedAt);
 
@@ -118,7 +118,8 @@ public sealed partial class OriginalNewGameExperimentTests
     // (FND-HIRE-001, FND-HIRE-008).
     private sealed record RecordedHireStep(int Slot, int Sector, IReadOnlyList<int> Orders);
     private sealed record RecordedSavedWrite(int Turn, int Before, int Value);
-    private sealed record RecordedClose(int Saved, int NoMatch, int Answer, IReadOnlyList<int> Dialogs, bool QuitRequested);
+    private sealed record RecordedClose(
+        int Saved, int NoMatch, int Answer, int SaveResult, IReadOnlyList<int> Dialogs, int Saves, bool Left);
 
     // A click the probe posted after the dump, whether the Search panel was open after it, the
     // active player and the whole search_filters table (FND-SEARCH-001, FND-SEARCH-002).
@@ -187,6 +188,14 @@ public sealed partial class OriginalNewGameExperimentTests
                 .Where(value => value.StartsWith("planning_limit_choice ", StringComparison.Ordinal))
                 .Select(value => int.Parse(value["planning_limit_choice ".Length..], System.Globalization.CultureInfo.InvariantCulture))
                 .FirstOrDefault();
+            // "no Done press, turn 2: the planning time runs out", as the probe writes a turn it
+            // left to the planning time limit.
+            ExpiredTurns = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "wait")
+                .Select(input => input.GetProperty("value").GetString()!)
+                .Where(value => value.StartsWith("no Done press, turn ", StringComparison.Ordinal))
+                .Select(value => int.Parse(value["no Done press, turn ".Length..value.IndexOf(':')], System.Globalization.CultureInfo.InvariantCulture))
+                .ToHashSet();
             Timers = run.TryGetProperty("timers", out var timers)
                 ? timers.EnumerateArray().Select(timer => new RecordedTimer(
                     timer.GetProperty("turn").GetInt32(), timer.GetProperty("limit_ms").GetInt32(),
@@ -225,9 +234,10 @@ public sealed partial class OriginalNewGameExperimentTests
             Closes = run.TryGetProperty("closes", out var closes)
                 ? closes.EnumerateArray().Select(close => new RecordedClose(
                     close.GetProperty("saved").GetInt32(), close.GetProperty("no_match").GetInt32(),
-                    close.GetProperty("answer").GetInt32(),
+                    close.GetProperty("answer").GetInt32(), close.GetProperty("save_result").GetInt32(),
                     close.GetProperty("dialogs").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
-                    close.GetProperty("quit_requested").GetBoolean())).ToArray()
+                    close.GetProperty("saves").GetInt32(),
+                    close.GetProperty("left_at").GetString() != "0x00000000")).ToArray()
                 : [];
             GangMarkers = run.TryGetProperty("gang_markers", out var gangMarkers)
                 ? gangMarkers.EnumerateArray()
@@ -340,6 +350,9 @@ public sealed partial class OriginalNewGameExperimentTests
         public int Seed { get; }
         public int DoneCount => DoneAtRoll.Count;
         public IReadOnlyList<int> DoneAtRoll { get; }
+        // The turns whose planning time ran out with no Done press; DoneAtRoll still has an entry
+        // for each.
+        public IReadOnlySet<int> ExpiredTurns { get; }
 
         /// <summary>
         /// The rolls the state dump follows; steps after the dump, such as a Ready press that refills

@@ -109,8 +109,8 @@ public sealed record ReferenceFrameRequest(
         var source = Operand(args, reference + 1);
         var beforeMatch = ScreenOperands.Contains(source);
         var save = beforeMatch ? source : Path.GetFullPath(source);
-        // The marker, pump, selected sector, lamps and item frame belong to a match's screens,
-        // which a screen shown before a match does not draw.
+        // The marker, pump, selected sector, lamps, item frame and clip tick belong to a match's
+        // screens, which a screen shown before a match does not draw.
         if (beforeMatch && (marker >= 0 || pump >= 0 || selected >= 0 || lamps >= 0 || item >= 0 || tick >= 0))
             throw new ArgumentException(
                 "--marker-frame, --pump-counter, --selected-sector, --lamps, --item-frame and --clip-tick require a save.");
@@ -311,8 +311,13 @@ public sealed partial class ChaosGame
         }
         if (_referenceFrameDraws >= 0 && !ReferenceClicksSettled) StepReferenceClicks();
         // The reference frame's clock never advances a clip, so one its clicks started stands at
-        // the capture's tick.
-        if (_referenceFrame.ClipTick is { } tick) _combatAnimationPlayer.ShowTick(tick);
+        // the capture's tick. Clicks that start no clip would draw the screen without the panel.
+        if (_referenceFrame.ClipTick is { } tick)
+        {
+            if (_combatAnimationPlayer.IsPlaying) _combatAnimationPlayer.ShowTick(tick);
+            else if (ReferenceClicksSettled)
+                throw new InvalidOperationException("--clip-tick was given, but the reference clicks started no Detailed Combat clip.");
+        }
         return true;
     }
 
@@ -341,12 +346,12 @@ public sealed partial class ChaosGame
                     HandleClick(point);
                     break;
                 case ReferenceEdge.Type:
-                    // A key typed in the Comlink Send panel (RULE-COMLINK-006).
-                    if (_screens.Current == ClientScreen.ComlinkSend)
-                    {
-                        _comlinkEditor.TryAppend(character);
-                        _comlinkStatus = string.Empty;
-                    }
+                    // A key typed in the Comlink Send panel (RULE-COMLINK-006). Text typed while
+                    // another screen shows would be lost and the frame drawn without it.
+                    if (_screens.Current != ClientScreen.ComlinkSend)
+                        throw new InvalidOperationException(
+                            $"Typed text reached the {_screens.Current} screen; it is typed into Comlink Send.");
+                    TypeComlinkCharacter(character);
                     break;
                 case ReferenceEdge.Move:
                     UpdateHoverPoint(point);

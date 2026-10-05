@@ -2,23 +2,25 @@ namespace Rechaos.OriginalProbe;
 
 /// <summary>
 /// One close of the window after the dump (RULE-UI-015): <c>match_saved</c> and the byte that marks
-/// no match in play as the close was posted, the dialogs the game opened, the answer the probe gave
-/// each, and whether the game then set <c>quit_requested</c> or exited.
+/// no match in play as the close was posted, the answer the probe gave, the dialogs the game opened,
+/// how many times it called the save, and the store of <c>quit_requested</c> it reached, or 0.
 /// </summary>
-internal sealed record CloseRecord(int Saved, int NoMatch, int Answer, List<int> Dialogs)
+internal sealed record CloseRecord(int Saved, int NoMatch, int Answer, int SaveResult, List<int> Dialogs)
 {
-    public bool QuitRequested { get; set; }
-    public bool Exited { get; set; }
+    public int Saves { get; set; }
+    public uint LeftAt { get; set; }
 }
 
 /// <summary>
 /// A close after the dump: <paramref name="Saved"/> is written to <c>match_saved</c> first when it
 /// is 0 or 1, and <paramref name="Answer"/> is what the dialog the close opens returns: 1 save first,
-/// 2 cancel, 3 go on without saving (FND-UI-022).
+/// 2 cancel, 3 go on without saving (FND-UI-022). For answer 1, <paramref name="SaveResult"/> is what
+/// the save returns: 1 written, 0 cancelled.
 /// </summary>
-internal sealed record ProbeClose(int? Saved, int Answer)
+internal sealed record ProbeClose(int? Saved, int Answer, int SaveResult = -1)
 {
-    public override string ToString() => $"close {(Saved is { } saved ? saved.ToString() : "-")}:{Answer}";
+    public override string ToString() =>
+        $"close {(Saved is { } saved ? saved.ToString() : "-")}:{Answer}{(Answer == 1 ? SaveResult == 1 ? "w" : "c" : "")}";
 }
 
 /// <summary>A write of <c>match_saved</c> before the Done press of <paramref name="Turn"/>, or at the
@@ -45,45 +47,55 @@ internal sealed partial class NewGameSession
 
     // RULE-UI-015, FND-UI-058: a close of the window is File, Exit (RULE-UI-014). Each dialog the game
     // opens through fn_00465CEC is answered without showing it: the probe returns the step's answer
-    // from the call, as the dialog procedure would for that button. The save the first answer starts,
-    // fn_00463CC5, opens the save dialog, so no step answers 1.
-    private void RecordCloses(IntPtr window)
+    // from the call, as the dialog procedure would for that button. The save fn_00463CC5, which
+    // takes no arguments, is not run either: the probe returns the step's save result from it. The
+    // three stores of quit_requested in File, Exit are skipped and recorded, so the game stays in
+    // planning and every close of a run is recorded.
+    private string? RecordCloses(IntPtr window)
     {
         CloseRecord? current = null;
+        void Return(BreakContext context, uint value)
+        {
+            context.Eax = value;
+            context.Eip = context.ReturnAddress;
+            context.Esp += 4;
+        }
         _process.SetBreakpoint(OriginalAddresses.DialogOpen, context =>
         {
             if (current is null) return;
             current.Dialogs.Add(context.Argument(0));
-            context.Eax = (uint)current.Answer;
-            context.Eip = context.ReturnAddress;
-            context.Esp += 4;
+            Return(context, (uint)current.Answer);
         });
+        _process.SetBreakpoint(OriginalAddresses.SaveGame, context =>
+        {
+            if (current is null) return;
+            current.Saves++;
+            Return(context, (uint)Math.Max(0, current.SaveResult));
+        });
+        foreach (var store in OriginalAddresses.ExitQuitStores)
+            _process.SetBreakpoint(store, context =>
+            {
+                if (current is null) return;
+                current.LeftAt = store;
+                context.Eip += OriginalAddresses.ExitQuitStoreLength;
+            });
         foreach (var step in settings.Closes!)
         {
             _postDumpStep++;
             if (step.Saved is { } saved) _process.Write(OriginalAddresses.MatchSaved, [(byte)saved]);
             current = new CloseRecord(_process.Read(OriginalAddresses.MatchSaved, 1)[0],
-                _process.Read(OriginalAddresses.NoMatchInPlay, 1)[0], step.Answer, []);
+                _process.Read(OriginalAddresses.NoMatchInPlay, 1)[0], step.Answer, step.SaveResult, []);
             _closes.Add(current);
             Native.PostMessageW(window, Native.WmClose, IntPtr.Zero, IntPtr.Zero);
             var posted = DateTime.UtcNow;
-            // The byte is read while the process can still be read: a game that quits and exits
-            // within the wait keeps the last value seen instead of reading a process that is gone.
-            var quitRequested = false;
-            _process.RunUntil(() =>
-            {
-                if (_process.Exited) return true;
-                quitRequested = _process.Read(OriginalAddresses.QuitRequested, 1)[0] != 0;
-                return quitRequested || DateTime.UtcNow - posted > TimeSpan.FromSeconds(3);
-            }, TimeSpan.FromSeconds(10));
-            current.QuitRequested = quitRequested;
-            _notes.Add($"{step}: dialogs [{string.Join(",", current.Dialogs)}], quit_requested {(current.QuitRequested ? 1 : 0)}");
-            if (current.QuitRequested) _process.RunUntil(() => _process.Exited, TimeSpan.FromSeconds(15));
-            if (current.QuitRequested || _process.Exited)
-            {
-                current.Exited = _process.Exited;
-                return;
-            }
+            var record = current;
+            _process.RunUntil(() => record.LeftAt != 0 || DateTime.UtcNow - posted > TimeSpan.FromSeconds(3),
+                TimeSpan.FromSeconds(10));
+            _notes.Add($"{step}: dialogs [{string.Join(",", current.Dialogs)}], saves {current.Saves}, "
+                       + $"left at 0x{current.LeftAt:X8}");
+            if (_process.Exited) return $"the game exited at {step}";
         }
+        current = null;
+        return null;
     }
 }

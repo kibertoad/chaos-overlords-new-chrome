@@ -40,7 +40,7 @@ static int Usage()
               [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
               [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|wait:ms|type:TEXT|shot:SCR-ID+...>,...] [--gang-markers]
               [--title-capture] [--credits-capture] [--setup-capture] [--setup-steps <strip:x:y|drag:x:y:x2:y2|shot>,...]
-              [--detailed-combat] [--pointer] [--sounds] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
+              [--detailed-combat] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
@@ -100,7 +100,7 @@ static int NewGame(string[] args)
         Option(args, "--setup-steps") is { } setupSteps ? ParseSetupSteps(setupSteps) : null,
         args.Contains("--detailed-combat"),
         args.Contains("--pointer"),
-        args.Contains("--sounds"),
+        args.Contains("--sound-calls"),
         args.Contains("--watch-intro"),
         args.Contains("--waits"),
         args.Contains("--slides"),
@@ -257,16 +257,26 @@ static IReadOnlyList<ProbeSavedWrite> ParseSavedWrites(string value) =>
     }).ToArray();
 
 // --closes saved:answer,... closes the window after the dump and answers the dialog the close
-// opens: saved is -, 0 or 1 (written to match_saved first), answer 2 cancels and 3 goes on without
-// saving (ProbeClose).
+// opens: saved is -, 0 or 1 (written to match_saved first); answer 1w saves first and the save is
+// written, 1c saves first and the save is cancelled, 2 cancels and 3 goes on without saving
+// (ProbeClose).
 static IReadOnlyList<ProbeClose> ParseCloses(string value) =>
     value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
     {
         var parts = entry.Split(':');
         int? saved = parts.Length == 2 && parts[0] is "0" or "1" ? int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture) : null;
-        return parts.Length == 2 && (saved is not null || parts[0] == "-") && parts[1] is "2" or "3"
-            ? new ProbeClose(saved, int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture))
-            : throw new FormatException($"A close is saved:answer, saved -, 0 or 1 and answer 2 or 3: {entry}");
+        ProbeClose? close = parts.Length == 2 && (saved is not null || parts[0] == "-")
+            ? parts[1] switch
+            {
+                "1w" => new ProbeClose(saved, 1, 1),
+                "1c" => new ProbeClose(saved, 1, 0),
+                "2" => new ProbeClose(saved, 2),
+                "3" => new ProbeClose(saved, 3),
+                _ => null
+            }
+            : null;
+        return close ?? throw new FormatException(
+            $"A close is saved:answer, saved -, 0 or 1 and answer 1w, 1c, 2 or 3: {entry}");
     }).ToArray();
 
 // --hire-steps drag:slot:sector,reject:slot,exit,... drags offers onto map sectors, presses their
@@ -379,7 +389,8 @@ static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnly
 }
 
 // --families turn:player:slot:family,... writes a planning record's family; --raiders
-// turn:player,... sets a player's raider_mode (ProbePlanning).
+// turn:player,... sets a player's raider_mode; --retire turn:player,... clears a player's
+// player_active (ProbePlanning).
 static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired)
 {
     static int[] Numbers(string entry) =>

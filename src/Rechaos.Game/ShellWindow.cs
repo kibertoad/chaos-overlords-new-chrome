@@ -18,17 +18,21 @@ public enum ShellShortcut
 /// </summary>
 public static class ShellWindow
 {
-    /// <summary>DEV-UI-018: input is read once per frame, 60 times a second.</summary>
-    public static readonly TimeSpan FrameTime = TimeSpan.FromTicks(TimeSpan.TicksPerSecond / 60);
+    /// <summary>
+    /// DEV-UI-018: input is read once per frame, 60 times a second. A second is not a whole number
+    /// of ticks at 60 frames, so the frame is rounded to the nearest tick, 166667, which is also
+    /// MonoGame's own default.
+    /// </summary>
+    public static readonly TimeSpan FrameTime = TimeSpan.FromTicks((TimeSpan.TicksPerSecond + 30) / 60);
 
     /// <summary>DEV-GFX-001: the window can be resized; the drawing area is scaled to fit it.</summary>
-    public const bool AllowsResizing = true;
+    public static readonly bool AllowsResizing = true;
 
     /// <summary>
     /// DEV-GFX-001: full screen is a borderless window at the desktop's mode; the display mode is
     /// never switched.
     /// </summary>
-    public const bool SwitchesDisplayMode = false;
+    public static readonly bool SwitchesDisplayMode = false;
 
     /// <summary>
     /// DEV-GFX-001: the window keeps ticking when it loses focus, sleeping this long between
@@ -61,21 +65,28 @@ public static class ShellWindow
     /// Shift+F1 opens the credits, F1 the help, O the Options screen and Escape the pause menu or
     /// whatever the screen showing gives it.
     /// </summary>
-    /// <param name="pressed">Whether a key went down this frame.</param>
     /// <param name="keyboard">The keys held this frame.</param>
-    public static ShellShortcut ShortcutFor(Func<Keys, bool> pressed, KeyboardState keyboard)
+    /// <param name="previous">The keys held the frame before.</param>
+    public static ShellShortcut ShortcutFor(KeyboardState keyboard, KeyboardState previous)
     {
-        if (pressed(Keys.F1))
+        if (Pressed(keyboard, previous, Keys.F1))
             return keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift)
                 ? ShellShortcut.Credits
                 : ShellShortcut.Help;
-        if (pressed(Keys.O)) return ShellShortcut.Options;
-        if (pressed(Keys.Escape)) return ShellShortcut.Escape;
+        if (Pressed(keyboard, previous, Keys.O)) return ShellShortcut.Options;
+        if (Pressed(keyboard, previous, Keys.Escape)) return ShellShortcut.Escape;
         return ShellShortcut.None;
     }
 
+    /// <summary>DEV-OPTIONS-003, DEV-UI-019: Alt+Enter went down this frame.</summary>
+    public static bool AltEnter(KeyboardState keyboard, KeyboardState previous) =>
+        Pressed(keyboard, previous, Keys.Enter)
+        && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
+
     /// <summary>DEV-OPTIONS-003, DEV-UI-019: F11 or Alt+Enter switches full screen.</summary>
-    public static bool TogglesFullscreen(Func<Keys, bool> pressed, KeyboardState keyboard) =>
-        pressed(Keys.F11)
-        || (pressed(Keys.Enter) && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt)));
+    public static bool TogglesFullscreen(KeyboardState keyboard, KeyboardState previous) =>
+        Pressed(keyboard, previous, Keys.F11) || AltEnter(keyboard, previous);
+
+    private static bool Pressed(KeyboardState keyboard, KeyboardState previous, Keys key) =>
+        keyboard.IsKeyDown(key) && !previous.IsKeyDown(key);
 }

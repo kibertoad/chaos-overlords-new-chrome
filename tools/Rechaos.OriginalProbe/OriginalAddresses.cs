@@ -93,8 +93,8 @@ internal static class OriginalAddresses
     // RULE-TIMER-004, FND-TIMER-002: the timer callback and the presentation wait.
     public const uint TimerCallback = 0x004327C0;
     public const uint PresentationWait = 0x00464CD9;
-    // RULE-UI-003, FND-UI-011, EXP-UI-025: the panel-open helper, the copy in its slide loop and its
-    // last copy, and the startup benchmark count it divides.
+    // RULE-UI-003, FND-UI-011, FND-UI-056, EXP-UI-025: the panel-open helper, the copy in its
+    // slide loop and its last copy, and the startup benchmark count it divides.
     public const uint PanelOpenHelper = 0x0041953E;
     public const uint SlideCopy = 0x0041965D;
     public const uint SlideFinalCopy = 0x004196DC;
@@ -328,6 +328,13 @@ internal static class OriginalAddresses
     public const uint NoMatchInPlay = 0x004ABC9C;
     public const uint QuitRequested = 0x00487828;
     public const uint DialogOpen = 0x00465CEC;
+
+    // RULE-UI-015, FND-UI-058: the save fn_00463CC5, which takes no arguments, and File, Exit's three
+    // stores of 1 to quit_requested, each a 7-byte mov: after a written save, for the third answer,
+    // and when the match is saved.
+    public const uint SaveGame = 0x00463CC5;
+    public static readonly uint[] ExitQuitStores = [0x00470586, 0x004705A8, 0x004705FB];
+    public const uint ExitQuitStoreLength = 7;
 
     // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler
     // fn_0045EAB1; FND-COMLINK-004: the helper fn_0045E04D(player, count) that marks and draws one

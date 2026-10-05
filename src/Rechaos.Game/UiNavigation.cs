@@ -662,8 +662,10 @@ public static class SiteInformationLayout
 public static class ComlinkViewLayout
 {
     public static Rectangle Panel => SharedPanelLayout.Panel;
+    // DEV-UI-005: the inbox tooltip's hover area, the panel art's frame around the number and
+    // count, which holds both digit cells.
+    public static Rectangle Page => SharedPanelLayout.At(29, 9, 59, 13);
     // FND-COMLINK-007: the View fields of fn_0045E04D, panel-local.
-    public static Rectangle Page => new(PageNumber.X, PageNumber.Y, PageCount.Right - PageNumber.X, PageNumber.Height);
     public static Rectangle PageNumber => DigitCells(34, 13, 2);
     public static Rectangle PageCount => DigitCells(70, 13, 2);
     // Native view handler 0x0045D61A (FND-COMLINK-002) uses half-open panel-local rectangles
@@ -677,9 +679,6 @@ public static class ComlinkViewLayout
     public static Rectangle SenderColour => SharedPanelLayout.At(95, 46, 8, 64);
     public static Rectangle SenderPortrait => SharedPanelLayout.At(103, 46, 64, 64);
     public static Point MessageOrigin => new(SharedPanelLayout.X(95), SharedPanelLayout.Y(121));
-    public static Rectangle Message => new(MessageOrigin.X, MessageOrigin.Y,
-        ComlinkSendLayout.MessageColumns * OriginalFontLayout.CellWidth,
-        (ComlinkSendLayout.MessageRows - 1) * ComlinkSendLayout.TextRowStride + OriginalFontLayout.GlyphHeight);
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
 
     private static Rectangle DigitCells(int x, int y, int count) =>

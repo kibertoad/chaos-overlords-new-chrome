@@ -2,8 +2,8 @@ namespace Rechaos.OriginalProbe;
 
 /// <summary>
 /// One movie the intro played (FND-VIDEO-002): its name, the frame count of its header, the frame
-/// counter of the movie slot at each frame shown, the milliseconds from the first frame to each,
-/// and the counter when the slot was closed.
+/// counter of the movie slot at each frame shown, the milliseconds from the first movie's first
+/// frame to each, and the counter when the slot was closed.
 /// </summary>
 internal sealed record IntroMovieRecord(string Name, int Frames, List<int> Shown, List<long> Milliseconds)
 {
