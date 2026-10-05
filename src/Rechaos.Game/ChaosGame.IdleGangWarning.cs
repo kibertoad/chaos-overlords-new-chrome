@@ -25,6 +25,17 @@ public static class IdleGangWarningLayout
         if (ticks < 0) throw new ArgumentOutOfRangeException(nameof(ticks));
         return ticks % 8 < 6;
     }
+
+    /// <summary>
+    /// Whether the warning line shows at <paramref name="now"/> for a panel opened at
+    /// <paramref name="openedAt"/>, counting the ticks of the presentation clock that fall after
+    /// the open (FND-UI-054). The clock runs for the whole program, as slot 0 of the original's
+    /// timer does (FND-TIMER-002), so the first tick comes at most one period after the open
+    /// and the first shown part lasts more than five periods and at most six. A time before the open counts as
+    /// the open.
+    /// </summary>
+    public static bool LineShown(TimeSpan openedAt, TimeSpan now) =>
+        LineShown(now < openedAt ? 0 : PresentationClock.Ticks(now) - PresentationClock.Ticks(openedAt));
 }
 
 public static class IdleGangWarningPolicy
@@ -140,10 +151,10 @@ public sealed partial class ChaosGame
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Ok, "OK", true);
         }
         // FND-UI-054: a reference frame draws the recorded ticks since the open, kept modulo 8.
-        var ticks = _referenceFrame?.ItemFrame
-            ?? PresentationClock.Ticks(_inputTime < _idleGangWarningOpenedAt
-                ? TimeSpan.Zero : _inputTime - _idleGangWarningOpenedAt);
-        if (!IdleGangWarningLayout.LineShown(ticks))
+        var shown = _referenceFrame?.ItemFrame is { } ticks
+            ? IdleGangWarningLayout.LineShown(ticks)
+            : IdleGangWarningLayout.LineShown(_idleGangWarningOpenedAt, _inputTime);
+        if (!shown)
             batch.Draw(pixel, IdleGangWarningLayout.BlinkingLine, Color.Black);
     }
 }

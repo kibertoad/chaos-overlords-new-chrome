@@ -82,13 +82,23 @@ internal sealed partial class NewGameSession
         }
         // FND-UI-054: the warning's line is shown for six ticks from the open and hidden for two,
         // and the countdown holds the ticks left of the current part, so the ticks since the
-        // open, modulo 8, are 6 less the countdown while shown and 8 less it while hidden.
+        // open, modulo 8, are 6 less the countdown while shown and 8 less it while hidden. A read
+        // between the handler's stores can find the countdown at 0 while hidden, so the result is
+        // reduced modulo 8. The game keeps running between the reads, so the flag is read before
+        // and after the countdown, and a pair whose flag changed between them is read again.
         int? ItemFrame()
         {
             if (!itemHandlers.TryPeek(out var handler)) return null;
-            var value = _process.ReadInt32(handler.Ebp - handler.Local);
-            if (handler.ShownLocal == 0) return value;
-            return _process.Read(handler.Ebp - handler.ShownLocal, 1)[0] != 0 ? 6 - value : 8 - value;
+            if (handler.ShownLocal == 0) return _process.ReadInt32(handler.Ebp - handler.Local);
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                var shown = _process.Read(handler.Ebp - handler.ShownLocal, 1)[0];
+                var value = _process.ReadInt32(handler.Ebp - handler.Local);
+                if (_process.Read(handler.Ebp - handler.ShownLocal, 1)[0] != shown) continue;
+                var phase = shown != 0 ? 6 - value : 8 - value;
+                return (phase % 8 + 8) % 8;
+            }
+            return null;
         }
         foreach (var step in settings.OrderSteps!)
         {
@@ -100,7 +110,7 @@ internal sealed partial class NewGameSession
                 var area = CaptureDrawingArea(window, file);
                 var itemFrame = ItemFrame() == itemBefore ? itemBefore : null;
                 if (itemBefore is not null && itemFrame is null)
-                    _notes.Add($"{file}: the item pictures' frame moved during the capture.");
+                    _notes.Add($"{file}: the item pictures' frame or the warning line's phase moved during the capture.");
                 var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
                         _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,

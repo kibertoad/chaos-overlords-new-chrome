@@ -6,7 +6,7 @@ builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
-environment: Windows 11 Pro 10.0.26200, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, run with the compatibility layers DWM8And16BitMitigation, WINXPSP2, DISABLEDWM, 640X480 and DISABLEDXMAXIMIZEDWINDOWEDMODE, windowed, Warn if Idle Gangs and Detailed Combat switched off and the sound levels set to 0 in memory until the steps after the dump, under the Windows debugging interface of tools/Rechaos.OriginalProbe
+environment: Windows 11 Pro 10.0.26200, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, run with the compatibility layers DWM8And16BitMitigation, WINXPSP2, DISABLEDWM, 640X480 and DISABLEDXMAXIMIZEDWINDOWEDMODE, windowed, Warn if Idle Gangs and Detailed Combat switched off and the sound levels set to 0 in memory, Warn if Idle Gangs switched back on by a step after the dump, under the Windows debugging interface of tools/Rechaos.OriginalProbe
 starting_state: new-game
 recording: null
 repetitions: 1
@@ -54,7 +54,9 @@ The capture shows the warning panel over the city, with its red line shown.
 `TheRebuildDrawsWhatTheOriginalDrew` in
 `tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the capture as for
 EXP-UI-009, with the rebuild's Warn if Idle Gangs at its default, on, and the
-recorded item frame as the line's phase. Leaving out the cash row (DEV-UI-006)
+recorded item frame as the line's phase. The digest of the Warning line
+element was taken from the capture's bitmap after the run, as the probe's
+`digest` command does for a run's own capture. Leaving out the cash row (DEV-UI-006)
 and the city's key line (DEV-UI-023), every element matches. A first run of
 the comparison, which blinked the line on the presentation clock's ticks since
 the program started, drew the line black.

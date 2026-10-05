@@ -38,7 +38,7 @@ static int Usage()
               [--draw-values <hex address>=<int32>[/<int32>...],...]
               [--equip-lists] [--attack-lists] [--search-clicks <x:y>,...]
               [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
-              [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers]
+              [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|shot:SCR-ID+...>,...] [--gang-markers]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
