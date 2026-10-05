@@ -12,14 +12,16 @@ public sealed partial class ChaosGame
     private bool _pressedPanelFaceByRightButton;
 
     /// <summary>
-    /// A press on an information panel: on the close face it holds the face until the release,
-    /// outside the panel it is refused with slot 4, and elsewhere inside it does nothing
-    /// (SCR-GANG-001, SCR-GANG-002, SCR-UI-005).
+    /// A press on an information panel: on the close face it plays slot 3 and holds the face until
+    /// the release, outside the panel it is refused with slot 4, and elsewhere inside it does
+    /// nothing (SCR-GANG-001, SCR-GANG-002, SCR-UI-005). The held-button helper plays slot 3 when
+    /// the press starts, whether or not the release lands inside the face (FND-AUDIO-011).
     /// </summary>
     private void PressPanelFace(Point point, Rectangle panel, Rectangle face, Action close)
     {
         if (face.Contains(point))
         {
+            AcceptInput();
             _pressedPanelFace = (face, _screens.Current, close);
             _pressedPanelFaceByRightButton = false;
         }
@@ -61,7 +63,7 @@ public sealed partial class ChaosGame
             _pressedPanelFace = null;
             if (pointerMapped && pressedFace.Screen == _screens.Current
                 && pressedFace.Face.Contains(point))
-                AcceptAndInvoke(pressedFace.Close);
+                pressedFace.Close();
             return;
         }
 

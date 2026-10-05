@@ -1,7 +1,7 @@
 ---
 id: RULE-UI-005
 title: Lengths of the site progress and Force meters
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-UI-036, FND-UI-010, FND-EXE-004, EXP-UI-010, EXP-UI-011]

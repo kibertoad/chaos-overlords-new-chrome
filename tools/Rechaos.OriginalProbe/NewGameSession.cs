@@ -448,6 +448,7 @@ internal sealed partial class NewGameSession(
         }
 
         DumpWritableSections();
+        _gangMarkersDumped = true;
         _panelsAtDump = [.. _panels];
         if (settings.Capture && CaptureDrawingArea(window, "capture-blt") is var (marker, pump, lamps, selected))
         {
@@ -462,8 +463,8 @@ internal sealed partial class NewGameSession(
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
         if (settings.HireSteps is { Count: > 0 } && RecordHireSteps(window) is { } stopped)
             return Finish(false, stopped, rollsBeforeBegin);
-        if (settings.OrderSteps is { Count: > 0 } && !RecordOrderSteps(window))
-            return Finish(false, "The original exited during the order steps.", rollsBeforeBegin);
+        if (settings.OrderSteps is { Count: > 0 } && RecordOrderSteps(window) is { } orderStepsStopped)
+            return Finish(false, orderStepsStopped, rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -553,6 +554,21 @@ internal sealed partial class NewGameSession(
         }
 
         return _panelsOpen == 0;
+    }
+
+    // An Exit press of a step after the dump. With no panel open the Exit point lies on the city
+    // map, where a press would select a sector and a second one open the sector view, so the
+    // press is skipped. A press that closes a panel counts as for ClosePanels, so the panel is
+    // recorded as shown.
+    private void PressExitAfterDump(IntPtr window)
+    {
+        if (_panelsOpen == 0)
+        {
+            _notes.Add("exit after the dump skipped: no panel was open");
+            return;
+        }
+        _exitPresses++;
+        Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
     }
 
     // FND-AWARDS-005: the renderer's first call, kept until it returns.

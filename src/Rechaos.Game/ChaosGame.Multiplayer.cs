@@ -411,6 +411,16 @@ public sealed partial class ChaosGame
     /// markers and its last-turn reports, which the events panel matches on player and turn number
     /// alone and would happily show from the wrong match.
     /// </remarks>
+    /// <summary>
+    /// FND-SAVE-003: keeps the sector the player has selected for its next planning, before an
+    /// adoption replaces the turn on screen with a later one of the same match.
+    /// </summary>
+    private void KeepOnlinePlanningSelection()
+    {
+        if (_session is not null && _state is not null)
+            _planningSelections.Store(new PlayerId(_session.Slot), _cursor);
+    }
+
     private void ResetMatchPresentation(MatchState state)
     {
         _combatPresentationProgress.ResetTo(
@@ -418,6 +428,9 @@ public sealed partial class ChaosGame
             state.Events.LastOrDefault()?.Sequence ?? -1);
         ResetTransientMatchUi();
         _siteSearchSelections.Reset();
+        // FND-SAVE-003, DEV-SAVE-001: a match taken up here keeps no selection, so every player
+        // starts on the sector of its roster slot 0.
+        _planningSelections.Reset(state);
         _lastTurnEventArchive.Clear();
     }
 
@@ -444,7 +457,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ResetTransientMatchUi()
     {
-        _idleGangWarningOpen = false;
+        CloseIdleGangWarning();
         CancelHireReject();
         ForgetGangDrag();
         _tickedPresentation.Clear();
@@ -524,11 +537,12 @@ public sealed partial class ChaosGame
         ForgetHireDrag();
         // The idle-gang warning belongs to the turn that is being replaced. Left open, OK on it
         // submits the new turn as ready with no orders, and there is no taking that back.
-        _idleGangWarningOpen = false;
+        CloseIdleGangWarning();
         CancelHireReject();
         _selectedGangIndex = 0;
-        _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
-            .FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
+        // FND-SAVE-003: the planning starts on the sector the player left selected, or on its roster
+        // slot 0's sector when this client has seen none of its plannings in this match.
+        _cursor = _planningSelections.For(new PlayerId(_session.Slot), _cursor);
         if (submission?.Ready == true) CloseOnlinePlanning();
         TouchOnlineRecovery();
         return true;
