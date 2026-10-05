@@ -25,6 +25,10 @@
     <None Include="../../spec/formats/FMT-*.md" LinkBase="spec/formats" CopyToOutputDirectory="PreserveNewest" />
     <!-- The experiment fixtures, for the tests that replay a run of the original. -->
     <None Include="../../spec/experiments/EXP-*.json" LinkBase="spec/experiments" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The screen entries and the element lists the probe digests captures at, for the check
+         that every element lies in the drawing area and names a row of its entry. -->
+    <None Include="../../spec/screens/SCR-*.md" LinkBase="spec/screens" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../tools/Rechaos.OriginalProbe/Screens/SCR-*.json" LinkBase="Screens" CopyToOutputDirectory="PreserveNewest" />
     <!-- The deviations, for the check that a screen comparison masks only what a deviation of
          that screen draws (ScreenCaptureMasks). -->
     <None Include="../../DEVIATIONS.md" Link="DEVIATIONS.md" CopyToOutputDirectory="PreserveNewest" />

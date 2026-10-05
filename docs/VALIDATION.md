@@ -615,7 +615,17 @@ The digest of a rectangle is the xxh3 of its pixels as red, green and blue
 bytes, row by row from the top and left to right. The elements of a screen and
 their rectangles, worked out for the state the capture shows, are in
 `tools/Rechaos.OriginalProbe/Screens/<SCR ID>.json`; a screen with no such file
-cannot be named yet. Each rectangle comes from the entry's Position column.
+cannot be named yet. Each rectangle comes from the entry's Position column, and
+an element whose position the entry does not give is left out of the list.
+`ScreenElementListTests` checks every list: it names its screen entry, the
+screen has an entry in `ScreenCaptureMasks`, each rectangle lies inside the
+640-by-460 drawing area, and each element names a row of the entry's Drawn
+elements table. The name is the row's own, or the row's name (or that name's
+part before its own comma) followed by a comma and either an index such as
+`slot 0` or a field or variant that the row's Element or Shows cell names as a
+whole word: `Offer portrait, slot 0` cites the row
+`Offer portrait, one per offer slot`, and `Value fields, Gang Upkeep` cites
+`Value fields`, whose Shows cell lists Gang Upkeep.
 
 The bitmap holds the game's art, so it never goes into the repository. When
 `GAME_DIR` is set, `extract` copies it to `GAME_DIR/captures/<xxh3>`, the
