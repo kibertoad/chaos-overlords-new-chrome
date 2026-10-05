@@ -168,6 +168,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-019](../experiments/EXP-UI-019.md) | builds |
 | [EXP-UI-020](../experiments/EXP-UI-020.md) | builds |
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | builds |
+| [EXP-UI-022](../experiments/EXP-UI-022.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
 | [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, builds |
@@ -1278,6 +1279,7 @@ None.
 | [EXP-UI-019](../experiments/EXP-UI-019.md) | body |
 | [EXP-UI-020](../experiments/EXP-UI-020.md) | body |
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | body |
+| [EXP-UI-022](../experiments/EXP-UI-022.md) | body |
 
 ## EXP-TURN-002
 
@@ -2386,6 +2388,12 @@ None.
 |---|---|
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | evidence |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | evidence |
+
+## EXP-UI-022
+
+| Cited by | In |
+|---|---|
+| [RULE-UI-007](../rules/RULE-UI-007.md) | body, evidence |
 
 ## FMT-AUDIO-001
 
@@ -7477,6 +7485,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-022](../experiments/EXP-UI-022.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
 | glossary: pointer_shape | glossary |
 | glossary: PointerShapeSet | glossary |
@@ -9449,6 +9458,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-022](../experiments/EXP-UI-022.md) | body |
 | glossary: on_pointer_query | glossary |
 | glossary: set_pointer | glossary |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | related |

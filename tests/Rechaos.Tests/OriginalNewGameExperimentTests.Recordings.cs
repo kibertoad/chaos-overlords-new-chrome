@@ -87,6 +87,10 @@ public sealed partial class OriginalNewGameExperimentTests
     private sealed record RecordedCombatPresentation(
         int AfterRoll, bool Automatic, int FirstClip, int Clips, IReadOnlyList<int> Sounds, bool Returned);
 
+    // A call of the cursor helper (FND-UI-034): the roll count and the Done presses before it, the
+    // shape and force it was passed, and the address of the call.
+    private sealed record RecordedPointerCall(int AfterRoll, int Done, int Shape, int Force, int Call);
+
     // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
     // (FND-HIRE-001, FND-HIRE-008).
@@ -247,6 +251,10 @@ public sealed partial class OriginalNewGameExperimentTests
                     presentation.GetProperty("sounds").EnumerateArray().Select(sound => sound.GetInt32()).ToArray(),
                     !presentation.TryGetProperty("returned", out var returned) || returned.GetBoolean())).ToArray()
                 : null;
+            PointerCalls = run.TryGetProperty("pointer_calls", out var pointerCalls)
+                ? pointerCalls.EnumerateArray().Select(call => new RecordedPointerCall(
+                    call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32(), call[4].GetInt32())).ToArray()
+                : null;
             // The inputs list every turn up to --end-turns, but a match that ends early presses
             // Done fewer times, and the probe writes a turn's filter entries only before its press.
             SearchFilter = inputs.EnumerateArray()
@@ -292,6 +300,8 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedCombatClip>? CombatClips { get; }
         // Null for a run recorded before the probe kept the presentation calls.
         public IReadOnlyList<RecordedCombatPresentation>? CombatPresentations { get; }
+        // Null when the run did not record the pointer.
+        public IReadOnlyList<RecordedPointerCall>? PointerCalls { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedHireStep> HireSteps { get; }
         public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }
