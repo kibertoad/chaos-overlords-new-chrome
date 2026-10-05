@@ -46,9 +46,11 @@ and the second marker frame 5.
 
 The map holds no exact-white pixel in either capture. In the first, the
 selected sector shows the owned-sector tile inside its frame and the grid tabs
-show their labels with the map around them, as FND-PLATFORM-014 describes. The one exact-white pixel of each capture is
-inside an Overlord bar portrait, that of player 3 for seed 52421 and of player
-2 for seed 1001.
+show their labels with the map around them, as FND-PLATFORM-014 describes.
+The one exact-white pixel of each capture is inside an Overlord bar portrait,
+that of player 3 at `(250,16)` for seed 52421 and of player 2 at `(180,16)`
+for seed 1001. The first is the pixel FND-PLATFORM-014 found left white with
+the write and did not examine.
 
 ## Results
 
@@ -57,9 +59,10 @@ for both runs, compared as in EXP-UI-001.
 
 `tests/Rechaos.Tests/ScreenCaptureTests.cs` replays each run, draws its
 endpoint at the capture's marker frame and compares every element with the
-capture. No element differs, and outside the masks of DEV-UI-006 (the cash
-row) and DEV-UI-023 (the key line) no pixel is unverified: every pixel of the
-map matches, the selected sector and the corners around the grid tabs
+capture. The fixture lists the setup input `key_colour`, so the test compares
+exact white like any other colour (docs/VALIDATION.md). No element differs:
+outside the masks of DEV-UI-006 (the cash row) and DEV-UI-023 (the key line)
+every pixel matches, the selected sector and the corners around the grid tabs
 included, and the rebuild draws the exact-white portrait pixel white as well.
 
 ## Conclusion

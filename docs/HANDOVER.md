@@ -917,7 +917,9 @@ original silent unless `--sound` is given.
   changing a run's rolls or state. EXP-UI-003 takes EXP-UI-001's two captures
   again with it: the map has no white left, every pixel of it matches the
   rebuild, and the one exact-white pixel of each capture is part of an
-  Overlord bar portrait, which the rebuild draws white too. DDrawCompat did
+  Overlord bar portrait, which the rebuild draws white too. ScreenCaptureTests
+  compares the white of a capture whose fixture lists `key_colour` like any
+  other colour, so these captures leave no pixel unverified. DDrawCompat did
   not remove the white areas, since the windowed original draws with GDI only
   (docs/DECISIONS.md, 2026-10-05). EXP-TURN-041's and EXP-TURN-042's captures
   keep their white areas until they are taken again.

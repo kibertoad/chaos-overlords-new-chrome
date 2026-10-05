@@ -680,14 +680,19 @@ The test then compares each element:
 - An element the original drew wholly in exact white is unverified: in a
   capture taken without `--white-key`, a keyed copy on Windows 11 draws solid
   white where its image should show through (FND-PLATFORM-014), and what
-  belongs there is unknown. The test does not read the `key_colour` setup
-  input, so it treats the white of a `--white-key` capture the same way.
+  belongs there is unknown.
 - With the capture under `GAME_DIR/captures/`, every pixel outside the masks is
   compared. A pixel the original drew exact white is counted as unverified
   unless the rebuild drew it white as well. The element matches when no
   compared pixel differs.
 - Without the capture, an element with no white pixel and no mask is compared
   by its digest, and any other element is unverified.
+- A fixture whose inputs hold the setup input `key_colour`, written by
+  `--white-key`, has no white left by a keyed copy, so its exact white is
+  compared like any other colour: a pixel the original drew white and the
+  rebuild did not differs, and without the capture an element with white
+  pixels and no mask is compared by its digest. EXP-UI-003 is compared this
+  way.
 - `ScreenCaptureMasks` lists, for each screen, the rectangles a deviation draws
   over, each under the ID of the deviation. All the masks of the screens a
   capture names apply to the whole frame. `EveryMaskCitesADeviationFromItsScreen`
