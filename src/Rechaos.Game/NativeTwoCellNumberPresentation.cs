@@ -29,20 +29,31 @@ public static class NativeTwoCellNumberPresentation
     public static Rectangle DimZeroCell => new(354, 8, OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
 
     /// <summary>
+    /// The part of a glyph cell the copy takes from <c>PX00129</c>: <paramref name="Source"/> in the
+    /// sheet, drawn <paramref name="Offset"/> pixels right of the cell's left edge.
+    /// </summary>
+    public readonly record struct CellCopy(Rectangle Source, int Offset)
+    {
+        /// <summary>Where the copy lands for a cell whose left edge is at (<paramref name="cellX"/>, <paramref name="cellY"/>).</summary>
+        public Rectangle Destination(int cellX, int cellY) => new(cellX + Offset, cellY, Source.Width, Source.Height);
+    }
+
+    /// <summary>
     /// RULE-UI-004: glyph <c>g</c> is copied from <c>(x, 0, 6, 7)</c> of <c>PX00129</c>, or from
     /// <c>(x, 8, 6, 7)</c> for a negative value, where <c>x</c> is <c>6g</c> cut to a signed 16-bit
-    /// number (FND-UI-045), so a large enough glyph wraps back into the bitmap. Null when the cell
-    /// does not lie wholly inside the bitmap.
+    /// number (FND-UI-045), so a large enough glyph wraps back into the bitmap. Only the pixel
+    /// columns inside the bitmap are copied, and the rest of the cell keeps what was drawn under it
+    /// (EXP-UI-002). Null when no column of the cell lies inside the bitmap.
     /// </summary>
-    public static Rectangle? AtlasCell(int glyph, bool negative, int atlasWidth)
+    public static CellCopy? AtlasCell(int glyph, bool negative, int atlasWidth)
     {
         var left = (int)unchecked((short)(glyph * OriginalFontLayout.CellWidth));
-        // PLACEHOLDER: RULE-UI-004 - what the GDI copy draws for a source cell that is not wholly
-        // inside the 512-pixel bitmap is not recorded (FND-UI-045); the cell is left blank.
-        return left < 0 || left + OriginalFontLayout.CellWidth > atlasWidth
+        var start = Math.Max(left, 0);
+        var end = Math.Min(left + OriginalFontLayout.CellWidth, atlasWidth);
+        return end <= start
             ? null
-            : new Rectangle(left, negative ? 8 : 0, OriginalFontLayout.CellWidth,
-                OriginalFontLayout.GlyphHeight);
+            : new CellCopy(new Rectangle(start, negative ? 8 : 0, end - start, OriginalFontLayout.GlyphHeight),
+                start - left);
     }
 
     /// <summary>
