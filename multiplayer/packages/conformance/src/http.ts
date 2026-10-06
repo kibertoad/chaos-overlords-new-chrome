@@ -1,5 +1,10 @@
 import { type FetchLike, MultiplayerApiError, MultiplayerClient } from '@chaos-overlords/client'
-import type { MatchEvent, MatchEventType, OrderDocument } from '@chaos-overlords/contracts'
+import {
+  LIMITS,
+  type MatchEvent,
+  type MatchEventType,
+  type OrderDocument,
+} from '@chaos-overlords/contracts'
 import { describe, expect, it } from 'vitest'
 
 export interface HttpConformanceHarness {
@@ -380,6 +385,152 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       const sealed = await host.api.sealedOrders(1)
       expect(sealed.players.map((p) => p.slot)).toEqual([1])
       expect((await host.api.get()).match.currentTurn).toBe(2)
+    })
+  })
+
+  describe('http conformance: when to ask again', () => {
+    /** A member's raw read of the match, so the status and the tag headers can be read. */
+    const readMatch = (matchId: string, token: string, ifNoneMatch?: string) =>
+      harness.fetch(`http://conformance/api/v1/matches/${matchId}`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+          accept: 'application/json',
+          ...(ifNoneMatch === undefined ? {} : { 'if-none-match': ifNoneMatch }),
+        },
+      })
+
+    /** A whole number of seconds no shorter than one, as every 429 must carry. */
+    const expectRetryAfter = (response: Response) => {
+      const value = response.headers.get('retry-after')
+      expect(value).toMatch(/^\d+$/)
+      expect(Number(value)).toBeGreaterThanOrEqual(1)
+    }
+
+    it('answers an unchanged lobby read with 304 and a changed one with a new tag', async () => {
+      const { matchId, host, guest } = await lobbyOfTwo()
+      const first = await readMatch(matchId, host.token)
+      expect(first.status).toBe(200)
+      const tag = first.headers.get('etag') ?? ''
+      expect(tag).toMatch(/^"[^"]+"$/)
+      expect(first.headers.get('cache-control')).toMatch(/private/)
+      await first.json()
+
+      const unchanged = await readMatch(matchId, host.token, tag)
+      expect(unchanged.status).toBe(304)
+      expect(unchanged.headers.get('etag')).toBe(tag)
+      expect(await unchanged.text()).toBe('')
+      // A proxy may weaken the tag on the way out; the comparison is the weak one.
+      expect((await readMatch(matchId, host.token, `"other", W/${tag}`)).status).toBe(304)
+
+      // The detail names its reader, so one member's tag is never another's.
+      const asGuest = await readMatch(matchId, guest.token, tag)
+      expect(asGuest.status).toBe(200)
+      expect(asGuest.headers.get('etag')).not.toBe(tag)
+      await asGuest.json()
+
+      // A roster change publishes an event, a settings change moves the match row: both re-tag.
+      await guest.api.updateProfile({ displayName: 'Hopper', portraitId: 3 })
+      const renamed = await readMatch(matchId, host.token, tag)
+      expect(renamed.status).toBe(200)
+      const renamedTag = renamed.headers.get('etag') ?? ''
+      expect(renamedTag).not.toBe(tag)
+      const detail = (await renamed.json()) as { match: { players: { displayName: string }[] } }
+      expect(detail.match.players.map((p) => p.displayName)).toEqual(['Ada', 'Hopper'])
+
+      await host.api.updateSettings({ ...settings, name: 'Renamed city' })
+      const resettled = await readMatch(matchId, host.token, renamedTag)
+      expect(resettled.status).toBe(200)
+      const settled = (await resettled.json()) as { match: { settings: { name: string } } }
+      expect(settled.match.settings.name).toBe('Renamed city')
+    })
+
+    it('never answers a running match from a tag', async () => {
+      const { matchId, host } = await lobbyOfTwo()
+      const lobby = await readMatch(matchId, host.token)
+      const tag = lobby.headers.get('etag') ?? ''
+      await lobby.json()
+      await host.api.start()
+      const running = await readMatch(matchId, host.token, tag)
+      expect(running.status).toBe(200)
+      expect(running.headers.get('etag')).toBeNull()
+      expect(((await running.json()) as { match: { status: string } }).match.status).toBe('running')
+      // `*` names any current copy, and a running match has none a client may keep.
+      const starred = await readMatch(matchId, host.token, '*')
+      expect(starred.status).toBe(200)
+      await starred.json()
+    })
+
+    it('says when to come back after too many password attempts', async () => {
+      const host = await client().createMatch({
+        settings: { ...settings, name: 'Gated city' },
+        hostDisplayName: 'Ada',
+        password: 'opensesame',
+      })
+      let refused: Response | undefined
+      for (let attempt = 0; attempt < 20 && refused === undefined; attempt += 1) {
+        const response = await harness.fetch('http://conformance/api/v1/matches/join', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            joinCode: host.joinCode,
+            displayName: 'Mallory',
+            password: `guess-${attempt}-wrong`,
+          }),
+        })
+        if (response.status === 429) refused = response
+        else {
+          expect(response.status).toBe(401)
+          await response.json()
+        }
+      }
+      if (!refused) throw new Error('the password-attempt budget never ran out')
+      expectRetryAfter(refused)
+      const body = (await refused.json()) as {
+        error: { code: string; details: { retryAfterSeconds?: number } }
+      }
+      expect(body.error.code).toBe('rate_limited')
+      expect(String(body.error.details.retryAfterSeconds)).toBe(refused.headers.get('retry-after'))
+    })
+
+    it('says when to come back after refusing a stream past the per-match cap', async () => {
+      // A player's own stale streams make room for their next one, so the cap a client cannot talk
+      // its way past is the match's: every seat holding its three, plus a stream that outlived the
+      // membership it was opened under, which a lobby leaver's is until the hub notices.
+      const anonymous = client()
+      const host = await anonymous.createMatch({
+        settings: { ...settings, maxPlayers: LIMITS.maxPlayers },
+        hostDisplayName: 'Ada',
+      })
+      const members = [host]
+      for (let n = 1; n < LIMITS.maxPlayers; n += 1) {
+        members.push(await anonymous.join({ joinCode: host.joinCode, displayName: `Seat ${n}` }))
+      }
+      const stream = (token: string, signal: AbortSignal) =>
+        harness.fetch(`http://conformance/api/v1/matches/${host.match.id}/stream`, {
+          headers: { authorization: `Bearer ${token}`, accept: 'text/event-stream' },
+          signal,
+        })
+      const controller = new AbortController()
+      try {
+        for (const member of members) {
+          for (let n = 0; n < 3; n += 1) {
+            expect((await stream(member.token, controller.signal)).status).toBe(200)
+          }
+        }
+        const leaver = members.at(-1)
+        if (!leaver) throw new Error('no members')
+        await anonymous.withToken(leaver.token).match(host.match.id).leave()
+        const late = await anonymous.join({ joinCode: host.joinCode, displayName: 'Late' })
+        const refused = await stream(late.token, controller.signal)
+        expect(refused.status).toBe(429)
+        expectRetryAfter(refused)
+        expect((await refused.json()).error).toMatchObject({
+          code: 'rate_limited',
+          details: { reason: 'too_many_streams', scope: 'match' },
+        })
+      } finally {
+        controller.abort()
+      }
     })
   })
 }

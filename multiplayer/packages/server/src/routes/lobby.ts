@@ -72,6 +72,21 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
   buildHonoRoute(api, getMatchContract, async (c) => {
     const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
     const { kernel } = c.get('container')
+    // A lobby poll that has seen this view already is answered 304 from the tag alone; see
+    // `MatchQueryService.lobbyTag`. Taken before the view is read, so the tag is never newer than
+    // the view it goes out with.
+    const tag = await kernel.query.lobbyTag(
+      principal.match,
+      principal.player.id,
+      kernel.deps.clock.now(),
+    )
+    if (tag !== null) {
+      // Per member and current only for a moment: no shared cache may keep it, and a private one
+      // must ask again every time.
+      c.header('Cache-Control', 'private, no-cache')
+      c.header('ETag', tag)
+      if (matchesIfNoneMatch(c.req.header('if-none-match'), tag)) return c.body(null, 304)
+    }
     // A client reads the view to resynchronise, and one that is doing so because its countdown ran
     // out with no seal is owed the seal rather than the same stuck turn; see `sealIfOverdue`.
     const match = await kernel.turns.sealIfOverdue(principal.match)
@@ -143,5 +158,21 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
         c.req.valid('json'),
       )
     return c.body(null, 204)
+  })
+}
+
+/**
+ * Whether an `If-None-Match` list names `tag`, by the weak comparison RFC 9110 prescribes for it.
+ *
+ * The list is comma-separated, a `W/` prefix is ignored on either side, and `*` matches any current
+ * representation, which a lobby always has.
+ */
+export function matchesIfNoneMatch(header: string | undefined, tag: string): boolean {
+  if (header === undefined) return false
+  const opaque = (value: string) => value.trim().replace(/^W\//, '')
+  const wanted = opaque(tag)
+  return header.split(',').some((candidate) => {
+    const value = opaque(candidate)
+    return value === '*' || value === wanted
   })
 }

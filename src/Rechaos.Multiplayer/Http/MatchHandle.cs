@@ -22,6 +22,18 @@ public sealed class MatchHandle
         _client.SendAsync<MatchDetail>(
             HttpMethod.Get, ApiRoutes.Match(MatchId), body: null, cancellationToken);
 
+    /// <summary>
+    /// The match view, unless the copy tagged <paramref name="entityTag"/> is still current.
+    /// </summary>
+    /// <remarks>
+    /// The server tags a lobby's view only; a running match always answers in full. See
+    /// <see cref="MultiplayerClient.GetIfChangedAsync{T}"/>.
+    /// </remarks>
+    public Task<ConditionalRead<MatchDetail>> GetIfChangedAsync(
+        string? entityTag,
+        CancellationToken cancellationToken) =>
+        _client.GetIfChangedAsync<MatchDetail>(ApiRoutes.Match(MatchId), entityTag, cancellationToken);
+
     /// <summary>Host only: seats the players, draws the seed and opens turn 1.</summary>
     public Task<Unit> StartAsync(CancellationToken cancellationToken) =>
         _client.SendAsync<Unit>(

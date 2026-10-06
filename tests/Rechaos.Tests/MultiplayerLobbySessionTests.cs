@@ -242,6 +242,67 @@ public sealed class MultiplayerLobbySessionTests
         Assert.Equal(nameof(MultiplayerLobbySession.UpdateProfile), failed.Operation);
     }
 
+    [Fact]
+    public async Task AnUnchangedLobbyPollIsAnsweredFromTheViewAlreadyHeld()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        var first = View(MatchStatus.Lobby);
+        server.AnswerTagged(HttpMethod.Get, "/matches/m1", new MatchDetail(first, "CODE1234", "p1"), "\"lobby-1\"");
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await WaitFor<LobbyNotice.Seated>(lobby, cancellationToken);
+
+        // The first poll has no tag to name, since the resume read went through the plain path.
+        lobby.Refresh();
+        var held = (await WaitFor<LobbyNotice.Updated>(lobby, cancellationToken)).Match;
+        Assert.Equal("HOST", held.Players[0].DisplayName);
+        // The second names the tag, is answered 304, and the view held is handed on again.
+        lobby.Refresh();
+        Assert.Same(held, (await WaitFor<LobbyNotice.Updated>(lobby, cancellationToken)).Match);
+
+        // Once the lobby changes, the server's tag no longer matches and the new view comes back.
+        var renamed = first with { Players = [first.Players[0] with { DisplayName = "RENAMED" }] };
+        server.AnswerTagged(HttpMethod.Get, "/matches/m1", new MatchDetail(renamed, "CODE1234", "p1"), "\"lobby-2\"");
+        lobby.Refresh();
+        Assert.Equal("RENAMED", (await WaitFor<LobbyNotice.Updated>(lobby, cancellationToken)).Match.Players[0].DisplayName);
+        lobby.Refresh();
+        Assert.Equal("RENAMED", (await WaitFor<LobbyNotice.Updated>(lobby, cancellationToken)).Match.Players[0].DisplayName);
+
+        var polls = server.Requests
+            .Where(request => request.Method == HttpMethod.Get && request.Path.EndsWith("/matches/m1", StringComparison.Ordinal))
+            .Select(request => request.IfNoneMatch)
+            .ToArray();
+        Assert.Equal([null, null, "\"lobby-1\"", "\"lobby-1\"", "\"lobby-2\""], polls);
+    }
+
+    [Fact]
+    public async Task AnUntaggedAnswerIsNeverNamedOnTheNextPoll()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        server.AnswerTagged(HttpMethod.Get, "/matches/m1", new MatchDetail(View(MatchStatus.Lobby), "CODE1234", "p1"), "\"lobby-1\"");
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await WaitFor<LobbyNotice.Seated>(lobby, cancellationToken);
+        lobby.Refresh();
+        await WaitFor<LobbyNotice.Updated>(lobby, cancellationToken);
+
+        // A running match is never tagged; the copy held for the lobby must not be named after it.
+        server.Answer(HttpMethod.Get, "/matches/m1", new MatchDetail(View(MatchStatus.Running), "CODE1234", "p1"));
+        lobby.Refresh();
+        Assert.Equal(MatchStatus.Running, (await WaitFor<LobbyNotice.Updated>(lobby, cancellationToken)).Match.Status);
+        lobby.Refresh();
+        Assert.Equal(MatchStatus.Running, (await WaitFor<LobbyNotice.Updated>(lobby, cancellationToken)).Match.Status);
+
+        var last = server.Requests.Last(request => request.Method == HttpMethod.Get && request.Path.EndsWith("/matches/m1", StringComparison.Ordinal));
+        Assert.Null(last.IfNoneMatch);
+    }
+
     private static MatchView View(MatchStatus status) => new(
         "m1",
         MultiplayerProtocolVersion.Current,

@@ -75,11 +75,18 @@ export function buildContainer(env: Env): ServerContainer {
         // error here is what gets the caller the same envelope every other refusal has.
         if (response.status === 429) {
           const scope = response.headers.get('X-Stream-Refusal') === 'process' ? 'process' : 'match'
+          const retryAfter = Number(response.headers.get('Retry-After'))
           throw new RateLimitedError(
             scope === 'process'
               ? 'This server is holding as many event streams as it can'
               : 'This match is holding as many event streams as it can',
-            { reason: 'too_many_streams', scope },
+            {
+              reason: 'too_many_streams',
+              scope,
+              ...(Number.isFinite(retryAfter) && retryAfter > 0
+                ? { retryAfterSeconds: retryAfter }
+                : {}),
+            },
           )
         }
         return new Response(response.body as ReadableStream<Uint8Array> | null, {

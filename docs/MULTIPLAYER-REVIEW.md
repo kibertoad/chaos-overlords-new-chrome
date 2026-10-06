@@ -16,8 +16,6 @@ above and is still open. All of it is low severity: polish, efficiency, or tests
 earlier fix from regressing.
 
 <!-- doc-index:begin toc depth=3 -->
-- [Server](#server)
-  - [Lobby polling is the steadiest load a server sees](#lobby-polling-is-the-steadiest-load-a-server-sees)
 - [Client](#client)
   - [Backoff jitter is not full jitter](#backoff-jitter-is-not-full-jitter)
   - [A recovery file from a newer build is overwritten](#a-recovery-file-from-a-newer-build-is-overwritten)
@@ -25,17 +23,6 @@ earlier fix from regressing.
   - [Smaller allocations](#smaller-allocations)
 - [Test coverage](#test-coverage)
 <!-- doc-index:end -->
-
-## Server
-
-### Lobby polling is the steadiest load a server sees
-
-The game polls the lobby once a second per player (`LobbyPollInterval`,
-`src/Rechaos.Game/ChaosGame.Multiplayer.cs`). Each poll is an authenticated request that runs
-several queries. The design doc calls this deliberate, but it is still the server's steadiest
-load. An `ETag` built from `(updatedAt, lastEventSeq)` and answered with `304` would cut an
-unchanged poll to the auth lookup and one `lastSeq` read. Alternatively, the lobby could long-poll
-`GET /events?after=`.
 
 ## Client
 
@@ -85,12 +72,11 @@ Fixes without a test that would fail if they were reverted:
 - **Over HTTP**, in `multiplayer/packages/conformance/src/http.ts`, so that every runtime runs it:
   - password-gated create and join;
   - the no-echo rule with a wrong-typed secret (e.g. `{ "password": 123456 }`);
-  - stream caps answering 429 (currently tested only on the hub itself);
   - the keepalive frame;
   - `Last-Event-ID` taking precedence over `?after=`;
   - malformed JSON answering 422;
   - an oversized snapshot answering 413;
-  - `Retry-After` on every 429 and `X-Request-Id` on every response, the event stream included.
+  - `X-Request-Id` on every response, the event stream included.
 - **Cloudflare end to end.** `tools/OnlineSmoke` runs in the multiplayer workflow against the Node
   runtime. Nothing plays a match against the workerd runtime, and nothing runs on a schedule to
   catch drift on a branch nobody touched.

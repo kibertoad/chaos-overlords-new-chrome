@@ -127,5 +127,12 @@ function respond(c: Context<AppEnv>, { code, message, details, requestId }: Erro
   // `immutable`, say) would otherwise be applied to the refusal. It must be overwritten on the
   // context itself: the `c.res` setter copies the previous response's headers over the new one.
   c.header('Cache-Control', 'no-store')
+  // Every 429 states when to come back, from the one place every refusal passes through: a limiter,
+  // the password-attempt budget and the stream caps each put the wait in the details, and a header
+  // set by whoever threw would be missed by the next refusal somebody adds.
+  const retryAfter = details.retryAfterSeconds
+  if (code === 'rate_limited' && typeof retryAfter === 'number' && retryAfter > 0) {
+    c.header('Retry-After', String(Math.ceil(retryAfter)))
+  }
   return c.json(validateSync(errorEnvelopeSchema, body), STATUS_BY_CODE[code] as 400)
 }
