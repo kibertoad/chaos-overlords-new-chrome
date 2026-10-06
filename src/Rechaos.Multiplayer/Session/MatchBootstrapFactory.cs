@@ -25,7 +25,11 @@ public static class MatchBootstrapFactory
     /// one; a client that narrowed it would refuse those.
     /// </param>
     /// <param name="settings">The host's choices, from the opaque blob.</param>
-    /// <param name="players">The seated roster, in any order; slots decide the seating.</param>
+    /// <param name="players">
+    /// The seated roster. Slots decide the seating, and a slot with several rows takes the first in
+    /// list order, so a slot's rows must come in the order the server lists them: the order they
+    /// claimed the seat.
+    /// </param>
     public static MatchSetup Setup(
         int seed,
         MultiplayerGameSettings settings,

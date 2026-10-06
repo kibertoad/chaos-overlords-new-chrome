@@ -284,15 +284,6 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
 }
 
 /**
- * The select list `create` and `createLate` feed their insert from: the player's own values, each
- * under the column name it is inserted as.
- *
- * The list is written out, which means it does NOT get Drizzle's column mapping: a column added to
- * `players` later has to be added here too, in the storage form the column expects. The
- * conformance suite compares a created player against its fixture field by field, so a dropped
- * column fails there rather than going unnoticed.
- */
-/**
  * The rows that still hold a claim on their seat: every row but a computer-controlled one whose
  * token is gone. The SQL twin of `isVacated`, negated.
  */
@@ -301,6 +292,15 @@ function holdsClaim() {
   return or(ne(players.status, 'computer'), isNotNull(players.tokenHash))
 }
 
+/**
+ * The select list `create` and `createLate` feed their insert from: the player's own values, each
+ * under the column name it is inserted as.
+ *
+ * The list is written out, which means it does NOT get Drizzle's column mapping: a column added to
+ * `players` later has to be added here too, in the storage form the column expects. The
+ * conformance suite compares a created player against its fixture field by field, so a dropped
+ * column fails there rather than going unnoticed.
+ */
 function playerValues(player: Player) {
   return {
     id: sql`${player.id}`.as('id'),

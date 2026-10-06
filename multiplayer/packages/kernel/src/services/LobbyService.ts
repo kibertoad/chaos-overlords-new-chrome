@@ -341,9 +341,13 @@ export class LobbyService {
     // Ends the former players' right to take the seat back, before the insert that claims it. A
     // former player whose `rejoin` won the seat a moment earlier is no longer computer controlled,
     // so nothing of theirs is released and the insert below refuses. A claim refused after the
-    // release can only have lost the seat to another late joiner, or the match to its end.
-    const released = await this.deps.storage.players.releaseComputerSeat(match.id, request.slot)
-    for (const playerId of released) await this.hangUp(match.id, playerId)
+    // release lost the seat to another late joiner, the last place under `maxPlayers` to a late
+    // joiner on another seat, or the match to its end; the release stands in each case. A seat
+    // with no live token among its holders has nothing to release, and none can gain one since.
+    if (holders.some((holder) => !isVacated(holder))) {
+      const released = await this.deps.storage.players.releaseComputerSeat(match.id, request.slot)
+      for (const playerId of released) await this.hangUp(match.id, playerId)
+    }
     if (!(await this.deps.storage.players.createLate(player))) {
       throw new ConflictError('That seat was claimed by another player, or the match filled up', {
         reason: 'seat_reserved',
