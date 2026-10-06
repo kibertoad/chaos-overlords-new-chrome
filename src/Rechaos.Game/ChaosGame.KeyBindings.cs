@@ -21,6 +21,17 @@ public static class KeyBindingsLayout
     public static Rectangle Capture => new(408, 400, 112, 28);
     public static Rectangle Row(int visibleRow) => new(120, 65 + visibleRow * 19, 400, 18);
     public static Point Detail(int line) => new(98, 281 + line * 11);
+
+    /// <summary>
+    /// The line under the selected shortcut's description. A capture that refused a key stays
+    /// open, so its reason leads the capture prompt in place of "PRESS A KEY" until a key is bound
+    /// or the capture stops.
+    /// </summary>
+    public static string StatusLine(bool capturing, string status) => capturing
+        ? (string.IsNullOrEmpty(status) ? "PRESS A KEY" : status) + "   ESC, RIGHT-CLICK OR CANCEL STOPS"
+        : string.IsNullOrEmpty(status)
+            ? "UP/DOWN SELECT   ENTER CHANGES   ESC BACK"
+            : status;
 }
 
 public sealed partial class ChaosGame
@@ -199,12 +210,8 @@ public sealed partial class ChaosGame
         for (var line = 0; line < uses.Count && line < KeyBindingsLayout.DetailLines; line++)
             font.Draw(batch, uses[line].ToString(), KeyBindingsLayout.Detail(line).ToVector2(),
                 Color.LightGray, 1);
-        var status = _capturingKeyBinding
-            ? "PRESS A KEY   ESC, RIGHT-CLICK OR CANCEL STOPS"
-            : string.IsNullOrEmpty(_keyBindingStatus)
-                ? "UP/DOWN SELECT   ENTER CHANGES   ESC BACK"
-                : _keyBindingStatus;
-        DrawCentered(font, batch, status, 378, Color.White, 1);
+        DrawCentered(font, batch,
+            KeyBindingsLayout.StatusLine(_capturingKeyBinding, _keyBindingStatus), 378, Color.White, 1);
         DrawButton(batch, pixel, font, KeyBindingsLayout.Reset, "RESET", true);
         DrawButton(batch, pixel, font, KeyBindingsLayout.Back, "BACK", true);
         DrawButton(batch, pixel, font, KeyBindingsLayout.Capture,

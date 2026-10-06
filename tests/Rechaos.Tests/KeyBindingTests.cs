@@ -69,7 +69,7 @@ public sealed class KeyBindingTests : IDisposable
         // A key read through the bindings but missing from the map would still act on its
         // printed key, and could then trigger two shortcuts at once. A listed key nothing reads
         // would be a dead row in the editor.
-        var source = Path.Combine(RepositoryRoot(), "src", "Rechaos.Game");
+        var source = Path.Combine(AppContext.BaseDirectory, "game-source");
         var calls = new Regex(
             @"(?<![A-Za-z])(?:Pressed\((?:keyboard|current), |Pressed\(|Bound\(bindings, )Keys\.([A-Za-z0-9]+)\)");
         var read = new HashSet<Keys>();
@@ -128,6 +128,23 @@ public sealed class KeyBindingTests : IDisposable
         Assert.Equal(Keys.Escape, map.Physical(Keys.F5));
         Assert.True(map.Assign(Keys.F5, Keys.F5));
         Assert.Equal(Keys.Escape, map.Physical(Keys.Escape));
+    }
+
+    [Fact]
+    public void ACaptureShowsWhyItRefusedAKey()
+    {
+        // DEV-UI-024: a capture that refuses a modifier or two keys at once stays open, and the
+        // status line says why while keeping the way out on screen.
+        Assert.Equal("PRESS A KEY   ESC, RIGHT-CLICK OR CANCEL STOPS",
+            KeyBindingsLayout.StatusLine(capturing: true, string.Empty));
+        Assert.Equal("KEY UNAVAILABLE   ESC, RIGHT-CLICK OR CANCEL STOPS",
+            KeyBindingsLayout.StatusLine(capturing: true, "KEY UNAVAILABLE"));
+        Assert.Equal("PRESS ONE KEY   ESC, RIGHT-CLICK OR CANCEL STOPS",
+            KeyBindingsLayout.StatusLine(capturing: true, "PRESS ONE KEY"));
+        Assert.Equal("UP/DOWN SELECT   ENTER CHANGES   ESC BACK",
+            KeyBindingsLayout.StatusLine(capturing: false, string.Empty));
+        Assert.Equal("KEY SAVED", KeyBindingsLayout.StatusLine(capturing: false, "KEY SAVED"));
+        AssertPrintable(KeyBindingsLayout.StatusLine(capturing: true, "KEY UNAVAILABLE"));
     }
 
     [Fact]
@@ -272,17 +289,6 @@ public sealed class KeyBindingTests : IDisposable
     private static void AssertPrintable(string text) =>
         Assert.All(text, character => Assert.True(OriginalFontLayout.TryGlyph(character, out _),
             $"'{character}' in \"{text}\" has no glyph."));
-
-    private static string RepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory);
-             directory is not null;
-             directory = directory.Parent)
-            if (Directory.Exists(Path.Combine(directory.FullName, "src", "Rechaos.Game")))
-                return directory.FullName;
-        throw new DirectoryNotFoundException(
-            $"No src/Rechaos.Game above the test binaries at '{AppContext.BaseDirectory}'.");
-    }
 
     public void Dispose() => _directory.Delete(recursive: true);
 }

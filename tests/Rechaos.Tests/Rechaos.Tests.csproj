@@ -23,6 +23,10 @@
          from GAME_DIR. -->
     <None Include="../../spec/builds/BLD-*.md" LinkBase="spec/builds" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../spec/formats/FMT-*.md" LinkBase="spec/formats" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The game's sources, for the check that the screens read no shortcut key the key binding
+         map leaves out (KeyBindingTests). The validation gate builds outside the checkout, so the
+         test reads its copy beside the binaries. -->
+    <None Include="../../src/Rechaos.Game/*.cs" LinkBase="game-source" CopyToOutputDirectory="PreserveNewest" />
     <!-- The experiment fixtures, for the tests that replay a run of the original. -->
     <None Include="../../spec/experiments/EXP-*.json" LinkBase="spec/experiments" CopyToOutputDirectory="PreserveNewest" />
     <!-- The screen entries and the element lists the probe digests captures at, for the check
