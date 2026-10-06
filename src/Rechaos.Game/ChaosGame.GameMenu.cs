@@ -434,18 +434,12 @@ public sealed partial class ChaosGame
         DrawBorder(batch, pixel, panel, Color.Gold, 2);
         if (_quitToMainMenuConfirmationOpen)
         {
+            // Only an online match opens this confirmation; a local one asks to save first instead
+            // (RULE-UI-015).
             DrawCentered(font, batch, "QUIT TO MAIN MENU?", 132, Color.Gold, 2);
-            if (_session is null)
-            {
-                DrawCentered(font, batch, "YOUR CURRENT GAME WILL BE LOST", 190, Color.White, 1);
-                DrawCentered(font, batch, "IF NOT SAVED.", 207, Color.White, 1);
-            }
-            else
-            {
-                DrawCentered(font, batch, "SERVER SAVES EACH TURN.", 178, Color.White, 1);
-                DrawCentered(font, batch, "RESUME IT LATER FROM ONLINE.", 195, Color.White, 1);
-                DrawCentered(font, batch, "AVAILABLE UNTIL COMPLETED OR EXPIRED.", 212, Color.White, 1);
-            }
+            DrawCentered(font, batch, "SERVER SAVES EACH TURN.", 178, Color.White, 1);
+            DrawCentered(font, batch, "RESUME IT LATER FROM ONLINE.", 195, Color.White, 1);
+            DrawCentered(font, batch, "AVAILABLE UNTIL COMPLETED OR EXPIRED.", 212, Color.White, 1);
             DrawButton(batch, pixel, font, GameMenuLayout.ConfirmQuit, "QUIT", _gameMenuCursor == 0);
             DrawButton(batch, pixel, font, GameMenuLayout.CancelQuit, "CANCEL", _gameMenuCursor == 1);
             return;

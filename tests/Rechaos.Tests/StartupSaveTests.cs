@@ -31,9 +31,9 @@ public sealed class StartupSaveTests
         var load = typeof(ChaosGame).GetMethod("LoadContent", flags)!;
         Assert.Contains(typeof(ChaosGame).GetMethod("OpenStartupSave", flags)!, DeviationBehaviourTests.Calls(load));
 
-        // The intro starts only when no save was named.
+        // A start that has loaded a match skips the intro.
         var game = DeviationBehaviourTests.HeadlessGame();
-        DeviationBehaviourTests.Field("_startupSavePath").SetValue(game, @"C:\Games\SAVE1.json");
+        DeviationBehaviourTests.Field("_state").SetValue(game, NativeSaveSerializerTests.CreateMatch());
         DeviationBehaviourTests.Call(game, "InitializeIntroMovies");
         Assert.False((bool)DeviationBehaviourTests.Field("_introMoviesPlaying").GetValue(game)!);
     }

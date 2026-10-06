@@ -425,9 +425,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             var sound = LoadSound(AudioRouting.GeneralSoundFile(slot));
             if (sound is not null) _generalSounds.Add(slot, sound);
         }
+        // RULE-UI-013: the command-line file is opened before the intro test, which a loaded
+        // match skips.
+        OpenStartupSave();
         InitializeIntroMovies();
         LoadSoundtrack();
-        OpenStartupSave();
         _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
         {
             ["helpAvailable"] = (_helpDocument is not null).ToString(),

@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Game;
@@ -26,7 +25,8 @@ public sealed partial class OriginalNewGameExperimentTests
     // dialog 129, and each answer opens the save browser and leaves exactly when the original called
     // its save and stored quit_requested. Each write of 1 is a save; the rebuild has no other way to
     // set the mark. A leave is the rebuild's confirmed exit, which the original's skipped store
-    // stands for.
+    // stands for. Closing the window is File, Exit (RULE-UI-014), which LeavePromptTests.ClosingIsCancelled
+    // drives through the game's exiting handler.
     [Theory]
     [MemberData(nameof(CloseRuns))]
     public void ClosingAsksToSaveExactlyWhileTheMatchIsUnsaved(string experiment, int run)
@@ -63,7 +63,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 Assert.Equal(close.Saved == 1, actions!.IsSaved);
                 Assert.Equal(0, close.NoMatch);
                 var asked = close.Dialogs.Contains(129);
-                var held = ClosingIsCancelled(game);
+                var held = LeavePromptTests.ClosingIsCancelled(game);
                 Assert.Equal(asked, held);
                 Assert.Equal(asked ? LeaveKind.Exit : LeaveKind.None,
                     (LeaveKind)DeviationBehaviourTests.Field("_leavePrompt").GetValue(game)!);
@@ -86,19 +86,5 @@ public sealed partial class OriginalNewGameExperimentTests
         {
             directory.Delete(recursive: true);
         }
-    }
-
-    /// <summary>
-    /// Closes the window of a headless game, which is File, Exit (RULE-UI-014), and says whether
-    /// the close was held back.
-    /// </summary>
-    internal static bool ClosingIsCancelled(ChaosGame game)
-    {
-        var args = new ExitingEventArgs();
-        typeof(ChaosGame).GetMethod("OnExiting",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-                [typeof(object), typeof(ExitingEventArgs)])!
-            .Invoke(game, [game, args]);
-        return args.Cancel;
     }
 }

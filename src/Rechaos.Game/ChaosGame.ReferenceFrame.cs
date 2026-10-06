@@ -525,6 +525,10 @@ public sealed partial class ChaosGame
             writer.Write(0L);
             writer.Write(bgra);
         }
+        // The frame's match was loaded without being marked saved, and the update loop stops
+        // short of the game menu here, so a save-first prompt (RULE-UI-015) would hold the
+        // process open until the capture times out.
+        _exitConfirmed = true;
         Exit();
     }
 }

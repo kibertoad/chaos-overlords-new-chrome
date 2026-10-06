@@ -245,18 +245,33 @@ Tim Jordan, Adam K. Rixey, and George Ruof, for the remarkably thorough
 It has been invaluable for clarifying game mechanics whose presentation in the
 original game and manual can otherwise be delightfully cryptic.
 
-This project copies no source code and redistributes no copyrighted resources
-from the original game. Players are expected to buy and own a legal copy, such
-as the [GOG release](https://www.gog.com/en/game/chaos_overlords), and import
-its assets locally during installation.
-
 ## License
 
-Copyright (C) 2026 kibertoad.
+The code, documentation and other material written for this project, including
+the rebuild, its tools and the spec in `spec/`, are copyright (C) 2026
+kibertoad. This copyright covers only that new work.
 
-The original code in this repository is licensed under the [MIT License](LICENSE).
-The documentation of the original game in `spec/` is licensed under
+The code in this repository is licensed under the [MIT License](LICENSE).
+The spec in `spec/`, this project's own description of how the original game
+works, is licensed under
 [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/),
 and its machine-readable files under the MIT License; `spec/LICENSE` says which
-files each covers. Neither license covers or grants rights to the original
-*Chaos Overlords* assets, which are not distributed by this project.
+files each covers. The MIT and CC BY 4.0 licenses apply only to this project's
+own work. They grant no rights to the original game or its assets.
+
+*Chaos Overlords* was created by Stick Man Games and first published in 1996 by
+New World Computing. According to the
+[GOG store page](https://www.gog.com/en/game/chaos_overlords), the rights to the
+game are now held by Evolution Interactive. All rights to the original game,
+including its name, executable, artwork, music, sounds, video, text and other
+assets, belong to their respective owners.
+
+This project copies no source code from the original game, and this repository
+and its releases contain none of its files. Players are expected to buy and own
+a legal copy, such as the
+[GOG release](https://www.gog.com/en/game/chaos_overlords), and import its
+assets locally during installation. The name
+*Chaos Overlords* is used here only to identify the game this project is
+compatible with. This project is an independent fan recreation, not affiliated
+with or endorsed by Stick Man Games, New World Computing, Evolution Interactive
+or GOG.

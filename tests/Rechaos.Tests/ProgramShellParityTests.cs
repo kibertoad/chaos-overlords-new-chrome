@@ -236,7 +236,7 @@ public sealed class ProgramShellParityTests
         // match loaded, sets quit_requested without asking.
         var game = DeviationBehaviourTests.HeadlessGame();
         Assert.Null(DeviationBehaviourTests.Field("_state").GetValue(game));
-        Assert.False(OriginalNewGameExperimentTests.ClosingIsCancelled(game));
+        Assert.False(LeavePromptTests.ClosingIsCancelled(game));
         Assert.Equal(LeaveKind.None, (LeaveKind)DeviationBehaviourTests.Field("_leavePrompt").GetValue(game)!);
     }
 }
