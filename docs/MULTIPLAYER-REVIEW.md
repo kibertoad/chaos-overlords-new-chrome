@@ -37,7 +37,8 @@ The game polls the lobby once a second per player (`LobbyPollInterval`,
 several queries. The design doc calls this deliberate, but it is still the server's steadiest
 load. An `ETag` built from `(updatedAt, lastEventSeq)` and answered with `304` would cut an
 unchanged poll to the auth lookup and one `lastSeq` read. Alternatively, the lobby could long-poll
-`GET /events?after=`.
+`GET /events?after=`. Tracked in
+[#458](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/458).
 
 ### Two kinds of 429 carry no `Retry-After`
 
@@ -105,6 +106,7 @@ it sits, then `DeserializeAsync` straight from the stream.
   nothing lets a test change it, so the worker pool skips the case rather than wait out a heartbeat.
 - **`Retry-After` on every 429.** See [the server item above](#two-kinds-of-429-carry-no-retry-after):
   two of the three kinds do not carry it yet.
-- **Cloudflare end to end.** `tools/OnlineSmoke` runs in the multiplayer workflow against the Node
-  runtime. Nothing plays a match against the workerd runtime, and nothing runs on a schedule to
-  catch drift on a branch nobody touched.
+- **End to end on a schedule.** `tools/OnlineSmoke` plays a match against the Node server and
+  against the Worker under `wrangler dev` whenever the multiplayer workflow runs, but nothing runs
+  it on a schedule to catch drift on a branch nobody touched. Running it on a schedule is tracked in
+  [#459](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/459).
