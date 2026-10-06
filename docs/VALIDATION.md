@@ -524,10 +524,10 @@ compares the rebuild's pointer at each planning entry and after each Done press
 `--sound-calls` logs every call of the play helper `fn_0045851A`
 (FND-AUDIO-006) with the rolls and Done presses before it, its slot and the
 address of the call; with `--sound` the effects wrapper's calls are logged too.
-It also reads `effects_enabled` (FND-AUDIO-002) at each call and at the end of
-the run. The fixture holds the calls as `sound_calls` with `effects_enabled`
-beside them, and `extract` refuses a run whose value is unknown or changed
-during the run. The replay expects the push cue of Begin and of each Done press
+It also reads `effects_enabled` (FND-AUDIO-002) at each call, at each Done press
+and at the end of the run. The fixture holds the calls as `sound_calls` with
+`effects_enabled` beside them, and `extract` refuses a run whose value is
+unknown or differed between those reads. The replay expects the push cue of Begin and of each Done press
 when effects were enabled, and no push cue when they were not
 (RULE-AUDIO-006, EXP-AUDIO-001).
 `--watch-intro` lets both intro movies play out before the button is held and

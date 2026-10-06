@@ -435,6 +435,7 @@ internal sealed partial class NewGameSession(
                 if (!CaptureFinance(window, panel))
                     return Finish(false, $"The Financial panel of turn {turn} for sector {panel.Sector} was not captured.", rollsBeforeBegin);
             _rollsAtDone.Add(_rolls.Count);
+            if (settings.Sounds) SampleEffectsEnabled();
             _turn = turn;
             var waits = settings.ExpireTurns?.Contains(turn) == true;
             // A turn left to run out takes its planning limit before the resolution even starts, so
@@ -932,7 +933,7 @@ internal sealed partial class NewGameSession(
             settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
             settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
-            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledThroughout() : null);
+            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null);
     }
 
     private static void Click(IntPtr window, int x, int y)

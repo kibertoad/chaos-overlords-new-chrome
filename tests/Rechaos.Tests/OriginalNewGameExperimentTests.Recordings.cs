@@ -382,8 +382,9 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedPointerCall>? PointerCalls { get; }
         // Null when the run did not record the play helper.
         public IReadOnlyList<RecordedSoundCall>? SoundCalls { get; }
-        // Whether effects_enabled was set throughout the run (FND-AUDIO-002), which decides whether
-        // the effects wrapper's calls reach the play helper. Null when the run did not record it.
+        // Whether effects_enabled was set at each read the probe made (FND-AUDIO-002), which decides
+        // whether the effects wrapper's calls reach the play helper. Null when the run did not
+        // record it.
         public bool? EffectsEnabled { get; }
         // Null when the run did not record the presentation clock: the milliseconds of each tick of
         // timer slot 0 from the dump on, and each call of the wait.
