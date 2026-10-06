@@ -4,7 +4,7 @@ title: After the instant phase every sector's base Tolerance is clamped to 1..40
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TOLERANCE-001, FND-SNITCH-001, FND-STATE-001, FND-TURN-008, FND-TURN-001, FND-CONTROL-001, FND-EXE-004, EXP-TURN-032]
+evidence: [FND-TOLERANCE-001, FND-SNITCH-001, FND-STATE-001, FND-TURN-008, FND-TURN-001, FND-CONTROL-001, FND-EXE-004, EXP-TURN-032, EXP-TURN-103]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, RULE-TOLERANCE-001, RULE-BRIBE-001, RULE-SNITCH-001]
@@ -72,4 +72,8 @@ None known.
 
 ## Open questions
 
-None known.
+- No recorded run makes thirty Bribes in one sector in one turn, so the wrap
+  of the signed byte rests on the static reading behind RULE-BRIBE-001. For this rule
+  the wrapped value is a base below 1, the branch EXP-TURN-032 reaches.
+  EXP-TURN-032 reaches the lower bound and EXP-TURN-103 the upper one, each
+  with the sector out of range while later gangs act.

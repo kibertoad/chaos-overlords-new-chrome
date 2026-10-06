@@ -69,3 +69,9 @@ None known.
 - Whether this belongs in the main console's screen entry of the UI area is
   for that entry to decide; the offers are described here because their input
   is the hire order.
+- No recorded run of the original reaches the hire and snub marks; the dragged
+  portrait and the pointer clamp; a release before the pointer moves more than
+  2 pixels; drops in the sector view and outside the map; input outside the
+  planning phase; the sounds of a drop and of Reject (FND-HIRE-007,
+  FND-HIRE-008). These rest on the static findings named, so the entry stays
+  `supported` (DECISIONS.md, 2026-10-06).

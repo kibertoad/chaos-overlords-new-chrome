@@ -48,7 +48,7 @@
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | Site slot in a sector record | supported |
 | [FMT-STATE-005](../formats/FMT-STATE-005.md) | Comlink message record | established |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | Last Turn report record | supported |
-| [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | supported |
+| [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | established |
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | Combat result row of one sector | supported |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | Input event record | supported |
 | [FMT-VIDEO-001](../formats/FMT-VIDEO-001.md) | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported |
@@ -224,7 +224,7 @@
 
 ## findings
 
-388 entries.
+389 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -423,6 +423,7 @@
 | [FND-GFX-004](../findings/FND-GFX-004.md) | The display layer draws with GDI into twelve surface slots, copies the 640-by-460 backing surface to the window's client origin, and uses DirectDraw only to take the screen in full screen | recorded |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 | recorded |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | A pattern fill takes its bitmap from the high byte of a 16-bit grey, starts the pattern at the filled rectangle's corner, and outlines the fill with the scratch surface's own pen | recorded |
+| [FND-GFX-008](../findings/FND-GFX-008.md) | SetDIBits decodes every shipped PX08 file as the plain RLE8 reading does, clips runs at the line end, follows delta codes and leaves unwritten pixels as the bitmap held them | recorded |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | The Give panel handler lists the giver's sector mates, accepts a recipient only when its Tech Level covers every selected item, and stores the order in the target bytes | recorded |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art | recorded |
 | [FND-GIVE-003](../findings/FND-GIVE-003.md) | The Give recipient list fills no background, and dims an ineligible card with black through bitmap 146 from the card's corner | recorded |
@@ -619,7 +620,7 @@
 
 ## experiments
 
-151 entries.
+154 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -747,6 +748,9 @@
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? | recorded |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? | recorded |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? | recorded |
+| [EXP-TURN-103](../experiments/EXP-TURN-103.md) | Does the clamp after the instant phase bring a base Tolerance above 40 back to 40, after the later gangs have acted? | recorded |
+| [EXP-TURN-104](../experiments/EXP-TURN-104.md) | Does a Research gang that acts after a site of its sector is completed in the same instant phase roll without the site's Research? | recorded |
+| [EXP-TURN-105](../experiments/EXP-TURN-105.md) | Do the Greed Terminate branches of the family 1, 5, 6 and 12 handlers flag the record for a new family? | recorded |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? | recorded |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? | recorded |

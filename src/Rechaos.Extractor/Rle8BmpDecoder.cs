@@ -48,23 +48,24 @@ public static class Px08BmpDecoder
         return output;
     }
 
+    // RULE-GFX-001, FND-GFX-008: decodes as SetDIBits does. A run past the end of its line is cut
+    // there, a delta moves right and up without writing, the data may end without the
+    // end-of-bitmap code, and a pixel no code writes stays 0. Only data that ends inside a code is
+    // refused.
     private static byte[] DecodeIndices(ReadOnlySpan<byte> encoded, int width, int height)
     {
         var pixels = new byte[checked(width * height)];
         var sourceIndex = 0;
         var x = 0;
         var y = 0;
-        var ended = false;
-        while (sourceIndex < encoded.Length && !ended)
+        while (sourceIndex + 1 < encoded.Length)
         {
-            Require(encoded, sourceIndex, 2);
             var count = encoded[sourceIndex++];
             var value = encoded[sourceIndex++];
             if (count != 0)
             {
-                RequireDestination(x, y, count, width, height);
-                pixels.AsSpan(y * width + x, count).Fill(value);
-                x += count;
+                for (var k = 0; k < count; k++, x++)
+                    Write(pixels, x, y, width, height, value);
                 continue;
             }
 
@@ -73,43 +74,35 @@ public static class Px08BmpDecoder
                 case 0: // End of line.
                     x = 0;
                     y++;
-                    if (y > height) throw new InvalidDataException("PX08 RLE stream has too many rows.");
                     break;
                 case 1: // End of bitmap.
-                    ended = true;
-                    break;
+                    return pixels;
                 case 2: // Delta.
                     Require(encoded, sourceIndex, 2);
                     x += encoded[sourceIndex++];
                     y += encoded[sourceIndex++];
-                    if (x > width || y >= height)
-                        throw new InvalidDataException("PX08 RLE delta leaves the image bounds.");
                     break;
                 default: // Absolute run.
                     var literalCount = value;
                     Require(encoded, sourceIndex, literalCount + (literalCount & 1));
-                    RequireDestination(x, y, literalCount, width, height);
-                    encoded.Slice(sourceIndex, literalCount).CopyTo(pixels.AsSpan(y * width + x, literalCount));
+                    for (var k = 0; k < literalCount; k++, x++)
+                        Write(pixels, x, y, width, height, encoded[sourceIndex + k]);
                     sourceIndex += literalCount + (literalCount & 1);
-                    x += literalCount;
                     break;
             }
         }
-        if (!ended) throw new InvalidDataException("PX08 RLE stream has no end-of-bitmap marker.");
         return pixels;
+    }
+
+    private static void Write(byte[] pixels, int x, int y, int width, int height, byte value)
+    {
+        if (x < width && y < height) pixels[y * width + x] = value;
     }
 
     private static void Require(ReadOnlySpan<byte> source, int offset, int count)
     {
         if (offset < 0 || count < 0 || offset > source.Length - count)
             throw new InvalidDataException("PX08 RLE stream is truncated.");
-    }
-
-    private static void RequireDestination(int x, int y, int count, int width, int height)
-    {
-        if (x < 0 || y < 0 || y >= height || count > width - x)
-            throw new InvalidDataException(
-                $"PX08 RLE run leaves the image bounds (x={x}, y={y}, count={count}, size={width}x{height}).");
     }
 
     private static short ReadInt16(byte[] bytes, int offset) => BitConverter.ToInt16(bytes, offset);

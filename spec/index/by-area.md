@@ -71,6 +71,7 @@
 | [FND-GFX-004](../findings/FND-GFX-004.md) | The display layer draws with GDI into twelve surface slots, copies the 640-by-460 backing surface to the window's client origin, and uses DirectDraw only to take the screen in full screen | recorded |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 | recorded |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | A pattern fill takes its bitmap from the high byte of a 16-bit grey, starts the pattern at the filled rectangle's corner, and outlines the fill with the scratch surface's own pen | recorded |
+| [FND-GFX-008](../findings/FND-GFX-008.md) | SetDIBits decodes every shipped PX08 file as the plain RLE8 reading does, clips runs at the line end, follows delta codes and leaves unwritten pixels as the bitmap held them | recorded |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image | supported |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | The display is a 640-by-480 window or screen whose drawing area of 640 by 460 sits directly under the menu bar and is copied from an off-screen surface | supported |
 | [RULE-GFX-003](../rules/RULE-GFX-003.md) | A keyed image copy leaves out the pixels of maximum white | supported |
@@ -155,7 +156,7 @@
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | Site slot in a sector record | supported |
 | [FMT-STATE-005](../formats/FMT-STATE-005.md) | Comlink message record | established |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | Last Turn report record | supported |
-| [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | supported |
+| [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | established |
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | Combat result row of one sector | supported |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | Input event record | supported |
 | [FND-STATE-001](../findings/FND-STATE-001.md) | City generation stores Income and Tolerance in sector bytes 1 and 2, and the refresh before planning rebuilds bytes 3 to 6, 0x0D, 0x0E and 0x16 to 0x23 from them and the completed sites | recorded |
@@ -285,6 +286,9 @@
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? | recorded |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? | recorded |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? | recorded |
+| [EXP-TURN-103](../experiments/EXP-TURN-103.md) | Does the clamp after the instant phase bring a base Tolerance above 40 back to 40, after the later gangs have acted? | recorded |
+| [EXP-TURN-104](../experiments/EXP-TURN-104.md) | Does a Research gang that acts after a site of its sector is completed in the same instant phase roll without the site's Research? | recorded |
+| [EXP-TURN-105](../experiments/EXP-TURN-105.md) | Do the Greed Terminate branches of the family 1, 5, 6 and 12 handlers flag the record for a new family? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |

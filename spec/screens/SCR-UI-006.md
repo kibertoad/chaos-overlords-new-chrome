@@ -77,3 +77,9 @@ None known.
 - Which item each caller passes on a double-click is recorded with each
   caller; FND-UI-013 lists the eight functions that open the panel.
 - `VK_EXECUTE` is a key code that no key on a US keyboard sends.
+- No recorded run of the original reaches frame 0 on opening, the frame
+  sequence and its rate; the rotation stopping while Exit is held; opening
+  from the other panels and cards; presses outside the panel and off the face;
+  Enter and Execute; the sounds and the slide's timing (FND-UI-004,
+  FND-UI-013, FND-UI-047, FND-UI-052, FND-AUDIO-011). These rest on the static
+  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).

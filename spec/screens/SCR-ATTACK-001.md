@@ -90,3 +90,12 @@ None known.
 - The panel exists as `DATA/PX08/PX05003` too, and each image as a `PX08`
   file; which is drawn depends on the display mode, which the GFX entries
   describe.
+- No recorded run of the original reaches the No opponent state; opening on an
+  existing Attack order; target cells 4 and 5 and the marker on a cell other
+  than 0; when the Confirm face is first drawn; presses on another or a
+  disabled opponent, on cells 1 to 5, on Confirm and outside the panel; the
+  result of Cancel; the four double-click regions; Enter, Execute and Escape;
+  the accepted and rejected sounds (FND-ATTACK-001, FND-ATTACK-003,
+  FND-ATTACK-004, FND-ATTACK-005, FND-ATTACK-007, FND-AUDIO-011). These rest
+  on the static findings named, so the entry stays `supported` (DECISIONS.md,
+  2026-10-06).

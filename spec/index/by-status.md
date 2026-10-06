@@ -16,7 +16,7 @@
 
 ## supported
 
-144 entries.
+143 entries.
 
 | ID | Title |
 |---|---|
@@ -53,7 +53,6 @@
 | [FMT-STATE-003](../formats/FMT-STATE-003.md) | Per-gang combat record of the last resolution |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | Site slot in a sector record |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | Last Turn report record |
-| [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot |
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | Combat result row of one sector |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | Input event record |
 | [FMT-VIDEO-001](../formats/FMT-VIDEO-001.md) | Smacker movies DATA/MVINTRO and DATA/MVLOGOS |
@@ -167,7 +166,7 @@
 
 ## established
 
-98 entries.
+99 entries.
 
 | ID | Title |
 |---|---|
@@ -176,6 +175,7 @@
 | [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | A band-0 Influence sets the site's progress to its dice pool plus its successes |
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 | [FMT-STATE-005](../formats/FMT-STATE-005.md) | Comlink message record |
+| [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best |
@@ -295,7 +295,7 @@
 
 ## recorded
 
-527 entries.
+532 entries.
 
 | ID | Title |
 |---|---|
@@ -423,6 +423,9 @@
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? |
+| [EXP-TURN-103](../experiments/EXP-TURN-103.md) | Does the clamp after the instant phase bring a base Tolerance above 40 back to 40, after the later gangs have acted? |
+| [EXP-TURN-104](../experiments/EXP-TURN-104.md) | Does a Research gang that acts after a site of its sector is completed in the same instant phase roll without the site's Research? |
+| [EXP-TURN-105](../experiments/EXP-TURN-105.md) | Do the Greed Terminate branches of the family 1, 5, 6 and 12 handlers flag the record for a new family? |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? |
@@ -634,6 +637,7 @@
 | [FND-GFX-004](../findings/FND-GFX-004.md) | The display layer draws with GDI into twelve surface slots, copies the 640-by-460 backing surface to the window's client origin, and uses DirectDraw only to take the screen in full screen |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | A pattern fill takes its bitmap from the high byte of a 16-bit grey, starts the pattern at the filled rectangle's corner, and outlines the fill with the scratch surface's own pen |
+| [FND-GFX-008](../findings/FND-GFX-008.md) | SetDIBits decodes every shipped PX08 file as the plain RLE8 reading does, clips runs at the line end, follows delta codes and leaves unwritten pixels as the bitmap held them |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | The Give panel handler lists the giver's sector mates, accepts a recipient only when its Tech Level covers every selected item, and stores the order in the target bytes |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art |
 | [FND-GIVE-003](../findings/FND-GIVE-003.md) | The Give recipient list fills no background, and dims an ineligible card with black through bitmap 146 from the card's corner |
@@ -843,6 +847,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [BUG-INFLUENCE-001](../bugs/BUG-INFLUENCE-001.md) | A band-0 Influence sets the site's progress to its dice pool plus its successes |
 | [BUG-SELL-001](../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 | [FMT-STATE-005](../formats/FMT-STATE-005.md) | Comlink message record |
+| [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best |
@@ -977,7 +982,7 @@ Entries whose Open questions section says more than None known.
 | [FMT-STATE-003](../formats/FMT-STATE-003.md) | Per-gang combat record of the last resolution | supported |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | Site slot in a sector record | supported |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | Last Turn report record | supported |
-| [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | supported |
+| [FMT-STATE-007](../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | established |
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | Combat result row of one sector | supported |
 | [FMT-VIDEO-001](../formats/FMT-VIDEO-001.md) | Smacker movies DATA/MVINTRO and DATA/MVLOGOS | supported |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
@@ -1087,6 +1092,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes | supported |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds | supported |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 | established |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | A turn is turn start, planning by each active player in slot order, then resolution | supported |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order | supported |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | established |
@@ -1130,6 +1136,7 @@ Entries whose Open questions section says more than None known.
 | [SCR-NET-005](../screens/SCR-NET-005.md) | Legacy network turn synchronization frame with one progress row per seat and a spinner | supported |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | Player Rankings panel with one vertical rail per player and portraits placed by score | supported |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | Private elimination card shown to an eliminated local human over the city screen | supported |
+| [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | Idle gang warning panel | supported |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | Research panel with item categories and a fixed sixteen-row item list | supported |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | Search panel | supported |
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | Sell panel | supported |
@@ -1141,5 +1148,6 @@ Entries whose Open questions section says more than None known.
 | [SCR-UI-004](../screens/SCR-UI-004.md) | Detailed sector screen | supported |
 | [SCR-UI-005](../screens/SCR-UI-005.md) | Gangs in Sector panel | supported |
 | [SCR-UI-006](../screens/SCR-UI-006.md) | Item Information panel | supported |
+| [SCR-UI-007](../screens/SCR-UI-007.md) | Site Information panel | supported |
 | [SCR-UI-008](../screens/SCR-UI-008.md) | Game Information panel | supported |
 | [SCR-UI-009](../screens/SCR-UI-009.md) | Application menu bar | supported |

@@ -78,3 +78,11 @@ None known.
 - Which of `DATA/PX08/PX05006` and `DATA/PX16/PX05006` is drawn depends on the
   display mode; the entries here name the `PX08` path the executable's template
   uses.
+- No recorded run of the original reaches the off-city bands of an edge
+  sector; the direction arrow and the Destination chosen state; the portrait
+  for definition -1; cell presses and double-clicks, the disabled cells, a
+  neighbour holding six gangs and the centre cell; Confirm, enabled and
+  refused; a press outside the panel; Enter, Execute and Escape; the sounds
+  and the slide's timing (FND-MOVE-002, FND-MOVE-004, FND-MOVE-005,
+  FND-MOVE-007, FND-UI-019, FND-OPTIONS-001). These rest on the static
+  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).

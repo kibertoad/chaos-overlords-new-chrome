@@ -97,3 +97,12 @@ None known.
   `DATA/PX16/PX00140`; their source rectangles are not recorded.
 - The keyboard handling of the screen is not recorded.
 - In 256-colour mode the game uses the `DATA/PX08` files of the same names.
+- No recorded run of the original reaches scenarios other than 0 and 4 with
+  their titles, descriptions and light positions; time limits 26 and 208,
+  Mentality 0 and 2 and planning times 1 and 3, as lights and presses; the
+  time-limit refusal from scenario 4 on; the pressed and held images of the
+  left-panel buttons; Cancel; the name band and the name editor; a card drag
+  and swap; cards of computer and network slots; the roster kept from an
+  earlier Begin; the sounds (FND-SETUP-005, FND-SETUP-013, FND-SETUP-014,
+  FND-SETUP-019, FND-RNG-005, FND-AUDIO-010). These rest on the static
+  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).

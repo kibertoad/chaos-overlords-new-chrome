@@ -78,3 +78,10 @@ None known.
   screen ID should be named in the effects once it exists.
 - When the game runs with the 8-bit image set it uses the `DATA/PX08` files of
   the same names (FND-PLATFORM-002).
+- No recorded run of the original reaches the chosen-site frame and the Site
+  selected state, opening on an existing Influence order included; a slot
+  press, a slot double-click and a press on a completed slot; Confirm with and
+  without a choice; a press outside the panel; Enter, Execute and Escape; the
+  rejected sound (FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003,
+  FND-INFLUENCE-005, FND-RESEARCH-005, FND-TURN-001). These rest on the static
+  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).

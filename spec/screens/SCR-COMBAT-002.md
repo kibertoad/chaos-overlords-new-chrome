@@ -125,3 +125,12 @@ None known.
   reproduced (BUG-COMBAT-001).
 - The panel exists as `DATA/PX08/PX05014` too, and each strip as a `PX08` file;
   which is drawn depends on the display mode.
+- No recorded run of the original reaches the strips of an equipped weapon, of
+  Martial Arts above 0, of definition 63, of a hit with no damage, of an
+  evaded attack and of every mirrored clip; ticks 3, 10 and 22 and a clip
+  ended at tick 16; the 166 ms period as a measurement; an Exit hold pausing
+  the clip; the pressed Exit face, the refused press outside and Escape; sound
+  501 and the silent retaliation (FND-COMBAT-005, FND-COMBAT-010,
+  FND-COMBAT-011, FND-COMBAT-014, FND-COMBAT-016, FND-UI-001, FND-UI-047,
+  FND-AUDIO-002, FND-AUDIO-013). These rest on the static findings named, so
+  the entry stays `supported` (DECISIONS.md, 2026-10-06).

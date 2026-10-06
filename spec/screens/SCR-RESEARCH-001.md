@@ -82,3 +82,13 @@ None known.
   named in the effects once it exists.
 - When the game runs with the 8-bit image set it uses the `DATA/PX08` file of
   the same name (FND-PLATFORM-002).
+- No recorded run of the original reaches categories 1 to 3; opening on the
+  `target` item's category with its row selected, and the Row selected state;
+  the Tech Level cap at 5 or 8; category, row and empty-row presses, the row
+  and portrait double-clicks; the confirmation control; the result of Cancel;
+  a press outside the panel; Enter, Execute and Escape; the rejected sound.
+  The `research_remaining` column is masked by DEV-RESEARCH-001, which
+  replaces nothing of the entry, so it is not compared (FND-EQUIP-005,
+  FND-EQUIP-009, FND-RESEARCH-003, FND-RESEARCH-004, FND-RESEARCH-005,
+  FND-AUDIO-011). These rest on the static findings named, so the entry stays
+  `supported` (DECISIONS.md, 2026-10-06).

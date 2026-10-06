@@ -61,3 +61,8 @@ None known.
   the table reads 2 to 4 as mouse and key presses.
 - Whether the music goes on playing unchanged, as no music call is recorded on
   this path.
+- No recorded run of the original reaches a click and window messages 17 and
+  18 closing the screen; its redraw on a paint message; opening from another
+  screen than the title; the restored screen after it closes; whether the
+  music keeps playing (FND-UI-007, FND-UI-008). These rest on the static
+  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).
