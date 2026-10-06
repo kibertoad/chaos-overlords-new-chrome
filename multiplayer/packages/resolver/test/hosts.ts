@@ -63,9 +63,7 @@ export async function expectBatchedFeed(resolver: MatchResolver, matchId: string
   }))
   const result = await resolver.applyEvents(matchId, 1, steps)
   expect(result.applied).toBe(true)
-  expect(result.seals.map((seal) => seal.stateHash)).toEqual(
-    seals(fed).map((step) => step.hash),
-  )
+  expect(result.seals.map((seal) => seal.stateHash)).toEqual(seals(fed).map((step) => step.hash))
   expect(result.status.stateHash).toBe(transcript.steps[at].hash)
   const again = await resolver.applyEvents(matchId, 1, steps)
   expect(again).toEqual({ applied: false, status: result.status, seals: [] })
