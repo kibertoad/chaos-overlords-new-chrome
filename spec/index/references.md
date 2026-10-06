@@ -151,6 +151,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | builds |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | builds |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | builds |
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | builds |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | builds |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | builds |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | builds |
@@ -1288,6 +1289,7 @@ None.
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | body |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | body |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | body |
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [EXP-UI-004](../experiments/EXP-UI-004.md) | body |
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | body |
@@ -1398,6 +1400,7 @@ None.
 | [EXP-TURN-091](../experiments/EXP-TURN-091.md) | body |
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | body |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | body |
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 
 ## EXP-TURN-005
@@ -1794,6 +1797,7 @@ None.
 | [EXP-TURN-091](../experiments/EXP-TURN-091.md) | body |
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | body |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | body |
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | body |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 | [RULE-AI-027](../rules/RULE-AI-027.md) | evidence |
 
@@ -2264,6 +2268,12 @@ None.
 | [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | body, evidence |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, evidence |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | body, evidence |
+
+## EXP-TURN-109
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
 
 ## EXP-UI-001
 
@@ -2747,6 +2757,7 @@ None.
 | [EXP-TURN-070](../experiments/EXP-TURN-070.md) | body |
 | [EXP-TURN-071](../experiments/EXP-TURN-071.md) | body |
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body |
 | [FND-AI-027](../findings/FND-AI-027.md) | body |
@@ -2917,6 +2928,7 @@ None.
 | [EXP-TURN-091](../experiments/EXP-TURN-091.md) | body |
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | body |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | body |
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | body |
 | [FND-AI-066](../findings/FND-AI-066.md) | body |
 | [FND-AI-079](../findings/FND-AI-079.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
@@ -3834,6 +3846,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-054](../experiments/EXP-TURN-054.md) | body |
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | body |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | body, evidence |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | body, evidence |
 
@@ -3850,6 +3863,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | body |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
 
 ## FND-AI-079
@@ -8318,6 +8332,7 @@ None.
 | [EXP-TURN-089](../experiments/EXP-TURN-089.md) | body |
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | body |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | body |
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | body |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | body |
 
@@ -8345,6 +8360,7 @@ None.
 | [EXP-TURN-073](../experiments/EXP-TURN-073.md) | body |
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
 | [EXP-TURN-088](../experiments/EXP-TURN-088.md) | body |
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | body |
 | glossary: research_continuation | glossary |
 | glossary: research_first | glossary |
 | glossary: research_score | glossary |
