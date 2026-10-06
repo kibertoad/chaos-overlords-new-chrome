@@ -400,6 +400,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-GFX-005](../findings/FND-GFX-005.md) | builds, locations |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | builds, locations |
 | [FND-GFX-007](../findings/FND-GFX-007.md) | builds, locations |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | builds, locations |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | builds, locations |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | builds, locations |
 | [FND-GIVE-003](../findings/FND-GIVE-003.md) | builds, locations |
@@ -4023,6 +4024,7 @@ None.
 | [EXP-COMBAT-008](../experiments/EXP-COMBAT-008.md) | body |
 | [EXP-COMBAT-009](../experiments/EXP-COMBAT-009.md) | body |
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | body |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | body |
@@ -5117,6 +5119,7 @@ None.
 | [FND-GANG-010](../findings/FND-GANG-010.md) | body |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | body |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | body |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | body |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | body |
 | [FND-HEAL-002](../findings/FND-HEAL-002.md) | body |
@@ -5503,6 +5506,7 @@ None.
 | [FND-GFX-001](../findings/FND-GFX-001.md) | body |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | body |
 | [FND-GFX-007](../findings/FND-GFX-007.md) | body |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | body, evidence |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, evidence |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | body, evidence |
@@ -5543,6 +5547,7 @@ None.
 | [FMT-GFX-001](../formats/FMT-GFX-001.md) | body, evidence |
 | [FMT-GFX-002](../formats/FMT-GFX-002.md) | body, evidence |
 | [FND-COMBAT-013](../findings/FND-COMBAT-013.md) | body |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 | [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | body |
 | [FND-PLATFORM-015](../findings/FND-PLATFORM-015.md) | body |
 | [SCR-ATTACK-001](../screens/SCR-ATTACK-001.md) | evidence |
@@ -5570,6 +5575,15 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-GFX-003](../rules/RULE-GFX-003.md) | body, evidence |
+
+## FND-GFX-009
+
+| Cited by | In |
+|---|---|
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | body, evidence |
+| [SCR-NET-001](../screens/SCR-NET-001.md) | body, evidence |
+| [SCR-NET-002](../screens/SCR-NET-002.md) | body, evidence |
+| [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | body, evidence |
 
 ## FND-GIVE-001
 
@@ -5904,6 +5918,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [SCR-NET-002](../screens/SCR-NET-002.md) | body, evidence |
 
@@ -6287,6 +6302,7 @@ None.
 |---|---|
 | [FMT-GFX-001](../formats/FMT-GFX-001.md) | body, evidence |
 | [FND-GFX-007](../findings/FND-GFX-007.md) | body |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 | [FND-PLATFORM-008](../findings/FND-PLATFORM-008.md) | superseded_by |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | body, evidence |
 | [RULE-GFX-003](../rules/RULE-GFX-003.md) | body, evidence |
@@ -6574,6 +6590,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | body |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 | glossary: search_filters | glossary |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | body, evidence |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | body, evidence |
@@ -7598,6 +7615,7 @@ None.
 | [FND-GFX-004](../findings/FND-GFX-004.md) | body |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | body |
 | [FND-GFX-007](../findings/FND-GFX-007.md) | body |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | body |
 | [FND-HIRE-008](../findings/FND-HIRE-008.md) | body |
 | [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | body |
@@ -8980,6 +8998,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-GFX-007](../findings/FND-GFX-007.md) | body |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 | [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 
 ## RULE-GIVE-001
@@ -9936,11 +9955,14 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 | [SCR-NET-002](../screens/SCR-NET-002.md) | related |
 
 ## SCR-NET-002
 
-None.
+| Cited by | In |
+|---|---|
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 
 ## SCR-NET-003
 
@@ -9992,6 +10014,7 @@ None.
 |---|---|
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | body |
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | body |
 
 ## SCR-SELL-001
 

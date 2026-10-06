@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-NET-003, FND-SETUP-006, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, FND-NET-001, FND-EXE-004]
+evidence: [FND-NET-003, FND-SETUP-006, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, FND-NET-001, FND-EXE-004, FND-GFX-009]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001, SCR-NET-001]
@@ -16,7 +16,7 @@ related: [SCR-SETUP-001, SCR-NET-001]
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Background | `DATA/PX16/PX00145` | None | `(0, 0, 640, 460)` | After the connection opens | FND-SETUP-006 |
-| Seat card, per configured seat | Drawn as the player card of SCR-SETUP-001 | The seat's portrait and name | The seat cell's origin | The seat is configured | FND-SETUP-006, FND-SETUP-005 |
+| Seat card, per configured seat | Drawn as the player card of SCR-SETUP-001, with the arrow overlay `(220, 138, 64, 62)` of `DATA/PX16/PX00140` keyed on exact white over the enlarged portrait of every configured seat | The seat's portrait and name | The seat cell's origin | The seat is configured | FND-SETUP-006, FND-SETUP-005, FND-GFX-009 |
 
 ## Mouse input
 

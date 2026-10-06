@@ -296,7 +296,7 @@
 
 ## recorded
 
-531 entries.
+532 entries.
 
 | ID | Title |
 |---|---|
@@ -638,6 +638,7 @@
 | [FND-GFX-005](../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | A pattern fill takes its bitmap from the high byte of a 16-bit grey, starts the pattern at the filled rectangle's corner, and outlines the fill with the scratch surface's own pen |
 | [FND-GFX-007](../findings/FND-GFX-007.md) | Every exact-white pixel of PX00129 that a copy reads lies in a cell copied with the key, except one pixel of an Overlord portrait |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | Surface 7 holds PX00150 for the Search rows' keyed copy and PX00140 for the network lobbies' keyed seat overlay, and every copied cell holds exact white |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | The Give panel handler lists the giver's sector mates, accepts a recipient only when its Tech Level covers every selected item, and stores the order in the target bytes |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art |
 | [FND-GIVE-003](../findings/FND-GIVE-003.md) | The Give recipient list fills no background, and dims an ineligible card with black through bitmap 146 from the card's corner |
