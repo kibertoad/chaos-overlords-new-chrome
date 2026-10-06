@@ -295,7 +295,7 @@
 
 ## recorded
 
-533 entries.
+535 entries.
 
 | ID | Title |
 |---|---|
@@ -426,6 +426,8 @@
 | [EXP-TURN-106](../experiments/EXP-TURN-106.md) | Does a six-month Power match at Criminal end with the same scores, ranking and awards, a tie for the lead included? |
 | [EXP-TURN-107](../experiments/EXP-TURN-107.md) | Does a Big 40 match at Goon end on the turn a computer player takes its fortieth sector? |
 | [EXP-TURN-108](../experiments/EXP-TURN-108.md) | Does an Armageddon match at Goon end on the turn a computer player holds all 64 sectors? |
+| [EXP-TURN-112](../experiments/EXP-TURN-112.md) | Does a Siege match at Goon run as the rebuild runs it until the hiding human is eliminated? |
+| [EXP-TURN-113](../experiments/EXP-TURN-113.md) | Does a Kill 'Em All match at Goon run as the rebuild runs it for 150 turns? |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? |
@@ -993,6 +995,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-007](../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector | supported |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | established |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
+| [RULE-AI-010](../rules/RULE-AI-010.md) | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported |
 | [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | established |
 | [RULE-AI-012](../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | established |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |

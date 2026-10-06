@@ -619,7 +619,7 @@
 
 ## experiments
 
-156 entries.
+158 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -750,6 +750,8 @@
 | [EXP-TURN-106](../experiments/EXP-TURN-106.md) | Does a six-month Power match at Criminal end with the same scores, ranking and awards, a tie for the lead included? | recorded |
 | [EXP-TURN-107](../experiments/EXP-TURN-107.md) | Does a Big 40 match at Goon end on the turn a computer player takes its fortieth sector? | recorded |
 | [EXP-TURN-108](../experiments/EXP-TURN-108.md) | Does an Armageddon match at Goon end on the turn a computer player holds all 64 sectors? | recorded |
+| [EXP-TURN-112](../experiments/EXP-TURN-112.md) | Does a Siege match at Goon run as the rebuild runs it until the hiding human is eliminated? | recorded |
+| [EXP-TURN-113](../experiments/EXP-TURN-113.md) | Does a Kill 'Em All match at Goon run as the rebuild runs it for 150 turns? | recorded |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? | recorded |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? | recorded |
