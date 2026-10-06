@@ -754,10 +754,25 @@ to diverge. The view arrives from the server over the same authenticated channel
 else. Its save payload carries the fingerprint of the view, which catches damage in transit and
 nothing more.
 
-Some of the rebuild's own additions read values a view sets to neutral: the rankings tooltip
-(DEV-UI-005) shows every seat's exact score and holdings, and the Bribe and Snitch tooltips show the
-base Tolerance and the sites' part of any sector the gang stands in. On a view they would show the
-neutral values as if they were true, so they have to say what the seat does not know instead.
+Some of the rebuild's own additions read values a view sets to neutral, and on a view they say
+what the seat does not know instead of drawing the neutral value as true. `SeatKnowledge` answers
+whether a state tells its player a fact; on the whole match every answer is yes, so single-player,
+hot-seat and lockstep matches show the tooltips unchanged.
+
+- The rankings tooltip (DEV-UI-005) gives the seat's own score and holdings, and for every seat
+  its sectors, headquarters and the seats still in the match, which the map and the Overlord bar
+  show everybody. Another seat's score, cash and Support read NOT SHOWN, Dominance shows only the
+  sectors' part of it, and a portrait that shares its height with others gets the range of places
+  they share ("PLACE 1-2 OF 4"), since the view's scores only reproduce the rail.
+- The Bribe and Snitch tooltips, and the console's Tolerance tooltip (DEV-UI-007), give the
+  Tolerance and the normal base, 17 less Income, in every sector. The base and the sites' part
+  they give only in the seat's own sectors, where the seat sees the sites and the base is the
+  Tolerance less their part (RULE-SITE-001); elsewhere they say only the owner sees them.
+
+`OriginalNewGameExperimentTests.TooltipsOnASeatsViewShowOnlyWhatTheSeatKnows` takes the view at
+every planning entry of every recorded run, checks that each of these tooltips shows what the whole
+match shows wherever the seat knows it, and that none changes when every value the view stands in
+for a hidden one is changed.
 
 ### Computer seats
 

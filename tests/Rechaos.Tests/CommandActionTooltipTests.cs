@@ -107,6 +107,49 @@ public sealed class CommandActionTooltipTests
         Assert.Contains(lines, line => line.EndsWith($"THIS TURN'S CHAOS TEST USES {sector.Tolerance}."));
     }
 
+    // docs/MULTIPLAYER.md, "Planning on a view": only a sector's owner sees its sites, so a seat's
+    // view of another's sector holds neither the sites' part nor the base. The tooltips give the
+    // Tolerance and the normal base, which every seat sees, and name the rest as not shown.
+    [Fact]
+    public void OnASeatsViewOfAnotherSeatsSectorTheToleranceTooltipsGiveNoBaseOrSites()
+    {
+        var whole = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1996,
+            [
+                new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human),
+                new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Human)
+            ],
+            allowSparsePlayerIds: true));
+        whole.Coordinator.FinishUpkeep();
+        var gang = whole.Players[0].Gangs[0];
+        var sector = whole.Sectors[gang.SectorId];
+        sector.Owner = new PlayerId(1);
+        var normal = ToleranceResolver.NormalBaseTolerance(sector);
+        sector.BaseTolerance = normal + 6;
+        var view = SeatView.Project(whole, new PlayerId(0));
+        var seen = view.Sectors[sector.Id];
+
+        var lines = CommandActionTooltips.Lines(GangAction.Snitch, view, view.FindGang(gang.Id));
+        var parts = StatusConsoleTooltip.ToleranceParts.Of(view, seen);
+        var console = StatusConsoleTooltip.Tolerance(seen.Tolerance,
+            new ChaosRangeEstimate(new ChaosRange(0, 0), []), [], parts: parts);
+
+        Assert.Equal(
+        [
+            "",
+            $"THIS TURN'S CHAOS TEST USES {sector.Tolerance}; NORMAL BASE {normal}.",
+            "ONLY THE OWNER SEES THIS SECTOR'S SITES, SO THE SITES' PART,",
+            "THE BASE AND ITS BRIBE/SNITCH SHIFT ARE NOT SHOWN TO YOU."
+        ], lines.TakeLast(4));
+        Assert.Equal(new StatusConsoleTooltip.ToleranceParts(null, null, normal), parts);
+        Assert.Contains($"TOLERANCE {sector.Tolerance} = BASE + SITES. ONLY THE", console);
+        Assert.Contains("NEITHER PART IS SHOWN TO YOU.", console);
+        Assert.Contains($"BASE MOVES 1 PER TURN TOWARD {normal}", console);
+        Assert.DoesNotContain(console, line => line.Contains("CHANGES SINCE PLANNING", StringComparison.Ordinal));
+        // The whole match, as in single-player and hot-seat play, keeps the breakdown.
+        Assert.Contains("CURRENT BRIBE/SNITCH SHIFT: +6.", CommandActionTooltips.Lines(GangAction.Snitch, whole, gang));
+    }
+
     [Fact]
     public void RowsResolveOnlyInsideTheOneOffActionList()
     {

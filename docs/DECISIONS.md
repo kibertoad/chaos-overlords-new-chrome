@@ -105,9 +105,10 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   players planning anywhere but the server; and any rebuild addition that
   shows a player more than the original does without a view-aware form
   (the DEV-UI-005 tooltip and the Bribe and Snitch tooltips need one).
-- Status: `SeatView` and its tests are in `Rechaos.Core`. Serving views,
-  playing an online match from them, the tooltips and the journals of a match
-  with views are tracked from #515.
+- Status: `SeatView` and its tests are in `Rechaos.Core`, and the tooltips
+  read `SeatKnowledge` to give a view only what its seat knows. Serving views,
+  playing an online match from them and the journals of a match with views are
+  tracked from #515.
 
 ## 2026-10-06 — Resolve online turns on the server with a WebAssembly build of the rules
 

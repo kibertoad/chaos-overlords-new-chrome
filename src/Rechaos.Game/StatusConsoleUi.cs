@@ -193,11 +193,20 @@ public static class StatusConsoleTooltip
         // completed sites, set before planning; the base moves while the orders resolve.
         if (parts is { } toleranceParts)
         {
-            lines.Add($"TOLERANCE {tolerance}: BASE {toleranceParts.Base} + SITES {toleranceParts.Sites}.");
+            if (toleranceParts is { Base: { } baseTolerance, Sites: { } sites })
+                lines.Add($"TOLERANCE {tolerance}: BASE {baseTolerance} + SITES {sites}.");
+            else
+            {
+                // SeatKnowledge.KnowsSites: only the owner sees the sites, so a seat's view of
+                // another's sector holds neither part.
+                lines.Add($"TOLERANCE {tolerance} = BASE + SITES. ONLY THE");
+                lines.Add("OWNER SEES THIS SECTOR'S SITES, SO");
+                lines.Add("NEITHER PART IS SHOWN TO YOU.");
+            }
             lines.Add($"BASE MOVES 1 PER TURN TOWARD {toleranceParts.NormalBase}");
             lines.Add("(17 - INCOME); BRIBE +3, SNITCH -3,");
             lines.Add("THEN KEPT WITHIN 1..40.");
-            if (toleranceParts.Base + toleranceParts.Sites != tolerance)
+            if (toleranceParts is { Base: { } movedBase, Sites: { } movedSites } && movedBase + movedSites != tolerance)
                 lines.Add("CHANGES SINCE PLANNING COUNT NEXT TURN.");
             lines.Add("");
         }
@@ -212,13 +221,19 @@ public static class StatusConsoleTooltip
         bool enemyGangsPresent = false) =>
         Tolerance(tolerance, new ChaosRangeEstimate(chaosRange, []), [], enemyGangsPresent);
 
-    /// <summary>The two parts a sector's Tolerance is rebuilt from, and where the base returns to.</summary>
-    public readonly record struct ToleranceParts(int Base, int Sites, int NormalBase)
+    /// <summary>
+    /// The two parts a sector's Tolerance is rebuilt from, and where the base returns to. The two
+    /// parts are null where the state does not tell the player them: on a seat's view of a sector
+    /// another seat owns, or nobody (<see cref="SeatKnowledge.KnowsSites"/>).
+    /// </summary>
+    public readonly record struct ToleranceParts(int? Base, int? Sites, int NormalBase)
     {
-        public static ToleranceParts Of(MatchState state, MatchSectorState sector) => new(
-            sector.BaseTolerance,
-            ToleranceResolver.SiteAdjustment(state, sector),
-            ToleranceResolver.NormalBaseTolerance(sector));
+        public static ToleranceParts Of(MatchState state, MatchSectorState sector) =>
+            SeatKnowledge.KnowsSites(state, sector)
+                ? new(sector.BaseTolerance,
+                    ToleranceResolver.SiteAdjustment(state, sector),
+                    ToleranceResolver.NormalBaseTolerance(sector))
+                : new(null, null, ToleranceResolver.NormalBaseTolerance(sector));
     }
 
     public static Rectangle Bounds(Point point, IReadOnlyList<string> lines) =>
