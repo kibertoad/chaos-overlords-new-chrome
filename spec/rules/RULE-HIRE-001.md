@@ -129,8 +129,8 @@ set; a hire that then finds no free slot has still made them.
   by a player in debt. The shipped `DATA/Gangs` has one such definition
   among the offered numbers 1 to 89 (FND-HIRE-006).
 - The search stops at roster slot 79, so slot 80 is never filled by a hire
-  and a player holds at most 80 hired gangs. EXP-TURN-097 and EXP-TURN-098
-  hire with 80 gangs: the hire makes its `roll(5)` and fails.
+  and a player holds at most 80 hired gangs. EXP-TURN-097, EXP-TURN-098 and
+  EXP-TURN-099 hire with 80 gangs: the hire makes its `roll(5)` and fails.
 - The new gang starts with its definition's statistics, without items or
   site bonuses; its effective statistics are rebuilt at the next
   `turn_start` (RULE-GANG-001).

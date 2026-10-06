@@ -39,9 +39,9 @@ No return value. Records one type-8 report for `player`.
 
 ## Edge cases
 
-- EXP-TURN-097, EXP-TURN-098 and EXP-TURN-099 record the report in the original: a hire
-  with 80 gangs gives its player one type-8 report whose `arg1` is the
-  offered definition and whose `arg2` and `arg3` are 0.
+- EXP-TURN-097, EXP-TURN-098 and EXP-TURN-099 record the report in the
+  original: a hire with 80 gangs gives its player one type-8 report whose
+  `arg1` is the offered definition and whose `arg2` and `arg3` are 0.
 
 ## What the sources say
 

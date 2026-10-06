@@ -61,7 +61,8 @@ row or leaves the city.
 - EXP-TURN-097, EXP-TURN-098 and EXP-TURN-099 draw from corner sectors 7, 63
   and 0: draws north of the city, south of it and past its eastern and western
   edges are drawn again, and a drawn sector that the mover then crowds sends
-  it back for another draw.
+  it back for another draw. Every western draw of EXP-TURN-099 gives a sector
+  below 0, which the range test refuses as well.
 - `fn_00476A94`, the Move-capacity repair, stores the result as the gang's new
   destination (RULE-MOVE-002) [FND-MOVE-003].
 - FND-MOVE-001 described this call as one draw over all 64 sectors followed by
@@ -79,6 +80,9 @@ None known.
 
 ## Open questions
 
+- No run has made a draw that only the test of the western edge refuses (from
+  a sector in column 0, an offset of -9, -1 or +7 that stays within 0 to 63),
+  so that test rests on FND-MOVE-003 alone.
 - Which records, if any, bring an owner byte below -1 through a block read is
-  not recorded [FND-MOVE-007]. No run has reached the owner test, so the
-  status stays `supported` until one does.
+  not recorded [FND-MOVE-007]. No run has reached the owner test either, so
+  the status stays `supported` until runs reach both tests.

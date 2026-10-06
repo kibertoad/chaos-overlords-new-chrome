@@ -2244,7 +2244,7 @@ None.
 | [RULE-AI-007](../rules/RULE-AI-007.md) | body, evidence |
 | [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | body, evidence |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, evidence |
-| [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | evidence |
+| [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | body, evidence |
 
 ## EXP-TURN-099
 
@@ -2252,7 +2252,7 @@ None.
 |---|---|
 | [RULE-AI-007](../rules/RULE-AI-007.md) | body, evidence |
 | [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | body, evidence |
-| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | evidence |
+| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, evidence |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | body, evidence |
 
 ## EXP-UI-001

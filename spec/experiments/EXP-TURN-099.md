@@ -16,9 +16,9 @@ fixture: EXP-TURN-099.json
 ## Question
 
 EXP-TURN-097 and EXP-TURN-098 reach the mode 0 selector from corners in column
-7. From corner sector 0, does the original also draw again for the western
-neighbour, which only the test of column 0 refuses? The run also repeats the
-hire with 80 gangs (RULE-EVENT-011).
+7. From corner sector 0, does the original also draw again for a neighbour
+past the western edge? The run also repeats the hire with 80 gangs
+(RULE-EVENT-011).
 
 ## Setup
 
@@ -65,7 +65,9 @@ and the repair ends.
 
 ## Conclusion
 
-The run agrees with RULE-AI-007 for a corner in column 0: offset -1, which only
-the test of the western edge refuses (FND-MOVE-003), is drawn again three
-times. With EXP-TURN-097 and EXP-TURN-098 the runs reach the tests of all four
-edges. It repeats the type-8 report of RULE-EVENT-011.
+The run agrees with RULE-AI-007 for a corner in column 0: offsets -1, -9 and
+-7 are drawn again. Each of them gives a sector below 0, which the loop head's
+test of the range 0 to 63 refuses as well as the edge tests (FND-MOVE-003).
+The one offset from sector 0 that only the test of the western edge refuses,
++7 to sector 7, was not drawn, so a draw that test alone refuses is still not
+reached. It repeats the type-8 report of RULE-EVENT-011.

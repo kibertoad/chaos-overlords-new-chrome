@@ -123,7 +123,7 @@ None known.
   orders that make the loop cycle, and whether the original then hangs in a
   run, is not recorded [FND-MOVE-006].
 - EXP-TURN-043 runs the first choice, with a mover whose source counts fewer
-  than six. EXP-TURN-097 to EXP-TURN-099 run the second choice, which sends a
-  human's mover back to a source counting six, and the mode-0 fallback
-  (RULE-AI-007), whose drawn sector is repaired in a later round. No run has
-  reached a cycle, so the status stays `supported`.
+  than six. EXP-TURN-097, EXP-TURN-098 and EXP-TURN-099 run the second
+  choice, which sends a human's mover back to a source counting six, and the
+  mode-0 fallback (RULE-AI-007), whose drawn sector is repaired in a later
+  round. No run has reached a cycle, so the status stays `supported`.
