@@ -23,8 +23,8 @@ public sealed partial class MultiplayerSessionTests
     /// <remarks>
     /// Ada is voted onto the computer after turn 1 and returns before turn 2; the snapshot after
     /// turn 2 holds her seat as human, with a Comlink message she sent on turn 2. Replaying the old
-    /// takeover onto that snapshot tried to hand a seat with human Comlink history to the computer,
-    /// which the core refuses, and the reconnect ended in a failure.
+    /// takeover onto that snapshot would put her seat through a second takeover, which marks it a
+    /// raider, and the resumed state would differ from the snapshot every other client holds.
     /// </remarks>
     [Fact]
     public async Task RestoreSkipsHandoversTheAdoptedSnapshotAlreadyHolds()

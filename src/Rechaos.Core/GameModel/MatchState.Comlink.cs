@@ -44,8 +44,8 @@ public sealed partial class MatchState
     /// RULE-COMLINK-004, FMT-STATE-005: the original keeps no messages in its save and empties
     /// every inbox when a match is entered, so a loaded match starts with none (FND-COMLINK-006,
     /// FND-SEARCH-005). A local load calls this. An online match never does: its clients rebuild
-    /// the state from the server on every resume, and Comlink cannot be opened online, so its
-    /// inboxes stay empty anyway.
+    /// the state from the server on every resume, inboxes included, and every client must hold the
+    /// same inboxes because they are hashed.
     /// </summary>
     /// <returns>Whether any inbox held a message.</returns>
     public bool EmptyComlinkInboxes()
@@ -113,6 +113,15 @@ public sealed partial class MatchState
         ArgumentNullException.ThrowIfNull(message);
         return message.All(character => character == ' ');
     }
+
+    /// <summary>
+    /// Whether a restored message can name <paramref name="sender"/>: a human seat, or one a human
+    /// held until the computer took it over online (RULE-AI-027 sets raider mode only then). A seat
+    /// the computer has played from the start never sent anything.
+    /// </summary>
+    private bool CouldHaveSentComlink(PlayerId sender) =>
+        FindPlayer(sender) is { } player
+        && (player.Setup.Controller == PlayerController.Human || AiPlanning.RaiderMode(sender));
 
     private ComlinkInbox GetComlinkInbox(PlayerId player) =>
         _comlinkInboxes.TryGetValue(player, out var inbox)

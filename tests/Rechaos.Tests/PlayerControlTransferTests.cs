@@ -151,17 +151,33 @@ public sealed class PlayerControlTransferTests
         Assert.False(match.FindGang(gang.Id)!.Hidden);
     }
 
+    /// <summary>
+    /// A seat whose human sent Comlink messages passes to the computer, and the messages stay in
+    /// their recipients' inboxes, as a delivered message does in the original (RULE-COMLINK-001).
+    /// A save of the match still loads: the takeover's raider mode (RULE-AI-027) is what tells a
+    /// restored inbox that a sender the computer now plays was once a human seat.
+    /// </summary>
     [Fact]
-    public void TransferRejectsASeatWithAuthenticatedHumanComlinkHistory()
+    public void TransferKeepsTheMessagesASeatSentAndTheSaveStillLoads()
     {
-        var match = CreateMatch();
+        var definitions = BundledOriginalData.Load();
+        var match = CreateMatch(definitions);
         match.FinishUpkeep();
         var sent = match.SendComlinkMessage(
             new PlayerId(0), [new PlayerId(1)], "STILL HERE");
         Assert.True(sent.Accepted);
+        AdvanceToNextCommandPhase(match);
 
-        Assert.Throws<InvalidOperationException>(() =>
-            match.TransferPlayerToComputer(new PlayerId(0)));
+        Assert.True(match.TransferPlayerToComputer(new PlayerId(0)));
+
+        var message = Assert.Single(match.ComlinkFor(new PlayerId(1)).Messages);
+        Assert.Equal(new PlayerId(0), message.Sender);
+        using var save = new MemoryStream();
+        NativeSaveSerializer.Save(save, match);
+        save.Position = 0;
+        var restored = NativeSaveSerializer.Load(save, definitions);
+        Assert.Equal(PlayerController.Computer, restored.Players[0].Setup.Controller);
+        Assert.Equal("STILL HERE", Assert.Single(restored.ComlinkFor(new PlayerId(1)).Messages).Text);
     }
 
     [Fact]

@@ -47,6 +47,11 @@ public static class OrderOpDecoder
                 GangDefinitionId(hire.GangDefinitionId, document), HireSector(hire.SectorId, document)),
             SnubHireOfferOp snub => new DecodedOrderOp.SnubHireOffer(GangDefinitionId(snub.GangDefinitionId, document)),
             DismissNotificationOp => DecodedOrderOp.DismissNotification.Instance,
+            SendComlinkMessageOp send => new DecodedOrderOp.SendComlinkMessage(
+                Recipients(send.Recipients, document), ComlinkText(send.Text, document)),
+            MarkComlinkReadOp read => read.Sequence >= 0
+                ? new DecodedOrderOp.MarkComlinkRead(read.Sequence)
+                : throw NotAnIdentifier(document, "Comlink sequence", read.Sequence, "message"),
             _ => throw new MultiplayerProtocolException(
                 $"{document} carries an op this client cannot apply: {op.Op}"),
         };
@@ -61,6 +66,46 @@ public static class OrderOpDecoder
         submit.SecondaryTarget is { } secondary ? Target(secondary, document, "secondaryTarget") : null,
         submit.TertiaryTarget is { } tertiary ? Target(tertiary, document, "tertiaryTarget") : null,
         submit.QuaternaryTarget is { } quaternary ? Target(quaternary, document, "quaternaryTarget") : null);
+
+    /// <summary>
+    /// The seats a Comlink message is addressed to. Whether each may take it (RULE-COMLINK-002) is
+    /// the core's judgement; a seat the board cannot have is not.
+    /// </summary>
+    private static PlayerId[] Recipients(IReadOnlyList<int>? recipients, string document)
+    {
+        if (recipients is null || recipients.Count is 0 or >= MatchLimits.PlayerCount)
+        {
+            throw new MultiplayerProtocolException(
+                $"{document} addresses a Comlink message to {recipients?.Count ?? 0} players, "
+                + $"not 1 to {MatchLimits.PlayerCount - 1}");
+        }
+        var seats = new PlayerId[recipients.Count];
+        for (var index = 0; index < seats.Length; index++)
+        {
+            var slot = recipients[index];
+            seats[index] = slot is >= 0 and < MatchLimits.PlayerCount
+                ? new PlayerId(slot)
+                : throw NotAnIdentifier(document, "Comlink recipient", slot, "player");
+        }
+        return seats;
+    }
+
+    /// <summary>
+    /// A Comlink message as the Send panel can type it: 1 to 160 characters from space to <c>Z</c>
+    /// (RULE-COMLINK-006). The server refuses anything else; this keeps a client from storing it if
+    /// a server ever did not.
+    /// </summary>
+    private static string ComlinkText(string? text, string document)
+    {
+        if (string.IsNullOrEmpty(text)
+            || text.Length > MatchLimits.ComlinkMessageCharacters
+            || text.Any(character => character is < ' ' or > 'Z'))
+        {
+            throw new MultiplayerProtocolException(
+                $"{document} carries a Comlink message the Send panel could not have written");
+        }
+        return text;
+    }
 
     /// <summary>A gang definition id that fits the core's <c>short</c>.</summary>
     private static short GangDefinitionId(int value, string document)

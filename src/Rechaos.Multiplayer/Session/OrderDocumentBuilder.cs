@@ -8,7 +8,7 @@ namespace Rechaos.Multiplayer.Session;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The five operations are exactly the player intents <c>MatchReplayRecorder</c> accepts over a
+/// The seven operations are exactly the player intents <c>MatchReplayRecorder</c> accepts over a
 /// turn. The phase transitions and the <c>Prepare*</c> steps are driven by the turn structure on
 /// every client and are refused over the wire, so they are absent here by construction.
 /// </para>
@@ -96,6 +96,29 @@ public sealed class OrderDocumentBuilder(PlayerId player)
     {
         RequireOwnSlot(player);
         Record(new DismissNotificationOp(player.Value));
+    }
+
+    /// <summary>Records a Comlink message. Mirrors <c>MatchState.SendComlinkMessage</c>.</summary>
+    public void SendComlinkMessage(PlayerId player, IReadOnlyList<PlayerId> recipients, string text)
+    {
+        ArgumentNullException.ThrowIfNull(recipients);
+        ArgumentNullException.ThrowIfNull(text);
+        RequireOwnSlot(player);
+        Record(new SendComlinkMessageOp(
+            player.Value, recipients.Select(recipient => recipient.Value).ToArray(), text));
+    }
+
+    /// <summary>Records a message marked read. Mirrors <c>MatchState.MarkComlinkRead</c>.</summary>
+    /// <remarks>
+    /// The wire carries the sequence as a 32-bit integer. An inbox numbers every message it has ever
+    /// received, at most six senders' worth a turn, so no match reaches the bound.
+    /// </remarks>
+    public void MarkComlinkRead(PlayerId player, long sequence)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(sequence);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(sequence, int.MaxValue);
+        RequireOwnSlot(player);
+        Record(new MarkComlinkReadOp(player.Value, (int)sequence));
     }
 
     /// <summary>The document as it stands, ready to submit.</summary>
