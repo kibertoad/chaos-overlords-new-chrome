@@ -4,7 +4,7 @@ title: The presentation timer
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-001, FND-PLATFORM-006, FND-TIMER-002, FND-UI-023, FND-UI-044, FND-UI-046, FND-UI-047, FND-AUDIO-017, FND-EXE-004, EXP-UI-041, EXP-UI-042]
+evidence: [FND-UI-001, FND-PLATFORM-006, FND-TIMER-002, FND-UI-023, FND-UI-044, FND-UI-046, FND-UI-047, FND-AUDIO-017, FND-EXE-004, EXP-UI-041, EXP-UI-042, EXP-UI-044]
 conflicting: []
 split_with: []
 related: []
@@ -66,9 +66,9 @@ clock read and clear `presentation_tick_pending`.
   pointer stops its step as well, and the pass that ends with the release takes
   the kept tick: the item rotations, the researched item of Last Turn Events,
   the Comlink Send caret, the Detailed Combat clip and the idle-gang warning's
-  line each step once and lose the other ticks of the hold (FND-UI-047). Item Information and Sell stopped their
-  items for holds of more than a second and cleared the flag in the step of
-  the release (EXP-UI-041, EXP-UI-042).
+  line each step once and lose the other ticks of the hold (FND-UI-047). Item Information, Sell and the Send caret stopped
+  for holds of more than a second and cleared the flag in the step of
+  the release (EXP-UI-041, EXP-UI-042, EXP-UI-044).
 - A CD fade runs inside the pump's music poll or mute command and leaves
   `presentation_tick_pending` alone, so the pump's steps stop for it in the
   same way: the pump takes one tick of the fade when it returns, and the other

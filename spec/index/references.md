@@ -182,6 +182,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-041](../experiments/EXP-UI-041.md) | builds |
 | [EXP-UI-042](../experiments/EXP-UI-042.md) | builds |
 | [EXP-UI-043](../experiments/EXP-UI-043.md) | builds |
+| [EXP-UI-044](../experiments/EXP-UI-044.md) | builds |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
@@ -1322,6 +1323,7 @@ None.
 | [EXP-UI-041](../experiments/EXP-UI-041.md) | body |
 | [EXP-UI-042](../experiments/EXP-UI-042.md) | body |
 | [EXP-UI-043](../experiments/EXP-UI-043.md) | body |
+| [EXP-UI-044](../experiments/EXP-UI-044.md) | body |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | body |
 
 ## EXP-TURN-002
@@ -2437,6 +2439,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | body |
+| [EXP-UI-044](../experiments/EXP-UI-044.md) | body |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | evidence |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | evidence |
@@ -2524,6 +2527,7 @@ None.
 |---|---|
 | [EXP-UI-042](../experiments/EXP-UI-042.md) | body |
 | [EXP-UI-043](../experiments/EXP-UI-043.md) | body |
+| [EXP-UI-044](../experiments/EXP-UI-044.md) | body |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | evidence |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | body, evidence |
@@ -2551,6 +2555,13 @@ None.
 ## EXP-UI-043
 
 None.
+
+## EXP-UI-044
+
+| Cited by | In |
+|---|---|
+| [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
+| [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 
 ## EXP-VIDEO-001
 
@@ -7855,6 +7866,7 @@ None.
 |---|---|
 | [EXP-UI-041](../experiments/EXP-UI-041.md) | body |
 | [EXP-UI-042](../experiments/EXP-UI-042.md) | body |
+| [EXP-UI-044](../experiments/EXP-UI-044.md) | body |
 | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) | body, evidence |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
@@ -7964,6 +7976,7 @@ None.
 |---|---|
 | [EXP-UI-041](../experiments/EXP-UI-041.md) | body |
 | [EXP-UI-042](../experiments/EXP-UI-042.md) | body |
+| [EXP-UI-044](../experiments/EXP-UI-044.md) | body |
 | [FND-COMLINK-011](../findings/FND-COMLINK-011.md) | body |
 | [FND-EVENT-007](../findings/FND-EVENT-007.md) | body |
 | [FND-UI-067](../findings/FND-UI-067.md) | body |
@@ -9960,6 +9973,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | body |
+| [EXP-UI-044](../experiments/EXP-UI-044.md) | body |
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | body, related |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | body |
 | [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | body |
@@ -10186,6 +10200,7 @@ None.
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | body |
 | [EXP-UI-041](../experiments/EXP-UI-041.md) | body |
 | [EXP-UI-043](../experiments/EXP-UI-043.md) | body |
+| [EXP-UI-044](../experiments/EXP-UI-044.md) | body |
 | [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, related |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | related |

@@ -797,7 +797,7 @@ a shot taken while a button is down writes the held point again and waits
 0.3 seconds before it copies. Every order step also keeps `slot_zero_clears`,
 the milliseconds from the step's start to each tick of timer slot 0 a panel
 loop took before the next step began (FND-UI-047), read from breakpoints on the
-calls that clear the slot. EXP-UI-041 to EXP-UI-043 are taken with these steps.
+calls that clear the slot. EXP-UI-041 to EXP-UI-044 are taken with these steps.
 
 `new-game --title-capture` copies the title screen before the run presses New
 Game: a breakpoint at the title loop's first load of its art (FND-UI-055)
