@@ -305,6 +305,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _online.Server.Set(preferences.CustomMultiplayerServer);
         _onlineLobbyPresentation = preferences.LobbyPresentation;
         _multiplayerRecoveries.AddRange(MultiplayerRecoveryStore.LoadAll(_multiplayerRecoveryPath));
+        _onlineTokensInClear = MultiplayerRecoveryStore.KeepsTokensInClear(_multiplayerRecoveryPath);
         // The player's own name carries over from any saved seat, including one from another
         // session version; only the join code is limited to a match this build can play.
         if (_multiplayerRecoveries.FirstOrDefault(saved => saved.CanReconnect) is { } latest)

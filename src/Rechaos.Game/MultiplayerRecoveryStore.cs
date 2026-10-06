@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -77,10 +78,13 @@ public sealed record MultiplayerRecoveryFailure(
 /// <remarks>
 /// <para>
 /// Separate from <see cref="MultiplayerRecovery"/> because the token is not stored the way it is
-/// held: <see cref="ProtectedToken"/> carries it sealed to the current user account where the
-/// platform offers that, and <see cref="Token"/> carries it in clear where it does not. Exactly one
-/// of the two is set. A file written by a build that predates the sealed form has only
-/// <see cref="Token"/>, which is why reading that is still supported.
+/// held. <see cref="ProtectedToken"/> carries it sealed with DPAPI to the current user account on
+/// Windows. <see cref="TokenStore"/> names the operating-system store that holds it on macOS
+/// (<c>keychain</c>) and Linux (<c>secret-service</c>), and <see cref="TokenAccount"/> the name it
+/// is filed under there; see <see cref="RecoveryTokenProtection"/>. <see cref="Token"/> carries it in clear where
+/// neither is available. Exactly one of the three is set. A file written by a build that predates
+/// the sealed forms has only <see cref="Token"/>, which is why reading that is still supported, and
+/// why the first load that can seal it rewrites the file without it.
 /// </para>
 /// <para>
 /// <see cref="Password"/> is stored in the clear, unlike the token. It opens one session's door to
@@ -113,21 +117,43 @@ internal sealed record PersistedRecovery(
     int? SessionVersion = null,
     string? SessionName = null,
     DateTimeOffset? LastUpdatedAt = null,
-    MultiplayerRecoveryFailure? LastFailure = null);
+    MultiplayerRecoveryFailure? LastFailure = null,
+    string? TokenStore = null,
+    string? TokenAccount = null);
 
 internal sealed record MultiplayerRecoveryHistory(
     int FormatVersion,
     IReadOnlyList<PersistedRecovery> Sessions)
 {
     /// <summary>
-    /// Version 5 added <see cref="PersistedRecovery.LastFailure"/>; 4 added <see cref="PersistedRecovery.SessionName"/> and
+    /// Version 6 added <see cref="PersistedRecovery.TokenStore"/> and
+    /// <see cref="PersistedRecovery.TokenAccount"/>; 5 added
+    /// <see cref="PersistedRecovery.LastFailure"/>; 4 added <see cref="PersistedRecovery.SessionName"/> and
     /// <see cref="PersistedRecovery.LastUpdatedAt"/>; 3 added
-    /// <see cref="PersistedRecovery.ProtectedToken"/>; 2 is still read. Every field either version
+    /// <see cref="PersistedRecovery.ProtectedToken"/>; 2 is still read. Every field these versions
     /// added is optional, so an older file reads back as a membership that simply knows less about
     /// itself rather than one that cannot be resumed.
     /// </summary>
-    internal const int CurrentFormatVersion = 5;
+    internal const int CurrentFormatVersion = 6;
     internal const int OldestReadableFormatVersion = 2;
+
+    /// <summary>
+    /// The newest version without <see cref="PersistedRecovery.TokenStore"/>, which a file is still
+    /// written as when no membership in it uses that field.
+    /// </summary>
+    /// <remarks>
+    /// A build of version 5 would read a token kept in an operating-system store as a membership
+    /// without a token, drop it, and on its next save write the file without it: the seat would be
+    /// gone. Stamping such a file 6 makes that build leave it alone instead. A file with no such
+    /// membership, which is every file on Windows, stays readable by that build, so going back one
+    /// build there costs nothing.
+    /// </remarks>
+    internal const int FormatVersionWithoutTokenStore = 5;
+
+    internal static int FormatVersionFor(IEnumerable<PersistedRecovery> sessions) =>
+        sessions.Any(session => session.TokenStore is not null)
+            ? CurrentFormatVersion
+            : FormatVersionWithoutTokenStore;
 }
 
 /// <summary>Atomic local record of the seat needed to resume an interrupted online match.</summary>
@@ -135,10 +161,13 @@ internal sealed record MultiplayerRecoveryHistory(
 /// A membership token is a full capability for that seat until the match is retired, so this file is
 /// worth what a password is worth. Two things bound what it holds. Retired memberships are dropped
 /// rather than written back, so a finished match's token stops existing on disk at the next save;
-/// and the token is sealed to the current user account where the platform can do that, so another
-/// account on the same machine cannot read it out of the file. Neither defends against something
-/// already running as the player, which nothing local can, and a platform with no keystore keeps the
-/// clear token, because the alternative is losing the reconnect this file exists for.
+/// and the token is kept out of the file's clear text where the platform can do that (DPAPI on
+/// Windows, the Keychain on macOS, the Secret Service on Linux; see
+/// <see cref="RecoveryTokenProtection"/>), so another account on the same machine, or a copy of the
+/// file, does not carry the seat. Neither defends against something already running as the player,
+/// which nothing local can. Where no store answers, the token stays in clear in a file only its
+/// owner can read, because the alternative is losing the reconnect this file exists for, and
+/// <see cref="KeepsTokensInClear"/> lets the interface say so.
 /// </remarks>
 public static class MultiplayerRecoveryStore
 {
@@ -217,14 +246,89 @@ public static class MultiplayerRecoveryStore
     /// </para>
     /// </remarks>
     public static IReadOnlyList<MultiplayerRecovery> LoadAll(string path)
+        => LoadAll(path, RecoveryTokenProtection.Platform);
+
+    /// <summary>
+    /// <see cref="LoadAll(string)"/> with the token protection named, which is what tests use to
+    /// keep the operating system's own stores out of their way.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A membership whose token sits in an operating-system store that does not answer now (the
+    /// keyring is locked, the player dismissed its prompt, no keyring is running this session) is
+    /// not offered, because there is no token to offer it with, and it is not dropped either: it
+    /// is held back and written back unchanged by every save, until a load finds the store
+    /// answering again. A store that answers and has no such token is the one case that drops it.
+    /// </para>
+    /// <para>
+    /// A file that still holds a token in clear where this platform can protect it is rewritten at
+    /// once, and its <c>.bak</c> generation with it, so the clear token does not wait for the next
+    /// turn to leave the disk.
+    /// </para>
+    /// </remarks>
+    internal static IReadOnlyList<MultiplayerRecovery> LoadAll(
+        string path, RecoveryTokenProtection protection)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        var primary = Read(path, setAsideWhenCorrupt: true);
+        ArgumentNullException.ThrowIfNull(protection);
+        var ledger = LedgerFor(path);
+        var primary = Read(path, setAsideWhenCorrupt: true, protection, ledger);
         if (primary.Kind == ReadKind.Read) NewerHistory.NoteCurrent(path);
-        if (primary.Kind != ReadKind.Corrupt) return primary.Recoveries;
-        // The backup is only read, never set aside: it is the last copy there is.
-        var backup = Read(path + ".bak", setAsideWhenCorrupt: false);
-        return backup.Kind == ReadKind.Read ? backup.Recoveries : [];
+        var loaded = primary;
+        if (primary.Kind == ReadKind.Corrupt)
+        {
+            // The backup is only read, never set aside: it is the last copy there is.
+            var backup = Read(path + ".bak", setAsideWhenCorrupt: false, protection, ledger);
+            loaded = backup.Kind == ReadKind.Read ? backup : ReadResult.Of(ReadKind.Corrupt);
+        }
+        if (loaded.Kind != ReadKind.Read) return loaded.Recoveries;
+        lock (ledger.Gate)
+        {
+            ledger.HeldBack = loaded.HeldBack;
+            ledger.KeptInClear = loaded.HasClearTokens;
+        }
+        if (loaded.HasClearTokens && protection.CanSeal) SealClearTokens(path, loaded.Recoveries, protection);
+        return loaded.Recoveries;
+    }
+
+    /// <summary>
+    /// Whether the last load or save of this history left a token in clear in the file.
+    /// </summary>
+    /// <remarks>
+    /// True only where no store took the token: a Linux system without libsecret or a running
+    /// keyring, a store that refused the write, or a platform with none. The Unfinished Sessions
+    /// screen reads it to say so in one line.
+    /// </remarks>
+    public static bool KeepsTokensInClear(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var ledger = LedgerFor(path);
+        lock (ledger.Gate) return ledger.KeptInClear;
+    }
+
+    /// <summary>
+    /// Rewrites a history that still carries clear tokens, and replaces its backup with the result.
+    /// </summary>
+    /// <remarks>
+    /// The save copies the old file to <c>.bak</c> before writing, which would leave the clear
+    /// token there for one more generation; once the new file holds no clear token, the backup is
+    /// replaced by a copy of it. A save that could not seal every token leaves the backup alone,
+    /// since it then protects nothing.
+    /// </remarks>
+    private static void SealClearTokens(
+        string path, IReadOnlyList<MultiplayerRecovery> recoveries, RecoveryTokenProtection protection)
+    {
+        if (!TrySaveAll(path, recoveries, durable: true, protection)) return;
+        if (KeepsTokensInClear(path)) return;
+        try
+        {
+            File.Copy(path, path + ".bak", overwrite: true);
+            RestrictToOwner(path + ".bak");
+        }
+        catch
+        {
+            // The primary is sealed; a backup that cannot be replaced keeps the old generation.
+        }
     }
 
     private enum ReadKind
@@ -237,12 +341,22 @@ public static class MultiplayerRecoveryStore
         Corrupt
     }
 
-    private readonly record struct ReadResult(ReadKind Kind, IReadOnlyList<MultiplayerRecovery> Recoveries)
+    /// <param name="HeldBack">Memberships whose token store did not answer; see <see cref="LoadAll(string, RecoveryTokenProtection)"/>.</param>
+    /// <param name="HasClearTokens">Whether any membership kept carries its token in clear.</param>
+    private readonly record struct ReadResult(
+        ReadKind Kind,
+        IReadOnlyList<MultiplayerRecovery> Recoveries,
+        PersistedRecovery[] HeldBack,
+        bool HasClearTokens)
     {
-        public static ReadResult Of(ReadKind kind) => new(kind, []);
+        public static ReadResult Of(ReadKind kind) => new(kind, [], [], false);
     }
 
-    private static ReadResult Read(string path, bool setAsideWhenCorrupt)
+    private static ReadResult Read(
+        string path,
+        bool setAsideWhenCorrupt,
+        RecoveryTokenProtection protection,
+        TokenLedger ledger)
     {
         var (kind, bytes) = ReadBytes(path, setAsideWhenCorrupt);
         if (bytes is null) return ReadResult.Of(kind);
@@ -261,11 +375,25 @@ public static class MultiplayerRecoveryStore
                 {
                     throw new JsonException("Not a readable recovery history.");
                 }
-                return new ReadResult(ReadKind.Read, Keepable(history.Sessions.Select(Revive)));
+                var revived = new List<MultiplayerRecovery?>(history.Sessions.Count);
+                var clear = new HashSet<MultiplayerRecovery>();
+                var heldBack = new List<PersistedRecovery>();
+                foreach (var stored in history.Sessions)
+                {
+                    var outcome = Revive(stored, protection, ledger);
+                    revived.Add(outcome.Recovery);
+                    if (outcome.Recovery is not null && stored.Token is not null) clear.Add(outcome.Recovery);
+                    if (outcome.HeldBack is { } held
+                        && heldBack.Count < MaximumSessions + MaximumOtherVersionSessions)
+                        heldBack.Add(held);
+                }
+                var kept = Keepable(revived);
+                return new ReadResult(ReadKind.Read, kept, heldBack.ToArray(), kept.Any(clear.Contains));
             }
             // Version 1 contained one bare membership. Reading it here makes the upgrade lossless.
             var recovery = JsonSerializer.Deserialize<MultiplayerRecovery>(bytes, JsonOptions);
-            return new ReadResult(ReadKind.Read, Keepable([recovery]));
+            var single = Keepable([recovery]);
+            return new ReadResult(ReadKind.Read, single, [], single.Length > 0);
         }
         catch
         {
@@ -369,14 +497,52 @@ public static class MultiplayerRecoveryStore
         string path,
         IEnumerable<MultiplayerRecovery> recoveries,
         bool durable = false)
+        => TrySaveAll(path, recoveries, durable, RecoveryTokenProtection.Platform);
+
+    /// <summary>
+    /// <see cref="TrySaveAll(string, IEnumerable{MultiplayerRecovery}, bool)"/> with the token
+    /// protection named.
+    /// </summary>
+    /// <remarks>
+    /// A token goes into the operating-system store before the file that names the store is
+    /// written, so the file never points at a token that is not there yet. After the file is
+    /// written, every token this process put in (or found in) the store for a membership the file
+    /// no longer holds is removed from the store, which is how a forgotten, left or finished seat
+    /// stops existing there too. A store that refuses the token leaves it in clear in the file.
+    /// </remarks>
+    internal static bool TrySaveAll(
+        string path,
+        IEnumerable<MultiplayerRecovery> recoveries,
+        bool durable,
+        RecoveryTokenProtection protection)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(recoveries);
-        var sessions = Keepable(recoveries).Select(Persist).ToArray();
-        var temporaryPath = path + ".tmp";
+        ArgumentNullException.ThrowIfNull(protection);
+        var kept = Keepable(recoveries);
         // A newer build's history is not this build's to replace: neither it nor the .bak copy of
         // it would survive the write below, and this build could not have read its seats back.
         if (NewerHistory.IsNewer(path, MaximumFileBytes)) return false;
+        var ledger = LedgerFor(path);
+        lock (ledger.Gate)
+        {
+            var sessions = kept.Select(recovery => Persist(path, recovery, protection, ledger)).ToList();
+            var heldBack = ledger.HeldBack
+                .Where(held => !sessions.Any(session => SameSeat(session, held)))
+                .Take(MaximumSessions + MaximumOtherVersionSessions)
+                .ToArray();
+            sessions.AddRange(heldBack);
+            if (!TryWrite(path, sessions, durable)) return false;
+            ledger.HeldBack = heldBack;
+            ledger.KeptInClear = sessions.Any(session => session.Token is not null);
+            ForgetStoredTokens(sessions, protection, ledger);
+            return true;
+        }
+    }
+
+    private static bool TryWrite(string path, IReadOnlyList<PersistedRecovery> sessions, bool durable)
+    {
+        var temporaryPath = path + ".tmp";
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
@@ -385,17 +551,21 @@ public static class MultiplayerRecoveryStore
             // recover them from.
             try
             {
-                if (File.Exists(path)) File.Copy(path, path + ".bak", overwrite: true);
+                if (File.Exists(path))
+                {
+                    File.Copy(path, path + ".bak", overwrite: true);
+                    RestrictToOwner(path + ".bak");
+                }
             }
             catch
             {
                 // A backup that cannot be written must not stop the save it was taken for.
             }
-            using (var stream = new FileStream(
-                       temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            File.Delete(temporaryPath);
+            using (var stream = new FileStream(temporaryPath, OwnerOnlyCreate))
             {
                 JsonSerializer.Serialize(stream, new MultiplayerRecoveryHistory(
-                    MultiplayerRecoveryHistory.CurrentFormatVersion, sessions), JsonOptions);
+                    MultiplayerRecoveryHistory.FormatVersionFor(sessions), sessions), JsonOptions);
                 stream.Flush(flushToDisk: durable);
             }
             File.Move(temporaryPath, path, overwrite: true);
@@ -441,9 +611,170 @@ public static class MultiplayerRecoveryStore
         return kept.ToArray();
     }
 
-    private static PersistedRecovery Persist(MultiplayerRecovery recovery)
+    /// <summary>
+    /// How a save creates the file it writes: on Linux and macOS readable and writable by its owner
+    /// only, because it can hold a token in clear and always holds the session passwords.
+    /// </summary>
+    private static readonly FileStreamOptions OwnerOnlyCreate = CreateOptions();
+
+    private static FileStreamOptions CreateOptions()
     {
-        var sealedToken = Protect(recovery.Token);
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.Write,
+            Share = FileShare.None
+        };
+        if (!OperatingSystem.IsWindows())
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        return options;
+    }
+
+    /// <summary>Narrows a copied file to its owner on Linux and macOS. Best effort.</summary>
+    private static void RestrictToOwner(string path)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        try
+        {
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+        catch
+        {
+            // The file is still written; a mode that cannot be narrowed is no reason to fail.
+        }
+    }
+
+    /// <summary>
+    /// What this process knows about the tokens one history keeps in an operating-system store.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Stored"/> is every account this process wrote or found in the store, with the
+    /// token it holds, so an unchanged token is not written again on every turn's save and a
+    /// membership the history drops can have its token removed. One ledger per history path, for
+    /// the life of the process.
+    /// </remarks>
+    private sealed class TokenLedger
+    {
+        public readonly object Gate = new();
+        public readonly Dictionary<string, string> Stored = new(StringComparer.Ordinal);
+
+        /// <summary>The account each seat's token is filed under, by <see cref="SeatKey"/>.</summary>
+        public readonly Dictionary<string, string> Accounts = new(StringComparer.Ordinal);
+        public PersistedRecovery[] HeldBack = [];
+        public bool KeptInClear;
+    }
+
+    private static readonly ConcurrentDictionary<string, TokenLedger> Ledgers = new(
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+
+    private static TokenLedger LedgerFor(string path) =>
+        Ledgers.GetOrAdd(Path.GetFullPath(path), _ => new TokenLedger());
+
+    /// <summary>
+    /// The name a new seat's token is filed under in an operating-system store.
+    /// </summary>
+    /// <remarks>
+    /// It starts with a digest of the history's own path, so two data roots on one account (a
+    /// portable copy beside an installed one) never remove each other's tokens, and goes on to
+    /// name the seat. The name is written into the file beside the store's, and a load reads the
+    /// token by the name on file, so a data root that moves keeps its seats. Nothing in it is
+    /// secret.
+    /// </remarks>
+    private static string NewAccount(string historyPath, MultiplayerRecovery recovery)
+    {
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(historyPath)));
+        var scope = Convert.ToHexStringLower(digest, 0, 8);
+        return $"{scope}/{recovery.MatchId}/{recovery.PlayerId}@{recovery.Server.ToLowerInvariant()}";
+    }
+
+    /// <summary>What tells one seat from another, as <see cref="SameSeat"/> compares them.</summary>
+    private static string SeatKey(string server, string matchId, string playerId) =>
+        $"{matchId}|{playerId}|{server.ToLowerInvariant()}";
+
+    private static bool SameSeat(PersistedRecovery left, PersistedRecovery right) =>
+        string.Equals(left.Server, right.Server, StringComparison.OrdinalIgnoreCase)
+        && left.MatchId == right.MatchId
+        && left.PlayerId == right.PlayerId;
+
+    /// <summary>
+    /// Removes from the store every token this process knows of that the history no longer names.
+    /// </summary>
+    private static void ForgetStoredTokens(
+        IReadOnlyList<PersistedRecovery> sessions,
+        RecoveryTokenProtection protection,
+        TokenLedger ledger)
+    {
+        if (protection.Store is not { } store || ledger.Stored.Count == 0) return;
+        var named = sessions
+            .Where(session => session.TokenStore == store.Name && session.TokenAccount is not null)
+            .Select(session => session.TokenAccount!)
+            .ToHashSet(StringComparer.Ordinal);
+        foreach (var account in ledger.Stored.Keys.Where(account => !named.Contains(account)).ToArray())
+        {
+            if (!Guarded(() => store.TryDelete(account))) continue;
+            ledger.Stored.Remove(account);
+            foreach (var seat in ledger.Accounts.Where(pair => pair.Value == account).ToArray())
+                ledger.Accounts.Remove(seat.Key);
+        }
+    }
+
+    /// <summary>
+    /// A store call that cannot take the game down: a library missing an entry point, or any
+    /// other failure inside it, answers false.
+    /// </summary>
+    private static bool Guarded(Func<bool> call)
+    {
+        try
+        {
+            return call();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static PersistedRecovery Persist(
+        string historyPath,
+        MultiplayerRecovery recovery,
+        RecoveryTokenProtection protection,
+        TokenLedger ledger)
+    {
+        if (protection.Store is { } store)
+        {
+            var seat = SeatKey(recovery.Server, recovery.MatchId, recovery.PlayerId);
+            if (!ledger.Accounts.TryGetValue(seat, out var account))
+                account = NewAccount(historyPath, recovery);
+            var known = ledger.Stored.TryGetValue(account, out var held) && held == recovery.Token;
+            if (known || Guarded(() => store.TryStore(account, Label(recovery), recovery.Token)))
+            {
+                ledger.Stored[account] = recovery.Token;
+                ledger.Accounts[seat] = account;
+                return Persisted(recovery, token: null, protectedToken: null, store.Name, account);
+            }
+            return Persisted(recovery, recovery.Token, protectedToken: null, tokenStore: null, tokenAccount: null);
+        }
+        var sealedToken = protection.UseDpapi ? Protect(recovery.Token) : null;
+        return Persisted(recovery,
+            token: sealedToken is null ? recovery.Token : null,
+            protectedToken: sealedToken,
+            tokenStore: null,
+            tokenAccount: null);
+    }
+
+    /// <summary>What a keychain or keyring browser shows for the item.</summary>
+    private static string Label(MultiplayerRecovery recovery) =>
+        recovery.SessionName.Length > 0
+            ? $"Chaos Overlords online seat: {recovery.SessionName}"
+            : $"Chaos Overlords online seat: match {recovery.MatchId}";
+
+    private static PersistedRecovery Persisted(
+        MultiplayerRecovery recovery,
+        string? token,
+        string? protectedToken,
+        string? tokenStore,
+        string? tokenAccount)
+    {
         return new PersistedRecovery(
             recovery.FormatVersion,
             recovery.Server,
@@ -454,25 +785,80 @@ public static class MultiplayerRecoveryStore
             recovery.IsHost,
             recovery.CleanExit,
             recovery.Completed,
-            Token: sealedToken is null ? recovery.Token : null,
-            ProtectedToken: sealedToken,
+            Token: token,
+            ProtectedToken: protectedToken,
             Password: recovery.Password.Length > 0 ? recovery.Password : null,
             SessionVersion: recovery.SessionVersion,
             SessionName: recovery.SessionName.Length > 0 ? recovery.SessionName : null,
             LastUpdatedAt: recovery.LastUpdatedAt,
-            LastFailure: recovery.LastFailure);
+            LastFailure: recovery.LastFailure,
+            TokenStore: tokenStore,
+            TokenAccount: tokenAccount);
     }
 
-    private static MultiplayerRecovery? Revive(PersistedRecovery stored)
+    /// <summary>One stored membership as a load reads it.</summary>
+    /// <param name="Recovery">The membership, when its token could be read.</param>
+    /// <param name="HeldBack">
+    /// The stored form, when its token sits in a store that did not answer, so the next save can
+    /// write it back unchanged.
+    /// </param>
+    private readonly record struct Revived(MultiplayerRecovery? Recovery, PersistedRecovery? HeldBack);
+
+    private static Revived Revive(
+        PersistedRecovery stored,
+        RecoveryTokenProtection protection,
+        TokenLedger ledger)
     {
-        var token = stored.ProtectedToken is { } sealedToken
-            ? Unprotect(sealedToken)
-            : stored.Token;
+        string? token;
+        if (stored.TokenStore is { } storeName)
+        {
+            if (stored.TokenAccount is not { Length: > 0 and <= 512 } account) return default;
+            var lookup = SecretLookup.Unavailable;
+            string? found = null;
+            if (protection.Store is { } store && store.Name == storeName)
+            {
+                try
+                {
+                    lookup = store.TryLookup(account, out found);
+                }
+                catch
+                {
+                    lookup = SecretLookup.Unavailable;
+                }
+            }
+            switch (lookup)
+            {
+                case SecretLookup.Found when !string.IsNullOrEmpty(found):
+                    lock (ledger.Gate)
+                    {
+                        ledger.Stored[account] = found;
+                        ledger.Accounts[SeatKey(stored.Server, stored.MatchId, stored.PlayerId)] = account;
+                    }
+                    token = found;
+                    break;
+                case SecretLookup.Missing:
+                    // The store answered and the token is gone: removed by hand, or the keyring was
+                    // reset. Nothing can resume this seat.
+                    return default;
+                default:
+                    return IsHoldable(stored) ? new Revived(null, stored) : default;
+            }
+        }
+        else
+        {
+            token = stored.ProtectedToken is { } sealedToken
+                ? protection.UseDpapi ? Unprotect(sealedToken) : null
+                : stored.Token;
+        }
         // A sealed token that will not open belongs to another account, or to a machine this profile
         // was copied from. There is nothing to resume with, so the membership is dropped rather than
         // offered as a reconnect that would answer 401.
-        if (string.IsNullOrEmpty(token)) return null;
-        return new MultiplayerRecovery(
+        if (string.IsNullOrEmpty(token)) return default;
+        return new Revived(Membership(stored, token), null);
+    }
+
+    private static MultiplayerRecovery Membership(PersistedRecovery stored, string token) =>
+        new(
             stored.FormatVersion,
             stored.Server,
             stored.MatchId,
@@ -488,15 +874,30 @@ public static class MultiplayerRecoveryStore
             stored.SessionName ?? string.Empty,
             stored.LastUpdatedAt,
             stored.LastFailure);
+
+    /// <summary>
+    /// Whether a membership whose token could not be read is worth writing back: well formed
+    /// apart from the token, and not retired.
+    /// </summary>
+    private static bool IsHoldable(PersistedRecovery stored)
+    {
+        try
+        {
+            var placeholder = Membership(stored, "held");
+            return IsValid(placeholder) && placeholder.CanReconnect;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>
-    /// Seals a token to the current user account, or answers null where the platform cannot.
+    /// Seals a token to the current user account with DPAPI, or answers null where that fails.
     /// </summary>
     /// <remarks>
-    /// DPAPI on Windows. The macOS Keychain and libsecret are the equivalents elsewhere and both
-    /// want a native dependency the game does not otherwise carry, so those platforms keep the clear
-    /// token for now, under the user's own data root.
+    /// Windows only. macOS and Linux keep the token in an operating-system store instead; see
+    /// <see cref="RecoveryTokenProtection"/>.
     /// </remarks>
     private static string? Protect(string token)
     {
