@@ -58,9 +58,10 @@ their own sectors (DEV-AI-008), are switched by `--original-computer-moves` and
 
 Recorded runs of the original now check it in play. A debugger records every
 random draw of a new game from launch through up to eighty-two turns of play,
-with the state and the computer players' planning records where the run stops,
-and the rebuild has to make the same draws and reach the same state (the
-`EXP-` entries of the [spec](spec/README.md)). The runs cover setup, every
+with the state where the run stops (and, in most runs from EXP-TURN-048 on,
+the computer players' planning records), and the rebuild has to make the same
+draws and reach the same state (the `EXP-` entries of the
+[spec](spec/README.md)). The runs cover setup, every
 scenario and Mentality, the computer players' planning and hiring, every order,
 combat, the police, events, and the end of Greed, Acceptance, Dominance and Big
 Man matches. A static reading can still be wrong where no run reaches: some

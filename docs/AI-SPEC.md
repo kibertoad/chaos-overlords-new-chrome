@@ -188,25 +188,38 @@ replays), and DEV-AI-003 (Advanced AI, off by default).
 ### What the recorded runs compare
 
 `OriginalNewGameExperimentTests` replays every `EXP-SETUP-` and `EXP-TURN-`
-run of the original. For each one the rebuild has to make every draw the
+run of the original except EXP-TURN-036, which holds measurements taken from
+reruns of the others. For each one the rebuild has to make every draw the
 original made, with the same bound and result in the same order, and reach the
-same state: players, sectors, gangs, attitudes, scores and reports. From
-EXP-TURN-048 on, the runs also hold the computer players' planning records
-(FMT-STATE-007), which the replay compares byte for byte: family, the three
-generations of action and target, cooldowns, focus and coverage sector. A
-planning pass that picks another family, action, target or sector, or draws
-once more or once less, fails the replay at that draw. The runs cover all ten
-scenarios and all four Mentalities. Some of them write a family, a raider flag,
-cash or a retirement into the original's memory before a Done press to reach
-branches no ordinary match reaches; the replay makes the same writes.
+same state: players, sectors, gangs, attitudes, scores and reports. EXP-TURN-083
+is the one run the rebuild does not follow to its end: under DEV-AI-002 a
+family-7 gang's Influence in a neutral sector gives no command, so the rebuild
+rolls fewer dice in that turn, and the test checks only that the first draw
+that differs is still draw 1420. From EXP-TURN-048 on, every run except
+EXP-TURN-052 also holds the computer players' planning records
+(FMT-STATE-007) where it stops, which the replay compares byte for byte:
+family, the three generations of action and target and the cooldowns. It also
+compares the focus and coverage sector of every active gang of a computer
+player that has planned. A planning pass that draws once more or once less
+fails the replay at that draw; one that picks another family, action, target
+or sector without changing a draw fails where the run stops, when the records
+or the state there differ. The runs cover all ten scenarios and all four
+Mentalities. Some of them write a family, a raider flag or cash into the
+original's memory before a Done press to reach branches no ordinary match
+reaches, and EXP-UI-023 retires players the same way; the replay makes the
+same writes.
 
-The planning pass (RULE-AI-001), the family dispatch (RULE-AI-002), the hire
-choice (RULE-AI-008 to RULE-AI-013) and every family handler (RULE-AI-019 to
-RULE-AI-031) run in each replayed turn, and every row of the `AI` area in
-[PARITY.md](../PARITY.md) is `validated`. A rule's spec status says how much of
-it the evidence proves: an `established` rule has a static reading and the
-runs in agreement, and a `supported` one rests on one kind of evidence, so
-branches of it that no run reaches rest on the static reading alone; its Open
+The planning pass (RULE-AI-001), the family dispatch (RULE-AI-002) and the
+hire choice (RULE-AI-008 to RULE-AI-013) run in each replayed turn. A family
+handler (RULE-AI-019 to RULE-AI-031) runs only for the gangs the scenario and
+hire roles put in its family, or the probe writes into it: families 13 and 14
+play for the Big Man and Siege objectives, and nothing in the game writes
+family 4, so only a probe write reaches its handler. Every row of the `AI`
+area in [PARITY.md](../PARITY.md) is `validated`. A rule's spec status says
+how much of it the evidence proves: an `established` rule has a static reading
+and the runs in agreement, and a `supported` one does not yet have that
+agreement for the whole rule, so branches of it that no run reaches rest on the
+static reading alone; its Open
 questions and its PARITY.md notes name them. The current status of each rule is
 in the generated [index by status](../spec/index/by-status.md), which this
 document does not repeat.
@@ -226,14 +239,19 @@ recorded only while the human survives.
 
 ### Tournaments
 
-`AiTournamentTests` (category `LongRunning`, run each night by
-`.github/workflows/nightly-ai-campaigns.yml`) plays matches of six computer
-players. Power, Acceptance and Dominance run to their time limit, and Kill 'Em
-All, Big 40, Siege, Eliminate, Big Man and Armageddon run for 20 and 40 turns at
-several seeds; Greed is played to its time limit in the fast gate by
-`HeadlessMatchRunnerTests`. Each tournament match must replay from its journal
-to the same state hash, save and load to the same hash and stay within its
-phase-boundary limit; each objective campaign must also resolve a hire and make
-progress toward its scenario's objective, and one Big Man campaign must end on
-its objective. These matches are not compared with the original: they guard the
-rebuild against crashes, nondeterminism and stalled matches.
+`AiTournamentTests` (category `LongRunning`, run by
+`.github/workflows/nightly-ai-campaigns.yml` each night after a day with a
+commit) plays matches of six computer players. Power, Acceptance and Dominance
+run to their time limit, and Kill 'Em All, Big 40, Siege, Eliminate, Big Man
+and Armageddon run for 20 and 40 turns at several seeds; Greed is played to its
+time limit in the fast gate by `HeadlessMatchRunnerTests`. The timed matches
+and the 20-turn matches are each played twice and must reach the same state
+hash. Each tournament match must replay from its journal to the same state
+hash, save and load to the same hash and stay within its phase-boundary limit;
+each 40-turn campaign must also resolve a hire, hold more sectors than the six
+it started with and make progress toward its scenario's objective, and one Big
+Man campaign must end on its objective. In Kill 'Em All the progress check asks
+for an attack only while some computer player is hostile to another, so a
+match in which every attitude stays neutral passes without one. These matches
+are not compared with the original: they guard the rebuild against crashes,
+nondeterminism and stalled matches.
