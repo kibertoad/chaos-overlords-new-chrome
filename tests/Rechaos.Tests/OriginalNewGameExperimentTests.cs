@@ -134,6 +134,10 @@ namespace Rechaos.Tests;
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
 /// around the gang's sector, the centre included, which EXP-TURN-017 needs (RULE-AI-005).
+/// In EXP-TURN-010's second run, EXP-TURN-039, EXP-TURN-043 and EXP-TURN-049's first run a family-7
+/// gang outside its best research sector holds a focus equal to that sector and researches in
+/// place, and in EXP-TURN-021 and EXP-TURN-049 one goes on from the site slot a rewritten Snitch
+/// left as its previous target (RULE-AI-026, FND-AI-078).
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {

@@ -1675,6 +1675,13 @@ Whether a registry query succeeds. A value from outside the game: the result of
 `RegQueryValueExA` for the loader's `index`th value, once at startup
 [FND-OPTIONS-001].
 
+## research_continuation
+
+`research_continuation(player, idx)` plans Research of the item the gang's
+previous target byte names while research on it remains, or of the first item
+of the category after that item's type, and stores the item in the focus. A
+function, defined by RULE-AI-026.
+
 ## research_first
 
 `research_first(player, idx, want)` gives the first item of a type, or of the

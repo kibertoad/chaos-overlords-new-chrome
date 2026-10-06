@@ -279,6 +279,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AI-075](../findings/FND-AI-075.md) | builds, locations |
 | [FND-AI-076](../findings/FND-AI-076.md) | builds, locations |
 | [FND-AI-077](../findings/FND-AI-077.md) | builds, locations |
+| [FND-AI-078](../findings/FND-AI-078.md) | builds, locations |
+| [FND-AI-079](../findings/FND-AI-079.md) | builds, locations |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | builds, locations |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | builds, locations |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | builds, locations |
@@ -1448,6 +1450,7 @@ None.
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 | [RULE-AI-015](../rules/RULE-AI-015.md) | evidence |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | evidence |
@@ -1580,6 +1583,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
 
 ## EXP-TURN-022
 
@@ -1758,6 +1762,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | body, evidence |
@@ -1810,6 +1815,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | body, evidence |
 
 ## EXP-TURN-044
@@ -1870,6 +1876,7 @@ None.
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 
 ## EXP-TURN-050
@@ -2632,6 +2639,7 @@ None.
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | body |
 | [FND-AI-024](../findings/FND-AI-024.md) | body |
+| [FND-AI-079](../findings/FND-AI-079.md) | body |
 | [FND-ATTACK-006](../findings/FND-ATTACK-006.md) | body |
 | [FND-COMBAT-004](../findings/FND-COMBAT-004.md) | body |
 | [FND-EQUIP-008](../findings/FND-EQUIP-008.md) | body |
@@ -2890,6 +2898,7 @@ None.
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | body |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | body |
 | [FND-AI-066](../findings/FND-AI-066.md) | body |
+| [FND-AI-079](../findings/FND-AI-079.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: planning_records | glossary |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | related |
@@ -2926,6 +2935,8 @@ None.
 | [FND-AI-074](../findings/FND-AI-074.md) | body |
 | [FND-AI-075](../findings/FND-AI-075.md) | body |
 | [FND-AI-076](../findings/FND-AI-076.md) | body |
+| [FND-AI-078](../findings/FND-AI-078.md) | body |
+| [FND-AI-079](../findings/FND-AI-079.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: planning_records | glossary |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -3157,7 +3168,7 @@ None.
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | body, evidence |
-| [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | evidence |
 
 ## FND-AI-016
@@ -3203,6 +3214,8 @@ None.
 | [FND-AI-045](../findings/FND-AI-045.md) | body |
 | [FND-AI-046](../findings/FND-AI-046.md) | body |
 | [FND-AI-074](../findings/FND-AI-074.md) | body |
+| [FND-AI-078](../findings/FND-AI-078.md) | body |
+| [FND-AI-079](../findings/FND-AI-079.md) | body |
 | [FND-STATE-006](../findings/FND-STATE-006.md) | body |
 | glossary: planning_records | glossary |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -3377,6 +3390,7 @@ None.
 | [FND-AI-015](../findings/FND-AI-015.md) | body |
 | [FND-AI-045](../findings/FND-AI-045.md) | body |
 | [FND-AI-074](../findings/FND-AI-074.md) | body |
+| [FND-AI-078](../findings/FND-AI-078.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
 
@@ -3486,6 +3500,7 @@ None.
 | [FND-AI-074](../findings/FND-AI-074.md) | body |
 | [FND-AI-075](../findings/FND-AI-075.md) | body |
 | [FND-AI-076](../findings/FND-AI-076.md) | body |
+| [FND-AI-078](../findings/FND-AI-078.md) | body |
 | [FND-STATE-003](../findings/FND-STATE-003.md) | body |
 | glossary: active_gang_count | glossary |
 | glossary: aux_records | glossary |
@@ -3780,6 +3795,8 @@ None.
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | evidence |
 | [FND-AI-075](../findings/FND-AI-075.md) | body |
 | [FND-AI-076](../findings/FND-AI-076.md) | body |
+| [FND-AI-078](../findings/FND-AI-078.md) | body |
+| [FND-AI-079](../findings/FND-AI-079.md) | body |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | body, evidence |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
@@ -3808,6 +3825,18 @@ None.
 | [EXP-TURN-055](../experiments/EXP-TURN-055.md) | body |
 | [EXP-TURN-056](../experiments/EXP-TURN-056.md) | body |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
+
+## FND-AI-078
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body, evidence |
+
+## FND-AI-079
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
 
 ## FND-ASSET-001
 
@@ -7911,6 +7940,7 @@ None.
 | [RULE-AI-003](../rules/RULE-AI-003.md) | body |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | body, related |
 | [RULE-AI-013](../rules/RULE-AI-013.md) | body |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body |
 | [RULE-AI-027](../rules/RULE-AI-027.md) | body, related |
 | [RULE-AI-031](../rules/RULE-AI-031.md) | body |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
@@ -7944,6 +7974,7 @@ None.
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | body, related |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | body, related |
+| [RULE-AI-030](../rules/RULE-AI-030.md) | body, related |
 
 ## RULE-AI-004
 
@@ -7955,6 +7986,7 @@ None.
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | body |
 | [EXP-TURN-048](../experiments/EXP-TURN-048.md) | body |
 | [FND-AI-069](../findings/FND-AI-069.md) | body |
+| [FND-AI-079](../findings/FND-AI-079.md) | body |
 | glossary: crackdown_in_force | glossary |
 | glossary: draw_once | glossary |
 | glossary: draw_target | glossary |
@@ -8038,6 +8070,7 @@ None.
 | [FND-AI-067](../findings/FND-AI-067.md) | body |
 | [FND-AI-070](../findings/FND-AI-070.md) | body |
 | [FND-AI-071](../findings/FND-AI-071.md) | body |
+| [FND-AI-078](../findings/FND-AI-078.md) | body |
 | glossary: block_leader_sector | glossary |
 | glossary: encoded_sector | glossary |
 | glossary: human_count | glossary |
@@ -8059,7 +8092,7 @@ None.
 | [RULE-AI-022](../rules/RULE-AI-022.md) | related |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | related |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | related |
-| [RULE-AI-026](../rules/RULE-AI-026.md) | related |
+| [RULE-AI-026](../rules/RULE-AI-026.md) | body, related |
 | [RULE-AI-027](../rules/RULE-AI-027.md) | related |
 | [RULE-AI-028](../rules/RULE-AI-028.md) | body, related |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | body, related |
@@ -8289,6 +8322,7 @@ None.
 | [EXP-TURN-073](../experiments/EXP-TURN-073.md) | body |
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
 | [EXP-TURN-088](../experiments/EXP-TURN-088.md) | body |
+| glossary: research_continuation | glossary |
 | glossary: research_first | glossary |
 | glossary: research_score | glossary |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |

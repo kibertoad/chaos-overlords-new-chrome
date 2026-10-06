@@ -86,7 +86,10 @@ internal static class OriginalAiFamilySevenRules
         int previousItemId)
     {
         ValidateGang(state, player, gang);
-        if (IsPendingResearch(state, player, previousItemId)) return previousItemId;
+        // FND-AI-078: the research byte of the previous target, item 0 included, tested against 0.
+        if (MatchState.IsActualItem(state.Definitions, previousItemId)
+            && player.RemainingResearch(state.Definitions, checked((short)previousItemId)) != 0)
+            return previousItemId;
 
         var previousType = previousItemId is >= 0
                 && previousItemId < state.Definitions.Items.Count

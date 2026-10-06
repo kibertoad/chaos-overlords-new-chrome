@@ -421,10 +421,11 @@ explicit M6 gap rather than an unmeasured claim.
    tuples, active-slot rollover, duplicate cleanup, dispatch/anchor ordering,
    reset/reuse behavior and first-plan flags.
    All three complete action tuples are authoritative and persisted. Their two
-   target bytes retain the original command-dependent encodings: player/roster
-   slot for Attack, item for Equip/Research, local site slot for Influence,
-   sector for Move, equipment mask plus friendly roster slot for Give, and
-   equipment mask for Sell. The six first-planning flags are now
+   target bytes hold what the original's `plan` stores: player and roster slot
+   for Attack, item for Equip and Research, local site slot for Influence and
+   sector for Move; every other action stores none and keeps the bytes an
+   earlier write left (RULE-AI-004, FND-AI-074). No handler plans a Bribe, Give
+   or Sell (FND-AI-079). The six first-planning flags are now
    authoritative, hashed, and persisted: a player's first preparation resets
    all 81 records and skips action rollover; later preparations roll active
    records normally. Resolved hires reuse the first inactive slot and reset its
