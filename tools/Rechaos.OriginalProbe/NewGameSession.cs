@@ -250,7 +250,8 @@ internal sealed record ProbeTrace(
     List<CloseRecord>? Closes = null,
     List<SavedWriteRecord>? SavedWrites = null,
     List<KeyEventRecord>? KeyEvents = null,
-    List<NameEntryRecord>? NameEntries = null);
+    List<NameEntryRecord>? NameEntries = null,
+    List<NameShotRecord>? NameShots = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -933,7 +934,8 @@ internal sealed partial class NewGameSession(
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
             settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
             _savedWrites.Count == 0 ? null : _savedWrites,
-            _keyEvents.Count == 0 ? null : _keyEvents, _nameEntries.Count == 0 ? null : _nameEntries);
+            _keyEvents.Count == 0 ? null : _keyEvents, _nameEntries.Count == 0 ? null : _nameEntries,
+            _nameShots.Count == 0 ? null : _nameShots);
     }
 
     private static void Click(IntPtr window, int x, int y)

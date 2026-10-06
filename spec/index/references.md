@@ -179,6 +179,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | builds |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | builds |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | builds |
+| [EXP-UI-051](../experiments/EXP-UI-051.md) | builds |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
@@ -1313,6 +1314,7 @@ None.
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | body |
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | body |
+| [EXP-UI-051](../experiments/EXP-UI-051.md) | body |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | body |
 
 ## EXP-TURN-002
@@ -2503,6 +2505,13 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
+
+## EXP-UI-051
+
+| Cited by | In |
+|---|---|
+| [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | evidence |
+| [SCR-SETUP-003](../screens/SCR-SETUP-003.md) | body, evidence |
 
 ## EXP-VIDEO-001
 
@@ -6648,6 +6657,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
+| [EXP-UI-051](../experiments/EXP-UI-051.md) | body |
 | [FND-SETUP-006](../findings/FND-SETUP-006.md) | body |
 | [FND-SETUP-014](../findings/FND-SETUP-014.md) | body |
 | [FND-SETUP-017](../findings/FND-SETUP-017.md) | body |
@@ -7482,6 +7492,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | body |
+| [EXP-UI-051](../experiments/EXP-UI-051.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
@@ -7877,6 +7888,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-051](../experiments/EXP-UI-051.md) | body |
 | [SCR-SETUP-003](../screens/SCR-SETUP-003.md) | body, evidence |
 | [SRC-WIN32-DIALOG](../sources/SRC-WIN32-DIALOG.md) | body |
 | [SRC-WIN32-EDIT](../sources/SRC-WIN32-EDIT.md) | body |
@@ -10027,6 +10039,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-051](../experiments/EXP-UI-051.md) | body |
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | body, related |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, related |
 | [SRC-WIN32-CARETS](../sources/SRC-WIN32-CARETS.md) | body |

@@ -73,6 +73,19 @@ public static class SetupPlayerCardArtLayout
             OriginalFontLayout.CellWidth * count, OriginalFontLayout.GlyphHeight + 2);
     }
 
+    /// <summary>
+    /// DEV-SETUP-003: the row the name editor draws in on slot <paramref name="player"/>'s card,
+    /// ten cells of a name centred as <see cref="NameStart"/> centres one, with the caret's column
+    /// on either side and its row above and below.
+    /// </summary>
+    public static Rectangle NameRow(int player)
+    {
+        var start = NameStart(player, LocalSetupPolicy.MaximumPlayerNameCharacters);
+        return new Rectangle(start.X - 1, start.Y - 1,
+            OriginalFontLayout.CellWidth * LocalSetupPolicy.MaximumPlayerNameCharacters + 2,
+            OriginalFontLayout.GlyphHeight + 2);
+    }
+
     public static Rectangle ArrowOverlaySource => new(220, 138, 64, 62);
 
     public static Rectangle PortraitDestination(int player)

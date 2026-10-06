@@ -210,6 +210,18 @@ internal sealed class StateExtractor
                 ["slot"] = entry["Slot"]!.GetValue<int>(),
                 ["name"] = Integers(entry["Name"]),
             }).ToArray());
+        // SCR-SETUP-003: the name dialog's edit control at each {SHOT} of a name step, its text and
+        // selection, and the dialog's and the edit control's rectangles in drawing-area pixels.
+        if (trace["NameShots"] is JsonArray nameShots)
+            run["name_shots"] = new JsonArray(nameShots.Select(shot => (JsonNode)new JsonObject
+            {
+                ["entry"] = shot!["Entry"]!.GetValue<int>(),
+                ["shot"] = shot["Shot"]!.GetValue<int>(),
+                ["text"] = shot["Text"]!.GetValue<string>(),
+                ["selection"] = new JsonArray(shot["SelectionStart"]!.GetValue<int>(), shot["SelectionEnd"]!.GetValue<int>()),
+                ["dialog_rect"] = Integers(shot["DialogRect"]),
+                ["edit_rect"] = Integers(shot["EditRect"]),
+            }).ToArray());
         // RULE-TURN-005, SCR-UI-004: each order step after the dump, the popup it opened with its
         // items' commands and greyed states, the view, the card slots and the active player's orders.
         if (trace["OrderSteps"] is JsonArray orderSteps)

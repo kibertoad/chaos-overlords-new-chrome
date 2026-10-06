@@ -814,7 +814,15 @@ Two steps type keys, from tokens `{VKhh}` (a press and release of virtual key
 opens the name editor (dialog 139, FND-UI-064), posts the keys to its edit
 control with Shift set in the keyboard state the probe shares with the game's
 thread while `{SHIFT}` holds, presses OK and keeps slot 0's 12-byte name
-record; `extract` lists the records as `name_entries`. The order step
+record; `extract` lists the records as `name_entries`. A name step also takes
+`{PRESSxx}`, a left press and release on the edit control at client x `xx` on
+its middle row, and `{SHOT}`, which reads the control's text and selection and
+for 1.2 seconds copies the game window and the dialog window, each from its own
+device context, keeping every different picture as `name-<step>-<shot>-<n>.bmp`
+with the time it showed; `extract` lists the readings as `name_shots`. When a
+name step's tokens start with `{SHOT}`, that shot also copies the game window
+alone as the step's copy, which leaves the dialog out and is compared at
+SCR-SETUP-003. The order step
 `keys:TOKENS` posts the keys to the game window and makes the window
 procedure's Shift test at `0x0045CA62` report Shift held or not as the tokens
 say, since a posted message cannot hold the key; it keeps the type, character

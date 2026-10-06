@@ -24,7 +24,9 @@ internal sealed partial class NewGameSession
     private bool _keyEventsArmed;
 
     // keys:TOKENS and name:TOKENS take {VKhh} for a press of virtual key hh, {CHARhh} for the
-    // character hh posted as WM_CHAR, {SHIFT} and {PLAIN} for Shift held and released.
+    // character hh posted as WM_CHAR, {SHIFT} and {PLAIN} for Shift held and released; name:TOKENS
+    // also takes {SHOT} for copies of the open dialog and {PRESSxx} for a press on the edit control
+    // at client x hh (NewGameSession.NameDialog).
     internal static IEnumerable<(string Kind, int Value)> KeyTokens(string text)
     {
         for (var index = 0; index < text.Length;)
@@ -37,6 +39,9 @@ internal sealed partial class NewGameSession
             {
                 "SHIFT" => ("shift", 1),
                 "PLAIN" => ("shift", 0),
+                "SHOT" => ("shot", 0),
+                _ when token.StartsWith("PRESS", StringComparison.Ordinal) =>
+                    ("press", Convert.ToInt32(token[5..], 16)),
                 _ when token.StartsWith("VK", StringComparison.Ordinal) =>
                     ("vk", Convert.ToInt32(token[2..], 16)),
                 _ when token.StartsWith("CHAR", StringComparison.Ordinal) =>
@@ -98,7 +103,7 @@ internal sealed partial class NewGameSession
     // dialog's own message loop translates them, so Shift is set in the keyboard state the probe
     // shares with the game's thread for the time of the keys. OK closes the dialog, and the name
     // record of slot 0 is read.
-    private void EnterName(IntPtr window, string tokens)
+    private void EnterName(IntPtr window, string tokens, int step = -1)
     {
         _process.Pump(TimeSpan.FromSeconds(1));
         Click(window, OriginalAddresses.NameBandX, OriginalAddresses.NameBandY);
@@ -112,6 +117,7 @@ internal sealed partial class NewGameSession
         var edit = Native.GetDlgItem(dialog, OriginalAddresses.NameEditControl);
         var thread = Native.GetWindowThreadProcessId(dialog, out _);
         var attached = false;
+        var shots = 0;
         try
         {
             foreach (var (kind, value) in KeyTokens(tokens))
@@ -137,6 +143,19 @@ internal sealed partial class NewGameSession
                     case "char":
                         Native.PostMessageW(edit, Native.WmChar, value, 1);
                         _process.Pump(TimeSpan.FromSeconds(0.12));
+                        break;
+                    case "press":
+                        PressEdit(edit, value);
+                        break;
+                    case "shot":
+                        _process.Pump(TimeSpan.FromSeconds(0.3));
+                        // The game window's own copy holds what the game drew under the dialog; the
+                        // first shot of a step, before any key, is kept as the step's copy.
+                        if (shots == 0 && tokens.StartsWith("{SHOT}", StringComparison.Ordinal) && step >= 0
+                            && ClientAreaHoldsDrawingArea(window)
+                            && CaptureDrawingArea(window, $"setup-step-{step}", CaptureFixture.Width, CaptureFixture.Height))
+                            _notes.Add(CaptureFixture.SetupStepNote(step));
+                        CaptureNameDialog(window, dialog, edit, shots++);
                         break;
                 }
             }

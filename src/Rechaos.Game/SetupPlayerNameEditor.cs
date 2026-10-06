@@ -62,13 +62,14 @@ public sealed class SetupPlayerNameEditor
 
     /// <summary>
     /// A typed character replaces the selection, or goes in at the insertion point. ES_UPPERCASE
-    /// turns a lower-case letter into a capital (SRC-WIN32-EDIT). Control characters are not
-    /// text, and nothing goes in once the text is at the limit.
+    /// turns a lower-case letter into a capital (SRC-WIN32-EDIT), accented Latin-1 letters
+    /// included (EXP-UI-051). Control characters are not text, and nothing goes in once the text
+    /// is at the limit.
     /// </summary>
     public bool Type(char character)
     {
         if (character < ' ' || character == (char)127) return false;
-        if (character is >= 'a' and <= 'z') character = (char)(character - ('a' - 'A'));
+        character = UpperCase(character);
         if (_text.Length - (SelectionEnd - SelectionStart) >= TextLimit) return false;
         var at = SelectionStart;
         _text = string.Concat(_text.AsSpan(0, at), [character], _text.AsSpan(SelectionEnd));
@@ -151,6 +152,14 @@ public sealed class SetupPlayerNameEditor
         ArgumentOutOfRangeException.ThrowIfLessThan(cellWidth, 1);
         var cells = (int)Math.Round(offset / (double)cellWidth, MidpointRounding.AwayFromZero);
         return Math.Clamp(FirstVisible + cells, FirstVisible, FirstVisible + VisibleText.Length);
+    }
+
+    // A letter whose capital lies outside Latin-1, such as y with a diaeresis, is kept as typed:
+    // no run records what the control makes of it.
+    private static char UpperCase(char character)
+    {
+        var capital = char.ToUpperInvariant(character);
+        return capital <= (char)0xFF ? capital : character;
     }
 
     private bool DeleteSelection()
