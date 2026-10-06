@@ -179,6 +179,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | builds |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | builds |
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | builds |
+| [EXP-UI-027](../experiments/EXP-UI-027.md) | builds |
+| [EXP-UI-028](../experiments/EXP-UI-028.md) | builds |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
@@ -2295,11 +2297,17 @@ None.
 | [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | body |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
+| [EXP-UI-027](../experiments/EXP-UI-027.md) | body |
+| [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
 
 ## EXP-UI-002
 
-None.
+| Cited by | In |
+|---|---|
+| [EXP-UI-027](../experiments/EXP-UI-027.md) | body |
+| [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 
 ## EXP-UI-003
 
@@ -2510,6 +2518,18 @@ None.
 |---|---|
 | glossary: match_saved | glossary |
 | [RULE-UI-015](../rules/RULE-UI-015.md) | evidence |
+
+## EXP-UI-027
+
+| Cited by | In |
+|---|---|
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
+
+## EXP-UI-028
+
+| Cited by | In |
+|---|---|
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 
 ## EXP-VIDEO-001
 
@@ -7711,6 +7731,8 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
+| [EXP-UI-027](../experiments/EXP-UI-027.md) | body |
+| [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
 | [FND-UI-059](../findings/FND-UI-059.md) | body |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
@@ -7753,6 +7775,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 
 ## FND-UI-046
@@ -9635,6 +9658,8 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
+| [EXP-UI-027](../experiments/EXP-UI-027.md) | body |
+| [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
 | glossary: modifier_cells | glossary |
 | glossary: number_cells | glossary |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | body |
