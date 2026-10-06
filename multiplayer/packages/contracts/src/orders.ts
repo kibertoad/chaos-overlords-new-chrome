@@ -11,13 +11,11 @@ import {
   nullable,
   number,
   pipe,
-  regex,
   strictObject,
-  string,
   variant,
 } from 'valibot'
 import { LIMITS } from './limits'
-import { notNegativeZero, slotSchema } from './primitives'
+import { comlinkEnvelopeSchema, notNegativeZero, slotSchema } from './primitives'
 
 /**
  * The order document: what one player intends to do in a turn, in the vocabulary the game core
@@ -32,7 +30,7 @@ import { notNegativeZero, slotSchema } from './primitives'
  *
  * - the op must be one of the seven player intents the replay recorder accepts over a turn
  *   (`MatchReplayRecorder.Submit`/`Cancel`/`QueueHire`/`SnubHireOffer`/`TryDismissNotification`/
- *   `SendComlinkMessage`/`MarkComlinkRead`);
+ *   `SendSealedComlinkMessage`/`MarkComlinkRead`);
  *   the phase transitions and the `Prepare*` steps are driven by the turn structure on every
  *   client and are refused if a client tries to send one,
  * - every field must exist, have the right type, and fit the C# type and capacity it indexes
@@ -136,17 +134,15 @@ export const commandTargetSchema = variant('kind', [
 ])
 
 /**
- * The text of a Comlink message: 1 to 160 characters from space to `Z`, the characters the Send
- * panel can type (RULE-COMLINK-006). Trailing spaces are stripped by the game before it sends, and a
- * message of spaces only is never sent (RULE-COMLINK-003), but neither is refused here: the core
- * decides what such a message does, the same way on every client.
+ * One recipient's copy of a sealed Comlink message: the slot it is for and the envelope only that
+ * seat's client can open. The text never crosses the wire in the clear, so neither the server nor
+ * another seat can read it; what the text may be (RULE-COMLINK-006) is checked by the sender's client
+ * before it seals and by the recipient's after it opens.
  */
-export const comlinkTextSchema = pipe(
-  string(),
-  minLength(1),
-  maxLength(160),
-  regex(/^[\x20-\x5A]*$/, 'a Comlink message holds only the characters space to Z'),
-)
+export const comlinkLetterSchema = strictObject({
+  recipient: slotSchema,
+  envelope: comlinkEnvelopeSchema,
+})
 
 /**
  * A Comlink message's sequence number in its recipient's inbox. It counts every message the inbox
@@ -216,14 +212,14 @@ export const dismissNotificationOpSchema = strictObject({
 })
 
 /**
- * `MatchState.SendComlinkMessage(sender, recipients, text)`: RULE-COMLINK-003, applied when the turn
- * seals. Whether each recipient may take the message (RULE-COMLINK-002) is the core's judgement.
+ * `MatchState.SendSealedComlinkMessage(sender, letters)`: RULE-COMLINK-003, applied when the turn
+ * seals, with one letter per recipient. Whether each recipient may take the message
+ * (RULE-COMLINK-002), and whether a recipient is named twice, is the core's judgement.
  */
 export const sendComlinkMessageOpSchema = strictObject({
   op: literal('sendComlinkMessage'),
   player: slotSchema,
-  recipients: pipe(array(slotSchema), minLength(1), maxLength(5)),
-  text: comlinkTextSchema,
+  letters: pipe(array(comlinkLetterSchema), minLength(1), maxLength(5)),
 })
 
 /** `MatchState.MarkComlinkRead(player, sequence)`: RULE-COMLINK-005, applied when the turn seals. */

@@ -81,6 +81,7 @@ describe.skipIf(!url)('postgres', () => {
       tokenHash: `${id}-token-${slot}`,
       status: 'active',
       joinedAt: now,
+      comlinkKey: null,
     })
     expect(await storage.matches.create(match)).toBe(true)
     for (let slot = 0; slot < playerCount; slot += 1) {

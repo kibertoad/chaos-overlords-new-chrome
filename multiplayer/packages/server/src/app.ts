@@ -103,7 +103,7 @@ function apiRoutes(): Hono<AppEnv> {
   // the bare path would authenticate (a token lookup plus a match read) and charge the member's
   // rate limit twice on every request to it.
   api.use('/matches/:matchId/*', bearerAuth, memberRateLimited())
-  // The two member routes with a JSON body that had no cap of their own. A member token costs one
+  // The member routes with a JSON body that had no cap of their own. A member token costs one
   // unauthenticated `POST /matches`, so without these a stranger could make the process buffer and
   // parse a body of any size, a few hundred megabytes at a time, inside the same process that is
   // sealing every other match's turns.
@@ -113,6 +113,7 @@ function apiRoutes(): Hono<AppEnv> {
   )
   api.use('/matches/:matchId/profile', bodyLimit({ maxSize: SMALL_BODY }))
   api.use('/matches/:matchId/chat', bodyLimit({ maxSize: SMALL_BODY }))
+  api.use('/matches/:matchId/comlink-key', bodyLimit({ maxSize: SMALL_BODY }))
   api.use('/matches/:matchId/players/:playerId/takeover-vote', bodyLimit({ maxSize: SMALL_BODY }))
   api.use('/matches/:matchId/turns/:turn/orders', bodyLimit({ maxSize: LIMITS.ordersBytes }))
   api.use('/matches/:matchId/turns/:turn/report', bodyLimit({ maxSize: SMALL_BODY }))

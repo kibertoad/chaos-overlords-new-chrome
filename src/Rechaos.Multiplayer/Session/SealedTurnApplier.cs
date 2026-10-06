@@ -162,7 +162,7 @@ public static class SealedTurnApplier
                 // RULE-COMLINK-003 and RULE-COMLINK-005, in the seat's place in slot order and so
                 // before its FinishCommand, which drops the read messages (RULE-COMLINK-007).
                 case DecodedOrderOp.SendComlinkMessage send:
-                    replay.SendComlinkMessage(player, send.Recipients, send.Text);
+                    replay.SendSealedComlinkMessage(player, send.Letters);
                     break;
                 case DecodedOrderOp.MarkComlinkRead read:
                     replay.MarkComlinkRead(player, read.Sequence);

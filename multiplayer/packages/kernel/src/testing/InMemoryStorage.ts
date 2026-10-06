@@ -240,6 +240,12 @@ export class InMemoryStorage implements MultiplayerStorage {
       player.portraitId = profile.portraitId
       return true
     },
+    setComlinkKey: async (playerId, comlinkKey) => {
+      const player = this.playerRows.get(playerId)
+      if (!player || player.comlinkKey === comlinkKey) return false
+      player.comlinkKey = comlinkKey
+      return true
+    },
     revokeToken: async (playerId) => {
       const player = this.playerRows.get(playerId)
       if (player) player.tokenHash = null

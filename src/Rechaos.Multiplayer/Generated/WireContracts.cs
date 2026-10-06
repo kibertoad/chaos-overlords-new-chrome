@@ -27,6 +27,7 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonDerivedType(typeof(MatchPlayerTakenOverEvent), "match.playerTakenOver")]
 [JsonDerivedType(typeof(MatchPlayerReturnedEvent), "match.playerReturned")]
 [JsonDerivedType(typeof(MatchLatePlayerJoinedEvent), "match.latePlayerJoined")]
+[JsonDerivedType(typeof(MatchComlinkKeyPublishedEvent), "match.comlinkKeyPublished")]
 [JsonDerivedType(typeof(TurnOpenedEvent), "turn.opened")]
 [JsonDerivedType(typeof(TurnDeadlineExtendedEvent), "turn.deadlineExtended")]
 [JsonDerivedType(typeof(TurnReadinessEvent), "turn.readiness")]
@@ -210,6 +211,18 @@ public sealed record MatchLatePlayerJoinedEvent(
     [property: JsonPropertyName("payload")] MatchLatePlayerJoinedEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "match.latePlayerJoined");
 
+public sealed record MatchComlinkKeyPublishedEventPayload(
+    [property: JsonPropertyName("playerId")] string PlayerId,
+    [property: JsonPropertyName("comlinkKey")] string ComlinkKey
+);
+
+public sealed record MatchComlinkKeyPublishedEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] MatchComlinkKeyPublishedEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "match.comlinkKeyPublished");
+
 public sealed record TurnOpenedEventPayload(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("deadlineAt")] string? DeadlineAt
@@ -376,8 +389,7 @@ public sealed record DismissNotificationOp(
 
 public sealed record SendComlinkMessageOp(
     int Player,
-    [property: JsonPropertyName("recipients")] IReadOnlyList<int> Recipients,
-    [property: JsonPropertyName("text")] string Text
+    [property: JsonPropertyName("letters")] IReadOnlyList<ComlinkLetter> Letters
 ) : OrderOp(Player, "sendComlinkMessage");
 
 public sealed record MarkComlinkReadOp(
@@ -505,6 +517,11 @@ public sealed record EventPage(
     [property: JsonPropertyName("events")] IReadOnlyList<MatchEvent> Events
 );
 
+public sealed record ComlinkLetter(
+    [property: JsonPropertyName("recipient")] int Recipient,
+    [property: JsonPropertyName("envelope")] string Envelope
+);
+
 public sealed record OrderDocument(
     [property: JsonPropertyName("schemaVersion")] int SchemaVersion,
     [property: JsonPropertyName("ops")] IReadOnlyList<OrderOp> Ops
@@ -549,6 +566,10 @@ public sealed record UpdatePlayerProfileRequest(
 
 public sealed record PostChatMessageRequest(
     [property: JsonPropertyName("text")] string Text
+);
+
+public sealed record PublishComlinkKeyRequest(
+    [property: JsonPropertyName("publicKey")] string PublicKey
 );
 
 public sealed record SubmitOrdersRequest(
@@ -641,7 +662,8 @@ public sealed record PlayerView(
     [property: JsonPropertyName("displayName")] string DisplayName,
     [property: JsonPropertyName("portraitId")] int PortraitId,
     [property: JsonPropertyName("status")] PlayerStatus Status,
-    [property: JsonPropertyName("isHost")] bool IsHost
+    [property: JsonPropertyName("isHost")] bool IsHost,
+    [property: JsonPropertyName("comlinkKey")] string? ComlinkKey
 );
 
 public sealed record TurnView(

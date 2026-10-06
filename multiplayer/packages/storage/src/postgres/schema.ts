@@ -65,6 +65,8 @@ export const players = pgTable(
     tokenHash: text('token_hash').unique(),
     status: text('status').notNull(),
     joinedAt: stamp('joined_at').notNull(),
+    /** The player's published Comlink public key; null until their client publishes one. */
+    comlinkKey: text('comlink_key'),
   },
   (table) => [index('players_match_idx').on(table.matchId)],
 )

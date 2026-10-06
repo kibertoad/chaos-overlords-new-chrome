@@ -301,6 +301,7 @@ function playerValues(player: Player) {
     tokenHash: sql`${player.tokenHash}`.as('token_hash'),
     status: sql`${player.status}`.as('status'),
     joinedAt: sql`${player.joinedAt}`.as('joined_at'),
+    comlinkKey: sql`${player.comlinkKey}`.as('comlink_key'),
   }
 }
 
@@ -414,6 +415,20 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
         .update(players)
         .set({ displayName: profile.displayName, portraitId: profile.portraitId })
         .where(and(eq(players.id, playerId), eq(players.status, 'active'), inLobby))
+        .returning({ id: players.id })
+      return rows.length === 1
+    },
+    /** Writes only a key that differs, so republishing the stored key changes nothing. */
+    async setComlinkKey(playerId, comlinkKey) {
+      const rows = await db
+        .update(players)
+        .set({ comlinkKey })
+        .where(
+          and(
+            eq(players.id, playerId),
+            or(isNull(players.comlinkKey), ne(players.comlinkKey, comlinkKey)),
+          ),
+        )
         .returning({ id: players.id })
       return rows.length === 1
     },

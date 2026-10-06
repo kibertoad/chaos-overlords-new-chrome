@@ -26,6 +26,9 @@ const submitCommand = {
   quaternaryTarget: null,
 }
 
+/** A sealed letter's shape: 240 bytes of base64. What the bytes are is the recipient's business. */
+const envelope = 'A+/z'.repeat(80)
+
 describe('orderDocumentSchema', () => {
   it('accepts every op the game core records as a player intent', () => {
     expect(
@@ -35,7 +38,14 @@ describe('orderDocumentSchema', () => {
         { op: 'queueHire', player: 2, gangDefinitionId: 44, sectorId: 63 },
         { op: 'snubHireOffer', player: 3, gangDefinitionId: -1 },
         { op: 'dismissNotification', player: 4 },
-        { op: 'sendComlinkMessage', player: 5, recipients: [0, 2], text: 'MEET AT DAWN.' },
+        {
+          op: 'sendComlinkMessage',
+          player: 5,
+          letters: [
+            { recipient: 0, envelope },
+            { recipient: 2, envelope },
+          ],
+        },
         { op: 'markComlinkRead', player: 5, sequence: 3 },
       ]),
     ).toBe(true)
@@ -54,7 +64,7 @@ describe('orderDocumentSchema', () => {
               : op === 'snubHireOffer'
                 ? { op, player: 0, gangDefinitionId: 1 }
                 : op === 'sendComlinkMessage'
-                  ? { op, player: 0, recipients: [1], text: 'HI' }
+                  ? { op, player: 0, letters: [{ recipient: 1, envelope }] }
                   : op === 'markComlinkRead'
                     ? { op, player: 0, sequence: 0 }
                     : { op, player: 0 },
@@ -142,22 +152,32 @@ describe('orderDocumentSchema', () => {
   })
 
   /**
-   * RULE-COMLINK-006: the Send panel types space to `Z` into 160 cells, so the wire refuses any other
-   * character and any longer text before a peer has to store it.
+   * A Comlink message crosses the wire only sealed, one letter per recipient, and every letter has
+   * the same length whatever the text, so nothing the server or another seat can see depends on
+   * what was written.
    */
-  it('bounds a Comlink message to what the Send panel can type', () => {
+  it('takes a Comlink message only as sealed letters of the one envelope length', () => {
     const send = (fields: Record<string, unknown>) =>
-      accepts([{ op: 'sendComlinkMessage', player: 0, recipients: [1], text: 'HI', ...fields }])
-    expect(send({ text: 'Z'.repeat(160) })).toBe(true)
-    expect(send({ text: ' !"#,.09:?@AZ' })).toBe(true)
-    expect(send({ text: 'Z'.repeat(161) })).toBe(false)
-    expect(send({ text: '' })).toBe(false)
-    expect(send({ text: 'lower case' })).toBe(false)
-    expect(send({ text: 'TAB\tHERE' })).toBe(false)
-    expect(send({ text: 'CAF\u00c9' })).toBe(false)
-    expect(send({ recipients: [] })).toBe(false)
-    expect(send({ recipients: [1, 2, 3, 4, 5, 0] })).toBe(false)
-    expect(send({ recipients: [6] })).toBe(false)
+      accepts([
+        { op: 'sendComlinkMessage', player: 0, letters: [{ recipient: 1, envelope }], ...fields },
+      ])
+    const letters = (count: number) =>
+      Array.from({ length: count }, (_, recipient) => ({ recipient, envelope }))
+    expect(send({})).toBe(true)
+    expect(send({ letters: letters(5) })).toBe(true)
+    expect(send({ letters: [] })).toBe(false)
+    expect(send({ letters: letters(6) })).toBe(false)
+    expect(send({ letters: [{ recipient: 6, envelope }] })).toBe(false)
+    expect(send({ letters: [{ recipient: 1, envelope: envelope.slice(4) }] })).toBe(false)
+    expect(send({ letters: [{ recipient: 1, envelope: `${envelope}AAAA` }] })).toBe(false)
+    expect(send({ letters: [{ recipient: 1, envelope: `${envelope.slice(2)}==` }] })).toBe(false)
+    expect(send({ letters: [{ recipient: 1, envelope: envelope.replace('A', '-') }] })).toBe(false)
+    expect(send({ letters: [{ recipient: 1, envelope, text: 'HI' }] })).toBe(false)
+    // The clear-text shape is not an op at all.
+    expect(
+      accepts([{ op: 'sendComlinkMessage', player: 0, recipients: [1], text: 'MEET AT DAWN.' }]),
+    ).toBe(false)
+    expect(send({ text: 'MEET AT DAWN.' })).toBe(false)
     expect(accepts([{ op: 'markComlinkRead', player: 0, sequence: -1 }])).toBe(false)
     expect(accepts([{ op: 'markComlinkRead', player: 0, sequence: 1.5 }])).toBe(false)
   })
@@ -194,7 +214,7 @@ describe('foreignOps', () => {
       document([
         { op: 'cancelCommand', player: 1, gang: 1 },
         { op: 'dismissNotification', player: 4 },
-        { op: 'sendComlinkMessage', player: 3, recipients: [1], text: 'I AM PLAYER ONE' },
+        { op: 'sendComlinkMessage', player: 3, letters: [{ recipient: 1, envelope }] },
         { op: 'markComlinkRead', player: 2, sequence: 0 },
       ]),
     )

@@ -85,23 +85,26 @@ public sealed class MultiplayerCanonicalJsonTests
     }
 
     /// <summary>
-    /// The golden document over the Comlink ops, pinned in the kernel's tests as well. The message
-    /// text is the only string an order carries, and a quote in it must be escaped as
-    /// <c>JSON.stringify</c> escapes it.
+    /// The golden document over the Comlink ops, pinned in the kernel's tests as well. A sealed
+    /// envelope is base64, whose <c>+</c> and <c>/</c> both writers leave unescaped.
     /// </summary>
     [Fact]
     public void ReproducesTheServersGoldenDigestOfComlinkOps()
     {
+        var first = string.Concat(Enumerable.Repeat("A+/z", 80));
+        var second = string.Concat(Enumerable.Repeat("Q0RF", 80));
         var document = new OrderDocument(1, [
-            new SendComlinkMessageOp(2, [0, 4], "MEET AT \"DAWN\", SECTOR 27."),
+            new SendComlinkMessageOp(2, [new ComlinkLetter(0, first), new ComlinkLetter(4, second)]),
             new MarkComlinkReadOp(2, 5),
         ]);
 
         Assert.Equal(
-            """{"ops":[{"op":"sendComlinkMessage","player":2,"recipients":[0,4],"text":"MEET AT \"DAWN\", SECTOR 27."},{"op":"markComlinkRead","player":2,"sequence":5}],"schemaVersion":1}""",
+            "{\"ops\":[{\"letters\":[{\"envelope\":\"" + first + "\",\"recipient\":0},{\"envelope\":\""
+            + second + "\",\"recipient\":4}],\"op\":\"sendComlinkMessage\",\"player\":2},"
+            + "{\"op\":\"markComlinkRead\",\"player\":2,\"sequence\":5}],\"schemaVersion\":1}",
             OrderDigest.CanonicalTextOf(document));
         Assert.Equal(
-            "ad6e418f5fa21054c41fbb9360ff793cd5dc6f956c0d1d5aa547ca79bc3e55ef",
+            "3721b79560548355dbd668c9c575eb9c4e00bfcdc2732684d3d1356c928967bd",
             OrderDigest.OfDocument(document));
     }
 

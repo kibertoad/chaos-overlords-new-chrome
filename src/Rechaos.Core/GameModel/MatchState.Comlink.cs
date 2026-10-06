@@ -17,6 +17,53 @@ public sealed partial class MatchState
         return validation;
     }
 
+    /// <summary>
+    /// RULE-COMLINK-003 for an online message: stores each letter's envelope in its recipient's
+    /// inbox, in recipient order, as <see cref="SendComlinkMessage"/> stores the text.
+    /// </summary>
+    /// <remarks>
+    /// The text is sealed for each recipient, so no other client can read it and the core never
+    /// does. What every client can judge, it judges the same way as for a message in the clear:
+    /// the sender, the phase, and each recipient (RULE-COMLINK-002), in the same order, with the
+    /// envelopes' shape checked where the text would be. Whether the text is blank or too long
+    /// (RULE-COMLINK-003, RULE-COMLINK-006) is the sender's client's check before it seals, and the
+    /// recipient's client's after it opens.
+    /// </remarks>
+    public ComlinkSendResult SendSealedComlinkMessage(
+        PlayerId sender,
+        IReadOnlyList<SealedComlinkLetter> letters)
+    {
+        ArgumentNullException.ThrowIfNull(letters);
+        var recipients = letters.Select(letter => letter.Recipient).ToArray();
+        var validation = ValidateComlinkSend(
+            sender,
+            recipients,
+            () => letters.All(letter => ComlinkEnvelope.IsWellFormed(letter.Envelope))
+                ? null
+                : ComlinkValidationCode.MalformedEnvelope);
+        if (!validation.Accepted) return validation;
+        foreach (var letter in letters.OrderBy(letter => letter.Recipient.Value))
+            GetComlinkInbox(letter.Recipient).ReceiveSealed(Coordinator.Turn, sender, letter.Envelope);
+        return validation;
+    }
+
+    /// <summary>
+    /// Judges a message in the clear as <see cref="SendComlinkMessage"/> would, without storing it.
+    /// </summary>
+    /// <remarks>
+    /// What an online client asks before it seals a message: the same refusal a hot-seat send would
+    /// meet, or for a blank draft the same accepted send with nobody to store it for
+    /// (RULE-COMLINK-003).
+    /// </remarks>
+    public ComlinkSendResult CheckComlinkMessage(
+        PlayerId sender,
+        IReadOnlyList<PlayerId> recipients,
+        string message)
+    {
+        ArgumentNullException.ThrowIfNull(recipients);
+        return ValidateComlinkMessage(sender, recipients, message);
+    }
+
     public bool MarkComlinkRead(PlayerId player, long sequence) =>
         GetComlinkInbox(player).MarkRead(sequence);
 
@@ -60,6 +107,30 @@ public sealed partial class MatchState
         IReadOnlyList<PlayerId> recipients,
         string message)
     {
+        var validation = ValidateComlinkSend(sender, recipients, () =>
+            // A draft of spaces only is the RULE-COMLINK-003 blank; other whitespace alone is refused.
+            message is null || !IsBlankComlinkDraft(message) && string.IsNullOrWhiteSpace(message)
+                ? ComlinkValidationCode.EmptyMessage
+                : message.Length > MatchLimits.ComlinkMessageCharacters
+                    ? ComlinkValidationCode.MessageTooLong
+                    : null);
+        // RULE-COMLINK-003: once a recipient is chosen, a blank draft is stored for no one and the
+        // send still counts as made, with nothing to report.
+        if (validation.Accepted && IsBlankComlinkDraft(message))
+            return new ComlinkSendResult(true, ComlinkValidationCode.Accepted, [], string.Empty);
+        return validation;
+    }
+
+    /// <summary>
+    /// The checks every Comlink send takes, in the order the codes are recorded in: the sender, the
+    /// phase, that there is a recipient, then <paramref name="content"/> (the text, or the
+    /// envelopes of a sealed message), then each recipient.
+    /// </summary>
+    private ComlinkSendResult ValidateComlinkSend(
+        PlayerId sender,
+        IReadOnlyList<PlayerId> recipients,
+        Func<ComlinkValidationCode?> content)
+    {
         var senderSetup = Setup.Players.SingleOrDefault(player => player.Id == sender);
         if (senderSetup is null)
             return Rejected(ComlinkValidationCode.SenderNotFound);
@@ -71,11 +142,8 @@ public sealed partial class MatchState
             return Rejected(ComlinkValidationCode.WrongPhase);
         if (recipients.Count == 0)
             return Rejected(ComlinkValidationCode.NoRecipients);
-        // A draft of spaces only is the RULE-COMLINK-003 blank; other whitespace alone is refused.
-        if (message is null || !IsBlankComlinkDraft(message) && string.IsNullOrWhiteSpace(message))
-            return Rejected(ComlinkValidationCode.EmptyMessage);
-        if (message.Length > MatchLimits.ComlinkMessageCharacters)
-            return Rejected(ComlinkValidationCode.MessageTooLong);
+        if (content() is { } refused)
+            return Rejected(refused);
         if (recipients.Distinct().Count() != recipients.Count)
             return Rejected(ComlinkValidationCode.DuplicateRecipient);
         if (recipients.Contains(sender))
@@ -91,15 +159,11 @@ public sealed partial class MatchState
             if (!IsComlinkRecipient(sender, recipient))
                 return Rejected(ComlinkValidationCode.RecipientNotActive);
         }
-        // RULE-COMLINK-003: once a recipient is chosen, a blank draft is stored for no one and the
-        // send still counts as made, with nothing to report.
-        if (IsBlankComlinkDraft(message))
-            return new ComlinkSendResult(true, ComlinkValidationCode.Accepted, [], string.Empty);
         return new ComlinkSendResult(true, ComlinkValidationCode.Accepted,
             recipients.OrderBy(player => player.Value).ToArray(),
             ComlinkValidationMessages.For(ComlinkValidationCode.Accepted));
 
-        ComlinkSendResult Rejected(ComlinkValidationCode code) =>
+        static ComlinkSendResult Rejected(ComlinkValidationCode code) =>
             new(false, code, [], ComlinkValidationMessages.For(code));
     }
 

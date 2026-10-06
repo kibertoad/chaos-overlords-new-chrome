@@ -15,6 +15,7 @@ import {
   takeoverVoteRequestSchema,
   turnReportRequestSchema,
   postChatMessageRequestSchema,
+  publishComlinkKeyRequestSchema,
   updatePlayerProfileRequestSchema,
   uploadSnapshotRequestSchema,
 } from './schemas'
@@ -161,6 +162,15 @@ export const postChatMessageContract = defineApiContract({
   requestBodySchema: postChatMessageRequestSchema,
   responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
   summary: 'Post a chat message to the lobby, announced as lobby.chatMessage.',
+})
+
+export const publishComlinkKeyContract = defineApiContract({
+  method: 'put',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/matches/${matchId}/comlink-key`,
+  requestBodySchema: publishComlinkKeyRequestSchema,
+  responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
+  summary: "Publish the caller's Comlink public key, announced as match.comlinkKeyPublished.",
 })
 
 export const leaveMatchContract = defineApiContract({
@@ -331,6 +341,7 @@ export const API_CONTRACTS = {
   updateMatchSettings: updateMatchSettingsContract,
   updatePlayerProfile: updatePlayerProfileContract,
   postChatMessage: postChatMessageContract,
+  publishComlinkKey: publishComlinkKeyContract,
   startMatch: startMatchContract,
   leaveMatch: leaveMatchContract,
   rejoinMatch: rejoinMatchContract,

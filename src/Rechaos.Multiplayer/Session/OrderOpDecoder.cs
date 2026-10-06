@@ -48,7 +48,7 @@ public static class OrderOpDecoder
             SnubHireOfferOp snub => new DecodedOrderOp.SnubHireOffer(GangDefinitionId(snub.GangDefinitionId, document)),
             DismissNotificationOp => DecodedOrderOp.DismissNotification.Instance,
             SendComlinkMessageOp send => new DecodedOrderOp.SendComlinkMessage(
-                Recipients(send.Recipients, document), ComlinkText(send.Text, document)),
+                Letters(send.Letters, document)),
             MarkComlinkReadOp read => read.Sequence >= 0
                 ? new DecodedOrderOp.MarkComlinkRead(read.Sequence)
                 : throw NotAnIdentifier(document, "Comlink sequence", read.Sequence, "message"),
@@ -68,43 +68,36 @@ public static class OrderOpDecoder
         submit.QuaternaryTarget is { } quaternary ? Target(quaternary, document, "quaternaryTarget") : null);
 
     /// <summary>
-    /// The seats a Comlink message is addressed to. Whether each may take it (RULE-COMLINK-002) is
-    /// the core's judgement; a seat the board cannot have is not.
+    /// The letters of a sealed Comlink message: a seat the board can have, and an envelope of the one
+    /// shape, for each. Whether each seat may take the message, or is named twice
+    /// (RULE-COMLINK-002), is the core's judgement; a seat the board cannot have is not.
     /// </summary>
-    private static PlayerId[] Recipients(IReadOnlyList<int>? recipients, string document)
+    private static SealedComlinkLetter[] Letters(IReadOnlyList<ComlinkLetter>? letters, string document)
     {
-        if (recipients is null || recipients.Count is 0 or >= MatchLimits.PlayerCount)
+        if (letters is null || letters.Count is 0 or >= MatchLimits.PlayerCount)
         {
             throw new MultiplayerProtocolException(
-                $"{document} addresses a Comlink message to {recipients?.Count ?? 0} players, "
+                $"{document} addresses a Comlink message to {letters?.Count ?? 0} players, "
                 + $"not 1 to {MatchLimits.PlayerCount - 1}");
         }
-        var seats = new PlayerId[recipients.Count];
-        for (var index = 0; index < seats.Length; index++)
+        var decoded = new SealedComlinkLetter[letters.Count];
+        for (var index = 0; index < decoded.Length; index++)
         {
-            var slot = recipients[index];
-            seats[index] = slot is >= 0 and < MatchLimits.PlayerCount
-                ? new PlayerId(slot)
-                : throw NotAnIdentifier(document, "Comlink recipient", slot, "player");
+            var letter = letters[index]
+                ?? throw new MultiplayerProtocolException($"{document} carries an empty Comlink letter");
+            var slot = letter.Recipient;
+            if (slot is < 0 or >= MatchLimits.PlayerCount)
+                throw NotAnIdentifier(document, "Comlink recipient", slot, "player");
+            // The server refuses any other shape; this keeps a client from storing one if a server
+            // ever did not.
+            if (!ComlinkEnvelope.IsWellFormed(letter.Envelope))
+            {
+                throw new MultiplayerProtocolException(
+                    $"{document} carries a Comlink letter that is not a sealed envelope");
+            }
+            decoded[index] = new SealedComlinkLetter(new PlayerId(slot), letter.Envelope);
         }
-        return seats;
-    }
-
-    /// <summary>
-    /// A Comlink message as the Send panel can type it: 1 to 160 characters from space to <c>Z</c>
-    /// (RULE-COMLINK-006). The server refuses anything else; this keeps a client from storing it if
-    /// a server ever did not.
-    /// </summary>
-    private static string ComlinkText(string? text, string document)
-    {
-        if (string.IsNullOrEmpty(text)
-            || text.Length > MatchLimits.ComlinkMessageCharacters
-            || text.Any(character => character is < ' ' or > 'Z'))
-        {
-            throw new MultiplayerProtocolException(
-                $"{document} carries a Comlink message the Send panel could not have written");
-        }
-        return text;
+        return decoded;
     }
 
     /// <summary>A gang definition id that fits the core's <c>short</c>.</summary>

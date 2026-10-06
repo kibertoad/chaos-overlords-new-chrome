@@ -1129,7 +1129,10 @@ Whether the original shows the count is not recorded.
   save file has no counterpart. A Comlink message travels instead in the sender's orders for the
   turn and reaches its recipients when the turn seals, applied by every client in the sender's
   place in slot order: a recipient in a higher slot than the sender reads it on the next turn,
-  where the original delivered it to the recipient's computer at once. An online match that ends
+  where the original delivered it to the recipient's computer at once. The message is sealed on
+  the sender's computer for each recipient, and inboxes, saves and journals hold the envelopes, so
+  only the recipient's computer can show the text; one it cannot open, such as a message sealed to a
+  key the player no longer has, shows as unreadable. An online match that ends
   opens the awards without the final view of the city the original gives each player at its own
   computer.
 - Setting: None
@@ -1141,7 +1144,7 @@ Whether the original shows the count is not recorded.
   sit in one client's inbox and not another's: earlier delivery is not something a setting could
   offer.
 - Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs,
-  tests/Rechaos.Tests/MultiplayerComlinkTests.cs
+  tests/Rechaos.Tests/MultiplayerComlinkTests.cs, tests/Rechaos.Tests/MultiplayerComlinkSealTests.cs
 - Dropped: no
 
 Decided 2026-09-10 ("Networking scope").

@@ -18,6 +18,11 @@ namespace Rechaos.Game;
 /// two unfinished sessions apart when both are still resumable. It is null, and <c>SessionName</c>
 /// empty, in a record written by a build that stored neither.
 /// </para>
+/// <para>
+/// <c>ComlinkKey</c> is the seat's Comlink private key (PKCS#8, base64), the only thing that opens
+/// the messages other seats sealed to it. It is empty in a record from a build that kept none, and
+/// a resume then publishes a fresh key.
+/// </para>
 /// </remarks>
 public sealed record MultiplayerRecovery(
     int FormatVersion,
@@ -34,7 +39,8 @@ public sealed record MultiplayerRecovery(
     int SessionVersion = MultiplayerSessionVersion.Initial,
     string SessionName = "",
     DateTimeOffset? LastUpdatedAt = null,
-    MultiplayerRecoveryFailure? LastFailure = null)
+    MultiplayerRecoveryFailure? LastFailure = null,
+    string ComlinkKey = "")
 {
     public const int CurrentFormatVersion = 1;
 
@@ -113,20 +119,24 @@ internal sealed record PersistedRecovery(
     int? SessionVersion = null,
     string? SessionName = null,
     DateTimeOffset? LastUpdatedAt = null,
-    MultiplayerRecoveryFailure? LastFailure = null);
+    MultiplayerRecoveryFailure? LastFailure = null,
+    string? ComlinkKey = null,
+    string? ProtectedComlinkKey = null);
 
 internal sealed record MultiplayerRecoveryHistory(
     int FormatVersion,
     IReadOnlyList<PersistedRecovery> Sessions)
 {
     /// <summary>
-    /// Version 5 added <see cref="PersistedRecovery.LastFailure"/>; 4 added <see cref="PersistedRecovery.SessionName"/> and
+    /// Version 6 added <see cref="PersistedRecovery.ComlinkKey"/> and
+    /// <see cref="PersistedRecovery.ProtectedComlinkKey"/>, sealed like the token; 5 added
+    /// <see cref="PersistedRecovery.LastFailure"/>; 4 added <see cref="PersistedRecovery.SessionName"/> and
     /// <see cref="PersistedRecovery.LastUpdatedAt"/>; 3 added
     /// <see cref="PersistedRecovery.ProtectedToken"/>; 2 is still read. Every field either version
     /// added is optional, so an older file reads back as a membership that simply knows less about
     /// itself rather than one that cannot be resumed.
     /// </summary>
-    internal const int CurrentFormatVersion = 5;
+    internal const int CurrentFormatVersion = 6;
     internal const int OldestReadableFormatVersion = 2;
 }
 
@@ -444,6 +454,7 @@ public static class MultiplayerRecoveryStore
     private static PersistedRecovery Persist(MultiplayerRecovery recovery)
     {
         var sealedToken = Protect(recovery.Token);
+        var sealedComlinkKey = recovery.ComlinkKey.Length > 0 ? Protect(recovery.ComlinkKey) : null;
         return new PersistedRecovery(
             recovery.FormatVersion,
             recovery.Server,
@@ -460,7 +471,11 @@ public static class MultiplayerRecoveryStore
             SessionVersion: recovery.SessionVersion,
             SessionName: recovery.SessionName.Length > 0 ? recovery.SessionName : null,
             LastUpdatedAt: recovery.LastUpdatedAt,
-            LastFailure: recovery.LastFailure);
+            LastFailure: recovery.LastFailure,
+            ComlinkKey: sealedComlinkKey is null && recovery.ComlinkKey.Length > 0
+                ? recovery.ComlinkKey
+                : null,
+            ProtectedComlinkKey: sealedComlinkKey);
     }
 
     private static MultiplayerRecovery? Revive(PersistedRecovery stored)
@@ -487,7 +502,11 @@ public static class MultiplayerRecoveryStore
             stored.SessionVersion ?? MultiplayerSessionVersion.Initial,
             stored.SessionName ?? string.Empty,
             stored.LastUpdatedAt,
-            stored.LastFailure);
+            stored.LastFailure,
+            // A sealed key that will not open is dropped like a sealed token, but the seat is
+            // still worth resuming: it takes a fresh key and loses only what was sealed to the old.
+            (stored.ProtectedComlinkKey is { } sealedKey ? Unprotect(sealedKey) : stored.ComlinkKey)
+                ?? string.Empty);
     }
 
     /// <summary>
@@ -542,6 +561,7 @@ public static class MultiplayerRecoveryStore
             Password.Length: <= 128,
             SessionVersion: >= 0,
             SessionName.Length: <= 64,
+            ComlinkKey.Length: <= 1024,
             LastFailure: null or
             {
                 Stage.Length: > 0 and <= 48,

@@ -243,7 +243,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> withLateJoiner =
         [
             Roster[0],
-            new("late-1", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
+            new("late-1", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false, ComlinkKey: null),
         ];
         var view = View() with { Players = withLateJoiner, LastEventSeq = 2 };
         MatchEvent[] history =
@@ -299,8 +299,8 @@ public sealed partial class MultiplayerSessionTests
         Assert.False(session.IsHost);
         IReadOnlyList<PlayerView> afterPromotion =
         [
-            new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Left, IsHost: false),
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Left, IsHost: false, ComlinkKey: null),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: true, ComlinkKey: null),
         ];
         server.Answer(
             HttpMethod.Get,
@@ -326,7 +326,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> afterLeaving =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false, ComlinkKey: null),
         ];
         var view = View() with { Players = afterLeaving, LastEventSeq = 6 };
         MatchEvent[] history =
@@ -735,7 +735,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> afterLeaving =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false, ComlinkKey: null),
         ];
         server.Answer(
             HttpMethod.Get,
@@ -760,7 +760,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> afterLeaving =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false, ComlinkKey: null),
         ];
         server.Answer(
             HttpMethod.Get,
@@ -769,7 +769,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> pendingVote =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.TakeoverPending, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.TakeoverPending, IsHost: false, ComlinkKey: null),
         ];
         server.Answer(
             HttpMethod.Get,
@@ -778,7 +778,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> computerControlled =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false, ComlinkKey: null),
         ];
         server.Answer(
             HttpMethod.Get,
@@ -806,7 +806,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> returnedRoster =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false, ComlinkKey: null),
         ];
         server.Answer(
             HttpMethod.Get,

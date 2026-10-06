@@ -27,8 +27,8 @@ public sealed class MultiplayerMatchLifecycleTests
 
     private static readonly IReadOnlyList<PlayerView> Roster =
     [
-        new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
-        new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
+        new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true, ComlinkKey: null),
+        new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false, ComlinkKey: null),
     ];
 
     private static (MatchReplayRecorder Replay, OriginalData Definitions) NewClient(
@@ -131,7 +131,7 @@ public sealed class MultiplayerMatchLifecycleTests
         IReadOnlyList<PlayerView> afterLeaving =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false, ComlinkKey: null),
         ];
 
         var atStart = MatchBootstrapFactory.Setup(Seed, Settings, Roster);
@@ -201,7 +201,7 @@ public sealed class MultiplayerMatchLifecycleTests
     {
         IReadOnlyList<PlayerView> cheating =
         [
-            new("p1", 0, "SMGFUNDAGE", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "SMGFUNDAGE", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true, ComlinkKey: null),
             Roster[1],
         ];
 
@@ -220,7 +220,7 @@ public sealed class MultiplayerMatchLifecycleTests
     {
         IReadOnlyList<PlayerView> named =
         [
-            new("p1", 0, "Ada Lovelace", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "Ada Lovelace", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true, ComlinkKey: null),
             Roster[1],
         ];
 
@@ -239,7 +239,7 @@ public sealed class MultiplayerMatchLifecycleTests
         IReadOnlyList<PlayerView> cheating =
         [
             new("p1", 0, "smgfundage legacy", PortraitId: 0,
-                Status: WirePlayerStatus.Active, IsHost: true),
+                Status: WirePlayerStatus.Active, IsHost: true, ComlinkKey: null),
             Roster[1],
         ];
 
@@ -260,8 +260,8 @@ public sealed class MultiplayerMatchLifecycleTests
     {
         IReadOnlyList<PlayerView> chosen =
         [
-            new("p1", 0, "ADA", PortraitId: 9, Status: WirePlayerStatus.Active, IsHost: true),
-            new("p2", 1, "GRACE", PortraitId: 14, Status: WirePlayerStatus.Active, IsHost: false),
+            new("p1", 0, "ADA", PortraitId: 9, Status: WirePlayerStatus.Active, IsHost: true, ComlinkKey: null),
+            new("p2", 1, "GRACE", PortraitId: 14, Status: WirePlayerStatus.Active, IsHost: false, ComlinkKey: null),
         ];
 
         var setup = MatchBootstrapFactory.Setup(Seed, Settings, chosen);
@@ -285,7 +285,7 @@ public sealed class MultiplayerMatchLifecycleTests
     {
         IReadOnlyList<PlayerView> impossible =
         [
-            new("p1", 0, "ADA", PortraitId: 16, Status: WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "ADA", PortraitId: 16, Status: WirePlayerStatus.Active, IsHost: true, ComlinkKey: null),
             Roster[1],
         ];
 
@@ -305,7 +305,7 @@ public sealed class MultiplayerMatchLifecycleTests
     {
         IReadOnlyList<PlayerView> otherFace =
         [
-            new("p1", 0, "ADA", PortraitId: 9, Status: WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "ADA", PortraitId: 9, Status: WirePlayerStatus.Active, IsHost: true, ComlinkKey: null),
             Roster[1],
         ];
 
@@ -330,12 +330,12 @@ public sealed class MultiplayerMatchLifecycleTests
     {
         IReadOnlyList<PlayerView> cheating =
         [
-            new("p1", 0, "SMGFUNDAGE", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "SMGFUNDAGE", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true, ComlinkKey: null),
             Roster[1],
         ];
         IReadOnlyList<PlayerView> honest =
         [
-            new("p1", 0, "PLAYER 1", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "PLAYER 1", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true, ComlinkKey: null),
             Roster[1],
         ];
 

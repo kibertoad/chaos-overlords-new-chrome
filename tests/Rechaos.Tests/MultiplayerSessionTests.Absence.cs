@@ -149,7 +149,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> afterLeaving =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false, ComlinkKey: null),
         ];
         server.Answer(
             HttpMethod.Get,

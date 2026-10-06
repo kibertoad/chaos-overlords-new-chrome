@@ -129,7 +129,7 @@ public static class MatchStateHasher
     /// multiplayer session version — so the file is refused as an older format before its
     /// fingerprint is ever compared. <c>StateFingerprintVersionCouplingTests</c> holds the rule.
     /// </remarks>
-    internal const int FormatVersion = 15;
+    internal const int FormatVersion = 16;
 
     /// <summary>The number of lowercase hex characters a fingerprint has.</summary>
     public const int FingerprintLength = 2 * DigestBytes;
@@ -242,7 +242,10 @@ public static class MatchStateHasher
                     writer.Write(message.Sequence);
                     writer.Write(message.Turn);
                     writer.Write(message.Sender.Value);
-                    WriteString(writer, message.Text);
+                    // A sealed message is hashed by its envelope, which every client holds; only
+                    // the recipient's client can read the text inside it.
+                    writer.Write(message.IsSealed);
+                    WriteString(writer, message.Envelope ?? message.Text);
                 }
             }
 

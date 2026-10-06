@@ -53,6 +53,7 @@ export interface PlayerRow {
   tokenHash: string | null
   status: string
   joinedAt: Date
+  comlinkKey: string | null
 }
 
 export interface TurnRow {

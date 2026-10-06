@@ -112,6 +112,16 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     /// <summary>This client's own player id, once seated.</summary>
     public string OwnPlayerId { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// The Comlink key pair of the seat this session takes: a fresh one for a new seat, the one the
+    /// recovery record kept for a resumed one. The caller keeps it with the membership.
+    /// </summary>
+    /// <remarks>
+    /// Its public half is published as soon as the seat is held, so the other seats can seal
+    /// messages to it. Only the private half opens them, and it never leaves this client.
+    /// </remarks>
+    public ComlinkKeyPair ComlinkKey { get; private set; } = ComlinkKeyPair.Generate();
+
     /// <summary>The next thing the interface should know about, if anything is waiting.</summary>
     public bool TryDequeueNotice(out LobbyNotice notice) => _notices.TryDequeue(out notice!);
 
@@ -157,8 +167,18 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             (await _anonymous.ListLobbiesAsync(token).ConfigureAwait(false)).Matches)));
 
     /// <summary>Reclaims an existing seat after restarting with its durable membership token.</summary>
-    public void Resume(string matchId, string playerId, string token, string joinCode)
+    /// <param name="comlinkPrivateKey">
+    /// The seat's Comlink key as the recovery record kept it, or null when it kept none; a fresh
+    /// key is published then, and messages sealed to the old one cannot be read on this client.
+    /// </param>
+    public void Resume(
+        string matchId,
+        string playerId,
+        string token,
+        string joinCode,
+        string? comlinkPrivateKey = null)
     {
+        if (ComlinkKeyPair.FromPrivateKey(comlinkPrivateKey) is { } kept) ComlinkKey = kept;
         ArgumentException.ThrowIfNullOrWhiteSpace(matchId);
         ArgumentException.ThrowIfNullOrWhiteSpace(playerId);
         ArgumentException.ThrowIfNullOrWhiteSpace(token);
@@ -427,6 +447,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     private async Task SeatAsync(MembershipView membership, int generation, bool claimed)
     {
         var handle = _anonymous.WithToken(membership.Token).Match(membership.Match.Id);
+        var seated = false;
         lock (_seatGate)
         {
             var left = generation != _leaveGeneration;
@@ -436,9 +457,14 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
                 _handle = handle;
                 _chatCursor = 0;
                 _notices.Enqueue(new LobbyNotice.Seated(membership));
-                return;
+                seated = true;
             }
-            if (!left && !claimed) return;
+            else if (!left && !claimed) return;
+        }
+        if (seated)
+        {
+            await PublishComlinkKeyAsync(handle, membership.Player).ConfigureAwait(false);
+            return;
         }
         // The server committed the request after the player left, or after a stop that means nobody
         // will ever read this answer or record its token. Release it even though nobody waits.
@@ -449,6 +475,28 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         catch (Exception exception) when (IsServerOrNetworkFailure(exception))
         {
             // The server's turn timer handles a seat we could not release.
+        }
+    }
+
+    /// <summary>
+    /// Publishes the seat's Comlink key when the roster shows another, after the seat is announced.
+    /// </summary>
+    /// <remarks>
+    /// The seat is already the player's whatever happens here, so a failure is dropped rather than
+    /// reported: the match session publishes again when it starts, and until a key arrives the other
+    /// seats are told this one cannot receive messages yet.
+    /// </remarks>
+    private async Task PublishComlinkKeyAsync(MatchHandle handle, PlayerView self)
+    {
+        if (string.Equals(self.ComlinkKey, ComlinkKey.PublicKey, StringComparison.Ordinal)) return;
+        try
+        {
+            await handle.PublishComlinkKeyAsync(ComlinkKey.PublicKey, _stopping.Token)
+                .ConfigureAwait(false);
+        }
+        catch (Exception exception) when (IsServerOrNetworkFailure(exception)
+            || exception is OperationCanceledException)
+        {
         }
     }
 

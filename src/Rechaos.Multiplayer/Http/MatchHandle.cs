@@ -49,6 +49,20 @@ public sealed class MatchHandle
             HttpMethod.Post, ApiRoutes.PostChatMessage(MatchId), request, cancellationToken);
 
     /// <summary>
+    /// Publishes this player's Comlink public key, the one the other seats seal messages to.
+    /// </summary>
+    /// <remarks>
+    /// Idempotent: the server announces <c>match.comlinkKeyPublished</c> only when the stored key
+    /// changes. Refused with <c>match_not_running</c> once the match has ended.
+    /// </remarks>
+    public Task<Unit> PublishComlinkKeyAsync(string publicKey, CancellationToken cancellationToken) =>
+        _client.SendAsync<Unit>(
+            HttpMethod.Put,
+            ApiRoutes.PublishComlinkKey(MatchId),
+            new PublishComlinkKeyRequest(publicKey),
+            cancellationToken);
+
+    /// <summary>
     /// Leaves the active roster while retaining the durable membership needed to rejoin.
     /// </summary>
     /// <remarks>

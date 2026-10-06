@@ -163,8 +163,8 @@ public sealed partial class MultiplayerMatchSession
         var state = MatchStateClone.Of(_replay.State, _definitions);
         var turn = state.Outcome is null
             ? submission.Orders is { } document
-                ? SpeculativeTurn.Restore(state, _definitions, Slot, document)
-                : SpeculativeTurn.For(state, _definitions, Slot)
+                ? SpeculativeTurn.Restore(state, _definitions, Slot, document, Comlink)
+                : SpeculativeTurn.For(state, _definitions, Slot, Comlink)
             : null;
         _resumeAfterSeq = view.LastEventSeq;
         _notices.Enqueue(new MultiplayerNotice.Resumed(view, state, submission, turn));

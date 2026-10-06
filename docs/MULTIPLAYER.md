@@ -32,6 +32,7 @@ characters without disturbing the player-name field.
 - [Bug reports: the same deployment, a different database](#bug-reports-the-same-deployment-a-different-database)
 - [Retention](#retention)
 - [Security model](#security-model)
+- [Comlink privacy](#comlink-privacy)
 - [What the server does and does not defend against](#what-the-server-does-and-does-not-defend-against)
 - [Two languages, one contract](#two-languages-one-contract)
 - [Client integration contract](#client-integration-contract)
@@ -167,6 +168,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
+| `PUT /matches/:id/comlink-key` | member | Publishes `{ publicKey }`, the caller's Comlink public key: a P-256 SubjectPublicKeyInfo in base64, which the other seats seal messages to. Taken in the lobby and while the match runs (`409 match_not_running` once it has finished or been abandoned). The key is shown on the caller's roster row as `comlinkKey`, and a key that differs from the stored one is announced as `match.comlinkKeyPublished`. See [Comlink privacy](#comlink-privacy). |
 | `POST /matches/:id/chat` | member | Posts `{ text }` to the lobby chat before start (`409 match_not_in_lobby` after it). The text is 1 to 160 characters after trimming and NFC, with no control, format or private-use characters. Each player may post ten a minute (`429 rate_limited`), and a lobby whose log holds 1,000 events takes no more (`409 lobby_log_full`). Announced as `lobby.chatMessage`, which is the message's only store. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
 | `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the departure and opens a takeover vote; it does not transfer control. A leaving host hands the role to the lowest active slot. The durable membership token is retained for later rejoin. |
@@ -197,14 +199,17 @@ operations the core's replay recorder accepts as player intent, in the core's ow
 { "op": "queueHire", "player": 0, "gangDefinitionId": 44, "sectorId": 27 }
 { "op": "snubHireOffer", "player": 0, "gangDefinitionId": 44 }
 { "op": "dismissNotification", "player": 0 }
-{ "op": "sendComlinkMessage", "player": 0, "recipients": [2, 4], "text": "MEET AT DAWN." }
+{ "op": "sendComlinkMessage", "player": 0,
+  "letters": [{ "recipient": 2, "envelope": "<320 base64 characters>" },
+              { "recipient": 4, "envelope": "<320 base64 characters>" }] }
 { "op": "markComlinkRead", "player": 0, "sequence": 3 }
 ```
 
 These mirror `MatchReplayRecorder.Submit` / `Cancel` / `QueueHire` / `SnubHireOffer` /
-`TryDismissNotification` / `SendComlinkMessage` / `MarkComlinkRead`. A Comlink message's text is 1
-to 160 characters from space to `Z` (0x20 to 0x5A), the characters the Send panel types, and it
-names 1 to 5 recipient slots. The phase transitions (`FinishCommand` and the rest) and the `Prepare*`
+`TryDismissNotification` / `SendSealedComlinkMessage` / `MarkComlinkRead`. A Comlink message
+carries no text: it has one letter for each of its 1 to 5 recipient slots, and each letter is an
+envelope sealed for that recipient alone, 240 bytes written as 320 base64 characters whatever the
+message says. [Comlink privacy](#comlink-privacy) describes the envelope. The phase transitions (`FinishCommand` and the rest) and the `Prepare*`
 steps are driven by the turn structure on every client and are refused over the wire. Every id is
 bounded by the capacity it indexes and every op must name the submitter's own slot; unknown ops and
 unknown fields are refused. See "What the server does and does not defend against" for why this
@@ -315,7 +320,8 @@ field, for exactly that reason.
 
 What travels is what the player typed and — unless they unticked the box — the whole match as a
 compressed event-sourced journal that replays from its first turn. The game anonymizes it first by
-re-running the match with player names replaced by seat labels and Comlink text redacted, so every
+re-running the match with player names replaced by seat labels and hot-seat Comlink text redacted
+(an online message is an envelope only its recipient can open, and travels as it is), so every
 state fingerprint in it is recomputed and the result is a valid journal rather than an edited one;
 if the re-run diverges at any step, nothing is attached. Names the original reads as cheat codes are
 game rules and stay, because substituting one would change how the match plays.
@@ -493,6 +499,61 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   40 bits against 30 attempts a minute per address, so this buys an attacker nothing in practice,
   and collapsing the password refusal into a 404 would tell a player who mistyped their password
   that their join code was wrong. The trade is made deliberately in that direction.
+
+## Comlink privacy
+
+A Comlink message sent in an online match is read by its recipients and by nobody else: not the
+other seats, not the server or whoever runs it, not a spectator and not a bug report. The original's
+network game sent a message only to the recipient's computer, and this keeps that.
+
+Lockstep makes it harder than it sounds. Every client applies every seat's orders and hashes every
+inbox, so whatever goes into an inbox reaches every client. The text therefore never goes into one.
+The sender's client seals the message once for each recipient, and the order document, the sealed
+set, every inbox, the state fingerprint, saves, journals and snapshots all carry those envelopes.
+Every client stores the same envelope and agrees on the hash; only the recipient's client opens
+its own, when the player opens the message, and what it opens is never written back into the match.
+
+- **Keys.** Each seat has a P-256 key pair, made when the client takes the seat. The private key
+  stays on that computer, in the recovery record beside the membership token and sealed with DPAPI
+  in the same way on Windows. The public key is published with `PUT /matches/:id/comlink-key`,
+  shown on the seat's roster row and announced as `match.comlinkKeyPublished`, and the client
+  publishes it again when it resumes a seat the server shows another key for. A seat that has
+  published no key cannot be written to yet, and the Send panel says so.
+- **The envelope** is ECIES: an ephemeral P-256 key, ECDH with the recipient's public key,
+  HKDF-SHA256 (salted with the ephemeral point and the recipient's key) to an AES-256 key and a
+  nonce, and AES-256-GCM over the text padded with zero bytes to 160. The match id, the turn, the
+  sender's slot and the recipient's slot are authenticated with it, so an envelope copied into
+  another match, turn, sender or recipient does not open. Every envelope is 240 bytes, so its length
+  says nothing about the text. All of it is in the .NET base library on every platform the game
+  ships for.
+- **What the server checks.** The server cannot read an envelope and does not try: it checks that a
+  letter names a slot and carries 320 base64 characters, and that a published key is a P-256 key.
+  RULE-COMLINK-002 is judged by every client when the turn seals, as before. What the text may be
+  (RULE-COMLINK-006, and RULE-COMLINK-003's blank message) is judged by the sender's client before it
+  seals and by the recipient's after it opens.
+
+What this protects against, and what it does not:
+
+- **A modified client at another seat** holds every envelope and no key that opens one addressed to
+  someone else. It reads nothing.
+- **A curious server operator**, or anyone who can read a seat's traffic or the server's database,
+  sees envelopes and public keys only.
+- **A server that lies is not covered.** The players have no way to check one another's keys outside
+  the server, so a server that hands a sender its own key in place of the recipient's can read what
+  is sealed to it, and could seal it again to the real key to hide having done so. Guarding against
+  that needs keys compared by the players themselves, such as a fingerprint read out over another
+  channel, which the game does not offer. A self-hosted server is trusted by whoever chose to play on
+  it, as it is for the secrecy of orders.
+- **Who wrote to whom is not hidden.** The server and every seat see which seat wrote to which, in
+  which turn, and how many messages; only the text is sealed.
+- **A modified sender can waste a slot.** It can seal text the Send panel could not type, seal to the
+  wrong key, or seal nothing worth reading. Every client stores that envelope alike, so the match does
+  not desync, and the recipient sees a message the game cannot read, which takes a place in the
+  16-message inbox like any other.
+- **A lost key loses the old messages.** A seat resumed on another computer, or from a recovery record
+  whose key no longer opens, takes a fresh key and publishes it. What was sealed to the old key shows
+  as `THIS MESSAGE CANNOT BE READ ON THIS COMPUTER.`, and so does a message sent to a seat before its
+  current player held it.
 
 ## What the server does and does not defend against
 
@@ -773,7 +834,7 @@ still be valid. A completed match or an explicit Leave retires
 the recovery record, and a retired record is dropped rather than written back: the token is a full
 capability for that seat, so keeping a spent one on disk buys nothing. On Windows the token is
 sealed with DPAPI to the current user account, so another account on the same machine cannot read
-it out of the file; macOS and Linux keep it in clear under the user's own data root, because their
+it out of the file, and so is the seat's Comlink private key, which the record keeps beside it; macOS and Linux keep it in clear under the user's own data root, because their
 keystores want a native dependency the game does not otherwise carry. Neither defends against
 something already running as the player.
 
@@ -842,10 +903,9 @@ dock a player plans against the dock the sealed turn grants.
   recipient when the turn seals: a recipient in a higher slot than the sender reads it a turn later
   than hot-seat play would let them (DEV-NET-001). Reading marks the player's own planning copy at
   once, so the panel and the alert behave as in hot-seat play.
-- **Comlink is not private from other seats.** The server relays every sealed set to every seat and
-  every client holds every inbox to hash it, so a modified client, or anyone who can read a seat's
-  traffic, can read messages addressed to other players. The game shows each player only their own
-  inbox. Private delivery is [#484](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/484).
+- **Comlink keys are taken from the server on trust.** A message is sealed for its recipient, but
+  nothing lets the players check each other's keys, so a server that substitutes a key can read what
+  is sealed to it. See [Comlink privacy](#comlink-privacy).
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
   that follows a desync pause or the closing of an absence vote.
 - **Desync recovery is decided by a count of reports.** A client that finds its own report wrong

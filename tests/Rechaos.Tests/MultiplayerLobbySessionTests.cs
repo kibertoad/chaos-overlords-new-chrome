@@ -221,6 +221,45 @@ public sealed partial class MultiplayerLobbySessionTests
         Assert.Equal(2, server.CallsTo(HttpMethod.Get, "/matches/m1"));
     }
 
+    /// <summary>
+    /// A resumed seat keeps the Comlink key it saved, and publishes it once seated when the roster
+    /// shows another; a roster that already shows it is left alone (DEV-NET-001).
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ASeatedPlayerPublishesItsSavedComlinkKeyOnlyWhenTheServerLacksIt(bool alreadyPublished)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var key = ComlinkKeyPair.Generate();
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        var view = View(MatchStatus.Lobby);
+        if (alreadyPublished)
+            view = view with { Players = [view.Players[0] with { ComlinkKey = key.PublicKey }] };
+        server.Answer(HttpMethod.Get, "/matches/m1", new MatchDetail(view, "CODE1234", "p1"));
+        server.Answer(HttpMethod.Put, "/matches/m1/comlink-key", null, HttpStatusCode.NoContent);
+
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234", comlinkPrivateKey: key.ExportPrivateKey());
+        await WaitFor<LobbyNotice.Seated>(lobby, cancellationToken);
+        await lobby.StopAsync();
+
+        Assert.Equal(key.PublicKey, lobby.ComlinkKey.PublicKey);
+        var published = server.Requests
+            .Where(request => request.Method == HttpMethod.Put
+                && request.Path.EndsWith("/matches/m1/comlink-key", StringComparison.Ordinal))
+            .ToArray();
+        if (alreadyPublished)
+        {
+            Assert.Empty(published);
+            return;
+        }
+        using var body = JsonDocument.Parse(Assert.Single(published).Body);
+        Assert.Equal(key.PublicKey, body.RootElement.GetProperty("publicKey").GetString());
+    }
+
     [Fact]
     public async Task RefusedProfileChangeIsReportedUnderItsOwnOperation()
     {
@@ -253,7 +292,7 @@ public sealed partial class MultiplayerLobbySessionTests
         status == MatchStatus.Lobby ? null : 123,
         status == MatchStatus.Lobby ? 0 : 1,
         [new PlayerView("p1", status == MatchStatus.Lobby ? -1 : 0, "HOST", 0,
-            PlayerStatus.Active, true)],
+            PlayerStatus.Active, true, null)],
         null,
         null,
         0,

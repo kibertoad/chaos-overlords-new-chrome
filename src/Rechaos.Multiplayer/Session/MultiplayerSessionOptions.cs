@@ -1,6 +1,7 @@
 using Rechaos.Core.Assets;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Http;
+using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Multiplayer.Session;
 
@@ -82,6 +83,12 @@ namespace Rechaos.Multiplayer.Session;
 /// up on it: a client that returns replays the seal from history and reports it again.
 /// </para>
 /// </param>
+/// <param name="ComlinkKey">
+/// This seat's Comlink key pair, kept with the membership, or null for one made up for this session
+/// alone. The session publishes its public half when the server's roster shows another, and opens
+/// the seat's messages with it; a seat resumed with a different key cannot read what was sealed to
+/// the old one.
+/// </param>
 public sealed record MultiplayerSessionOptions(
     MatchHandle Match,
     OriginalData Definitions,
@@ -94,4 +101,5 @@ public sealed record MultiplayerSessionOptions(
     RetryPolicy? StreamRetryPolicy = null,
     RetryPolicy? CallRetryPolicy = null,
     TimeSpan? ReportFlushGrace = null,
-    RetryPolicy? BackgroundRetryPolicy = null);
+    RetryPolicy? BackgroundRetryPolicy = null,
+    ComlinkKeyPair? ComlinkKey = null);

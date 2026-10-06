@@ -29,9 +29,10 @@ public abstract record DecodedOrderOp
     public sealed record SnubHireOffer(short GangDefinitionId) : DecodedOrderOp;
 
     /// <summary>
-    /// Send <see cref="Text"/> to <see cref="Recipients"/> over the Comlink (RULE-COMLINK-003).
+    /// Send a Comlink message, sealed in one of <see cref="Letters"/> for each recipient
+    /// (RULE-COMLINK-003).
     /// </summary>
-    public sealed record SendComlinkMessage(IReadOnlyList<PlayerId> Recipients, string Text) : DecodedOrderOp;
+    public sealed record SendComlinkMessage(IReadOnlyList<SealedComlinkLetter> Letters) : DecodedOrderOp;
 
     /// <summary>Mark the inbox message numbered <see cref="Sequence"/> read (RULE-COMLINK-005).</summary>
     public sealed record MarkComlinkRead(long Sequence) : DecodedOrderOp;
