@@ -42,7 +42,7 @@ public sealed partial class ChaosGame
     /// The one client every online call goes through, bounded so a hostile server cannot answer with
     /// a body large enough to take the game down. See <see cref="MultiplayerClientOptions.MaximumResponseBytes"/>.
     /// </summary>
-    private readonly HttpClient _http = MultiplayerClientOptions.CreateHttpClient();
+    private readonly HttpClient _http;
     private MultiplayerLobbySession? _lobby;
     private MultiplayerMatchSession? _session;
     private TimeSpan _lobbyPollDue;
@@ -143,7 +143,7 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>Routes typed characters to whichever text field currently owns focus.</summary>
-    private void HandleTextInput(char character)
+    internal void HandleTextInput(char character)
     {
         // FND-AUDIO-016: text callbacks must also respect the window-only fade pump.
         if (_soundtrackFade is not null) return;

@@ -542,6 +542,14 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
+    /// Puts <paramref name="match"/>, which stands at a local human's planning entry, on screen the
+    /// way a hot-seat match enters that player's planning (RULE-SETUP-008): the Ready card when two
+    /// humans remain, then the completed turn's Combat Results and Last Turn Events, then the city.
+    /// For a test that reaches the entry another way, such as a replay of a run of the original.
+    /// </summary>
+    internal void EnterPlanningEntry(MatchState match) => EnterNewMatch(match, advanceToPlanning: false);
+
+    /// <summary>
     /// Puts a newly created match on screen at its first planning entry. A match that already
     /// stands at that entry, as a reference frame's does, is shown without advancing it.
     /// </summary>

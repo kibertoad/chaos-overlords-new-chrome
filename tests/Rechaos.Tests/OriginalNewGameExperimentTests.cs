@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
@@ -575,19 +576,10 @@ public sealed partial class OriginalNewGameExperimentTests
             Assert.True(combatCalled[entry], $"planning entry {entry + 1}: the recording holds no call of Combat Results");
 
         var shown = new List<string>[recorded.DoneCount + 1];
-        static List<string> Panels(MatchState match, PlayerId human)
-        {
-            var hasCombat = CombatResultProjection.Pages(match, human).SelectMany(page => page.Results).Any();
-            var hasReports = LastTurnEventProjection.For(match, human).Count > 0;
-            return HandoffPresentationOrder.First(hasCombat, hasReports) switch
-            {
-                HandoffPresentationStep.Combat => hasReports ? ["Combat Results", "Last Turn Events"] : ["Combat Results"],
-                HandoffPresentationStep.Events => ["Last Turn Events"],
-                _ => [],
-            };
-        }
+        using var game = new HeadlessGame(HeadlessGame.DefaultPreferences with { DetailedCombat = false });
+        List<string> Panels(MatchState match, PlayerId human) => PlanningEntryPanels(game, match, human);
         var match = StartMatch(recorded, out var donePresses,
-            (state, human, turn) => shown[turn - 1] = Panels(state, human));
+            atPlanningEntry: (state, human, turn) => shown[turn - 1] = Panels(state, human));
         // An early stop would leave the recording's later entries uncompared.
         Assert.Equal(recorded.DoneCount, donePresses);
         // The last entry is a planning entry unless the match ended or the human was eliminated. An
@@ -605,6 +597,33 @@ public sealed partial class OriginalNewGameExperimentTests
         for (var entry = 0; entry < compared; entry++)
             Assert.True(expected[entry].SequenceEqual(shown[entry]),
                 $"planning entry {entry + 1}: the original showed [{string.Join(", ", expected[entry])}], the rebuild [{string.Join(", ", shown[entry])}]");
+    }
+
+    /// <summary>
+    /// The panels the rebuild shows at <paramref name="match"/>'s planning entry, in order: a copy of
+    /// the match is put on screen in <paramref name="game"/> as a hot-seat planning entry, and each
+    /// panel it opens is closed with Enter until the city shows.
+    /// </summary>
+    private static List<string> PlanningEntryPanels(HeadlessGame game, MatchState match, PlayerId human)
+    {
+        using var copy = new MemoryStream();
+        NativeSaveSerializer.Save(copy, match);
+        copy.Position = 0;
+        game.Game.EnterPlanningEntry(NativeSaveSerializer.Load(copy, BundledOriginalData.Load()));
+        Assert.Equal(human, game.Game.Match!.Coordinator.ActivePlayer);
+        var panels = new List<string>();
+        while (game.Game.CurrentScreen != ClientScreen.City)
+        {
+            panels.Add(game.Game.CurrentScreen switch
+            {
+                ClientScreen.CombatSummary => "Combat Results",
+                ClientScreen.Events => "Last Turn Events",
+                var other => throw new InvalidOperationException($"the planning entry showed {other}"),
+            });
+            Assert.True(panels.Count <= 2, $"the planning entry showed [{string.Join(", ", panels)}] and more");
+            game.Press(Keys.Enter);
+        }
+        return panels;
     }
 
     // RULE-OBJECTIVE-005: -2 stops before the card at the human's own slot; -1

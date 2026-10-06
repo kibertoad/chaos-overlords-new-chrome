@@ -33,6 +33,14 @@ public sealed class LeavePromptTests
     }
 
     [Fact]
+    public void TheWindowAsksTheGameBeforeItCloses()
+    {
+        var exiting = typeof(ChaosGameWindow).GetMethod("OnExiting", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        Assert.Contains(typeof(ChaosGame).GetMethod(nameof(ChaosGame.ConfirmExit), BindingFlags.Instance | BindingFlags.NonPublic)!,
+            DeviationBehaviourTests.Calls(exiting));
+    }
+
+    [Fact]
     public void ClosingASavedMatchIsNotHeldBack()
     {
         var game = GameWith(saved: true);
@@ -106,14 +114,7 @@ public sealed class LeavePromptTests
     }
 
     /// <summary>Closes the window of a headless game and says whether the close was held back.</summary>
-    internal static bool ClosingIsCancelled(ChaosGame game)
-    {
-        var args = new ExitingEventArgs();
-        typeof(ChaosGame).GetMethod("OnExiting", BindingFlags.Instance | BindingFlags.NonPublic,
-                [typeof(object), typeof(ExitingEventArgs)])!
-            .Invoke(game, [game, args]);
-        return args.Cancel;
-    }
+    internal static bool ClosingIsCancelled(ChaosGame game) => !game.ConfirmExit();
 
     /// <summary>Gives the prompt's answer; a leave the game takes reaches Exit, which a headless game cannot run.</summary>
     internal static void Answer(ChaosGame game, LeaveAnswer answer) =>
