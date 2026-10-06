@@ -107,11 +107,13 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   covers the other gap: a client that diverged through its own fault, which in
   a two-player match is a tie, had its state imposed on the other player
   whenever it was the host.
-- The designee is recomputed when the roster changes. A departure, a kick or a
-  takeover during the pause re-runs the verdict, and when the candidates or the
-  designee change the server announces `turn.desynced` again for the same turn.
-  The sweep re-runs verdicts without announcing, so a paused match costs no
-  extra writes while nothing changes.
+- The designee is recomputed when the roster changes. A departure, a kick, a
+  takeover or a rejoin during the pause re-runs the verdict, and when the
+  candidates or the designee differ from the turn's latest announcement the
+  server announces `turn.desynced` again, keyed by the announcement it follows,
+  so a verdict that returns to an earlier one (a seat that leaves and rejoins)
+  is announced too. The sweep re-runs verdicts without announcing, so a paused
+  match costs no extra writes while nothing changes.
 - Unchanged: a snapshot may still only claim a hash the most players reported,
   and a sole most-reported hash may still be posted by anyone holding it. The
   self-check changes nothing but this client's own report: the server still
