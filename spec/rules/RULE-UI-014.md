@@ -4,7 +4,7 @@ title: Input reaches the screen loops as one polled event at a time, and the eve
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-020, FND-UI-021, FND-HELP-005, FND-EXE-004, FND-UI-064]
+evidence: [FND-UI-020, FND-UI-021, FND-HELP-005, FND-EXE-004, FND-UI-064, EXP-UI-052, EXP-UI-053]
 conflicting: []
 split_with: []
 related: [FMT-STATE-009, RULE-UI-008, RULE-UI-007, RULE-HELP-001, RULE-AUDIO-003, RULE-AUDIO-002, SCR-UI-002, SCR-UI-009]
@@ -100,9 +100,17 @@ flipped; the new value takes effect at the next start.
   and Ctrl+Enter produce the codes of Ctrl+H (Host) and Ctrl+J (Join).
 - Keys are translated with a fixed United States shift map: Shift with a digit
   or with `'`, `,`, `.`, `/`, `;` or `=` gives the shifted character, and
-  letters always come out in upper case. A setup name is typed into the name
-  editor's edit control instead, which runs in the dialog's own message loop
-  and never reaches this switch (FND-UI-064).
+  letters always come out in upper case. The map tests the translated
+  character, so on a United States layout Shift with a number-pad digit gives
+  the shifted character of that digit, and Shift with number-pad `.` or `/`
+  gives `>` or `?`; the number-pad `*`, `+` and `-` keep their character, and
+  the separator and the navigation keys give 0 (EXP-UI-052).
+- A setup name is typed into the name editor's edit control instead, which
+  runs in the dialog's own message loop and never reaches this switch
+  (FND-UI-064). The control types the layout's own character: Shift with a
+  number-pad digit types nothing, Shift with minus an underscore, and the
+  name copy turns every character outside space to `Z` into a space
+  (EXP-UI-053).
 - A button press carries the client coordinates of the press. A second press
   counted as a double click becomes type 5 (19 for the right button) only on
   every other double click; a panel that closes resets that phase.
@@ -119,5 +127,11 @@ None known.
 
 ## Open questions
 
+- Whether a key of the physical number pad ever reaches the window as
+  `VK_NUMPAD0` to `VK_NUMPAD9` while `GetAsyncKeyState` reports Shift held is
+  up to the keyboard driver and is not recorded; EXP-UI-052 posted the keys
+  and set the Shift test's result itself.
+- The translation on layouts other than the United States one is not
+  recorded; `MapVirtualKeyA` and the edit control both follow the layout.
 - Whether `TranslateAcceleratorA` sends the command of a greyed item needs a
   run of the original; the documented Windows behaviour is that it does not.

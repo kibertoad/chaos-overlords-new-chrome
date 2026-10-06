@@ -179,6 +179,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | builds |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | builds |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | builds |
+| [EXP-UI-052](../experiments/EXP-UI-052.md) | builds |
+| [EXP-UI-053](../experiments/EXP-UI-053.md) | builds |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
@@ -2501,6 +2503,20 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
+
+## EXP-UI-052
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-053](../experiments/EXP-UI-053.md) | body |
+| [RULE-UI-014](../rules/RULE-UI-014.md) | body, evidence |
+
+## EXP-UI-053
+
+| Cited by | In |
+|---|---|
+| [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | body, evidence |
+| [RULE-UI-014](../rules/RULE-UI-014.md) | body, evidence |
 
 ## EXP-VIDEO-001
 
@@ -7425,6 +7441,7 @@ None.
 | [EXP-TURN-096](../experiments/EXP-TURN-096.md) | body |
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | body |
+| [EXP-UI-052](../experiments/EXP-UI-052.md) | body |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body, evidence |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
@@ -7480,12 +7497,14 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | body |
+| [EXP-UI-053](../experiments/EXP-UI-053.md) | body |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-UI-028](../findings/FND-UI-028.md) | body |
 | [FND-UI-064](../findings/FND-UI-064.md) | body |
 | glossary: DialogShown | glossary |
+| [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | body, evidence |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | evidence |
 | [RULE-UI-015](../rules/RULE-UI-015.md) | evidence |
 
@@ -7866,7 +7885,10 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-052](../experiments/EXP-UI-052.md) | body |
+| [EXP-UI-053](../experiments/EXP-UI-053.md) | body |
 | [FND-UI-022](../findings/FND-UI-022.md) | body |
+| [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | body, evidence |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | body, evidence |
 
 ## FND-UPKEEP-001
@@ -9730,6 +9752,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-052](../experiments/EXP-UI-052.md) | body |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body |
 | [RULE-GFX-002](../rules/RULE-GFX-002.md) | related |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | related |

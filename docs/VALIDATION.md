@@ -821,7 +821,9 @@ say, since a posted message cannot hold the key; it keeps the type, character
 and key the procedure stores at `0x0045CC35` for each, listed as
 `key_events`. Num Lock plays no part in either: Windows turns a number-pad key
 into a virtual key before it is posted, so a run posts the virtual key each
-Num Lock state would give.
+Num Lock state would give. Both steps note the keyboard layout of the game's
+thread, which the translation follows. EXP-UI-052 and EXP-UI-053 are taken
+this way.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under

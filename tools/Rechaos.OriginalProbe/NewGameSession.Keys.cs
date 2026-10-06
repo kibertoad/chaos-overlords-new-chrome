@@ -69,6 +69,7 @@ internal sealed partial class NewGameSession
     private void PressKeys(IntPtr window, string tokens)
     {
         ArmKeyEvents();
+        NoteLayout(window);
         foreach (var (kind, value) in KeyTokens(tokens))
         {
             if (kind == "shift")
@@ -111,6 +112,7 @@ internal sealed partial class NewGameSession
         _process.Pump(TimeSpan.FromSeconds(0.5));
         var edit = Native.GetDlgItem(dialog, OriginalAddresses.NameEditControl);
         var thread = Native.GetWindowThreadProcessId(dialog, out _);
+        NoteLayout(dialog);
         var attached = false;
         try
         {
@@ -156,6 +158,18 @@ internal sealed partial class NewGameSession
         _process.Pump(TimeSpan.FromSeconds(0.5));
         _nameEntries.Add(new NameEntryRecord(tokens, 0, _process.Read(OriginalAddresses.RosterNames, OriginalAddresses.RosterNameLength)
             .Select(value => (int)value).ToList()));
+    }
+
+    // MapVirtualKeyA and the edit control's translation both follow the keyboard layout of the
+    // game's thread, so the run notes it once.
+    private bool _layoutNoted;
+
+    private void NoteLayout(IntPtr window)
+    {
+        if (_layoutNoted) return;
+        _layoutNoted = true;
+        var layout = Native.GetKeyboardLayout(Native.GetWindowThreadProcessId(window, out _));
+        _notes.Add($"Keyboard layout of the game's thread: {(long)layout & 0xFFFFFFFF:X8}.");
     }
 
     private static void SetSharedShift(bool held)

@@ -396,7 +396,9 @@ public sealed partial class ChaosGame
         foreach (var key in keyboard.GetPressedKeys())
         {
             if (_previousKeyboard.IsKeyDown(key)) continue;
-            if (OriginalTextInput.TryCharacter(key, shift, out var character))
+            // FND-UI-064: the name is typed into an edit control, which translates the key as
+            // Windows does instead of the window procedure's shift switch.
+            if (OriginalTextInput.TryNameCharacter(key, shift, out var character))
                 _setupNameEditor.TryAppend(character);
         }
     }
