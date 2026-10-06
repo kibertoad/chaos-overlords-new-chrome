@@ -199,17 +199,9 @@ public sealed partial class OriginalNewGameExperimentTests
     private static int FirstDifferingRoll(
         RecordedRun recorded, bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false)
     {
-        var rolls = new List<(int Bound, int Result)>();
-        DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
-        try
-        {
-            StartMatch(recorded, out _, computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
-                computerHiresWhereHumansCan: computerHiresWhereHumansCan);
-        }
-        finally
-        {
-            DeterministicRandom.RollObserver = null;
-        }
+        var rolls = ObservingRolls(() => StartMatch(recorded, out _,
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan));
 
         return Enumerable.Range(0, Math.Min(rolls.Count, recorded.Rolls.Count))
             .First(index => rolls[index] != (recorded.Rolls[index].Bound, recorded.Rolls[index].Result));
@@ -500,6 +492,8 @@ public sealed partial class OriginalNewGameExperimentTests
             {
                 // A pre-awards fixture holding award rows would leave them uncompared.
                 Assert.False(recorded.HasTerm("player_awards", 0), "a run stopped before the awards holds no award rows");
+                // EndgameRuns would otherwise compare a drawing that has no recorded awards behind it.
+                Assert.True(recorded.EndgameRows is null, "a run stopped before the awards holds no endgame_rows");
                 return;
             }
             Assert.True(recorded.HasTerm("player_awards", 0), "a run that ends the match after the awards holds their rows");

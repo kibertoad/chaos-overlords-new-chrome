@@ -52,13 +52,17 @@ public sealed partial class OriginalNewGameExperimentTests
     // so a test that changes its match changes nothing another test reads.
     private sealed class CachedReplay(byte[] snapshot, int donePresses, IReadOnlyList<(int Bound, int Result)> rolls)
     {
+        // The definitions are read-only records, so every copy can share one parsed set instead of
+        // deserializing and validating the embedded data again for each caller.
+        private static readonly OriginalData Definitions = BundledOriginalData.Load();
+
         public int DonePresses { get; } = donePresses;
         public IReadOnlyList<(int Bound, int Result)> Rolls { get; } = rolls;
 
         public MatchState Copy()
         {
             using var stream = new MemoryStream(snapshot, writable: false);
-            return NativeSaveSerializer.Load(stream, BundledOriginalData.Load());
+            return NativeSaveSerializer.Load(stream, Definitions);
         }
     }
 
@@ -78,28 +82,37 @@ public sealed partial class OriginalNewGameExperimentTests
         return new Replay(cached.Copy(), cached.DonePresses, cached.Rolls);
     }
 
-    private static CachedReplay Record(ReplayInputs inputs)
+    // RULE-RNG-002: every roll(n) made on this thread while play runs, as the bound and the result.
+    // The observer that was installed before is put back afterwards.
+    private static IReadOnlyList<(int Bound, int Result)> ObservingRolls(Action play)
     {
         var rolls = new List<(int Bound, int Result)>();
-        var observer = DeterministicRandom.RollObserver;
+        var outer = DeterministicRandom.RollObserver;
         DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
-        MatchState match;
-        int donePresses;
         try
         {
-            match = Play(inputs, out donePresses);
+            play();
         }
         finally
         {
-            DeterministicRandom.RollObserver = observer;
+            DeterministicRandom.RollObserver = outer;
         }
 
-        var snapshot = NativeSaveStore.Serialize(match);
-        var cached = new CachedReplay(snapshot, donePresses, rolls.ToArray().AsReadOnly());
-        // A copy stands in for the replayed match only if the save keeps all of it: it has to hash
-        // as the replayed match does and save to the same bytes again.
+        return rolls.AsReadOnly();
+    }
+
+    private static CachedReplay Record(ReplayInputs inputs)
+    {
+        MatchState? match = null;
+        var donePresses = 0;
+        var rolls = ObservingRolls(() => match = Play(inputs, out donePresses));
+
+        var snapshot = NativeSaveStore.Serialize(match!);
+        var cached = new CachedReplay(snapshot, donePresses, rolls);
+        // A copy stands in for the replayed match only if the save keeps all of it. Load refuses a
+        // copy that does not hash as the replayed match did, and the copy has to save to the same
+        // bytes again.
         var copy = cached.Copy();
-        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(copy));
         Assert.Equal(snapshot, NativeSaveStore.Serialize(copy));
         return cached;
     }
