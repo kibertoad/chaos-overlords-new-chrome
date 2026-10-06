@@ -1,7 +1,7 @@
 ---
 id: RULE-AI-011
 title: A computer player tries to hire only below a gang limit and outside each scenario's closing turns
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-AI-012, FND-AI-009, FND-EXE-004, FND-SETUP-018, EXP-TURN-028]
@@ -103,3 +103,8 @@ None known.
   Crackdown byte.
 - The comparison `active gangs <= limit` is recorded as inclusive for every
   gated scenario.
+- No recorded run has a limit above 80, so the cap `min(limit, 80)` never
+  acts, and none reaches the cash-based limit that applies once no neutral
+  sector is free. These rest on the static readings of the gates this entry
+  cites. Until a run reaches them, the entry stays `supported` (DECISIONS.md,
+  2026-10-06).

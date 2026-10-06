@@ -1,7 +1,7 @@
 ---
 id: RULE-COMLINK-006
 title: Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-COMLINK-010, FND-COMLINK-007, FND-UI-020, SRC-MANUAL-GOG, EXP-COMLINK-001]
@@ -102,9 +102,13 @@ None known.
 
 ## Open questions
 
-None known. A key event carries the virtual key and the character
-`MapVirtualKeyA` gives it (FND-UI-020): Backspace and Enter give characters
-below the space and the arrows none, so no key of the list also stores a
-character, and in EXP-COMLINK-001 each of them moved the cursor once and wrote
-nothing else. Letters arrive as capitals, so the step that turns `a` to `z`
-into capitals is not reached from the keyboard.
+- A key event carries the virtual key and the character
+  `MapVirtualKeyA` gives it (FND-UI-020): Backspace and Enter give characters
+  below the space and the arrows none, so no key of the list also stores a
+  character, and in EXP-COMLINK-001 each of them moved the cursor once and wrote
+  nothing else. Letters arrive as capitals, so the step that turns `a` to `z`
+  into capitals is not reached from the keyboard.
+- No recorded run presses Left at column 0, Backspace at column 0 below row 0,
+  or Right at column 39. These rest on FND-COMLINK-010. With the capitals step
+  above, until a run reaches them, the entry stays `supported` (DECISIONS.md,
+  2026-10-06).

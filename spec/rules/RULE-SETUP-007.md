@@ -1,7 +1,7 @@
 ---
 id: RULE-SETUP-007
 title: A player named with the visibility modifier sees every opposing gang for the whole match
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-SETUP-015, FND-SETUP-011, EXP-SETUP-004]
@@ -60,4 +60,7 @@ None known.
 
 ## Open questions
 
-- None.
+- No recorded run keeps the flag across a save and a load, or is a network
+  game, which skips the scan. These rest on FND-SETUP-015 and FND-SETUP-011.
+  Until a run reaches them, the entry stays `supported` (DECISIONS.md,
+  2026-10-06).

@@ -1,7 +1,7 @@
 ---
 id: RULE-COMBAT-001
 title: A gang's Combat takes the skills that match its weapon when its statistics are rebuilt
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [EXP-TURN-010, EXP-TURN-011, FND-COMBAT-008, FND-EXE-004, FND-GANG-007, SRC-MANUAL-GOG]
@@ -87,3 +87,7 @@ None known.
 - That item types 0, 1 and 2 are the manual's melee, blade and ranged classes
   follows from which skills each adds; no finding ties the values to the
   classes' names in the game's texts.
+- No recorded run reaches a weapon whose type is not 0 to 2, which Equip never
+  puts in the weapon slot, or a newly hired gang's statistics read before the
+  next rebuild. These rest on FND-GANG-007 and FMT-DATA-003. Until a run
+  reaches them, the entry stays `supported` (DECISIONS.md, 2026-10-06).

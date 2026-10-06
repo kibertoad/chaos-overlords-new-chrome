@@ -1,7 +1,7 @@
 ---
 id: RULE-AI-027
 title: Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-AI-036, FND-AI-070, FND-AI-033, FND-AI-028, FND-AI-043, FND-EXE-004, EXP-TURN-040]
@@ -98,3 +98,8 @@ None known.
 
 - The pool choice for the draws is taken from family 12 (FND-AI-070), as
   FND-AI-036 says it is the same.
+- Only EXP-TURN-040 plays family 9, with three attacks accepted at once from
+  the human pool. No recorded run reaches all five attack draws failing or a
+  target pool for an owner who is not human. These rest on FND-AI-036 and
+  FND-AI-070. Until a run reaches them, the entry stays `supported`
+  (DECISIONS.md, 2026-10-06).

@@ -1,7 +1,7 @@
 ---
 id: RULE-AI-003
 title: Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-AI-044, FND-AI-018, FND-AI-040, FND-AI-039, FND-AI-013, FND-AI-019, FND-AI-004, FND-AI-006, FND-AI-045, FND-EXE-004, EXP-TURN-010, EXP-TURN-017, EXP-TURN-036]
@@ -122,3 +122,7 @@ None known.
 
 - The Mentality test for a player slot whose controller is -1 (empty) is not
   recorded; such a player owns no sectors.
+- No recorded run reaches a sector where exactly 75 percent of the sectors are
+  advantaged, or an empty player slot; every run has six players. These rest
+  on FND-AI-004 and FND-AI-005. Until a run reaches them, the entry stays
+  `supported` (DECISIONS.md, 2026-10-06).

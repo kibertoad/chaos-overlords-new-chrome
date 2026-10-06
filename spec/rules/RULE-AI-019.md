@@ -1,7 +1,7 @@
 ---
 id: RULE-AI-019
 title: Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-AI-072, FND-AI-048, FND-AI-046, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-044, FND-EXE-004, EXP-TURN-010, EXP-TURN-017, EXP-TURN-036, EXP-TURN-057, EXP-TURN-081, EXP-TURN-091]
@@ -170,3 +170,7 @@ None known.
   test after Chaos or Equip, but not which owner read the tests after Control
   and after Heal, Hide or Move make; the procedure reads `sectors[s].owner`
   there until a reading settles it.
+- No recorded run reaches, after an Attack, a failed draw falling through to
+  Control; after Chaos or Equip, all five draws failing; or a previous Hide.
+  These rest on FND-AI-072, FND-AI-048 and FND-AI-046. Until a run reaches
+  them, the entry stays `supported` (DECISIONS.md, 2026-10-06).

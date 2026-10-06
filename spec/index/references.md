@@ -53,6 +53,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | builds |
 | [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | builds |
 | [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | builds |
+| [EXP-SETUP-005](../experiments/EXP-SETUP-005.md) | builds |
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | builds |
 | [EXP-TURN-002](../experiments/EXP-TURN-002.md) | builds |
 | [EXP-TURN-003](../experiments/EXP-TURN-003.md) | builds |
@@ -154,6 +155,12 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-103](../experiments/EXP-TURN-103.md) | builds |
 | [EXP-TURN-104](../experiments/EXP-TURN-104.md) | builds |
 | [EXP-TURN-105](../experiments/EXP-TURN-105.md) | builds |
+| [EXP-TURN-110](../experiments/EXP-TURN-110.md) | builds |
+| [EXP-TURN-111](../experiments/EXP-TURN-111.md) | builds |
+| [EXP-TURN-114](../experiments/EXP-TURN-114.md) | builds |
+| [EXP-TURN-115](../experiments/EXP-TURN-115.md) | builds |
+| [EXP-TURN-116](../experiments/EXP-TURN-116.md) | builds |
+| [EXP-TURN-117](../experiments/EXP-TURN-117.md) | builds |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | builds |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | builds |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | builds |
@@ -953,7 +960,7 @@ None.
 |---|---|
 | [EXP-ATTACK-002](../experiments/EXP-ATTACK-002.md) | body |
 | [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | body |
-| [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | evidence |
+| [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | body, evidence |
 
 ## EXP-ATTACK-002
 
@@ -966,7 +973,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
-| [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | evidence |
+| [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | body, evidence |
 
 ## EXP-AUDIO-001
 
@@ -987,6 +994,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-AI-016](../rules/RULE-AI-016.md) | body |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | evidence |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | evidence |
 
@@ -1118,6 +1126,7 @@ None.
 | [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
 | [EXP-SETUP-003](../experiments/EXP-SETUP-003.md) | body |
 | [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
+| [EXP-SETUP-005](../experiments/EXP-SETUP-005.md) | body |
 | [EXP-TURN-001](../experiments/EXP-TURN-001.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
@@ -1170,14 +1179,22 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-005](../experiments/EXP-SETUP-005.md) | body |
+| [EXP-TURN-116](../experiments/EXP-TURN-116.md) | body |
 | [RULE-CITY-002](../rules/RULE-CITY-002.md) | evidence |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | evidence |
 | [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | evidence |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | evidence |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
-| [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | evidence |
+| [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | body, evidence |
 | [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | evidence |
 | [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | evidence |
+
+## EXP-SETUP-005
+
+| Cited by | In |
+|---|---|
+| [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | body, evidence |
 
 ## EXP-TURN-001
 
@@ -1293,6 +1310,12 @@ None.
 | [EXP-TURN-103](../experiments/EXP-TURN-103.md) | body |
 | [EXP-TURN-104](../experiments/EXP-TURN-104.md) | body |
 | [EXP-TURN-105](../experiments/EXP-TURN-105.md) | body |
+| [EXP-TURN-110](../experiments/EXP-TURN-110.md) | body |
+| [EXP-TURN-111](../experiments/EXP-TURN-111.md) | body |
+| [EXP-TURN-114](../experiments/EXP-TURN-114.md) | body |
+| [EXP-TURN-115](../experiments/EXP-TURN-115.md) | body |
+| [EXP-TURN-116](../experiments/EXP-TURN-116.md) | body |
+| [EXP-TURN-117](../experiments/EXP-TURN-117.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [EXP-UI-004](../experiments/EXP-UI-004.md) | body |
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | body |
@@ -1480,7 +1503,7 @@ None.
 | [EXP-COMBAT-008](../experiments/EXP-COMBAT-008.md) | body |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | [EXP-TURN-051](../experiments/EXP-TURN-051.md) | body |
-| [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
 | [RULE-AI-016](../rules/RULE-AI-016.md) | body, evidence |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | evidence |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
@@ -1495,6 +1518,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-COMBAT-002](../experiments/EXP-COMBAT-002.md) | body |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | body |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | evidence |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
 
@@ -1507,6 +1531,7 @@ None.
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | body |
 | [FND-AI-070](../findings/FND-AI-070.md) | body |
 | [FND-AI-071](../findings/FND-AI-071.md) | body |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | body |
 | [RULE-AI-028](../rules/RULE-AI-028.md) | evidence |
 | [RULE-AI-030](../rules/RULE-AI-030.md) | evidence |
 
@@ -1514,7 +1539,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
 | [RULE-AI-016](../rules/RULE-AI-016.md) | evidence |
 | [RULE-EVENT-010](../rules/RULE-EVENT-010.md) | evidence |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
@@ -1545,10 +1570,10 @@ None.
 |---|---|
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
 | [EXP-UI-018](../experiments/EXP-UI-018.md) | body |
-| [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
 | [RULE-AI-003](../rules/RULE-AI-003.md) | evidence |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
-| [RULE-AI-016](../rules/RULE-AI-016.md) | evidence |
+| [RULE-AI-016](../rules/RULE-AI-016.md) | body, evidence |
 | [RULE-AI-017](../rules/RULE-AI-017.md) | evidence |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
@@ -1601,7 +1626,8 @@ None.
 | [FND-AI-072](../findings/FND-AI-072.md) | body |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | body, evidence |
-| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | evidence |
+| [RULE-GANG-002](../rules/RULE-GANG-002.md) | body |
+| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | body, evidence |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, evidence |
 
 ## EXP-TURN-023
@@ -1627,6 +1653,7 @@ None.
 | [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
 | [RULE-POLICE-004](../rules/RULE-POLICE-004.md) | evidence |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | body, evidence |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, evidence |
 
 ## EXP-TURN-025
@@ -1705,7 +1732,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-103](../experiments/EXP-TURN-103.md) | body |
-| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | evidence |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | body, evidence |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | body, evidence |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, evidence |
 
@@ -1713,15 +1740,15 @@ None.
 
 | Cited by | In |
 |---|---|
-| [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
-| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | evidence |
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | body, evidence |
 | [RULE-EVENT-008](../rules/RULE-EVENT-008.md) | evidence |
 
 ## EXP-TURN-034
 
 | Cited by | In |
 |---|---|
-| [FMT-STATE-006](../formats/FMT-STATE-006.md) | evidence |
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | evidence |
 | [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | evidence |
 
@@ -1800,8 +1827,9 @@ None.
 | [EXP-TURN-091](../experiments/EXP-TURN-091.md) | body |
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | body |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | body |
+| [RULE-AI-018](../rules/RULE-AI-018.md) | body |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
-| [RULE-AI-027](../rules/RULE-AI-027.md) | evidence |
+| [RULE-AI-027](../rules/RULE-AI-027.md) | body, evidence |
 
 ## EXP-TURN-041
 
@@ -1817,6 +1845,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## EXP-TURN-043
@@ -2223,6 +2252,7 @@ None.
 |---|---|
 | [EXP-ATTACK-002](../experiments/EXP-ATTACK-002.md) | body |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | body |
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
 
 ## EXP-TURN-094
@@ -2251,6 +2281,7 @@ None.
 |---|---|
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | body |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | body |
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | body, evidence |
 | [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | body, evidence |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, evidence |
@@ -2270,6 +2301,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | body, evidence |
 | [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | body, evidence |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, evidence |
@@ -2279,6 +2311,9 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-115](../experiments/EXP-TURN-115.md) | body |
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | body, evidence |
+| [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | evidence |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | body, evidence |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, evidence |
 
@@ -2294,6 +2329,48 @@ None.
 | Cited by | In |
 |---|---|
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | body, evidence |
+
+## EXP-TURN-110
+
+| Cited by | In |
+|---|---|
+| [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
+
+## EXP-TURN-111
+
+| Cited by | In |
+|---|---|
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | body, evidence |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | body, evidence |
+
+## EXP-TURN-114
+
+| Cited by | In |
+|---|---|
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | body, evidence |
+| [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | body, evidence |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | body, evidence |
+
+## EXP-TURN-115
+
+| Cited by | In |
+|---|---|
+| [RULE-TOLERANCE-001](../rules/RULE-TOLERANCE-001.md) | body, evidence |
+
+## EXP-TURN-116
+
+| Cited by | In |
+|---|---|
+| [RULE-POLICE-003](../rules/RULE-POLICE-003.md) | body, evidence |
+| [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | body, evidence |
+
+## EXP-TURN-117
+
+| Cited by | In |
+|---|---|
+| [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | body, evidence |
+| [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | body, evidence |
+| [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | body, evidence |
 
 ## EXP-UI-001
 
@@ -2420,7 +2497,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | evidence |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | body, evidence |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | evidence |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | evidence |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | evidence |
@@ -2607,7 +2684,7 @@ None.
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | [FND-UI-013](../findings/FND-UI-013.md) | body |
 | glossary: item_definitions | glossary |
-| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | related |
+| [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, related |
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | related |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | related |
 | [RULE-EQUIP-004](../rules/RULE-EQUIP-004.md) | related |
@@ -2660,6 +2737,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-SAVE-001](../bugs/BUG-SAVE-001.md) | body, related |
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | body |
 | [RULE-UI-015](../rules/RULE-UI-015.md) | body, related |
 
@@ -2686,6 +2764,7 @@ None.
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
 | [EXP-TURN-090](../experiments/EXP-TURN-090.md) | body |
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | body |
+| [EXP-TURN-110](../experiments/EXP-TURN-110.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
@@ -2778,6 +2857,9 @@ None.
 | [EXP-TURN-070](../experiments/EXP-TURN-070.md) | body |
 | [EXP-TURN-071](../experiments/EXP-TURN-071.md) | body |
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
+| [EXP-TURN-111](../experiments/EXP-TURN-111.md) | body |
+| [EXP-TURN-114](../experiments/EXP-TURN-114.md) | body |
+| [EXP-TURN-117](../experiments/EXP-TURN-117.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body |
 | [FND-AI-027](../findings/FND-AI-027.md) | body |
@@ -3030,7 +3112,7 @@ None.
 | [FND-SAVE-003](../findings/FND-SAVE-003.md) | body |
 | glossary: controller | glossary |
 | glossary: mentality | glossary |
-| [RULE-AI-003](../rules/RULE-AI-003.md) | evidence |
+| [RULE-AI-003](../rules/RULE-AI-003.md) | body, evidence |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-014](../rules/RULE-AI-014.md) | evidence |
 | [RULE-AI-018](../rules/RULE-AI-018.md) | evidence |
@@ -3056,12 +3138,13 @@ None.
 | glossary: scenario_standing | glossary |
 | glossary: sector | glossary |
 | glossary: turn_limit | glossary |
+| [RULE-AI-003](../rules/RULE-AI-003.md) | body |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | evidence |
 | [RULE-AI-007](../rules/RULE-AI-007.md) | evidence |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | evidence |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | evidence |
-| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | body, evidence |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | evidence |
 
 ## FND-AI-006
@@ -3224,7 +3307,7 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-AI-012](../rules/RULE-AI-012.md) | evidence |
+| [RULE-AI-012](../rules/RULE-AI-012.md) | body, evidence |
 
 ## FND-AI-017
 
@@ -3292,7 +3375,7 @@ None.
 | [FND-AI-033](../findings/FND-AI-033.md) | body |
 | [FND-AI-057](../findings/FND-AI-057.md) | body |
 | glossary: planning_records | glossary |
-| [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
+| [RULE-AI-005](../rules/RULE-AI-005.md) | body, evidence |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
@@ -3316,7 +3399,7 @@ None.
 | [FND-AI-021](../findings/FND-AI-021.md) | body |
 | [FND-AI-061](../findings/FND-AI-061.md) | body |
 | glossary: local_tech_cap | glossary |
-| [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
+| [RULE-AI-005](../rules/RULE-AI-005.md) | body, evidence |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | evidence |
 
 ## FND-AI-025
@@ -3580,7 +3663,7 @@ None.
 |---|---|
 | [FND-AI-048](../findings/FND-AI-048.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
-| [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
+| [RULE-AI-019](../rules/RULE-AI-019.md) | body, evidence |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
 | [RULE-AI-028](../rules/RULE-AI-028.md) | evidence |
 
@@ -3662,10 +3745,11 @@ None.
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | body |
 | [EXP-TURN-103](../experiments/EXP-TURN-103.md) | body |
 | [EXP-TURN-104](../experiments/EXP-TURN-104.md) | body |
+| [EXP-TURN-117](../experiments/EXP-TURN-117.md) | body |
 | [FND-AI-070](../findings/FND-AI-070.md) | body |
 | [FND-AI-071](../findings/FND-AI-071.md) | body |
 | [FND-AI-073](../findings/FND-AI-073.md) | body |
-| [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
+| [RULE-AI-005](../rules/RULE-AI-005.md) | body, evidence |
 | [RULE-AI-026](../rules/RULE-AI-026.md) | evidence |
 | [RULE-AI-028](../rules/RULE-AI-028.md) | evidence |
 | [RULE-AI-029](../rules/RULE-AI-029.md) | evidence |
@@ -3810,7 +3894,7 @@ None.
 | [FND-AI-030](../findings/FND-AI-030.md) | body |
 | [FND-AI-037](../findings/FND-AI-037.md) | superseded_by |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
-| [RULE-AI-005](../rules/RULE-AI-005.md) | evidence |
+| [RULE-AI-005](../rules/RULE-AI-005.md) | body, evidence |
 | [RULE-AI-028](../rules/RULE-AI-028.md) | body, evidence |
 
 ## FND-AI-072
@@ -3820,7 +3904,7 @@ None.
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | body, evidence |
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | body |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
-| [RULE-AI-019](../rules/RULE-AI-019.md) | evidence |
+| [RULE-AI-019](../rules/RULE-AI-019.md) | body, evidence |
 | [RULE-AI-020](../rules/RULE-AI-020.md) | evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | evidence |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | body, evidence |
@@ -4170,7 +4254,7 @@ None.
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | body, evidence |
 | [FND-AUDIO-002](../findings/FND-AUDIO-002.md) | body |
 | glossary: effect_slots | glossary |
-| [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | evidence |
+| [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | body, evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
@@ -4216,7 +4300,7 @@ None.
 | glossary: hide_count | glossary |
 | glossary: overthrow_count | glossary |
 | glossary: player_awards | glossary |
-| [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
+| [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | body, evidence |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | evidence |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, evidence |
@@ -4249,8 +4333,8 @@ None.
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | glossary: player_awards | glossary |
-| [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
-| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
+| [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | body, evidence |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body, evidence |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, evidence |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 
@@ -4262,7 +4346,7 @@ None.
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
-| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body, evidence |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 
 ## FND-BRIBE-001
@@ -4367,7 +4451,7 @@ None.
 | [FND-COMBAT-008](../findings/FND-COMBAT-008.md) | body |
 | glossary: damage_inflicted | glossary |
 | glossary: phase_damage | glossary |
-| [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
+| [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | body, evidence |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | body, evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
 | [RULE-COMBAT-003](../rules/RULE-COMBAT-003.md) | body, evidence |
@@ -4388,7 +4472,7 @@ None.
 | glossary: combat_results | glossary |
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | evidence |
 | [RULE-COMBAT-002](../rules/RULE-COMBAT-002.md) | evidence |
-| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | evidence |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, evidence |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | evidence |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | evidence |
 
@@ -4603,7 +4687,7 @@ None.
 | glossary: comlink_messages | glossary |
 | glossary: comlink_pending | glossary |
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | evidence |
-| [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | evidence |
+| [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | body, evidence |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
 
 ## FND-COMLINK-005
@@ -4630,7 +4714,7 @@ None.
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | evidence |
 | [RULE-COMLINK-004](../rules/RULE-COMLINK-004.md) | evidence |
 | [RULE-COMLINK-005](../rules/RULE-COMLINK-005.md) | body, evidence |
-| [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | evidence |
+| [RULE-COMLINK-007](../rules/RULE-COMLINK-007.md) | body, evidence |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | body, evidence |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | evidence |
 
@@ -4683,7 +4767,7 @@ None.
 | [FND-NET-003](../findings/FND-NET-003.md) | body |
 | glossary: comlink_draft_column | glossary |
 | glossary: comlink_draft_row | glossary |
-| [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | evidence |
+| [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | body, evidence |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 
 ## FND-CONTROL-001
@@ -4824,7 +4908,7 @@ None.
 | [FND-SETUP-011](../findings/FND-SETUP-011.md) | body |
 | glossary: modifier_visibility | glossary |
 | glossary: planning_phase | glossary |
-| [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | evidence |
+| [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | body, evidence |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | body, evidence |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | evidence |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | evidence |
@@ -4845,7 +4929,7 @@ None.
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | body, evidence |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
 | [FND-EQUIP-006](../findings/FND-EQUIP-006.md) | body |
-| [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
+| [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | body, evidence |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | evidence |
 | [SCR-EQUIP-001](../screens/SCR-EQUIP-001.md) | body, evidence |
 
@@ -4860,7 +4944,7 @@ None.
 | [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | evidence |
 | [RULE-GIVE-001](../rules/RULE-GIVE-001.md) | evidence |
-| [RULE-SELL-001](../rules/RULE-SELL-001.md) | evidence |
+| [RULE-SELL-001](../rules/RULE-SELL-001.md) | body, evidence |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | evidence |
 
 ## FND-EQUIP-003
@@ -5642,6 +5726,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-067](../experiments/EXP-TURN-067.md) | body |
+| [EXP-TURN-110](../experiments/EXP-TURN-110.md) | body |
 | [FND-TURN-007](../findings/FND-TURN-007.md) | body |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
 
@@ -5649,6 +5734,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-110](../experiments/EXP-TURN-110.md) | body |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
 
 ## FND-HELP-001
@@ -5702,7 +5788,7 @@ None.
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | glossary: turn_start | glossary |
-| [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | evidence |
+| [RULE-HIDE-001](../rules/RULE-HIDE-001.md) | body, evidence |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | evidence |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | evidence |
 | [RULE-TURN-005](../rules/RULE-TURN-005.md) | evidence |
@@ -5780,7 +5866,7 @@ None.
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: hire_force_modifier | glossary |
 | glossary: modifier_name_hire_force | glossary |
-| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | evidence |
+| [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, evidence |
 
 ## FND-HIRE-006
 
@@ -6123,7 +6209,7 @@ None.
 | [FND-UI-054](../findings/FND-UI-054.md) | body |
 | glossary: idle_warning_choice | glossary |
 | glossary: pref_warn_idle | glossary |
-| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | evidence |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | body, evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | evidence |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | body, evidence |
 
@@ -6136,7 +6222,7 @@ None.
 | glossary: serial_number | glossary |
 | [RULE-OPTIONS-001](../rules/RULE-OPTIONS-001.md) | evidence |
 | [RULE-OPTIONS-002](../rules/RULE-OPTIONS-002.md) | evidence |
-| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | evidence |
+| [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | body, evidence |
 
 ## FND-PLATFORM-001
 
@@ -6395,7 +6481,7 @@ None.
 | glossary: research_remaining | glossary |
 | glossary: scenario | glossary |
 | [RULE-RESEARCH-001](../rules/RULE-RESEARCH-001.md) | evidence |
-| [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | evidence |
+| [RULE-RESEARCH-002](../rules/RULE-RESEARCH-002.md) | body, evidence |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
 | [SCR-RESEARCH-001](../screens/SCR-RESEARCH-001.md) | body, evidence |
 
@@ -6774,7 +6860,7 @@ None.
 | glossary: modifier_visibility | glossary |
 | [RULE-DETECT-001](../rules/RULE-DETECT-001.md) | evidence |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
-| [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | evidence |
+| [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | body, evidence |
 
 ## FND-SETUP-012
 
@@ -6824,6 +6910,8 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-SETUP-004](../experiments/EXP-SETUP-004.md) | body |
+| [EXP-SETUP-005](../experiments/EXP-SETUP-005.md) | body |
+| [EXP-TURN-116](../experiments/EXP-TURN-116.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body, evidence |
 | [FND-AI-047](../findings/FND-AI-047.md) | body |
 | [FND-STATE-003](../findings/FND-STATE-003.md) | body |
@@ -6841,10 +6929,10 @@ None.
 | glossary: resumed_match | glossary |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | body, evidence |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | body, evidence |
-| [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | evidence |
+| [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | body, evidence |
 | [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | evidence |
 | [RULE-SETUP-006](../rules/RULE-SETUP-006.md) | evidence |
-| [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | evidence |
+| [RULE-SETUP-007](../rules/RULE-SETUP-007.md) | body, evidence |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | evidence |
 
 ## FND-SETUP-016
@@ -7026,7 +7114,7 @@ None.
 | glossary: planning_start_ms | glossary |
 | glossary: timer_redraw_countdown | glossary |
 | glossary: TimerBarDrawn | glossary |
-| [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | evidence |
+| [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | body, evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | evidence |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -7059,7 +7147,7 @@ None.
 | glossary: planning_start_ms | glossary |
 | glossary: planning_timed | glossary |
 | glossary: timer_redraw_countdown | glossary |
-| [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | evidence |
+| [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | body, evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | evidence |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -7128,19 +7216,20 @@ None.
 | glossary: scenario_score | glossary |
 | glossary: turn_end | glossary |
 | [RULE-CITY-004](../rules/RULE-CITY-004.md) | evidence |
-| [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | evidence |
+| [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | body, evidence |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | evidence |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
-| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | evidence |
+| [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | body, evidence |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | evidence |
-| [RULE-TURN-006](../rules/RULE-TURN-006.md) | evidence |
+| [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, evidence |
 | [RULE-UI-009](../rules/RULE-UI-009.md) | evidence |
 
 ## FND-TURN-004
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-110](../experiments/EXP-TURN-110.md) | body |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body, evidence |
 | [FND-HEAL-002](../findings/FND-HEAL-002.md) | body |
@@ -7507,6 +7596,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | body |
+| [EXP-TURN-110](../experiments/EXP-TURN-110.md) | body |
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | body |
 | [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [FMT-STATE-009](../formats/FMT-STATE-009.md) | body, evidence |
@@ -7537,7 +7627,7 @@ None.
 | [FND-UI-028](../findings/FND-UI-028.md) | body |
 | glossary: DialogShown | glossary |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | evidence |
-| [RULE-UI-015](../rules/RULE-UI-015.md) | evidence |
+| [RULE-UI-015](../rules/RULE-UI-015.md) | body, evidence |
 
 ## FND-UI-023
 
@@ -7717,7 +7807,7 @@ None.
 | glossary: gang | glossary |
 | glossary: gangs | glossary |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | evidence |
-| [RULE-UI-005](../rules/RULE-UI-005.md) | evidence |
+| [RULE-UI-005](../rules/RULE-UI-005.md) | body, evidence |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
 
@@ -7904,7 +7994,7 @@ None.
 |---|---|
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | body |
 | glossary: match_saved | glossary |
-| [RULE-UI-015](../rules/RULE-UI-015.md) | evidence |
+| [RULE-UI-015](../rules/RULE-UI-015.md) | body, evidence |
 
 ## FND-UI-059
 
@@ -8242,7 +8332,6 @@ None.
 |---|---|
 | [EXP-TURN-011](../experiments/EXP-TURN-011.md) | body |
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | body |
-| [RULE-AI-016](../rules/RULE-AI-016.md) | body |
 
 ## RULE-AI-016
 
@@ -8587,6 +8676,7 @@ None.
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | related |
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
 | [EXP-TURN-033](../experiments/EXP-TURN-033.md) | body |
+| [EXP-TURN-111](../experiments/EXP-TURN-111.md) | body |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | body, related |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, related |
 
@@ -9024,6 +9114,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-068](../experiments/EXP-TURN-068.md) | body |
+| [EXP-TURN-110](../experiments/EXP-TURN-110.md) | body |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, related |
 
 ## RULE-HELP-001
@@ -9057,7 +9148,6 @@ None.
 | [EXP-TURN-035](../experiments/EXP-TURN-035.md) | body |
 | [EXP-TURN-090](../experiments/EXP-TURN-090.md) | body |
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | body |
-| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
 | [FND-ATTACK-006](../findings/FND-ATTACK-006.md) | body |
 | [FND-MOVE-006](../findings/FND-MOVE-006.md) | body |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | body |
@@ -9088,7 +9178,6 @@ None.
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | body |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | body |
 | [EXP-TURN-104](../experiments/EXP-TURN-104.md) | body |
-| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | body |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
@@ -9250,6 +9339,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-116](../experiments/EXP-TURN-116.md) | body |
 | [RULE-POLICE-002](../rules/RULE-POLICE-002.md) | body |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | body |
 | [RULE-TURN-006](../rules/RULE-TURN-006.md) | body, related |
@@ -9395,6 +9485,7 @@ None.
 |---|---|
 | [EXP-SETUP-001](../experiments/EXP-SETUP-001.md) | body |
 | [EXP-SETUP-002](../experiments/EXP-SETUP-002.md) | body |
+| [EXP-SETUP-005](../experiments/EXP-SETUP-005.md) | body |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | body |
 | [RULE-SETUP-010](../rules/RULE-SETUP-010.md) | body |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, related |
@@ -9423,6 +9514,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-SETUP-005](../experiments/EXP-SETUP-005.md) | body |
+| [EXP-TURN-116](../experiments/EXP-TURN-116.md) | body |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | body, related |
 
 ## RULE-SETUP-006
@@ -9492,6 +9585,7 @@ None.
 |---|---|
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
 | [EXP-TURN-032](../experiments/EXP-TURN-032.md) | body |
+| [EXP-TURN-114](../experiments/EXP-TURN-114.md) | body |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | related |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, related |
 
@@ -9552,6 +9646,9 @@ None.
 | [EXP-TURN-032](../experiments/EXP-TURN-032.md) | body |
 | [EXP-TURN-033](../experiments/EXP-TURN-033.md) | body |
 | [EXP-TURN-103](../experiments/EXP-TURN-103.md) | body |
+| [EXP-TURN-111](../experiments/EXP-TURN-111.md) | body |
+| [EXP-TURN-114](../experiments/EXP-TURN-114.md) | body |
+| [EXP-TURN-115](../experiments/EXP-TURN-115.md) | body |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | related |
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | related |
 | [RULE-TOLERANCE-002](../rules/RULE-TOLERANCE-002.md) | related |
@@ -9564,6 +9661,10 @@ None.
 | [BUG-BRIBE-001](../bugs/BUG-BRIBE-001.md) | body, related |
 | [EXP-TURN-032](../experiments/EXP-TURN-032.md) | body |
 | [EXP-TURN-103](../experiments/EXP-TURN-103.md) | body |
+| [EXP-TURN-111](../experiments/EXP-TURN-111.md) | body |
+| [EXP-TURN-114](../experiments/EXP-TURN-114.md) | body |
+| [EXP-TURN-115](../experiments/EXP-TURN-115.md) | body |
+| [EXP-TURN-117](../experiments/EXP-TURN-117.md) | body |
 | [FND-DATA-011](../findings/FND-DATA-011.md) | body |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | body, related |
 | [RULE-SNITCH-001](../rules/RULE-SNITCH-001.md) | body, related |

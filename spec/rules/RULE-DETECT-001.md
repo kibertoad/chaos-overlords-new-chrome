@@ -1,7 +1,7 @@
 ---
 id: RULE-DETECT-001
 title: A player sees an enemy gang when its Stealth is at most the player's detection strength in that sector
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-DETECT-001, FND-DETECT-002, FND-EXE-004, FND-SETUP-011, SRC-MANUAL-GOG, EXP-SETUP-001, EXP-SETUP-004, EXP-TURN-025, EXP-TURN-062]
@@ -113,3 +113,8 @@ None known.
 - The replays compare the `visible_to` bytes of active gangs only. No recorded
   run compares the bytes an inactive gang keeps from when it died, left or was
   hired over; that case rests on the static reading [FND-DETECT-002].
+- No recorded run reaches a helper with negative Detect, which the shipped
+  gang and item tables cannot give, or an observer slot no player ever held.
+  With the inactive gangs' bytes above, these rest on FND-DETECT-001 and
+  FND-DETECT-002. Until a run reaches them, the entry stays `supported`
+  (DECISIONS.md, 2026-10-06).

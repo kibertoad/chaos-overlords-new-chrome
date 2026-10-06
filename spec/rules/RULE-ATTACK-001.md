@@ -1,7 +1,7 @@
 ---
 id: RULE-ATTACK-001
 title: One gang's attack and the retaliation it provokes
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [EXP-TURN-011, EXP-TURN-017, EXP-TURN-029, FND-AI-006, FND-AI-007, FND-AI-047, FND-COMBAT-001, FND-COMBAT-003, FND-COMBAT-004, FND-COMBAT-006, FND-COMBAT-008, FND-EXE-004, FND-RNG-003, FND-RNG-006, FND-STATE-002, SRC-MANUAL-GOG]
@@ -173,6 +173,11 @@ None known.
 
 ## Open questions
 
-None known. `phase_damage`, `fight_marks`, `opening_damage` and
-`retaliation_damage` are locals of the resolver `fn_00472775` with no fixed
-address [FND-COMBAT-008].
+- `phase_damage`, `fight_marks`, `opening_damage` and
+  `retaliation_damage` are locals of the resolver `fn_00472775` with no fixed
+  address [FND-COMBAT-008].
+- No recorded run reaches an Attack on a target that is inactive or in another
+  sector, which the procedure does not check, or a bare-handed attacker with
+  negative Martial Arts. These rest on FND-COMBAT-006, FND-COMBAT-008 and
+  FND-COMBAT-003. Until a run reaches them, the entry stays `supported`
+  (DECISIONS.md, 2026-10-06).

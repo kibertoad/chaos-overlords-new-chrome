@@ -1,7 +1,7 @@
 ---
 id: RULE-TURN-006
 title: The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-TURN-003, FND-TURN-008, FND-POLICE-001, FND-EVENT-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-017, EXP-TURN-018, EXP-TURN-020, EXP-TURN-022, EXP-TURN-025]
@@ -110,3 +110,7 @@ None known.
   EXP-TURN-020, EXP-TURN-022 and EXP-TURN-025 a player is eliminated in the
   last resolution, and the scores stored by that turn's evaluation already
   count the player out.
+- No recorded run eliminates two players in one match or in one turn, loses
+  the Right Hands while other gangs live, or has slot 0 holding another gang.
+  These rest on FND-TURN-008 and FND-TURN-003. Until a run reaches them, the
+  entry stays `supported` (DECISIONS.md, 2026-10-06).

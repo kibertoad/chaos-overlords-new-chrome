@@ -1,7 +1,7 @@
 ---
 id: RULE-COMBAT-004
 title: Detailed Combat plays the viewer's fights sector by sector, one clip per attack
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-004, FND-COMBAT-005, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-EXE-004, FND-UI-001, EXP-COMBAT-001, EXP-COMBAT-002, EXP-COMBAT-003, EXP-COMBAT-005, EXP-COMBAT-006, EXP-COMBAT-007, EXP-COMBAT-008, EXP-COMBAT-009]
@@ -167,3 +167,9 @@ None known.
 
 - Whether a computer player can order an Attack on one of its own gangs,
   which could make a list longer than 36, was not checked [FND-COMBAT-013].
+- No recorded run reaches an opponent's gang in two focal lists, a fight
+  between two other players in the viewer's sector being left out, a stale
+  lookup of the target's own target in another row, Escape ending the
+  presentation, or a list over 36 entries. These rest on FND-COMBAT-004,
+  FND-COMBAT-010, FND-COMBAT-011 and FND-COMBAT-013. Until a run reaches them,
+  the entry stays `supported` (DECISIONS.md, 2026-10-06).

@@ -1,7 +1,7 @@
 ---
 id: RULE-SELL-001
 title: Sell removes every selected item but pays half the Cost of only the last selected slot
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-EQUIP-002, FND-EQUIP-004, FND-EQUIP-006, FND-EQUIP-007, FND-EQUIP-008, FND-SELL-001, SRC-MANUAL-GOG, EXP-TURN-016]
@@ -89,3 +89,7 @@ None known.
 
 - Whether the computer players can write a Sell order with an empty mask or
   an empty selected slot is not recorded.
+- No recorded run has Sell cash spent by a later slot's Equip in the same
+  pass, or a Sell with an empty mask or slot that pays the stale value. These
+  rest on FND-EQUIP-002 and FND-EQUIP-007. Until a run reaches them, the entry
+  stays `supported` (DECISIONS.md, 2026-10-06).

@@ -1,7 +1,7 @@
 ---
 id: RULE-RNG-001
 title: The generator, its step, and its seed at process start
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-RNG-001, FND-RNG-002, FND-RNG-005, FND-RNG-006, SRC-MANUAL-GOG, FND-EXE-004, EXP-SETUP-001]
@@ -74,5 +74,9 @@ None known.
 
 ## Open questions
 
-None known. EXP-SETUP-001 recorded the seed and 310 results that follow from
-it.
+- EXP-SETUP-001 recorded the seed and 310 results that follow from
+  it.
+- Every run starts one match in one process, so no recorded run reaches a
+  second match or a load continuing the sequence. That rests on FND-RNG-005.
+  Until a run reaches them, the entry stays `supported` (DECISIONS.md,
+  2026-10-06).

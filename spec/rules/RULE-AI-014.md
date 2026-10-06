@@ -1,7 +1,7 @@
 ---
 id: RULE-AI-014
 title: A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-AI-006, FND-AI-004, FND-EXE-004, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003]
@@ -70,3 +70,6 @@ None known.
 
 - Whether the attitude cells are filled before or after the reaction draws in
   the same initializer is not recorded; neither step reads the other's result.
+- No recorded run has an empty player slot counting as a computer; every run
+  has six players. That rests on the static reading this entry cites. Until a
+  run reaches them, the entry stays `supported` (DECISIONS.md, 2026-10-06).

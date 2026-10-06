@@ -1,7 +1,7 @@
 ---
 id: RULE-GANG-002
 title: A gang that dies or is terminated has only its sector byte set to inactive
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [EXP-TURN-017, EXP-TURN-019, FND-GANG-003, FND-GANG-005, FND-MOVE-001, FND-MOVE-003]
@@ -76,3 +76,7 @@ None known.
 
 - The combat rule that decides the death calls this rule; the damage step
   belongs to the combat rules.
+- No recorded run reaches the Eliminate scenario's clean-up retiring a
+  player's remaining gangs; in EXP-TURN-022 the eliminated player has none
+  left. That rests on FND-GANG-003. Until a run reaches them, the entry stays
+  `supported` (DECISIONS.md, 2026-10-06).

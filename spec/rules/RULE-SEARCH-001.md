@@ -1,7 +1,7 @@
 ---
 id: RULE-SEARCH-001
 title: Each player's Search filter starts empty and is changed by ALL, NONE and its rows
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-SEARCH-005, FND-COMLINK-006, EXP-SEARCH-001, EXP-SEARCH-002]
@@ -87,3 +87,5 @@ readings:
 - a loaded match, whose filters the match function empties [FND-SEARCH-005];
 - two humans in a hot-seat game, each with their own filter
   [FND-SEARCH-001].
+- Until a run reaches the cases above, the entry stays `supported`
+  (DECISIONS.md, 2026-10-06).

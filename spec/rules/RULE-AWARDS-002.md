@@ -1,7 +1,7 @@
 ---
 id: RULE-AWARDS-002
 title: The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-AWARDS-004, FND-OBJECTIVE-004, FND-AWARDS-003, FND-AI-005, FND-AWARDS-001, FND-AWARDS-005, EXP-TURN-038, EXP-TURN-039, SRC-MANUAL-GOG, EXP-TURN-058, EXP-UI-023]
@@ -91,3 +91,8 @@ None known.
 - Whether a timed scenario can end with exactly one player active, which
   would show the splash for a player who did not have the best score, is not
   recorded beyond the order of the tests in RULE-OBJECTIVE-001.
+- No recorded run shows a computer survivor's splash to a human, the Stats tab
+  with one survivor, the Awards tab bringing the splash back, or Done from
+  either view as a recorded input. These rest on FND-AWARDS-004 and
+  FND-AWARDS-005. Until a run reaches them, the entry stays `supported`
+  (DECISIONS.md, 2026-10-06).

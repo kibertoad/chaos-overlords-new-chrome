@@ -4,7 +4,7 @@ title: Snitch lowers the gang's sector base Tolerance by 3, free and whatever th
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SNITCH-001, FND-TOLERANCE-001, FND-TURN-007, FND-TURN-001, FND-STATE-001, FND-EXE-004, EXP-TURN-032, SRC-MANUAL-GOG]
+evidence: [FND-SNITCH-001, FND-TOLERANCE-001, FND-TURN-007, FND-TURN-001, FND-STATE-001, FND-EXE-004, EXP-TURN-032, SRC-MANUAL-GOG, EXP-TURN-024, EXP-TURN-114, EXP-TURN-117]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, RULE-TOLERANCE-001, RULE-TOLERANCE-002]
@@ -52,7 +52,8 @@ reads no cash.
 - Several Snitches in one sector in one turn each subtract 3.
 - The subtraction is made in 32 bits and stored as a signed byte. Starting
   from at least 1, the byte wraps only on the forty-fourth Snitch in one sector
-  in one turn.
+  in one turn. EXP-TURN-114 reaches the wrap by writing the base Tolerance
+  before the phase.
 - The Chaos test of the same turn compares with `tolerance`, which was rebuilt
   before planning; a Snitch first raises the chance of a Crackdown in the next
   turn's Chaos test.
@@ -73,3 +74,7 @@ None known.
 
 - Whether the planning screens refuse a Snitch order from a player in debt, as
   the manual says, is not recorded.
+- The runs reach every case of the procedure: EXP-TURN-032 Snitches that take
+  the base below 1, EXP-TURN-024 several in one sector in one turn, EXP-TURN-117 a
+  Snitch and a Bribe in one sector, and EXP-TURN-114 a Snitch from -126 that
+  wraps the signed byte to 127.
