@@ -4,7 +4,7 @@ title: A press on a setup player card selects it first, then works its portrait 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-015]
+evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-015, EXP-UI-030]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001]
@@ -97,7 +97,10 @@ slots, or changes one slot's `portrait` or name. Makes no draws.
 ## Edge cases
 
 A release outside every card after a drag changes nothing. A drag onto an
-empty card moves the player there and leaves its old slot empty. A press in
+empty card moves the player there and leaves its old slot empty. EXP-UI-030
+repeats a swap of two players, a move to an empty card in both directions and
+a drag that stays within the box, which acts as a press at its start, three
+times with the same result. A press in
 the middle of a selected card, between the two portrait bands and above the
 name band, does nothing. With six humans on six different portraits the
 arrows still find one of the nine free ones.
@@ -117,3 +120,6 @@ None known.
 
 - `fn_0040F63D` is the name editor; its dialog's layout is not described.
 - What a press or a drag that starts on an empty card does is not recorded.
+- No run releases a drag outside every card or opens the name editor from the
+  name band, so those branches rest on FND-SETUP-005 alone and the status
+  stays `supported`.

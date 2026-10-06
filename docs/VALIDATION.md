@@ -806,7 +806,8 @@ press, at each of eight steps to the release point and before the release, as
 the hire steps do, and posts only the button messages. The run's own settings
 then replace only what they set: any other choice keeps what the presses left,
 and the trace notes which choices the presses changed. EXP-UI-015 is taken this
-way, with an earlier drag that posted the moves as `WM_MOUSEMOVE` instead.
+way, with an earlier drag that posted the moves as `WM_MOUSEMOVE` instead, and
+EXP-UI-030 with the drag above.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
