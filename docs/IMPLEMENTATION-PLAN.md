@@ -1154,8 +1154,8 @@ finding alone cannot establish behavioral parity for this build.
 
 ## Shared runtime primitives migration
 
-Delegate staged save promotion and cooperative autosave leases to shared persistence. Retain
-incompatible-version admission, optional quarantine repair, worker scheduling and trust policy.
+Delegate staged save promotion, backup reads, quarantine repair and cooperative autosave leases
+to shared persistence. Retain incompatible-version admission, worker scheduling and trust policy.
 Share PCM widening without changing soundtrack routing. The shared code comes from the published
-`1.3.0` toolkit packages; see [SHARED-RUNTIME-MIGRATION.md](SHARED-RUNTIME-MIGRATION.md).
+`10.1.0` toolkit packages; see [SHARED-RUNTIME-MIGRATION.md](SHARED-RUNTIME-MIGRATION.md).
 Validate synthetic controls and the default fast gate; original formats and rules remain local.

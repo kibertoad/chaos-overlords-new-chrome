@@ -101,8 +101,8 @@ capture before they can be classified as parity.
 
 ## Shared codec adoption
 
-RefurbishedDinosaurs.Media.Smacker 1.0.1 supplies the video Huffman and packed audio decoders;
-RefurbishedDinosaurs.Media.Playback 1.0.0 supplies timeline progression. The restoration keeps
+RefurbishedDinosaurs.Media.Smacker 10.1.0 supplies the video Huffman and packed audio decoders;
+RefurbishedDinosaurs.Media.Playback 10.1.0 supplies timeline progression. The restoration keeps
 SMK2 admission, bounded demultiplexing, palette byte ordering, rendering and audio policy.
 Smacker 1.0.1 is published with bit-free constant-tree support and oversized-run rejection.
 The migration was revalidated against the NuGet release. Synthetic adapter tests exercise those
