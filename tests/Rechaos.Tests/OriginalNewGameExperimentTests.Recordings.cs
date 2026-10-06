@@ -310,6 +310,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? soundCalls.EnumerateArray().Select(call => new RecordedSoundCall(
                     call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
                 : null;
+            EffectsEnabled = run.TryGetProperty("effects_enabled", out var effectsEnabled) ? effectsEnabled.GetBoolean() : null;
             IntroMovies = run.TryGetProperty("intro_movies", out var introMovies)
                 ? introMovies.EnumerateArray().Select(movie => new RecordedIntroMovie(
                     movie.GetProperty("name").GetString()!, movie.GetProperty("frames").GetInt32(),
@@ -381,6 +382,10 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedPointerCall>? PointerCalls { get; }
         // Null when the run did not record the play helper.
         public IReadOnlyList<RecordedSoundCall>? SoundCalls { get; }
+        // Whether effects_enabled was set at each read the probe made (FND-AUDIO-002), which decides
+        // whether the effects wrapper's calls reach the play helper. Null when the run did not
+        // record it.
+        public bool? EffectsEnabled { get; }
         // Null when the run did not record the presentation clock: the milliseconds of each tick of
         // timer slot 0 from the dump on, and each call of the wait.
         public IReadOnlyList<long>? Ticks { get; }

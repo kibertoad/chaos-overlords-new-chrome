@@ -3931,6 +3931,7 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | evidence |
+| [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | evidence |
 | [FND-AUDIO-013](../findings/FND-AUDIO-013.md) | body |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | body |

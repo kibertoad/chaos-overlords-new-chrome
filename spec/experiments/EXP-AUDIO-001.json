@@ -6,6 +6,8 @@
   "clock": "roll",
   "inputs": [
     {"tick":0,"name":"command","value":"File, New Game (0x8101)"},
+    {"tick":0,"name":"setup","value":"scenario 4"},
+    {"tick":0,"name":"setup","value":"mentality 2"},
     {"tick":0,"name":"setup","value":"slot 0: human"},
     {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 1"},
@@ -5161,6 +5163,7 @@
         {"term":"aux_records.focus","index":408,"value":-1},
         {"term":"aux_records.coverage_sector","index":408,"value":-1}
       ],
+      "effects_enabled": true,
       "sound_calls": [
         [0,0,2,4604587],
         [328,1,2,4604587],
