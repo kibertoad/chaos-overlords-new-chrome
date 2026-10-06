@@ -618,7 +618,7 @@
 
 ## experiments
 
-150 entries.
+151 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -745,6 +745,7 @@
 | [EXP-TURN-096](../experiments/EXP-TURN-096.md) | Whose gangs do the sector view's cards list after each Overlord portrait press? | recorded |
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? | recorded |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? | recorded |
+| [EXP-TURN-099](../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? | recorded |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? | recorded |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? | recorded |
