@@ -31,7 +31,6 @@ public sealed class NativeAudioLevelApplicationTests
         voice.IsLooped = true;
         voice.Play();
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
         Set(game, "_musicVolumeLevel", 5);
         Set(game, "_soundEffectVolumeLevel", 6);
         Set(game, "_soundEffects", effects);

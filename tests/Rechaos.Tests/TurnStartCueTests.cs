@@ -91,7 +91,7 @@ public sealed class TurnStartCueTests
             multiplayerTransport: server);
         try
         {
-            game.Click(new Microsoft.Xna.Framework.Point(370, 350));
+            game.Click(ChaosGame.TitleOnline.Center);
             Assert.Equal(ClientScreen.Online, game.Game.CurrentScreen);
             game.Click(OnlineConnectLayout.JoinRole.Center);
             game.Type(seat.DisplayName);

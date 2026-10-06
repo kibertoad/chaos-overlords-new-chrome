@@ -609,7 +609,7 @@ public sealed partial class OriginalNewGameExperimentTests
         using var copy = new MemoryStream();
         NativeSaveSerializer.Save(copy, match);
         copy.Position = 0;
-        game.Game.EnterPlanningEntry(NativeSaveSerializer.Load(copy, BundledOriginalData.Load()));
+        game.Game.EnterPlanningEntry(NativeSaveSerializer.Load(copy, match.Definitions));
         Assert.Equal(human, game.Game.Match!.Coordinator.ActivePlayer);
         var panels = new List<string>();
         while (game.Game.CurrentScreen != ClientScreen.City)

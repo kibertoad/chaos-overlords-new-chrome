@@ -18,7 +18,7 @@ public sealed partial class ChaosGame
     private readonly bool _originalComputerHires;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
-    private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
+    internal static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
     private static readonly Rectangle TitleOptions = new(154, 376, 80, 34);
     private static readonly Rectangle TitleHelp = new(238, 376, 80, 34);
     private static readonly Rectangle TitleIntro = new(322, 376, 80, 34);

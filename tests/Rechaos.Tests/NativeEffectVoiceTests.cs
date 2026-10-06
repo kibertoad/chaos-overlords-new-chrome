@@ -146,7 +146,6 @@ public sealed class NativeEffectVoiceTests
         // Exercise the game's effects gate without constructing a window, graphics device,
         // preference store or network session. It reads only the fields set here.
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
         SetField(game, "_soundEffectVolumeLevel", level);
         SetField(game, "_soundEffects", effects);
         return game;
