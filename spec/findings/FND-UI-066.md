@@ -1,6 +1,6 @@
 ---
 id: FND-UI-066
-title: Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the panel
+title: Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the handler that opened the panel
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -128,10 +128,13 @@ The six calls with mode 1 are the six alternate-form callers FND-UI-011 lists.
 ## Interpretation
 
 Within one run, the return address on top of the stack when `fn_0041953E` is
-entered identifies the handler that opened the panel, and so which panel slid
-in. A probe that reads it at the helper's entry can attribute each recorded
-slide to its panel without relying on the travel, which only separates the
-two forms.
+entered identifies the handler that opened the panel. Of the 23 handlers, 21
+contain one panel image resource, so for them it also names the panel that
+slid in. City and Sector Financial `fn_0044D1BB` (5008, 5019) and Comlink Send
+`fn_0045EAB1` (5018, 5023) each contain two, and the return address alone does
+not say which of the two slid in. A probe that reads it at the helper's entry
+can attribute each recorded slide to its handler without relying on the
+travel, which only separates the two forms.
 
 ## Alternatives
 
