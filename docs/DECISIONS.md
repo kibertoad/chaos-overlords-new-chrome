@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-06 | [Spectators watch an online match some turns behind](#2026-10-06--spectators-watch-an-online-match-some-turns-behind) |
 | 2026-10-06 | [Chat in the online lobby, through the match's event log](#2026-10-06--chat-in-the-online-lobby-through-the-matchs-event-log) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
@@ -46,6 +47,75 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-06 — Spectators watch an online match some turns behind
+
+- Decision: a host can let people who hold no seat watch an online match. The
+  host turns it on in the lobby by choosing a delay of 2 to 20 turns
+  (`settings.spectatorDelayTurns`); leaving it unset, the default, means the
+  match cannot be watched. The setting can change only while the match is in
+  its lobby, so the players who sit down know whether they will be watched.
+  It travels in the match settings, so every seated player's lobby shows it,
+  and the public listing shows it too.
+- Joining: `POST /spectate` with the join code, the password when the match
+  has one, and a display name. The password check and its budgets are the
+  ones the seat doors use. The answer is a spectator token, prefixed `cos_`
+  where a player token is `cop_`. A match admits at most 64 spectators over
+  its life, counting those who left or were removed, and refuses the 65th
+  with `spectators_full`. The cap bounds both the table and the
+  `spectator.joined` and `spectator.left` events a lobby log can collect.
+- Authorization: spectator routes live under `/spectate/:matchId` and take
+  only a spectator token; every `/matches/:matchId` route takes only a player
+  token. A spectator holds no seat and has no player row, so nothing that
+  counts players can count one: not capacity, readiness, the turn barrier,
+  takeover votes, hash reports, the desync verdict or its tie-break. A
+  spectator cannot write anything except leaving. Their requests are charged
+  to the member rate limit, keyed by spectator id.
+- The delay is enforced by the server. While the match runs, the released
+  turn is the newest sealed turn minus the delay, and a spectator may read:
+  - the spectator view: status, settings without the live `seatSummaries`,
+    the roster, the open turn number, the delay and the released turn;
+  - the seed, once at least turn 1 is released;
+  - the sealed order set of any released turn;
+  - the newest snapshot at or below the released turn. Snapshot pruning keeps
+    that snapshot while the match runs, so a spectator can always start;
+  - the events that change who controls a seat (start, turn opened and
+    sealed, takeover, return, late join, status) logged before the seal of
+    the first unreleased turn. A rebuild from sealed sets needs them; see
+    the control handovers in the match session.
+  Once the match has finished or been abandoned every sealed turn is
+  released. A request for anything later answers `409 turn_not_released`.
+  A spectator never reads the event stream, readiness, deadlines, hash
+  reports, desync announcements, takeover votes or lobby chat. Chat is
+  between the people at the table, and the players wrote it without an
+  audience.
+- What a spectator sees: the whole map, every seat's position and the orders
+  every seat gave, as of the released turn. That is hidden information to the
+  players, who see the city through fog of war and never see a rival's
+  orders. If the Comlink is carried online in sealed sets, its messages are
+  in that view too. The delay is the control against a player watching their
+  own match to cheat: what a spectator can relay is at least the delay old,
+  and positions and plans that old have mostly been overtaken. It narrows the
+  advantage without removing it, which is why spectating is off unless the
+  host turns it on and why the setting is shown to every player.
+- Removal: the host can remove a spectator at any time
+  (`POST /matches/:id/spectators/:spectatorId/kick`), which revokes the
+  token. A spectator can leave (`POST /spectate/:id/leave`). Players can list
+  the spectators (`GET /matches/:id/spectators`) and are told of arrivals and
+  departures through `spectator.joined` and `spectator.left` in their event
+  log.
+- Runtimes and retention: both runtimes serve the same routes from the shared
+  application and storage, the Worker over D1 with the SQLite migration. A
+  spectator polls; nothing is added to the stream or the Durable Object.
+  Spectators are rows of their own table, deleted with the match.
+- Versions: protocol version 28. The session version is unchanged: the
+  setting is a new optional field and the spectators a new table, and nothing
+  a stored match already holds changes meaning. A match created before has no
+  delay, which means it cannot be watched.
+- Status: the server on both runtimes, the contracts and the client session
+  that follows a match are implemented and tested. The game shows the setting
+  in the lobby summary. The desktop screens for turning spectating on, joining
+  as a spectator and watching are tracked in a follow-up issue.
 
 ## 2026-10-06 — Chat in the online lobby, through the match's event log
 
