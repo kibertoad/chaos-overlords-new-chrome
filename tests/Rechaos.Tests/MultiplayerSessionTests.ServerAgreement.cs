@@ -22,9 +22,10 @@ public sealed partial class MultiplayerSessionTests
     /// </summary>
     /// <remarks>
     /// Ada is voted onto the computer after turn 1 and returns before turn 2; the snapshot after
-    /// turn 2 holds her seat as human, with a Comlink message she sent on turn 2. Replaying the old
-    /// takeover onto that snapshot would put her seat through a second takeover, which marks it a
-    /// raider, and the resumed state would differ from the snapshot every other client holds.
+    /// turn 2 holds her seat as human, with a Comlink message she sent on turn 2 and a recurring
+    /// Hide she gave on turn 2 carried into turn 3. Replaying the old takeover onto that snapshot
+    /// would put her seat through a second takeover, which cancels the seat's recurring orders, and
+    /// the resumed state would differ from the snapshot every other client holds.
     /// </remarks>
     [Fact]
     public async Task RestoreSkipsHandoversTheAdoptedSnapshotAlreadyHolds()
@@ -38,8 +39,14 @@ public sealed partial class MultiplayerSessionTests
         replay.TransferPlayerToHuman(new PlayerId(0));
         Assert.True(replay.State.SendComlinkMessage(
             new PlayerId(0), [new PlayerId(1)], "BACK AGAIN").Accepted);
+        var hider = replay.State.Players[0].Gangs[0].Id;
+        Assert.True(replay.State.Submit(new GameCommand(
+            new PlayerId(0), hider, GangAction.Hide,
+            Rechaos.Core.GameModel.CommandTarget.None, Repeat: true)).Accepted);
         replay = new MatchReplayRecorder(MatchStateClone.Of(replay.State, definitions));
         SealedTurnApplier.Apply(replay, SealedOrders(2));
+        // What a second takeover would cancel.
+        Assert.True(replay.State.Commands.TryGet(hider, out var carried) && carried!.Command.Repeat);
         var snapshot = new SnapshotView(
             2,
             NativeSaveSerializer.CurrentFormatVersion,

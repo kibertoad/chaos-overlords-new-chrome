@@ -25,6 +25,8 @@ export const LIMITS = {
   snapshotBase64Bytes: 1024 * 1024,
   /** Event log page size for the REST fallback. */
   eventsPageSize: 200,
+  /** A Comlink message, in characters: the 4 rows of 40 the Send panel types (RULE-COMLINK-006). */
+  comlinkMessageLength: 160,
   /** A lobby chat message, in characters after normalisation: the length of a Comlink message. */
   chatMessageLength: 160,
   /** Chat messages one player may post per minute. */

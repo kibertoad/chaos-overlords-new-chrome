@@ -99,13 +99,17 @@ public static class OrderOpDecoder
     {
         if (string.IsNullOrEmpty(text)
             || text.Length > MatchLimits.ComlinkMessageCharacters
-            || text.Any(character => character is < ' ' or > 'Z'))
+            || !IsComlinkCharacters(text))
         {
             throw new MultiplayerProtocolException(
                 $"{document} carries a Comlink message the Send panel could not have written");
         }
         return text;
     }
+
+    /// <summary>Whether every character is one the Send panel types, space to <c>Z</c> (RULE-COMLINK-006).</summary>
+    internal static bool IsComlinkCharacters(string text) =>
+        text.All(character => character is >= ' ' and <= 'Z');
 
     /// <summary>A gang definition id that fits the core's <c>short</c>.</summary>
     private static short GangDefinitionId(int value, string document)

@@ -144,7 +144,7 @@ export const commandTargetSchema = variant('kind', [
 export const comlinkTextSchema = pipe(
   string(),
   minLength(1),
-  maxLength(160),
+  maxLength(LIMITS.comlinkMessageLength),
   regex(/^[\x20-\x5A]*$/, 'a Comlink message holds only the characters space to Z'),
 )
 
@@ -222,7 +222,7 @@ export const dismissNotificationOpSchema = strictObject({
 export const sendComlinkMessageOpSchema = strictObject({
   op: literal('sendComlinkMessage'),
   player: slotSchema,
-  recipients: pipe(array(slotSchema), minLength(1), maxLength(5)),
+  recipients: pipe(array(slotSchema), minLength(1), maxLength(LIMITS.maxPlayers - 1)),
   text: comlinkTextSchema,
 })
 

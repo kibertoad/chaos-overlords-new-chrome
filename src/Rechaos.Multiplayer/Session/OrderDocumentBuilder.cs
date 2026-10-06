@@ -111,7 +111,8 @@ public sealed class OrderDocumentBuilder(PlayerId player)
     /// <summary>Records a message marked read. Mirrors <c>MatchState.MarkComlinkRead</c>.</summary>
     /// <remarks>
     /// The wire carries the sequence as a 32-bit integer. An inbox numbers every message it has ever
-    /// received, at most six senders' worth a turn, so no match reaches the bound.
+    /// received, and each sender's document for a turn holds at most 512 ops, so no match reaches
+    /// the bound.
     /// </remarks>
     public void MarkComlinkRead(PlayerId player, long sequence)
     {

@@ -119,6 +119,11 @@ public sealed partial class MatchState
     /// held until the computer took it over online (RULE-AI-027 sets raider mode only then). A seat
     /// the computer has played from the start never sent anything.
     /// </summary>
+    /// <remarks>
+    /// The check goes only as far as the state does: a save does not record which seats began as
+    /// computer players, so a save that sets raider mode on such a seat passes it. Play never
+    /// produces one, because only a takeover enters raider mode.
+    /// </remarks>
     private bool CouldHaveSentComlink(PlayerId sender) =>
         FindPlayer(sender) is { } player
         && (player.Setup.Controller == PlayerController.Human || AiPlanning.RaiderMode(sender));
