@@ -291,6 +291,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AI-075](../findings/FND-AI-075.md) | builds, locations |
 | [FND-AI-076](../findings/FND-AI-076.md) | builds, locations |
 | [FND-AI-077](../findings/FND-AI-077.md) | builds, locations |
+| [FND-AI-080](../findings/FND-AI-080.md) | builds, locations |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | builds, locations |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | builds, locations |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | builds, locations |
@@ -3686,6 +3687,7 @@ None.
 | [FND-AI-030](../findings/FND-AI-030.md) | superseded_by |
 | [FND-AI-049](../findings/FND-AI-049.md) | body |
 | [FND-AI-052](../findings/FND-AI-052.md) | body |
+| [FND-AI-080](../findings/FND-AI-080.md) | body |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
 | [RULE-AI-019](../rules/RULE-AI-019.md) | body, evidence |
 | [RULE-AI-023](../rules/RULE-AI-023.md) | evidence |
@@ -3955,6 +3957,12 @@ None.
 | [EXP-TURN-055](../experiments/EXP-TURN-055.md) | body |
 | [EXP-TURN-056](../experiments/EXP-TURN-056.md) | body |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
+
+## FND-AI-080
+
+| Cited by | In |
+|---|---|
+| [RULE-AI-019](../rules/RULE-AI-019.md) | body, evidence |
 
 ## FND-ASSET-001
 
@@ -8121,6 +8129,7 @@ None.
 | [EXP-TURN-022](../experiments/EXP-TURN-022.md) | body |
 | [EXP-TURN-048](../experiments/EXP-TURN-048.md) | body |
 | [FND-AI-069](../findings/FND-AI-069.md) | body |
+| [FND-AI-080](../findings/FND-AI-080.md) | body |
 | glossary: crackdown_in_force | glossary |
 | glossary: draw_once | glossary |
 | glossary: draw_target | glossary |
