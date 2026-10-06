@@ -945,15 +945,23 @@ differs. The table lists, for each entry, the experiments whose captures are
 compared and the states of the screen that no capture shows yet. A state in
 the last column rests on static readings and the layout tests alone. The
 `PARITY.md` row of each entry says the same in its notes; this table gathers
-them so the open captures can be planned together. SCR-UI-009 and SCR-NET-001
+them so the open captures can be planned together.
+`ScreenCaptureTests.CoverageTableNamesEveryComparedCapture` fails when the
+second column names other experiments than the fixtures' compared captures,
+so a new capture experiment has to be added here. SCR-UI-009 and SCR-NET-001
 to SCR-NET-005 are not drawn (DEV-UI-019, DEV-NET-001) and have nothing to
 capture.
 
-A shot taken after presses also checks the presses: the probe posts them to
-the original at window points, and the reference frame makes the same presses
-at the same points (`--reference-clicks`), so a shot whose elements match
-shows that each press hit the region the original's hit test chose. Regions
-that no shot presses rest on the static reading of the handler, checked
+A shot taken after presses also checks some of the presses. The reference
+frame makes a `strip` or `dbl` step and each setup step at the window point the
+probe pressed in the original (`--reference-clicks`), so a shot whose elements
+match shows that each of those presses changed the screen as the original's
+did. A press that lands in the wrong region but leaves the same picture is not
+caught. The other presses are not made at the original's points: a `card`
+step's menu choice becomes a press on the rebuild's order panel (DEV-UI-021),
+`back` is pressed at `(20, 425)` and `exit` is left out, as
+[Comparing](#comparing) describes. Regions that no shot presses at the
+original's point rest on the static reading of the handler, checked
 against the entry by layout tests such as `HireDockLayoutTests`,
 `UiNavigationTests` and `SetupPanelLayoutTests`, and on EXP-TURN-095 for the
 detailed sector screen's card and group strips.
@@ -962,16 +970,16 @@ detailed sector screen's card and group strips.
 |---|---|---|
 | SCR-UI-001 | EXP-UI-015 | None; the rebuild's buttons and version are masked (DEV-UI-012, DEV-UI-019, DEV-VIDEO-003) |
 | SCR-UI-002 | EXP-UI-015 | None |
-| SCR-SETUP-001 | EXP-UI-015, the screen as New Game opens it and after presses and drags | A card-face drag with the pointer points written (#413); a computer slot's background |
+| SCR-SETUP-001 | EXP-UI-015, the screen as New Game opens it and after presses and a drag from Add | A card-face drag with the pointer points written (#413); a computer slot's background |
 | SCR-SETUP-002 | EXP-UI-016, EXP-UI-021 | The card held pressed, an eliminated player's card, a later turn |
-| SCR-UI-003 | EXP-UI-001, EXP-UI-003, EXP-UI-006, EXP-UI-008, EXP-UI-012 to EXP-UI-014, EXP-UI-016, EXP-UI-021 | The Events or Comlink light lit; a timed scenario's countdown after the first planning entry; the city behind an elimination card of an earlier human (#421) |
-| SCR-HIRE-002 | EXP-UI-001, EXP-UI-003, EXP-UI-006 | The hire and snub marks; a dragged portrait |
+| SCR-UI-003 | EXP-UI-001, EXP-UI-003, EXP-UI-006, EXP-UI-008, EXP-UI-012 to EXP-UI-014, EXP-UI-016, EXP-UI-021 | The Events or Comlink light lit; a timed scenario's countdown after the first planning entry; the final view (FND-UI-041); the city behind an elimination card of an earlier human (#421) |
+| SCR-HIRE-002 | EXP-UI-001, EXP-UI-003, EXP-UI-006 | The hire and snub marks; a dragged portrait; the mouse input |
 | SCR-UI-004 | EXP-UI-006, EXP-UI-007, EXP-UI-009 to EXP-UI-011 | The group order strip's menus; a card drag |
 | SCR-UI-005 | EXP-UI-006, EXP-UI-007 | A seventh gang in one sector |
-| SCR-UI-006 | EXP-UI-009 | How often the rotation advances, which a still capture cannot show |
-| SCR-UI-007 | EXP-UI-007 | Site Information opened from Influence or Search |
+| SCR-UI-006 | EXP-UI-009, opened from an Equip row | The panel opened from Gang Information; how often the rotation advances, which a still capture cannot show |
+| SCR-UI-007 | EXP-UI-007, one site | Another site; Site Information opened from Influence or Search |
 | SCR-UI-008 | EXP-UI-006 | None; Advanced AI's field (DEV-AI-003) is off in the comparison |
-| SCR-FINANCE-001 | EXP-UI-006 (City), EXP-UI-007 (Sector) | None; the cash row is masked (DEV-UI-006) |
+| SCR-FINANCE-001 | EXP-UI-006 (City), EXP-UI-007 (Sector) | A queued Sell of several items (DEV-FINANCE-001); the cash row is masked (DEV-UI-006) |
 | SCR-HIRE-001 | EXP-UI-008 | An offer with a two-digit negative value |
 | SCR-GANG-002 | EXP-UI-008, a hire offer | A hired gang's panel; its rotating items |
 | SCR-COMBAT-001 | EXP-UI-008, one page | A second page; the pressed arrows |
