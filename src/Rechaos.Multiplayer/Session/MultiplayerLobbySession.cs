@@ -249,8 +249,17 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     {
         var match = (await handle.GetAsync(token).ConfigureAwait(false)).Match;
         _notices.Enqueue(new LobbyNotice.Updated(match));
-        if (match.Status == MatchStatus.Lobby && match.LastEventSeq > _chatCursor)
+        if (match.Status != MatchStatus.Lobby || match.LastEventSeq <= _chatCursor) return;
+        try
+        {
             await ReadChatAsync(handle, match.LastEventSeq, token).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (IsServerOrNetworkFailure(exception))
+        {
+            // The call this read follows has already succeeded, and a profile change reported as
+            // failed would be drawn as refused. The cursor stops at the last page announced, so
+            // the next poll reads the rest.
+        }
     }
 
     /// <summary>
@@ -264,11 +273,11 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     /// </remarks>
     private async Task ReadChatAsync(MatchHandle handle, int throughSeq, CancellationToken token)
     {
-        var lines = new List<LobbyChatLine>();
         while (_chatCursor < throughSeq)
         {
             var page = await handle.EventsAsync(_chatCursor, ChatPageSize, token).ConfigureAwait(false);
-            if (page.Events.Count == 0) break;
+            var before = _chatCursor;
+            var lines = new List<LobbyChatLine>();
             foreach (var matchEvent in page.Events)
             {
                 if (matchEvent.Seq <= _chatCursor) continue;
@@ -276,8 +285,12 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
                 if (matchEvent is LobbyChatMessageEvent chat)
                     lines.Add(new LobbyChatLine(chat.Seq, chat.Payload.PlayerId, chat.Payload.Text));
             }
+            // Announced page by page: the cursor has already moved past these, so a later page
+            // that fails must not take them down with it.
+            if (lines.Count > 0) _notices.Enqueue(new LobbyNotice.Chatted(lines));
+            // A page with nothing past the cursor would be asked for again forever.
+            if (_chatCursor == before) break;
         }
-        if (lines.Count > 0) _notices.Enqueue(new LobbyNotice.Chatted(lines));
     }
 
     /// <summary>The page size a chat read asks for: the server's own ceiling.</summary>
@@ -297,23 +310,19 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(text);
         if (_handle is not { } handle || _stopping.IsCancellationRequested) return;
-        lock (_chatGate) _chatTail = SendChatAfterAsync(_chatTail, handle, text);
+        // Read now: a send queued behind a slow one runs after the stop may have disposed the source.
+        var token = _stopping.Token;
+        lock (_chatGate) _chatTail = SendChatAfterAsync(_chatTail, handle, text, token);
     }
 
-    private async Task SendChatAfterAsync(Task previous, MatchHandle handle, string text)
+    private async Task SendChatAfterAsync(
+        Task previous, MatchHandle handle, string text, CancellationToken token)
     {
+        // Each send reports its own failure; the next message is still worth sending.
+        await previous.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         try
         {
-            await previous.ConfigureAwait(false);
-        }
-        catch (Exception exception) when (IsServerOrNetworkFailure(exception)
-            || exception is OperationCanceledException)
-        {
-            // Reported when it happened; the next message is still worth sending.
-        }
-        try
-        {
-            await handle.PostChatAsync(new PostChatMessageRequest(text), _stopping.Token)
+            await handle.PostChatAsync(new PostChatMessageRequest(text), token)
                 .ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (_stopping.IsCancellationRequested)

@@ -43,6 +43,59 @@ public sealed partial class MultiplayerLobbySessionTests
     }
 
     [Fact]
+    public async Task ChatReadThatFailsPartWayKeepsWhatWasReadAndLeavesTheCallSucceeded()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        server.Answer(HttpMethod.Get, "/matches/m1",
+            new MatchDetail(View(MatchStatus.Lobby), "CODE1234", "p1"));
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await WaitFor<LobbyNotice.Seated>(lobby, cancellationToken);
+        server.Answer(HttpMethod.Get, "/matches/m1", new MatchDetail(
+            View(MatchStatus.Lobby) with { LastEventSeq = 3 }, "CODE1234", "p1"));
+        server.Answer(HttpMethod.Put, "/matches/m1/profile", null, HttpStatusCode.NoContent);
+        server.AnswerOnce(HttpMethod.Get, "/events", new EventPage([Chat(1, "p1", "HELLO")]));
+        server.Answer(HttpMethod.Get, "/events", """
+            {"error":{"code":"conflict","message":"Not now","details":{"reason":"busy"}}}
+            """, HttpStatusCode.Conflict);
+
+        lobby.UpdateProfile(new UpdatePlayerProfileRequest("RENAMED", 7));
+        await Until(() => server.CallsTo(HttpMethod.Get, "/events") == 2, cancellationToken);
+        await Until(() => !lobby.IsBusy, cancellationToken);
+
+        var notices = new List<LobbyNotice>();
+        while (lobby.TryDequeueNotice(out var notice)) notices.Add(notice);
+        Assert.DoesNotContain(notices, notice => notice is LobbyNotice.Failed);
+        var chatted = Assert.Single(notices.OfType<LobbyNotice.Chatted>());
+        Assert.Equal([new LobbyChatLine(1, "p1", "HELLO")], chatted.Lines);
+    }
+
+    [Fact]
+    public async Task ChatReadStopsOnAPageThatMovesNothing()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        server.Answer(HttpMethod.Get, "/matches/m1", new MatchDetail(
+            View(MatchStatus.Lobby) with { LastEventSeq = 3 }, "CODE1234", "p1"));
+        // A page that never reaches the view's last event, however often it is asked for.
+        server.Answer(HttpMethod.Get, "/events", new EventPage([Chat(1, "p1", "HELLO")]));
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await WaitFor<LobbyNotice.Seated>(lobby, cancellationToken);
+
+        lobby.Refresh();
+        await WaitFor<LobbyNotice.Chatted>(lobby, cancellationToken);
+        await Until(() => !lobby.IsBusy, cancellationToken);
+
+        Assert.Equal(2, server.CallsTo(HttpMethod.Get, "/events"));
+    }
+
+    [Fact]
     public async Task ChatIsNotReadOnceTheMatchHasStarted()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

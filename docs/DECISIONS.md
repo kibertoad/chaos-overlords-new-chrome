@@ -70,7 +70,10 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   - Once a lobby's log holds 1,000 events, chat is refused with
     `lobby_log_full`. The log is the only store and lobby retention keeps it
     for days, so a cap on its length is what bounds what one lobby can cost
-    the server, whichever process counted the rate.
+    the server, whichever process counted the rate. The check and the append
+    are separate steps, so posts that arrive together can carry the log past
+    1,000 by at most one message each. The cap bounds the log; it does not
+    need to be exact, so no atomic check-and-append is added to storage.
 - The game draws chat in the original font, which has upper-case letters,
   digits and punctuation. A character it has no glyph for is drawn blank, and
   the game's own input accepts only characters it can draw. The server accepts
