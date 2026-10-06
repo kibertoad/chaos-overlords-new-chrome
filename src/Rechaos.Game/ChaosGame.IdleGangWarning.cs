@@ -185,7 +185,7 @@ public sealed partial class ChaosGame
         // FND-UI-047: the presentation clock stops while a face is held, and the line with it.
         var shown = _referenceFrame?.ItemFrame is { } ticks
             ? IdleGangWarningLayout.LineShown(ticks)
-            : IdleGangWarningLayout.LineShown(_idleGangWarningOpenedAt, PresentationDrawTime);
+            : _steadyLights || IdleGangWarningLayout.LineShown(_idleGangWarningOpenedAt, PresentationDrawTime);
         if (!shown)
             batch.Draw(pixel, IdleGangWarningLayout.BlinkingLine, Color.Black);
     }

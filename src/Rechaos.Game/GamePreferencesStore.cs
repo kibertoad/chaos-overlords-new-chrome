@@ -24,6 +24,9 @@ public static class OriginalOptionsPolicy
     /// <summary>DEV-VIDEO-003: the intro plays on the first start only. The original plays it at
     /// every start.</summary>
     public const bool IntroOnlyOnceByDefault = true;
+
+    /// <summary>DEV-UI-027: the lights, markers and caret blink and cycle as in the original.</summary>
+    public const bool SteadyLightsByDefault = false;
 }
 
 /// <summary>Which coordination service the Online screen uses.</summary>
@@ -57,9 +60,10 @@ public sealed record GamePreferences(
     string CustomMultiplayerServer,
     OnlineLobbyPresentation LobbyPresentation = OnlineLobbyPresentation.Modern,
     bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault,
-    ScenarioId PreferredScenario = ScenarioId.Greed)
+    ScenarioId PreferredScenario = ScenarioId.Greed,
+    bool SteadyLights = OriginalOptionsPolicy.SteadyLightsByDefault)
 {
-    public const int CurrentFormatVersion = 12;
+    public const int CurrentFormatVersion = 13;
     public const string DefaultCustomMultiplayerServer = "http://localhost:8787";
 
     /// <summary>Preferences that have never recorded a showing leave the intro owed, so the
@@ -114,9 +118,10 @@ public static class GamePreferencesStore
                 9 => Read<VersionNinePreferences>(bytes),
                 10 => Read<VersionTenPreferences>(bytes),
                 11 => Read<VersionElevenPreferences>(bytes),
+                12 => Read<VersionTwelvePreferences>(bytes),
                 _ => null
             };
-            if (formatVersion is >= 4 and <= 11)
+            if (formatVersion is >= 4 and <= 12)
             {
                 return legacy is not null && legacy.IsValid(formatVersion)
                     ? legacy.Upgrade()
@@ -363,7 +368,7 @@ public static class GamePreferencesStore
         };
     }
 
-    private sealed record VersionElevenPreferences(
+    private record VersionElevenPreferences(
         int FormatVersion,
         int MusicVolumeLevel,
         int SoundEffectVolumeLevel,
@@ -389,5 +394,35 @@ public static class GamePreferencesStore
 
         public override GamePreferences Upgrade() =>
             base.Upgrade() with { LobbyPresentation = LobbyPresentation };
+    }
+
+    private sealed record VersionTwelvePreferences(
+        int FormatVersion,
+        int MusicVolumeLevel,
+        int SoundEffectVolumeLevel,
+        bool WarnIfIdleGangs,
+        PlanningTimeLimit PlanningTimeLimit,
+        bool ShowBaseStatistics,
+        bool DetailedCombat,
+        bool SlidePanels,
+        bool Fullscreen,
+        bool SmoothEventSiteImages,
+        bool IntroMoviesSeen,
+        AiPolicyMode DefaultAiPolicy,
+        OnlineServiceMode OnlineService,
+        string CustomMultiplayerServer,
+        OnlineLobbyPresentation LobbyPresentation,
+        bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault,
+        ScenarioId PreferredScenario = ScenarioId.Greed)
+        : VersionElevenPreferences(
+            FormatVersion, MusicVolumeLevel, SoundEffectVolumeLevel, WarnIfIdleGangs, PlanningTimeLimit,
+            ShowBaseStatistics, DetailedCombat, SlidePanels, Fullscreen, SmoothEventSiteImages,
+            IntroMoviesSeen, DefaultAiPolicy, OnlineService, CustomMultiplayerServer, LobbyPresentation)
+    {
+        public override bool IsValid(int formatVersion) =>
+            base.IsValid(formatVersion) && Enum.IsDefined(PreferredScenario);
+
+        public override GamePreferences Upgrade() =>
+            base.Upgrade() with { IntroOnlyOnce = IntroOnlyOnce, PreferredScenario = PreferredScenario };
     }
 }

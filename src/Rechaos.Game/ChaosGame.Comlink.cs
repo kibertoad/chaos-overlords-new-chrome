@@ -391,7 +391,7 @@ public sealed partial class ChaosGame
     // recorded, 0 to 2 timer events since a flip to plain and 3 to 5 since a flip to inverse.
     private bool ComlinkCaretInverse => _referenceFrame?.ItemFrame is { } frame
         ? frame % 6 >= 3
-        : _comlinkCaretCadence.UsesInverseGlyph;
+        : _steadyLights || _comlinkCaretCadence.UsesInverseGlyph;
 
     private void DrawPressedComlinkSendButton(SpriteBatch batch)
     {

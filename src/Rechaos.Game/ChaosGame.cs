@@ -299,6 +299,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _smoothEventSiteImages = preferences.SmoothEventSiteImages;
         _introMoviesSeen = preferences.IntroMoviesSeen;
         _introOnlyOnce = preferences.IntroOnlyOnce;
+        _steadyLights = preferences.SteadyLights;
         _defaultAiPolicy = preferences.DefaultAiPolicy;
         _preferredScenario = preferences.PreferredScenario;
         _online.Service = preferences.OnlineService;

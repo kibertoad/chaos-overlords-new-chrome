@@ -19,15 +19,19 @@ public static class OptionsLayout
         Enumerable.Range(0, AudioRouting.MaximumEffectVolumeLevel + 1)
             .Select(level => new Rectangle(132 + level * 34, 140, 28, 28))
             .ToArray();
-    public static Rectangle BaseStatistics => new(150, 174, 340, 22);
-    public static Rectangle DetailedCombat => new(150, 198, 340, 22);
-    public static Rectangle SlidePanels => new(150, 222, 340, 22);
-    public static Rectangle WarnIfIdleGangs => new(150, 246, 340, 22);
-    public static Rectangle EventSiteImages => new(150, 270, 340, 22);
-    public static Rectangle AdvancedAi => new(150, 294, 340, 22);
-    public static Rectangle IntroOnlyOnce => new(150, 318, 340, 22);
-    public static Rectangle ExportDiagnostics => new(150, 342, 340, 22);
-    public static Rectangle ColorDepth => new(150, 368, 340, 16);
+    public static Rectangle BaseStatistics => Toggle(0);
+    public static Rectangle DetailedCombat => Toggle(1);
+    public static Rectangle SlidePanels => Toggle(2);
+    public static Rectangle SteadyLights => Toggle(3);
+    public static Rectangle WarnIfIdleGangs => Toggle(4);
+    public static Rectangle EventSiteImages => Toggle(5);
+    public static Rectangle AdvancedAi => Toggle(6);
+    public static Rectangle IntroOnlyOnce => Toggle(7);
+    public static Rectangle ExportDiagnostics => Toggle(8);
+    public static Rectangle ColorDepth => new(150, 174 + 9 * 21, 340, 16);
+
+    /// <summary>The toggle rows, 21 pixels apart below the volume sliders.</summary>
+    private static Rectangle Toggle(int index) => new(150, 174 + index * 21, 340, 20);
     public static Rectangle OnlineLobbyPresentation => ColorDepth;
 
     /// <summary>The first row below the two volume sliders.</summary>
@@ -36,15 +40,15 @@ public static class OptionsLayout
     /// <summary>The toggle rows in cursor order, starting at <see cref="FirstToggleRow"/>.</summary>
     public static IReadOnlyList<Rectangle> ToggleRows { get; } =
     [
-        BaseStatistics, DetailedCombat, SlidePanels, WarnIfIdleGangs, EventSiteImages, AdvancedAi,
-        IntroOnlyOnce, ExportDiagnostics, OnlineLobbyPresentation
+        BaseStatistics, DetailedCombat, SlidePanels, SteadyLights, WarnIfIdleGangs, EventSiteImages,
+        AdvancedAi, IntroOnlyOnce, ExportDiagnostics, OnlineLobbyPresentation
     ];
 
     /// <summary>The cursor row of <see cref="ExportDiagnostics"/>.</summary>
-    public const int ExportDiagnosticsRow = 9;
+    public const int ExportDiagnosticsRow = 10;
 
     /// <summary>The last cursor row.</summary>
-    public const int LastRow = FirstToggleRow + 8;
+    public const int LastRow = FirstToggleRow + 9;
 
     /// <summary>Whether Left and Right flip the setting on <paramref name="row"/>.</summary>
     /// <remarks>
@@ -75,6 +79,14 @@ public static class OptionsTooltip
                 "EACH STEP SHOWS MORE OF THE PANEL, LEFT COLUMNS FIRST, CUT OFF",
                 "AT ITS RIGHT EDGE. PANELS CLOSE AT ONCE.",
                 "OFF SHOWS PANELS AT ONCE, SILENTLY."
+            ];
+        if (OptionsLayout.SteadyLights.Contains(point))
+            return [
+                "STEADY LIGHTS",
+                "ON STOPS BLINKING AND CYCLING: THE EVENTS, COMLINK AND DONE",
+                "LIGHTS STAY LIT, AND THE SELECTED SECTOR FRAME, THE OVERLORD",
+                "MARKER, ROTATING ITEMS, THE IDLE GANG WARNING AND THE COMLINK",
+                "CARET HOLD STILL. OFF BLINKS THEM AS THE ORIGINAL DOES."
             ];
         if (OptionsLayout.WarnIfIdleGangs.Contains(point))
             return ["WARN IF IDLE GANGS", "ASKS BEFORE ENDING WITH UNASSIGNED ACTIVE GANGS."];
@@ -139,6 +151,7 @@ public sealed partial class ChaosGame
     private bool _fullscreen = OriginalOptionsPolicy.FullscreenByDefault;
     private bool _smoothEventSiteImages = OriginalOptionsPolicy.SmoothEventSiteImagesByDefault;
     private bool _introOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault;
+    private bool _steadyLights = OriginalOptionsPolicy.SteadyLightsByDefault;
     private OnlineLobbyPresentation _onlineLobbyPresentation = OnlineLobbyPresentation.Modern;
     private string _optionsStatus = string.Empty;
 
@@ -227,12 +240,13 @@ public sealed partial class ChaosGame
         if (_optionsRow == 2) ToggleBaseStatistics();
         else if (_optionsRow == 3) ToggleDetailedCombat();
         else if (_optionsRow == 4) ToggleSlidePanels();
-        else if (_optionsRow == 5) ToggleIdleGangWarning();
-        else if (_optionsRow == 6) ToggleEventSiteImageFilter();
-        else if (_optionsRow == 7) ToggleAdvancedAi();
-        else if (_optionsRow == 8) ToggleIntroOnlyOnce();
+        else if (_optionsRow == 5) ToggleSteadyLights();
+        else if (_optionsRow == 6) ToggleIdleGangWarning();
+        else if (_optionsRow == 7) ToggleEventSiteImageFilter();
+        else if (_optionsRow == 8) ToggleAdvancedAi();
+        else if (_optionsRow == 9) ToggleIntroOnlyOnce();
         else if (_optionsRow == OptionsLayout.ExportDiagnosticsRow) ExportDiagnostics();
-        else if (_optionsRow == 10) ToggleOnlineLobbyPresentation();
+        else if (_optionsRow == 11) ToggleOnlineLobbyPresentation();
     }
 
     private void ToggleBaseStatistics()
@@ -292,6 +306,15 @@ public sealed partial class ChaosGame
         ApplyAudioVolumeLevels(_inputTime);
         SavePreferences();
         if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _message = string.Empty;
+    }
+
+    /// <summary>DEV-UI-027: Steady Lights holds the blinking and cycling parts of the screen still.</summary>
+    private void ToggleSteadyLights()
+    {
+        _steadyLights = !_steadyLights;
+        SavePreferences();
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
     }
 
@@ -403,7 +426,8 @@ public sealed partial class ChaosGame
                 _online.Server.Value,
                 _onlineLobbyPresentation,
                 _introOnlyOnce,
-                _preferredScenario));
+                _preferredScenario,
+                _steadyLights));
 
     private void ToggleFullscreen()
     {
@@ -453,18 +477,20 @@ public sealed partial class ChaosGame
             $"DETAILED COMBAT: {(_detailedCombat ? "ON" : "OFF")}", 3);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.SlidePanels,
             $"SLIDE PANELS: {(_slidePanels ? "ON" : "OFF")}", 4);
+        DrawOptionToggle(batch, pixel, font, OptionsLayout.SteadyLights,
+            $"STEADY LIGHTS: {(_steadyLights ? "ON" : "OFF")}", 5);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.WarnIfIdleGangs,
-            $"WARN IF IDLE GANGS: {(_warnIfIdleGangs ? "ON" : "OFF")}", 5);
+            $"WARN IF IDLE GANGS: {(_warnIfIdleGangs ? "ON" : "OFF")}", 6);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.EventSiteImages,
-            $"EVENT SITE IMAGES: {(_smoothEventSiteImages ? "SMOOTH" : "ORIGINAL")}", 6);
+            $"EVENT SITE IMAGES: {(_smoothEventSiteImages ? "SMOOTH" : "ORIGINAL")}", 7);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.AdvancedAi,
-            $"ADVANCED AI: {(OwnAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 7);
+            $"ADVANCED AI: {(OwnAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 8);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.IntroOnlyOnce,
-            $"INTRO ONLY ONCE: {(_introOnlyOnce ? "ON" : "OFF")}", 8);
+            $"INTRO ONLY ONCE: {(_introOnlyOnce ? "ON" : "OFF")}", 9);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ExportDiagnostics,
-            "EXPORT DIAGNOSTICS", 9);
+            "EXPORT DIAGNOSTICS", 10);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.OnlineLobbyPresentation,
-            $"ONLINE LOBBY: {(_onlineLobbyPresentation == OnlineLobbyPresentation.Classic ? "CLASSIC" : "MODERN")}", 10);
+            $"ONLINE LOBBY: {(_onlineLobbyPresentation == OnlineLobbyPresentation.Classic ? "CLASSIC" : "MODERN")}", 11);
 
         DrawCentered(font, batch,
             string.IsNullOrEmpty(_optionsStatus)

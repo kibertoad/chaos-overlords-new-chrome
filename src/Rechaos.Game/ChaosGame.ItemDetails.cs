@@ -66,7 +66,7 @@ public sealed partial class ChaosGame
                 // from frame 0 when the panel opens, or at the frame the reference frame's capture showed.
                 _referenceFrame?.ItemFrame is { } frame
                     ? ItemRotationPresentation.Frame(frame)
-                    : ItemRotationPresentation.Frame(PresentationDrawTime < _itemDetailsOpenedAt
+                    : ItemRotationPresentation.Frame(_steadyLights || PresentationDrawTime < _itemDetailsOpenedAt
                         ? TimeSpan.Zero : PresentationDrawTime - _itemDetailsOpenedAt), Color.White);
         else if (_itemPortraits is not null)
             batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,

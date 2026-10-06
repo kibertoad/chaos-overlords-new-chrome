@@ -32,6 +32,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
             preferences.CustomMultiplayerServer);
         Assert.Equal(OnlineLobbyPresentation.Modern, preferences.LobbyPresentation);
         Assert.Equal(OriginalOptionsPolicy.IntroOnlyOnceByDefault, preferences.IntroOnlyOnce);
+        Assert.Equal(OriginalOptionsPolicy.SteadyLightsByDefault, preferences.SteadyLights);
         // RULE-SETUP-002: Greed when nothing is stored.
         Assert.Equal(ScenarioId.Greed, preferences.PreferredScenario);
     }

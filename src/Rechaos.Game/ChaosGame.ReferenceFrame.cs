@@ -391,7 +391,8 @@ public sealed partial class ChaosGame
     /// Whether a light whose flag is set is in its lit phase (FND-EVENT-006): the phase the
     /// reference frame's capture recorded for its lamp, otherwise the clock's.
     /// </summary>
-    private bool LampInLitPhase(bool? recorded) => recorded ?? PresentationClock.BlinkLit(PresentationDrawTime);
+    private bool LampInLitPhase(bool? recorded) =>
+        recorded ?? (_steadyLights || PresentationClock.BlinkLit(PresentationDrawTime));
 
     /// <summary>
     /// The selection frame the pump has drawn last (FND-UI-017): the one for the reference frame's
@@ -400,6 +401,7 @@ public sealed partial class ChaosGame
     /// </summary>
     private int SelectionFrameShown() => _referenceFrame?.PumpCounter is { } counter
         ? CityMapLayout.SelectionFrameAfterPass(counter)
+        : _steadyLights ? 0
         : _heldSelectionFrame ?? CityMapLayout.SelectionFrame(PresentationDrawTime);
 
     /// <summary>

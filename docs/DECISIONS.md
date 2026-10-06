@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-06 | [Accessibility criteria the rebuild meets](#2026-10-06--accessibility-criteria-the-rebuild-meets) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
 | 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
@@ -44,6 +45,35 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-06 — Accessibility criteria the rebuild meets
+
+The rebuild meets these criteria. Each is met by an added setting that starts
+off, by an added line or input that changes nothing the player can do, or by
+an issue that tracks the gap. None changes the rules or what a player can
+order, and every capture comparison runs with the settings off.
+
+1. Blinking and cycling can be stopped. With Steady Lights on (DEV-UI-027),
+   the console lights, the Done light, the selected sector's frame, the
+   Overlord marker, the idle-gang warning line, the Comlink caret and the
+   rotating item pictures hold one frame. The original's rates stay under three
+   flashes a second, so the setting starts off.
+2. Motion can be removed. Slide Panels starts off (DEV-OPTIONS-002), so panels
+   are drawn in place, and Detailed Combat can be switched off in Options or
+   cleared with Escape or a right-button press (DEV-COMBAT-001).
+3. A refusal is stated in words. Every refused order, drop or key is named on
+   the message line (DEV-UI-023), so no refusal is reported by a sound alone.
+4. Every match action can be ordered without a pointer. Hiring is the one
+   action that still needs a drag: #474.
+5. Colour is never the only carrier of information. The detailed sector screen
+   names a sector's owner; the city map shows it by colour only: #475.
+6. Keys can be remapped: #158.
+
+Reason: these are the criteria from WCAG 2.2 (2.2.2, 2.3.3, 1.3.3, 2.1.1,
+1.4.1) that a mouse-driven 1996 strategy game can meet without changing what
+the player can do. Criteria that would need new content, such as spoken text
+or larger fonts with a new layout, are out of scope while screens match the
+original pixel for pixel.
 
 ## 2026-10-06 — Count a row its mandatory deviations replace as deviated
 

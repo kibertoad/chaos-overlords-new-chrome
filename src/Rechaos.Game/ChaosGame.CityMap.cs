@@ -131,8 +131,9 @@ public sealed partial class ChaosGame
         if (_uiSprites is null) return;
         // FND-UI-038: the reference frame draws the marker frame its capture recorded, or the
         // first one, whatever its clicks advanced the clock to.
+        // DEV-UI-027: Steady Lights holds the marker at its first frame.
         var markerFrame = _referenceFrame is null
-            ? _overlordMarkerClock.Frame(_inputTime)
+            ? _steadyLights ? ActivePlayerMarkerPresentation.Frame(TimeSpan.Zero) : _overlordMarkerClock.Frame(_inputTime)
             : _referenceFrame.MarkerFrame ?? ActivePlayerMarkerPresentation.Frame(TimeSpan.Zero);
         for (var seat = 0; seat < MatchLimits.PlayerCount; seat++)
         {

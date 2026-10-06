@@ -480,6 +480,7 @@ public sealed partial class UiNavigationTests
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.BaseStatistics));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.DetailedCombat));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.SlidePanels));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.SteadyLights));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.AdvancedAi));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.IntroOnlyOnce));
@@ -498,6 +499,7 @@ public sealed partial class UiNavigationTests
             OptionsLayout.BaseStatistics,
             OptionsLayout.DetailedCombat,
             OptionsLayout.SlidePanels,
+            OptionsLayout.SteadyLights,
             OptionsLayout.WarnIfIdleGangs,
             OptionsLayout.EventSiteImages,
             OptionsLayout.AdvancedAi,
@@ -518,6 +520,12 @@ public sealed partial class UiNavigationTests
         });
         Assert.Contains("ORIGINAL HOST-LOBBY ART",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.ColorDepth.Center)));
+        Assert.Contains("OFF BLINKS THEM AS THE ORIGINAL DOES",
+            string.Join(' ', OptionsTooltip.At(OptionsLayout.SteadyLights.Center)));
+        // The rows and the Done face do not overlap, so each press reaches one of them.
+        var rows = OptionsLayout.ToggleRows.Append(OptionsLayout.Done).ToArray();
+        Assert.All(rows.SelectMany((first, index) => rows.Skip(index + 1).Select(second => (first, second))),
+            pair => Assert.False(pair.first.Intersects(pair.second)));
         Assert.Contains("SLIDES PANELS IN FROM THE RIGHT",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.SlidePanels.Center)));
         Assert.Contains("NATIVE STRETCH AND ORDERED DITHER",

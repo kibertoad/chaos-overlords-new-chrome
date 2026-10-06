@@ -291,7 +291,7 @@ public sealed partial class ChaosGame
             && LampInLitPhase(_referenceFrame?.Lamps?.Comlink))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
-        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))
+        if (_finalViewPlayer is not null && (_steadyLights || PresentationClock.BlinkLit(PresentationDrawTime)))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
