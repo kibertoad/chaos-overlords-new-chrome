@@ -213,11 +213,13 @@ internal sealed class OriginalProcess : IDisposable
         }
 
         Disarm(breakpoint);
-        if (breakpoint.Handlers.Count == 0)
+        // A handler may have removed this breakpoint and set a new one at the same address, which
+        // waits for the single step as well, or it would stop this same instruction again.
+        var current = _breakpoints.GetValueOrDefault(address);
+        if (current is not null && current != breakpoint) Disarm(current);
+        if (current is null || current.Handlers.Count == 0)
         {
-            // A handler may have removed this breakpoint and set a new one at the same address.
-            if (_breakpoints.TryGetValue(address, out var current) && current == breakpoint)
-                _breakpoints.Remove(address);
+            if (current == breakpoint) _breakpoints.Remove(address);
         }
         else
         {

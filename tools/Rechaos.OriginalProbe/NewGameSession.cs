@@ -265,9 +265,9 @@ internal sealed partial class NewGameSession(
     private readonly List<int> _rollsAtDone = [];
     private int _seed = -1;
     private bool _setupReached;
-    private int _panelsOpen;
     // The indices in _panels of the panel calls whose handler has not returned, innermost last.
     private readonly List<int> _openPanelCalls = [];
+    private int PanelsOpen => _openPanelCalls.Count;
     private readonly List<PanelRecord> _panels = [];
     // The panel calls as they stood at the dump: presses made after it, such as a hire step's
     // Exit, close panels and open others that belong to no planning entry of the run.
@@ -488,7 +488,7 @@ internal sealed partial class NewGameSession(
             }, turnTimeout);
             if (!next)
                 return Finish(false, $"Turn {turn} never reached the next planning phase (match_over "
-                    + $"{_process.Read(OriginalAddresses.MatchOver, 1)[0]}, {_panelsOpen} panel(s) open, elapsed_turns "
+                    + $"{_process.Read(OriginalAddresses.MatchOver, 1)[0]}, {PanelsOpen} panel(s) open, elapsed_turns "
                     + $"{_process.ReadInt32(OriginalAddresses.ElapsedTurns)}).", rollsBeforeBegin);
             if (_awardsReached)
             {
@@ -497,6 +497,7 @@ internal sealed partial class NewGameSession(
                 if (!_process.RunUntil(() => _endgameDrawn, TimeSpan.FromSeconds(10)))
                 {
                     _endgame = null;
+                    _process.RemoveBreakpoint(OriginalAddresses.TextDraw, OnTextDraw);
                     _notes.Add("The endgame renderer did not return within 10 seconds; its rows are not kept.");
                 }
                 _notes.Add($"The match ended with turn {turn}; the endgame drew the awards after roll {_rolls.Count}.");
@@ -604,16 +605,11 @@ internal sealed partial class NewGameSession(
     // panel-open helper (FND-UI-061), whatever closes the panel afterwards.
     private void OpenPanel(BreakContext context, string panel)
     {
-        _panelsOpen++;
         _notes.Add($"{panel} opened after roll {_rolls.Count}");
         var index = _panels.Count;
         _panels.Add(new PanelRecord(panel, _rolls.Count, false));
         _openPanelCalls.Add(index);
-        _process.SetBreakpoint(context.ReturnAddress, _ =>
-        {
-            _panelsOpen--;
-            _openPanelCalls.Remove(index);
-        }, oneShot: true);
+        _process.SetBreakpoint(context.ReturnAddress, _ => _openPanelCalls.Remove(index), oneShot: true);
     }
 
     // FND-UI-061: the innermost open call of the panel has reached its slide-in.
@@ -637,19 +633,29 @@ internal sealed partial class NewGameSession(
     {
         for (var attempt = 0; attempt < 10; attempt++)
         {
-            if (_panelsOpen == 0)
+            if (PanelsOpen == 0)
             {
                 if (attempt == 0) return true;
                 var loopReached = false;
-                _process.SetBreakpoint(OriginalAddresses.PlanningTimeCheck, _ => loopReached = true, oneShot: true);
-                _process.RunUntil(() => loopReached || _panelsOpen > 0, TimeSpan.FromSeconds(3));
-                if (_panelsOpen == 0) return true;
+                Action<BreakContext> onLoop = _ => loopReached = true;
+                _process.SetBreakpoint(OriginalAddresses.PlanningTimeCheck, onLoop, oneShot: true);
+                _process.RunUntil(() => loopReached || PanelsOpen > 0, TimeSpan.FromSeconds(3));
+                // When a panel opened or the 3 seconds ran out first, the handler is still on the
+                // time check and would fire on a later pass.
+                _process.RemoveBreakpoint(OriginalAddresses.PlanningTimeCheck, onLoop);
+                if (PanelsOpen == 0) return true;
+                // The handler has only been entered. Its slide-in blocks input (FND-UI-011), so the
+                // press waits until the panel is quiet, as for a panel at a planning entry.
+                _process.RunUntil(
+                    () => PanelsOpen == 0 || DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(0.5),
+                    TimeSpan.FromSeconds(3));
+                if (PanelsOpen == 0) continue;
             }
             Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
-            _process.RunUntil(() => _panelsOpen == 0, TimeSpan.FromSeconds(3));
+            _process.RunUntil(() => PanelsOpen == 0, TimeSpan.FromSeconds(3));
         }
 
-        return _panelsOpen == 0;
+        return PanelsOpen == 0;
     }
 
     // An Exit press of a step after the dump. With no panel open the Exit point lies on the city
@@ -657,7 +663,7 @@ internal sealed partial class NewGameSession(
     // press is skipped.
     private void PressExitAfterDump(IntPtr window)
     {
-        if (_panelsOpen == 0)
+        if (PanelsOpen == 0)
         {
             _notes.Add("exit after the dump skipped: no panel was open");
             return;

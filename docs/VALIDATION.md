@@ -407,21 +407,21 @@ follows the last one. The human's planning phase opens the Combat Results
 panel (SCR-COMBAT-001) after a fight that involved its gangs, and the Last
 Turn Events panel (SCR-EVENT-001) when it has reports, and waits in each; the
 probe breaks on both handlers and presses Exit before the next Done; once a
-press has closed a panel it waits until another panel opens or the planning
-loop runs again, since Last Turn Events is a call of its own after Combat
-Results has returned (FND-UI-061). It presses Done again if a press left the
-turn unmoved for 20 seconds. Each call of either handler is kept with the roll
-count at the call and whether it showed its panel: a call shows it when it
-reaches its call of the panel-open helper, `0x00452146` in Combat Results and
-`0x0044F3D1` in Last Turn Events, which comes before it waits for input, and a
-call with nothing to show, as Combat Results when no fight qualifies, returns
-without reaching it (FND-UI-061). The fixture holds the calls as `panels`. `--orders` writes
-an order into a gang record of the first human before the Done press of the
-given turn, counted from 1: the `action`, `target` and `target_2` bytes of
-FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
-as the order screens write them (RULE-TURN-005). The fixture lists each order
-as an `order` input before its Done press, and the replay submits the same
-order as a command. `--hires` writes the sector byte of the first human's
+press has closed a panel it waits up to 3 seconds for another panel to open
+or the planning loop to run again, since Last Turn Events is a call of its own
+after Combat Results has returned (FND-UI-061). It presses Done again if a
+press left the turn unmoved for 20 seconds. Each call of either handler is kept
+with the roll count at the call and whether it showed its panel: a call shows
+it when it reaches its call of the panel-open helper, `0x00452146` in Combat
+Results and `0x0044F3D1` in Last Turn Events, which comes before it waits for
+input, and a call with nothing to show, as Combat Results when no fight
+qualifies, returns without reaching it (FND-UI-061). The fixture holds the
+calls as `panels`. `--orders` writes an order into a gang record of the first
+human before the Done press of the given turn, counted from 1: the `action`,
+`target` and `target_2` bytes of FMT-STATE-001, and for a recurring order
+`repeat_action` and `repeat_target`, as the order screens write them
+(RULE-TURN-005). The fixture lists each order as an `order` input before its
+Done press, and the replay submits the same order as a command. `--hires` writes the sector byte of the first human's
 hire order for an offer slot into `hire_orders` before the Done press of the
 given turn, as the hire screen does (RULE-HIRE-003); the fixture lists it as a
 `hire` input, and the replay hires the gang the rebuild offers in that slot.
