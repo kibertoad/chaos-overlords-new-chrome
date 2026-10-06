@@ -586,6 +586,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-056](../findings/FND-UI-056.md) | builds, locations |
 | [FND-UI-057](../findings/FND-UI-057.md) | builds, locations |
 | [FND-UI-058](../findings/FND-UI-058.md) | builds, locations |
+| [FND-UI-059](../findings/FND-UI-059.md) | body, builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -4428,6 +4429,7 @@ None.
 | [FMT-STATE-008](../formats/FMT-STATE-008.md) | body, evidence |
 | [FND-COMBAT-008](../findings/FND-COMBAT-008.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [FND-UI-059](../findings/FND-UI-059.md) | body |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 
@@ -5014,6 +5016,7 @@ None.
 | [FND-COMLINK-007](../findings/FND-COMLINK-007.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-046](../findings/FND-UI-046.md) | body |
+| [FND-UI-059](../findings/FND-UI-059.md) | body |
 | glossary: events_page | glossary |
 | glossary: events_seen | glossary |
 | glossary: events_unviewed | glossary |
@@ -6002,6 +6005,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-059](../findings/FND-UI-059.md) | body |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, evidence |
 
 ## FND-OBJECTIVE-006
@@ -6205,6 +6209,7 @@ None.
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
 | [FND-UI-058](../findings/FND-UI-058.md) | body |
+| [FND-UI-059](../findings/FND-UI-059.md) | body |
 | glossary: cd_present | glossary |
 | glossary: display_depth | glossary |
 | glossary: full_screen_active | glossary |
@@ -7460,6 +7465,7 @@ None.
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
 | [FND-UI-057](../findings/FND-UI-057.md) | body |
+| [FND-UI-059](../findings/FND-UI-059.md) | body |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | evidence |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | evidence |
@@ -7694,6 +7700,7 @@ None.
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | body |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
+| [FND-UI-059](../findings/FND-UI-059.md) | body |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
@@ -7845,6 +7852,12 @@ None.
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | body |
 | glossary: match_saved | glossary |
 | [RULE-UI-015](../rules/RULE-UI-015.md) | evidence |
+
+## FND-UI-059
+
+| Cited by | In |
+|---|---|
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-UPKEEP-001
 
