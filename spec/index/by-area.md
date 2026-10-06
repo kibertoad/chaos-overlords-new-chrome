@@ -910,6 +910,8 @@
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | How long do the original's presentation waits last against its six-per-second clock? | recorded |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | Which copies does the original make when a panel slides in? | recorded |
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? | recorded |
+| [EXP-UI-027](../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? | recorded |
+| [EXP-UI-028](../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-032](../experiments/EXP-UI-032.md) | What does the elimination card show behind it after an earlier human has planned? | recorded |
 | [EXP-UI-034](../experiments/EXP-UI-034.md) | What does the endgame show behind it after an elimination card? | recorded |
 | [EXP-UI-035](../experiments/EXP-UI-035.md) | What does the planning clock bar show at the next planning entry? | recorded |
