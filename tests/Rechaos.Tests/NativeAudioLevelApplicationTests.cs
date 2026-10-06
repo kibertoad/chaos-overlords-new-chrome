@@ -37,6 +37,8 @@ public sealed class NativeAudioLevelApplicationTests
         Set(game, "_soundtrack", new Dictionary<string, Song> { ["track"] = song });
         Set(game, "_generalSounds", new Dictionary<int, SoundEffect>());
         Set(game, "_preferencesPath", preferencePath);
+        // SavePreferences stores the timer's menu setting (DEV-TIMER-002).
+        Set(game, "_planningTimer", new PlanningTimer());
         var onlineField = Field("_online");
         onlineField.SetValue(game, Activator.CreateInstance(onlineField.FieldType, nonPublic: true));
         MediaPlayer.Stop();
