@@ -319,11 +319,16 @@ public sealed partial class DeviationBehaviourTests
         return strings;
     }
 
-    /// <summary>A game with no window, its collections and helper objects made and nothing loaded.</summary>
+    /// <summary>
+    /// A game with no window, its collections and helper objects made and nothing loaded. It runs in
+    /// the detached shell, whose Exit does nothing, and its effects go to a recorder.
+    /// </summary>
     internal static ChaosGame HeadlessGame()
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
+        // No constructor or field initializer has run, so the interface-typed services are set here.
+        Field("_shell").SetValue(game, DetachedShell.Instance);
+        Field("_soundEffects").SetValue(game, new RecordingSoundEffects());
         foreach (var field in typeof(ChaosGame).GetFields(BindingFlags.Instance | BindingFlags.NonPublic))
         {
             var type = field.FieldType;

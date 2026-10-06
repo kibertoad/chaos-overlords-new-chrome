@@ -196,12 +196,20 @@ public sealed class PlanningTimerLoopTests
             PlanningTimeLimit = PlanningTimeLimit.ThirtySeconds,
             WarnIfIdleGangs = warnIfIdleGangs,
         });
-        var match = game.StartLocalMatch();
-        Assert.Equal(ClientScreen.City, game.Game.CurrentScreen);
-        human = match.Coordinator.ActivePlayer ?? throw new InvalidOperationException("No player plans.");
-        Assert.Equal(PlayerController.Human, match.FindPlayer(human)!.Setup.Controller);
-        Assert.True(game.Game.PlanningClock.IsActive);
-        return game;
+        try
+        {
+            var match = game.StartLocalMatch();
+            Assert.Equal(ClientScreen.City, game.Game.CurrentScreen);
+            human = match.Coordinator.ActivePlayer ?? throw new InvalidOperationException("No player plans.");
+            Assert.Equal(PlayerController.Human, match.FindPlayer(human)!.Setup.Controller);
+            Assert.True(game.Game.PlanningClock.IsActive);
+            return game;
+        }
+        catch
+        {
+            game.Dispose();
+            throw;
+        }
     }
 
     private static void AssertPlanning(HeadlessGame game, PlayerId human)
