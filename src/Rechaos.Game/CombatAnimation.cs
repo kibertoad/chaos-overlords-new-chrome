@@ -247,12 +247,16 @@ public sealed class CombatAnimationPlayer
         CombatAnimationRouting.SecondDamageFlashTick;
     public bool IsPlaying => Active is not null;
 
+    /// <summary>The index of <see cref="Active"/> among the clips queued since the player was last idle.</summary>
+    public int ClipIndex { get; private set; }
+
     public void Enqueue(CombatAnimationClip clip)
     {
         ArgumentNullException.ThrowIfNull(clip);
         if (Active is null)
         {
             Active = clip;
+            ClipIndex = 0;
             TimelineTick = 0;
             _elapsedMilliseconds = 0;
         }
@@ -297,6 +301,7 @@ public sealed class CombatAnimationPlayer
                 (started ??= []).Add(Active);
             if (TimelineTick < Active.CompletionTick) continue;
             Active = _queue.Count > 0 ? _queue.Dequeue() : null;
+            ClipIndex = Active is null ? 0 : ClipIndex + 1;
             TimelineTick = 0;
             if (Active is null) _elapsedMilliseconds = 0;
         }
@@ -315,9 +320,32 @@ public sealed class CombatAnimationPlayer
         TimelineTick = tick;
     }
 
+    /// <summary>
+    /// Puts the presentation at clip <paramref name="clipIndex"/>, counted from 0, and that clip at
+    /// <paramref name="tick"/> (<see cref="ShowTick"/>), passing over the clips before it without
+    /// playing them, for a frame drawn at a captured clip of the original's presentation
+    /// (FND-COMBAT-011). Each clip draws from its own forces, so a clip passed over leaves nothing
+    /// on the screen.
+    /// </summary>
+    public void Show(int clipIndex, int tick)
+    {
+        if (clipIndex < 0) throw new ArgumentOutOfRangeException(nameof(clipIndex));
+        if (Active is null) return;
+        if (clipIndex < ClipIndex || clipIndex - ClipIndex > _queue.Count)
+            throw new ArgumentOutOfRangeException(nameof(clipIndex),
+                $"The presentation has clips {ClipIndex} to {ClipIndex + _queue.Count}, not {clipIndex}.");
+        while (ClipIndex < clipIndex)
+        {
+            Active = _queue.Dequeue();
+            ClipIndex++;
+        }
+        ShowTick(tick);
+    }
+
     public void Clear()
     {
         _queue.Clear();
+        ClipIndex = 0;
         Active = null;
         TimelineTick = 0;
         _elapsedMilliseconds = 0;

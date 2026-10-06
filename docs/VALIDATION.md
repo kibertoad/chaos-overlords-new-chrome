@@ -771,12 +771,16 @@ the frame counter is that value while the flag is set, the pump counter when it
 is clear, and null when the probe could not tell. A panel that slides in over
 another finds the flag set and leaves the counter as it was. While Item
 Information, Sell or Give is open the shot also keeps `item_frame`, the frame
-of its rotating items, read from the handler's local before and after the
-capture, which is taken again when the two reads differ (FND-UI-052,
-FND-UI-053); while the idle gang warning is open, the ticks since its open
-modulo 8, read from its countdown and shown flag (FND-UI-054); and for a shot
-of the Comlink Send panel, 3 while its caret is drawn inverse and 0 while
-plain, read from the byte at `0x00498110` (FND-COMLINK-010). A `warn` step
+of its rotating items, read from the handler's local (FND-UI-052,
+FND-UI-053); while the idle gang warning is open, `idle_phase`, the ticks since
+its open modulo 8, read from its countdown and shown flag (FND-UI-054); for a
+shot of the Comlink Send panel, `caret_phase`, 3 while its caret is drawn
+inverse and 0 while plain, read from the byte at `0x00498110`
+(FND-COMLINK-010); and while a Detailed Combat clip plays, `clip_tick`, the
+clip's tick (FND-COMBAT-016), and `clip_index`, the clip's index within its
+presentation, counted from 0 (FND-COMBAT-011). Each is read before and after
+the capture, which is taken again when the two reads differ, and a value that
+moved during every attempt is left out. A `warn` step
 switches Warn if Idle Gangs back on for the steps after it. `extract` gives that
 order step a `capture` object as above and a `screens` string naming the
 screens it is compared at. The steps before it bring the screen up: `open:s`
@@ -827,7 +831,8 @@ save, and starts the game with
 ```text
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
     [--pump-counter <0-7>] [--selected-sector <0-63>] [--lamps <0|1>,<0|1>]
-    [--item-frame <0-14>] [--clip-tick <0-21>]
+    [--item-frame <0-14>] [--idle-phase <0-7>] [--caret-phase <0-5>]
+    [--clip-tick <0-21> [--clip-index <n>]]
     [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]
 ```
 
@@ -842,10 +847,13 @@ second and fourth of the capture's `lamps`, the bytes that say the Events and
 the Comlink lamp were drawn lit, which pick the blink phase of those lights in
 place of the clock's (FND-EVENT-006). `--item-frame` passes `item_frame`, the
 frame the rotating items of Item Information, Sell and Give are drawn at
-(FND-UI-052, FND-UI-053), the idle gang warning's ticks since its open
-modulo 8 (FND-UI-054), or the Comlink caret's phase (FND-COMLINK-010).
+(FND-UI-052, FND-UI-053). `--idle-phase` passes `idle_phase`, the idle gang
+warning's ticks since its open modulo 8 (FND-UI-054), and `--caret-phase`
+passes `caret_phase`, the Comlink caret's phase (FND-COMLINK-010).
 `--clip-tick` passes `clip_tick`, the tick of the Detailed Combat clip a shot
-shows (FND-COMBAT-016), which the clip the clicks started is drawn at. The blinking
+shows (FND-COMBAT-016), and `--clip-index` passes `clip_index`: the rebuild
+passes over that many clips of the presentation the clicks started and draws
+the next at the tick. A shot without `clip_index` is drawn at the first clip. The blinking
 and cycling parts of the screen stay at time zero however many clicks were
 made: the marker is drawn at `--marker-frame`, or at its first frame without it.
 `--reference-clicks` lists the presses that take the rebuild from the planning

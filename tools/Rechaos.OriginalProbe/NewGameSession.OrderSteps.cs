@@ -39,12 +39,16 @@ internal sealed record OrderStepRecord(
 
 /// <summary>
 /// A capture taken after the dump: the bitmap <c>File</c> in the run directory with its repeat
-/// beside it, the Overlord bar's marker frame it shows (FND-UI-038) and the pump's counter, and
-/// the tick of the Detailed Combat clip it shows while one plays (FND-COMBAT-016).
+/// beside it, the Overlord bar's marker frame it shows (FND-UI-038) and the pump's counter, the
+/// frame of the rotating item pictures of Item Information, Sell or Give (FND-UI-052,
+/// FND-UI-053), the idle gang warning's ticks since its open modulo 8 (FND-UI-054), the Comlink
+/// Send caret's phase (FND-COMLINK-010), and the tick of the Detailed Combat clip it shows with
+/// the clip's index within its presentation (FND-COMBAT-016, FND-COMBAT-011), each null when the
+/// screen does not show it or it moved during every copy.
 /// </summary>
 internal sealed record CaptureShot(
     string File, int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector, int? FrameCounter,
-    int? ItemFrame = null, int? ClipTick = null);
+    int? ItemFrame = null, int? ClipTick = null, int? IdlePhase = null, int? CaretPhase = null, int? ClipIndex = null);
 
 internal sealed partial class NewGameSession
 {
@@ -81,7 +85,7 @@ internal sealed partial class NewGameSession
                 heldCounter = _process.ReadInt32(OriginalAddresses.PumpCounter);
         }, quiet: true);
         // FND-UI-052, FND-UI-053: the frame local of the last of Item Information, Sell and Give
-        // to open, while it runs. It is read from memory around the capture, since a breakpoint's
+        // to open, while it runs, and FND-UI-054 the idle gang warning's countdown. It is read from memory around the capture, since a breakpoint's
         // report reaches the probe only after the game has gone on drawing.
         // A return pops the entries down to its own handler's, so a handler whose return went
         // unseen cannot leave its frame to be read by a later shot.
@@ -101,10 +105,15 @@ internal sealed partial class NewGameSession
         // between the handler's stores can find the countdown at 0 while hidden, so the result is
         // reduced modulo 8. The game keeps running between the reads, so the flag is read before
         // and after the countdown, and a pair whose flag changed between them is read again.
-        int? ItemFrame()
+        // The open handler's value goes to its own field: the item frame for Item Information,
+        // Sell and Give, the idle phase for the warning, the one handler with a shown flag.
+        int? ItemFrame() =>
+            itemHandlers.TryPeek(out var handler) && handler.ShownLocal == 0
+                ? _process.ReadInt32(handler.Ebp - handler.Local)
+                : null;
+        int? IdlePhase()
         {
-            if (!itemHandlers.TryPeek(out var handler)) return null;
-            if (handler.ShownLocal == 0) return _process.ReadInt32(handler.Ebp - handler.Local);
+            if (!itemHandlers.TryPeek(out var handler) || handler.ShownLocal == 0) return null;
             for (var attempt = 0; attempt < 3; attempt++)
             {
                 var shown = _process.Read(handler.Ebp - handler.ShownLocal, 1)[0];
@@ -122,6 +131,12 @@ internal sealed partial class NewGameSession
         _process.SetBreakpoint(OriginalAddresses.CombatClipEnd, _ => clipEbp = null, quiet: true);
         int? ClipTick() => clipEbp is { } ebp
             ? Math.Max(_process.ReadInt32(ebp - OriginalAddresses.CombatClipTick) - 1, 0)
+            : null;
+        // FND-COMBAT-011: the clip player's entry, where the presentation's clip count moves, comes
+        // before the store of its tick local (FND-COMBAT-016), so while a clip's frame is known the
+        // count includes it, and its index within the presentation is the count less 1.
+        int? ClipIndex() => clipEbp is not null && _detailedCombatOpen && _combatPresentations.Count > 0
+            ? _combatPresentations[^1].Clips - 1
             : null;
         foreach (var step in settings.OrderSteps!)
         {
@@ -141,29 +156,34 @@ internal sealed partial class NewGameSession
             {
                 // A capture moves nothing, so it is not a post-dump step of the marker log.
                 var file = $"capture-step-{_orderSteps.Count}";
-                // The item, the warning line or the Send caret steps every few ticks, so a capture it
-                // moved under is taken again.
-                // So is one a clip's tick moved under.
-                int? itemBefore, itemFrame, clipBefore, clipTick;
+                // The item, the warning line, the Send caret and a clip's tick step every few ticks,
+                // so a capture one of them moved under is taken again. Each is read before and
+                // after the copy, and kept only when both reads agree.
+                Func<int?>[] readers = [ItemFrame, IdlePhase, () => CaretFrame(step), ClipTick, ClipIndex];
+                string[] names =
+                [
+                    "the item pictures' frame", "the warning line's phase", "the caret's phase",
+                    "the Detailed Combat clip's tick", "the Detailed Combat clip's index",
+                ];
+                var before = new int?[readers.Length];
+                var values = new int?[readers.Length];
                 (int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector)? area;
-                var itemAttempts = 0;
+                var attempts = 0;
+                bool Moved() => Enumerable.Range(0, readers.Length).Any(index => before[index] is not null && values[index] is null);
                 do
                 {
-                    itemBefore = ItemFrame() ?? CaretFrame(step);
-                    clipBefore = ClipTick();
+                    for (var index = 0; index < readers.Length; index++) before[index] = readers[index]();
                     area = CaptureDrawingArea(window, file);
-                    itemFrame = (ItemFrame() ?? CaretFrame(step)) == itemBefore ? itemBefore : null;
-                    clipTick = ClipTick() == clipBefore ? clipBefore : null;
-                } while (((itemBefore is not null && itemFrame is null) || (clipBefore is not null && clipTick is null))
-                         && ++itemAttempts < 5);
-                if (itemBefore is not null && itemFrame is null)
-                    _notes.Add($"{file}: the item pictures' frame, the warning line's phase or the caret's phase moved during each capture.");
-                if (clipBefore is not null && clipTick is null)
-                    _notes.Add($"{file}: the Detailed Combat clip's tick moved during each capture.");
+                    for (var index = 0; index < readers.Length; index++)
+                        values[index] = readers[index]() == before[index] ? before[index] : null;
+                } while (Moved() && ++attempts < 5);
+                for (var index = 0; index < readers.Length; index++)
+                    if (before[index] is not null && values[index] is null)
+                        _notes.Add($"{file}: {names[index]} moved during each capture.");
                 var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
                         _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,
-                        itemFrame, clipTick)
+                        values[0], values[3], values[1], values[2], values[4])
                     : null;
                 _orderSteps.Add(new OrderStepRecord(step, -1, null,
                     _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),

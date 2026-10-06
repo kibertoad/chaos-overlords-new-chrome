@@ -77,13 +77,38 @@ public sealed partial class ScreenCaptureTests
             : RebuildFrame.Render(
                 OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
                 $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
-                capture.ItemFrame, clipTick: capture.ClipTick);
+                capture.ItemFrame, clipTick: capture.ClipTick, idlePhase: capture.IdlePhase,
+                caretPhase: capture.CaretPhase, clipIndex: capture.ClipIndex);
 
         var results = capture.Elements
             .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
         var output = TestContext.Current.TestOutputHelper;
         foreach (var result in results) output?.WriteLine(result.ToString());
         Assert.Empty(results.Where(result => result.Verdict == ElementVerdict.Differs).Select(result => result.ToString()));
+    }
+
+    // FND-COMBAT-011: a Detailed Combat shot without clip_index is drawn at the presentation's
+    // first clip. Shots are taken after the dump, where only the console's control (flag 0) opens
+    // a presentation, and every planning presentation (flag 1) has returned by then, so such a shot
+    // shows a first clip when no console presentation of its run started a second.
+    [Fact]
+    public void ADetailedCombatShotWithoutAClipIndexShowsAFirstClip()
+    {
+        var directory = Path.Combine(AppContext.BaseDirectory, "spec", "experiments");
+        foreach (var run in ScreenCaptureRecord.LoadAll()
+                     .Where(capture => capture.Screens.Contains("SCR-COMBAT-002") && capture.ClipIndex is null)
+                     .Select(capture => (capture.Experiment, capture.Run)).Distinct())
+        {
+            using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, run.Experiment + ".json")));
+            var presentations = fixture.RootElement.GetProperty("runs")[run.Run].GetProperty("combat_presentations")
+                .EnumerateArray().ToArray();
+            Assert.All(presentations.Where(presentation => presentation.GetProperty("automatic").GetInt32() != 0),
+                presentation => Assert.True(presentation.GetProperty("returned").GetBoolean(),
+                    $"{run}: a planning presentation was still open after the dump"));
+            Assert.All(presentations.Where(presentation => presentation.GetProperty("automatic").GetInt32() == 0),
+                presentation => Assert.True(presentation.GetProperty("clips").GetInt32() <= 1,
+                    $"{run}: a console presentation started more than one clip, so a shot without clip_index is ambiguous"));
+        }
     }
 
     // The comparison needs a frame that depends on nothing but the state and the marker frame:
