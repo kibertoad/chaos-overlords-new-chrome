@@ -36,8 +36,7 @@ public sealed partial class OriginalNewGameExperimentTests
         // handler of an online match's resolved turn (ChaosGame.MultiplayerNotices), which a local
         // game never reaches, and the routing gives a local game no cue. The replay does not
         // observe the rebuild's sounds.
-        StartMatch(recorded, out var presses);
-        Assert.Equal(recorded.DoneCount, presses);
+        Assert.Equal(recorded.DoneCount, Replayed(recorded).DonePresses);
         Assert.Null(AudioRouting.TurnStartSound(networkGame: false));
     }
 
