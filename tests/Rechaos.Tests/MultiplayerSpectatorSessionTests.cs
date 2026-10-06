@@ -103,7 +103,8 @@ public sealed class MultiplayerSpectatorSessionTests
         using var _ = http;
         server.Answer(HttpMethod.Get, $"/spectate/{MatchId}", ViewOf(MatchStatus.Running, 3, 0));
         server.Answer(HttpMethod.Get, "/snapshots/latest", SnapshotOf(0, Bootstrap().State));
-        server.AnswerOnce(HttpMethod.Get, "/events", Page(1, Opened(1, 1)));
+        // Nothing released: the log ends at the start announcement, which a spectator ignores.
+        server.AnswerOnce(HttpMethod.Get, "/events", Page(1));
         server.Answer(HttpMethod.Get, "/events", Page(1));
 
         var session = await MultiplayerSpectatorSession.StartAsync(handle, Definitions, TestContext.Current.CancellationToken);
@@ -112,7 +113,7 @@ public sealed class MultiplayerSpectatorSessionTests
 
         server.Answer(HttpMethod.Get, $"/spectate/{MatchId}", ViewOf(MatchStatus.Running, 4, 1));
         // A page whose events the server filtered out still moves the cursor.
-        server.AnswerOnce(HttpMethod.Get, "/events", Page(6, Sealed(4, 1)));
+        server.AnswerOnce(HttpMethod.Get, "/events", Page(6, Opened(2, 1), Sealed(4, 1)));
         server.AnswerOnce(HttpMethod.Get, "/events", Page(9));
         server.Answer(HttpMethod.Get, "/events", Page(9));
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
@@ -124,7 +125,10 @@ public sealed class MultiplayerSpectatorSessionTests
             .Select(request => request.Query)
             .ToArray();
         Assert.Equal(
-            ["?after=0&limit=200", "?after=1&limit=200", "?after=1&limit=200", "?after=6&limit=200", "?after=9&limit=200"],
+            [
+                "?after=0&limit=200", "?after=1&limit=200", "?after=1&limit=200",
+                "?after=1&limit=200", "?after=6&limit=200", "?after=9&limit=200",
+            ],
             after);
     }
 

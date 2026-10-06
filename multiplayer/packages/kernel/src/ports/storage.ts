@@ -423,6 +423,12 @@ export interface EventRepository {
    * one question the log answers better than any row: what clients were last told about a status.
    */
   latestOfType(matchId: string, type: string): Promise<PersistedEvent | null>
+  /**
+   * The sequence number of the event `appendOnce` logged under `dedupeKey`, or null when the log
+   * has none. An indexed read through `match_events_dedupe_idx`, for finding where in the log an
+   * announcement landed without paging through it.
+   */
+  seqOfKey(matchId: string, dedupeKey: string): Promise<number | null>
   /** Highest sequence number persisted for the match, or 0 when the log is empty. */
   lastSeq(matchId: string): Promise<number>
 }

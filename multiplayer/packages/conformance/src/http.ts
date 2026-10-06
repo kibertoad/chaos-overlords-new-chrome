@@ -446,17 +446,18 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       })
       expect((await spectator.latestSnapshot()).turn).toBe(0)
 
-      // The log stops at the seal of the first turn not released, and holds only seat facts.
+      // The log ends at the released turn's seal, before the next turn opens, and holds only
+      // seat facts.
       const page = await spectator.events(0)
-      expect(new Set(types(page.events))).toEqual(
-        new Set(['match.started', 'turn.opened', 'turn.sealed']),
-      )
+      expect(types(page.events)).toEqual(['match.started', 'turn.opened', 'turn.sealed'])
       expect(
         page.events
           .filter((event) => event.type === 'turn.sealed')
           .map((event) => (event.payload as { turn: number }).turn),
       ).toEqual([1])
-      expect((await spectator.events(page.cursor)).events).toEqual([])
+      expect(await spectator.events(page.cursor)).toEqual({ events: [], cursor: page.cursor })
+      // The roster is the one the match started with.
+      expect(view.players.map((player) => player.status)).toEqual(['active', 'active'])
 
       // Only the host removes a spectator, and a removed token reads nothing more.
       await expect(guestApi.removeSpectator(watcher.spectator.id)).rejects.toMatchObject({

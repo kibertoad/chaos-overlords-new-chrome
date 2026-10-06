@@ -13,6 +13,9 @@ const settings = {
   spectatorDelayTurns: 2,
 }
 
+const types = (page: { events: ReadonlyArray<{ type: string }> }) =>
+  page.events.map((event) => event.type)
+
 describe('releasedTurn', () => {
   const match = (status: string, currentTurn: number) =>
     ({ status, currentTurn, settings: { ...settings } }) as Parameters<typeof releasedTurn>[0]
@@ -115,6 +118,84 @@ describe('spectators', () => {
     await expect(h.kernel.auth.authenticate(watcher.token)).rejects.toMatchObject({
       details: { reason: 'invalid_token' },
     })
+  })
+
+  it('holds back a handover announced after the seal of the released turn', async () => {
+    const host = await watchedLobby()
+    const guest = await h.kernel.lobby.join({ joinCode: host.joinCode, displayName: 'Guest' })
+    const watcher = await h.kernel.spectators.join({ joinCode: host.joinCode, displayName: 'W' })
+    await h.kernel.lobby.start(await h.principalOf(host.token))
+    // A fresh principal for every read: the match row it carries is the one the route would load.
+    const read = async (after = 0) =>
+      h.kernel.spectators.events(
+        await h.kernel.spectators.authenticate(watcher.token),
+        after,
+        LIMITS.eventsPageSize,
+      )
+    const sealsIn = (page: Awaited<ReturnType<typeof read>>) =>
+      page.events.flatMap((event) => (event.type === 'turn.sealed' ? [event.payload.turn] : []))
+    const seal = async (turn: number, both: boolean) => {
+      await h.submit(await h.principalOf(host.token), turn, turn, true)
+      if (both) await h.submit(await h.principalOf(guest.token), turn, turn, true)
+    }
+
+    // Turn 1 open: nothing is released, and the log stops at the start announcement.
+    expect(types(await read())).toEqual(['match.started'])
+    await seal(1, true)
+    await seal(2, true)
+    // Turn 3 is planned with the guest gone and the seat handed to the computer.
+    await h.kernel.lobby.leave(await h.principalOf(guest.token))
+    await h.kernel.lobby.voteOnTakeover(await h.principalOf(host.token), guest.player.id, {
+      decision: 'computer',
+    })
+    await seal(3, false)
+
+    // Turn 4 open, turn 1 released: the log ends at turn 1's seal, before turn 2 opens.
+    const first = await read()
+    expect(types(first)).toEqual(['match.started', 'turn.opened', 'turn.sealed'])
+    expect(sealsIn(first)).toEqual([1])
+    expect(await read(first.cursor)).toEqual({ events: [], cursor: first.cursor })
+    // The view's roster is the one the match started with, not the computer seat of turn 3.
+    const view = await h.kernel.spectators.view(
+      await h.kernel.spectators.authenticate(watcher.token),
+    )
+    expect(view.releasedTurn).toBe(1)
+    expect(view.players.map((player) => player.status)).toEqual(['active', 'active'])
+
+    // Turn 2 released: the handover was announced after its seal, so it is still held back.
+    await seal(4, false)
+    const second = await read()
+    expect(sealsIn(second)).toEqual([1, 2])
+    expect(types(second)).not.toContain('match.playerTakenOver')
+
+    // Turn 3 released: the handover arrives after turn 2's seal and before turn 3's.
+    await seal(5, false)
+    const third = await read()
+    expect(sealsIn(third)).toEqual([1, 2, 3])
+    const handover = types(third).indexOf('match.playerTakenOver')
+    const sealOf = (turn: number) =>
+      third.events.findIndex((event) => event.type === 'turn.sealed' && event.payload.turn === turn)
+    expect(handover).toBeGreaterThan(sealOf(2))
+    expect(handover).toBeLessThan(sealOf(3))
+  })
+
+  it('reports a desynced match as running, and the live roster once it is over', async () => {
+    const host = await watchedLobby()
+    const guest = await h.kernel.lobby.join({ joinCode: host.joinCode, displayName: 'Guest' })
+    const watcher = await h.kernel.spectators.join({ joinCode: host.joinCode, displayName: 'W' })
+    await h.kernel.lobby.start(await h.principalOf(host.token))
+    await h.kernel.lobby.leave(await h.principalOf(guest.token))
+    const spectator = await h.kernel.spectators.authenticate(watcher.token)
+    expect((await h.kernel.spectators.view(spectator)).players.map((p) => p.status)).toEqual([
+      'active',
+      'active',
+    ])
+    const desynced = { ...spectator, match: { ...spectator.match, status: 'desynced' as const } }
+    expect((await h.kernel.spectators.view(desynced)).status).toBe('running')
+    const over = { ...spectator, match: { ...spectator.match, status: 'abandoned' as const } }
+    expect(
+      (await h.kernel.spectators.view(over)).players.find((p) => p.id === guest.player.id)?.status,
+    ).toBe('left')
   })
 
   it('keeps the snapshot a spectator starts from out of the live pruning', async () => {

@@ -12,6 +12,7 @@ const emptyEvents: EventRepository = {
   },
   listAfter: async (): Promise<PersistedEvent[]> => [],
   latestOfType: async () => null,
+  seqOfKey: async () => null,
   lastSeq: async () => 0,
 }
 
@@ -398,6 +399,9 @@ function countingLog(events: PersistedEvent[]) {
       return events.filter((event) => event.seq > afterSeq).slice(0, limit)
     },
     latestOfType: async () => {
+      throw new Error('not used')
+    },
+    seqOfKey: async () => {
       throw new Error('not used')
     },
     lastSeq: async () => events.at(-1)?.seq ?? 0,

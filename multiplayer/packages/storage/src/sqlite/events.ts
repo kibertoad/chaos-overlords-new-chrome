@@ -78,6 +78,14 @@ export function sqliteEventRepository(db: SqliteDatabase): EventRepository {
         .limit(1)
       return rows[0] ? toEvent(rows[0]) : null
     },
+    async seqOfKey(matchId, dedupeKey) {
+      const rows = await db
+        .select({ seq: matchEvents.seq })
+        .from(matchEvents)
+        .where(and(eq(matchEvents.matchId, matchId), eq(matchEvents.dedupeKey, dedupeKey)))
+        .limit(1)
+      return rows[0]?.seq ?? null
+    },
     async lastSeq(matchId) {
       const rows = await db
         .select({ seq: matchEvents.seq })

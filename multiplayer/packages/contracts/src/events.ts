@@ -256,7 +256,9 @@ export const eventPageSchema = strictObject({ events: array(matchEventSchema) })
 
 /**
  * The part of the log a spectator may read: the events that decide who controls each seat, logged
- * before the seal of the first turn not yet released to spectators.
+ * up to and including the seal of the released turn (`match.started` while no turn is released).
+ * An event a player's client would apply to a later turn is held back until that turn is released.
+ * Once the match is over the whole log is.
  *
  * `cursor` is the last sequence number the server looked at, which may be past the last event it
  * returned: the events between are ones a spectator does not get. The next page starts after it.
