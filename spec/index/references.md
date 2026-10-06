@@ -179,6 +179,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | builds |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | builds |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | builds |
+| [EXP-UI-031](../experiments/EXP-UI-031.md) | builds |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
@@ -2269,6 +2270,7 @@ None.
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | body |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
+| [EXP-UI-031](../experiments/EXP-UI-031.md) | body |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
 
 ## EXP-UI-002
@@ -2281,7 +2283,10 @@ None.
 
 ## EXP-UI-003
 
-None.
+| Cited by | In |
+|---|---|
+| [EXP-UI-031](../experiments/EXP-UI-031.md) | body |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
 
 ## EXP-UI-004
 
@@ -2500,6 +2505,13 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
+
+## EXP-UI-031
+
+| Cited by | In |
+|---|---|
+| [FND-UI-017](../findings/FND-UI-017.md) | body |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
 
 ## EXP-VIDEO-001
 
@@ -7360,6 +7372,7 @@ None.
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
+| [EXP-UI-031](../experiments/EXP-UI-031.md) | body |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-015](../findings/FND-UI-015.md) | body |
@@ -7680,6 +7693,7 @@ None.
 |---|---|
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
+| [EXP-UI-031](../experiments/EXP-UI-031.md) | body |
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
@@ -7772,6 +7786,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
+| [EXP-UI-031](../experiments/EXP-UI-031.md) | body |
 | [FND-UI-051](../findings/FND-UI-051.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
@@ -10029,6 +10044,7 @@ None.
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | body |
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | body |
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | body |
+| [EXP-UI-031](../experiments/EXP-UI-031.md) | body |
 | [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, related |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | related |

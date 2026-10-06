@@ -619,7 +619,7 @@
 
 ## experiments
 
-153 entries.
+154 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -775,6 +775,7 @@
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? | recorded |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? | recorded |
+| [EXP-UI-031](../experiments/EXP-UI-031.md) | At the first planning entry, does the rebuild draw every active-player marker frame and both selected-sector frames as the original does? | recorded |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | How many steps does the intro show of each movie when it plays out? | recorded |
 
 ## bugs
