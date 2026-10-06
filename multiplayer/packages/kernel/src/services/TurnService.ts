@@ -19,6 +19,7 @@ import {
   assignSlots,
   awaitedSeats,
   evaluateConsensus,
+  tieBreaker,
   sealedByDeadline,
   turnDeadline,
 } from '../logic/turn-logic'
@@ -602,7 +603,9 @@ export class TurnService {
     for (const { matchId, number } of await this.deps.storage.turns.listUnannouncedVerdicts(
       limit,
     )) {
-      const finished = await this.guard(matchId, number, () => this.settle(matchId, number))
+      const finished = await this.guard(matchId, number, () =>
+        this.settle(matchId, number, QUIET_SETTLE),
+      )
       if (finished) {
         this.deps.logger.warn('finished an interrupted verdict', { matchId, turn: number })
         repaired += 1
@@ -612,7 +615,7 @@ export class TurnService {
     // unsettled, which no other path revisits.
     for (const matchId of await this.deps.storage.matches.listDesynced(limit, touchedSince)) {
       await this.guard(matchId, 0, async () => {
-        await this.reevaluate(matchId)
+        await this.reevaluate(matchId, QUIET_SETTLE)
         return false
       })
     }
@@ -823,12 +826,12 @@ export class TurnService {
   }
 
   /** Re-run the verdict of every unconfirmed turn and the auto-seal of the open one. */
-  async reevaluate(matchId: string): Promise<void> {
+  async reevaluate(matchId: string, options: SettleOptions = {}): Promise<void> {
     const match = await this.deps.storage.matches.get(matchId)
     if (!match || !isInProgress(match)) return
     const unsettled = await this.deps.storage.turns.listUnsettled(matchId)
     for (const turn of unsettled) {
-      await this.settle(matchId, turn.number)
+      await this.settle(matchId, turn.number, options)
     }
     // A match left `desynced` with nothing unsettled is a verdict whose consequences were cut short
     // after its compare-and-swap. Nothing else reaches `resumeAfterDesync`, so without this the
@@ -844,7 +847,7 @@ export class TurnService {
    * whether this call finished anything a confirmation cut short (see `finishConfirmation`), which
    * is what the sweep reports as a repair.
    */
-  async settle(matchId: string, number: number): Promise<boolean> {
+  async settle(matchId: string, number: number, options: SettleOptions = {}): Promise<boolean> {
     const [match, turn] = await Promise.all([
       this.deps.storage.matches.get(matchId),
       this.deps.storage.turns.get(matchId, number),
@@ -918,16 +921,33 @@ export class TurnService {
       // null one means the announcement is still owed. It used to be claimed first and published
       // after, and a publish that threw in between lost the announcement for good. The event is
       // keyed, so racing verdicts and repeats log it once.
+      const payload = {
+        turn: number,
+        reports: verdict.reports,
+        candidateStateHashes: verdict.candidateStateHashes,
+        tieBreakerPlayerId: tieBreaker(
+          players,
+          reports,
+          verdict.candidateStateHashes,
+          match.hostPlayerId,
+        ),
+      }
       if (turn.desyncedAt === null) {
-        await this.publisher.publishOnce(matchId, desyncAnnouncementKey(number), {
+        await this.publisher.publishOnce(matchId, desyncAnnouncementKey(payload), {
           type: 'turn.desynced',
-          payload: {
-            turn: number,
-            reports: verdict.reports,
-            candidateStateHashes: verdict.candidateStateHashes,
-          },
+          payload,
         })
         await this.deps.storage.turns.claimDesyncAnnouncement(matchId, number, now)
+      } else if (options.reannounce !== false) {
+        // The verdict was re-run because something changed: a client re-reported after checking
+        // its own state, or the roster moved. Either can change who holds the most-reported hash
+        // and who breaks a tie, and a client acts on the announcement it last saw, so a changed
+        // verdict is announced again. The key names the verdict's content, which makes an
+        // unchanged one a no-op; the sweep passes `reannounce: false` and never pays for the try.
+        await this.publisher.publishOnce(matchId, desyncAnnouncementKey(payload), {
+          type: 'turn.desynced',
+          payload,
+        })
       }
       // Not behind the receipt above: a turn stamped by an older build that died before pausing
       // the match is paused only now, and its pause is still owed to clients.
@@ -1085,7 +1105,29 @@ export class TurnService {
  */
 const sealAnnouncementKey = (turn: number): string => `turn.sealed:${turn}`
 const confirmationKey = (turn: number): string => `turn.confirmed:${turn}`
-const desyncAnnouncementKey = (turn: number): string => `turn.desynced:${turn}`
+/**
+ * The dedupe key of a desync announcement: the turn and everything a client acts on, so a verdict
+ * announced again with the same content is logged once. The reports themselves are left out,
+ * because a report that changes without changing the candidates or the tie-breaker asks nothing
+ * new of anybody.
+ */
+const desyncAnnouncementKey = (payload: {
+  turn: number
+  candidateStateHashes: readonly string[]
+  tieBreakerPlayerId: string | null
+}): string =>
+  `turn.desynced:${payload.turn}:${payload.candidateStateHashes.join(',')}:${payload.tieBreakerPlayerId ?? ''}`
+
+export interface SettleOptions {
+  /**
+   * Whether a desync whose announcement is already out is announced again when its verdict has
+   * changed. On by default; the sweep turns it off, since it re-runs verdicts on a timer rather
+   * than because anything happened.
+   */
+  reannounce?: boolean
+}
+
+const QUIET_SETTLE: SettleOptions = { reannounce: false }
 /**
  * A pause or its lift, named by the status event it follows: the same change announced after the
  * same last word is the same fact, and the next pause of the match follows a different event.
