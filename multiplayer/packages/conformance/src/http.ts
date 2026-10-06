@@ -370,6 +370,142 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       ).rejects.toMatchObject({ status: 409, reason: 'seat_reserved' })
     })
 
+    it('lets a spectator read only what the delay has released, behind a door of its own', async () => {
+      const anonymous = client()
+      const host = await anonymous.createMatch({
+        settings: { ...settings, maxPlayers: 2, spectatorDelayTurns: 2 },
+        hostDisplayName: 'Ada',
+        password: 'open sesame',
+      })
+      const hostApi = anonymous.withToken(host.token).match(host.match.id)
+      await expect(
+        anonymous.spectate({ joinCode: host.joinCode, displayName: 'Watcher' }),
+      ).rejects.toMatchObject({ status: 401, reason: 'password_required' })
+      const watcher = await anonymous.spectate({
+        joinCode: host.joinCode.toLowerCase(),
+        displayName: 'Watcher',
+        password: 'open sesame',
+      })
+      expect(watcher.token).toMatch(/^cos_[A-Za-z0-9_-]{43}$/)
+      expect(watcher.match).toMatchObject({ status: 'lobby', delayTurns: 2, releasedTurn: 0 })
+      expect(watcher.match.seed).toBeNull()
+      const spectator = anonymous.withToken(watcher.token).spectator(host.match.id)
+
+      // Neither door takes the other's token.
+      await expect(
+        anonymous.withToken(watcher.token).match(host.match.id).get(),
+      ).rejects.toMatchObject({ status: 401, reason: 'invalid_token' })
+      await expect(
+        anonymous.withToken(host.token).spectator(host.match.id).get(),
+      ).rejects.toMatchObject({ status: 401, reason: 'invalid_token' })
+      await expect(
+        anonymous.withToken(watcher.token).match(host.match.id).postChat('hello'),
+      ).rejects.toMatchObject({ status: 401 })
+
+      // No seat: a full lobby of two still takes its second player.
+      const guest = await anonymous.join({
+        joinCode: host.joinCode,
+        displayName: 'Grace',
+        password: 'open sesame',
+      })
+      const guestApi = anonymous.withToken(guest.token).match(host.match.id)
+      expect((await hostApi.spectators()).spectators).toEqual([watcher.spectator])
+      await hostApi.start()
+      await hostApi.uploadSnapshot({
+        turn: 0,
+        formatVersion: 1,
+        stateHash: HASH_A,
+        body: 'c2F2ZQ==',
+        seatSummaries: [],
+      })
+
+      // The two players alone seal each turn; the spectator is nobody the barrier waits on.
+      for (let turn = 1; turn <= 3; turn++) {
+        await hostApi.submitOrders(turn, { orders: orders(0, turn), ready: true })
+        await guestApi.submitOrders(turn, { orders: orders(1, turn), ready: true })
+        await hostApi.report(turn, { stateHash: HASH_A, finished: false })
+        await guestApi.report(turn, { stateHash: HASH_A, finished: false })
+        if (turn === 1) {
+          await expect(spectator.sealedOrders(1)).rejects.toMatchObject({
+            status: 409,
+            reason: 'turn_not_released',
+          })
+          expect((await spectator.get()).seed).toBeNull()
+        }
+      }
+      const view = await spectator.get()
+      expect(view).toMatchObject({ status: 'running', currentTurn: 4, releasedTurn: 1 })
+      expect(view.seed).toEqual(expect.any(Number))
+      expect((await spectator.sealedOrders(1)).players.map((p) => p.orders)).toEqual([
+        orders(0, 1),
+        orders(1, 1),
+      ])
+      await expect(spectator.sealedOrders(2)).rejects.toMatchObject({
+        status: 409,
+        reason: 'turn_not_released',
+      })
+      expect((await spectator.latestSnapshot()).turn).toBe(0)
+
+      // The log stops at the seal of the first turn not released, and holds only seat facts.
+      const page = await spectator.events(0)
+      expect(new Set(types(page.events))).toEqual(
+        new Set(['match.started', 'turn.opened', 'turn.sealed']),
+      )
+      expect(
+        page.events
+          .filter((event) => event.type === 'turn.sealed')
+          .map((event) => (event.payload as { turn: number }).turn),
+      ).toEqual([1])
+      expect((await spectator.events(page.cursor)).events).toEqual([])
+
+      // Only the host removes a spectator, and a removed token reads nothing more.
+      await expect(guestApi.removeSpectator(watcher.spectator.id)).rejects.toMatchObject({
+        status: 403,
+        reason: 'host_only',
+      })
+      await hostApi.removeSpectator(watcher.spectator.id)
+      await expect(spectator.get()).rejects.toMatchObject({ status: 401, reason: 'invalid_token' })
+      expect((await hostApi.spectators()).spectators).toEqual([])
+      const { events } = await hostApi.events(0)
+      expect(
+        events
+          .filter((event) => event.type === 'spectator.joined' || event.type === 'spectator.left')
+          .map((event) => event.type),
+      ).toEqual(['spectator.joined', 'spectator.left'])
+    })
+
+    it('refuses to let anyone watch a match whose host has not allowed it', async () => {
+      const anonymous = client()
+      const host = await anonymous.createMatch({ settings, hostDisplayName: 'Ada' })
+      await expect(
+        anonymous.spectate({ joinCode: host.joinCode, displayName: 'Watcher' }),
+      ).rejects.toMatchObject({ status: 403, reason: 'spectating_disabled' })
+      await expect(
+        anonymous.spectate({ joinCode: 'ZZZZZZZZ', displayName: 'Watcher' }),
+      ).rejects.toMatchObject({ status: 404, reason: 'unknown_join_code' })
+      await expect(
+        anonymous.createMatch({
+          settings: { ...settings, spectatorDelayTurns: 1 },
+          hostDisplayName: 'Ada',
+        }),
+      ).rejects.toMatchObject({ status: 422 })
+      const watched = await anonymous.createMatch({
+        settings: { ...settings, spectatorDelayTurns: 5 },
+        hostDisplayName: 'Ada',
+      })
+      const watcher = await anonymous.spectate({ joinCode: watched.joinCode, displayName: 'W' })
+      const spectator = anonymous.withToken(watcher.token).spectator(watched.match.id)
+      await expect(
+        anonymous.withToken(watcher.token).spectator(host.match.id).get(),
+      ).rejects.toMatchObject({ status: 404, reason: 'unknown_match' })
+      await expect(spectator.latestSnapshot()).rejects.toMatchObject({
+        status: 404,
+        reason: 'no_snapshot',
+      })
+      await spectator.leave()
+      await expect(spectator.get()).rejects.toMatchObject({ status: 401 })
+    })
+
     it('names the refused field without echoing what was sent, and caps every body', async () => {
       const response = await harness.fetch('http://conformance/api/v1/matches/join', {
         method: 'POST',

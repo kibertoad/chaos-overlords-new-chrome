@@ -113,9 +113,11 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   a stored match already holds changes meaning. A match created before has no
   delay, which means it cannot be watched.
 - Status: the server on both runtimes, the contracts and the client session
-  that follows a match are implemented and tested. The game shows the setting
-  in the lobby summary. The desktop screens for turning spectating on, joining
-  as a spectator and watching are tracked in a follow-up issue.
+  that follows a match are implemented and tested. The game keeps the setting
+  when the host changes the lobby's settings, but has no control for it yet,
+  so a match the game creates cannot be watched. The desktop screens for
+  turning spectating on, showing it in the lobby summary, joining as a
+  spectator and watching are tracked in #495.
 
 ## 2026-10-06 — Chat in the online lobby, through the match's event log
 

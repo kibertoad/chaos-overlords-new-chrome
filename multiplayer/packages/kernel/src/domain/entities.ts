@@ -69,6 +69,25 @@ export interface Player {
   joinedAt: Date
 }
 
+/**
+ * Somebody watching a match without a seat.
+ *
+ * A row of its own rather than a player with a role, so that nothing which counts players (seat
+ * capacity, readiness, the turn barrier, the votes, the desync verdict) can ever count a spectator.
+ * Rows are kept after a spectator leaves or is removed, with the token revoked, because the number
+ * of rows is what bounds how many spectators a match admits over its life.
+ */
+export interface Spectator {
+  id: string
+  matchId: string
+  displayName: string
+  /** SHA-256 of the spectator token, or null once it is revoked. */
+  tokenHash: string | null
+  joinedAt: Date
+  /** When the spectator left or was removed; null while they are watching. */
+  leftAt: Date | null
+}
+
 /** What a lobby member may change about themselves before the match starts. */
 export type PlayerProfile = Pick<Player, 'displayName' | 'portraitId'>
 

@@ -14,6 +14,7 @@ import type {
   SealedSlot,
   Snapshot,
   SnapshotSummary,
+  Spectator,
   TakeoverDecision,
   TakeoverVote,
   Turn,
@@ -277,4 +278,24 @@ function databaseVersion(value: unknown, column: string): number {
   if (!Number.isInteger(number) || number < 0 || number > 2_147_483_647)
     throw new TypeError(`${column} is not a signed 32-bit version`)
   return number
+}
+
+export interface SpectatorRow {
+  id: string
+  matchId: string
+  displayName: string
+  tokenHash: string | null
+  joinedAt: Date
+  leftAt: Date | null
+}
+
+export function toSpectator(row: SpectatorRow): Spectator {
+  return {
+    id: row.id,
+    matchId: row.matchId,
+    displayName: row.displayName,
+    tokenHash: row.tokenHash,
+    joinedAt: row.joinedAt,
+    leftAt: row.leftAt,
+  }
 }

@@ -13,6 +13,7 @@ import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
 import { requireInProgress, requireParticipant, requireTurn } from './guards'
+import { spectatorStartTurn } from './spectatorRelease'
 import type { TurnService } from './TurnService'
 
 /**
@@ -246,7 +247,14 @@ export class SnapshotService {
    */
   private async pruneOldSnapshots(matchId: string): Promise<void> {
     try {
-      const dropped = await this.deps.storage.snapshots.prune(matchId, SNAPSHOTS_KEPT_PER_MATCH)
+      // A match that can be watched keeps the snapshot its spectators start from, however old.
+      const match = await this.deps.storage.matches.get(matchId)
+      const retainTurn = match ? await spectatorStartTurn(this.deps.storage, match) : undefined
+      const dropped = await this.deps.storage.snapshots.prune(
+        matchId,
+        SNAPSHOTS_KEPT_PER_MATCH,
+        retainTurn,
+      )
       if (dropped > 0) this.deps.logger.debug('pruned old snapshots', { matchId, dropped })
     } catch (error) {
       this.deps.logger.warn('could not prune old snapshots', { matchId, error: String(error) })
@@ -256,13 +264,13 @@ export class SnapshotService {
   async latest(matchId: string): Promise<SnapshotView> {
     const snapshot = await this.deps.storage.snapshots.getLatest(matchId)
     if (!snapshot) throw new NotFoundError('No snapshot uploaded yet', { reason: 'no_snapshot' })
-    return toView(snapshot)
+    return toSnapshotView(snapshot)
   }
 
   async get(matchId: string, turn: number): Promise<SnapshotView> {
     const snapshot = await this.deps.storage.snapshots.get(matchId, turn)
     if (!snapshot) throw new NotFoundError('No snapshot for that turn', { reason: 'no_snapshot' })
-    return toView(snapshot)
+    return toSnapshotView(snapshot)
   }
 }
 
@@ -309,7 +317,7 @@ export function mergeSeatSummaries(
   return checked.output
 }
 
-function toView(snapshot: Snapshot): SnapshotView {
+export function toSnapshotView(snapshot: Snapshot): SnapshotView {
   return {
     turn: snapshot.turn,
     formatVersion: snapshot.formatVersion,

@@ -42,7 +42,8 @@ public static class Program
             new CreateMatchRequest(
                 // Public, so the browse below has something to find. Discovery is the one part of
                 // the lobby flow the two-client match cannot exercise from a join code.
-                new MatchSettings("SMOKE CITY", 2, 0, MatchVisibility.Public, settings.ToWire()),
+                new MatchSettings(
+                    "SMOKE CITY", 2, 0, MatchVisibility.Public, settings.ToWire(), SpectatorDelayTurns: null),
                 "ADA",
                 HostPortraitId: 0,
                 Password: null,

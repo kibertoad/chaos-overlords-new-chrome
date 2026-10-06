@@ -42,6 +42,7 @@ import {
 import type { PostgresDatabase } from './database'
 import { postgresEventRepository } from './events'
 import * as schema from './schema'
+import { postgresSpectatorRepository } from './spectators'
 import { postgresTakeoverRepository } from './takeovers'
 
 /**
@@ -57,6 +58,7 @@ export function createPostgresStorage(db: PostgresDatabase): MultiplayerStorage 
     players: postgresPlayerRepository(db),
     turns: postgresTurnRepository(db),
     takeovers: postgresTakeoverRepository(db),
+    spectators: postgresSpectatorRepository(db),
     snapshots: postgresSnapshotRepository(db),
     events: postgresEventRepository(db),
   }
@@ -830,7 +832,16 @@ function postgresSnapshotRepository(db: PostgresDatabase): SnapshotRepository {
         .limit(1)
       return firstOrNull(rows.map(toSnapshotSummary))
     },
-    async prune(matchId, keep) {
+    async getLatestSummaryAtOrBelow(matchId, turn) {
+      const rows = await db
+        .select(snapshotSummaryColumns)
+        .from(snapshots)
+        .where(and(eq(snapshots.matchId, matchId), lte(snapshots.turn, turn)))
+        .orderBy(desc(snapshots.turn))
+        .limit(1)
+      return firstOrNull(rows.map(toSnapshotSummary))
+    },
+    async prune(matchId, keep, retainTurn) {
       // The turns to keep are the newest `keep`; everything strictly below the oldest of them goes.
       const kept = await db
         .select({ turn: snapshots.turn })
@@ -842,7 +853,14 @@ function postgresSnapshotRepository(db: PostgresDatabase): SnapshotRepository {
       if (oldestKept === undefined || kept.length < keep) return 0
       const rows = await db
         .delete(snapshots)
-        .where(and(eq(snapshots.matchId, matchId), lt(snapshots.turn, oldestKept)))
+        .where(
+          and(
+            eq(snapshots.matchId, matchId),
+            lt(snapshots.turn, oldestKept),
+            // The snapshot a spectator starts from stays, however old; see `prune`.
+            retainTurn === undefined ? undefined : ne(snapshots.turn, retainTurn),
+          ),
+        )
         .returning({ turn: snapshots.turn })
       return rows.length
     },

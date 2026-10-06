@@ -27,6 +27,15 @@ export const LIMITS = {
   eventsPageSize: 200,
   /** A lobby chat message, in characters after normalisation: the length of a Comlink message. */
   chatMessageLength: 160,
+  /** The fewest sealed turns a spectator's view may run behind the players. */
+  spectatorMinDelayTurns: 2,
+  /** The most sealed turns a host may hold a spectator's view behind the players. */
+  spectatorMaxDelayTurns: 20,
+  /**
+   * Spectators one match admits over its life, counting those who left or were removed. It bounds
+   * the spectators table and the `spectator.joined` and `spectator.left` events a log can collect.
+   */
+  spectatorsPerMatch: 64,
   /** Chat messages one player may post per minute. */
   chatMessagesPerMinute: 10,
   /**

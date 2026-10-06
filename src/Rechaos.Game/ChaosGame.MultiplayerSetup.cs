@@ -67,7 +67,8 @@ public sealed partial class ChaosGame
             match.Settings.MaxPlayers,
             SelectedOnlineTurnTimerSeconds,
             _online.PublicListing ? MatchVisibility.Public : MatchVisibility.Private,
-            game.ToWire()));
+            game.ToWire(),
+            match.Settings.SpectatorDelayTurns));
         _online.Status = "SAVING SESSION SETTINGS";
     }
 

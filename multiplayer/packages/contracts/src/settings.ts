@@ -4,7 +4,9 @@ import {
   integer,
   maxValue,
   minValue,
+  nullable,
   number,
+  optional,
   picklist,
   pipe,
   record,
@@ -61,6 +63,21 @@ export const matchSettingsSchema = strictObject({
   ),
   visibility: matchVisibilitySchema,
   gameSettings: gameSettingsSchema,
+  /**
+   * How many sealed turns behind the players a spectator watches, or null (or absent) when the
+   * match cannot be watched. The server holds every spectator read to it; see `/spectate`.
+   */
+  spectatorDelayTurns: optional(
+    nullable(
+      pipe(
+        number(),
+        integer(),
+        // Literals, for the C# generator, which reads the source; a test holds them to LIMITS.
+        minValue(2),
+        maxValue(20),
+      ),
+    ),
+  ),
 })
 
 export type MatchSettings = InferOutput<typeof matchSettingsSchema>

@@ -94,6 +94,47 @@ export const matchViewSchema = strictObject({
   createdAt: isoTimestampSchema,
 })
 
+/** Somebody watching a match without a seat, as the players and the spectator see them. */
+export const spectatorViewSchema = strictObject({
+  id: resourceIdSchema,
+  displayName: displayNameSchema,
+  joinedAt: isoTimestampSchema,
+})
+
+/** The spectators a match has admitted and not yet lost. */
+export const spectatorListSchema = strictObject({ spectators: array(spectatorViewSchema) })
+
+/**
+ * What a spectator may read of a match: everything here is either public or released.
+ *
+ * `releasedTurn` is the newest turn whose sealed set and resolution a spectator may read; 0 means
+ * none yet. While the match runs it is the newest sealed turn minus `delayTurns`; once the match
+ * is over it is the newest sealed turn. The seed is withheld until at least turn 1 is released.
+ * `settings.gameSettings` leaves out `seatSummaries`, which describe the computer seats now.
+ */
+export const spectatorMatchViewSchema = strictObject({
+  id: resourceIdSchema,
+  protocolVersion: protocolVersionSchema,
+  sessionVersion: sessionVersionSchema,
+  status: matchStatusSchema,
+  settings: matchSettingsSchema,
+  players: array(playerViewSchema),
+  /** The turn the players have open, or 0 in the lobby. */
+  currentTurn: turnNumberSchema,
+  delayTurns: turnNumberSchema,
+  releasedTurn: turnNumberSchema,
+  seed: nullable(seedSchema),
+  createdAt: isoTimestampSchema,
+})
+
+/** What `POST /spectate` answers: the view, the spectator, and the token for every later read. */
+export const spectatorMembershipSchema = strictObject({
+  match: spectatorMatchViewSchema,
+  spectator: spectatorViewSchema,
+  /** Bearer token for the `/spectate/:matchId` routes. Shown once; the server stores its hash. */
+  token: tokenSchema,
+})
+
 export const lobbyListingSchema = strictObject({
   id: resourceIdSchema,
   joinCode: joinCodeSchema,
@@ -172,6 +213,10 @@ export type TurnStatus = InferOutput<typeof turnStatusSchema>
 export type PlayerView = InferOutput<typeof playerViewSchema>
 export type TurnView = InferOutput<typeof turnViewSchema>
 export type MatchView = InferOutput<typeof matchViewSchema>
+export type SpectatorView = InferOutput<typeof spectatorViewSchema>
+export type SpectatorList = InferOutput<typeof spectatorListSchema>
+export type SpectatorMatchView = InferOutput<typeof spectatorMatchViewSchema>
+export type SpectatorMembership = InferOutput<typeof spectatorMembershipSchema>
 export type LobbyListing = InferOutput<typeof lobbyListingSchema>
 export type LobbyList = InferOutput<typeof lobbyListSchema>
 export type MembershipView = InferOutput<typeof membershipViewSchema>

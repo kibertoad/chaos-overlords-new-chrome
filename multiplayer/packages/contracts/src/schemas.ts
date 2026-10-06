@@ -66,6 +66,13 @@ export const joinMatchRequestSchema = strictObject({
   password: optional(passwordSchema),
 })
 
+/** Watch a match by its join code, under a name the players will see. */
+export const spectateRequestSchema = strictObject({
+  joinCode: joinCodeInputSchema,
+  displayName: displayNameInputSchema,
+  password: optional(passwordSchema),
+})
+
 export const joinRunningMatchRequestSchema = strictObject({
   match: resourceIdSchema,
   displayName: displayNameInputSchema,
@@ -172,6 +179,7 @@ export type JoinMatchRequest = InferOutput<typeof joinMatchRequestSchema>
 export type JoinRunningMatchRequest = InferOutput<typeof joinRunningMatchRequestSchema>
 export type UpdatePlayerProfileRequest = InferOutput<typeof updatePlayerProfileRequestSchema>
 export type PostChatMessageRequest = InferOutput<typeof postChatMessageRequestSchema>
+export type SpectateRequest = InferOutput<typeof spectateRequestSchema>
 export type SubmitOrdersRequest = InferOutput<typeof submitOrdersRequestSchema>
 export type TakeoverVoteRequest = InferOutput<typeof takeoverVoteRequestSchema>
 export type TurnReportRequest = InferOutput<typeof turnReportRequestSchema>

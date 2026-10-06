@@ -83,7 +83,7 @@ public sealed partial class MultiplayerSessionTests
         MultiplayerProtocolVersion.Current,
         MultiplayerSessionVersion.Current,
         MatchStatus.Running,
-        new MatchSettings("ADA'S CITY", 2, 300, MatchVisibility.Private, GameSettings.ToWire()),
+        new MatchSettings("ADA'S CITY", 2, 300, MatchVisibility.Private, GameSettings.ToWire(), null),
         "p1",
         Seed,
         CurrentTurn: 1,

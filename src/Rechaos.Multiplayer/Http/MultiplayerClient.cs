@@ -168,6 +168,18 @@ public sealed class MultiplayerClient
     /// <summary>A handle for the calls that name a match.</summary>
     public MatchHandle Match(string matchId) => new(this, matchId);
 
+    /// <summary>Starts watching a match that allows spectators, by its join code.</summary>
+    public Task<SpectatorMembership> SpectateAsync(
+        SpectateRequest request,
+        CancellationToken cancellationToken) =>
+        SendAsync<SpectatorMembership>(
+            HttpMethod.Post, ApiRoutes.Spectate, request, cancellationToken);
+
+    /// <summary>
+    /// A handle for the reads a spectator token opens. Bind the token with <see cref="WithToken"/>.
+    /// </summary>
+    public SpectatorHandle Spectator(string matchId) => new(this, matchId);
+
     /// <summary>
     /// One request, with the answer read as <typeparamref name="T"/>.
     /// </summary>

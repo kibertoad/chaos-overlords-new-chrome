@@ -127,7 +127,7 @@ export class LobbyService {
    * shares a single budget, which is the safe direction: an unattributable flood is throttled
    * together rather than not at all.
    */
-  private async verifyMatchPassword(
+  async verifyMatchPassword(
     match: Match,
     password: string | undefined,
     caller: string | undefined,

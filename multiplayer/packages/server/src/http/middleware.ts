@@ -1,4 +1,8 @@
-import { RateLimitedError, UnauthorizedError } from '@chaos-overlords/kernel'
+import {
+  RateLimitedError,
+  type SpectatorPrincipal,
+  UnauthorizedError,
+} from '@chaos-overlords/kernel'
 import type { Context, MiddlewareHandler } from 'hono'
 import type { RateLimiters } from '../container'
 import type { AppEnv } from './types'
@@ -53,6 +57,35 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
     if (error instanceof UnauthorizedError) chargeAnonymous(c)
     throw error
   }
+  await next()
+}
+
+/**
+ * Resolves a spectator token, for the `/spectate/:matchId` routes, or refuses with 401.
+ *
+ * The same shape as `bearerAuth`, against the other kind of token: a player token is refused here
+ * by its prefix before any lookup, as a spectator token is at the player door. A spectator's reads
+ * are then charged to the member budget under the spectator's id, so one spectator polling hard
+ * cannot spend anybody else's.
+ */
+export const spectatorAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const header = c.req.header('authorization') ?? ''
+  const [scheme, token] = header.split(' ', 2)
+  if (scheme?.toLowerCase() !== 'bearer' || !token) {
+    chargeAnonymous(c)
+    throw new UnauthorizedError('Send the spectator token as a Bearer credential', {
+      reason: 'missing_token',
+    })
+  }
+  let principal: SpectatorPrincipal
+  try {
+    principal = await c.get('container').kernel.spectators.authenticate(token)
+  } catch (error) {
+    if (error instanceof UnauthorizedError) chargeAnonymous(c)
+    throw error
+  }
+  c.set('spectator', principal)
+  enforce(c.get('container').rateLimiters, 'member', `spectator:${principal.spectator.id}`, c)
   await next()
 }
 

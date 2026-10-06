@@ -21,7 +21,7 @@ import {
   slotSchema,
   turnNumberSchema,
 } from './primitives'
-import { matchStatusSchema, playerViewSchema } from './views'
+import { matchStatusSchema, playerViewSchema, spectatorViewSchema } from './views'
 
 /**
  * The match event log: an ordered stream of facts, resumable by sequence number.
@@ -86,6 +86,20 @@ export const lobbyChatMessageEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('lobby.chatMessage'),
   payload: strictObject({ playerId: resourceIdSchema, text: chatMessageTextSchema }),
+})
+
+/** Somebody started watching the match. Players are told; spectators never read the log. */
+export const spectatorJoinedEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('spectator.joined'),
+  payload: strictObject({ spectator: spectatorViewSchema }),
+})
+
+/** A spectator stopped watching: they left, or the host removed them (`removed`). */
+export const spectatorLeftEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('spectator.left'),
+  payload: strictObject({ spectatorId: resourceIdSchema, removed: boolean() }),
 })
 
 export const lobbyHostChangedEventSchema = strictObject({
@@ -218,6 +232,8 @@ export const matchEventSchema = variant('type', [
   lobbyPlayerLeftEventSchema,
   lobbyPlayerUpdatedEventSchema,
   lobbyChatMessageEventSchema,
+  spectatorJoinedEventSchema,
+  spectatorLeftEventSchema,
   lobbyHostChangedEventSchema,
   matchStartedEventSchema,
   matchStatusChangedEventSchema,
@@ -239,11 +255,24 @@ export const matchEventSchema = variant('type', [
 export const eventPageSchema = strictObject({ events: array(matchEventSchema) })
 
 /**
+ * The part of the log a spectator may read: the events that decide who controls each seat, logged
+ * before the seal of the first turn not yet released to spectators.
+ *
+ * `cursor` is the last sequence number the server looked at, which may be past the last event it
+ * returned: the events between are ones a spectator does not get. The next page starts after it.
+ */
+export const spectatorEventPageSchema = strictObject({
+  events: array(matchEventSchema),
+  cursor: eventSeqSchema,
+})
+
+/**
  * An event as persisted and delivered: the body plus its position in the match's log.
  */
 export type MatchEvent = InferOutput<typeof matchEventSchema>
 export type MatchEventType = MatchEvent['type']
 export type EventPage = InferOutput<typeof eventPageSchema>
+export type SpectatorEventPage = InferOutput<typeof spectatorEventPageSchema>
 
 /**
  * An event before the log gives it a position: what a publisher hands to storage.

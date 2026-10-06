@@ -16,6 +16,7 @@ import type {
   SealedSlot,
   Snapshot,
   SnapshotSummary,
+  Spectator,
   TakeoverDecision,
   TakeoverVote,
   Turn,
@@ -359,11 +360,39 @@ export interface SnapshotRepository {
   /** The newest snapshot's metadata without its body, which is a megabyte a caller checking for existence never reads. */
   getLatestSummary(matchId: string): Promise<SnapshotSummary | null>
   /**
+   * The metadata of the newest snapshot at or below `turn`, without its body: where a spectator,
+   * who may read nothing past the released turn, starts watching from.
+   */
+  getLatestSummaryAtOrBelow(matchId: string, turn: number): Promise<SnapshotSummary | null>
+  /**
    * Keep only the `keep` newest turns' snapshots of a match, dropping the rest. Returns how many
    * went. Retention collects whole terminated matches; this bounds what a single LIVE match holds,
    * which is otherwise a megabyte per desynced turn with nothing to stop it.
+   *
+   * `retainTurn`, when given, names one more turn whose snapshot stays whatever its age: the one a
+   * spectator starts from, which may be older than every turn `keep` covers.
    */
-  prune(matchId: string, keep: number): Promise<number>
+  prune(matchId: string, keep: number, retainTurn?: number): Promise<number>
+}
+
+/** Spectators: people watching a match from behind its delay, with no seat. */
+export interface SpectatorRepository {
+  /**
+   * Insert a spectator unless the match already holds `cap` spectator rows, counted in the same
+   * statement as the insert so two joins at once cannot both take the last place. Answers whether
+   * the row was written.
+   */
+  create(spectator: Spectator, cap: number): Promise<boolean>
+  get(id: string): Promise<Spectator | null>
+  /** The spectator a token hash belongs to; a revoked token (null hash) matches nobody. */
+  getByTokenHash(tokenHash: string): Promise<Spectator | null>
+  /** The spectators still watching a match, oldest first. */
+  listActive(matchId: string): Promise<Spectator[]>
+  /**
+   * Revoke a watching spectator's token and stamp when they stopped. Answers false when the
+   * spectator was not watching any more, so a second removal publishes nothing.
+   */
+  revoke(id: string, at: Date): Promise<boolean>
 }
 
 export interface EventRepository {
@@ -460,6 +489,7 @@ export interface MultiplayerStorage {
   players: PlayerRepository
   turns: TurnRepository
   takeovers: TakeoverRepository
+  spectators: SpectatorRepository
   snapshots: SnapshotRepository
   events: EventRepository
 }

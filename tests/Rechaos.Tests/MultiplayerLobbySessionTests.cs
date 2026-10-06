@@ -248,7 +248,7 @@ public sealed partial class MultiplayerLobbySessionTests
         MultiplayerSessionVersion.Current,
         status,
         new MatchSettings("TEST", 6, 0, MatchVisibility.Private,
-            new Dictionary<string, JsonElement>()),
+            new Dictionary<string, JsonElement>(), null),
         "p1",
         status == MatchStatus.Lobby ? null : 123,
         status == MatchStatus.Lobby ? 0 : 1,

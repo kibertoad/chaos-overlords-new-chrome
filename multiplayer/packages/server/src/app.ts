@@ -11,6 +11,7 @@ import {
   memberRateLimited,
   rateLimited,
   requestId,
+  spectatorAuth,
 } from './http/middleware'
 import { validateContractResponse } from './http/responseValidation'
 import type { AppEnv } from './http/types'
@@ -19,6 +20,11 @@ import { registerEventRoutes } from './routes/events'
 import { registerMemberLobbyRoutes, registerPublicLobbyRoutes } from './routes/lobby'
 import { registerProtocolRoutes } from './routes/protocol'
 import { registerSnapshotRoutes } from './routes/snapshots'
+import {
+  registerMemberSpectatorRoutes,
+  registerPublicSpectatorRoutes,
+  registerSpectatorRoutes,
+} from './routes/spectators'
 import { registerTurnRoutes } from './routes/turns'
 
 export const API_PREFIX = '/api/v1'
@@ -96,8 +102,17 @@ function apiRoutes(): Hono<AppEnv> {
     bodyLimit({ maxSize: BUG_REPORT_LIMITS.stateBase64Bytes + SMALL_BODY }),
   )
 
+  // The spectator door, password-gated like the join doors and charged to the same budget.
+  api.use('/spectate', rateLimited, bodyLimit({ maxSize: SMALL_BODY }))
+
   registerPublicLobbyRoutes(api)
+  registerPublicSpectatorRoutes(api)
   registerBugReportRoutes(api)
+
+  // Spectator reads, under a prefix of their own so that no `/matches/:matchId/*` middleware, which
+  // takes a player token, ever runs for them. `/:matchId/*` also matches the bare `/:matchId`.
+  api.use('/spectate/:matchId/*', spectatorAuth)
+  registerSpectatorRoutes(api)
 
   // `/:matchId/*` also matches the bare `/:matchId`, so this is the only mount: a second one for
   // the bare path would authenticate (a token lookup plus a match read) and charge the member's
@@ -127,5 +142,6 @@ function apiRoutes(): Hono<AppEnv> {
   registerTurnRoutes(api)
   registerSnapshotRoutes(api)
   registerEventRoutes(api)
+  registerMemberSpectatorRoutes(api)
   return api
 }
