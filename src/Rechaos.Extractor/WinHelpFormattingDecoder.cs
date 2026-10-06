@@ -6,7 +6,7 @@ namespace Rechaos.Extractor;
 public static partial class WinHelpDecoder
 {
     // The face names and old 11-byte descriptors of |FONT (FMT-HELP-001, FND-HELP-006).
-    private static IReadOnlyList<HelpFont> ReadFonts(ReadOnlySpan<byte> data)
+    private static IReadOnlyList<HelpFont> ReadFonts(ReadOnlySpan<byte> data, Action<string>? warning)
     {
         if (data.Length < 8) throw new InvalidDataException("WinHelp font table is truncated.");
         var faceNames = ReadUInt16(data);
@@ -41,7 +41,15 @@ public static partial class WinHelpDecoder
             if ((attributes & 0xc0) != 0 || halfPoints is 0 or > 144)
                 throw new InvalidDataException("WinHelp font descriptor is invalid.");
             if (faceIndex >= names.Length)
-                throw new InvalidDataException("WinHelp font face index is invalid.");
+            {
+                // A descriptor naming a face past the table takes the first face, so one damaged
+                // descriptor costs a face name rather than the whole help file. The viewer draws
+                // every face with the same pixel font (DEV-HELP-001), so nothing it shows changes.
+                warning?.Invoke(
+                    $"WinHelp font descriptor {index} names face {faceIndex}, but the face table " +
+                    $"has {names.Length}; it uses face 0 ({names[0]}) instead.");
+                faceIndex = 0;
+            }
             result[index] = new HelpFont(index, names[faceIndex], attributes, halfPoints,
                 data[offset + 2], data[offset + 5], data[offset + 6], data[offset + 7],
                 data[offset + 8], data[offset + 9], data[offset + 10]);

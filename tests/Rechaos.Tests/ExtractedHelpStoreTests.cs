@@ -32,11 +32,10 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Assert.Equal(expected.Topics.Count, actual.Topics.Count);
         for (var index = 0; index < expected.Topics.Count; index++)
         {
-            Assert.Equal(expected.Topics[index] with { Runs = null, Paragraphs = null },
-                actual.Topics[index] with { Runs = null, Paragraphs = null });
-            Assert.Equal(expected.Topics[index].Runs!, actual.Topics[index].Runs!);
-            var expectedParagraphs = expected.Topics[index].Paragraphs!;
-            var actualParagraphs = actual.Topics[index].Paragraphs!;
+            Assert.Equal(expected.Topics[index] with { Paragraphs = [] },
+                actual.Topics[index] with { Paragraphs = [] });
+            var expectedParagraphs = expected.Topics[index].Paragraphs;
+            var actualParagraphs = actual.Topics[index].Paragraphs;
             Assert.Equal(expectedParagraphs.Count, actualParagraphs.Count);
             for (var paragraph = 0; paragraph < expectedParagraphs.Count; paragraph++)
             {
@@ -50,6 +49,28 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Assert.Equal(expected.Contents, actual.Contents);
         Assert.Equal(expected.Contexts, actual.Contexts);
         Assert.Equal(expected.Fonts, actual.Fonts);
+    }
+
+    // The paragraphs are the only stored copy of a topic's text; the plain text is worked out
+    // from them when it is read.
+    [Fact]
+    public void TopicTextIsStoredOnlyInItsParagraphs()
+    {
+        var topic = Topic(0, "Topic", "First", true) with
+        {
+            Paragraphs =
+            [
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("First")], 0, TabStops: []),
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("Sec"),
+                    new ExtractedHelpTextRun("ond", Bold: true)], 0, TabStops: [])
+            ]
+        };
+
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(topic));
+
+        Assert.False(json.RootElement.TryGetProperty("Text", out _));
+        Assert.False(json.RootElement.TryGetProperty("Runs", out _));
+        Assert.Equal("First\nSecond", topic.Text);
     }
 
     [Fact]
@@ -71,11 +92,10 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             Contexts = [new ExtractedHelpContext(null, null, null, 0)]
         });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
-        Write(Document() with
-        {
-            Topics = [new ExtractedHelpTopic(0, "Topic", "Mismatch", true, 0,
-                [new ExtractedHelpTextRun("Different")])]
-        });
+        Write(Document() with { Topics = [Topic(0, "Topic", "Readable text", true)
+            with { Paragraphs = [new ExtractedHelpParagraph(
+                [new ExtractedHelpTextRun("Text")], 0x0002, SpaceBeforeUnits: 40_000,
+                TabStops: [])] }] });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
         Write(Document() with { Fonts = null });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
@@ -121,14 +141,42 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             StringComparison.Ordinal));
     }
 
-    [Fact]
-    public void EmptyParagraphRecordsCollapseIntoOneBlankRow()
+    // DEV-HELP-003: space after one paragraph and space before the next add up, and a twip
+    // distance becomes pixels at 9 pixels per 221.48 twips, the 10-point body line.
+    [Theory]
+    [InlineData(null, null, 9)]   // no spacing: the next line follows directly
+    [InlineData(12, 12, 18)]      // 115 + 115 twips = 9.35 pixels
+    [InlineData(12, null, 14)]    // 115 twips = 4.67 pixels
+    [InlineData(6, null, 11)]     // 55 twips = 2.23 pixels
+    [InlineData(24, 12, 23)]      // 235 + 115 twips = 14.22 pixels
+    [InlineData(-12, null, 9)]    // negative space is drawn as none
+    public void ParagraphSpacingAddsSpaceAfterToSpaceBefore(int? after, int? before, int top)
     {
-        var topic = Topic(0, "Topic", "ONE\n\nTWO", true) with
+        var topic = Topic(0, "Topic", "ONE", true) with
         {
             Paragraphs =
             [
-                new ExtractedHelpParagraph([], 0, TabStops: []),
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("ONE")], 0,
+                    SpaceBeforeUnits: 24, SpaceAfterUnits: after, TabStops: []),
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("TWO")], 0,
+                    SpaceBeforeUnits: before, TabStops: [])
+            ]
+        };
+
+        var lines = HelpTextLayout.Wrap(topic, 12);
+
+        // The first paragraph's space before is not drawn.
+        Assert.Equal([0, top], lines.Select(line => line.Top));
+    }
+
+    // DEV-HELP-003: an empty paragraph is one empty line with its own spacing.
+    [Fact]
+    public void EmptyParagraphIsOneEmptyLine()
+    {
+        var topic = Topic(0, "Topic", "ONE", true) with
+        {
+            Paragraphs =
+            [
                 new ExtractedHelpParagraph([new ExtractedHelpTextRun("ONE")], 0, TabStops: []),
                 new ExtractedHelpParagraph([], 0, TabStops: []),
                 new ExtractedHelpParagraph([], 0, TabStops: []),
@@ -136,7 +184,56 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             ]
         };
 
-        Assert.Equal(["ONE", "", "TWO"], HelpTextLayout.Wrap(topic, 12).Select(line => line.Text));
+        var lines = HelpTextLayout.Wrap(topic, 12);
+
+        Assert.Equal(["ONE", "", "", "TWO"], lines.Select(line => line.Text));
+        Assert.Equal([0, 9, 18, 27], lines.Select(line => line.Top));
+    }
+
+    // DEV-HELP-003: a line spacing is a minimum when positive and an exact pitch when negative,
+    // and a pitch below the pixel font's 9-pixel row is drawn as one row.
+    [Theory]
+    [InlineData(null, 9)]
+    [InlineData(20, 9)]    // 195 twips = 7.92 pixels, below one row
+    [InlineData(40, 16)]   // 395 twips = 16.05 pixels
+    [InlineData(-40, 16)]  // 405 twips = 16.46 pixels
+    public void LineSpacingSetsTheLinePitchInsideAParagraph(int? lineSpacing, int pitch)
+    {
+        var topic = Topic(0, "Topic", "ONE TWO", true) with
+        {
+            Paragraphs =
+            [
+                new ExtractedHelpParagraph([new ExtractedHelpTextRun("ONE TWO THREE")], 0,
+                    LineSpacingUnits: lineSpacing, TabStops: [])
+            ]
+        };
+
+        var lines = HelpTextLayout.Wrap(topic, 7);
+
+        Assert.Equal(["ONE TWO", "THREE"], lines.Select(line => line.Text));
+        Assert.Equal([0, pitch], lines.Select(line => line.Top));
+    }
+
+    [Fact]
+    public void ViewportCountsScrollsAndHitTestsLinesByTheirPixelPositions()
+    {
+        HelpTextLine[] lines =
+        [
+            new([new ExtractedHelpTextRun("A")], Top: 0),
+            new([new ExtractedHelpTextRun("B")], Top: 9),
+            new([new ExtractedHelpTextRun("C")], Top: 23),
+            new([new ExtractedHelpTextRun("D")], Top: 32)
+        ];
+
+        Assert.Equal(2, HelpTextLayout.VisibleLineCount(lines, 0, 27));
+        Assert.Equal(3, HelpTextLayout.VisibleLineCount(lines, 0, 32));
+        Assert.Equal(2, HelpTextLayout.MaximumStart(lines, 18));
+        Assert.Equal(0, HelpTextLayout.MaximumStart(lines, 41));
+        Assert.Equal(1, HelpTextLayout.LineAt(lines, 0, 17));
+        Assert.Null(HelpTextLayout.LineAt(lines, 0, 18));
+        Assert.Equal(2, HelpTextLayout.LineAt(lines, 0, 23));
+        Assert.Equal(3, HelpTextLayout.LineAt(lines, 1, 23));
+        Assert.Null(HelpTextLayout.LineAt(lines, 0, 41));
     }
 
     [Fact]
@@ -168,7 +265,7 @@ public sealed class ExtractedHelpStoreTests : IDisposable
     public void StyledHelpWrapPreservesFormattingAndLinksAcrossLineBreaks()
     {
         const uint target = 0x86ee9810;
-        var topic = new ExtractedHelpTopic(0, "Topic", "ONE TWO THREE", true, 0,
+        var topic = Topic(0, "Topic",
         [
             new ExtractedHelpTextRun("ONE ", Bold: true),
             new ExtractedHelpTextRun("TWO THREE", Underline: true, LinkHash: target)
@@ -185,7 +282,7 @@ public sealed class ExtractedHelpStoreTests : IDisposable
     [Fact]
     public void StyledHelpWrapMergesAdjacentRunsAndSplitsThemMidRun()
     {
-        var topic = new ExtractedHelpTopic(0, "Topic", "ABCDEFGHIJKLMNOPQ", true, 0,
+        var topic = Topic(0, "Topic",
         [
             new ExtractedHelpTextRun("ABCDE", Bold: true),
             new ExtractedHelpTextRun("FGHIJ", Bold: true),
@@ -223,8 +320,10 @@ public sealed class ExtractedHelpStoreTests : IDisposable
 
         var lines = HelpTextLayout.Wrap(topic, 12);
 
-        Assert.Equal(["FIRST", "SECOND", "", "CENTER"], lines.Select(line => line.Text));
-        Assert.Equal([2, 2, 0, 3], lines.Select(line => line.ColumnOffset));
+        // 175 twips of indent is 1.94 cells; 115 twips of space before is 4.67 pixels.
+        Assert.Equal(["FIRST", "SECOND", "CENTER"], lines.Select(line => line.Text));
+        Assert.Equal([2, 2, 3], lines.Select(line => line.ColumnOffset));
+        Assert.Equal([0, 9, 23], lines.Select(line => line.Top));
     }
 
     [Fact]
@@ -310,9 +409,9 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             StringComparison.Ordinal);
         Assert.Contains("Bribe costs $3", augmented.Topics[5].Text,
             StringComparison.Ordinal);
-        Assert.Contains(augmented.Topics[0].Runs!, run =>
-            run.Bold && run.Text.Contains(HelpContentAugmentation.NoteHeading,
-                StringComparison.Ordinal));
+        Assert.Contains(augmented.Topics[0].Paragraphs, paragraph =>
+            paragraph.Text == HelpContentAugmentation.NoteHeading
+            && paragraph.Runs.All(run => run.Bold));
         Assert.Contains(augmented.Contents, entry =>
             entry.TopicId == 30 && entry.ContextName == "BRIBE");
         Assert.Same(augmented, HelpContentAugmentation.AddExecutableNotes(augmented));
@@ -448,6 +547,12 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         string text,
         bool listed,
         int offset = 0) =>
-        new(id, title, text, listed, offset, [new ExtractedHelpTextRun(text)],
+        new(id, title, listed, offset,
             [new ExtractedHelpParagraph([new ExtractedHelpTextRun(text)], 0, TabStops: [])]);
+
+    private static ExtractedHelpTopic Topic(
+        int id,
+        string title,
+        IReadOnlyList<ExtractedHelpTextRun> runs) =>
+        new(id, title, true, 0, [new ExtractedHelpParagraph(runs, 0, TabStops: [])]);
 }

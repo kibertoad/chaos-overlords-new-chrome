@@ -10,6 +10,7 @@ public static class HelpLayout
 {
     public const int VisibleTopicRows = 15;
     public const int VisibleTextLines = 30;
+    public const int TextPaneHeight = VisibleTextLines * OriginalFontLayout.LineHeight;
     public const int TextColumns = 62;
     public static Rectangle Panel => new(18, 24, 604, 412);
     public static Rectangle TopicList => new(30, 64, 176, 318);
@@ -71,60 +72,115 @@ public static class HelpTextLayout
         return lines;
     }
 
+    /// <summary>
+    /// Lays a topic's paragraphs out on the pixel-font grid by the rules of DEV-HELP-003: source
+    /// indents and alignment become whole character columns, and the space between paragraphs
+    /// and the line spacing become pixels. Each line's <see cref="HelpTextLine.Top"/> is its
+    /// distance in pixels from the top of the topic's first line.
+    /// </summary>
     public static IReadOnlyList<HelpTextLine> Wrap(
         ExtractedHelpTopic topic,
         int columns)
     {
         ArgumentNullException.ThrowIfNull(topic);
         if (columns <= 0) throw new ArgumentOutOfRangeException(nameof(columns));
-        // Source indents, alignment and spacing on the pixel-font grid (DEV-HELP-001,
-        // FND-HELP-006).
-        if (topic.Paragraphs is { Count: > 0 })
+        var laidOut = new List<HelpTextLine>();
+        var top = 0;
+        var afterTwips = 0;
+        var first = true;
+        foreach (var paragraph in topic.Paragraphs)
         {
-            var laidOut = new List<HelpTextLine>();
-            var pendingAfter = 0;
-            foreach (var record in topic.Paragraphs)
+            // Space after one paragraph and space before the next add up. The first paragraph's
+            // space before is not drawn: the viewer starts the text a fixed distance under the
+            // topic's title line.
+            if (!first)
+                top += PixelsFromTwips(afterTwips + SpacingTwips(paragraph.SpaceBeforeUnits));
+            var pitch = LinePitch(paragraph.LineSpacingUnits);
+            IReadOnlyList<HelpTextLine> lines = paragraph.Runs.Count == 0
+                ? [new HelpTextLine([])]
+                : WrapRuns(paragraph.Runs, columns,
+                    ColumnsFromTwips(Twips(paragraph.LeftIndentUnits)),
+                    ColumnsFromTwips(Twips(paragraph.RightIndentUnits)),
+                    ColumnsFromTwips(Twips(paragraph.FirstLineIndentUnits)),
+                    paragraph.Alignment);
+            foreach (var line in lines)
             {
-                if (record.Runs.Count == 0)
-                {
-                    // An empty record is authored vertical space: fold it into the gap
-                    // before the next record instead of stacking extra blank rows.
-                    pendingAfter = Math.Max(pendingAfter, Math.Max(
-                        RowsFromUnits(record.SpaceBeforeUnits),
-                        RowsFromUnits(record.SpaceAfterUnits)));
-                    continue;
-                }
-                if (laidOut.Count > 0)
-                    AddBlankRows(laidOut, Math.Max(1, Math.Max(pendingAfter,
-                        RowsFromUnits(record.SpaceBeforeUnits))));
-                var left = ColumnsFromUnits(record.LeftIndentUnits);
-                var right = ColumnsFromUnits(record.RightIndentUnits);
-                var first = ColumnsFromUnits(record.FirstLineIndentUnits);
-                var recordLines = WrapRuns(record.Runs, columns, left, right, first,
-                    record.Alignment);
-                laidOut.AddRange(recordLines);
-                pendingAfter = RowsFromUnits(record.SpaceAfterUnits);
+                laidOut.Add(line with { Top = top });
+                top += pitch;
             }
-            return laidOut;
+            afterTwips = SpacingTwips(paragraph.SpaceAfterUnits);
+            first = false;
         }
-        var source = topic.Runs is { Count: > 0 }
-            ? topic.Runs
-            : [new ExtractedHelpTextRun(topic.Text)];
-        return WrapRuns(source, columns, 0, 0, 0, HelpParagraphAlignment.Left);
+        return laidOut;
     }
 
-    private static int ColumnsFromUnits(int? units) =>
-        Math.Clamp((int)Math.Round((units ?? 0) * 2.0 / (3 * OriginalFontLayout.CellWidth)),
-            -16, 32);
-
-    private static int RowsFromUnits(int? units) =>
-        Math.Clamp((int)Math.Round((units ?? 0) * 2.0 / (3 * OriginalFontLayout.LineHeight)),
-            0, 3);
-
-    private static void AddBlankRows(List<HelpTextLine> lines, int count)
+    /// <summary>How many lines from <paramref name="start"/> fit whole in a pane of the given height.</summary>
+    public static int VisibleLineCount(IReadOnlyList<HelpTextLine> lines, int start, int heightPixels)
     {
-        for (var index = 0; index < count; index++) lines.Add(new HelpTextLine([]));
+        ArgumentNullException.ThrowIfNull(lines);
+        if (start < 0 || start >= lines.Count) return 0;
+        var origin = lines[start].Top;
+        var count = 0;
+        while (start + count < lines.Count
+               && lines[start + count].Top - origin + OriginalFontLayout.LineHeight <= heightPixels)
+            count++;
+        return Math.Max(1, count);
     }
+
+    /// <summary>The first line of the last full pane: the largest useful scroll position.</summary>
+    public static int MaximumStart(IReadOnlyList<HelpTextLine> lines, int heightPixels)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        if (lines.Count == 0) return 0;
+        var bottom = lines[^1].Top + OriginalFontLayout.LineHeight;
+        for (var start = 0; start < lines.Count; start++)
+            if (bottom - lines[start].Top <= heightPixels) return start;
+        return lines.Count - 1;
+    }
+
+    /// <summary>
+    /// The line drawn at <paramref name="y"/> pixels below the top of a pane that starts with line
+    /// <paramref name="start"/>, or null when the point falls between lines or past the last one.
+    /// </summary>
+    public static int? LineAt(IReadOnlyList<HelpTextLine> lines, int start, int y)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        if (start < 0 || start >= lines.Count || y < 0) return null;
+        var origin = lines[start].Top;
+        for (var index = start; index < lines.Count; index++)
+        {
+            var lineTop = lines[index].Top - origin;
+            if (lineTop > y) break;
+            if (y < lineTop + OriginalFontLayout.LineHeight) return index;
+        }
+        return null;
+    }
+
+    // The paragraph distances are half-points less half a point's rounding, as Wine's help
+    // viewer and helpdeco convert them back to twips (SRC-WINHLP32-WINE, SRC-HELPDECO).
+    private static int Twips(int? units) => units is { } value ? value * 10 - 5 : 0;
+
+    // Negative space before or after is drawn as none.
+    private static int SpacingTwips(int? units) => Math.Max(0, Twips(units));
+
+    // One pixel-font row stands for one line of the help file's 10-point body text, taken as
+    // Times New Roman's ascent plus descent: 200 twips x (1825 + 443) / 2048 (DEV-HELP-003).
+    private const double BodyLineTwips = 200.0 * (1825 + 443) / 2048;
+
+    private static int PixelsFromTwips(int twips) =>
+        (int)Math.Round(twips * OriginalFontLayout.LineHeight / BodyLineTwips,
+            MidpointRounding.AwayFromZero);
+
+    // A positive line spacing is a minimum and a negative one an exact pitch (SRC-RTF-15). The
+    // pixel font has one size, so a pitch below its row is drawn as one row.
+    private static int LinePitch(int? units) =>
+        Math.Max(OriginalFontLayout.LineHeight, PixelsFromTwips(Math.Abs(Twips(units))));
+
+    // Indents are the help program's pixels at 96 DPI (15 twips each) divided by the
+    // character cell, close to the average advance of the 10-point body face at that size.
+    private static int ColumnsFromTwips(int twips) =>
+        Math.Clamp((int)Math.Round(twips / (15.0 * OriginalFontLayout.CellWidth),
+            MidpointRounding.AwayFromZero), -16, 32);
 
     private static IReadOnlyList<HelpTextLine> WrapRuns(
         IReadOnlyList<ExtractedHelpTextRun> source, int columns,
@@ -229,7 +285,8 @@ public static class HelpTextLayout
     private readonly record struct HelpStyledCharacter(char Value, ExtractedHelpTextRun Style);
 }
 
-public sealed record HelpTextLine(IReadOnlyList<ExtractedHelpTextRun> Runs, int ColumnOffset = 0)
+public sealed record HelpTextLine(
+    IReadOnlyList<ExtractedHelpTextRun> Runs, int ColumnOffset = 0, int Top = 0)
 {
     public string Text => string.Concat(Runs.Select(run => run.Text));
 }
@@ -308,8 +365,7 @@ public static class HelpContentAugmentation
             {
                 topicIndex = topics.Count;
                 topics.Add(new ExtractedHelpTopic(
-                    nextId, note.Title, string.Empty, ListedInContents: true,
-                    nextOffset, []));
+                    nextId, note.Title, ListedInContents: true, nextOffset, []));
                 contents.Add(new ExtractedHelpContentsEntry(
                     1, note.Title, nextId, note.Context));
                 nextId = checked(nextId + 1);
@@ -328,30 +384,10 @@ public static class HelpContentAugmentation
                 continue;
 
             var topic = topics[topicIndex];
-            IReadOnlyList<ExtractedHelpTextRun> runs = topic.Runs is { Count: > 0 }
-                ? topic.Runs
-                : topic.Text.Length > 0
-                    ? [new ExtractedHelpTextRun(topic.Text)]
-                    : [];
-            var heading = topic.Text.Length == 0
-                ? $"{NoteHeading}\n"
-                : $"\n\n{NoteHeading}\n";
-            // Layout draws a topic's paragraph records whenever it has any, so the note must be
-            // appended there too or it would never be shown for an extracted topic.
-            IReadOnlyList<ExtractedHelpParagraph>? paragraphs = topic.Paragraphs is { Count: > 0 }
-                ? [.. topic.Paragraphs,
-                    new ExtractedHelpParagraph(
-                        [new ExtractedHelpTextRun(NoteHeading, Bold: true),
-                            new ExtractedHelpTextRun($"\n{note.Text}")],
-                        0, TabStops: [])]
-                : topic.Paragraphs;
             topics[topicIndex] = topic with
             {
-                Text = topic.Text + heading + note.Text,
-                Runs = [.. runs,
-                    new ExtractedHelpTextRun(heading, Bold: true),
-                    new ExtractedHelpTextRun(note.Text)],
-                Paragraphs = paragraphs
+                Paragraphs = [.. topic.Paragraphs,
+                    .. HelpNoteParagraphs.Create(NoteHeading, note.Text)]
             };
             changed = true;
         }
@@ -558,9 +594,9 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Home)) SelectHelpTopicPosition(0);
         if (Pressed(keyboard, Keys.End))
             SelectHelpTopicPosition(_helpTopicOrder.Count - 1);
-        if (Pressed(keyboard, Keys.PageUp)) ScrollHelp(-HelpLayout.VisibleTextLines);
+        if (Pressed(keyboard, Keys.PageUp)) PageHelp(-1);
         if (Pressed(keyboard, Keys.PageDown) || Pressed(keyboard, Keys.Space))
-            ScrollHelp(HelpLayout.VisibleTextLines);
+            PageHelp(1);
     }
 
     private void ChangeHelpTopic(int delta)
@@ -586,7 +622,17 @@ public sealed partial class ChaosGame
         if (_helpDocument is null) return;
         var lines = HelpLines(_helpTopicIndex, HelpLayout.TextColumns);
         _helpLineOffset = Math.Clamp(_helpLineOffset + delta,
-            0, Math.Max(0, lines.Count - HelpLayout.VisibleTextLines));
+            0, HelpTextLayout.MaximumStart(lines, HelpLayout.TextPaneHeight));
+    }
+
+    // A page is the lines the pane shows from where it is now, so lines are as tall as their
+    // paragraph spacing makes them (DEV-HELP-003).
+    private void PageHelp(int direction)
+    {
+        if (_helpDocument is null) return;
+        var lines = HelpLines(_helpTopicIndex, HelpLayout.TextColumns);
+        ScrollHelp(direction * HelpTextLayout.VisibleLineCount(
+            lines, _helpLineOffset, HelpLayout.TextPaneHeight));
     }
 
     private void HandleHelpClick(Point point)
@@ -616,11 +662,10 @@ public sealed partial class ChaosGame
             || !HelpLayout.Text.Contains(point))
             return false;
         var lines = HelpLines(_helpTopicIndex, HelpLayout.TextColumns);
-        var row = (point.Y - 94) / OriginalFontLayout.LineHeight;
-        if (row < 0 || row >= HelpLayout.VisibleTextLines
-            || _helpLineOffset + row >= lines.Count)
+        if (point.Y - 94 >= HelpLayout.TextPaneHeight
+            || HelpTextLayout.LineAt(lines, _helpLineOffset, point.Y - 94) is not { } index)
             return false;
-        var line = lines[_helpLineOffset + row];
+        var line = lines[index];
         var column = (point.X - 226) / OriginalFontLayout.CellWidth - line.ColumnOffset;
         var cursor = 0;
         foreach (var run in line.Runs)
@@ -711,10 +756,8 @@ public sealed partial class ChaosGame
         if (title.Length > HelpLayout.TextColumns) title = title[..HelpLayout.TextColumns];
         font.Draw(batch, title, new Vector2(226, 74), Color.Gold, 1);
         var lines = HelpLines(_helpTopicIndex, HelpLayout.TextColumns);
-        for (var row = 0; row < HelpLayout.VisibleTextLines && _helpLineOffset + row < lines.Count; row++)
-            DrawHelpLine(batch, pixel, font, lines[_helpLineOffset + row],
-                226 + lines[_helpLineOffset + row].ColumnOffset * OriginalFontLayout.CellWidth,
-                94 + row * OriginalFontLayout.LineHeight);
+        DrawHelpLines(batch, pixel, font, lines, _helpLineOffset, 226, 94,
+            HelpLayout.TextPaneHeight);
         var position = HelpNavigation.PositionOf(_helpTopicOrder, _helpTopicIndex);
         var topicPosition = position < 0 ? "LINKED" : $"{position + 1}/{_helpTopicOrder.Count}";
         font.Draw(batch,
@@ -767,9 +810,24 @@ public sealed partial class ChaosGame
         var lines = HelpLines(_helpPopupTopicIndex!.Value, 48);
         var firstLineY = panel.Y + (hasAuthoredTitle ? 28 : 10);
         var visibleLines = hasAuthoredTitle ? 18 : 20;
-        for (var row = 0; row < visibleLines && row < lines.Count; row++)
-            DrawHelpLine(batch, pixel, font, lines[row],
-                panel.X + 10 + lines[row].ColumnOffset * OriginalFontLayout.CellWidth,
-                firstLineY + row * OriginalFontLayout.LineHeight);
+        DrawHelpLines(batch, pixel, font, lines, 0, panel.X + 10, firstLineY,
+            visibleLines * OriginalFontLayout.LineHeight);
+    }
+
+    private static void DrawHelpLines(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        IReadOnlyList<HelpTextLine> lines,
+        int start,
+        int x,
+        int y,
+        int heightPixels)
+    {
+        var count = HelpTextLayout.VisibleLineCount(lines, start, heightPixels);
+        for (var index = start; index < start + count; index++)
+            DrawHelpLine(batch, pixel, font, lines[index],
+                x + lines[index].ColumnOffset * OriginalFontLayout.CellWidth,
+                y + lines[index].Top - lines[start].Top);
     }
 }

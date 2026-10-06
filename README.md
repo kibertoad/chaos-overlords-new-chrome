@@ -77,10 +77,11 @@ validation plans list the open questions.
   no screen has been compared with a capture of the original
   ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136),
   [#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
-- Help is drawn by a cross-platform viewer using the imported font descriptors,
-  indents, centering and paragraph spacing. Native typography and exact geometry
-  still need comparison with original captures
-  ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
+- Help is drawn by a cross-platform viewer in one pixel font, with the help
+  file's indents, centering and paragraph spacing converted to its grid
+  (DEV-HELP-003 in [DEVIATIONS.md](DEVIATIONS.md)). The original never shows its
+  help, and its layout has not been compared with the Windows help program,
+  which current Windows lacks.
 - Online play has no spectating, lobby chat or Comlink messages between
   players ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)).
 - Key bindings cannot be changed, and macOS builds are not signed or notarized

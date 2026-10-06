@@ -12,15 +12,18 @@
 
 ## sources
 
-5 entries.
+8 entries.
 
 | ID | Title | Status |
 |---|---|---|
 | [SRC-HELP-GOG](../sources/SRC-HELP-GOG.md) | Chaos Overlords in-game WinHelp file, read as a document | None |
+| [SRC-HELPDECO](../sources/SRC-HELPDECO.md) | helpdeco, the WinHelp decompiler, src/helpdeco.c | None |
 | [SRC-MANUAL-GOG](../sources/SRC-MANUAL-GOG.md) | Chaos Overlords manual, image scan shipped with the GOG release | None |
 | [SRC-MCI-PLAY](../sources/SRC-MCI-PLAY.md) | Microsoft MCI_PLAY command reference | None |
 | [SRC-MCI-STOP](../sources/SRC-MCI-STOP.md) | Microsoft MCI_STOP command reference | None |
 | [SRC-RECHAOS-3561D41](../sources/SRC-RECHAOS-3561D41.md) | RE: Chaos Overlords (1996) | None |
+| [SRC-RTF-15](../sources/SRC-RTF-15.md) | Microsoft Rich Text Format specification, version 1.5 | None |
+| [SRC-WINHLP32-WINE](../sources/SRC-WINHLP32-WINE.md) | Wine's WinHelp viewer, programs/winhlp32/hlpfile.c | None |
 
 ## formats
 

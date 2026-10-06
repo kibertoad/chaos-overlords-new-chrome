@@ -58,51 +58,24 @@ public static class ExtractedHelpStore
         var ids = new HashSet<int>();
         var linkHashes = new HashSet<uint>();
         var totalCharacters = 0;
-        var totalParagraphCharacters = 0;
         var previousTopicOffset = -1;
         foreach (var topic in document.Topics)
         {
             if (topic is null || topic.Id < 0 || !ids.Add(topic.Id)
                 || string.IsNullOrWhiteSpace(topic.Title)
-                || topic.Text is null || topic.Text.Length > MaximumTopicCharacters)
-                return false;
-            if (topic.TopicOffset < previousTopicOffset
-                || topic.Runs is null or { Count: > MaximumRunsPerTopic }
+                || topic.TopicOffset < previousTopicOffset
                 || topic.Paragraphs is null or { Count: > MaximumParagraphsPerTopic }
-                || !topic.Runs.All(run => IsValidRun(run, document.Fonts.Count)))
+                || !topic.Paragraphs.All(paragraph => IsValidParagraph(paragraph, document.Fonts.Count))
+                || topic.Paragraphs.Sum(paragraph => paragraph.Runs.Count) > MaximumRunsPerTopic)
                 return false;
-            if (!topic.Paragraphs.All(paragraph =>
-                paragraph is not null
-                && paragraph.Runs is not null
-                && paragraph.RawFlags is >= 0 and <= ushort.MaxValue
-                && paragraph.Alignment is >= HelpParagraphAlignment.Left
-                    and <= HelpParagraphAlignment.Unsupported
-                && paragraph.TabStops is not null
-                && paragraph.TabStops.Count <= 256
-                // The decoder keeps a tab's alignment as the compressed word it read.
-                && paragraph.TabStops.All(tab => tab is not null
-                    && tab.PositionUnits is >= 0 and <= 16383
-                    && tab.AlignmentCode is >= 0 and <= 0x7fff)
-                && paragraph.Runs.All(run => IsValidRun(run, document.Fonts.Count))))
-                return false;
-            // Layout draws the paragraph records instead of Runs, so they carry the same bounds.
-            if (topic.Paragraphs.Sum(paragraph => paragraph.Runs.Count) > MaximumRunsPerTopic)
-                return false;
-            var paragraphCharacters = topic.Paragraphs
-                .Sum(paragraph => paragraph.Runs.Sum(run => run.Text.Length));
-            if (paragraphCharacters > MaximumTopicCharacters) return false;
-            totalParagraphCharacters = checked(totalParagraphCharacters + paragraphCharacters);
-            if (totalParagraphCharacters > MaximumTotalCharacters) return false;
-            previousTopicOffset = topic.TopicOffset;
-            if (!string.Equals(string.Concat(topic.Runs.Select(run => run.Text)),
-                    topic.Text, StringComparison.Ordinal))
-                return false;
-            foreach (var hash in topic.Runs.Concat(topic.Paragraphs.SelectMany(p => p.Runs))
-                         .Where(run => run.LinkHash is not null)
-                         .Select(run => run.LinkHash!.Value))
-                linkHashes.Add(hash);
-            totalCharacters = checked(totalCharacters + topic.Title.Length + topic.Text.Length);
+            var characters = topic.Paragraphs.Sum(paragraph => paragraph.Text.Length);
+            if (characters > MaximumTopicCharacters) return false;
+            totalCharacters = checked(totalCharacters + topic.Title.Length + characters);
             if (totalCharacters > MaximumTotalCharacters) return false;
+            previousTopicOffset = topic.TopicOffset;
+            foreach (var run in topic.Paragraphs.SelectMany(paragraph => paragraph.Runs))
+                if (run.LinkHash is { } hash)
+                    linkHashes.Add(hash);
         }
         if (!document.Contents.All(entry =>
             entry.Level is >= 0 and <= 15
@@ -121,6 +94,30 @@ public static class ExtractedHelpStore
             && (context.NumericId is not { } numericId || numericIds.Add(numericId)));
         return validContexts && linkHashes.All(hashes.Contains);
     }
+
+    // The decoder keeps a tab's alignment as the compressed word it read, and every distance as
+    // a compressed integer of the record (FND-HELP-006).
+    private static bool IsValidParagraph(ExtractedHelpParagraph? paragraph, int fontCount) =>
+        paragraph is not null
+        && paragraph.Runs is not null
+        && paragraph.RawFlags is >= 0 and <= ushort.MaxValue
+        && paragraph.Alignment is >= HelpParagraphAlignment.Left
+            and <= HelpParagraphAlignment.Unsupported
+        && IsDistance(paragraph.SpaceBeforeUnits)
+        && IsDistance(paragraph.SpaceAfterUnits)
+        && IsDistance(paragraph.LineSpacingUnits)
+        && IsDistance(paragraph.LeftIndentUnits)
+        && IsDistance(paragraph.RightIndentUnits)
+        && IsDistance(paragraph.FirstLineIndentUnits)
+        && paragraph.TabStops is not null
+        && paragraph.TabStops.Count <= 256
+        && paragraph.TabStops.All(tab => tab is not null
+            && tab.PositionUnits is >= 0 and <= 16383
+            && tab.AlignmentCode is >= 0 and <= 0x7fff)
+        && paragraph.Runs.All(run => IsValidRun(run, fontCount));
+
+    private static bool IsDistance(int? units) =>
+        units is null or >= short.MinValue and <= short.MaxValue;
 
     private static bool IsValidRun(ExtractedHelpTextRun? run, int fontCount) =>
         run is not null

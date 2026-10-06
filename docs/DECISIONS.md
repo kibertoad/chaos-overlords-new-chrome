@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-06 | [Lay out WinHelp paragraphs from the format's meaning instead of native captures](#2026-10-06--lay-out-winhelp-paragraphs-from-the-formats-meaning-instead-of-native-captures) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
 | 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
@@ -30,7 +31,6 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-24 | [Refuse a hire drop on a sector already holding six friendly gangs](#2026-09-24--refuse-a-hire-drop-on-a-sector-already-holding-six-friendly-gangs) |
 | 2026-09-24 | [Mark objective sectors on the detailed-sector minimap](#2026-09-24--mark-objective-sectors-on-the-detailed-sector-minimap) |
 | 2026-09-24 | [Resolve cash transactions in player order](#2026-09-24--resolve-cash-transactions-in-player-order) |
-| 2026-09-23 | [Render WinHelp geometry on the cross-platform pixel grid](#2026-09-23--render-winhelp-geometry-on-the-cross-platform-pixel-grid) |
 | 2026-09-23 | [Do not animate the panel slide-out](#2026-09-23--do-not-animate-the-panel-slide-out) |
 | 2026-09-22 | [Fold the definition set into a fingerprint as a digest](#2026-09-22--fold-the-definition-set-into-a-fingerprint-as-a-digest) |
 | 2026-09-21 | [Fingerprint match state with XxHash128, not SHA-256](#2026-09-21--fingerprint-match-state-with-xxhash128-not-sha-256) |
@@ -45,6 +45,27 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-06 — Lay out WinHelp paragraphs from the format's meaning instead of native captures
+
+**Decision.** The help viewer lays out the help file's paragraphs by what the
+format's fields mean, converted to the pixel-font grid by the fixed rules of
+DEV-HELP-003, and no comparison with captures of the Windows help program is
+planned. Extracted-help format 4 stores each topic once, as its paragraphs, and
+asset-pack format 8 makes players regenerate their pack to get it. A damaged
+font descriptor costs its face name, not the help file.
+
+**Reasoning.** The original never opens its help file (RULE-HELP-001), so
+there is no screen of the game to match, and the help program it would have
+started is not part of Windows 10 or 11, so a native capture cannot be made on
+a current system. Wine's viewer and helpdeco agree on the units of the
+paragraph fields and RTF defines what each field means (SRC-WINHLP32-WINE,
+SRC-HELPDECO, SRC-RTF-15), which is enough to draw every recorded distance in
+proportion. The one question no source answers, whether the space after one
+paragraph and the space before the next add up, is answered in DEV-HELP-003
+and stated there as unverified. Storing the text once leaves a single copy for
+the extractor, the rebuild's notes and the store to keep right, and the format
+had not shipped, so the change cost players no extra regeneration.
 
 ## 2026-10-06 — Count a row its mandatory deviations replace as deviated
 
@@ -362,22 +383,6 @@ next Upkeep income cannot. This deliberate rule deviation changes deterministic
 turn outcomes, so multiplayer session version 9 retires sessions started under
 version 8. Native saves and replay journals retain their format gates because
 their schema and fingerprint encoding have not changed.
-
-## 2026-09-23 — Render WinHelp geometry on the cross-platform pixel grid
-
-**Decision.** Preserve the supported help file's font descriptors and
-paragraph geometry in extracted-help format 4, and render source indents,
-centering, and paragraph spacing on the existing bounded pixel-font grid.
-Asset-pack format 8 requires users to regenerate their local extracted pack.
-Exact native font metrics and line spacing remain pending comparison with
-representative original captures. Legacy macro and external-file execution
-remain disabled.
-
-**Reasoning.** Static inspection of the owned help file recovers the authored
-fields without running WinHelp. The native font rasterization and exact
-paragraph-to-pixel conversion cannot be established from those records alone.
-The extracted schema keeps the original values so a later renderer can use
-them without decoding the source again.
 
 ## 2026-09-23 — Do not animate the panel slide-out
 

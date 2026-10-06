@@ -48,12 +48,11 @@ public sealed class WinHelpDecoderTests
         Assert.Equal("Hello\nworld", topic.Text);
         Assert.True(topic.ListedInContents);
         Assert.Equal(0, topic.TopicOffset);
-        Assert.Equal(topic.Text, string.Concat(topic.Runs!.Select(run => run.Text)));
         Assert.Equal(2, document.Fonts!.Count);
         Assert.Equal("Times New Roman", document.Fonts[0].Name);
         Assert.Equal(20, document.Fonts[0].HalfPoints);
-        Assert.Equal("Hello\nworld", Assert.Single(topic.Paragraphs!).Runs
-            .Aggregate(string.Empty, (text, run) => text + run.Text));
+        // A line break (0x81) stays inside the paragraph.
+        Assert.Equal("Hello\nworld", Assert.Single(topic.Paragraphs).Text);
         Assert.Collection(document.Contexts!,
             context =>
             {
@@ -87,14 +86,15 @@ public sealed class WinHelpDecoderTests
 
         var topic = Assert.Single(document.Topics);
         Assert.Equal("Plain Bold City", topic.Text);
-        Assert.Contains(topic.Runs!, run => run.Text.Contains("Bold", StringComparison.Ordinal)
-                                           && run.Bold && run.Italic);
-        var link = Assert.Single(topic.Runs!, run => run.LinkHash is not null);
+        var runs = Assert.Single(topic.Paragraphs).Runs;
+        Assert.Contains(runs, run => run.Text.Contains("Bold", StringComparison.Ordinal)
+                                     && run.Bold && run.Italic);
+        var link = Assert.Single(runs, run => run.LinkHash is not null);
         Assert.Equal("City", link.Text);
         Assert.Equal(WinHelpDecoder.CalculateContextHash("CITYVIEW"), link.LinkHash);
         Assert.Equal(popup, link.Popup);
         Assert.Equal(20, link.HalfPoints);
-        Assert.Equal(1, Assert.Single(topic.Runs!, run => run.Text.Contains("Bold", StringComparison.Ordinal)).FontIndex);
+        Assert.Equal(1, Assert.Single(runs, run => run.Text.Contains("Bold", StringComparison.Ordinal)).FontIndex);
     }
 
     // The paragraph fields of a display record (FND-HELP-006).
@@ -103,7 +103,7 @@ public sealed class WinHelpDecoderTests
     {
         var document = WinHelpDecoder.Decode(BuildHelpFile(geometry: true),
             ReadOnlyMemory<byte>.Empty);
-        var paragraph = Assert.Single(Assert.Single(document.Topics).Paragraphs!);
+        var paragraph = Assert.Single(Assert.Single(document.Topics).Paragraphs);
 
         Assert.Equal(0x087e, paragraph.RawFlags);
         Assert.Equal(12, paragraph.SpaceBeforeUnits);
@@ -113,6 +113,43 @@ public sealed class WinHelpDecoderTests
         Assert.Equal(12, paragraph.RightIndentUnits);
         Assert.Equal(-6, paragraph.FirstLineIndentUnits);
         Assert.Equal(HelpParagraphAlignment.Center, paragraph.Alignment);
+    }
+
+    // An end-of-paragraph command (0x82) inside a display record starts a new paragraph that
+    // keeps the record's formatting (FND-HELP-006).
+    [Fact]
+    public void EndOfParagraphSplitsDisplayRecordIntoParagraphsWithItsFormatting()
+    {
+        var document = WinHelpDecoder.Decode(
+            BuildHelpFile(geometry: true, paragraphBreak: true), ReadOnlyMemory<byte>.Empty);
+        var paragraphs = Assert.Single(document.Topics).Paragraphs;
+
+        Assert.Equal(["Hello", "world"], paragraphs.Select(paragraph => paragraph.Text));
+        Assert.All(paragraphs, paragraph =>
+        {
+            Assert.Equal(12, paragraph.SpaceBeforeUnits);
+            Assert.Equal(6, paragraph.SpaceAfterUnits);
+            Assert.Equal(HelpParagraphAlignment.Center, paragraph.Alignment);
+        });
+    }
+
+    // A font descriptor naming a face past the face table takes face 0 and is reported, so one
+    // damaged descriptor does not cost the whole help file (DEV-HELP-001).
+    [Fact]
+    public void FontDescriptorWithFaceIndexPastTheTableUsesTheFirstFace()
+    {
+        var warnings = new List<string>();
+
+        var document = WinHelpDecoder.Decode(BuildHelpFile(badFaceIndex: true),
+            Encoding.ASCII.GetBytes(":Title Synthetic Help\r\n1 Synthetic=SYNTH\r\n"),
+            warnings.Add);
+
+        Assert.Equal(["Times New Roman", "Times New Roman"],
+            document.Fonts!.Select(font => font.Name));
+        var warning = Assert.Single(warnings);
+        Assert.Contains("descriptor 1", warning, StringComparison.Ordinal);
+        Assert.Contains("face 5", warning, StringComparison.Ordinal);
+        Assert.Equal("Hello\nworld", Assert.Single(document.Topics).Text);
     }
 
     [Theory]
@@ -151,7 +188,10 @@ public sealed class WinHelpDecoderTests
         var document = WinHelpDecoder.Decode(
             BuildHelpFile("Attack..."), ReadOnlyMemory<byte>.Empty);
 
-        var text = Assert.Single(document.Topics).Text;
+        var topic = Assert.Single(document.Topics);
+        var text = topic.Text;
+        Assert.Contains(topic.Paragraphs, paragraph =>
+            paragraph.Text == "NEW CHROME CLARIFICATION" && paragraph.Runs.All(run => run.Bold));
         Assert.Contains("Attack Roll = gang Combat + current Force - defender Defense", text,
             StringComparison.Ordinal);
         Assert.Contains("gang eliminated during the round still attacks", text,
@@ -162,7 +202,9 @@ public sealed class WinHelpDecoderTests
         string topicName = "Synthetic",
         bool styledLink = false,
         bool popupLink = false,
-        bool geometry = false)
+        bool geometry = false,
+        bool paragraphBreak = false,
+        bool badFaceIndex = false)
     {
         var system = new byte[12];
         WriteUInt16(system, 2, 33);
@@ -175,7 +217,8 @@ public sealed class WinHelpDecoderTests
             checked((uint)(12 + topicHeaderLength)));
         var paragraphCommands = geometry
             ? new byte[] { 0, 0x80, 22, 0, 0, 0, 0, 0x7e, 0x08,
-                152, 140, 168, 164, 152, 116, 0x81, 0xff }
+                152, 140, 168, 164, 152, 116, paragraphBreak ? (byte)0x82 : (byte)0x81,
+                0x82, 0xff }
             : styledLink
             ? StyledParagraphCommands(popupLink)
             : new byte[] { 0, 0x80, 22, 0, 0, 0, 0, 0, 0, 0x81, 0xff };
@@ -195,7 +238,7 @@ public sealed class WinHelpDecoderTests
                 ? BuildContextTree(("SYNTH", 0), ("CITYVIEW", 0))
                 : BuildContextTree(("SYNTH", 0)),
             ["|CTXOMAP"] = BuildContextIdMap(7001, 0),
-            ["|FONT"] = BuildFontTable(),
+            ["|FONT"] = BuildFontTable(badFaceIndex),
             ["|PhrImage"] = [],
             ["|PhrIndex"] = phraseIndex,
             ["|SYSTEM"] = system,
@@ -264,7 +307,7 @@ public sealed class WinHelpDecoderTests
         return result;
     }
 
-    private static byte[] BuildFontTable()
+    private static byte[] BuildFontTable(bool badFaceIndex = false)
     {
         var result = new byte[30 + 22];
         WriteUInt16(result, 0, 1);
@@ -275,6 +318,7 @@ public sealed class WinHelpDecoderTests
         result[30 + 1] = 20;
         result[41] = 0x03;
         result[41 + 1] = 20;
+        if (badFaceIndex) WriteUInt16(result, 41 + 3, 5);
         return result;
     }
 

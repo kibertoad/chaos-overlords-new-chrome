@@ -18,16 +18,22 @@ public static partial class WinHelpDecoder
     private const int MaximumPhrases = 16_512;
     private const int MaximumTopicTextBytes = 128 * 1024;
 
-    public static ExtractedHelpDocument Decode(string helpPath, string contentsPath)
+    /// <param name="warning">Receives a message for each damaged part of the file the decoder
+    /// works around instead of rejecting the file.</param>
+    public static ExtractedHelpDocument Decode(
+        string helpPath, string contentsPath, Action<string>? warning = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(helpPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(contentsPath);
         var help = ReadBounded(helpPath, MaximumHelpBytes);
         var contents = ReadBounded(contentsPath, MaximumContentsBytes);
-        return Decode(help, contents);
+        return Decode(help, contents, warning);
     }
 
-    public static ExtractedHelpDocument Decode(ReadOnlyMemory<byte> help, ReadOnlyMemory<byte> contents)
+    /// <param name="warning">Receives a message for each damaged part of the file the decoder
+    /// works around instead of rejecting the file.</param>
+    public static ExtractedHelpDocument Decode(
+        ReadOnlyMemory<byte> help, ReadOnlyMemory<byte> contents, Action<string>? warning = null)
     {
         if (help.Length is < 16 or > MaximumHelpBytes)
             throw new InvalidDataException("WinHelp file size is outside the supported bounds.");
@@ -46,7 +52,7 @@ public static partial class WinHelpDecoder
 
         var phrases = ReadHallPhrases(container);
         var fonts = container.TryReadStream("|FONT", out var fontStream)
-            ? ReadFonts(fontStream.Span)
+            ? ReadFonts(fontStream.Span, warning)
             : [];
         var topics = ReadTopics(container.ReadStream("|TOPIC"), flags, phrases, fonts);
         var contexts = container.TryReadStream("|CONTEXT", out var contextStream)
@@ -55,7 +61,8 @@ public static partial class WinHelpDecoder
         var contextIds = container.TryReadStream("|CTXOMAP", out var contextIdStream)
             ? ReadContextIds(contextIdStream.Span)
             : new Dictionary<uint, int>();
-        var missingLink = topics.SelectMany(topic => topic.Runs ?? [])
+        var missingLink = topics.SelectMany(topic => topic.Paragraphs)
+            .SelectMany(paragraph => paragraph.Runs)
             .FirstOrDefault(run => run.LinkHash is { } hash && !contexts.ContainsKey(hash));
         if (missingLink?.LinkHash is { } missingHash)
             throw new InvalidDataException(
@@ -141,18 +148,16 @@ public static partial class WinHelpDecoder
             && !string.Equals(topic.Title, "Attack…", StringComparison.OrdinalIgnoreCase))
             return topic;
 
+        // DEV-HELP-002.
         const string clarification =
-            "NEW CHROME CLARIFICATION\n" +
             "Attack Roll = gang Combat + current Force - defender Defense. " +
             "Combat is simultaneous, so a gang eliminated during the round still attacks " +
             "using the Force it had at the start of the round.";
-        var text = $"{topic.Text.TrimEnd()}\n\n{clarification}";
-        var runs = (topic.Runs ?? []).ToList();
-        runs.Add(new ExtractedHelpTextRun($"\n\n{clarification}", Bold: true));
-        var paragraphs = (topic.Paragraphs ?? []).ToList();
-        paragraphs.Add(new ExtractedHelpParagraph(
-            [new ExtractedHelpTextRun(clarification, Bold: true)], 0, TabStops: []));
-        return topic with { Text = text, Runs = runs, Paragraphs = paragraphs };
+        return topic with
+        {
+            Paragraphs = [.. topic.Paragraphs,
+                .. HelpNoteParagraphs.Create("NEW CHROME CLARIFICATION", clarification, boldBody: true)]
+        };
     }
 
     public static byte[] DecompressLz77(ReadOnlySpan<byte> input, int maximumOutputBytes)
@@ -304,23 +309,16 @@ public static partial class WinHelpDecoder
         }
 
         return topics.Where(topic => !string.IsNullOrWhiteSpace(topic.Title)
-                                     || topic.Runs.Any(run =>
-                                         !string.IsNullOrWhiteSpace(run.Text.ToString())))
+                                     || topic.Paragraphs.Any(paragraph => paragraph.Runs.Count > 0))
             .Take(MaximumTopics)
-            .Select((topic, index) =>
-            {
-                var runs = NormalizeRuns(topic.Runs);
-                return new ExtractedHelpTopic(
-                    index,
-                    string.IsNullOrWhiteSpace(topic.Title)
-                        ? $"Additional topic {index + 1}"
-                        : topic.Title,
-                    string.Concat(runs.Select(run => run.Text)),
-                    false,
-                    topic.TopicOffset,
-                    runs,
-                    topic.Paragraphs);
-            })
+            .Select((topic, index) => new ExtractedHelpTopic(
+                index,
+                string.IsNullOrWhiteSpace(topic.Title)
+                    ? $"Additional topic {index + 1}"
+                    : topic.Title,
+                false,
+                topic.TopicOffset,
+                topic.Paragraphs.ToArray()))
             .ToList();
     }
 
@@ -369,7 +367,7 @@ public static partial class WinHelpDecoder
             {
                 topicOffset = checked(topicOffset + ParagraphTopicLength(data1));
                 AppendDisplayText(topics[^1], data1, data2, fonts);
-                if (topics[^1].Runs.Sum(run => run.Text.Length) > MaximumTopicTextBytes)
+                if (topics[^1].Characters > MaximumTopicTextBytes)
                     throw new InvalidDataException("WinHelp topic text exceeds the supported bound.");
             }
 
@@ -388,6 +386,7 @@ public static partial class WinHelpDecoder
     {
         var (commandOffset, formatting) = ReadParagraphFormatting(data1);
         var runs = new List<MutableRun>();
+        var endedParagraph = false;
         var textOffset = 0;
         var fontIndex = -1;
         uint? linkHash = null;
@@ -415,7 +414,11 @@ public static partial class WinHelpDecoder
                     commandOffset++;
                     break;
                 case 0x82:
-                    AddRun(runs, "\n\n", FontAt(fonts, fontIndex), linkHash, popup);
+                    // End of paragraph: the record's next text starts a new paragraph with the
+                    // same formatting (FND-HELP-006).
+                    AddParagraph(topic, formatting, runs);
+                    runs = [];
+                    endedParagraph = true;
                     commandOffset++;
                     break;
                 case 0x83:
@@ -451,9 +454,20 @@ public static partial class WinHelpDecoder
             }
             if (terminator < 0 && textOffset >= data2.Length) break;
         }
-        AddRun(runs, "\n\n", FontAt(fonts, fontIndex), null, false);
-        topic.Runs.AddRange(runs);
-        topic.Paragraphs.Add(formatting with { Runs = NormalizeRuns(runs) });
+        // Text after the last end-of-paragraph command, or a record that has none, still forms
+        // a paragraph; whitespace left after the last one does not.
+        if (!endedParagraph || runs.Any(run => !string.IsNullOrWhiteSpace(run.Text.ToString())))
+            AddParagraph(topic, formatting, runs);
+    }
+
+    private static void AddParagraph(
+        MutableTopic topic,
+        ExtractedHelpParagraph formatting,
+        IReadOnlyList<MutableRun> runs)
+    {
+        var paragraph = formatting with { Runs = NormalizeRuns(runs) };
+        topic.Paragraphs.Add(paragraph);
+        topic.Characters = checked(topic.Characters + paragraph.Text.Length);
     }
 
     private static int ParagraphTopicLength(ReadOnlySpan<byte> data)
@@ -816,8 +830,8 @@ public static partial class WinHelpDecoder
     {
         public string Title { get; } = title;
         public int TopicOffset { get; } = topicOffset;
-        public List<MutableRun> Runs { get; } = [];
         public List<ExtractedHelpParagraph> Paragraphs { get; } = [];
+        public int Characters { get; set; }
     }
 
     private sealed class MutableRun(string text, HelpFont font, uint? linkHash, bool popup)

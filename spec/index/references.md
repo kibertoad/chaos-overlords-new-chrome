@@ -10095,6 +10095,14 @@ None.
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | body, evidence |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, evidence |
 
+## SRC-HELPDECO
+
+| Cited by | In |
+|---|---|
+| [FMT-HELP-001](../formats/FMT-HELP-001.md) | body, evidence |
+| [FND-HELP-006](../findings/FND-HELP-006.md) | body |
+| [SRC-RTF-15](../sources/SRC-RTF-15.md) | body |
+
 ## SRC-MANUAL-GOG
 
 | Cited by | In |
@@ -10296,3 +10304,19 @@ None.
 | [FND-COMBAT-004](../findings/FND-COMBAT-004.md) | body |
 | [FND-DATA-001](../findings/FND-DATA-001.md) | body |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | body, evidence |
+
+## SRC-RTF-15
+
+| Cited by | In |
+|---|---|
+| [FMT-HELP-001](../formats/FMT-HELP-001.md) | body, evidence |
+| [FND-HELP-006](../findings/FND-HELP-006.md) | body |
+
+## SRC-WINHLP32-WINE
+
+| Cited by | In |
+|---|---|
+| [FMT-HELP-001](../formats/FMT-HELP-001.md) | body, evidence |
+| [FND-HELP-006](../findings/FND-HELP-006.md) | body |
+| [SRC-HELPDECO](../sources/SRC-HELPDECO.md) | body |
+| [SRC-RTF-15](../sources/SRC-RTF-15.md) | body |
