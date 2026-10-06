@@ -2,7 +2,13 @@ import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
 import { nodeBrotliCodec } from '../codec-node.js'
-import type { BootstrapInput, MatchStatus, ResolverInfo, ResolverLimits } from '../core.js'
+import type {
+  BootstrapInput,
+  MatchStatus,
+  ResolverInfo,
+  ResolverLimits,
+  RestoreInput,
+} from '../core.js'
 import { decodeResolverError } from '../errors.js'
 import {
   type MatchResolver,
@@ -131,12 +137,10 @@ export async function startNodeResolverHost(
     heldMatches: () => call<string[]>('heldMatches', []),
     bootstrap: (matchId: string, input: BootstrapInput) =>
       call<MatchStatus>('bootstrap', [matchId, input], matchId),
-    restore: (matchId: string, savePayload: Uint8Array, stateHash: string) =>
-      call<MatchStatus>('restore', [matchId, savePayload, stateHash], matchId),
-    applySealedTurn: (matchId: string, sealedOrders: unknown) =>
-      call<MatchStatus>('applySealedTurn', [matchId, sealedOrders], matchId),
-    handOverSeat: (matchId: string, slot: number, toComputer: boolean) =>
-      call<MatchStatus>('handOverSeat', [matchId, slot, toComputer], matchId),
+    restore: (matchId: string, savePayload: Uint8Array, stateHash: string, input: RestoreInput) =>
+      call<MatchStatus>('restore', [matchId, savePayload, stateHash, input], matchId),
+    applyEvent: (matchId: string, event: unknown, sealedOrders?: unknown) =>
+      call<MatchStatus>('applyEvent', [matchId, event, sealedOrders ?? null], matchId),
     status: (matchId: string) => call<MatchStatus | null>('status', [matchId], matchId),
     savePayload: (matchId: string) =>
       call<{ payload: Uint8Array; status: MatchStatus }>('savePayload', [matchId], matchId),

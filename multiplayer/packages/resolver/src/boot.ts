@@ -24,9 +24,8 @@ export interface ResolverExports {
   SessionVersion(): number
   SnapshotFormatVersion(): number
   Bootstrap(seed: number, gameSettingsJson: string, playersJson: string): number
-  Restore(savePayload: Uint8Array, stateHash: string): number
-  ApplySealedTurn(handle: number, sealedOrdersJson: string): string
-  HandOverSeat(handle: number, slot: number, toComputer: boolean): void
+  Restore(savePayload: Uint8Array, stateHash: string, playersJson: string, logTurn: number): number
+  ApplyEvent(handle: number, eventJson: string, sealedOrdersJson: string | null): string
   StateHash(handle: number): string
   Turn(handle: number): number
   IsFinished(handle: number): boolean

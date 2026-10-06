@@ -193,7 +193,7 @@ public sealed partial class MultiplayerMatchSession
         if (_pendingDesync?.Turn != announced.Turn) return;
         // A repair for a turn this client has not resolved yet is not something it can be behind
         // on; the seal for that turn is still ahead of it in the log and will bring it here.
-        if (announced.Turn >= _replay.State.Coordinator.Turn) return;
+        if (announced.Turn >= Replay.State.Coordinator.Turn) return;
         // Compared at the DISPUTED turn, not against wherever this client is now. Delivery is at
         // least once, so the repeat of a repair already adopted arrives here — and by then several
         // turns may have been applied on top of it, which is exactly when comparing current hashes
@@ -248,7 +248,7 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private async Task AdoptRepairAsync(SnapshotView snapshot, CancellationToken cancellationToken)
     {
-        var liveTurn = _replay.State.Coordinator.Turn;
+        var liveTurn = Replay.State.Coordinator.Turn;
         var rebuilt = await RebuildAsync(
                 snapshot,
                 throughTurn: liveTurn - 1,
@@ -256,14 +256,14 @@ public sealed partial class MultiplayerMatchSession
                 captureReports: true,
                 cancellationToken)
             .ConfigureAwait(false);
-        _replay = rebuilt.Recorder;
+        _history.Adopt(rebuilt.Recorder);
         _canonicalThroughTurn = snapshot.Turn;
         _pendingDesync = null;
         // Seals reconstructed before this repair are superseded by the turns just replayed.
         _unreportedSeals.Clear();
         var reports = Task.WhenAll(rebuilt.Reports.Select(QueueReportAsync).ToArray());
         await AwaitRepairReportsAsync(reports, cancellationToken).ConfigureAwait(false);
-        var current = MatchStateHasher.ComputeFingerprint(_replay.State);
+        var current = MatchStateHasher.ComputeFingerprint(Replay.State);
         var (state, planning) = HandOver();
         _notices.Enqueue(new MultiplayerNotice.Resynced(snapshot.Turn, state, current, planning));
     }
@@ -331,8 +331,8 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private async Task<MatchState?> StateAfterTurnAsync(int turn, CancellationToken cancellationToken)
     {
-        var reached = _replay.State.Coordinator.Turn;
-        if (reached == turn + 1) return _replay.State;
+        var reached = Replay.State.Coordinator.Turn;
+        if (reached == turn + 1) return Replay.State;
         if (reached <= turn) return null;
         var baseline = await SnapshotBelowAsync(turn, cancellationToken).ConfigureAwait(false);
         if (baseline is null) return null;
@@ -355,7 +355,7 @@ public sealed partial class MultiplayerMatchSession
     /// <remarks>
     /// <para>
     /// The one place a state is rebuilt outside the event history, for both a repair to adopt and a
-    /// turn to speak for. The sealed sets carry the orders, and <see cref="_controlHandovers"/> the
+    /// turn to speak for. The sealed sets carry the orders, and <see cref="MatchHistory.ApplyHandovers"/> the
     /// seats that changed hands between them, which a rebuild from sealed sets alone played with
     /// their old controllers. Handovers up to <paramref name="handoversThroughTurn"/> are applied,
     /// so a caller that wants the state the hash for <paramref name="throughTurn"/> was taken from
@@ -386,13 +386,13 @@ public sealed partial class MultiplayerMatchSession
                 if (recorder.State.Outcome is not null) break;
                 while (fetches.Count < SealedSetPrefetchDepth && nextFetch <= throughTurn)
                     fetches.Enqueue(FetchSealedSetAsync(nextFetch++, cancellationToken));
-                ApplyHandovers(recorder, afterTurn: turn - 1, throughTurn: turn);
+                _history.ApplyHandovers(recorder, afterTurn: turn - 1, throughTurn: turn);
                 var sealedOrders = await fetches.Dequeue().ConfigureAwait(false);
-                RequireSealedSet(sealedOrders, turn);
+                MatchHistory.RequireSealedSet(sealedOrders, turn);
                 var stateHash = SealedTurnApplier.Apply(recorder, sealedOrders);
                 if (captureReports) reports.Add(CaptureReport(turn, stateHash, recorder.State));
             }
-            ApplyHandovers(recorder, afterTurn: throughTurn, throughTurn: handoversThroughTurn);
+            _history.ApplyHandovers(recorder, afterTurn: throughTurn, throughTurn: handoversThroughTurn);
         }
         finally
         {
@@ -400,36 +400,6 @@ public sealed partial class MultiplayerMatchSession
             foreach (var pending in fetches) Forget(pending);
         }
         return new RebuiltState(recorder, reports);
-    }
-
-    /// <summary>
-    /// Throws unless a fetched sealed set is the one for <paramref name="turn"/>, carries the digest
-    /// the event log announced when there is one, and matches its own digest.
-    /// </summary>
-    private static void RequireSealedSet(
-        SealedOrdersView sealedOrders,
-        int turn,
-        string? announcedOrderSetHash = null)
-    {
-        if (sealedOrders.Turn != turn)
-        {
-            throw new MultiplayerProtocolException(
-                $"the server answered turn {turn}'s sealed set with the set for turn {sealedOrders.Turn}");
-        }
-        if (announcedOrderSetHash is not null
-            && !string.Equals(
-                sealedOrders.OrderSetHash,
-                announcedOrderSetHash,
-                StringComparison.Ordinal))
-        {
-            throw new MultiplayerProtocolException(
-                $"the sealed-set digest for turn {turn} does not match the event log");
-        }
-        if (!OrderDigest.Verifies(sealedOrders, sealedOrders.OrderSetHash))
-        {
-            throw new MultiplayerProtocolException(
-                $"the sealed set for turn {turn} does not match the digest the server announced");
-        }
     }
 
     /// <summary>The newest snapshot before <paramref name="turn"/>, or null.</summary>

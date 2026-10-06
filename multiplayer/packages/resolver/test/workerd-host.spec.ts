@@ -4,7 +4,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { WORKERD_RESOLVER_DEFAULTS } from '../dist/workerd/limits.js'
 import { startWorkerdResolver } from './harness/workerd.mjs'
-import { apply, expectNativeHashes, missing, playToSnapshot, transcript } from './hosts.js'
+import {
+  apply,
+  expectNativeHashes,
+  missing,
+  playToSnapshot,
+  restoreInput,
+  transcript,
+} from './hosts.js'
 
 const bootstrapInput = () => ({
   seed: transcript.seed,
@@ -25,7 +32,7 @@ describe.skipIf(missing)('the Cloudflare host under workerd', () => {
   })
 
   it('answers match_not_held for a match its object does not hold', async () => {
-    await expect(host.resolver.applySealedTurn('nobody', {})).rejects.toMatchObject({
+    await expect(host.resolver.applyEvent('nobody', {})).rejects.toMatchObject({
       code: 'match_not_held',
     })
     expect(await host.resolver.status('nobody')).toBeNull()
@@ -34,10 +41,14 @@ describe.skipIf(missing)('the Cloudflare host under workerd', () => {
   it('answers resolver_refused for a snapshot stored under another hash', async () => {
     const { snapshotStep } = await playToSnapshot(host.resolver, 'refused')
     await expect(
-      host.resolver.restore('refused-copy', {
-        body: snapshotStep.archive,
-        stateHash: transcript.bootstrapHash,
-      }),
+      host.resolver.restore(
+        'refused-copy',
+        {
+          body: snapshotStep.archive,
+          stateHash: transcript.bootstrapHash,
+        },
+        restoreInput(),
+      ),
     ).rejects.toMatchObject({ code: 'resolver_refused' })
     await host.resolver.release('refused')
   })
@@ -74,7 +85,11 @@ describe.skipIf(missing)('the Cloudflare host with RESOLVER_MAX_MATCHES', () => 
     })
     expect((await host.resolver.info('first')).heldMatches).toEqual(['second'])
 
-    await host.resolver.restore('first', { body: snapshot.body, stateHash: snapshot.stateHash })
+    await host.resolver.restore(
+      'first',
+      { body: snapshot.body, stateHash: snapshot.stateHash },
+      restoreInput(),
+    )
     let last
     for (const step of rest) last = (await apply(host.resolver, 'first', step)) ?? last
     expect(last?.stateHash).toBe(rest.at(-1).hash)

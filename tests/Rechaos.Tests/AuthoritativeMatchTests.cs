@@ -13,8 +13,9 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// The resolver the coordination server would run (docs/MULTIPLAYER.md, "Resolving turns on the
-/// server") reaches the hash a client reports, fact for fact, and picks a match up from a snapshot
-/// only at the hash it is stored under.
+/// server") reaches the hash a client reports, event for event, picks a match up from a snapshot
+/// only at the hash it is stored under, and folds a log over a snapshot as a reconnecting client
+/// does (<see cref="MatchHistory"/>).
 /// </summary>
 /// <remarks>
 /// tools/ResolverDeterminism holds the WebAssembly build of the same class to the hashes these
@@ -23,6 +24,7 @@ namespace Rechaos.Tests;
 public sealed class AuthoritativeMatchTests
 {
     private const int Seed = 1996;
+    private const string MatchId = "match";
 
     private static readonly MultiplayerGameSettings Settings = new(
         ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]);
@@ -65,30 +67,97 @@ public sealed class AuthoritativeMatchTests
         return new SealedOrdersView(state.Coordinator.Turn, OrderDigest.OfSet(entries), entries);
     }
 
-    [Fact]
-    public void ReachesTheHashAClientReportsTurnAfterTurn()
+    /// <summary>A match's log as the server stores it, with the sealed set of every seal.</summary>
+    private sealed class Log
+    {
+        public List<(MatchEvent Event, SealedOrdersView? Set)> Entries { get; } = [];
+
+        public TurnSealedEvent Sealed(SealedOrdersView set) =>
+            Add(new TurnSealedEvent(Next, MatchId, "t", new TurnSealedEventPayload(set.Turn, set.OrderSetHash)), set);
+
+        public MatchPlayerTakenOverEvent TakenOver(string playerId) =>
+            Add(new MatchPlayerTakenOverEvent(Next, MatchId, "t", new MatchPlayerTakenOverEventPayload(playerId)));
+
+        public MatchPlayerReturnedEvent Returned(string playerId) =>
+            Add(new MatchPlayerReturnedEvent(Next, MatchId, "t", new MatchPlayerReturnedEventPayload(playerId, true)));
+
+        public TurnReadinessEvent Ready(int turn, string playerId) =>
+            Add(new TurnReadinessEvent(Next, MatchId, "t", new TurnReadinessEventPayload(turn, playerId, true)));
+
+        private int Next => Entries.Count + 1;
+
+        private T Add<T>(T @event, SealedOrdersView? set = null)
+            where T : MatchEvent
+        {
+            Entries.Add((@event, set));
+            return @event;
+        }
+    }
+
+    /// <summary>
+    /// Plays four turns on a client and through the resolver: slot 1 goes to the computer before
+    /// turn 2 and comes back before turn 4. Returns the snapshot the resolver took after turn 3,
+    /// before the return.
+    /// </summary>
+    private static (MatchReplayRecorder Client, Log Log, AuthoritativeMatch Resolver, string Archive, string ArchiveHash)
+        PlayFourTurns()
     {
         var client = NewClient();
         var resolver = NewResolver();
-        Assert.Equal(MatchStateHasher.ComputeFingerprint(client.State), resolver.StateHash);
-
+        var log = new Log();
+        string? archive = null;
+        string? archiveHash = null;
         for (var turn = 1; turn <= 4; turn++)
         {
-            if (turn == 3)
+            if (turn == 2)
             {
-                // A takeover lands between two seals, and both parties apply it at the same place.
                 SeatControl.HandOver(client, 1, PlayerController.Computer);
-                resolver.HandOverSeat(1, PlayerController.Computer);
-                Assert.Equal(MatchStateHasher.ComputeFingerprint(client.State), resolver.StateHash);
+                resolver.Apply(log.TakenOver("p2"));
             }
-            var sealedOrders = Seal(client.State);
-            Assert.Equal(turn, resolver.Turn);
-
-            Assert.Equal(SealedTurnApplier.Apply(client, sealedOrders), resolver.ApplySealedTurn(sealedOrders));
+            if (turn == 4)
+            {
+                archive = resolver.Snapshot();
+                archiveHash = resolver.StateHash;
+                SeatControl.HandOver(client, 1, PlayerController.Human);
+                resolver.Apply(log.Returned("p2"));
+            }
+            resolver.Apply(log.Ready(turn, "p1"));
+            var set = Seal(client.State);
+            var expected = SealedTurnApplier.Apply(client, set);
+            Assert.Equal(expected, resolver.Apply(log.Sealed(set), set));
         }
-        Assert.Equal(
-            PlayerController.Computer,
-            client.State.FindPlayer(new PlayerId(1))!.Setup.Controller);
+        return (client, log, resolver, archive!, archiveHash!);
+    }
+
+    [Fact]
+    public void ReachesTheHashAClientReportsEventForEvent()
+    {
+        var (client, _, resolver, _, _) = PlayFourTurns();
+
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(client.State), resolver.StateHash);
+        Assert.Equal(5, resolver.Turn);
+        Assert.Equal(PlayerController.Human, client.State.FindPlayer(new PlayerId(1))!.Setup.Controller);
+    }
+
+    [Fact]
+    public void FoldsTheWholeLogOverASnapshotAsAReconnectingClientDoes()
+    {
+        var (client, log, _, archive, archiveHash) = PlayFourTurns();
+
+        // From the log's start: the seals the snapshot holds need no set and are passed over, and so
+        // is the takeover before turn 2, which the snapshot already reflects.
+        var fromStart = AuthoritativeMatch.FromSnapshot(Definitions, archive, archiveHash, Roster, logTurn: 1);
+        foreach (var (@event, set) in log.Entries)
+            fromStart.Apply(@event, @event is TurnSealedEvent { Payload.Turn: < 4 } ? null : set);
+
+        // From the last event the snapshot holds: the return and the last seal.
+        var fromCheckpoint = AuthoritativeMatch.FromSnapshot(Definitions, archive, archiveHash, Roster);
+        foreach (var (@event, set) in log.Entries.SkipWhile(entry => entry.Event is not MatchPlayerReturnedEvent))
+            fromCheckpoint.Apply(@event, set);
+
+        var expected = MatchStateHasher.ComputeFingerprint(client.State);
+        Assert.Equal(expected, fromStart.StateHash);
+        Assert.Equal(expected, fromCheckpoint.StateHash);
     }
 
     [Fact]
@@ -96,17 +165,20 @@ public sealed class AuthoritativeMatchTests
     {
         var client = NewClient();
         var resolver = NewResolver();
+        var log = new Log();
         var first = Seal(client.State);
         SealedTurnApplier.Apply(client, first);
-        resolver.ApplySealedTurn(first);
+        resolver.Apply(log.Sealed(first), first);
 
-        var fromArchive = AuthoritativeMatch.FromSnapshot(Definitions, resolver.Snapshot(), resolver.StateHash);
-        var fromPayload = AuthoritativeMatch.FromSavePayload(Definitions, resolver.SavePayload(), resolver.StateHash);
+        var fromArchive = AuthoritativeMatch.FromSnapshot(Definitions, resolver.Snapshot(), resolver.StateHash, Roster);
+        var fromPayload = AuthoritativeMatch.FromSavePayload(
+            Definitions, resolver.SavePayload(), resolver.StateHash, Roster);
         var second = Seal(client.State);
         var expected = SealedTurnApplier.Apply(client, second);
+        var seal = log.Sealed(second);
 
-        Assert.Equal(expected, fromArchive.ApplySealedTurn(second));
-        Assert.Equal(expected, fromPayload.ApplySealedTurn(second));
+        Assert.Equal(expected, fromArchive.Apply(seal, second));
+        Assert.Equal(expected, fromPayload.Apply(seal, second));
         Assert.Equal(3, fromPayload.Turn);
     }
 
@@ -117,21 +189,31 @@ public sealed class AuthoritativeMatchTests
         var claimed = new string('0', resolver.StateHash.Length);
 
         Assert.Throws<MultiplayerProtocolException>(
-            () => AuthoritativeMatch.FromSavePayload(Definitions, resolver.SavePayload(), claimed));
+            () => AuthoritativeMatch.FromSavePayload(Definitions, resolver.SavePayload(), claimed, Roster));
         Assert.Throws<MultiplayerProtocolException>(
-            () => AuthoritativeMatch.FromSnapshot(Definitions, resolver.Snapshot(), claimed));
+            () => AuthoritativeMatch.FromSnapshot(Definitions, resolver.Snapshot(), claimed, Roster));
         Assert.Throws<MultiplayerProtocolException>(
-            () => AuthoritativeMatch.FromSavePayload(Definitions, [0x7b, 0x7d], resolver.StateHash));
+            () => AuthoritativeMatch.FromSavePayload(Definitions, [0x7b, 0x7d], resolver.StateHash, Roster));
     }
 
     [Fact]
-    public void RefusesASealedSetThatDoesNotMatchItsOwnDigest()
+    public void RefusesASealItCannotApply()
     {
         var resolver = NewResolver();
         var before = resolver.StateHash;
-        var sealedOrders = Seal(NewClient().State) with { OrderSetHash = new string('0', 64) };
+        var set = Seal(NewClient().State);
+        var seal = new Log().Sealed(set);
 
-        Assert.Throws<MultiplayerProtocolException>(() => resolver.ApplySealedTurn(sealedOrders));
+        // No set, a set whose digest is not the one the log announced, and one that does not match
+        // its own digest.
+        Assert.Throws<MultiplayerProtocolException>(() => resolver.Apply(seal));
+        Assert.Throws<MultiplayerProtocolException>(
+            () => resolver.Apply(seal with { Payload = seal.Payload with { OrderSetHash = new string('1', 64) } }, set));
+        Assert.Throws<MultiplayerProtocolException>(
+            () => resolver.Apply(seal, set with { OrderSetHash = new string('0', 64) }));
+        // A seal for a turn ahead of the state.
+        Assert.Throws<MultiplayerProtocolException>(
+            () => resolver.Apply(seal with { Payload = seal.Payload with { Turn = 2 } }, set with { Turn = 2 }));
         Assert.Equal(before, resolver.StateHash);
     }
 

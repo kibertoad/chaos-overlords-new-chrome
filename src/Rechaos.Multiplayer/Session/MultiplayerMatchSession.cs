@@ -48,7 +48,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private readonly RetryPolicy _streamRetryPolicy;
     private readonly RetryPolicy _callRetryPolicy;
     private readonly RetryPolicy _backgroundRetryPolicy;
-    private readonly Dictionary<string, int> _slotsByPlayerId;
     private readonly Dictionary<string, PendingTakeoverVote> _takeoverVotes = new(StringComparer.Ordinal);
 
     /// <summary>Seats that have said they are done with <see cref="_readinessTurn"/>.</summary>
@@ -68,7 +67,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private readonly ConnectionHealth.Lane _outboxLane;
     private readonly Lock _disposalGate = new();
 
-    private MatchReplayRecorder _replay;
+    /// <summary>The match as this client holds it, and the log it was folded from.</summary>
+    private readonly MatchHistory _history;
+
+    private MatchReplayRecorder Replay => _history.Replay;
     private Task? _pump;
     private Task? _outbox;
     private Task? _reporter;
@@ -145,8 +147,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _backgroundRetryPolicy = options.BackgroundRetryPolicy ?? RetryPolicy.Background;
         _reportFlushGrace = options.ReportFlushGrace ?? DefaultReportFlushGrace;
         _stoppingToken = _stopping.Token;
-        _replay = replay;
-        _slotsByPlayerId = slotsByPlayerId;
+        _history = new MatchHistory(replay, slotsByPlayerId, logTurn: 1);
         _awaitedSlots = [.. slotsByPlayerId.Values];
         _resumeAfterSeq = options.ResumeAfterSeq;
         PlayerId = self.Id;
@@ -235,7 +236,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             || view.Players.Any(player =>
                 player.Slot >= 0 && player.Status != WirePlayerStatus.Active);
         var session = new MultiplayerMatchSession(
-            options, replay, self, SeatedSlots(view.Players), isRestoring);
+            options, replay, self, MatchHistory.SeatsOf(view.Players), isRestoring);
         session._pump = Task.Run(() => session.RunPumpAsync(session._stoppingToken));
         session._outbox = Task.Run(() => session.RunOutboxAsync(session._stoppingToken));
         session._reporter = Task.Run(() => session.RunReporterAsync(session._stoppingToken));
@@ -515,12 +516,12 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         string announcedOrderSetHash,
         CancellationToken cancellationToken)
     {
-        if (turn < _replay.State.Coordinator.Turn) return;
+        if (turn < Replay.State.Coordinator.Turn) return;
         // A finished match has no turn left to apply. The coordinator stops short of Command when
         // the match ends, so a successor turn that seals on its deadline — which happens when the
         // server cannot finish the match because a seat has not reported — would throw inside
         // SealedTurnApplier and throw the player off the endgame screen into an error modal.
-        if (_replay.State.Outcome is not null) return;
+        if (Replay.State.Outcome is not null) return;
         var (stateHash, includedOwnOrders) = await FetchAndApplySealedTurnAsync(
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
@@ -556,7 +557,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         string announcedOrderSetHash,
         CancellationToken cancellationToken)
     {
-        var current = _replay.State.Coordinator.Turn;
+        var current = Replay.State.Coordinator.Turn;
         if (turn != current)
         {
             throw new MultiplayerProtocolException(
@@ -565,9 +566,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         // From the replay's prefetch when one was started for this turn, and from the server
         // otherwise; see `SealedSetAsync`.
         var sealedOrders = await SealedSetAsync(turn, cancellationToken).ConfigureAwait(false);
-        RequireSealedSet(sealedOrders, turn, announcedOrderSetHash);
         var includedOwnOrders = sealedOrders.Players.Any(entry => entry.Slot == Slot);
-        return (SealedTurnApplier.Apply(_replay, sealedOrders), includedOwnOrders);
+        return (_history.ApplySealedSet(sealedOrders, announcedOrderSetHash), includedOwnOrders);
     }
 
     /// <summary>
@@ -582,7 +582,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// </remarks>
     private (MatchState State, SpeculativeTurn? Planning) HandOver()
     {
-        var state = MatchStateClone.Of(_replay.State, _definitions);
+        var state = MatchStateClone.Of(Replay.State, _definitions);
         // A turn that ended the match leaves no turn to plan, and the interface shows the endgame
         // from the state alone. So does a state that stopped anywhere but Command: `SpeculativeTurn`
         // refuses to plan on one, and refusing HERE is an `InvalidOperationException` on the pump,
@@ -833,17 +833,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 // desync pause has an event of its own that carries the hashes with it.
                 return;
         }
-    }
-
-    /// <summary>Every seat taken when the match started, by the player that took it.</summary>
-    private static Dictionary<string, int> SeatedSlots(IReadOnlyList<PlayerView> players)
-    {
-        var slots = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var player in players)
-        {
-            if (MatchBootstrapFactory.IsSeated(player)) slots[player.Id] = player.Slot;
-        }
-        return slots;
     }
 
     /// <summary>

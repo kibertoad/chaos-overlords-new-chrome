@@ -42,7 +42,7 @@ async function start(): Promise<ResolverCore> {
 }
 
 function dispatch(core: ResolverCore, request: ThreadRequest): unknown {
-  const [a, b, c] = request.args as [never, never, never]
+  const [a, b, c, d] = request.args as [never, never, never, never]
   switch (request.method) {
     case 'describe': {
       const { sessionVersion, snapshotFormatVersion } = core.info()
@@ -53,11 +53,9 @@ function dispatch(core: ResolverCore, request: ThreadRequest): unknown {
     case 'bootstrap':
       return core.bootstrap(a, b)
     case 'restore':
-      return core.restore(a, b, c)
-    case 'applySealedTurn':
-      return core.applySealedTurn(a, b)
-    case 'handOverSeat':
-      return core.handOverSeat(a, b, c)
+      return core.restore(a, b, c, d)
+    case 'applyEvent':
+      return core.applyEvent(a, b, c)
     case 'status':
       return core.status(a)
     case 'savePayload':

@@ -17,7 +17,7 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private void PublishReadiness()
     {
-        var turn = _replay.State.Coordinator.Turn;
+        var turn = Replay.State.Coordinator.Turn;
         _notices.Enqueue(new MultiplayerNotice.ReadinessChanged(
             turn, _readinessTurn == turn ? ReadySlots() : [], AwaitedSlots()));
     }
@@ -28,7 +28,7 @@ public sealed partial class MultiplayerMatchSession
         var slots = new HashSet<int>();
         foreach (var playerId in _readyPlayerIds)
         {
-            if (_slotsByPlayerId.TryGetValue(playerId, out var slot)) slots.Add(slot);
+            if (_history.Seats.TryGetValue(playerId, out var slot)) slots.Add(slot);
         }
         return slots;
     }
@@ -47,7 +47,7 @@ public sealed partial class MultiplayerMatchSession
         foreach (var playerId in _takeoverVotes.Keys)
         {
             if (_departedPlayerIds.Contains(playerId)
-                && _slotsByPlayerId.TryGetValue(playerId, out var slot))
+                && _history.Seats.TryGetValue(playerId, out var slot))
                 slots.Add(slot);
         }
         return slots;
@@ -76,7 +76,7 @@ public sealed partial class MultiplayerMatchSession
     /// <returns>False when the player holds no seat, so there is nothing to keep.</returns>
     private bool RecordReadiness(int turn, string playerId, bool ready)
     {
-        if (!_slotsByPlayerId.ContainsKey(playerId)) return false;
+        if (!_history.Seats.ContainsKey(playerId)) return false;
         if (turn != _readinessTurn)
         {
             _readinessTurn = turn;
@@ -105,7 +105,7 @@ public sealed partial class MultiplayerMatchSession
         _readyPlayerIds.Clear();
         foreach (var playerId in turn.ReadyPlayerIds)
         {
-            if (_slotsByPlayerId.ContainsKey(playerId)) _readyPlayerIds.Add(playerId);
+            if (_history.Seats.ContainsKey(playerId)) _readyPlayerIds.Add(playerId);
         }
         return _readyPlayerIds.Count > 0;
     }

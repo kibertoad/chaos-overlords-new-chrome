@@ -20,6 +20,7 @@ import {
   ResolverCore,
   type ResolverInfo,
   type ResolverLimits,
+  type RestoreInput,
 } from '../core.js'
 import { encodeResolverError } from '../errors.js'
 import type { ResolverDescription } from '../resolver.js'
@@ -51,9 +52,13 @@ export interface WorkerBundle {
 export interface ResolverService {
   describe(): Promise<ResolverDescription>
   bootstrap(matchId: string, input: BootstrapInput): Promise<MatchStatus>
-  restore(matchId: string, savePayload: Uint8Array, stateHash: string): Promise<MatchStatus>
-  applySealedTurn(matchId: string, sealedOrders: unknown): Promise<MatchStatus>
-  handOverSeat(matchId: string, slot: number, toComputer: boolean): Promise<MatchStatus>
+  restore(
+    matchId: string,
+    savePayload: Uint8Array,
+    stateHash: string,
+    input: RestoreInput,
+  ): Promise<MatchStatus>
+  applyEvent(matchId: string, event: unknown, sealedOrders: unknown): Promise<MatchStatus>
   status(matchId: string): Promise<MatchStatus | null>
   savePayload(matchId: string): Promise<{ payload: Uint8Array; status: MatchStatus }>
   release(matchId: string): Promise<void>
@@ -132,14 +137,16 @@ export class MatchResolverObject extends DurableObject<ResolverWorkerEnv> {
   bootstrap(matchId: string, input: BootstrapInput): Promise<MatchStatus> {
     return run(this.env, (resolver) => resolver.bootstrap(matchId, input))
   }
-  restore(matchId: string, savePayload: Uint8Array, stateHash: string): Promise<MatchStatus> {
-    return run(this.env, (resolver) => resolver.restore(matchId, savePayload, stateHash))
+  restore(
+    matchId: string,
+    savePayload: Uint8Array,
+    stateHash: string,
+    input: RestoreInput,
+  ): Promise<MatchStatus> {
+    return run(this.env, (resolver) => resolver.restore(matchId, savePayload, stateHash, input))
   }
-  applySealedTurn(matchId: string, sealedOrders: unknown): Promise<MatchStatus> {
-    return run(this.env, (resolver) => resolver.applySealedTurn(matchId, sealedOrders))
-  }
-  handOverSeat(matchId: string, slot: number, toComputer: boolean): Promise<MatchStatus> {
-    return run(this.env, (resolver) => resolver.handOverSeat(matchId, slot, toComputer))
+  applyEvent(matchId: string, event: unknown, sealedOrders: unknown): Promise<MatchStatus> {
+    return run(this.env, (resolver) => resolver.applyEvent(matchId, event, sealedOrders))
   }
   status(matchId: string): Promise<MatchStatus | null> {
     return run(this.env, (resolver) => resolver.status(matchId))
@@ -178,14 +185,16 @@ export class ResolverEntrypoint
   bootstrap(matchId: string, input: BootstrapInput): Promise<MatchStatus> {
     return objectFor(this.env, matchId).bootstrap(matchId, input)
   }
-  restore(matchId: string, savePayload: Uint8Array, stateHash: string): Promise<MatchStatus> {
-    return objectFor(this.env, matchId).restore(matchId, savePayload, stateHash)
+  restore(
+    matchId: string,
+    savePayload: Uint8Array,
+    stateHash: string,
+    input: RestoreInput,
+  ): Promise<MatchStatus> {
+    return objectFor(this.env, matchId).restore(matchId, savePayload, stateHash, input)
   }
-  applySealedTurn(matchId: string, sealedOrders: unknown): Promise<MatchStatus> {
-    return objectFor(this.env, matchId).applySealedTurn(matchId, sealedOrders)
-  }
-  handOverSeat(matchId: string, slot: number, toComputer: boolean): Promise<MatchStatus> {
-    return objectFor(this.env, matchId).handOverSeat(matchId, slot, toComputer)
+  applyEvent(matchId: string, event: unknown, sealedOrders: unknown): Promise<MatchStatus> {
+    return objectFor(this.env, matchId).applyEvent(matchId, event, sealedOrders)
   }
   status(matchId: string): Promise<MatchStatus | null> {
     return objectFor(this.env, matchId).status(matchId)

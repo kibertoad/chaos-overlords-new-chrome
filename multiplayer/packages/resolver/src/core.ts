@@ -20,6 +20,21 @@ export interface BootstrapInput {
   players: unknown
 }
 
+/** How a match picked up from a snapshot is fed the events after it. */
+export interface RestoreInput {
+  /**
+   * The roster as the server holds it now, as `PlayerView` rows, so that the events fed after the
+   * snapshot find every seat that has ever been human, late joins included.
+   */
+  players: unknown
+  /**
+   * The turn the log is on at the first event that will be fed: 1 when the feed starts at the log's
+   * beginning, as a reconnecting client's does. Left out, the turn the snapshot's state is on, for a
+   * feed that starts after the last event the snapshot holds.
+   */
+  logTurn?: number
+}
+
 export interface ResolverLimits {
   /** The most matches held at once; the least recently used goes first. */
   maxMatches: number
@@ -86,25 +101,36 @@ export class ResolverCore {
    * Picks a match up from a native save payload (the bytes a snapshot archive compresses), refused
    * unless it hashes to `stateHash`. Replaces any match held under the id.
    */
-  restore(matchId: string, savePayload: Uint8Array, stateHash: string): MatchStatus {
-    const handle = this.refused(() => this.exports.Restore(savePayload, stateHash))
+  restore(
+    matchId: string,
+    savePayload: Uint8Array,
+    stateHash: string,
+    input: RestoreInput,
+  ): MatchStatus {
+    const handle = this.refused(() =>
+      this.exports.Restore(
+        savePayload,
+        stateHash,
+        JSON.stringify(input.players),
+        input.logTurn ?? 0,
+      ),
+    )
     return this.hold(matchId, handle)
   }
 
-  /** Resolves a sealed set, as `GET /turns/:n/orders` answers it. */
-  applySealedTurn(matchId: string, sealedOrders: unknown): MatchStatus {
+  /**
+   * Folds one event of the match's log, as the server stores it, in log order. A `turn.sealed`
+   * event comes with its sealed set as `GET /turns/:n/orders` answers it; the set is not read for a
+   * seal the match already holds. Events that do not change the state are accepted and ignored.
+   */
+  applyEvent(matchId: string, event: unknown, sealedOrders?: unknown): MatchStatus {
     const handle = this.use(matchId)
-    this.refused(() => this.exports.ApplySealedTurn(handle, JSON.stringify(sealedOrders)))
+    const sealed =
+      sealedOrders === undefined || sealedOrders === null ? null : JSON.stringify(sealedOrders)
+    this.refused(() => this.exports.ApplyEvent(handle, JSON.stringify(event), sealed))
     const status = this.statusOf(handle)
     this.fit(matchId)
     return status
-  }
-
-  /** A seat changing hands at its place in the event log. */
-  handOverSeat(matchId: string, slot: number, toComputer: boolean): MatchStatus {
-    const handle = this.use(matchId)
-    this.refused(() => this.exports.HandOverSeat(handle, slot, toComputer))
-    return this.statusOf(handle)
   }
 
   /** Where a held match stands, or `null` when it is not held. */

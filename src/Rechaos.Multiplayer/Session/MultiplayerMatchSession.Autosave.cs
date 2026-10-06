@@ -65,7 +65,7 @@ public sealed partial class MultiplayerMatchSession
         // spent on nothing. An offer that comes after turn 1 has sealed is refused `unknown_turn`
         // and dropped like any other refusal.
         _uploadInitialSnapshot = !StartBackgroundUpload(
-            0, MatchStateHasher.ComputeFingerprint(_replay.State));
+            0, MatchStateHasher.ComputeFingerprint(Replay.State));
     }
 
     /// <summary>
@@ -86,9 +86,9 @@ public sealed partial class MultiplayerMatchSession
     private void CheckpointIfDue(int confirmedTurn, string stateHash)
     {
         if (!IsHost || confirmedTurn <= 0 || confirmedTurn % CheckpointEveryTurns != 0) return;
-        if (_replay.State.Coordinator.Turn != confirmedTurn + 1) return;
+        if (Replay.State.Coordinator.Turn != confirmedTurn + 1) return;
         if (!string.Equals(
-                stateHash, MatchStateHasher.ComputeFingerprint(_replay.State), StringComparison.Ordinal))
+                stateHash, MatchStateHasher.ComputeFingerprint(Replay.State), StringComparison.Ordinal))
         {
             return;
         }
@@ -123,8 +123,8 @@ public sealed partial class MultiplayerMatchSession
             MultiplayerProtocolVersion.Current,
             MultiplayerSessionVersion.Current,
             stateHash,
-            MatchStateClone.ToBase64(_replay.State),
-            SummarizeSeats(_replay.State));
+            MatchStateClone.ToBase64(Replay.State),
+            SummarizeSeats(Replay.State));
         var cancellationToken = _stoppingToken;
         _backgroundUpload = Task.Run(
             () => TryUploadSnapshotAsync(request, cancellationToken), cancellationToken);
