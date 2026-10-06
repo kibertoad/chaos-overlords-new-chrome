@@ -385,7 +385,8 @@ dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment
 `--sound` is given (it sets both volumes of the Options dialog, `effects_level`
 and `music_level`, to 0 in memory with the flags RULE-AUDIO-003 derives from
 them, so no effect, movie sound or music plays; nothing the rolls or the state
-depend on reads them), ends the logos and intro movies
+depend on reads them; `--sound` sets them to their initialized values, 6 and 5
+(FND-OPTIONS-001), whatever the registry holds), ends the logos and intro movies
 by holding `left_button_down` in memory (RULE-VIDEO-001 ends a movie only when
 the button is held at one of its ticks, so a posted click is missed), presses
 Begin, records the seed and every `roll` with its call site and result, and copies
@@ -523,9 +524,12 @@ compares the rebuild's pointer at each planning entry and after each Done press
 `--sound-calls` logs every call of the play helper `fn_0045851A`
 (FND-AUDIO-006) with the rolls and Done presses before it, its slot and the
 address of the call; with `--sound` the effects wrapper's calls are logged too.
-The fixture holds them as `sound_calls` but does not record `--sound`, and the
-replay expects the push cue of Begin and of each Done press, so record with
-both flags (RULE-AUDIO-006, EXP-AUDIO-001).
+It also reads `effects_enabled` (FND-AUDIO-002) at each call and at the end of
+the run. The fixture holds the calls as `sound_calls` with `effects_enabled`
+beside them, and `extract` refuses a run whose value is unknown or changed
+during the run. The replay expects the push cue of Begin and of each Done press
+when effects were enabled, and no push cue when they were not
+(RULE-AUDIO-006, EXP-AUDIO-001).
 `--watch-intro` lets both intro movies play out before the button is held and
 logs each frame the frame helper shows, with the movie's name, its header's
 frame count, the slot's frame counter and the time from the first movie's first

@@ -6,7 +6,7 @@ builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
-environment: Windows 11 Pro 10.0.26200, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, run with the compatibility layers DWM8And16BitMitigation, WINXPSP2, DISABLEDWM, 640X480 and DISABLEDXMAXIMIZEDWINDOWEDMODE, windowed, Warn if Idle Gangs and Detailed Combat switched off and the sound levels as the preferences file holds them, under the Windows debugging interface of tools/Rechaos.OriginalProbe
+environment: Windows 11 Pro 10.0.26200, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, run with the compatibility layers DWM8And16BitMitigation, WINXPSP2, DISABLEDWM, 640X480 and DISABLEDXMAXIMIZEDWINDOWEDMODE, windowed, Warn if Idle Gangs and Detailed Combat switched off and both volumes at their initialized values, effects 6 and music 5 (FND-OPTIONS-001), under the Windows debugging interface of tools/Rechaos.OriginalProbe
 starting_state: new-game
 recording: null
 repetitions: 1
@@ -20,18 +20,21 @@ turn-start sound, slot 9, at any turn after the first?
 
 ## Setup
 
-As EXP-TURN-001, with the sound left on (`--sound`).
+As EXP-TURN-001, with the sound on (`--sound`, which sets both volumes to
+their initialized values) and the objective and Mentality given explicitly, so
+the run does not depend on the preferences the machine's registry holds.
 
 ## Procedure
 
-`Rechaos.OriginalProbe new-game --humans 0 --seed 7272 --end-turns 4 --sound
---sound-calls`.
+`Rechaos.OriginalProbe new-game --scenario 4 --mentality 2 --humans 0 --seed
+7272 --end-turns 4 --sound --sound-calls`.
 
 The probe sets a breakpoint on the play helper `fn_0045851A(slot, priority)`
 (FND-AUDIO-006) and records each call with the number of `roll` calls and Done
 presses before it, the slot and the address of the call. The effects wrapper
 calls the helper only while effects are enabled; the turn-start cue calls it
-directly. The state is dumped at the fifth planning entry, after four turns
+directly. The probe also reads `effects_enabled` (FND-AUDIO-002) at each call
+and at the end of the run, and the fixture records it as `effects_enabled`. The state is dumped at the fifth planning entry, after four turns
 have begun since the first.
 
 ## Observations
@@ -39,7 +42,7 @@ have begun since the first.
 The run made 771 calls of `roll`, and the Done presses came after 328, 427,
 535 and 649 of them. The helper was called five times, each time for slot 2,
 the push cue, through the effects wrapper: once for Begin and once for each
-Done press. Slot 9 was never played.
+Done press. Slot 9 was never played. `effects_enabled` was set throughout the run.
 
 ## Results
 

@@ -17,23 +17,35 @@ public sealed partial class OriginalNewGameExperimentTests
 
     // RULE-AUDIO-006: the probe recorded every call of the original's play helper, which the
     // turn-start cue calls directly whatever the effects setting (FND-AUDIO-006). In a game started
-    // with New Game the helper played the push cue for Begin and for each Done press, and never the
-    // turn-start cue at the turns that began after them (EXP-AUDIO-001).
+    // with New Game the helper played the push cue for Begin and for each Done press when effects
+    // were enabled, and never the turn-start cue at the turns that began after them (EXP-AUDIO-001).
     [Theory]
     [MemberData(nameof(SoundRuns))]
     public void ANewGameHasNoTurnStartSound(string experiment, int run)
     {
         var recorded = Run(experiment, run);
         var calls = recorded.SoundCalls!;
-        // Begin and each Done press played the push cue at the press, so the recording reached the
-        // helper. The push cue goes through the effects wrapper, so this holds only for a run made
-        // with --sound; the fixture does not record that, and every run with sound_calls so far was.
-        // A turn left to the planning time limit has no press and so no cue.
-        Assert.Contains(calls, call => call.Done == 0 && call.Slot == AudioRouting.PointerPushSound());
-        for (var done = 1; done <= recorded.DoneCount; done++)
-            if (!recorded.ExpiredTurns.Contains(done))
-                Assert.Contains(calls, call => call.Done == done && call.AfterRoll == recorded.DoneAtRoll[done - 1]
-                    && call.Slot == AudioRouting.PointerPushSound());
+        // The push cue goes through the effects wrapper, which calls the helper only while
+        // effects_enabled is set (FND-AUDIO-002), so which calls a run can hold depends on it, and
+        // a run that does not record it cannot be read.
+        Assert.True(recorded.EffectsEnabled.HasValue,
+            $"{experiment} run {run} records sound_calls without effects_enabled; extract it again from a run that records it.");
+        if (recorded.EffectsEnabled!.Value)
+        {
+            // Begin and each Done press played the push cue at the press, so the recording reached
+            // the helper. A turn left to the planning time limit has no press and so no cue.
+            Assert.Contains(calls, call => call.Done == 0 && call.Slot == AudioRouting.PointerPushSound());
+            for (var done = 1; done <= recorded.DoneCount; done++)
+                if (!recorded.ExpiredTurns.Contains(done))
+                    Assert.Contains(calls, call => call.Done == done && call.AfterRoll == recorded.DoneAtRoll[done - 1]
+                        && call.Slot == AudioRouting.PointerPushSound());
+        }
+        else
+        {
+            // With effects off the wrapper calls nothing, so no press reaches the helper with the
+            // push cue; only a direct call, as the turn-start cue's (BUG-AUDIO-001), is recorded.
+            Assert.DoesNotContain(calls, call => call.Slot == AudioRouting.PointerPushSound());
+        }
         Assert.DoesNotContain(calls, call => call.Slot == GeneralSoundSlot.TurnStartCue);
 
         // The rebuild replays the recorded turns. Its only call of the turn-start cue is in the
