@@ -103,27 +103,59 @@ public sealed partial class ChaosGame
             HandleIdleGangWarningClick(point);
             return;
         }
-        if (PressSectorBack(point, rightButton: false) || _state is null) return;
+        // A press of the other button ends a right double-click, as it does in Windows.
+        _sectorRightClicks.Cancel();
+        HandleSectorPress(point, rightButton: false);
+    }
+
+    /// <summary>
+    /// SCR-UI-004, FND-UI-063: a right press on the sector view. While the left button holds the
+    /// back control, the original is in that control's helper loop, which takes no right press.
+    /// The second press of a right double-click reaches the original as a double-click event,
+    /// which only the console tiles take there.
+    /// </summary>
+    private void HandleSectorRightPress(Point point)
+    {
+        if (_pressedPanelFace is not null) return;
+        if (_sectorRightClicks.Register(point, _inputTime))
+        {
+            if (_state is not null) BeginCityConsolePress(point, ClientScreen.Sector, rightButton: true);
+            return;
+        }
+        HandleSectorPress(point, rightButton: true);
+    }
+
+    /// <summary>
+    /// SCR-UI-004, FND-UI-063: the sector view takes a right press where it takes a left one. The
+    /// console tiles are held until the right button comes up. The back control and an offer's
+    /// reject cross act at the press, since their held-button helper waits only on the left
+    /// button, and an offer's or a card's portrait starts no drag. The neighbouring cells and the
+    /// sites take only a left double-click.
+    /// </summary>
+    private void HandleSectorPress(Point point, bool rightButton)
+    {
+        if (PressSectorBack(point, rightButton) || _state is null) return;
         var playerId = ViewingPlayer(_state);
         if (SectorOpponentGangs.PortraitAt(_state, point) is { } portraitOwner)
         {
             SelectSectorGangCardOwner(_state, playerId, portraitOwner);
             return;
         }
-        if (BeginCityConsolePress(point, ClientScreen.Sector)) return;
+        if (BeginCityConsolePress(point, ClientScreen.Sector, rightButton)) return;
         var rejectSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Reject, point);
         var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.PortraitHit, point);
         if (rejectSlot >= 0)
         {
             BeginHireReject(rejectSlot, ClientScreen.Sector);
+            if (rightButton) CompleteHireReject(point);
             return;
         }
         if (hireSlot >= 0)
         {
-            BeginHireDrag(hireSlot, point);
+            if (!rightButton) BeginHireDrag(hireSlot, point);
             return;
         }
-        if (SectorDetailLayout.TrySectorAt(point, _cursor, out var selectedSector))
+        if (!rightButton && SectorDetailLayout.TrySectorAt(point, _cursor, out var selectedSector))
         {
             // SCR-UI-004: only a double-click on a neighbouring cell selects it.
             if (!_sectorNeighborClicks.Register(selectedSector, _inputTime)) return;
@@ -133,7 +165,7 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
-        var siteSlot = SectorDetailLayout.SiteAt(point);
+        var siteSlot = rightButton ? -1 : SectorDetailLayout.SiteAt(point);
         if (siteSlot >= 0)
         {
             if (_sectorSiteClicks.Register(_cursor * MatchLimits.SitesPerSector + siteSlot, _inputTime))
@@ -148,42 +180,7 @@ public sealed partial class ChaosGame
                     SectorDetailLayout.GroupOrderIsRecurring(point));
             return;
         }
-        PressSectorCard(_state, playerId, cards, point, rightButton: false);
-    }
-
-    /// <summary>
-    /// SCR-UI-004, FND-UI-063: the sector view takes a right press where it takes a left one. The
-    /// console tiles are held until the right button comes up. The back control and an offer's
-    /// reject cross act at the press, since their held-button helper waits only on the left
-    /// button, and an offer's or a card's portrait starts no drag. The neighbouring cells and the
-    /// sites take only a left double-click.
-    /// </summary>
-    private void HandleSectorRightPress(Point point)
-    {
-        if (_idleGangWarningOpen || PressSectorBack(point, rightButton: true) || _state is null) return;
-        var playerId = ViewingPlayer(_state);
-        if (SectorOpponentGangs.PortraitAt(_state, point) is { } portraitOwner)
-        {
-            SelectSectorGangCardOwner(_state, playerId, portraitOwner);
-            return;
-        }
-        if (BeginCityConsolePress(point, ClientScreen.Sector, rightButton: true)) return;
-        var rejectSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Reject, point);
-        if (rejectSlot >= 0)
-        {
-            BeginHireReject(rejectSlot, ClientScreen.Sector);
-            CompleteHireReject(point);
-            return;
-        }
-        var cards = SectorCardGangs(_state, playerId);
-        if (SectorDetailLayout.GroupOrderStrip.Contains(point))
-        {
-            if (ShowsGroupOrderStrip(_state, playerId, cards))
-                OpenGroupCommands(_state, playerId,
-                    SectorDetailLayout.GroupOrderIsRecurring(point));
-            return;
-        }
-        PressSectorCard(_state, playerId, cards, point, rightButton: true);
+        PressSectorCard(_state, playerId, cards, point, rightButton);
     }
 
     /// <summary>

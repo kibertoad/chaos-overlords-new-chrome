@@ -109,6 +109,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly IndexedDoubleClickTracker _sectorGangClicks = new();
     private readonly IndexedDoubleClickTracker _sectorSiteClicks = new();
     private readonly IndexedDoubleClickTracker _sectorNeighborClicks = new();
+    private readonly PointDoubleClickTracker _sectorRightClicks = new();
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentPortraitClicks = new();
@@ -210,6 +211,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     /// button is still down, and cleared when it comes up (FND-UI-044, FND-HIRE-008).
     /// </summary>
     private bool _leftHoldOutlivesCancel;
+    /// <summary>
+    /// The same for a console tile the right button holds, cleared when the right button comes up
+    /// (FND-UI-063).
+    /// </summary>
+    private bool _rightHoldOutlivesCancel;
     private Point _dragPoint;
     private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
@@ -265,6 +271,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _citySectorClicks.Cancel();
             _sectorSiteClicks.Cancel();
             _sectorNeighborClicks.Cancel();
+            _sectorRightClicks.Cancel();
             _sectorGangClicks.Cancel();
             _siteSearchClicks.Cancel();
             _heldSelectionFrame = HeldSelectionFrame(previous, current, _heldSelectionFrame, SelectionFrameShown());
@@ -798,7 +805,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: false);
         }
         if (_previousMouse.RightButton == ButtonState.Pressed && mouse.RightButton == ButtonState.Released)
+        {
+            _rightHoldOutlivesCancel = false;
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: true);
+        }
         CaptureNewCombatAnimations();
         EndUpdate(gameTime, keyboard, mouse);
     }

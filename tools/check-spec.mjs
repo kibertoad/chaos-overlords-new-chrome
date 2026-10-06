@@ -970,9 +970,8 @@ const deviations = new Map();
       // leaves nothing of them to compare with the original. The Tests item lists the test files that
       // check the rebuild does what the deviation says; nothing records a local run of them, so they
       // run in CI and never need GAME_DIR. Either may wrap onto indented lines like any other item.
-      const multiline = (name) => (new RegExp(`^- ${name}: (.*(?:\n  .*)*)`, "m").exec(s.text)?.[1] ?? "");
-      const replaces = idsIn(multiline("Replaces"));
-      const tests = multiline("Tests").split(",").map((x) => x.replaceAll("`", "").trim()).filter(Boolean);
+      const replaces = idsIn(item.Replaces ?? "");
+      const tests = (item.Tests ?? "").split(",").map((x) => x.replaceAll("`", "").trim()).filter(Boolean);
       checkResolves(path, replaces, `${s.title} Replaces`);
       if (!dropped) {
         if ("Replaces" in item) {

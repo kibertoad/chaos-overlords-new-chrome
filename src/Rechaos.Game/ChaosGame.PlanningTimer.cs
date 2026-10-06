@@ -390,18 +390,21 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// The presses on the city and the sector view that hold the original in a loop of its own
-    /// until the left button comes up, so that neither the planning loop
-    /// (<see cref="AtPlanningLoopPass"/>) nor the event pump (<see cref="HoldsPointerOutsideEventPump"/>)
-    /// runs: an offer and its reject cross (FND-HIRE-008), a console tile (FND-UI-032) and a gang
-    /// card's portrait (FND-UI-044). A hold the rebuild's Escape or right press lets go of still
-    /// counts until the button comes up, since the original's loop ends only then.
+    /// until the left button comes up (the right one for a console tile it pressed, FND-UI-063), so
+    /// that neither the planning loop (<see cref="AtPlanningLoopPass"/>) nor the event pump
+    /// (<see cref="HoldsPointerOutsideEventPump"/>) runs: an offer and its reject cross
+    /// (FND-HIRE-008), a console tile (FND-UI-032) and a gang card's portrait (FND-UI-044). A left
+    /// hold the rebuild's Escape or right press lets go of still counts until the left button comes
+    /// up, and a tile hold of the right button that Escape lets go of until the right one comes up,
+    /// since the original's loop ends only then.
     /// </summary>
     private bool HoldsCityPointer() =>
         _draggedHireDefinitionId is not null
         || _pressedHireRejectSlot is not null
         || _pressedCityConsoleControl is not null
         || _draggedGangId is not null
-        || _leftHoldOutlivesCancel;
+        || _leftHoldOutlivesCancel
+        || _rightHoldOutlivesCancel;
 
     /// <summary>
     /// Whether a press holds the game in a loop of the original that dispatches window messages
@@ -439,6 +442,15 @@ public sealed partial class ChaosGame
     private void KeepLeftHoldUntilRelease()
     {
         if (_previousMouse.LeftButton == ButtonState.Pressed) _leftHoldOutlivesCancel = true;
+    }
+
+    /// <summary>
+    /// The same for a console tile the right button holds, whose helper loop ends only when the
+    /// right button comes up (FND-UI-063).
+    /// </summary>
+    private void KeepRightHoldUntilRelease()
+    {
+        if (_previousMouse.RightButton == ButtonState.Pressed) _rightHoldOutlivesCancel = true;
     }
 
     /// <summary>The screens that are not the match, where no planning clock is drawn or run.</summary>
