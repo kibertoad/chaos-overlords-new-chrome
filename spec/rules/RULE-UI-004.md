@@ -4,7 +4,7 @@ title: Drawing numbers in fixed glyph cells
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-006, FND-UI-004, FND-UI-023, FND-EXE-004, FND-UI-040, FND-UI-045, FND-UI-060]
+evidence: [FND-UI-006, FND-UI-004, FND-UI-023, FND-EXE-004, FND-UI-040, FND-UI-045, FND-UI-060, FND-COMBAT-007]
 conflicting: []
 split_with: []
 related: []
@@ -78,9 +78,10 @@ glyph `16 + q` in bright green from the font strip of `PX00129`
 (`(96 + 6*q, 0, 6, 7)`, the strip holding one cell per ASCII character from
 space up), so 0 to 9 are the digits; `100 + q` for the same glyph from the red
 row at source y 8; and 200 for the dim green 0 at `(354,8,6,7)`. The cells are
-filled from the left. `number_cells` is the baseline helper. Every panel
-passes `leading_zeros` 0, except the main console's week, which passes 1
-(FND-UI-060). `modifier_cells` is the modifier helper.
+filled from the left. `number_cells` is the baseline helper. The panels of
+FND-UI-006 pass `leading_zeros` 0. The main console's week passes 1
+(FND-UI-060), and so do the two-cell page number and page count of Combat
+Results (FND-COMBAT-007). `modifier_cells` is the modifier helper.
 
 ## Edge cases
 

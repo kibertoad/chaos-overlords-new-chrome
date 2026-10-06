@@ -4354,6 +4354,7 @@ None.
 | [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | body |
 | [FND-COMBAT-012](../findings/FND-COMBAT-012.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
 
 ## FND-COMBAT-008
