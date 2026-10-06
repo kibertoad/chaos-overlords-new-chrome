@@ -21,12 +21,17 @@ public sealed partial class OriginalNewGameExperimentTests
         }
     }
 
-    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider, bool Retired = false)
+    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider, bool Retired = false, int? Cash = null)
     {
-        // "turn 2: player 1 gang slot 0 family 4", "turn 1: player 3 raider_mode 1" or "turn 1:
-        // player 3 player_active 0", as the probe writes them.
+        // "turn 2: player 1 gang slot 0 family 4", "turn 1: player 3 raider_mode 1", "turn 1:
+        // player 3 player_active 0" or "turn 1: player 0 cash 30000", as the probe writes them.
         public static RecordedPlanning Parse(string value)
         {
+            var cash = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) cash (-?\d+)$");
+            if (cash.Success)
+                return new(int.Parse(cash.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(cash.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), 0, 0, false,
+                    Cash: int.Parse(cash.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture));
             var retired = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) player_active 0$");
             if (retired.Success)
                 return new(int.Parse(retired.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),

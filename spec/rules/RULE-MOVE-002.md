@@ -4,7 +4,7 @@ title: Move destinations are rewritten until no sector would hold more than six 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-MOVE-001, FND-MOVE-003, FND-MOVE-006, FND-AI-005, FND-AI-028, EXP-TURN-043]
+evidence: [FND-MOVE-001, FND-MOVE-003, FND-MOVE-006, FND-AI-005, FND-AI-028, EXP-TURN-043, EXP-TURN-097, EXP-TURN-098]
 conflicting: []
 split_with: []
 related: [RULE-AI-006, RULE-AI-007, FMT-STATE-001]
@@ -122,7 +122,8 @@ None known.
 - Whether the Move panel and the computer players let a player give the
   orders that make the loop cycle, and whether the original then hangs in a
   run, is not recorded [FND-MOVE-006].
-- EXP-TURN-043 runs only the first choice, with a mover whose source counts
-  fewer than six. No run of the original has reached the second choice or the
-  mode-0 fallback (RULE-AI-007), so the status stays `supported` until one
-  does.
+- EXP-TURN-043 runs the first choice, with a mover whose source counts fewer
+  than six. EXP-TURN-097 and EXP-TURN-098 run the second choice, which sends a
+  human's mover back to a source counting six, and the mode-0 fallback
+  (RULE-AI-007), whose drawn sector is repaired in a later round. No run has
+  reached a cycle, so the status stays `supported`.

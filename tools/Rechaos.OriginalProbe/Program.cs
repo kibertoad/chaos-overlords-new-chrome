@@ -78,7 +78,7 @@ static int NewGame(string[] args)
         Option(args, "--orders") is { } orders ? ParseOrders(orders) : null,
         args.Contains("--sound"),
         Option(args, "--hires") is { } hires ? ParseHires(hires) : null,
-        ParsePlanning(Option(args, "--families"), Option(args, "--raiders"), Option(args, "--retire")),
+        ParsePlanning(Option(args, "--families"), Option(args, "--raiders"), Option(args, "--retire"), Option(args, "--cash")),
         Option(args, "--finance") is { } finance ? ParseFinance(finance) : null,
         Option(args, "--search") is { } search ? ParseSearch(search) : null,
         IntOption(args, "--time-limit"),
@@ -390,8 +390,9 @@ static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnly
 
 // --families turn:player:slot:family,... writes a planning record's family; --raiders
 // turn:player,... sets a player's raider_mode; --retire turn:player,... clears a player's
-// player_active (ProbePlanning).
-static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired)
+// player_active; --cash turns:player:value,... sets a player's cash before the Done press of each
+// turn, turns being one turn or a range first-last (ProbePlanning).
+static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired, string? cash)
 {
     static int[] Numbers(string entry) =>
         entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
@@ -416,6 +417,16 @@ static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? rai
         if (parts.Length != 2 || parts[1] is < 0 or > 5)
             throw new FormatException($"A retired player needs a turn and a player 0 to 5: {entry}");
         writes.Add(new ProbePlanning(parts[0], parts[1], 0, ProbePlanning.Retired));
+    }
+    foreach (var entry in (cash ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var range = entry.Split(':', 2);
+        var turns = range[0].Split('-').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        int[] parts = range.Length == 2 ? Numbers(range[1]) : [];
+        if (parts.Length != 2 || parts[0] is < 0 or > 5 || turns is not ([>= 1] or [>= 1, _]) || turns[^1] < turns[0])
+            throw new FormatException($"A cash write needs a turn or a range of turns from 1, a player 0 to 5 and a value: {entry}");
+        for (var turn = turns[0]; turn <= turns[^1]; turn++)
+            writes.Add(new ProbePlanning(turn, parts[0], 0, ProbePlanning.Cash, parts[1]));
     }
     return writes.Count == 0 ? null : writes;
 }
