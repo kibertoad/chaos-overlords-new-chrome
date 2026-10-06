@@ -463,7 +463,7 @@ The correction applied under the Original AI policy as well. Decided 2026-09-17.
 
 ## DEV-AI-002
 
-- Departs from: RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-MOVE-002, RULE-EQUIP-001, RULE-EVENT-014, RULE-INFLUENCE-001, RULE-SITE-001
+- Departs from: RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-MOVE-002, RULE-EQUIP-001, RULE-EVENT-014, RULE-INFLUENCE-001, RULE-SITE-001, RULE-CONTROL-001
 - Reason: A computer player's planned action becomes a command only when a human could give the
   same order and the planner's running total of this turn's costs leaves cash for it; any other
   planned action is kept in the planning state and gives the gang no command. The original stores
@@ -472,11 +472,17 @@ The correction applied under the Original AI policy as well. Decided 2026-09-17.
   longer pay for is refused when it resolves (RULE-EQUIP-001) and leaves the player a cash report
   (RULE-EVENT-014), and an Influence in a sector the player does not control rolls with no owner
   test (RULE-INFLUENCE-001, EXP-TURN-083), and a site it completes in a neutral sector counts in
-  the sector record (RULE-SITE-001). In 21 computer-only
-  matches of 26 turns those three kinds came to 478 orders, and no other planned action a human
-  could not order was seen. A fourth kind follows from `local_tech_cap` reading the research
-  level of a sector whoever owns it (RULE-AI-026): a Research above the Tech limit the Research
-  list allows there, which the original resolves because RULE-RESEARCH-001 tests no Tech Level.
+  the sector record (RULE-SITE-001). A fourth kind follows from `local_tech_cap` reading the
+  research level of a sector whoever owns it (RULE-AI-026): a Research above the Tech limit the
+  Research list allows there, which the original resolves because RULE-RESEARCH-001 tests no
+  Tech Level. A fifth is a family-2 or family-13 Control (RULE-AI-021, RULE-AI-031) of a
+  sector the player already controls or one under police presence. The original resolves it:
+  under police presence the Control adds the gang to the pool and takes nothing
+  (RULE-CONTROL-001), and in the player's own sector it counts the gang twice, as an attacker
+  and as a defender, if another player tries to take the sector in the same turn. In 120 matches
+  of six computer players, every scenario at every Mentality played for up to 208 turns, the
+  rebuild dropped 16,986 unaffordable Equips, 1,360 Influences, 1,944 Researches and 14 Controls,
+  and no other planned action. `AiTournamentTests` fails on any kind this entry does not list.
   The gang's planning history is the same; its resolved action can differ.
 - Setting: None
 - Default: mandatory
@@ -549,7 +555,9 @@ started with.
 - Justification: The write is an index past the end of a 64-entry table, and it rewrites another
   player's planning state with bytes that are no family, action or target any handler assigns: a
   corruption no player can rely on. While a human holds slot 0 the records are zero bytes and the
-  multiply leaves them zero, so the usual match plays the same. A setting would choose between
+  multiply leaves them zero, so a match with a human in slot 0 plays the same. With a computer in
+  slot 0 the records are not zero: in 120 matches of six computer players the multiply would have
+  rewritten them 600 times. A setting would choose between
   leaving the records alone and reproducing a corruption the rebuild's planning state refuses to
   hold.
 - Dropped: no
