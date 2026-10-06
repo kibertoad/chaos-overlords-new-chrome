@@ -80,7 +80,9 @@ export class InMemoryStorage implements MultiplayerStorage {
           settings: match.settings,
           availableSlots: [],
           availableSeatSummaries: [],
-          hasSnapshot: [...this.snapshotRows.values()].some((row) => row.matchId === match.id),
+          hasSnapshot:
+            match.seatViews ||
+            [...this.snapshotRows.values()].some((row) => row.matchId === match.id),
           createdAt: match.createdAt.toISOString(),
         })
       }

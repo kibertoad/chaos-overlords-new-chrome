@@ -148,6 +148,12 @@ export async function startNodeResolverHost(
     status: (matchId: string) => call<MatchStatus | null>('status', [matchId], matchId),
     savePayload: (matchId: string) =>
       call<{ payload: Uint8Array; status: MatchStatus }>('savePayload', [matchId], matchId),
+    seatViewPayload: (matchId: string, slot: number) =>
+      call<{ payload: Uint8Array | null; status: MatchStatus }>(
+        'seatViewPayload',
+        [matchId, slot],
+        matchId,
+      ),
     release: (matchId: string) => call<void>('release', [matchId], matchId),
     close: async () => {
       closed = true

@@ -5,6 +5,7 @@ import { LobbyService, type LobbyServiceOptions } from './LobbyService'
 import { MatchQueryService } from './MatchQueryService'
 import { Referee } from './Referee'
 import { type RetentionPolicy, RetentionService } from './RetentionService'
+import { SeatViewService } from './SeatViewService'
 import { SnapshotService } from './SnapshotService'
 import { TurnService } from './TurnService'
 
@@ -14,6 +15,7 @@ export interface Kernel {
   query: MatchQueryService
   lobby: LobbyService
   turns: TurnService
+  views: SeatViewService
   snapshots: SnapshotService
   referee: Referee
   retention: RetentionService
@@ -34,8 +36,12 @@ export function createKernel(deps: KernelDeps, options: KernelOptions = {}): Ker
     deps,
     auth: new AuthService(deps.storage),
     query,
-    lobby: new LobbyService(deps, publisher, turns, options),
+    lobby: new LobbyService(deps, publisher, turns, {
+      ...options,
+      seatViewsFor: (sessionVersion) => referee.offersSeatViews(sessionVersion),
+    }),
     turns,
+    views: new SeatViewService(deps, turns, referee),
     snapshots: new SnapshotService(deps, publisher, turns, referee),
     referee,
     retention: new RetentionService(deps, options.retention),

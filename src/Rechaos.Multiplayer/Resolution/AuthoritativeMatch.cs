@@ -203,6 +203,30 @@ public sealed class AuthoritativeMatch
     public string Snapshot() => MatchStateClone.ToBase64(Replay.State);
 
     /// <summary>
+    /// The seat in <paramref name="slot"/>'s view of the match at the planning entry of the turn it
+    /// is on (<see cref="SeatView.Project"/>), as an uncompressed save payload, or null when the seat
+    /// has none: it has been eliminated, or the match has ended and is sent whole.
+    /// </summary>
+    /// <remarks>
+    /// Between two seals the state stands at a Command phase with every seat's hire offers drawn,
+    /// which is the planning entry of every seat at once, so a view taken now is the one each seat
+    /// plans the turn on. A handover fed after the seal changes who plans a seat and nothing a view
+    /// holds of it.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The slot is not a seat of the match.</exception>
+    public byte[]? SeatViewPayload(int slot)
+    {
+        var state = Replay.State;
+        var seat = new PlayerId(slot);
+        var player = state.FindPlayer(seat) ?? throw new ArgumentOutOfRangeException(nameof(slot));
+        if (state.Outcome is not null || player.Status != Core.GameModel.PlayerStatus.Active) return null;
+        var view = SeatView.Project(state, seat);
+        using var stream = new MemoryStream();
+        SeatView.Save(stream, view);
+        return stream.ToArray();
+    }
+
+    /// <summary>
     /// The state as a native save payload: what <see cref="Snapshot"/> compresses, for a host that
     /// compresses it itself (see <see cref="FromSavePayload"/>).
     /// </summary>

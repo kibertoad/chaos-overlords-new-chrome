@@ -215,6 +215,21 @@ export class ResolverCore {
     return { payload, status: this.statusOf(handle) }
   }
 
+  /**
+   * The seat in `slot`'s view of the held match as a native save payload, or `null` when the seat
+   * has none (it has been eliminated, or the match has ended), with where the match stands: the
+   * view is of the planning entry of `status.turn`.
+   */
+  seatViewPayload(
+    matchId: string,
+    slot: number,
+  ): { payload: Uint8Array | null; status: MatchStatus } {
+    const handle = this.use(matchId)
+    // Copied out, as a save payload is.
+    const payload = this.refused(() => this.exports.SeatView(handle, slot)).slice()
+    return { payload: payload.length === 0 ? null : payload, status: this.statusOf(handle) }
+  }
+
   /** Forgets a match. Releasing one that is not held does nothing. */
   release(matchId: string): void {
     const handle = this.handles.get(matchId)

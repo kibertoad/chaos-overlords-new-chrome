@@ -49,6 +49,9 @@ function fakeRuntime(matchBytes = 10, garbagePerTurn = 0) {
     Turn: (handle) => held(handle).turn,
     IsFinished: () => false,
     SavePayload: (handle) => new Uint8Array([held(handle).turn]),
+    // Slot 9 is out of the match; any other seat's view is its slot and the turn.
+    SeatView: (handle, slot) =>
+      slot === 9 ? new Uint8Array(0) : new Uint8Array([slot, held(handle).turn]),
     ManagedHeapBytes: (collect) => {
       collections.push(collect)
       if (collect) garbage = 0
@@ -81,6 +84,20 @@ describe('ResolverCore', () => {
     expect([...payload]).toEqual([2])
     expect(core.restore('b', payload, status.stateHash, { players: [] }).turn).toBe(2)
     expect(core.info()).toMatchObject({ sessionVersion: 7, snapshotFormatVersion: 3, held: 2 })
+  })
+
+  it("hands out a seat's view with the turn it is for, and null for a seat that has none", () => {
+    const core = new ResolverCore(fakeRuntime().booted, {
+      maxMatches: 4,
+      managedHeapBudgetBytes: 1000,
+    })
+    core.bootstrap('a', input)
+    core.applyEvent('a', { turn: 1 })
+    const { payload, status } = core.seatViewPayload('a', 2)
+    expect(payload === null ? null : [...payload]).toEqual([2, 2])
+    expect(status.turn).toBe(2)
+    expect(core.seatViewPayload('a', 9).payload).toBeNull()
+    expect(() => core.seatViewPayload('b', 0)).toThrow(MatchNotHeldError)
   })
 
   it('answers MatchNotHeldError for a match it does not hold, and null from status', () => {

@@ -62,6 +62,8 @@ function dispatch(core: ResolverCore, request: ThreadRequest): unknown {
       return core.status(a)
     case 'savePayload':
       return core.savePayload(a)
+    case 'seatViewPayload':
+      return core.seatViewPayload(a, b)
     case 'release':
       return core.release(a)
     case 'heldMatches':

@@ -6,13 +6,19 @@ import {
   type UploadSnapshotRequest,
 } from '@chaos-overlords/contracts'
 import { safeParse } from 'valibot'
-import type { Snapshot, Turn } from '../domain/entities'
+import type { Match, Snapshot, Turn } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError } from '../domain/errors'
 import { authoritativeCandidates, tieBreaker } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
-import { requireInProgress, requireParticipant, requireTurn } from './guards'
+import {
+  requireInProgress,
+  requireLockstep,
+  requireParticipant,
+  requireReleased,
+  requireTurn,
+} from './guards'
 import { type Referee, SNAPSHOTS_KEPT_PER_MATCH } from './Referee'
 import type { TurnService } from './TurnService'
 
@@ -31,6 +37,8 @@ export class SnapshotService {
 
   async upload(principal: Principal, request: UploadSnapshotRequest): Promise<void> {
     const { match, player } = principal
+    // No client of a match played from views holds its state: the server writes every snapshot.
+    requireLockstep(match, 'snapshot_not_required')
     const isBootstrap = request.turn === 0 && match.status === 'running' && match.currentTurn === 1
     // The bootstrap snapshot is the host's alone: it is unconstrained (nothing has been reported
     // yet) and it is the match's starting state, which only the host has.
@@ -284,6 +292,21 @@ export class SnapshotService {
     const snapshot = await this.deps.storage.snapshots.getLatest(matchId)
     if (!snapshot) throw new NotFoundError('No snapshot uploaded yet', { reason: 'no_snapshot' })
     return toView(snapshot)
+  }
+
+  /**
+   * The newest snapshot as a member reads it: refused in a match played from views until it has
+   * ended, since a snapshot is the whole state.
+   */
+  async memberLatest(match: Match): Promise<SnapshotView> {
+    requireReleased(match, 'The whole state')
+    return this.latest(match.id)
+  }
+
+  /** One turn's snapshot as a member reads it; see {@link memberLatest}. */
+  async memberGet(match: Match, turn: number): Promise<SnapshotView> {
+    requireReleased(match, 'The whole state')
+    return this.get(match.id, turn)
   }
 
   async get(matchId: string, turn: number): Promise<SnapshotView> {

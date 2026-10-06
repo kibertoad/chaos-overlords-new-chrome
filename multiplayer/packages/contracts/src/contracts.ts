@@ -24,6 +24,7 @@ import {
   membershipViewSchema,
   ownSubmissionViewSchema,
   sealedOrdersViewSchema,
+  servedSeatViewSchema,
   snapshotViewSchema,
 } from './views'
 
@@ -215,7 +216,16 @@ export const sealedOrdersContract = defineApiContract({
   requestPathParamsSchema: turnParams,
   pathResolver: ({ matchId, turn }) => `/matches/${matchId}/turns/${turn}/orders`,
   responsesByStatusCode: { 200: sealedOrdersViewSchema, ...REFUSALS },
-  summary: 'The sealed set, in slot order, with its digest. Refused while the turn is open.',
+  summary:
+    'The sealed set, in slot order, with its digest. Refused while the turn is open, and in a match played from views until it has ended.',
+})
+
+export const seatViewContract = defineApiContract({
+  method: 'get',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/matches/${matchId}/view`,
+  responsesByStatusCode: { 200: servedSeatViewSchema, ...REFUSALS },
+  summary: "The caller's view of the open turn, in a match played from views.",
 })
 
 export const reportTurnContract = defineApiContract({
@@ -328,6 +338,7 @@ export const API_CONTRACTS = {
   submitOrders: submitOrdersContract,
   ownSubmission: ownSubmissionContract,
   sealedOrders: sealedOrdersContract,
+  seatView: seatViewContract,
   reportTurn: reportTurnContract,
   uploadSnapshot: uploadSnapshotContract,
   latestSnapshot: latestSnapshotContract,

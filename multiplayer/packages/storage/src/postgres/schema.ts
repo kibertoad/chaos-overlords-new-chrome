@@ -37,6 +37,11 @@ export const matches = pgTable(
     seatCount: integer('seat_count').notNull().default(1),
     /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */
     joinCounter: integer('join_counter').notNull().default(1),
+    /**
+     * Whether the match is played from per-seat views: the server resolves every turn and sends
+     * each seat only its own view. Stamped when the match is created and never changed.
+     */
+    seatViews: boolean('seat_views').notNull().default(false),
     createdAt: stamp('created_at').notNull(),
     updatedAt: stamp('updated_at').notNull(),
   },

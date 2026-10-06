@@ -30,6 +30,8 @@ export interface ResolverExports {
   Turn(handle: number): number
   IsFinished(handle: number): boolean
   SavePayload(handle: number): Uint8Array
+  /** Empty when the seat has no view. */
+  SeatView(handle: number, slot: number): Uint8Array
   ManagedHeapBytes(collect: boolean): number
   Release(handle: number): void
 }

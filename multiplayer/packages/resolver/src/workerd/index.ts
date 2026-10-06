@@ -64,6 +64,10 @@ export interface ResolverService {
   applyEvents(matchId: string, fromTurn: number, steps: readonly FeedStep[]): Promise<FeedResult>
   status(matchId: string): Promise<MatchStatus | null>
   savePayload(matchId: string): Promise<{ payload: Uint8Array; status: MatchStatus }>
+  seatViewPayload(
+    matchId: string,
+    slot: number,
+  ): Promise<{ payload: Uint8Array | null; status: MatchStatus }>
   release(matchId: string): Promise<void>
   /** The memory and holdings of the isolate the match's object runs in, for tests and operators. */
   info(matchId: string): Promise<ResolverIsolateInfo>
@@ -160,6 +164,12 @@ export class MatchResolverObject extends DurableObject<ResolverWorkerEnv> {
   savePayload(matchId: string): Promise<{ payload: Uint8Array; status: MatchStatus }> {
     return run(this.env, (resolver) => resolver.savePayload(matchId))
   }
+  seatViewPayload(
+    matchId: string,
+    slot: number,
+  ): Promise<{ payload: Uint8Array | null; status: MatchStatus }> {
+    return run(this.env, (resolver) => resolver.seatViewPayload(matchId, slot))
+  }
   release(matchId: string): Promise<void> {
     return run(this.env, (resolver) => resolver.release(matchId))
   }
@@ -210,6 +220,12 @@ export class ResolverEntrypoint
   }
   savePayload(matchId: string): Promise<{ payload: Uint8Array; status: MatchStatus }> {
     return objectFor(this.env, matchId).savePayload(matchId)
+  }
+  seatViewPayload(
+    matchId: string,
+    slot: number,
+  ): Promise<{ payload: Uint8Array | null; status: MatchStatus }> {
+    return objectFor(this.env, matchId).seatViewPayload(matchId, slot)
   }
   release(matchId: string): Promise<void> {
     return objectFor(this.env, matchId).release(matchId)

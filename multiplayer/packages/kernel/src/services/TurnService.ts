@@ -20,6 +20,7 @@ import {
   assignSlots,
   awaitedSeats,
   evaluateConsensus,
+  FIRST_TURN,
   tieBreaker,
   sealedByDeadline,
   turnDeadline,
@@ -27,15 +28,21 @@ import {
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
-import { requireInProgress, requireParticipant, requireTurn } from './guards'
+import {
+  previousTurnConfirmed,
+  requireInProgress,
+  requireLockstep,
+  requireParticipant,
+  requireRunning,
+  requireTurn,
+} from './guards'
 import { matchStartedEvent } from './MatchQueryService'
 import type { Referee, ResolveOutcome } from './Referee'
 import { publishSeatSummaries } from './SnapshotService'
 
 export type SealTrigger = 'ready' | 'deadline'
 
-/** Turns are numbered from 1; 0 is the lobby's `currentTurn`, before any turn exists. */
-export const FIRST_TURN = 1
+export { FIRST_TURN }
 
 /**
  * The soonest an early deadline timer is retried; see `rearmEarlyDeadline`. Exported so a runtime
@@ -190,8 +197,11 @@ export class TurnService {
     return true
   }
 
-  /** Resolve a refereed match on the server through turn `number`; see `Referee.settleThrough`. */
-  private async resolveOnServer(match: Match, number: number): Promise<ResolveOutcome['kind']> {
+  /**
+   * Resolve a refereed match on the server through turn `number` and settle every turn that
+   * decided; see `Referee.settleThrough`.
+   */
+  async resolveOnServer(match: Match, number: number): Promise<ResolveOutcome['kind']> {
     if (!this.referee) return 'unavailable'
     return this.referee.settleThrough(match, number, (turn) => this.settle(match.id, turn))
   }
@@ -468,10 +478,8 @@ export class TurnService {
     if (await this.hasEvent(match.id, 'match.started')) return
     const seated = await this.deps.storage.players.listByMatch(match.id)
     this.deps.logger.warn('finished an interrupted start', { matchId: match.id })
-    await this.publisher.publish(
-      match.id,
-      matchStartedEvent(match.seed, seated, match.hostPlayerId),
-    )
+    const started = matchStartedEvent({ ...match, seed: match.seed }, seated)
+    await this.publisher.publish(match.id, started)
   }
 
   /**
@@ -509,8 +517,12 @@ export class TurnService {
     // clock behind that modal would spend planning time nobody can use, so an open vote opens the
     // turn paused. The clock is restarted when the last absent seat returns or becomes computer
     // controlled.
-    const deadlineAt =
-      openPrompts.length > 0 ? null : turnDeadline(openedAt, match.settings.turnTimerSeconds)
+    //
+    // In a match played from views nobody can plan the turn before the server has resolved the one
+    // before it, so its clock starts at that confirmation instead (see `finishConfirmation`). A
+    // resolver that is down then stops the match rather than sealing one empty turn after another.
+    const paused = openPrompts.length > 0 || (match.seatViews && number > FIRST_TURN)
+    const deadlineAt = paused ? null : turnDeadline(openedAt, match.settings.turnTimerSeconds)
     const turn = {
       matchId: match.id,
       number,
@@ -654,6 +666,8 @@ export class TurnService {
 
   async report(principal: Principal, number: number, request: TurnReportRequest): Promise<void> {
     const { match, player } = principal
+    // No client of a match played from views resolves anything, so there is nothing to report.
+    requireLockstep(match, 'reports_not_taken')
     // A turn the server confirmed on its own state takes a report only to check it against that.
     if (await this.referee?.judgeDecided(match, player, number, request.stateHash)) return
     requireInProgress(match)
@@ -822,6 +836,8 @@ export class TurnService {
     const match = await this.deps.storage.matches.get(matchId)
     if (!match || match.status !== 'running' || match.settings.turnTimerSeconds === 0) return
     if (await this.deps.storage.takeovers.hasOpenPrompts(matchId)) return
+    // A turn of a match played from views has no clock until its predecessor is resolved.
+    if (!(await previousTurnConfirmed(this.deps.storage.turns, match))) return
     const turn = await this.deps.storage.turns.get(matchId, match.currentTurn)
     if (turn?.status !== 'open' || turn.deadlineAt !== null) return
     const deadlineAt = turnDeadline(this.deps.clock.now(), match.settings.turnTimerSeconds)
@@ -906,6 +922,9 @@ export class TurnService {
         this.finishConfirmation(match, number, verdict, false)
       return this.referee.confirm(match, turn, finish)
     }
+    // A match played from views has no reports to fall back on: its turn waits for the resolver,
+    // which the next seal or view request asks again.
+    if (match.seatViews) return false
     const [players, reports, snapshot] = await Promise.all([
       this.deps.storage.players.listByMatch(matchId),
       this.deps.storage.turns.listReports(matchId, number),
@@ -1097,6 +1116,9 @@ export class TurnService {
         if (announced) worked = true
       }
     }
+    // The views of the next turn can be read from here on, so its clock starts now (see
+    // `openTurn`). A repeat finds the clock running and leaves it.
+    if (match.seatViews && !finished) await this.resumeAfterTakeoverVotes(matchId)
     await this.deps.storage.turns.markSettled(matchId, number, now)
     return worked
   }
@@ -1227,15 +1249,4 @@ function assertOwnOps(request: SubmitOrdersRequest, slot: number): void {
     slot,
     ops: foreign.slice(0, 8).map((op) => ({ op: op.op, player: op.player })),
   })
-}
-
-function requireRunning(match: Match): void {
-  if (match.status === 'desynced') {
-    throw new ConflictError('The match is paused until the host uploads a snapshot', {
-      reason: 'match_desynced',
-    })
-  }
-  if (match.status !== 'running') {
-    throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
-  }
 }

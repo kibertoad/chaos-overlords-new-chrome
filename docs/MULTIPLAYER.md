@@ -42,6 +42,7 @@ characters without disturbing the player-name field.
 - [Per-seat views](#per-seat-views)
   - [What a seat may know](#what-a-seat-may-know)
   - [The view](#the-view)
+  - [Serving the views](#serving-the-views)
   - [Planning on a view](#planning-on-a-view)
   - [Computer seats](#computer-seats)
   - [Saves, journals and spectators](#saves-journals-and-spectators)
@@ -178,7 +179,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings, each match's `sessionVersion`, and available late-join seats with current gang, site, and sector counts. `?sessionVersion=N` narrows the list to matches stored under that session version before the page limit applies; the desktop client always sends its own, so a public match it could not play is never listed. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
 | `POST /matches/join` | anyone | Joins by code (and password), under the caller's chosen `portraitId`. Returns that player's token. Capacity is a single atomic seat claim. |
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings`: the match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
-| `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
+| `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed (null in a match played from views until it ends), and `seatViews: true` in such a match. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
@@ -193,10 +194,11 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 |---|---|---|
 | `PUT /matches/:id/turns/:n/orders` | member | Replaces the caller's order document for the open turn and sets `ready`. The write is one statement conditional on the turn still being open, so a new order landing after the seal is refused (`409 turn_not_open`), never silently folded in. An exact retry of the persisted document is acknowledged even after the turn advances, covering a lost success response. Readiness is never taken back: a `ready: false` document for a seat that is already ready is a draft that arrived after the final one, so the same statement leaves the row alone and the call answers with the document that stands. When `ready` completes the roster, the turn seals in the same call. |
 | `GET /matches/:id/turns/:n/orders/mine` | member | The caller's own submission (for a reconnecting client). |
-| `GET /matches/:id/turns/:n/orders` | member | The sealed set: the documents of the players the seal froze, in slot order, plus `orderSetHash`. Refused while open (`409 turn_open`). |
-| `POST /matches/:id/turns/:n/report` | member | `{ stateHash, finished }` after applying the sealed turn locally. |
-| `POST /matches/:id/snapshots` | host | A base64 native snapshot for a sealed turn, with its `stateHash`. |
-| `GET /matches/:id/snapshots/latest`, `/:turn` | member | Snapshot bodies for resync or reconnect. |
+| `GET /matches/:id/turns/:n/orders` | member | The sealed set: the documents of the players the seal froze, in slot order, plus `orderSetHash`. Refused while open (`409 turn_open`), and in a match played from views until it ends (`409 withheld_until_end`). |
+| `GET /matches/:id/view` | member | In a match played from views, the caller's view of the open turn: `{ turn, slot, formatVersion, sessionVersion, body }`, where `body` is the snapshot archive of the view's save payload. Sent with `Cache-Control: private, no-store`. Refused with 409 `not_a_view_match`, `match_finished`, `seat_out` (the seat is out of the match), or `view_not_ready` (the server has not resolved the turn before; ask again). See [Serving the views](#serving-the-views). |
+| `POST /matches/:id/turns/:n/report` | member | `{ stateHash, finished }` after applying the sealed turn locally. Refused in a match played from views (`409 reports_not_taken`). |
+| `POST /matches/:id/snapshots` | host | A base64 native snapshot for a sealed turn, with its `stateHash`. Refused in a match played from views (`409 snapshot_not_required`). |
+| `GET /matches/:id/snapshots/latest`, `/:turn` | member | Snapshot bodies for resync or reconnect. Refused in a match played from views until it ends (`409 withheld_until_end`). |
 | `GET /matches/:id/events?after=N` | member | The log, paged. |
 | `GET /matches/:id/stream` | member | The same log as SSE; `Last-Event-ID` or `?after=` resumes. Every frame is `id:` the sequence number, `event: message`, and `data:` the event JSON — one event name for the whole stream, so a browser's stock `EventSource` reads it from `onmessage` and branches on the `type` inside the payload. A `: keepalive` comment every 20 seconds is the only other frame. |
 
@@ -313,6 +315,11 @@ never seals a turn before its deadline, and a seal that fails there is logged an
 and the sweep rather than failing the read.
 Sealing on the deadline includes whatever each player last submitted; a player who submitted
 nothing contributes no orders.
+
+In a match played from views, every turn after the first opens with no deadline: nobody can plan it
+until the server has resolved the turn before and served the views. The clock starts when that turn
+is confirmed, announced as `turn.deadlineExtended`, so a slow resolution does not eat into the
+planning time.
 
 ## Bug reports: the same deployment, a different database
 
@@ -577,8 +584,8 @@ with.
 
 Status: decided (`docs/DECISIONS.md`, 2026-10-06). The referee step is implemented: the C# resolver,
 its WebAssembly build, the Node and Cloudflare hosts (`@chaos-overlords/resolver`) and the kernel's
-`Referee`. A deployment turns it on; see [Running the referee](#running-the-referee). Per-seat views
-are not started.
+`Referee`. A deployment turns it on; see [Running the referee](#running-the-referee). The server serves
+per-seat views when a deployment also turns those on; see [Serving the views](#serving-the-views).
 
 Lockstep leaves three gaps that the security model above names: recovery counts reports, so one
 person in several seats outvotes the rest; a client that diverges on purpose pauses the match every
@@ -674,6 +681,9 @@ settles turns by counting reports.
   service `RESOLVER` (see `multiplayer/packages/resolver/README.md`), which needs the Workers Paid
   plan. With `RESOLVE_TURNS` set and no `RESOLVER` binding the Worker logs a warning once per isolate
   and counts reports, so a deployment on the free plan leaves the flag off and loses nothing it had.
+- **`SEAT_VIEWS=true`**, on either runtime and only beside a working resolver, makes the matches
+  created from then on [played from views](#serving-the-views). Off, which is the default, matches
+  are refereed lockstep matches.
 
 What a refereed match does:
 
@@ -731,11 +741,12 @@ measured against the interpreter's 470 ms per turn under workerd before it is ad
 
 Status: decided (`docs/DECISIONS.md`, 2026-10-06, "Send each seat only what the original shows
 it"). The view is implemented in `Rechaos.Core` (`SeatView`) and checked against every recorded
-run of the original; the server does not serve views yet, and needs the referee first.
+run of the original. The server serves views where a deployment turns them on
+([Serving the views](#serving-the-views)); the game client does not plan on them yet.
 
 A seat's view is the match as that player may know it at their planning entry. The server resolves
-the whole match, takes one view per seat when a turn opens, and sends each seat its own. The client
-plans on its view and resolves nothing, so a modified client holds nothing it could reveal.
+the whole match and projects each seat's view of the open turn when that seat asks for it. The
+client plans on its view and resolves nothing, so a modified client holds nothing it could reveal.
 
 ### What a seat may know
 
@@ -829,6 +840,38 @@ the rankings rail, the sector cards and Overlord bar, the Financial panel and th
 the same; and that the human's recorded orders and hires, given through `SpeculativeTurn` on each,
 build the same order document.
 
+### Serving the views
+
+A match is played from views when the deployment sets `SEAT_VIEWS` and its resolver plays the
+session version the match is created under. The server decides that once, at creation, and stores
+it on the match (`seat_views`), so a match keeps one mode for its life; the match view says
+`seatViews: true`.
+
+`GET /matches/:id/view` answers the caller's view of the open turn. The server does not store views:
+it projects one from the resolver's copy of the match on each request (`AuthoritativeMatch` calls
+`SeatView.Project` and `SeatView.Save`), and the resolver host wraps the payload in the snapshot
+archive. A resolver that lost the match rebuilds it from the turn rows first, as for any feed.
+
+`turn.confirmed` for turn n is the signal that the views of turn n+1 can be read; no other event
+announces them. The server confirms a turn of a view match only on its own resolution, never on
+reports, and it takes none: there is no client state to compare. When the resolver fails at the
+seal, the turn stays sealed and the next turn waits with no clock. A view request is then the retry:
+it asks the resolver to resolve the turn before and confirms it on success, and otherwise answers
+409 `view_not_ready`. The match stalls while the resolver is down rather than falling back to report
+counting, which a view match has no means for.
+
+While the match runs the server withholds everything that would show more than a view: the seed
+(`match.started` carries `seed: null`, as does the match view), other seats' documents in a sealed
+set, and every snapshot, which the server alone writes. A seat still reads its own submitted
+document and the events, whose sealed-turn digests name the set. Once the match is finished or
+abandoned these reads are answered as in any match, so a client can rebuild the whole match from the
+seed and the sealed sets, or load the final snapshot.
+
+A late joiner needs no snapshot to take a computer seat: its view is served like any other at the
+next request. The public listing therefore offers a view match's free seats from its start. The
+listing carries no seat summaries for a view match, because they are written back from host reports
+and snapshot uploads, which a view match does not take.
+
 ### Planning on a view
 
 The client plans on a `SpeculativeTurn` copy as today and sends the same order document. The copy
@@ -878,9 +921,10 @@ A server with the resolver on decides per deployment whether its matches use vie
 and stamps the mode on each match when it is created, so a match keeps one mode for its life. In a
 view match the server withholds what lockstep has to publish: the seed in the bootstrap, other
 seats' documents in a sealed set (a seat reads its own and the set's digest), and snapshots of the
-whole match. Those changes and the view route move the protocol version. The session version stays:
-the sealed sets, order documents and snapshots a match stores are the same, and the mode is a new
-field on the match.
+whole match. Those changes, the view route and the refusals of reports and uploads moved the
+protocol version to 34. The session version stays: the sealed sets, order documents and snapshots a
+match stores are the same, and the mode is a new column on the match (`seat_views`, migration
+`0008_seat_views`), false for every match created before it.
 
 ### Cost
 

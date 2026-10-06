@@ -86,7 +86,15 @@ export const lobbyHostChangedEventSchema = strictObject({
 export const matchStartedEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('match.started'),
-  payload: strictObject({ seed: seedSchema, players: array(playerViewSchema) }),
+  payload: strictObject({
+    /**
+     * What every client bootstraps the match from. Null in a match played from views
+     * (`matchView.seatViews`), where no client bootstraps and the seed is released in the match
+     * view once the match has ended.
+     */
+    seed: nullable(seedSchema),
+    players: array(playerViewSchema),
+  }),
 })
 
 export const matchStatusChangedEventSchema = strictObject({

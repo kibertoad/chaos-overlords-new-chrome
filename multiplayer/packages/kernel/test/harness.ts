@@ -57,7 +57,9 @@ export interface Harness {
   }>
 }
 
-export function createHarness(options: { resolver?: TurnResolver } = {}): Harness {
+export function createHarness(
+  options: { resolver?: TurnResolver; seatViews?: boolean } = {},
+): Harness {
   const storage = new InMemoryStorage()
   const clock = new ManualClock()
   const notifier = new RecordingNotifier()
@@ -72,6 +74,7 @@ export function createHarness(options: { resolver?: TurnResolver } = {}): Harnes
     clock,
     logger,
     ...(options.resolver ? { resolver: options.resolver } : {}),
+    ...(options.seatViews === undefined ? {} : { seatViews: options.seatViews }),
   })
 
   const principalOf = (token: string) => kernel.auth.authenticate(token)

@@ -191,7 +191,7 @@ export function buildKernel(
       streams,
       clock: { now: () => new Date() },
       logger: workerLogger,
-      ...(resolver ? { resolver } : {}),
+      ...(resolver ? { resolver, seatViews: configFlag(env.SEAT_VIEWS, false, 'SEAT_VIEWS') } : {}),
     },
     { retention: retentionPolicyFor(env) },
   )

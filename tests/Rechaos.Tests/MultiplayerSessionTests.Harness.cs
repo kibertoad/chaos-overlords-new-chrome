@@ -92,6 +92,7 @@ public sealed partial class MultiplayerSessionTests
         PreviousTurn: null,
         LastEventSeq: 7,
         Refereed: null,
+        SeatViews: null,
         "2026-09-10T11:59:00.000Z");
 
     /// <summary>The sealed set for a turn nobody ordered anything in, with honest digests.</summary>

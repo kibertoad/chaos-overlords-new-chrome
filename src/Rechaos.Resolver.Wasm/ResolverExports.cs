@@ -103,6 +103,15 @@ public static partial class ResolverExports
     public static byte[] SavePayload(int handle) => Match(handle).SavePayload();
 
     /// <summary>
+    /// The seat in <paramref name="slot"/>'s view as a native save payload, or an empty array when
+    /// the seat has none (eliminated, or the match has ended); see
+    /// <see cref="AuthoritativeMatch.SeatViewPayload"/>. The host compresses it as it does
+    /// <see cref="SavePayload"/>.
+    /// </summary>
+    [JSExport]
+    public static byte[] SeatView(int handle, int slot) => Match(handle).SeatViewPayload(slot) ?? [];
+
+    /// <summary>
     /// The bytes the managed heap holds, after a full collection when <paramref name="collect"/> is
     /// set.
     /// </summary>

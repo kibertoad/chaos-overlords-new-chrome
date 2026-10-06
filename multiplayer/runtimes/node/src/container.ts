@@ -124,7 +124,7 @@ export async function buildNodeRuntime(
       clock,
       logger,
       scheduler: { schedule: (input) => (scheduler as TimerDeadlineScheduler).schedule(input) },
-      ...(resolver ? { resolver: resolver.resolver } : {}),
+      ...(resolver ? { resolver: resolver.resolver, seatViews: config.seatViews } : {}),
     },
     {
       retention,
@@ -190,6 +190,7 @@ export async function buildNodeRuntime(
     },
     bugReports: bugReports ? 'on' : 'off',
     resolveTurns: resolver ? 'on' : 'off',
+    seatViews: resolver && config.seatViews ? 'on' : 'off',
   })
   const closeStreams = (): void => {
     stopSweeper()

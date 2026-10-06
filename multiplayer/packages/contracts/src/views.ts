@@ -89,7 +89,10 @@ export const matchViewSchema = strictObject({
   status: matchStatusSchema,
   settings: matchSettingsSchema,
   hostPlayerId: resourceIdSchema,
-  /** Set at start; every client seeds its deterministic core from it. */
+  /**
+   * Set at start; every client seeds its deterministic core from it. Null in the lobby, and in a
+   * match played from views (`seatViews`) until it has ended.
+   */
   seed: nullable(seedSchema),
   currentTurn: turnNumberSchema,
   players: array(playerViewSchema),
@@ -105,6 +108,14 @@ export const matchViewSchema = strictObject({
    * are decided by the players' reports agreeing.
    */
   refereed: optional(boolean()),
+  /**
+   * True when the match is played from per-seat views (docs/MULTIPLAYER.md, "Per-seat views"): the
+   * server resolves every turn, each seat plans on its own view (`GET /view`) and resolves nothing,
+   * and the seed, other seats' order documents and whole-match snapshots are withheld until the
+   * match ends. Fixed when the match is created. Absent or false, every client resolves every turn
+   * from the seed and the sealed sets.
+   */
+  seatViews: optional(boolean()),
   createdAt: isoTimestampSchema,
 })
 
@@ -178,6 +189,26 @@ export const snapshotViewSchema = strictObject({
   body: base64BodySchema,
 })
 
+/**
+ * One seat's view of the open turn: the match as that player may know it at their planning entry,
+ * which the client plans on instead of the whole match (docs/MULTIPLAYER.md, "The view").
+ */
+export const servedSeatViewSchema = strictObject({
+  /** The turn the view is for: the open turn when it was served. */
+  turn: turnNumberSchema,
+  /** The seat the view is for: always the caller's. */
+  slot: slotSchema,
+  /** Native save format of the payload inside `body`. */
+  formatVersion: formatVersionSchema,
+  /** Session version the view belongs to; a client that plays another one cannot read it. */
+  sessionVersion: sessionVersionSchema,
+  /**
+   * Base64 of the view's save payload in the archive snapshots travel in. The payload carries the
+   * fingerprint of the view, which catches damage in transit.
+   */
+  body: base64BodySchema,
+})
+
 export const lobbyListSchema = strictObject({ matches: array(lobbyListingSchema) })
 
 export type MatchStatus = InferOutput<typeof matchStatusSchema>
@@ -194,3 +225,4 @@ export type OwnSubmissionView = InferOutput<typeof ownSubmissionViewSchema>
 export type SealedPlayerOrders = InferOutput<typeof sealedPlayerOrdersSchema>
 export type SealedOrdersView = InferOutput<typeof sealedOrdersViewSchema>
 export type SnapshotView = InferOutput<typeof snapshotViewSchema>
+export type ServedSeatView = InferOutput<typeof servedSeatViewSchema>

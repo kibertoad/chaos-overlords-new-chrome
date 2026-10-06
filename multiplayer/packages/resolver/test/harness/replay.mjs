@@ -3,7 +3,13 @@
 // run it against both hosts.
 //
 // A transcript is the match's event log as the server stores it (a step per event, a seal with its
-// sealed set), with the hash after each, and a snapshot taken after turn 10.
+// sealed set), with the hash after each, and a snapshot taken after turn 10 with each human seat's
+// view of the turn after it.
+import { brotliDecompressSync } from 'node:zlib'
+
+/** The save payload inside a snapshot archive's base64: a 12-byte header, then Brotli. */
+const archivePayload = (body) =>
+  Buffer.from(brotliDecompressSync(Buffer.from(body, 'base64').subarray(12))).toString('base64')
 
 /**
  * @param {import('../../dist/index.js').MatchResolver} resolver
@@ -68,6 +74,12 @@ export async function replayTranscript(resolver, transcript, prefix = '') {
       const roundTrip = await resolver.restore(`${prefix}own`, own, { players })
       check('own snapshot round trip', step.hash, roundTrip.stateHash)
       await resolver.release(`${prefix}own`)
+      // Every human seat is served the view the native build projects, byte for byte.
+      for (const [slot, expected] of Object.entries(step.seatViews ?? {})) {
+        const view = await resolver.seatView(live, Number(slot))
+        check(`seat ${slot}'s view turn`, (await resolver.status(live))?.turn, view?.turn)
+        check(`seat ${slot}'s view`, expected, view ? archivePayload(view.body) : null)
+      }
     } else {
       throw new Error(`unknown transcript step ${step.kind}`)
     }

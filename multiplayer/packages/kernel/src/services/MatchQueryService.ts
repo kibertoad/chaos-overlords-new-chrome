@@ -9,10 +9,10 @@ import {
   type SealedPlayerOrders,
   type TurnView,
 } from '@chaos-overlords/contracts'
-import { activePlayers, type Match, type Player, type Turn } from '../domain/entities'
+import { activePlayers, isConcluded, type Match, type Player, type Turn } from '../domain/entities'
 import { ConflictError, NotFoundError } from '../domain/errors'
 import type { MultiplayerStorage } from '../ports/storage'
-import { requireTurn } from './guards'
+import { requireReleased, requireTurn } from './guards'
 
 export function toPlayerView(player: Player, hostPlayerId: string): PlayerView {
   return {
@@ -25,17 +25,20 @@ export function toPlayerView(player: Player, hostPlayerId: string): PlayerView {
   }
 }
 
-/** The `match.started` announcement: the seed and the seated roster every client bootstraps from. */
+/**
+ * The `match.started` announcement: the seed and the seated roster every client bootstraps from.
+ * A match played from views announces no seed, because no client bootstraps it and the seed would
+ * let a client predict every draw; the match view releases it once the match has ended.
+ */
 export function matchStartedEvent(
-  seed: number,
+  match: Pick<Match, 'hostPlayerId' | 'seatViews'> & { seed: number },
   seated: readonly Player[],
-  hostPlayerId: string,
 ): MatchEventBody {
   return {
     type: 'match.started',
     payload: {
-      seed,
-      players: activePlayers(seated).map((player) => toPlayerView(player, hostPlayerId)),
+      seed: match.seatViews ? null : match.seed,
+      players: activePlayers(seated).map((player) => toPlayerView(player, match.hostPlayerId)),
     },
   }
 }
@@ -63,13 +66,14 @@ export class MatchQueryService {
       status: match.status,
       settings: match.settings,
       hostPlayerId: match.hostPlayerId,
-      seed: match.seed,
+      seed: match.seatViews && !isConcluded(match) ? null : match.seed,
       currentTurn: match.currentTurn,
       players: players.map((player) => toPlayerView(player, match.hostPlayerId)),
       turn,
       previousTurn,
       lastEventSeq,
       ...(refereed ? { refereed } : {}),
+      ...(match.seatViews ? { seatViews: true } : {}),
       createdAt: match.createdAt.toISOString(),
     }
   }
@@ -153,6 +157,15 @@ export class MatchQueryService {
     const row = await this.storage.turns.getOrders(match.id, number, playerId)
     if (!row) throw new NotFoundError('No such turn', { reason: 'unknown_turn' })
     return { turn: number, orders: row.orders, ready: row.ready, ordersHash: row.ordersHash }
+  }
+
+  /**
+   * The sealed set as a member reads it: refused, as well as while the turn is open, in a match
+   * played from views until it has ended, since it holds every other seat's orders.
+   */
+  async memberSealedOrders(match: Match, number: number): Promise<SealedOrdersView> {
+    requireReleased(match, 'The sealed set')
+    return this.sealedOrders(match, number)
   }
 
   /**

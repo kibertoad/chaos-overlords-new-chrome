@@ -30,6 +30,17 @@ export interface ResolverSnapshot {
 }
 
 /**
+ * One seat's view of a held match, at the planning entry of the turn the match is on
+ * (docs/MULTIPLAYER.md, "The view").
+ */
+export interface ResolverSeatView {
+  /** Base64 of the view's save payload in the snapshot archive. */
+  body: string
+  /** The turn the held match is planning, which the view is for. */
+  turn: number
+}
+
+/**
  * The game's own turn resolver, which the server runs to referee online turns (docs/MULTIPLAYER.md,
  * "Resolving turns on the server"). `@chaos-overlords/resolver` implements it for Node and for
  * Cloudflare; a runtime that supplies none keeps deciding turns by the players' reports.
@@ -63,6 +74,12 @@ export interface TurnResolver {
   ): Promise<ResolverFeedResult>
   status(matchId: string): Promise<ResolverMatchStatus | null>
   snapshot(matchId: string): Promise<ResolverSnapshot & { status: ResolverMatchStatus }>
+  /**
+   * The seat in `slot`'s view of the held match (`SeatView.Project`), or null when the seat has
+   * none: it has been eliminated, or the match has ended. The view is written in the native save
+   * format `describe` names.
+   */
+  seatView(matchId: string, slot: number): Promise<ResolverSeatView | null>
   release(matchId: string): Promise<void>
 }
 

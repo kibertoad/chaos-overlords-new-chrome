@@ -30,4 +30,10 @@ export interface KernelDeps {
    * the players' reports agreeing.
    */
   resolver?: TurnResolver
+  /**
+   * The deployment's `SEAT_VIEWS` setting: matches created while it is on, under the session version
+   * the resolver plays, are played from per-seat views (`Match.seatViews`). Ignored without a
+   * resolver, because a view match has nobody else to resolve its turns.
+   */
+  seatViews?: boolean
 }

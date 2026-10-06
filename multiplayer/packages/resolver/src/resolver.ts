@@ -30,6 +30,11 @@ export interface PayloadResolver {
   applyEvents(matchId: string, fromTurn: number, steps: readonly FeedStep[]): Promise<FeedResult>
   status(matchId: string): Promise<MatchStatus | null>
   savePayload(matchId: string): Promise<{ payload: Uint8Array; status: MatchStatus }>
+  /** A seat's view as a native save payload, or null when it has none; see `ResolverCore`. */
+  seatViewPayload(
+    matchId: string,
+    slot: number,
+  ): Promise<{ payload: Uint8Array | null; status: MatchStatus }>
   release(matchId: string): Promise<void>
 }
 
@@ -69,6 +74,12 @@ export interface MatchResolver {
   status(matchId: string): Promise<MatchStatus | null>
   /** The held match as a snapshot every client can adopt. */
   snapshot(matchId: string): Promise<StoredSnapshot & { status: MatchStatus }>
+  /**
+   * The seat in `slot`'s view of the held match at the planning entry of the turn it is on
+   * (`SeatView.Project`), in the archive form snapshots travel in, or `null` when the seat has none:
+   * it has been eliminated, or the match has ended.
+   */
+  seatView(matchId: string, slot: number): Promise<{ body: string; turn: number } | null>
   release(matchId: string): Promise<void>
 }
 
@@ -85,6 +96,12 @@ export function withArchives(host: PayloadResolver, codec: BrotliCodec): MatchRe
     snapshot: async (matchId) => {
       const { payload, status } = await host.savePayload(matchId)
       return { body: writeSnapshotArchive(payload, codec), stateHash: status.stateHash, status }
+    },
+    seatView: async (matchId, slot) => {
+      const { payload, status } = await host.seatViewPayload(matchId, slot)
+      return payload === null
+        ? null
+        : { body: writeSnapshotArchive(payload, codec), turn: status.turn }
     },
     release: (matchId) => host.release(matchId),
   }

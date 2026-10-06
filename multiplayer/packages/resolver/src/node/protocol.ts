@@ -9,6 +9,7 @@ export type ThreadMethod =
   | 'applyEvents'
   | 'status'
   | 'savePayload'
+  | 'seatViewPayload'
   | 'release'
   | 'heldMatches'
 

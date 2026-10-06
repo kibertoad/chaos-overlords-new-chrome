@@ -92,6 +92,7 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `MAX_EVENT_STREAMS` | `512` | Event streams this process holds at once, across every match; further opens answer 429. At most one quarter of this cap may be occupied by lobby streams, leaving capacity for running matches even if unauthenticated lobby creation is abused. A lobby stream stops using that share when its match starts. Raise the cap and the file descriptor limit together. |
 | `CORS_ORIGINS` | *(none)* | Comma-separated browser origins allowed to call the API. The game is not a browser and needs none; a web front end using `@chaos-overlords/client` lists its origin here, which also permits the preflighted `Authorization` and `Last-Event-ID` headers. |
 | `RESOLVE_TURNS` | `false` | Resolve every sealed turn on the server and decide it on the server's state (docs/MULTIPLAYER.md, "Running the referee"). Starts the WebAssembly resolver in a worker thread; the server refuses to start if it cannot. Off, turns are settled by counting reports. |
+| `SEAT_VIEWS` | `false` | With `RESOLVE_TURNS` on, play the matches created from then on from per-seat views: the server resolves every turn alone, serves each seat its own view and withholds the seed, the other seats' orders and the snapshots until the match ends (docs/MULTIPLAYER.md, "Serving the views"). Ignored without a resolver. |
 | `RESOLVER_MAX_MATCHES` | `64` | Matches the resolver holds in memory at once; the least recently used beyond it is released and rebuilt from its checkpoint when next needed. |
 | `RESOLVER_MANAGED_HEAP_MIB` | `512` | Live managed heap, in MiB, past which the resolver releases matches. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
@@ -166,7 +167,7 @@ deployment has to satisfy:
 `UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`,
 `MATCH_CREATION_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
 `LOBBY_RETENTION_DAYS`, `ABANDONED_RETENTION_DAYS`, `SILENT_RETENTION_DAYS`, `RETENTION_BATCH_SIZE`
-(`50`), `BUG_REPORT_RETENTION_DAYS`, `BUG_REPORT_DAILY_STATE_MB` and `RESOLVE_TURNS` are vars, with
+(`50`), `BUG_REPORT_RETENTION_DAYS`, `BUG_REPORT_DAILY_STATE_MB`, `RESOLVE_TURNS` and `SEAT_VIEWS` are vars, with
 the same meanings and defaults as the Node environment variables above. A deployment also wants the cron trigger the
 `scheduled` handler expects — `wrangler.dev.toml` declares `crons = ["*/5 * * * *"]`, the interval
 the sweeper and the retention sweeps are written for —

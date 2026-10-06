@@ -35,6 +35,7 @@ export function cloudflareResolverHost(binding: ResolverService): PayloadResolve
       call(matchId, () => binding.applyEvents(matchId, fromTurn, steps)),
     status: (matchId) => call(matchId, () => binding.status(matchId)),
     savePayload: (matchId) => call(matchId, () => binding.savePayload(matchId)),
+    seatViewPayload: (matchId, slot) => call(matchId, () => binding.seatViewPayload(matchId, slot)),
     release: (matchId) => call(matchId, () => binding.release(matchId)),
   }
 }

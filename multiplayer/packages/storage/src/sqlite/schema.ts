@@ -26,6 +26,11 @@ export const matches = sqliteTable(
     seatCount: integer('seat_count').notNull().default(1),
     /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */
     joinCounter: integer('join_counter').notNull().default(1),
+    /**
+     * Whether the match is played from per-seat views: the server resolves every turn and sends
+     * each seat only its own view. Stamped when the match is created and never changed.
+     */
+    seatViews: integer('seat_views', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
   },

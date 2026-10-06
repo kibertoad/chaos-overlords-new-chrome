@@ -96,7 +96,7 @@ public sealed record LobbyHostChangedEvent(
 ) : MatchEvent(Seq, MatchId, CreatedAt, "lobby.hostChanged");
 
 public sealed record MatchStartedEventPayload(
-    [property: JsonPropertyName("seed")] int Seed,
+    [property: JsonPropertyName("seed")] int? Seed,
     [property: JsonPropertyName("players")] IReadOnlyList<PlayerView> Players
 );
 
@@ -654,6 +654,7 @@ public sealed record MatchView(
     [property: JsonPropertyName("previousTurn")] TurnView? PreviousTurn,
     [property: JsonPropertyName("lastEventSeq")] int LastEventSeq,
     [property: JsonPropertyName("refereed"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? Refereed,
+    [property: JsonPropertyName("seatViews"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? SeatViews,
     [property: JsonPropertyName("createdAt")] string CreatedAt
 );
 
@@ -714,6 +715,14 @@ public sealed record SnapshotView(
     [property: JsonPropertyName("stateHash")] string StateHash,
     [property: JsonPropertyName("uploadedByPlayerId")] string UploadedByPlayerId,
     [property: JsonPropertyName("uploadedAt")] string UploadedAt,
+    [property: JsonPropertyName("body")] string Body
+);
+
+public sealed record ServedSeatView(
+    [property: JsonPropertyName("turn")] int Turn,
+    [property: JsonPropertyName("slot")] int Slot,
+    [property: JsonPropertyName("formatVersion")] int FormatVersion,
+    [property: JsonPropertyName("sessionVersion")] int SessionVersion,
     [property: JsonPropertyName("body")] string Body
 );
 

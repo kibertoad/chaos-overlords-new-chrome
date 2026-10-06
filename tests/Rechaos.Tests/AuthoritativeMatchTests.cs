@@ -217,6 +217,31 @@ public sealed class AuthoritativeMatchTests
         Assert.Equal(before, resolver.StateHash);
     }
 
+    /// <summary>
+    /// The view the server serves a seat (docs/MULTIPLAYER.md, "Per-seat views") is the one the core
+    /// projects from the same state, byte for byte, and loads back as that seat's view.
+    /// </summary>
+    [Fact]
+    public void ServesEachSeatTheViewTheCoreProjectsFromItsState()
+    {
+        var (client, _, resolver, _, _) = PlayFourTurns();
+
+        foreach (var slot in new[] { 0, 1 })
+        {
+            var payload = resolver.SeatViewPayload(slot);
+            Assert.NotNull(payload);
+            using var expected = new MemoryStream();
+            SeatView.Save(expected, SeatView.Project(client.State, new PlayerId(slot)));
+            Assert.Equal(expected.ToArray(), payload);
+
+            using var source = new MemoryStream(payload);
+            var view = SeatView.Load(source, Definitions, new PlayerId(slot));
+            Assert.Equal(new PlayerId(slot), view.ViewedBy);
+            Assert.Equal(resolver.Turn, view.Coordinator.Turn);
+        }
+        Assert.Throws<ArgumentOutOfRangeException>(() => resolver.SeatViewPayload(MatchLimits.PlayerCount));
+    }
+
     [Fact]
     public void PlaysTheSessionVersionOfThisBuild()
     {

@@ -4,6 +4,7 @@ import {
   isMatchNotHeld,
   type ResolverFeedStep,
   type ResolverMatchStatus,
+  type ResolverSeatView,
   type ResolverSnapshot,
 } from '../ports/resolver'
 import type { KernelDeps } from './deps'
@@ -52,6 +53,16 @@ export interface ResolveOutcome {
   recorded: number[]
 }
 
+/**
+ * What {@link Referee.seatView} found. `served`: the view, in the native save format named.
+ * `none`: the seat has no view, because it is out of the match. `pending`: the match is not on the
+ * turn asked about, because another caller sealed or resolved it meanwhile. `unavailable`: the
+ * resolver failed or cannot play the match.
+ */
+export type SeatViewOutcome =
+  | { kind: 'served'; view: ResolverSeatView; formatVersion: number }
+  | { kind: 'none' | 'pending' | 'unavailable' }
+
 /** Where a held match stands and the sequence number of the last event it was fed. */
 interface Position {
   status: ResolverMatchStatus
@@ -86,6 +97,60 @@ export class Referee {
     if (!this.deps.resolver || match.seed === null) return false
     const description = await this.describe()
     return description?.sessionVersion === match.sessionVersion
+  }
+
+  /**
+   * Whether a match created now under `sessionVersion` is played from per-seat views: the
+   * deployment asks for them and its resolver plays that session version, so that it can resolve
+   * every turn of the match. Decided once, when the match is created.
+   */
+  async offersSeatViews(sessionVersion: number): Promise<boolean> {
+    if (this.deps.seatViews !== true || !this.deps.resolver) return false
+    return (await this.describe())?.sessionVersion === sessionVersion
+  }
+
+  /**
+   * The view of the seat in `slot` at the planning entry of turn `turn`, which the match must be
+   * planning. The caller has made sure the turn before it is resolved and confirmed; a resolver that
+   * lost the match rebuilds it from the turn rows, as for any feed. Never throws.
+   */
+  async seatView(match: Match, turn: number, slot: number): Promise<SeatViewOutcome> {
+    const resolver = this.deps.resolver
+    if (!resolver || !(await this.referees(match))) return { kind: 'unavailable' }
+    try {
+      const description = await this.describe()
+      if (!description) return { kind: 'unavailable' }
+      for (let attempt = 0; ; attempt++) {
+        const held = await resolver.status(match.id)
+        if (held && held.turn > turn) return { kind: 'pending' }
+        if (held?.turn !== turn) {
+          // Not held, or held behind the turn: fed up to the planning entry, from the resolutions
+          // the turn rows record. Nothing new is recorded here.
+          if ((await this.feed(match, match.id, turn - 1, null)) === 'pending') {
+            return { kind: 'pending' }
+          }
+        }
+        let view: ResolverSeatView | null
+        try {
+          view = await resolver.seatView(match.id, slot)
+        } catch (error) {
+          // Released between the read of where it stood and the projection: fed once more.
+          if (isMatchNotHeld(error) && attempt === 0) continue
+          throw error
+        }
+        if (view === null) return { kind: 'none' }
+        if (view.turn !== turn) return { kind: 'pending' }
+        return { kind: 'served', view, formatVersion: description.snapshotFormatVersion }
+      }
+    } catch (error) {
+      this.deps.logger.warn('the server could not project a seat view', {
+        matchId: match.id,
+        turn,
+        slot,
+        error: String(error),
+      })
+      return { kind: 'unavailable' }
+    }
   }
 
   /**

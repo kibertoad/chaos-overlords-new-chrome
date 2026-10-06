@@ -68,6 +68,7 @@ describe.skipIf(!url)('postgres', () => {
       currentTurn: 0,
       seatCount: playerCount,
       joinCounter: playerCount,
+      seatViews: false,
       createdAt: now,
       updatedAt: now,
     }

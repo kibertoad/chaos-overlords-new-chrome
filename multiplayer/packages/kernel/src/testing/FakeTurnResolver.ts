@@ -32,6 +32,16 @@ export const fakeSealedHash = (previous: string, orderSetHash: string): string =
 export const fakeHandoverHash = (previous: string, event: string, playerId: string): string =>
   fakeHash(`${previous}|${event}:${playerId}`)
 
+/** What a {@link FakeTurnResolver} put in a seat view's body. */
+export function readFakeSeatView(body: string): {
+  slot: number
+  turn: number
+  stateHash: string
+  finished: boolean
+} {
+  return JSON.parse(atob(body)) as ReturnType<typeof readFakeSeatView>
+}
+
 interface FakeMatch {
   turn: number
   stateHash: string
@@ -64,6 +74,8 @@ export class FakeTurnResolver implements TurnResolver {
       sessionVersion?: number
       /** The turn whose seal ends the match. */
       finishAfterTurn?: number
+      /** Seats that have been eliminated, which {@link seatView} answers null for. */
+      outSlots?: number[]
     } = {},
   ) {}
 
@@ -118,6 +130,18 @@ export class FakeTurnResolver implements TurnResolver {
     this.enter('snapshot')
     const match = this.held(matchId)
     return { body: btoa(JSON.stringify(match)), stateHash: match.stateHash, status: { ...match } }
+  }
+
+  /**
+   * A stand-in for a seat's view: the held state and the seat, which a test can read back with
+   * {@link readFakeSeatView}. A seat listed in `options.outSlots` has none, and neither has a
+   * finished match.
+   */
+  async seatView(matchId: string, slot: number) {
+    this.enter('seatView')
+    const match = this.held(matchId)
+    if (match.finished || this.options.outSlots?.includes(slot)) return null
+    return { body: btoa(JSON.stringify({ slot, ...match })), turn: match.turn }
   }
 
   async release(matchId: string): Promise<void> {

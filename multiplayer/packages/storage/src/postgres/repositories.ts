@@ -121,12 +121,13 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
           sessionVersion: matches.sessionVersion,
           settings: matches.settings,
           createdAt: matches.createdAt,
-          hasSnapshot: exists(
+          // A late joiner of a match played from views is sent a view, not a snapshot.
+          hasSnapshot: sql<unknown>`(${matches.seatViews} or ${exists(
             db
               .select({ one: sql`1` })
               .from(snapshots)
               .where(eq(snapshots.matchId, matches.id)),
-          ),
+          )})`,
         })
         .from(matches)
         .innerJoin(players, eq(players.id, matches.hostPlayerId))

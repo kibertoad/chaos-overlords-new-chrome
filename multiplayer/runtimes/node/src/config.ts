@@ -141,6 +141,12 @@ export interface NodeConfig {
    * default while it rolls out; off, turns are decided by the players' reports agreeing.
    */
   resolveTurns: boolean
+  /**
+   * `SEAT_VIEWS`: play every match created from now on from per-seat views, so that each seat is
+   * sent only what the original shows that player (docs/MULTIPLAYER.md, "Per-seat views"). Needs
+   * `RESOLVE_TURNS`, since the server then resolves every turn alone. Off by default.
+   */
+  seatViews: boolean
   /** `RESOLVER_MAX_MATCHES`: matches the resolver holds at once; unset is the package default. */
   resolverMaxMatches: number | undefined
   /** `RESOLVER_MANAGED_HEAP_MIB`: the resolver's managed heap budget; unset is the default. */
@@ -210,6 +216,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
     ...requestTimeouts(env),
     corsOrigins: configList(env.CORS_ORIGINS),
     resolveTurns: configFlag(env.RESOLVE_TURNS, false),
+    seatViews: configFlag(env.SEAT_VIEWS, false),
     resolverMaxMatches: optionalInteger(env.RESOLVER_MAX_MATCHES, 1),
     resolverManagedHeapMib: optionalInteger(env.RESOLVER_MANAGED_HEAP_MIB, 1),
   }

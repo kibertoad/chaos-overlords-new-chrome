@@ -39,6 +39,14 @@ export interface Match {
    * takes the seat; gaps in that order carry no meaning.
    */
   joinCounter: number
+  /**
+   * Whether the match is played from per-seat views (docs/MULTIPLAYER.md, "Per-seat views"): the
+   * server resolves every turn and serves each seat only what the original shows that player, and
+   * withholds the seed, other seats' orders and whole-match snapshots until the match ends.
+   * Stamped at creation from the deployment's `SEAT_VIEWS` setting and never changed, so a match
+   * keeps one mode for its life.
+   */
+  seatViews: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -199,6 +207,7 @@ export type SnapshotSummary = Omit<Snapshot, 'body'>
  *
  * `playerCount` is already the count the reader wants — seats taken for a lobby, humans still in
  * the match for a running one — and `hasSnapshot` answers "could a late joiner bootstrap here"
+ * (a snapshot is stored, or the match is played from views, which a late joiner is sent instead)
  * without a second read. The listing is unauthenticated and rate limited per address, and it used
  * to cost up to two extra queries for every running match it returned.
  */
@@ -248,6 +257,14 @@ export function humanParticipants(players: readonly Player[]): Player[] {
 }
 
 /** A started match that has not ended. A desync pause counts: the match resumes from it. */
+/**
+ * Whether a match played from views has ended, so that nothing in it is hidden any more: the seed,
+ * every seat's sealed sets and the whole state are released to its members.
+ */
+export function isConcluded(match: Pick<Match, 'status'>): boolean {
+  return match.status === 'finished' || match.status === 'abandoned'
+}
+
 export function isInProgress(match: Pick<Match, 'status'>): boolean {
   return match.status === 'running' || match.status === 'desynced'
 }

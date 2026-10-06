@@ -107,6 +107,7 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonSerializable(typeof(SealedPlayerOrders))]
 [JsonSerializable(typeof(SealedOrdersView))]
 [JsonSerializable(typeof(SnapshotView))]
+[JsonSerializable(typeof(ServedSeatView))]
 [JsonSerializable(typeof(LobbyList))]
 [JsonSerializable(typeof(MatchVisibility))]
 [JsonSerializable(typeof(MatchSettings))]

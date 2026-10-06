@@ -220,6 +220,11 @@ describe('node runtime turn resolver', () => {
     expect(() => loadConfig({ RESOLVER_MAX_MATCHES: '0' })).toThrow(/at least 1/)
   })
 
+  it('reads SEAT_VIEWS as off unless it is set', () => {
+    expect(loadConfig({}).seatViews).toBe(false)
+    expect(loadConfig({ SEAT_VIEWS: 'true' }).seatViews).toBe(true)
+  })
+
   it.skipIf(!bundleBuilt)('starts the WebAssembly resolver when RESOLVE_TURNS is set', async () => {
     const runtime = await buildNodeRuntime(
       loadConfig({ DATABASE_URL: 'sqlite::memory:', LOG_LEVEL: 'error', RESOLVE_TURNS: 'true' }),
@@ -232,6 +237,87 @@ describe('node runtime turn resolver', () => {
       await runtime.close()
     }
   })
+
+  it.skipIf(!bundleBuilt)(
+    'serves each seat its view from the WebAssembly resolver when SEAT_VIEWS is set',
+    async () => {
+      const runtime = await buildNodeRuntime(
+        loadConfig({
+          DATABASE_URL: 'sqlite::memory:',
+          LOG_LEVEL: 'error',
+          RESOLVE_TURNS: 'true',
+          SEAT_VIEWS: 'true',
+        }),
+      )
+      const server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
+      await new Promise<void>((resolve) => server.once('listening', () => resolve()))
+      const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+      try {
+        const call = async (
+          path: string,
+          init: { method?: string; body?: unknown; token?: string },
+        ) => {
+          const response = await fetch(`${baseUrl}/api/v1${path}`, {
+            method: init.method ?? 'GET',
+            headers: {
+              'content-type': 'application/json',
+              ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
+            },
+            ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+          })
+          const text = await response.text()
+          // oxlint-disable-next-line typescript/no-explicit-any
+          return { status: response.status, body: (text ? JSON.parse(text) : null) as any }
+        }
+        const created = await call('/matches', {
+          method: 'POST',
+          body: {
+            settings: {
+              name: 'Views',
+              maxPlayers: 2,
+              turnTimerSeconds: 0,
+              visibility: 'private',
+              // The settings the game sends: the resolver builds the city from them.
+              gameSettings: {
+                scenario: 0,
+                duration: 0,
+                aiMentality: 1,
+                portraits: [0, 1, 2, 3, 4, 5],
+              },
+            },
+            hostDisplayName: 'Ada',
+            sessionVersion: MULTIPLAYER_SESSION_VERSION,
+          },
+        })
+        expect(created.body.match.seatViews).toBe(true)
+        const guest = await call('/matches/join', {
+          method: 'POST',
+          body: { joinCode: created.body.joinCode, displayName: 'Grace' },
+        })
+        const matchId = created.body.match.id
+        expect(
+          (await call(`/matches/${matchId}/start`, { method: 'POST', token: created.body.token }))
+            .status,
+        ).toBe(204)
+
+        const view = await call(`/matches/${matchId}/view`, { token: guest.body.token })
+        expect(view.status).toBe(200)
+        expect(view.body).toMatchObject({
+          turn: 1,
+          slot: 1,
+          sessionVersion: MULTIPLAYER_SESSION_VERSION,
+        })
+        // The archive snapshots travel in: `RCHS`, then the compressed save payload.
+        expect(Buffer.from(view.body.body, 'base64').subarray(0, 4).toString('latin1')).toBe('RCHS')
+        expect(
+          (await call(`/matches/${matchId}`, { token: guest.body.token })).body.match.seed,
+        ).toBe(null)
+      } finally {
+        await new Promise<void>((resolve) => server.close(() => resolve()))
+        await runtime.close()
+      }
+    },
+  )
 
   it('runs without a resolver unless one is asked for', async () => {
     const runtime = await buildNodeRuntime(

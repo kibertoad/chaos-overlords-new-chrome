@@ -13,7 +13,9 @@
 // turn.readiness), as the server's does.
 //
 // At the end, a match picked up from the snapshot after turn 10 folds the whole log from its start,
-// as a reconnecting client does (MatchHistory), and must reach the final hash too.
+// as a reconnecting client does (MatchHistory), and must reach the final hash too. The snapshot step
+// also carries each human seat's view of the turn after it (SeatView), which a host must serve byte
+// for byte.
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rechaos.Core.Assets;
@@ -113,12 +115,23 @@ while (client.State.Outcome is null && client.State.Coordinator.Turn <= turns)
         // A resolver that lost its runtime picks the match up from its own snapshot.
         checkpoint = resolver.Snapshot();
         checkpointHash = resolver.StateHash;
+        // Each human seat's view of turn 11, as the core projects it from the client's state: what a
+        // server playing the match from views serves that seat.
+        var seatViews = new JsonObject();
+        foreach (var player in players)
+        {
+            using var view = new MemoryStream();
+            SeatView.Save(view, SeatView.Project(client.State, new PlayerId(player.Slot)));
+            seatViews[player.Slot.ToString(System.Globalization.CultureInfo.InvariantCulture)] =
+                Convert.ToBase64String(view.ToArray());
+        }
         steps.Add(new JsonObject
         {
             ["kind"] = "snapshot",
             ["savePayload"] = Convert.ToBase64String(resolver.SavePayload()),
             ["archive"] = checkpoint,
             ["hash"] = checkpointHash,
+            ["seatViews"] = seatViews,
         });
     }
 }
