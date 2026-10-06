@@ -139,6 +139,8 @@ public sealed class NativeFinalViewHandlerTests
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
         GC.SuppressFinalize(game);
+        // The light reads the current screen, which the uninitialized game leaves unset.
+        Field("_screens").SetValue(game, new ScreenRouter());
         var method = typeof(ChaosGame).GetMethod("PlanningLightLit", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new MissingMethodException(nameof(ChaosGame), "PlanningLightLit");
         return (bool)method.Invoke(game, [state, player])!;
