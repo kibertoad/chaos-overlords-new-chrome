@@ -151,6 +151,9 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | builds |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | builds |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | builds |
+| [EXP-TURN-106](../experiments/EXP-TURN-106.md) | builds |
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | builds |
+| [EXP-TURN-108](../experiments/EXP-TURN-108.md) | builds |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | builds |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | builds |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | builds |
@@ -1286,6 +1289,9 @@ None.
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | body |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | body |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | body |
+| [EXP-TURN-106](../experiments/EXP-TURN-106.md) | body |
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
+| [EXP-TURN-108](../experiments/EXP-TURN-108.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [EXP-UI-004](../experiments/EXP-UI-004.md) | body |
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | body |
@@ -1742,6 +1748,8 @@ None.
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
+| [EXP-TURN-106](../experiments/EXP-TURN-106.md) | body |
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | evidence |
 | [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
@@ -1760,6 +1768,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | body, evidence |
@@ -2257,6 +2266,36 @@ None.
 | [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | body, evidence |
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, evidence |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | body, evidence |
+
+## EXP-TURN-106
+
+| Cited by | In |
+|---|---|
+| [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
+
+## EXP-TURN-107
+
+| Cited by | In |
+|---|---|
+| [EXP-TURN-108](../experiments/EXP-TURN-108.md) | body |
+| [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
+| [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | evidence |
+| [RULE-EVENT-006](../rules/RULE-EVENT-006.md) | evidence |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
+
+## EXP-TURN-108
+
+| Cited by | In |
+|---|---|
+| [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
+| [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
+| [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | evidence |
+| [RULE-OBJECTIVE-004](../rules/RULE-OBJECTIVE-004.md) | evidence |
 
 ## EXP-UI-001
 
@@ -8511,6 +8550,9 @@ None.
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
+| [EXP-TURN-106](../experiments/EXP-TURN-106.md) | body |
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
+| [EXP-TURN-108](../experiments/EXP-TURN-108.md) | body |
 | glossary: award_least | glossary |
 | glossary: award_most | glossary |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body, related |
@@ -8523,6 +8565,9 @@ None.
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
+| [EXP-TURN-106](../experiments/EXP-TURN-106.md) | body |
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
+| [EXP-TURN-108](../experiments/EXP-TURN-108.md) | body |
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, related |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, related |
@@ -8782,6 +8827,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | related |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | body, related |
 | [RULE-EVENT-004](../rules/RULE-EVENT-004.md) | body, related |
@@ -8829,6 +8875,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
 | glossary: SiteCooperationAchieved | glossary |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | body |
 | [RULE-INFLUENCE-001](../rules/RULE-INFLUENCE-001.md) | body |
@@ -9088,6 +9135,9 @@ None.
 | [EXP-TURN-037](../experiments/EXP-TURN-037.md) | body |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
+| [EXP-TURN-106](../experiments/EXP-TURN-106.md) | body |
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
+| [EXP-TURN-108](../experiments/EXP-TURN-108.md) | body |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | body |
 | [RULE-OBJECTIVE-003](../rules/RULE-OBJECTIVE-003.md) | body |
@@ -9103,6 +9153,9 @@ None.
 | [EXP-TURN-038](../experiments/EXP-TURN-038.md) | body |
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
+| [EXP-TURN-106](../experiments/EXP-TURN-106.md) | body |
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
+| [EXP-TURN-108](../experiments/EXP-TURN-108.md) | body |
 | glossary: completed_site_support | glossary |
 | glossary: owned_sector_count | glossary |
 | [RULE-AI-010](../rules/RULE-AI-010.md) | related |
@@ -9125,6 +9178,9 @@ None.
 | [EXP-TURN-039](../experiments/EXP-TURN-039.md) | body |
 | [EXP-TURN-041](../experiments/EXP-TURN-041.md) | body |
 | [EXP-TURN-058](../experiments/EXP-TURN-058.md) | body |
+| [EXP-TURN-106](../experiments/EXP-TURN-106.md) | body |
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
+| [EXP-TURN-108](../experiments/EXP-TURN-108.md) | body |
 | glossary: dominance_points | glossary |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | body, related |
 | [RULE-OBJECTIVE-002](../rules/RULE-OBJECTIVE-002.md) | related |
@@ -9133,6 +9189,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | body |
 | [EXP-UI-018](../experiments/EXP-UI-018.md) | body |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | body |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | body, related |

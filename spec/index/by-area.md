@@ -285,6 +285,9 @@
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? | recorded |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? | recorded |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? | recorded |
+| [EXP-TURN-106](../experiments/EXP-TURN-106.md) | Does a six-month Power match at Criminal end with the same scores, ranking and awards, a tie for the lead included? | recorded |
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | Does a Big 40 match at Goon end on the turn a computer player takes its fortieth sector? | recorded |
+| [EXP-TURN-108](../experiments/EXP-TURN-108.md) | Does an Armageddon match at Goon end on the turn a computer player holds all 64 sectors? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
