@@ -316,8 +316,10 @@ Cloudflare suite runs on an older workerd build than the workspace's `wrangler`,
 runtime a deployment gets. After the unit tests it plays a real match with the headless game
 (`tools/OnlineSmoke`) twice: against the Node server, and against the Worker served by the
 workspace's `wrangler dev` in local mode (local D1, R2 and Durable Objects, no Cloudflare account).
-The Worker run also fails when the Worker logs an error or a failed call to the match's Durable
-Object, since the lobby requests succeed even when the object behind them is broken. To run it by
+The Worker run also fails when the Worker logs an error, a call to the match's Durable Object that
+failed or that the object answered with an error status, an event stream the server dropped, or an
+uncaught exception, since the lobby requests succeed even when the object behind them is broken. To
+run it by
 hand, with the .NET SDK installed:
 
 ```sh
@@ -331,8 +333,8 @@ dotnet run --project ../../../tools/OnlineSmoke/OnlineSmoke.csproj -- http://loc
 The pool's wrangler and miniflare are not overridden to the workspace's. A pnpm override of both
 does pass the suite today, but the pool is built and released against the miniflare it pins, and
 Dependabot updates `wrangler` in `package.json` without touching an override, so every bump would
-either leave the override behind or put the pool on a pairing nobody released. The gap closes on its
-own when a pool release pins a newer wrangler.
+either leave the override behind or put the pool on a pairing nobody released. A pool release that
+pins a newer wrangler narrows the gap, and the next `wrangler` bump in `package.json` opens it again.
 
 Rules that keep the two runtimes honest:
 

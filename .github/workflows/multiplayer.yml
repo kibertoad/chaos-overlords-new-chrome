@@ -133,8 +133,8 @@ jobs:
         run: |
           wrangler=./node_modules/.bin/wrangler
           "$wrangler" --version
-          "$wrangler" d1 migrations apply chaos_overlords_dev --local --config wrangler.dev.toml
-          "$wrangler" d1 migrations apply chaos_overlords_bug_reports_dev --local --config wrangler.dev.toml
+          pnpm db:migrate:local
+          pnpm db:migrate:bugs:local
           log="${RUNNER_TEMP}/worker-server.log"
           "$wrangler" dev --config wrangler.dev.toml --local --ip 127.0.0.1 --port 8788 >"$log" 2>&1 &
           server_pid=$!
@@ -147,15 +147,22 @@ jobs:
             fi
             sleep 1
           done
-          curl --fail http://127.0.0.1:8788/health
+          if ! curl --fail http://127.0.0.1:8788/health; then
+            cat "$log"
+            exit 1
+          fi
           if ! dotnet run --project ../../../tools/OnlineSmoke/OnlineSmoke.csproj -- http://127.0.0.1:8788 3; then
             cat "$log"
             exit 1
           fi
           # The Worker reaches a match's Durable Object on a best-effort path that logs a failure and
-          # carries on, so the lobby half of the match can pass with a broken object behind it. A clean
-          # run logs neither of these.
-          if grep -a -e '"level":"error"' -e 'could not reach the match hub' "$log"; then
+          # carries on, so the lobby half of the match can pass with a broken object behind it. The
+          # object's own failures show up as a call it refused, a stream it dropped, or an exception
+          # that wrangler reports as `[ERROR]` or `Uncaught` rather than through the Worker's JSON
+          # logger. A clean run logs none of these.
+          if grep -a -e '"level":"error"' -e 'could not reach the match hub' \
+            -e 'the match hub refused a call' \
+            -e 'event stream dropped by the server' -e '\[ERROR\]' -e 'Uncaught' "$log"; then
             echo "The Worker logged errors during the match. Full log:"
             cat "$log"
             exit 1
