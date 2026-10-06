@@ -295,7 +295,7 @@
 
 ## recorded
 
-527 entries.
+530 entries.
 
 | ID | Title |
 |---|---|
@@ -423,6 +423,8 @@
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? |
+| [EXP-TURN-100](../experiments/EXP-TURN-100.md) | Does the Move repair's neighbour draw from corner sector 56 draw again when only the test of the western edge refuses the result? |
+| [EXP-TURN-101](../experiments/EXP-TURN-101.md) | Where does a family-13 or family-14 computer gang move in a scenario without objective sectors? |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? |

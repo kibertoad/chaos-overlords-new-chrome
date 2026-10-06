@@ -4,7 +4,7 @@ title: Sector selector mode 0 picks a random neighbouring sector
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-AI-028, FND-MOVE-003, FND-EXE-004, EXP-TURN-097, EXP-TURN-098, EXP-TURN-099]
+evidence: [FND-AI-005, FND-AI-028, FND-MOVE-003, FND-EXE-004, EXP-TURN-097, EXP-TURN-098, EXP-TURN-099, EXP-TURN-100]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -62,7 +62,15 @@ row or leaves the city.
   and 0: draws north of the city, south of it and past its eastern and western
   edges are drawn again, and a drawn sector that the mover then crowds sends
   it back for another draw. Every western draw of EXP-TURN-099 gives a sector
-  below 0, which the range test refuses as well.
+  below 0, which the range test refuses as well. EXP-TURN-100 draws from
+  corner sector 56: offset -1 gives sector 55 and +7 gives sector 63, both in
+  the city, and the column test alone refuses them.
+- No draw can be refused by the test of the city's northern or southern edge
+  alone. From row 0 every northern offset gives a sector below 0 except -7
+  from sector 7, whose result, sector 0, the column test refuses as well; from
+  row 7 every southern offset gives a sector above 63 except +7 from sector
+  56, which the column test refuses as well. The range test 0 to 63 is the
+  only test of those edges a run can show.
 - `fn_00476A94`, the Move-capacity repair, stores the result as the gang's new
   destination (RULE-MOVE-002) [FND-MOVE-003].
 - FND-MOVE-001 described this call as one draw over all 64 sectors followed by
@@ -80,9 +88,6 @@ None known.
 
 ## Open questions
 
-- No run has made a draw that only the test of the western edge refuses (from
-  a sector in column 0, an offset of -9, -1 or +7 that stays within 0 to 63),
-  so that test rests on FND-MOVE-003 alone.
 - Which records, if any, bring an owner byte below -1 through a block read is
   not recorded [FND-MOVE-007]. No run has reached the owner test either, so
   the status stays `supported` until runs reach both tests.
