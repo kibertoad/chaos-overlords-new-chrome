@@ -156,6 +156,10 @@ internal static class OriginalAddresses
     // Each waits until its Exit (137, 293, 49, 22) is pressed.
     public const uint CombatResults = 0x00451F80;
     public const uint LastTurnEvents = 0x0044F2FC;
+    // FND-UI-061: each handler calls the panel-open helper once, at these calls, only on the branch
+    // that shows its panel, and before it waits for input.
+    public const uint CombatResultsSlideIn = 0x00452146;
+    public const uint LastTurnEventsSlideIn = 0x0044F3D1;
     public const int PanelExitX = 137 + 24;
     public const int PanelExitY = 293 + 11;
 

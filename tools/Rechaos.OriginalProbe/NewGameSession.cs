@@ -103,8 +103,9 @@ internal sealed record ProbeClick(int X, int Y)
 
 /// <summary>
 /// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
-/// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
-/// Combat Results function returns at once when no fight qualifies.
+/// roll count when it was called, and whether it showed its panel, which a call does when it
+/// reaches its call of the panel-open helper (FND-UI-061). A call with nothing to show returns
+/// at once.
 /// </summary>
 internal sealed record PanelRecord(string Panel, int AfterRoll, bool Shown);
 
@@ -265,7 +266,8 @@ internal sealed partial class NewGameSession(
     private int _seed = -1;
     private bool _setupReached;
     private int _panelsOpen;
-    private int _exitPresses;
+    // The indices in _panels of the panel calls whose handler has not returned, innermost last.
+    private readonly List<int> _openPanelCalls = [];
     private readonly List<PanelRecord> _panels = [];
     // The panel calls as they stood at the dump: presses made after it, such as a hire step's
     // Exit, close panels and open others that belong to no planning entry of the run.
@@ -301,6 +303,8 @@ internal sealed partial class NewGameSession(
         if (settings.WhiteKey) _process.SetBreakpoint(OriginalAddresses.KeyColourCall, UseThirtyTwoBitKey, quiet: true);
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
+        _process.SetBreakpoint(OriginalAddresses.CombatResultsSlideIn, _ => PanelShown("Combat Results"));
+        _process.SetBreakpoint(OriginalAddresses.LastTurnEventsSlideIn, _ => PanelShown("Last Turn Events"));
         if (settings.Finance is { Count: > 0 })
         {
             _process.SetBreakpoint(OriginalAddresses.FinancePanel, OnFinancePanel);
@@ -596,28 +600,51 @@ internal sealed partial class NewGameSession(
                && quiet > TimeSpan.FromSeconds(8);
     }
 
+    // Kept in the order of the calls, as not shown until the handler reaches its call of the
+    // panel-open helper (FND-UI-061), whatever closes the panel afterwards.
     private void OpenPanel(BreakContext context, string panel)
     {
         _panelsOpen++;
         _notes.Add($"{panel} opened after roll {_rolls.Count}");
-        var presses = _exitPresses;
-        // Kept in the order of the calls. A panel still open when the run ends was shown at the
-        // last planning entry, so it stays marked shown until its handler returns.
         var index = _panels.Count;
-        _panels.Add(new PanelRecord(panel, _rolls.Count, true));
+        _panels.Add(new PanelRecord(panel, _rolls.Count, false));
+        _openPanelCalls.Add(index);
         _process.SetBreakpoint(context.ReturnAddress, _ =>
         {
             _panelsOpen--;
-            _panels[index] = _panels[index] with { Shown = _exitPresses > presses };
+            _openPanelCalls.Remove(index);
         }, oneShot: true);
     }
 
-    // Presses Exit until every panel handler that opened has returned.
+    // FND-UI-061: the innermost open call of the panel has reached its slide-in.
+    private void PanelShown(string panel)
+    {
+        for (var at = _openPanelCalls.Count - 1; at >= 0; at--)
+        {
+            var index = _openPanelCalls[at];
+            if (_panels[index].Panel != panel) continue;
+            _panels[index] = _panels[index] with { Shown = true };
+            return;
+        }
+        _notes.Add($"{panel} slid in after roll {_rolls.Count} with no call of its handler open");
+    }
+
+    // Presses Exit until every panel handler that opened has returned. FND-UI-061: Last Turn Events
+    // is a call of its own that the planning entry makes after Combat Results has returned, so once
+    // a press has closed a panel the probe waits for the next one to open or for the planning loop
+    // to run before it counts the panels closed.
     private bool ClosePanels(IntPtr window)
     {
-        for (var attempt = 0; _panelsOpen > 0 && attempt < 10; attempt++)
+        for (var attempt = 0; attempt < 10; attempt++)
         {
-            _exitPresses++;
+            if (_panelsOpen == 0)
+            {
+                if (attempt == 0) return true;
+                var loopReached = false;
+                _process.SetBreakpoint(OriginalAddresses.PlanningTimeCheck, _ => loopReached = true, oneShot: true);
+                _process.RunUntil(() => loopReached || _panelsOpen > 0, TimeSpan.FromSeconds(3));
+                if (_panelsOpen == 0) return true;
+            }
             Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
             _process.RunUntil(() => _panelsOpen == 0, TimeSpan.FromSeconds(3));
         }
@@ -627,8 +654,7 @@ internal sealed partial class NewGameSession(
 
     // An Exit press of a step after the dump. With no panel open the Exit point lies on the city
     // map, where a press would select a sector and a second one open the sector view, so the
-    // press is skipped. A press that closes a panel counts as for ClosePanels, so the panel is
-    // recorded as shown.
+    // press is skipped.
     private void PressExitAfterDump(IntPtr window)
     {
         if (_panelsOpen == 0)
@@ -636,7 +662,6 @@ internal sealed partial class NewGameSession(
             _notes.Add("exit after the dump skipped: no panel was open");
             return;
         }
-        _exitPresses++;
         Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
     }
 
@@ -645,9 +670,14 @@ internal sealed partial class NewGameSession(
     {
         _awardsReached = true;
         _endgame = new EndgameDrawing([context.Argument(0), context.Argument(1), context.Argument(2)], [], []);
-        // Set only now: the helper draws every text of the game.
+        // Set only now and removed once the drawing returns: the helper draws every text of the
+        // game, so left in place it would stop the game at each text drawn after the endgame.
         _process.SetBreakpoint(OriginalAddresses.TextDraw, OnTextDraw);
-        _process.SetBreakpoint(context.ReturnAddress, _ => _endgameDrawn = true, oneShot: true);
+        _process.SetBreakpoint(context.ReturnAddress, _ =>
+        {
+            _endgameDrawn = true;
+            _process.RemoveBreakpoint(OriginalAddresses.TextDraw, OnTextDraw);
+        }, oneShot: true);
     }
 
     private void OnTextDraw(BreakContext context)

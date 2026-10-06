@@ -585,6 +585,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-057](../findings/FND-UI-057.md) | builds, locations |
 | [FND-UI-058](../findings/FND-UI-058.md) | builds, locations |
 | [FND-UI-059](../findings/FND-UI-059.md) | body, builds, locations |
+| [FND-UI-061](../findings/FND-UI-061.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -4353,6 +4354,7 @@ None.
 | [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | body |
 | [FND-COMBAT-012](../findings/FND-COMBAT-012.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
+| [FND-UI-061](../findings/FND-UI-061.md) | body |
 | [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
 
 ## FND-COMBAT-008
@@ -4906,6 +4908,7 @@ None.
 | [FND-EVENT-002](../findings/FND-EVENT-002.md) | body |
 | [FND-EVENT-003](../findings/FND-EVENT-003.md) | body |
 | [FND-POLICE-002](../findings/FND-POLICE-002.md) | body |
+| [FND-UI-061](../findings/FND-UI-061.md) | body |
 | glossary: BribeCashShort | glossary |
 | glossary: ControlGainedReport | glossary |
 | glossary: ControlLostReport | glossary |
@@ -5156,6 +5159,7 @@ None.
 | [FND-UI-047](../findings/FND-UI-047.md) | body |
 | [FND-UI-048](../findings/FND-UI-048.md) | body |
 | [FND-UI-050](../findings/FND-UI-050.md) | body |
+| [FND-UI-061](../findings/FND-UI-061.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -7270,6 +7274,7 @@ None.
 | [FND-UI-023](../findings/FND-UI-023.md) | body |
 | [FND-UI-056](../findings/FND-UI-056.md) | body |
 | [FND-UI-057](../findings/FND-UI-057.md) | body |
+| [FND-UI-061](../findings/FND-UI-061.md) | body |
 | glossary: blit_benchmark_count | glossary |
 | glossary: PanelSlideDrawn | glossary |
 | glossary: pref_slide_panels | glossary |
@@ -7835,6 +7840,10 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## FND-UI-061
+
+None.
 
 ## FND-UPKEEP-001
 
