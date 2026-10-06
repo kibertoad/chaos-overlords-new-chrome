@@ -178,6 +178,23 @@ pixel except where a documented interface change draws something new. When a
 bug cannot be told from a design decision, the original behaviour stays and any
 fix becomes a setting.
 
+## Runs of the original
+
+Running the original game is part of the normal work here and needs no
+approval beyond the task itself. When a change needs a dynamic finding, an
+experiment or a capture, run the original through
+`tools/Rechaos.OriginalProbe` (`docs/VALIDATION.md`) without asking first. That includes posting input to
+its window, capturing its screen, and reading or writing its process memory to
+set up a state a run needs, as long as the experiment entry records every
+write.
+
+Run the staged copy of the executable that `docs/VALIDATION.md` describes,
+not the one in the installation at `C:\GOG Games\Chaos Overlords`, and leave
+the installation and the registry unchanged. Only one process may run
+the original on this machine at a time, and agents working on other games may
+share it, so wait until no `Chaos Overlords` process is running before starting
+one and stop your own when the runs are done.
+
 ## Multiplayer protocol version
 
 Keep `MULTIPLAYER_PROTOCOL_VERSION` in
