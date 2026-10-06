@@ -1,6 +1,7 @@
-# Installs the pinned Kaitai Struct compiler and points `KSC` at it, so `tools/check-spec.mjs`
-# compiles every `.ksy` definition in spec/formats/. AGENTS.md promises that in CI the definitions
-# always compile, and check-spec now fails when CI is set and no compiler is found, so every
+# Installs the pinned Kaitai Struct compiler and points `KSC` at it, so the documentation checker
+# (`tools/check-documentation.mjs`) compiles every `.ksy` definition in spec/formats/. AGENTS.md
+# promises that in CI the definitions always compile, and the checker fails when CI is set and no
+# compiler is found, so every
 # workflow that runs `tools/Invoke-Validation.ps1` uses this action first and passes its `ksc`
 # output to that step as `KSC`. The path is an output rather than a GITHUB_ENV write, which would
 # hand every later step of the job whatever the step wrote there.

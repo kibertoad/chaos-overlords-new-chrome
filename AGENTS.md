@@ -67,8 +67,8 @@ methodology and the work protocol as published at refurbished-dinosaurs
 after its ID: builds (`BLD-`), sources (`SRC-`), findings (`FND-`),
 experiments (`EXP-`), formats (`FMT-`, binary ones with a Kaitai `.ksy`
 definition next to them), rules (`RULE-`), bugs (`BUG-`) and screens (`SCR-`).
-`spec/README.md` holds the scope and the area list, `spec/glossary.md` the terms
-the pseudocode uses, and `docs/SPEC-ENTRY-TEMPLATES.md` a blank entry of each
+`spec/README.md` holds the scope and the area list, `spec/glossary/` the terms
+the pseudocode uses (one file per term), and `docs/SPEC-ENTRY-TEMPLATES.md` a blank entry of each
 kind. The spec never names a class, file or setting of the rebuild, and never
 reproduces content: texts, images, sounds, or the names and statistics of
 individual gangs, items and sites. Constants the code does arithmetic with are
@@ -106,8 +106,8 @@ the repository. Tool procedure is in `docs/GHIDRA.md`.
 
 ### The rebuild's ledgers
 
-- `DEVIATIONS.md` lists every place the rebuild departs from the spec on
-  purpose, as `DEV-AREA-NNN` entries with a Default of `off`, `on` or
+- `deviations/` lists every place the rebuild departs from the spec on
+  purpose, one `DEV-AREA-NNN` entry per file, with a Default of `off`, `on` or
   `mandatory`. A setting starts `off`, with the original's behaviour, unless the
   entry's Justification argues that the rebuild's behaviour is strictly better:
   then it starts `on`, and a player who wants the original switches it off. A
@@ -117,35 +117,46 @@ the repository. Tool procedure is in `docs/GHIDRA.md`.
   deliberate or that players rely on is never strictly better, so its deviation
   starts `off`. The validation suite runs with every setting switched off, and a
   test that reaches a mandatory deviation cites its ID and allows for it.
-- `PARITY.md` has one row per rule, format and screen entry that is not
+  Default always describes the deviation, never the option it is carried by:
+  when the deviation is to start an option off that the original starts on, the
+  Setting item says the setting is inverted and which value is the original's.
+- `parity/<AREA>.md` has one row per rule, format and screen entry that is not
   superseded, with how much of it the rebuild does and which tests compare the
   rebuild with evidence from the original. Behaviour without a spec entry gets
   an `unknown` entry before any code. Manual play never counts as a test.
   A complete row that a `mandatory` deviation's Replaces item names, because
   nothing of it is left to compare with the original, is `deviated` once each
   `mandatory` deviation it lists has a Tests item naming the tests that check
-  the rebuild does what the deviation's Reason says.
+  the rebuild does what the deviation's Reason says. `PARITY.md` at the root is
+  generated from these files and is not edited by hand.
+- `VALIDATION.md` records the SHA-256 of each test file of a `validated` row
+  that carries a `needs: GAME_DIR` comment, as it was when its tests last
+  passed against the original's files. After changing such a file, commit,
+  run its tests with `GAME_DIR` set (all must pass, none skipped) and record
+  them with `node tools/check-documentation.mjs --record-validation
+  BLD-GOG-EN-1.1`, which needs a clean tree, then commit `VALIDATION.md`.
 - `docs/DECISIONS.md` keeps dated product and scope decisions that are not
   departures from the original (network play, saves, bug reports).
 
 Code comments and tests cite the spec IDs they implement or check. A
 placeholder, such as a guessed formula, carries a `PLACEHOLDER: <spec ID>`
-comment, and that row of `PARITY.md` cannot be `complete` while it does.
+comment, and that row of `parity/` cannot be `complete` while it does.
 
 ### Checks
 
-`node tools/check-spec.mjs` runs the standard's checks over `spec/`,
-`PARITY.md` and `DEVIATIONS.md`, checks that every spec and deviation ID cited
-in the code resolves and that every executable address a code comment in a
-`.cs`, `.ts`, `.js` or `.mjs` file gives (`0x…` inside the image, `fn_…` or
-`g_…`) is recorded in an entry the comment cites or in its evidence, as the
-toolkit's documentation check does, and
-rewrites the generated indexes in `spec/index/`;
-`--check` fails on a stale index instead of writing it. It compiles the Kaitai
-definitions when `kaitai-struct-compiler` (or the path in `KSC`) is available;
-the CI fast gate installs a pinned release, so there they always compile.
-The script is written to move into the shared toolkit.
-`node tools/spec-coverage.mjs` writes `spec/index/functions.md`, which lists
+`node tools/check-documentation.mjs` runs the shared toolkit's checker
+(`@scientific-method/standard-checker`, pinned in the root `package.json`;
+run `pnpm install` at the root first) with this game's settings: the
+executable image's extent and `multiplayer/` as a directory that may cite IDs.
+It runs the standard's checks over `spec/`, `parity/` and `deviations/`, checks
+that every spec and deviation ID cited in the code resolves and that every
+executable address a code comment gives (`0x…` inside the image, `fn_…` or
+`g_…`) is recorded in an entry the comment cites or in its evidence, and
+rewrites `PARITY.md` and the generated indexes in `spec/index/`; `--check`
+fails on a stale one instead of writing it. It compiles the Kaitai definitions
+when `kaitai-struct-compiler` (or the path in `KSC`) is available; in CI it
+requires the compiler, and the workflows install a pinned release.
+`node tools/spec-coverage.mjs` writes `docs/FUNCTION-INDEX.md`, which lists
 every game function of FND-EXE-004 with the entries that cite it (`--check`
 fails on a stale index); with `--inventory <file>` it also reports what the
 spec leaves uncovered, from an inventory written by
@@ -160,7 +171,8 @@ blocks and broken relative links without writing). The fast gate
 `node` is on the path and requires them in CI, so a stale block, a broken link
 or a spec problem fails validation after the tests have run.
 `.githooks/pre-commit` runs the same three checks on the staged tree before
-every commit, in a few seconds. Enable it once in each clone, before the first commit, with
+every commit, in a few seconds, and lets a missing or stale `VALIDATION.md`
+record through, since the record can only be written after the commit. Enable it once in each clone, before the first commit, with
 `git config core.hooksPath .githooks`; do not bypass it with `--no-verify`.
 `docs/ASSET-CATALOG.md` is generated by `Rechaos.Extractor --catalog` and is
 not edited by hand.
