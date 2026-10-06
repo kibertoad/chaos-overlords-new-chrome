@@ -108,9 +108,10 @@ public sealed partial class OriginalNewGameExperimentTests
     // milliseconds of its start and return on the clock the run's ticks are timed with.
     private sealed record RecordedWait(int Ticks, int Call, long Started, long Returned);
 
-    // A slide-in of the panel-open helper (FND-UI-011): the benchmark count it read, its travel and
-    // the offset of each copy.
-    private sealed record RecordedSlide(int Benchmark, int Travel, IReadOnlyList<int> Offsets);
+    // A slide-in of the panel-open helper (FND-UI-011): the return address of the helper's call,
+    // which names the panel's handler (FND-UI-066), the benchmark count it read, its travel and the
+    // offset of each copy.
+    private sealed record RecordedSlide(int Caller, int Benchmark, int Travel, IReadOnlyList<int> Offsets);
 
     // A movie the intro played (FND-VIDEO-002): its name, its header's frame count, the movie
     // slot's frame counter at each frame shown, the milliseconds from the first movie's first frame
@@ -326,7 +327,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 : null;
             Slides = run.TryGetProperty("slides", out var slides)
                 ? slides.EnumerateArray().Select(slide => new RecordedSlide(
-                    slide.GetProperty("benchmark").GetInt32(), slide.GetProperty("travel").GetInt32(),
+                    slide.GetProperty("caller").GetInt32(), slide.GetProperty("benchmark").GetInt32(), slide.GetProperty("travel").GetInt32(),
                     slide.GetProperty("offsets").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
                 : null;
             // The inputs list every turn up to --end-turns, but a match that ends early presses

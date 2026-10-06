@@ -550,9 +550,10 @@ slot 0, and each call of the wait `fn_00464CD9` with its argument, the address
 of the call and the times it starts and returns (FND-TIMER-002). The fixture
 holds them as `ticks` and `waits` (RULE-TIMER-004, EXP-UI-024).
 `--slides` logs, from the dump on, each slide-in of the panel-open helper
-`fn_0041953E` with the startup benchmark count, the travel and the offset of
-each copy (FND-UI-011). The fixture holds them as `slides` (RULE-UI-003,
-EXP-UI-025).
+`fn_0041953E` with the return address of its call, the startup benchmark
+count, the travel and the offset of each copy (FND-UI-011). The fixture holds
+them as `slides`, the return address as `caller`, which FND-UI-066 maps to the
+panel's handler (RULE-UI-003, EXP-UI-025).
 `--saved turn:value,...` writes 0 or 1 to the saved byte `0x00498350`
 (FND-UI-058) before the Done press of that turn, or at the dump when the turn
 is one past the last, and records the value it replaced. `--closes

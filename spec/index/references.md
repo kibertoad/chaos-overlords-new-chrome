@@ -7885,7 +7885,10 @@ None.
 
 ## FND-UI-066
 
-None.
+| Cited by | In |
+|---|---|
+| [EXP-UI-025](../experiments/EXP-UI-025.md) | body |
+| [RULE-UI-003](../rules/RULE-UI-003.md) | evidence |
 
 ## FND-UPKEEP-001
 
