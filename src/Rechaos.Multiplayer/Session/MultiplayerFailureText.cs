@@ -39,6 +39,15 @@ public static class MultiplayerFailureText
             // own membership going away answers `invalid_token` — so it is not a membership reason.
             MultiplayerApiException { Reason: "unknown_player" } =>
                 "That player is no longer in this match.",
+            // The spectator door's own refusals (`SpectatorService`).
+            MultiplayerApiException { Reason: "spectating_disabled" } =>
+                "The host does not let anyone watch this match.",
+            MultiplayerApiException { Reason: "spectators_full" } =>
+                "This match has admitted as many spectators as it can.",
+            MultiplayerApiException { Reason: "turn_not_released" } =>
+                "The server has not released that turn to spectators yet.",
+            MultiplayerApiException { Reason: "unknown_spectator" } =>
+                "That spectator is no longer watching.",
             MultiplayerApiException { Reason: "unreadable_event" } =>
                 "The server holds a match event it cannot read, so this match cannot be resumed.",
             // A reserved display name is not in this list because it never reaches the server from

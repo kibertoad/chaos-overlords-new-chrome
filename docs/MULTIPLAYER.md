@@ -358,6 +358,18 @@ always has a state to start from.
 Both runtimes serve the same routes from the same app. The Cloudflare worker stores spectators in
 D1 through the same migrations, and neither runtime's event fan-out is involved.
 
+**In the game.** The host sets the delay on the lobby summary's SPECTATORS row, whose arrows step
+from off through 2 to 20 turns; the classic lobby has WATCH faces for the same choice. A player
+watches through WATCH A GAME on the connect form, or WATCH in the browser, which lists how far
+behind each watchable session is shown. `MultiplayerSpectatorWatch` polls every three seconds and
+hands the view a copy of the released state, which the game draws on the city screen for one seat
+at a time, with a panel over the command buttons that gives the turn shown, the turn the players
+are on and the delay. No order screen opens on it. Every seat can list the spectators from the
+lobby or the match's menu, and the host can remove one. A spectator's token is kept in
+`multiplayer-spectating.json` beside `multiplayer-recovery.json` and offered under UNFINISHED
+SESSIONS as WATCHING; it is a file of its own so a build that predates spectating never reads it
+as a seat.
+
 ## Bug reports: the same deployment, a different database
 
 The server also takes bug reports, at `POST /api/v1/bug-reports`. It is the same application and the

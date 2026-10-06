@@ -158,6 +158,9 @@ public sealed partial class ChaosGame
             case ClientScreen.Lobby:
                 DrawLobby(_batch, _pixel, _font);
                 break;
+            case ClientScreen.Spectate:
+                DrawSpectate(_batch, _pixel, _font);
+                break;
             case ClientScreen.City when _state is not null:
                 DrawBoard(_batch, _pixel, _font, _state);
                 break;
@@ -229,6 +232,7 @@ public sealed partial class ChaosGame
             DrawCombatPanel(batch, pixel, font, _state);
         DrawPlanningTimer(batch, pixel);
         DrawTakeoverVote(batch, pixel, font);
+        DrawSpectatorList(batch, pixel, font);
         DrawGameMenu(batch, pixel, font);
         DrawReconnectPopup(batch, pixel, font);
     }

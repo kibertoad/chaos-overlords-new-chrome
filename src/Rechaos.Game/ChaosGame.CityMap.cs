@@ -169,6 +169,8 @@ public sealed partial class ChaosGame
     /// </summary>
     private bool PlanningLightLit(MatchState state, MatchPlayerState player)
     {
+        // A spectator is shown released turns, whose planning is long over.
+        if (_screens.Current == ClientScreen.Spectate) return false;
         if (_session is null)
             return OverlordBarLayout.PlanningLightLit(
                 player.Setup.Controller == PlayerController.Human,

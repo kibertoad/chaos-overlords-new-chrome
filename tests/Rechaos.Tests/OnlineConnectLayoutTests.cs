@@ -123,11 +123,8 @@ public sealed class OnlineConnectLayoutTests
     [Fact]
     public void TheListingChoiceStandsWhereTheJoinCodeDoes()
     {
-        Assert.Equal(
-            (OnlineConnectLayout.HostRole.Width, OnlineConnectLayout.HostRole.Height),
-            (OnlineConnectLayout.PublicChoice.Width, OnlineConnectLayout.PublicChoice.Height));
+        Assert.Equal(OnlineConnectLayout.HostRole.Height, OnlineConnectLayout.PublicChoice.Height);
         Assert.Equal(OnlineConnectLayout.HostRole.X, OnlineConnectLayout.PublicChoice.X);
-        Assert.Equal(OnlineConnectLayout.JoinRole.X, OnlineConnectLayout.PrivateChoice.X);
         Assert.Equal(OnlineConnectLayout.PublicChoice.Y, OnlineConnectLayout.PrivateChoice.Y);
         Assert.False(OnlineConnectLayout.PublicChoice.Intersects(OnlineConnectLayout.PrivateChoice));
         Assert.True(OnlineConnectLayout.PublicChoice.Intersects(OnlineConnectLayout.JoinCode));
@@ -168,7 +165,7 @@ public sealed class OnlineConnectLayoutTests
                 OnlineConnectLayout.JoinCode, OnlineConnectLayout.PasteJoinCode,
                 OnlineConnectLayout.PublicChoice, OnlineConnectLayout.PrivateChoice,
                 OnlineConnectLayout.Password, OnlineConnectLayout.HostRole,
-                OnlineConnectLayout.JoinRole
+                OnlineConnectLayout.JoinRole, OnlineConnectLayout.WatchRole
             },
             other =>
             {
@@ -193,10 +190,18 @@ public sealed class OnlineConnectLayoutTests
                 OnlineConnectLayout.DiscoveryFilter(column).Width,
                 OnlineScreenLayout.ThirdAction(column).Width);
         }
-        Assert.False(
-            OnlineConnectLayout.DiscoveryJoin.Intersects(OnlineConnectLayout.DiscoveryRefresh));
-        Assert.False(
-            OnlineConnectLayout.DiscoveryRefresh.Intersects(OnlineConnectLayout.DiscoveryBack));
+        Rectangle[] actions =
+        [
+            OnlineConnectLayout.DiscoveryJoin, OnlineConnectLayout.DiscoveryWatch,
+            OnlineConnectLayout.DiscoveryRefresh, OnlineConnectLayout.DiscoveryBack,
+        ];
+        Assert.All(actions.Zip(actions.Skip(1)), pair => Assert.True(pair.First.Right < pair.Second.X));
+        // The four actions span the same columns as the three filters above them.
+        Assert.Equal(OnlineConnectLayout.DiscoveryFilter(0).X, actions[0].X);
+        Assert.Equal(
+            OnlineConnectLayout.DiscoveryFilter(DiscoveryFilters.Count - 1).Right, actions[^1].Right);
+        Assert.All(actions, action => Assert.True(
+            "REFRESH".Length * OriginalFontLayout.CellWidth + 8 <= action.Width));
         Assert.True(
             OnlineConnectLayout.DiscoveryFilter(DiscoveryFilters.Status).Bottom
                 < OnlineConnectLayout.DiscoveryRow(0).Y);
@@ -280,7 +285,7 @@ public sealed class OnlineConnectLayoutTests
             everything:
             [
                 OnlineConnectLayout.HostRole, OnlineConnectLayout.JoinRole,
-                OnlineConnectLayout.Name, OnlineConnectLayout.Portrait,
+                OnlineConnectLayout.WatchRole, OnlineConnectLayout.Name, OnlineConnectLayout.Portrait,
                 OnlineConnectLayout.PortraitPrevious, OnlineConnectLayout.PortraitNext,
                 OnlineConnectLayout.JoinCode, OnlineConnectLayout.PasteJoinCode,
                 OnlineConnectLayout.PublicChoice, OnlineConnectLayout.PrivateChoice,

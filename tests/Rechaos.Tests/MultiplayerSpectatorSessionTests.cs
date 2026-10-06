@@ -21,7 +21,7 @@ namespace Rechaos.Tests;
 /// </remarks>
 public sealed class MultiplayerSpectatorSessionTests
 {
-    private const string MatchId = "m1";
+    internal const string MatchId = "m1";
     private const int Seed = 1996;
     private const string CreatedAt = "2026-10-06T12:00:00.000Z";
 
@@ -164,6 +164,111 @@ public sealed class MultiplayerSpectatorSessionTests
             MatchStateHasher.ComputeFingerprint(shown));
     }
 
+    /// <summary>
+    /// A seat the vote handed to the computer and a late joiner then took: the slot has two roster
+    /// rows, and the sealed sets name the newcomer for it. See the 2026-10-06 late-join decision.
+    /// </summary>
+    [Fact]
+    public async Task FollowsALateJoinerIntoASeatTheVoteHandedToTheComputer()
+    {
+        var reference = Bootstrap();
+        var bootstrap = SnapshotOf(0, reference.State);
+        SealedTurnApplier.Apply(reference, SealedOrders(1));
+        reference.TransferPlayerToComputer(new PlayerId(1));
+        SealedTurnApplier.Apply(reference, SealedOrdersForSlots(2, 0));
+        reference.TransferPlayerToHuman(new PlayerId(1));
+        var third = SealedOrdersFor(3, (0, "p1"), (1, "late-2"));
+        SealedTurnApplier.Apply(reference, third);
+
+        var (handle, server, http) = Watching();
+        using var _ = http;
+        server.Answer(
+            HttpMethod.Get, $"/spectate/{MatchId}",
+            ViewOf(MatchStatus.Running, 6, 3) with { Players = RetakenRoster });
+        server.Answer(HttpMethod.Get, "/snapshots/latest", bootstrap);
+        server.AnswerOnce(
+            HttpMethod.Get,
+            "/events",
+            Page(
+                9,
+                Opened(1, 1),
+                Sealed(2, 1),
+                TakenOver(3, "p2"),
+                Opened(4, 2),
+                Sealed(5, 2, SealedOrdersForSlots(2, 0)),
+                LateJoined(6, "late-2", 1),
+                Opened(7, 3),
+                Sealed(9, 3, third)));
+        server.Answer(HttpMethod.Get, "/events", Page(9));
+        server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+        server.Answer(HttpMethod.Get, "/turns/2/orders", SealedOrdersForSlots(2, 0));
+        server.Answer(HttpMethod.Get, "/turns/3/orders", third);
+
+        var session = await MultiplayerSpectatorSession.StartAsync(handle, Definitions, TestContext.Current.CancellationToken);
+
+        Assert.Equal(3, session.ShownTurn);
+        var shown = session.CloneState()!;
+        Assert.Equal(PlayerController.Human, shown.FindPlayer(new PlayerId(1))!.Setup.Controller);
+        Assert.Equal(
+            MatchStateHasher.ComputeFingerprint(reference.State),
+            MatchStateHasher.ComputeFingerprint(shown));
+    }
+
+    /// <summary>
+    /// A spectator who starts from a snapshot taken after a seat was retaken learns the newcomer's
+    /// seat from a roster with two rows in that slot, and follows the newcomer's own handover.
+    /// </summary>
+    [Fact]
+    public async Task StartsAfterARetakenSeatAndFollowsTheNewcomersHandover()
+    {
+        var reference = Bootstrap();
+        SealedTurnApplier.Apply(reference, SealedOrders(1));
+        reference.TransferPlayerToComputer(new PlayerId(1));
+        SealedTurnApplier.Apply(reference, SealedOrdersForSlots(2, 0));
+        reference.TransferPlayerToHuman(new PlayerId(1));
+        var third = SealedOrdersFor(3, (0, "p1"), (1, "late-2"));
+        SealedTurnApplier.Apply(reference, third);
+        var snapshot = SnapshotOf(3, reference.State);
+        reference.TransferPlayerToComputer(new PlayerId(1));
+        SealedTurnApplier.Apply(reference, SealedOrdersForSlots(4, 0));
+
+        var (handle, server, http) = Watching();
+        using var _ = http;
+        server.Answer(
+            HttpMethod.Get, $"/spectate/{MatchId}",
+            ViewOf(MatchStatus.Running, 7, 4) with { Players = RetakenRoster });
+        server.Answer(HttpMethod.Get, "/snapshots/latest", snapshot);
+        server.AnswerOnce(
+            HttpMethod.Get,
+            "/events",
+            Page(
+                12,
+                Opened(1, 1),
+                Sealed(2, 1),
+                TakenOver(3, "p2"),
+                Opened(4, 2),
+                Sealed(5, 2, SealedOrdersForSlots(2, 0)),
+                LateJoined(6, "late-2", 1),
+                Opened(7, 3),
+                Sealed(9, 3, third),
+                TakenOver(10, "late-2"),
+                Opened(11, 4),
+                Sealed(12, 4, SealedOrdersForSlots(4, 0))));
+        server.Answer(HttpMethod.Get, "/events", Page(12));
+        server.Answer(HttpMethod.Get, "/turns/4/orders", SealedOrdersForSlots(4, 0));
+
+        var session = await MultiplayerSpectatorSession.StartAsync(handle, Definitions, TestContext.Current.CancellationToken);
+
+        Assert.Equal(4, session.ShownTurn);
+        var shown = session.CloneState()!;
+        Assert.Equal(PlayerController.Computer, shown.FindPlayer(new PlayerId(1))!.Setup.Controller);
+        Assert.Equal(
+            MatchStateHasher.ComputeFingerprint(reference.State),
+            MatchStateHasher.ComputeFingerprint(shown));
+        // Turns the snapshot already holds are not fetched again.
+        Assert.Equal(0, server.CallsTo(HttpMethod.Get, "/turns/3/orders"));
+    }
+
     [Fact]
     public async Task RefusesASnapshotPastTheReleasedTurn()
     {
@@ -233,7 +338,7 @@ public sealed class MultiplayerSpectatorSessionTests
         return (handle, server, http);
     }
 
-    private static MatchReplayRecorder Bootstrap()
+    internal static MatchReplayRecorder Bootstrap()
     {
         var replay = new MatchReplayRecorder(
             MatchBootstrapFactory.Create(Definitions, Seed, GameSettings, Roster));
@@ -241,7 +346,7 @@ public sealed class MultiplayerSpectatorSessionTests
         return replay;
     }
 
-    private static SnapshotView SnapshotOf(int turn, MatchState state) => new(
+    internal static SnapshotView SnapshotOf(int turn, MatchState state) => new(
         turn,
         NativeSaveSerializer.CurrentFormatVersion,
         MultiplayerProtocolVersion.Current,
@@ -251,7 +356,7 @@ public sealed class MultiplayerSpectatorSessionTests
         CreatedAt,
         MatchStateClone.ToBase64(state));
 
-    private static SpectatorMatchView ViewOf(MatchStatus status, int currentTurn, int releasedTurn) => new(
+    internal static SpectatorMatchView ViewOf(MatchStatus status, int currentTurn, int releasedTurn) => new(
         MatchId,
         MultiplayerProtocolVersion.Current,
         MultiplayerSessionVersion.Current,
@@ -264,29 +369,46 @@ public sealed class MultiplayerSpectatorSessionTests
         releasedTurn >= 1 ? Seed : null,
         CreatedAt);
 
-    private static SealedOrdersView SealedOrders(int turn) => SealedOrdersForSlots(turn, 0, 1);
+    internal static SealedOrdersView SealedOrders(int turn) => SealedOrdersForSlots(turn, 0, 1);
 
-    private static SealedOrdersView SealedOrdersForSlots(int turn, params int[] slots)
+    private static SealedOrdersView SealedOrdersForSlots(int turn, params int[] slots) =>
+        SealedOrdersFor(turn, slots.Select(slot => (slot, $"p{slot + 1}")).ToArray());
+
+    private static SealedOrdersView SealedOrdersFor(int turn, params (int Slot, string PlayerId)[] seats)
     {
         var empty = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);
-        var players = slots
-            .Select(slot => new SealedPlayerOrders($"p{slot + 1}", slot, empty, OrderDigest.OfDocument(empty)))
+        var players = seats
+            .Select(seat => new SealedPlayerOrders(seat.PlayerId, seat.Slot, empty, OrderDigest.OfDocument(empty)))
             .ToArray();
         return new SealedOrdersView(turn, OrderDigest.OfSet(players), players);
     }
 
-    private static SpectatorEventPage Page(int cursor, params MatchEvent[] events) => new(events, cursor);
+    /// <summary>
+    /// The roster once a late joiner has taken the seat the vote handed to the computer: the slot
+    /// keeps its first holder's row, now computer controlled, beside the newcomer's.
+    /// </summary>
+    private static readonly IReadOnlyList<PlayerView> RetakenRoster =
+    [
+        new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+        new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false),
+        new("late-2", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
+    ];
 
-    private static TurnOpenedEvent Opened(int seq, int turn) =>
+    private static MatchLatePlayerJoinedEvent LateJoined(int seq, string playerId, int slot) =>
+        new(seq, MatchId, CreatedAt, new MatchLatePlayerJoinedEventPayload(playerId, slot));
+
+    internal static SpectatorEventPage Page(int cursor, params MatchEvent[] events) => new(events, cursor);
+
+    internal static TurnOpenedEvent Opened(int seq, int turn) =>
         new(seq, MatchId, CreatedAt, new TurnOpenedEventPayload(turn, null));
 
-    private static TurnSealedEvent Sealed(int seq, int turn, SealedOrdersView? set = null) =>
+    internal static TurnSealedEvent Sealed(int seq, int turn, SealedOrdersView? set = null) =>
         new(seq, MatchId, CreatedAt, new TurnSealedEventPayload(turn, (set ?? SealedOrders(turn)).OrderSetHash));
 
     private static MatchPlayerTakenOverEvent TakenOver(int seq, string playerId) =>
         new(seq, MatchId, CreatedAt, new MatchPlayerTakenOverEventPayload(playerId));
 
-    private static string Envelope(string reason) => JsonSerializer.Serialize(new
+    internal static string Envelope(string reason) => JsonSerializer.Serialize(new
     {
         error = new
         {

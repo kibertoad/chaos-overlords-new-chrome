@@ -28,12 +28,15 @@ public sealed partial class ChaosGame
         get
         {
             var fields = new List<TextField>(4) { _online.DisplayName };
-            if (_online.Role == OnlineConnectRole.Join) fields.Add(_online.JoinCode);
+            if (UsesJoinCode) fields.Add(_online.JoinCode);
             if (OnlinePasswordApplies) fields.Add(_online.Password);
             if (_online.Service == OnlineServiceMode.Custom) fields.Add(_online.Server);
             return [.. fields];
         }
     }
+
+    /// <summary>Whether the form asks for a join code: to join a lobby, or to watch a match.</summary>
+    private bool UsesJoinCode => _online.Role is OnlineConnectRole.Join or OnlineConnectRole.Watch;
 
     private void FocusNextOnlineField()
     {
@@ -57,7 +60,7 @@ public sealed partial class ChaosGame
         {
             (OnlineConnectLayout.Name, _online.DisplayName)
         };
-        if (_online.Role == OnlineConnectRole.Join)
+        if (UsesJoinCode)
             hits.Add((OnlineConnectLayout.JoinCode, _online.JoinCode));
         if (OnlinePasswordApplies) hits.Add((OnlineConnectLayout.Password, _online.Password));
         if (_online.Service == OnlineServiceMode.Custom)

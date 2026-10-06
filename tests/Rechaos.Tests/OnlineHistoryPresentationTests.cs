@@ -20,6 +20,9 @@ public sealed class OnlineHistoryPresentationTests
     {
         Assert.Equal("HOST", OnlineHistoryPresentation.Role(Recovery()));
         Assert.Equal("PLAYER", OnlineHistoryPresentation.Role(Recovery() with { IsHost = false }));
+        Assert.Equal(
+            "WATCHING",
+            OnlineHistoryPresentation.Role(Recovery() with { IsHost = false, Spectating = true }));
     }
 
     private static MultiplayerRecovery Recovery() => new(

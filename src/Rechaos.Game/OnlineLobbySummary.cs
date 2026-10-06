@@ -29,15 +29,28 @@ public static class OnlineLobbySummary
         ["THESE SETTINGS CANNOT BE READ", "BY THIS BUILD OF THE GAME"];
 
     /// <summary>One label and one value per line, in the order the lobby draws them.</summary>
+    /// <remarks>
+    /// The last row says whether the match can be watched and how far behind, which every seat is
+    /// owed before it starts: a spectator sees every seat's position and orders, late. For the host
+    /// it is also the control that changes it; see <see cref="SpectatorRow"/>.
+    /// </remarks>
     public static IReadOnlyList<(string Label, string Value)> Rows(
         ScenarioId scenario,
         GameDuration duration,
         AiDifficulty mentality,
-        PlanningTimeLimit turnTimer) =>
+        PlanningTimeLimit turnTimer,
+        int? spectatorDelayTurns) =>
     [
         ("SCENARIO", ScenarioCatalog.Get(scenario).Name),
         ("LENGTH", DurationSetupTooltip.Label(duration)),
         ("OPPONENTS", DifficultyPresentation.Label(mentality)),
-        ("TURN TIMER", PlanningTimerPolicy.Label(turnTimer))
+        ("TURN TIMER", PlanningTimerPolicy.Label(turnTimer)),
+        ("SPECTATORS", SpectatorDelayChoice.Label(spectatorDelayTurns))
     ];
+
+    /// <summary>The index of the row that says whether the match can be watched.</summary>
+    public const int SpectatorRow = 4;
+
+    /// <summary>How many rows the summary draws.</summary>
+    public const int RowCount = 5;
 }

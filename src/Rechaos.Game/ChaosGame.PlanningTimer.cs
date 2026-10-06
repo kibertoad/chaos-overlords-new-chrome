@@ -444,7 +444,7 @@ public sealed partial class ChaosGame
     /// <summary>The screens that are not the match, where no planning clock is drawn or run.</summary>
     private bool LeftMatchScreen() =>
         _screens.Current is ClientScreen.Title or ClientScreen.Setup
-            or ClientScreen.Online or ClientScreen.Lobby
+            or ClientScreen.Online or ClientScreen.Lobby or ClientScreen.Spectate
             or ClientScreen.Handoff or ClientScreen.Elimination or ClientScreen.Endgame;
 
     private bool UpdatePlanningTimer(TimeSpan now)

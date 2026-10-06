@@ -36,11 +36,14 @@ public static class MultiplayerRecoveryReconciliation
         if (!Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server)) return recovery;
         try
         {
-            await new MultiplayerClient(http, new MultiplayerClientOptions(server))
-                .WithToken(recovery.Token)
-                .Match(recovery.MatchId)
-                .GetAsync(cancellationToken)
-                .ConfigureAwait(false);
+            var client = new MultiplayerClient(http, new MultiplayerClientOptions(server))
+                .WithToken(recovery.Token);
+            // A spectator's token opens the spectator door only, and the player door refuses it
+            // before any lookup, so asking there would read every watch as gone.
+            if (recovery.Spectating)
+                await client.Spectator(recovery.MatchId).GetAsync(cancellationToken).ConfigureAwait(false);
+            else
+                await client.Match(recovery.MatchId).GetAsync(cancellationToken).ConfigureAwait(false);
             return null;
         }
         catch (MultiplayerApiException exception) when (IsMembershipGone(exception))
@@ -75,7 +78,11 @@ public static class MultiplayerRecoveryReconciliation
     /// The test itself lives in <see cref="MultiplayerFailureText.IsMembershipRevoked"/>, which the
     /// match session now asks the same question of: this file and a live session must not disagree
     /// about whether a seat still exists.
+    ///
+    /// A watch is also gone when the host has stopped letting anyone watch, which a match can only
+    /// do while it is in its lobby: the token outlives the setting, but nothing it opens answers.
     /// </remarks>
     private static bool IsMembershipGone(MultiplayerApiException exception) =>
-        MultiplayerFailureText.IsMembershipRevoked(exception);
+        MultiplayerFailureText.IsMembershipRevoked(exception)
+        || exception is { FromEnvelope: true, Reason: "spectating_disabled" };
 }

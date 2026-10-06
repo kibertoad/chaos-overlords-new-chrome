@@ -305,6 +305,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _online.Server.Set(preferences.CustomMultiplayerServer);
         _onlineLobbyPresentation = preferences.LobbyPresentation;
         _multiplayerRecoveries.AddRange(MultiplayerRecoveryStore.LoadAll(_multiplayerRecoveryPath));
+        // A spectator's memberships, kept apart so an older build never takes one for a seat.
+        _multiplayerRecoveries.AddRange(MultiplayerRecoveryStore.LoadAll(SpectatorRecoveryPath)
+            .Where(recovery => recovery.Spectating));
         // The player's own name carries over from any saved seat, including one from another
         // session version; only the join code is limited to a match this build can play.
         if (_multiplayerRecoveries.FirstOrDefault(saved => saved.CanReconnect) is { } latest)
@@ -549,6 +552,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         {
             UpdateGameMenu(keyboard);
         }
+        else if (_online.SpectatorListOpen)
+        {
+            UpdateSpectatorList(keyboard);
+            // The lobby under the list keeps reading the server, so a start is not missed.
+            if (_screens.Current == ClientScreen.Lobby) PollLobby(gameTime);
+        }
         else if (_screens.Current == ClientScreen.Options)
         {
             UpdateOptions(keyboard);
@@ -583,6 +592,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     // SCR-ATTACK-001, FND-ATTACK-003: Escape is the Attack picker's Cancel.
                     if (IsAttackPickerOpen()) CancelAttackPickerByKey();
                     else if (_configuringOnlineLobby) CloseOnlineSetup();
+                    else if (_screens.Current == ClientScreen.Spectate) LeaveSpectating();
                     else if (_state is not null && _screens.Current is not ClientScreen.Title)
                         OpenGameMenu();
                     else if (!_screens.Back()) Exit();
@@ -601,6 +611,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     break;
                 case ClientScreen.Lobby:
                     UpdateLobby(keyboard, gameTime);
+                    break;
+                case ClientScreen.Spectate:
+                    UpdateSpectate(keyboard);
                     break;
                 case ClientScreen.City:
                     UpdateCity(keyboard);
@@ -820,6 +833,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             HandleGameMenuClick(point);
             return;
         }
+        if (_online.SpectatorListOpen)
+        {
+            HandleSpectatorListClick(point);
+            return;
+        }
         if (HandleTakeoverVoteClick(point)) return;
         switch (_screens.Current)
         {
@@ -837,6 +855,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Lobby:
                 HandleLobbyClick(point);
+                break;
+            case ClientScreen.Spectate:
+                HandleSpectateClick(point);
                 break;
             case ClientScreen.Setup:
                 var timed = ScenarioCatalog.Get(_selectedScenario).IsTimed;

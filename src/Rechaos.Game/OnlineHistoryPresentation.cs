@@ -22,6 +22,6 @@ public static class OnlineHistoryPresentation
     public static string Role(MultiplayerRecovery recovery)
     {
         ArgumentNullException.ThrowIfNull(recovery);
-        return recovery.IsHost ? "HOST" : "PLAYER";
+        return recovery.Spectating ? "WATCHING" : recovery.IsHost ? "HOST" : "PLAYER";
     }
 }

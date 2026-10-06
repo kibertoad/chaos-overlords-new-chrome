@@ -18,6 +18,12 @@ namespace Rechaos.Game;
 /// two unfinished sessions apart when both are still resumable. It is null, and <c>SessionName</c>
 /// empty, in a record written by a build that stored neither.
 /// </para>
+/// <para>
+/// <c>Spectating</c> marks a spectator's membership: <c>PlayerId</c> then holds the spectator's id
+/// and <c>Token</c> a spectator token, which opens the spectator door and nothing else. The game
+/// keeps those in a file of their own, so a build that predates spectating never reads one as a
+/// seat.
+/// </para>
 /// </remarks>
 public sealed record MultiplayerRecovery(
     int FormatVersion,
@@ -34,7 +40,8 @@ public sealed record MultiplayerRecovery(
     int SessionVersion = MultiplayerSessionVersion.Initial,
     string SessionName = "",
     DateTimeOffset? LastUpdatedAt = null,
-    MultiplayerRecoveryFailure? LastFailure = null)
+    MultiplayerRecoveryFailure? LastFailure = null,
+    bool Spectating = false)
 {
     public const int CurrentFormatVersion = 1;
 
@@ -96,6 +103,11 @@ public sealed record MultiplayerRecoveryFailure(
 /// as <see cref="MultiplayerSessionVersion.Initial"/>, the only version that can have been stored
 /// before the field existed. The file is a hint either way — the match view settles it.
 /// </para>
+/// <para>
+/// <see cref="Spectating"/> is additive in the same way and for the same reason. It is written only
+/// for a spectator's membership, and those live in a file of their own, which a build that does not
+/// know the field never opens.
+/// </para>
 /// </remarks>
 internal sealed record PersistedRecovery(
     int FormatVersion,
@@ -113,7 +125,8 @@ internal sealed record PersistedRecovery(
     int? SessionVersion = null,
     string? SessionName = null,
     DateTimeOffset? LastUpdatedAt = null,
-    MultiplayerRecoveryFailure? LastFailure = null);
+    MultiplayerRecoveryFailure? LastFailure = null,
+    bool? Spectating = null);
 
 internal sealed record MultiplayerRecoveryHistory(
     int FormatVersion,
@@ -460,7 +473,8 @@ public static class MultiplayerRecoveryStore
             SessionVersion: recovery.SessionVersion,
             SessionName: recovery.SessionName.Length > 0 ? recovery.SessionName : null,
             LastUpdatedAt: recovery.LastUpdatedAt,
-            LastFailure: recovery.LastFailure);
+            LastFailure: recovery.LastFailure,
+            Spectating: recovery.Spectating ? true : null);
     }
 
     private static MultiplayerRecovery? Revive(PersistedRecovery stored)
@@ -487,7 +501,8 @@ public static class MultiplayerRecoveryStore
             stored.SessionVersion ?? MultiplayerSessionVersion.Initial,
             stored.SessionName ?? string.Empty,
             stored.LastUpdatedAt,
-            stored.LastFailure);
+            stored.LastFailure,
+            stored.Spectating ?? false);
     }
 
     /// <summary>

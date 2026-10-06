@@ -90,7 +90,8 @@ internal enum GameMenuAction
     Load,
     Options,
     ReportBug,
-    QuitToMainMenu
+    QuitToMainMenu,
+    Spectators
 }
 
 public sealed partial class ChaosGame
@@ -241,6 +242,10 @@ public sealed partial class ChaosGame
             case GameMenuAction.Load: OpenSaveBrowser(saving: false); break;
             case GameMenuAction.Options: OpenOptionsFromGameMenu(); break;
             case GameMenuAction.ReportBug: OpenBugReport(); break;
+            case GameMenuAction.Spectators:
+                CloseGameMenu();
+                OpenSpectatorList();
+                break;
             // RULE-UI-015: a local match asks to save first only while it is unsaved. An online
             // match, which the original never asks about, keeps the confirmation that says the
             // server holds it (DEV-NET-001).
@@ -487,6 +492,8 @@ public sealed partial class ChaosGame
             :
             [
                 (GameMenuLayout.Resume, "RESUME", GameMenuAction.Resume),
+                // Online, the Save row lists who is watching (DEV-NET-001): the server keeps the match.
+                (GameMenuLayout.Save, "SPECTATORS", GameMenuAction.Spectators),
                 (GameMenuLayout.Options, "OPTIONS", GameMenuAction.Options),
                 (GameMenuLayout.ReportBug, "REPORT BUG", GameMenuAction.ReportBug),
                 (GameMenuLayout.QuitToMainMenu, "QUIT TO MAIN MENU", GameMenuAction.QuitToMainMenu)

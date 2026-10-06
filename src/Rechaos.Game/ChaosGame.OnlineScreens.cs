@@ -74,13 +74,18 @@ public sealed partial class ChaosGame
         var hosting = _online.Role == OnlineConnectRole.Host;
         var secondary = busy ? ButtonEmphasis.Disabled : ButtonEmphasis.Secondary;
 
-        DrawChoicePair(batch, pixel, font, "WHAT DO YOU WANT TO DO",
-            OnlineConnectLayout.HostRole, "HOST A NEW GAME",
-            OnlineConnectLayout.JoinRole, "JOIN WITH A CODE",
-            hosting, !busy);
+        var watching = _online.Role == OnlineConnectRole.Watch;
+        font.Draw(batch, "WHAT DO YOU WANT TO DO",
+            OnlineScreenLayout.CaptionAt(OnlineConnectLayout.HostRole),
+            busy ? OnlineMutedText : OnlineSecondaryText, 1);
+        DrawChoice(batch, pixel, font, OnlineConnectLayout.HostRole, "HOST A NEW GAME", hosting, !busy);
+        DrawChoice(batch, pixel, font, OnlineConnectLayout.JoinRole, "JOIN WITH A CODE",
+            _online.Role == OnlineConnectRole.Join, !busy);
+        DrawChoice(batch, pixel, font, OnlineConnectLayout.WatchRole, "WATCH A GAME", watching, !busy);
 
         DrawField(batch, pixel, font, OnlineConnectLayout.Name, _online.DisplayName);
-        DrawOnlinePortraitChoice(batch, pixel, font);
+        // A spectator takes no seat, so there is no face to choose.
+        if (!watching) DrawOnlinePortraitChoice(batch, pixel, font);
 
         if (hosting)
         {
@@ -92,7 +97,9 @@ public sealed partial class ChaosGame
         else
         {
             DrawField(batch, pixel, font, OnlineConnectLayout.JoinCode, _online.JoinCode,
-                "THE 8 CHARACTERS THE HOST READS OUT");
+                watching
+                    ? "THE CODE OF A GAME THAT CAN BE WATCHED"
+                    : "THE 8 CHARACTERS THE HOST READS OUT");
             DrawButton(batch, pixel, font, OnlineConnectLayout.PasteJoinCode, "PASTE", secondary);
         }
 
@@ -115,7 +122,7 @@ public sealed partial class ChaosGame
                 ? ButtonEmphasis.Secondary
                 : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Continue,
-            hosting ? "CREATE GAME" : "JOIN GAME",
+            hosting ? "CREATE GAME" : watching ? "WATCH GAME" : "JOIN GAME",
             busy ? ButtonEmphasis.Disabled : ButtonEmphasis.Primary);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Back, "BACK", secondary);
     }
@@ -221,6 +228,10 @@ public sealed partial class ChaosGame
             CanCallOnlineLobby(listings.Count)
                 ? ButtonEmphasis.Primary
                 : ButtonEmphasis.Disabled);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryWatch, "WATCH",
+            CanWatchSelectedListing(listings)
+                ? ButtonEmphasis.Secondary
+                : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryRefresh, "REFRESH",
             CanCallOnlineLobby() ? ButtonEmphasis.Secondary : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryBack, "BACK",
@@ -238,13 +249,16 @@ public sealed partial class ChaosGame
         font.Draw(batch, Fitted(listing.Name, RowRoom(bounds, seats)),
             new Vector2(bounds.X + 7, bounds.Y + 8), Color.White, 1);
         DrawRightAligned(font, batch, seats, bounds.Right - 7, bounds.Y + 8, OnlineSecondaryText);
+        // Whether the session can be watched, and how far behind, opposite what is being played.
+        var watch = SpectatorDelayChoice.ListingLabel(listing.Settings.SpectatorDelayTurns);
+        DrawRightAligned(font, batch, watch, bounds.Right - 7, bounds.Y + 21, OnlineMutedText);
         // A session this build cannot read the settings of is still listed, so the second line says
         // so rather than naming a scenario and a mentality that were never read.
         font.Draw(batch,
-            settings is { } known
+            Fitted(settings is { } known
                 ? $"{ScenarioCatalog.Get(known.Scenario).Name}  " +
                     $"{DifficultyPresentation.Label(known.AiMentality)}"
-                : "SETTINGS THIS VERSION OF THE GAME CANNOT READ",
+                : "SETTINGS THIS VERSION OF THE GAME CANNOT READ", RowRoom(bounds, watch)),
             new Vector2(bounds.X + 7, bounds.Y + 21), OnlineSecondaryText, 1);
     }
 
@@ -398,6 +412,8 @@ public sealed partial class ChaosGame
             OnlineLobbyLayout.WaitingHintY, OnlineSecondaryText, 1);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.Start, "START",
             configurable && !busy ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
+        DrawButton(batch, pixel, font, OnlineLobbyLayout.Spectators, "SPECTATORS",
+            match is null ? ButtonEmphasis.Disabled : ButtonEmphasis.Secondary);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.Leave, "LEAVE",
             ButtonEmphasis.Secondary);
     }
@@ -436,8 +452,20 @@ public sealed partial class ChaosGame
             "LATE: YES", _online.AllowLateJoin, configurable);
         DrawClassicLobbyChoice(batch, pixel, font, ClassicOnlineLobbyLayout.LateJoinRefused,
             "LATE: NO", !_online.AllowLateJoin, configurable);
+        var watchDelay = _online.SpectatorDelayTurns;
+        DrawClassicLobbyChoice(batch, pixel, font, ClassicOnlineLobbyLayout.WatchRefused,
+            "WATCH: NO", watchDelay is null, configurable);
+        DrawClassicLobbyChoice(batch, pixel, font, ClassicOnlineLobbyLayout.WatchAllowed,
+            watchDelay is { } turns ? $"WATCH: {turns} LATE" : "WATCH: YES",
+            watchDelay is not null, configurable);
+        DrawClassicLobbyChoice(batch, pixel, font, ClassicOnlineLobbyLayout.WatchSooner,
+            "FEWER TURNS", false, configurable && watchDelay > SpectatorDelayChoice.Minimum);
+        DrawClassicLobbyChoice(batch, pixel, font, ClassicOnlineLobbyLayout.WatchLater,
+            "MORE TURNS", false, configurable && watchDelay < SpectatorDelayChoice.Maximum);
         DrawButton(batch, pixel, font, ClassicOnlineLobbyLayout.Setup, "RULES",
             configurable ? ButtonEmphasis.Secondary : ButtonEmphasis.Disabled);
+        DrawButton(batch, pixel, font, ClassicOnlineLobbyLayout.Spectators, "WATCHERS",
+            match is null ? ButtonEmphasis.Disabled : ButtonEmphasis.Secondary);
         DrawButton(batch, pixel, font, ClassicOnlineLobbyLayout.Start, "START",
             configurable && !busy ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, ClassicOnlineLobbyLayout.Leave, "LEAVE",
@@ -596,7 +624,7 @@ public sealed partial class ChaosGame
             OnlineLobbyLayout.LateJoinAllowed, "ALLOWED",
             OnlineLobbyLayout.LateJoinRefused, "NOT ALLOWED",
             _online.AllowLateJoin, configurable);
-        DrawLobbySummary(batch, font);
+        DrawLobbySummary(batch, pixel, font);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.Setup, "CHANGE GAME RULES",
             configurable ? ButtonEmphasis.Secondary : ButtonEmphasis.Disabled);
     }
@@ -611,7 +639,7 @@ public sealed partial class ChaosGame
     /// document this build cannot read — so the summary says it cannot read it rather than
     /// presenting this client's own local setup as what everybody is about to play.
     /// </remarks>
-    private void DrawLobbySummary(SpriteBatch batch, PixelFont font)
+    private void DrawLobbySummary(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         font.Draw(batch, "WHAT YOU WILL PLAY",
             new Vector2(OnlineLobbyLayout.SettingsLeft, OnlineLobbyLayout.SummaryCaptionY),
@@ -627,12 +655,26 @@ public sealed partial class ChaosGame
             return;
         }
         var rows = OnlineLobbySummary.Rows(
-            _selectedScenario, _selectedDuration, _selectedAiMentality, _selectedPlanningTimeLimit);
+            _selectedScenario, _selectedDuration, _selectedAiMentality, _selectedPlanningTimeLimit,
+            _online.SpectatorDelayTurns);
+        var configurable = CanConfigureOnlineLobby();
         for (var index = 0; index < rows.Count; index++)
         {
             var (label, value) = rows[index];
             var bounds = OnlineLobbyLayout.SummaryRow(index);
             font.Draw(batch, label, new Vector2(bounds.X, bounds.Y), OnlineMutedText, 1);
+            if (index == OnlineLobbySummary.SpectatorRow && configurable)
+            {
+                // The host's row is the control: the arrows step it from off through the delays.
+                var delay = _online.SpectatorDelayTurns;
+                DrawHorizontalArrow(batch, pixel, OnlineLobbyLayout.SpectatorDelayEarlier, left: true,
+                    delay is null ? OnlineMutedText : Color.Gold);
+                DrawHorizontalArrow(batch, pixel, OnlineLobbyLayout.SpectatorDelayLater, left: false,
+                    delay == SpectatorDelayChoice.Maximum ? OnlineMutedText : Color.Gold);
+                DrawRightAligned(font, batch, value,
+                    OnlineLobbyLayout.SpectatorValueRight, bounds.Y, Color.White);
+                continue;
+            }
             DrawRightAligned(font, batch, Fitted(value, RowRoom(bounds, label)),
                 bounds.Right, bounds.Y, Color.White);
         }

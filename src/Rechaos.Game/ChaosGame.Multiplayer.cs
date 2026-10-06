@@ -66,7 +66,7 @@ public sealed partial class ChaosGame
     /// <remarks>Null when no lobby has been joined; see <see cref="RememberLocalSetup"/>.</remarks>
     private LocalSetupChoices? _localSetupBeforeLobby;
     private MultiplayerRecovery? LatestOnlineRecovery =>
-        _multiplayerRecoveries.FirstOrDefault(recovery => recovery.CanResume);
+        _multiplayerRecoveries.FirstOrDefault(recovery => recovery.CanResume && !recovery.Spectating);
 
     private void OpenOnline()
     {
@@ -137,8 +137,12 @@ public sealed partial class ChaosGame
         if (_online.Stage != MultiplayerStage.Connect) return;
         // The face is the one control on the form that is neither a field nor a button, so the
         // arrow keys can turn it whichever field currently owns the caret.
-        if (Pressed(keyboard, Keys.Left)) CycleOnlinePortrait(-1);
-        if (Pressed(keyboard, Keys.Right)) CycleOnlinePortrait(1);
+        // A spectator takes no seat, so there is no face to turn.
+        if (_online.Role != OnlineConnectRole.Watch)
+        {
+            if (Pressed(keyboard, Keys.Left)) CycleOnlinePortrait(-1);
+            if (Pressed(keyboard, Keys.Right)) CycleOnlinePortrait(1);
+        }
         if (Pressed(keyboard, Keys.Enter)) ContinueOnline();
     }
 
@@ -201,8 +205,12 @@ public sealed partial class ChaosGame
 
     private void ContinueOnline()
     {
-        if (_online.Role == OnlineConnectRole.Host) BeginHost();
-        else BeginJoin();
+        switch (_online.Role)
+        {
+            case OnlineConnectRole.Host: BeginHost(); break;
+            case OnlineConnectRole.Watch: BeginWatch(); break;
+            default: BeginJoin(); break;
+        }
     }
 
     /// <summary>
@@ -231,7 +239,7 @@ public sealed partial class ChaosGame
                 SelectedOnlineTurnTimerSeconds,
                 _online.PublicListing ? MatchVisibility.Public : MatchVisibility.Private,
                 settings.ToWire(),
-                SpectatorDelayTurns: null),
+                _online.SpectatorDelayTurns),
             _online.DisplayName.Value.Trim(),
             _online.Portrait,
             password,
@@ -273,6 +281,11 @@ public sealed partial class ChaosGame
             : OnlineServiceMode.Custom;
         if (_online.Service == OnlineServiceMode.Custom) _online.Server.Set(recovery.Server);
         _serverProbeCancellation?.Cancel();
+        if (recovery.Spectating)
+        {
+            ResumeWatch(recovery, server);
+            return;
+        }
         _lobby = new MultiplayerLobbySession(_http, new MultiplayerClientOptions(server));
         _online.PasswordShown = recovery.Password;
         _online.Stage = MultiplayerStage.Busy;
@@ -697,15 +710,19 @@ public sealed partial class ChaosGame
             SelectOnlineRole(OnlineConnectRole.Host);
         else if (OnlineConnectLayout.JoinRole.Contains(point))
             SelectOnlineRole(OnlineConnectRole.Join);
-        else if (_online.Role == OnlineConnectRole.Join
+        else if (OnlineConnectLayout.WatchRole.Contains(point))
+            SelectOnlineRole(OnlineConnectRole.Watch);
+        else if (UsesJoinCode
             && OnlineConnectLayout.PasteJoinCode.Contains(point)) PasteJoinCode();
         else if (_online.Role == OnlineConnectRole.Host
             && OnlineConnectLayout.PublicChoice.Contains(point)) SelectOnlineListing(publicly: true);
         else if (_online.Role == OnlineConnectRole.Host
             && OnlineConnectLayout.PrivateChoice.Contains(point)) SelectOnlineListing(publicly: false);
-        else if (OnlineConnectLayout.PortraitPrevious.Contains(point)) CycleOnlinePortrait(-1);
-        else if (OnlineConnectLayout.PortraitNext.Contains(point)
-            || OnlineConnectLayout.Portrait.Contains(point)) CycleOnlinePortrait(1);
+        else if (_online.Role != OnlineConnectRole.Watch
+            && OnlineConnectLayout.PortraitPrevious.Contains(point)) CycleOnlinePortrait(-1);
+        else if (_online.Role != OnlineConnectRole.Watch
+            && (OnlineConnectLayout.PortraitNext.Contains(point)
+                || OnlineConnectLayout.Portrait.Contains(point))) CycleOnlinePortrait(1);
         else if (OnlineConnectLayout.Discover.Contains(point)) OpenOnlineDiscovery();
         else if (OnlineConnectLayout.Reconnect.Contains(point)) OpenOnlineHistory();
         else if (OnlineConnectLayout.Continue.Contains(point)) ContinueOnline();
@@ -750,6 +767,7 @@ public sealed partial class ChaosGame
         else if (OnlineConnectLayout.DiscoveryAi.Contains(point))
             OpenDiscoveryFilterMenu(DiscoveryFilters.Ai);
         else if (OnlineConnectLayout.DiscoveryJoin.Contains(point)) JoinSelectedOnlineListing();
+        else if (OnlineConnectLayout.DiscoveryWatch.Contains(point)) WatchSelectedOnlineListing();
         else if (OnlineConnectLayout.DiscoveryRefresh.Contains(point)) RefreshOnlineDiscovery();
         else if (OnlineConnectLayout.DiscoveryBack.Contains(point)) CloseOnlineDiscovery();
         else if (RowClicked(point, OnlineConnectLayout.DiscoveryRow,
@@ -812,12 +830,35 @@ public sealed partial class ChaosGame
         if (LobbyCopyCode.Contains(point)) CopyLobbyJoinCode();
         else if (LobbySetup.Contains(point)) OpenOnlineSetup();
         else if (LobbyStart.Contains(point)) StartHostedMatch();
+        else if (LobbySpectators.Contains(point)) OpenSpectatorList();
         else if (LobbyLeave.Contains(point)) LeaveOnlineMatch();
         else if (!CanConfigureOnlineLobby()) return;
         else if (LobbyPublicChoice.Contains(point)) ChangeLobbyListing(publicly: true);
         else if (LobbyPrivateChoice.Contains(point)) ChangeLobbyListing(publicly: false);
         else if (LobbyLateJoinAllowed.Contains(point)) ChangeLobbyLateJoin(allowed: true);
         else if (LobbyLateJoinRefused.Contains(point)) ChangeLobbyLateJoin(allowed: false);
+        else HandleLobbySpectatingClick(point);
+    }
+
+    /// <summary>The host's spectating controls, which differ between the two lobby screens.</summary>
+    private void HandleLobbySpectatingClick(Point point)
+    {
+        var delay = _online.SpectatorDelayTurns;
+        if (UsesClassicLobby)
+        {
+            if (ClassicOnlineLobbyLayout.WatchRefused.Contains(point)) ChangeLobbySpectating(null);
+            else if (ClassicOnlineLobbyLayout.WatchAllowed.Contains(point))
+                ChangeLobbySpectating(delay ?? SpectatorDelayChoice.Minimum);
+            else if (ClassicOnlineLobbyLayout.WatchSooner.Contains(point))
+                ChangeLobbySpectating(SpectatorDelayChoice.Adjust(delay, -1));
+            else if (ClassicOnlineLobbyLayout.WatchLater.Contains(point))
+                ChangeLobbySpectating(SpectatorDelayChoice.Adjust(delay, 1));
+            return;
+        }
+        if (OnlineLobbyLayout.SpectatorDelayEarlier.Contains(point))
+            ChangeLobbySpectating(SpectatorDelayChoice.Step(delay, -1));
+        else if (OnlineLobbyLayout.SpectatorDelayLater.Contains(point))
+            ChangeLobbySpectating(SpectatorDelayChoice.Step(delay, 1));
     }
 
     private bool UsesClassicLobby => _onlineLobbyPresentation == OnlineLobbyPresentation.Classic;
@@ -831,6 +872,8 @@ public sealed partial class ChaosGame
         ? ClassicOnlineLobbyLayout.Start : OnlineLobbyLayout.Start;
     private Rectangle LobbyLeave => UsesClassicLobby
         ? ClassicOnlineLobbyLayout.Leave : OnlineLobbyLayout.Leave;
+    private Rectangle LobbySpectators => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.Spectators : OnlineLobbyLayout.Spectators;
     private Rectangle LobbyPublicChoice => UsesClassicLobby
         ? ClassicOnlineLobbyLayout.PublicChoice : OnlineLobbyLayout.PublicChoice;
     private Rectangle LobbyPrivateChoice => UsesClassicLobby
@@ -893,94 +936,6 @@ public sealed partial class ChaosGame
             ? "JOIN CODE COPIED"
             : "COULD NOT COPY JOIN CODE";
     }
-
-    private void RememberOnlineMembership(MembershipView membership)
-    {
-        // The session's own address, not the one the connect form is showing. They differ whenever
-        // the form was edited after the session was built, and a record naming the wrong server is
-        // a seat every later reconnect gets a 401 or 404 for — after which reconciliation deletes it.
-        var server = _lobby?.BaseAddress;
-        if (server is null && !TrySelectedServer(out server)) return;
-        var recovery = new MultiplayerRecovery(
-            MultiplayerRecovery.CurrentFormatVersion,
-            server.ToString(),
-            membership.Match.Id,
-            membership.Player.Id,
-            membership.Token,
-            membership.JoinCode,
-            membership.Player.DisplayName,
-            membership.Player.IsHost,
-            CleanExit: false,
-            Completed: false,
-            _online.PasswordShown,
-            SessionVersion: membership.Match.SessionVersion,
-            SessionName: membership.Match.Settings.Name,
-            LastUpdatedAt: DateTimeOffset.UtcNow);
-        _activeMultiplayerRecovery = recovery;
-        _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
-        _multiplayerRecoveries.Insert(0, recovery);
-        SaveOnlineRecoveries();
-    }
-
-    /// <summary>
-    /// Stamps the seat with the moment its turn data was last stored.
-    /// </summary>
-    /// <remarks>
-    /// What the list of unfinished sessions is read by, next to the match's name: two matches a
-    /// player still has a seat in are told apart by which one they were last playing. Called where
-    /// authoritative state is adopted rather than where a turn is sent, because that is the point
-    /// the client has the turn's data to keep; a clean exit and a retirement both carry the stamp
-    /// forward untouched, since neither advances the match.
-    /// </remarks>
-    private void TouchOnlineRecovery()
-    {
-        if (_activeMultiplayerRecovery is not { Completed: false } recovery) return;
-        UpdateOnlineRecovery(recovery with { LastUpdatedAt = DateTimeOffset.UtcNow }, durable: false);
-    }
-
-    private void CompleteOnlineRecovery()
-    {
-        if (_activeMultiplayerRecovery is not { } recovery) return;
-        UpdateOnlineRecovery(recovery with { CleanExit = true, Completed = true });
-    }
-
-    /// <summary>
-    /// Writes a membership back to the history file.
-    /// </summary>
-    /// <param name="recovery">The membership as it now stands.</param>
-    /// <param name="durable">
-    /// Whether the write has to survive losing power. True for the marks that decide whether a
-    /// player is offered a reconnect at all — the clean exit and the completion — and false for the
-    /// routine stamp every resolved turn makes, which costs an fsync on the game thread in the
-    /// frame the new turn appears and whose loss costs only the order of a list.
-    /// </param>
-    private void UpdateOnlineRecovery(MultiplayerRecovery recovery, bool durable = true)
-    {
-        var index = _multiplayerRecoveries.FindIndex(item => SameMembership(item, recovery));
-        if (index >= 0) _multiplayerRecoveries[index] = recovery;
-        else _multiplayerRecoveries.Insert(0, recovery);
-        _activeMultiplayerRecovery = recovery;
-        SaveOnlineRecoveries(durable);
-    }
-
-    /// <summary>
-    /// Writes the history back, and marks the views over it stale.
-    /// </summary>
-    /// <remarks>
-    /// Every path that changes <see cref="_multiplayerRecoveries"/> ends here, which is why the
-    /// version lives in this one place rather than beside each mutation: a caller cannot add a
-    /// membership and forget to say so.
-    /// </remarks>
-    private void SaveOnlineRecoveries(bool durable = true)
-    {
-        _multiplayerRecoveryVersion++;
-        MultiplayerRecoveryStore.TrySaveAll(_multiplayerRecoveryPath, _multiplayerRecoveries, durable);
-    }
-
-    private static bool SameMembership(MultiplayerRecovery left, MultiplayerRecovery right) =>
-        string.Equals(left.Server, right.Server, StringComparison.OrdinalIgnoreCase)
-        && left.MatchId == right.MatchId
-        && left.PlayerId == right.PlayerId;
 
     /// <summary>
     /// What to say when the player acts on a turn that is no longer theirs to change.

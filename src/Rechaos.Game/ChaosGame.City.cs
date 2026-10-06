@@ -237,49 +237,8 @@ public sealed partial class ChaosGame
             }
         }
 
-        var selectedSector = state.Sectors[_cursor];
-        var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
-        font.Draw(batch, ExecutableStrings.ScenarioTitle(state.Setup.Scenario),
-            new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
-        var (year, week) = MatchCalendar.Of(MatchCalendar.PresentationElapsedTurns(state));
-        // FND-UI-040: separate calendar fields leave the template's separator intact.
-        // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
-        DrawOpaqueNativeFixedWidthValue(batch, pixel, font, year, StatusConsoleLayout.YearLeft,
-            StatusConsoleLayout.DateY, 4);
-        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY,
-            2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
-        font.Draw(batch, week.ToString("00"),
-            new Vector2(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
-        // FND-UI-040, FND-STATE-010: completion replaces the timed countdown in the final view.
-        // FND-UI-019: string cells are copied opaquely, like the numeric cells.
-        if (_finalViewPlayer is not null)
-        {
-            DrawOpaqueText(batch, pixel, font, ExecutableStrings.Get(StatusConsoleLayout.CompleteString),
-                StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY);
-        }
-        else if (StatusConsolePresentation.RemainingTurns(state.Setup.Scenario, state.Setup.Duration,
-                     state.Coordinator.Turn) is { } remainingTurns)
-            DrawOpaqueNativeFixedWidthValue(batch, pixel, font, remainingTurns,
-                StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY, 3);
-        // FND-UI-040, RULE-UI-004: five opaque numeric cells, including red unsigned magnitudes.
-        DrawOpaqueNativeFixedWidthValue(batch, pixel, font, StatusConsolePresentation.Score(state, player),
-            StatusConsoleLayout.ScoreLeft, StatusConsoleLayout.ScoreY, StatusConsoleLayout.ScoreCells);
-        DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
-                StatusConsolePresentation.UnspentCash(state, player),
-                FinanceProjection.Project(state, player, sectorId: null).CashAdjustment),
-            StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashY);
-        // RULE-UI-011: the sector code, the Income word and three two-cell numbers at x 568;
-        // Support and Cash are 0 unless the active player owns the sector.
-        var sectorValues = StatusConsolePresentation.SectorValues(state, player.Id, _cursor);
-        font.Draw(batch, SectorCode(_cursor),
-            new Vector2(StatusConsoleLayout.SectorValueLeft, StatusConsoleLayout.SectorValueY(0)), Color.Lime, 1);
-        font.Draw(batch, StatusConsolePresentation.IncomeWord(sectorValues.Income),
-            new Vector2(StatusConsoleLayout.SectorValueLeft, StatusConsoleLayout.SectorValueY(1)), Color.Lime, 1);
-        DrawSectorNumber(font, batch, sectorValues.Tolerance, StatusConsoleLayout.SectorValueY(2),
-            selectedSectorChaos.Range.CanTriggerCrackdown(selectedSector.Tolerance) ? Color.OrangeRed : Color.Lime);
-        DrawSectorNumber(font, batch, sectorValues.Support, StatusConsoleLayout.SectorValueY(3), Color.Lime);
-        // FND-UI-035: the sector Cash label is already present in the background art.
-        DrawSectorNumber(font, batch, sectorValues.Cash, StatusConsoleLayout.SectorValueY(4), Color.Lime);
+        DrawStatusConsoleValues(batch, pixel, font, state, player, _cursor,
+            complete: _finalViewPlayer is not null);
         font.Draw(batch, CityStatusMessage.Clip(_message),
             new Vector2(438, 354), Color.Gold, 1);
         if (_state is not null && PlanningViewer is { } reportPlayer
@@ -310,6 +269,60 @@ public sealed partial class ChaosGame
         DrawPressedCityConsole(batch);
         DrawStatusConsoleTooltip(batch, pixel, font);
         if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
+    }
+
+    /// <summary>
+    /// The status console's values for <paramref name="player"/> with <paramref name="sector"/>
+    /// selected: the scenario, the date, the score and cash, and the sector's numbers.
+    /// </summary>
+    /// <param name="complete">Whether the final view replaces the countdown (FND-UI-040).</param>
+    private void DrawStatusConsoleValues(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state, MatchPlayerState player,
+        int sector, bool complete)
+    {
+        var selectedSector = state.Sectors[sector];
+        var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, sector);
+        font.Draw(batch, ExecutableStrings.ScenarioTitle(state.Setup.Scenario),
+            new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
+        var (year, week) = MatchCalendar.Of(MatchCalendar.PresentationElapsedTurns(state));
+        // FND-UI-040: separate calendar fields leave the template's separator intact.
+        // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
+        DrawOpaqueNativeFixedWidthValue(batch, pixel, font, year, StatusConsoleLayout.YearLeft,
+            StatusConsoleLayout.DateY, 4);
+        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY,
+            2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+        font.Draw(batch, week.ToString("00"),
+            new Vector2(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
+        // FND-UI-040, FND-STATE-010: completion replaces the timed countdown in the final view.
+        // FND-UI-019: string cells are copied opaquely, like the numeric cells.
+        if (complete)
+        {
+            DrawOpaqueText(batch, pixel, font, ExecutableStrings.Get(StatusConsoleLayout.CompleteString),
+                StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY);
+        }
+        else if (StatusConsolePresentation.RemainingTurns(state.Setup.Scenario, state.Setup.Duration,
+                     state.Coordinator.Turn) is { } remainingTurns)
+            DrawOpaqueNativeFixedWidthValue(batch, pixel, font, remainingTurns,
+                StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY, 3);
+        // FND-UI-040, RULE-UI-004: five opaque numeric cells, including red unsigned magnitudes.
+        DrawOpaqueNativeFixedWidthValue(batch, pixel, font, StatusConsolePresentation.Score(state, player),
+            StatusConsoleLayout.ScoreLeft, StatusConsoleLayout.ScoreY, StatusConsoleLayout.ScoreCells);
+        DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
+                StatusConsolePresentation.UnspentCash(state, player),
+                FinanceProjection.Project(state, player, sectorId: null).CashAdjustment),
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashY);
+        // RULE-UI-011: the sector code, the Income word and three two-cell numbers at x 568;
+        // Support and Cash are 0 unless the active player owns the sector.
+        var sectorValues = StatusConsolePresentation.SectorValues(state, player.Id, sector);
+        font.Draw(batch, SectorCode(sector),
+            new Vector2(StatusConsoleLayout.SectorValueLeft, StatusConsoleLayout.SectorValueY(0)), Color.Lime, 1);
+        font.Draw(batch, StatusConsolePresentation.IncomeWord(sectorValues.Income),
+            new Vector2(StatusConsoleLayout.SectorValueLeft, StatusConsoleLayout.SectorValueY(1)), Color.Lime, 1);
+        DrawSectorNumber(font, batch, sectorValues.Tolerance, StatusConsoleLayout.SectorValueY(2),
+            selectedSectorChaos.Range.CanTriggerCrackdown(selectedSector.Tolerance) ? Color.OrangeRed : Color.Lime);
+        DrawSectorNumber(font, batch, sectorValues.Support, StatusConsoleLayout.SectorValueY(3), Color.Lime);
+        // FND-UI-035: the sector Cash label is already present in the background art.
+        DrawSectorNumber(font, batch, sectorValues.Cash, StatusConsoleLayout.SectorValueY(4), Color.Lime);
     }
 
     /// <summary>

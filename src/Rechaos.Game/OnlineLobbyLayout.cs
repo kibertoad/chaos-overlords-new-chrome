@@ -99,7 +99,45 @@ public static class OnlineLobbyLayout
     /// Under the summary it changes rather than beside START, where it read as a second way to begin
     /// the match. What it opens is a screen, not an action on this one.
     /// </remarks>
-    public static Rectangle Setup => new(SettingsLeft, 290, SettingsWidth, 26);
+    public static Rectangle Setup => new(SettingsLeft, 306, SettingsWidth, 26);
+
+    /// <summary>
+    /// The host's arrows either side of the spectator row's value, which step the choice off or
+    /// through the delays.
+    /// </summary>
+    /// <remarks>
+    /// The row is the control, so the value every seat reads is the one the host changes, and the
+    /// settings column needs no extra group. The arrows are the portrait picker's, at the row's
+    /// height plus a pixel of air above and below the glyphs.
+    /// </remarks>
+    public static Rectangle SpectatorDelayEarlier
+    {
+        get
+        {
+            var row = SummaryRow(OnlineLobbySummary.SpectatorRow);
+            return new Rectangle(
+                row.Right - SpectatorArrowWidth * 2 - SpectatorValueWidth - 4,
+                row.Y - 3, SpectatorArrowWidth, row.Height + 6);
+        }
+    }
+
+    public static Rectangle SpectatorDelayLater
+    {
+        get
+        {
+            var row = SummaryRow(OnlineLobbySummary.SpectatorRow);
+            return new Rectangle(
+                row.Right - SpectatorArrowWidth, row.Y - 3, SpectatorArrowWidth, row.Height + 6);
+        }
+    }
+
+    /// <summary>Where the host's value is drawn, between the arrows, right-aligned to the later one.</summary>
+    public static int SpectatorValueRight => SpectatorDelayLater.X - 2;
+
+    public const int SpectatorArrowWidth = 12;
+
+    /// <summary>The widest value, "20 TURNS BEHIND", in whole glyphs.</summary>
+    public const int SpectatorValueWidth = 15 * OriginalFontLayout.CellWidth;
 
     /// <summary>
     /// The lobby chat: the conversation so far, and the line a message is typed on.
@@ -112,10 +150,19 @@ public static class OnlineLobbyLayout
     public static Rectangle ChatLog => new(RosterLeft, 278, RosterRight - RosterLeft, 48);
     public static Rectangle ChatInput => new(RosterLeft, 328, RosterRight - RosterLeft, 18);
 
-    public static Rectangle Start => OnlineScreenLayout.Action(0);
-    public static Rectangle Leave => OnlineScreenLayout.Action(1);
+    /// <summary>
+    /// The actions: start, who is watching, and leave.
+    /// </summary>
+    /// <remarks>
+    /// The list of spectators is a screen of its own over the lobby, opened from the middle, so
+    /// START and LEAVE keep the two ends where the eye already finds them.
+    /// </remarks>
+    public static Rectangle Start => OnlineScreenLayout.ThirdAction(0);
+    public static Rectangle Spectators => OnlineScreenLayout.ThirdAction(1);
+    public static Rectangle Leave => OnlineScreenLayout.ThirdAction(2);
 
     /// <summary>The settings a host may change, which a seated player only reads.</summary>
     public static IReadOnlyList<Rectangle> HostSettings =>
-        [SessionName, PublicChoice, PrivateChoice, LateJoinAllowed, LateJoinRefused];
+        [SessionName, PublicChoice, PrivateChoice, LateJoinAllowed, LateJoinRefused,
+            SpectatorDelayEarlier, SpectatorDelayLater];
 }

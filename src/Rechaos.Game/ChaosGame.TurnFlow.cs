@@ -178,7 +178,7 @@ public sealed partial class ChaosGame
         _session is null && !_gameMenuOpen && _state is not null && _actions is not null
         && _screens.Current is not (ClientScreen.Title or ClientScreen.Options or ClientScreen.Help
             or ClientScreen.Setup or ClientScreen.Online or ClientScreen.Lobby
-            or ClientScreen.Endgame or ClientScreen.Elimination)
+            or ClientScreen.Spectate or ClientScreen.Endgame or ClientScreen.Elimination)
         && _eliminationHandoffPlayer is null;
 
     /// <summary>
