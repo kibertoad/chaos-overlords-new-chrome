@@ -25,7 +25,8 @@ public sealed partial class OriginalNewGameExperimentTests
     // dialog 129, and each answer opens the save browser and leaves exactly when the original called
     // its save and stored quit_requested. Each write of 1 is a save; the rebuild has no other way to
     // set the mark. A leave is the rebuild's confirmed exit, which the original's skipped store
-    // stands for.
+    // stands for. Closing the window is File, Exit (RULE-UI-014), which LeavePromptTests.ClosingIsCancelled
+    // drives through the game's exiting handler.
     [Theory]
     [MemberData(nameof(CloseRuns))]
     public void ClosingAsksToSaveExactlyWhileTheMatchIsUnsaved(string experiment, int run)
