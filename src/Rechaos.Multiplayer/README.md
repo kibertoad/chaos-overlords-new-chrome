@@ -67,4 +67,6 @@ whose `HotSeatRecorder` refuses to hand out a recorder in an online match, becau
 got one would apply a command locally and never record it as an order, and the two look identical at
 the point of the call.
 `tools/OnlineSmoke` plays a short match against a running server with two clients in one process,
-which is the end-to-end check the .NET test suite cannot make on its own.
+which is the end-to-end check the .NET test suite cannot make on its own. The multiplayer workflow
+runs it on pull requests, on pushes to main and weekly on main; a failed weekly run opens an issue
+labelled `scheduled-multiplayer-ci`, and the next green one closes it.
