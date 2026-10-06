@@ -232,10 +232,12 @@ None known.
   continuation tests the previous action. EXP-TURN-109 reaches the focus test
   with the gang in its best sector and a Research site there unfinished; the
   gang researches, and its replay parts from the original when it influences
-  the site instead. No recorded run isolates the failed or non-hostile attack fallthrough, weapon and armor upgrade
-  cooldowns, Heal, best-Research-sector routing and ties, Research-site
-  Influence, type cycling, or the late Greed Terminate override, so the
-  research procedure is not established.
+  the site instead. Its next pass, with the item number in the focus,
+  influences that site. No recorded run isolates the failed or non-hostile
+  attack fallthrough, weapon and armor upgrade cooldowns, Heal,
+  best-Research-sector routing and ties, Research-site Influence, type
+  cycling, or the late Greed Terminate override, so the research procedure is
+  not established.
 - The item `type` numbers (0 melee, 1 blade, 2 ranged, 3 armor, 4
   miscellaneous) are assumptions shared with RULE-AI-005.
 - A previous Research of an item of type 4 that is not on the fixed list, or of

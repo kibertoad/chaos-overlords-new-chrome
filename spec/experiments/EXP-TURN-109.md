@@ -46,19 +46,24 @@ took the focus test there.
 
 ## Observations
 
-The run made 2567 calls of `roll` over eleven Done presses. At the planning
-pass of turn 10, player 3's gang in roster slot 5 stands in sector 12, which
-player 3 controls, its focus names sector 12, sector 12 is the best research
-sector the handler finds, and one of its Research sites is unfinished
-(FMT-STATE-002, FMT-STATE-007).
+The run made 2567 calls of `roll` over eleven Done presses. At the end
+player 3's gang in roster slot 5 stands in sector 12, which player 3
+controls (FMT-STATE-001, FMT-STATE-002). Its planning record holds family 7,
+an older Influence (9), a previous Research (11) of item 13, the same item
+number in the focus, and a planned Influence on site slot 2 of sector 12
+(FMT-STATE-007): the tenth pass researched, and the eleventh, whose focus
+held the item number instead of the sector, influenced the site.
 
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
 rebuild makes the same calls with the same bounds and results and reaches
-the same state and planning records. With the focus test skipped in that
-case, so that the gang influences the unfinished site, the replay parts from
-the original at call 2146, a roll of the dice whose bound differs.
+the same state and planning records. In the replay, at the planning pass of
+turn 10 the gang stands in sector 12, its focus names sector 12, sector 12
+is the best research sector the handler finds, and one of its Research sites
+is unfinished. With the focus test skipped in that case, so that the gang
+influences the unfinished site, the replay parts from the original at call
+2146, a roll of the dice whose bound differs.
 
 ## Conclusion
 
