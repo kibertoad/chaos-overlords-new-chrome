@@ -352,7 +352,7 @@ public sealed class AiStrategicStateTests
             .ToArray();
         return new MatchState(definitions, new MatchSetup(
             ScenarioId.KillEmAll, GameDuration.SixMonths, 1996, setups,
-                MatchDeviations.Original, difficulty), players, sectors);
+            MatchDeviations.Original, difficulty), players, sectors);
     }
 
     private static MatchState CreateTerritorialPressureMatch(
@@ -396,6 +396,6 @@ public sealed class AiStrategicStateTests
             .ToArray();
         return new MatchState(definitions, new MatchSetup(
             ScenarioId.KillEmAll, GameDuration.SixMonths, 1996, setups,
-                MatchDeviations.Original, difficulty), players, sectors);
+            MatchDeviations.Original, difficulty), players, sectors);
     }
 }

@@ -612,7 +612,7 @@ public sealed partial class NativeSaveSerializerTests
         ];
         var setup = new MatchSetup(
             ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups,
-                MatchDeviations.Original, AiDifficulty.CrimeLord);
+            MatchDeviations.Original, AiDifficulty.CrimeLord);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [

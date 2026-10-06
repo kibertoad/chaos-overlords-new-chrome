@@ -96,9 +96,9 @@ static async Task<int> AiTournamentAsync(string[] arguments)
                     definitions,
                     new HeadlessMatchOptions(
                         // The tournament plays matches as the game starts them, with the
-                        // deviations at their DEVIATIONS.md defaults.
-                        match.Scenario, options.Duration, match.Seed, MatchDeviations.Defaults,
-                        options.Policy,
+                        // deviations at their DEVIATIONS.md defaults and DEV-AI-003 from --policy.
+                        match.Scenario, options.Duration, match.Seed,
+                        MatchDeviations.Defaults with { AiPolicy = options.Policy },
                         options.Turns, match.VerifyReplay, options.ProgressEveryTurns),
                     options.Trace
                         ? progress => Console.Error.WriteLine(

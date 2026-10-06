@@ -14,7 +14,6 @@ public sealed record HeadlessMatchOptions(
     GameDuration Duration,
     int Seed,
     MatchDeviations Deviations,
-    AiPolicyMode AiPolicy = AiPolicyMode.Original,
     int? ThroughTurn = null,
     bool VerifyReplay = false,
     int ProgressEveryTurns = 10,
@@ -68,8 +67,7 @@ public static class HeadlessMatchRunner
                 : new MatchPlayerSetup(new PlayerId(slot), $"CPU {slot + 1}", PlayerController.Computer))
             .ToArray();
         var setup = new MatchSetup(
-            options.Scenario, options.Duration, options.Seed, players, options.Deviations,
-            aiPolicy: options.AiPolicy);
+            options.Scenario, options.Duration, options.Seed, players, options.Deviations);
         var initial = OriginalMatchFactory.Create(definitions, setup);
         foreach (var player in simulatedHumans) initial.SimulateHuman(player);
         var recorder = new MatchReplayRecorder(initial);

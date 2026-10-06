@@ -68,7 +68,7 @@ public sealed class OriginalComlinkExperimentTests
                 .ToArray();
             _match = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
                 ScenarioId.Greed, GameDuration.SixMonths, run.GetProperty("rng_state").GetInt32(), players,
-                    MatchDeviations.Original));
+                MatchDeviations.Original));
             _match.FinishUpkeep();
             _recorder = new MatchReplayRecorder(_match);
         }

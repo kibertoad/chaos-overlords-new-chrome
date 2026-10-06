@@ -677,11 +677,15 @@ changes cites the deviation's ID and leaves that case out or compares with the
 original's result as the deviation changes it.
 
 A `MatchSetup` and a `HeadlessMatchOptions` have no default for the deviation
-settings a match carries (DEV-AI-007, DEV-AI-008): every caller passes a
-`MatchDeviations`. Tests pass `MatchDeviations.Original`, with every setting
-off, and a test of a deviation itself switches that one setting on and cites its
-ID. The game, the online match bootstrap and the `ai-tournament` command start
-from `MatchDeviations.Defaults`, the Default column of `DEVIATIONS.md`.
+settings a match carries (DEV-AI-003, DEV-AI-007, DEV-AI-008): every caller
+passes a `MatchDeviations`. A test that builds its own setup passes
+`MatchDeviations.Original`, with every setting off, and a test of a deviation
+itself switches that one setting on and cites its ID. The game, the online match
+bootstrap and the `ai-tournament` command start from `MatchDeviations.Defaults`,
+the Default column of `DEVIATIONS.md`, with the Advanced AI choice of the player,
+the host or `--policy` in place of its DEV-AI-003 value. A test that starts its
+match through the online bootstrap therefore runs with DEV-AI-007 and DEV-AI-008
+on and is not listed in `PARITY.md`.
 
 ## Screens against captures of the original
 

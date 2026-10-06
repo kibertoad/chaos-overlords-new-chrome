@@ -100,11 +100,14 @@ public sealed class AdvancedAiPlaytestTests
             new(new PlayerId(1), "CPU TWO", PlayerController.Computer)
         ];
         var state = OriginalMatchFactory.Create(data, new MatchSetup(
-            scenario, GameDuration.FourYears, seed, setups, MatchDeviations.Original,
-            difficulty,
-            aiPolicy: feature == AiTurnPlanner.AdvancedFeature.None
-                ? AiPolicyMode.Original
-                : AiPolicyMode.Advanced));
+            scenario, GameDuration.FourYears, seed, setups,
+            MatchDeviations.Original with
+            {
+                AiPolicy = feature == AiTurnPlanner.AdvancedFeature.None
+                    ? AiPolicyMode.Original
+                    : AiPolicyMode.Advanced
+            },
+            difficulty));
         var metrics = new CampaignMetrics();
         var boundaries = 0;
         while (state.Outcome is null && state.Coordinator.Turn <= 15

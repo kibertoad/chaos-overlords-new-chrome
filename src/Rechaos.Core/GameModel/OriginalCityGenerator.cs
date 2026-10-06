@@ -269,7 +269,6 @@ public static class OriginalMatchFactory
             setup.Scenario, setup.Duration, setup.InitialSeed,
             playersById.OrderBy(entry => entry.Key).Select(entry => entry.Value).ToArray(),
             setup.Deviations,
-            setup.AiMentality,
-            aiPolicy: setup.AiPolicy);
+            setup.AiMentality);
     }
 }

@@ -13,7 +13,8 @@ public sealed class HeadlessMatchRunnerTests
     {
         var definitions = BundledOriginalData.Load();
         var options = new HeadlessMatchOptions(
-            ScenarioId.Power, GameDuration.FourYears, 4093, MatchDeviations.Original, policy,
+            ScenarioId.Power, GameDuration.FourYears, 4093,
+            MatchDeviations.Original with { AiPolicy = policy },
             ThroughTurn: 4, VerifyReplay: true);
 
         var first = HeadlessMatchRunner.Run(

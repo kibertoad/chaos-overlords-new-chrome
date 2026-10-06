@@ -62,7 +62,9 @@ try
             // DEV-AI-008: --original-computer-hires lets the computer planner's hires in the local
             // matches started in this session go to any sector, as the original's do.
             ComputerHiresWhereHumansCan: MatchDeviations.Defaults.ComputerHiresWhereHumansCan
-                && !args.Contains("--original-computer-hires", StringComparer.OrdinalIgnoreCase)),
+                && !args.Contains("--original-computer-hires", StringComparer.OrdinalIgnoreCase),
+            // DEV-AI-003: the game replaces this with the Advanced AI option when a match starts.
+            AiPolicy: MatchDeviations.Defaults.AiPolicy),
         args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
         diagnostics,
         referenceFrame: referenceFrame,

@@ -651,7 +651,7 @@ public sealed partial class OriginalNewGameExperimentTests
             var state = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
                 ScenarioId.Power, GameDuration.OneYear, 12345,
                 [new MatchPlayerSetup(new PlayerId(slot), "PROBE", PlayerController.Human, 0)],
-                    MatchDeviations.Original,
+                MatchDeviations.Original,
                 AiDifficulty.Goon, allowSparsePlayerIds: true));
             state.FindPlayer(new PlayerId(slot))!.Status = PlayerStatus.Eliminated;
             foreach (var gang in state.FindPlayer(new PlayerId(slot))!.Gangs) gang.Force = 0;
@@ -722,7 +722,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 slot, Name(recorded, slot.Value), PlayerController.Human, (short)recorded.Term("portrait", slot.Value))).ToArray(),
             // DEV-AI-007 and DEV-AI-008 switched off unless a test asks for them, so the computer's
             // Moves and hires go where the original's do.
-            new MatchDeviations(computerMovesToNeighboursOnly, computerHiresWhereHumansCan),
+            new MatchDeviations(computerMovesToNeighboursOnly, computerHiresWhereHumansCan, AiPolicyMode.Original),
             (AiDifficulty)recorded.Term("mentality", 0),
             allowSparsePlayerIds: true);
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);

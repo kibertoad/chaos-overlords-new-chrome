@@ -153,10 +153,10 @@ public static class NativeSaveSerializer
                 ComputerMovesToNeighboursOnly: document.Setup.ComputerMovesToNeighboursOnly
                     ?? throw new InvalidDataException("Native save computer Move setting is missing."),
                 ComputerHiresWhereHumansCan: document.Setup.ComputerHiresWhereHumansCan
-                    ?? throw new InvalidDataException("Native save computer hire setting is missing.")),
-            document.Setup.AiMentality,
-            aiPolicy: document.Setup.AiPolicy
-                ?? throw new InvalidDataException("Native save AI policy is missing."));
+                    ?? throw new InvalidDataException("Native save computer hire setting is missing."),
+                AiPolicy: document.Setup.AiPolicy
+                    ?? throw new InvalidDataException("Native save AI policy is missing.")),
+            document.Setup.AiMentality);
         var players = document.Players
             .Select(player => RestorePlayer(setup, player))
             .ToArray();

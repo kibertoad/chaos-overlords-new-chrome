@@ -21,7 +21,7 @@ public sealed class SaveSlotCatalogTests
                 [
                     new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human),
                     new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Human)
-                ], MatchDeviations.Original, aiPolicy: AiPolicyMode.Advanced);
+                ], MatchDeviations.Original with { AiPolicy = AiPolicyMode.Advanced });
             var state = OriginalMatchFactory.Create(definitions, setup);
 
             var saved = SaveSlotCatalog.Save(directory, 8, "Friday campaign", state, online: false);
@@ -210,7 +210,7 @@ public sealed class SaveSlotCatalogTests
                 [
                     new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human),
                     new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Human)
-                ], MatchDeviations.Original, aiPolicy: AiPolicyMode.Advanced));
+                ], MatchDeviations.Original with { AiPolicy = AiPolicyMode.Advanced }));
             var sidecar = SaveSlotCatalog.SavePath(directory, 6) + ".json";
             SaveSlotCatalog.Save(directory, 6, "Other definitions", state, online: false);
             // The match type is the sidecar's alone: on the fallback path it is derived from the
@@ -358,8 +358,8 @@ public sealed class SaveSlotCatalogTests
             var definitions = BundledOriginalData.Load();
             var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
                 ScenarioId.Power, GameDuration.SixMonths, 1996,
-                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original,
-                aiPolicy: AiPolicyMode.Advanced));
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)],
+                MatchDeviations.Original with { AiPolicy = AiPolicyMode.Advanced }));
             var sidecar = SaveSlotCatalog.SavePath(directory, 2) + ".json";
             SaveSlotCatalog.Save(directory, 2, "Tampered", state, online: false);
             var text = File.ReadAllText(sidecar);

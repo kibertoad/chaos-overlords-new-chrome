@@ -244,11 +244,11 @@ public sealed class OriginalCityGeneratorTests
         var enabled = OriginalMatchFactory.Create(data,
             new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996,
                 [new MatchPlayerSetup(new PlayerId(0), "SMGISLANDS", PlayerController.Human)],
-                    MatchDeviations.Original));
+                MatchDeviations.Original));
         var wrongCase = OriginalMatchFactory.Create(data,
             new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996,
                 [new MatchPlayerSetup(new PlayerId(0), "smgislands", PlayerController.Human)],
-                    MatchDeviations.Original));
+                MatchDeviations.Original));
 
         Assert.Equal(MatchLimits.PlayerCount, enabled.Sectors.Count(sector => sector.Owner is not null));
         Assert.All(enabled.Sectors.Where(sector => sector.Owner is not null),

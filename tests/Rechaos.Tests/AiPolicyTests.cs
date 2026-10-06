@@ -138,7 +138,7 @@ public sealed class AiPolicyTests
     }
 
     // DEV-AI-007 and DEV-AI-008: each setting belongs to the match, so the fingerprint, a save and
-    // a replay journal carry it, and switching one off leaves the other on.
+    // a replay journal carry it, and switching one on leaves the other off.
     [Theory]
     [InlineData(false, true)]
     [InlineData(true, false)]
@@ -167,6 +167,42 @@ public sealed class AiPolicyTests
         {
             Assert.Equal(computerMovesToNeighboursOnly, setup.ComputerMovesToNeighboursOnly);
             Assert.Equal(computerHiresWhereHumansCan, setup.ComputerHiresWhereHumansCan);
+        }
+    }
+
+    // DEV-AI-003, DEV-AI-007 and DEV-AI-008: MatchDeviations.Defaults is the Default column of
+    // DEVIATIONS.md, and an online match whose host keeps the original policy starts from it.
+    [Fact]
+    public void DeviationDefaultsFollowTheLedgerAndStartOnlineMatches()
+    {
+        var ledger = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "DEVIATIONS.md"))
+            .Replace("\r\n", "\n");
+
+        Assert.Equal(DefaultIsOn("DEV-AI-003") ? AiPolicyMode.Advanced : AiPolicyMode.Original,
+            MatchDeviations.Defaults.AiPolicy);
+        Assert.Equal(DefaultIsOn("DEV-AI-007"), MatchDeviations.Defaults.ComputerMovesToNeighboursOnly);
+        Assert.Equal(DefaultIsOn("DEV-AI-008"), MatchDeviations.Defaults.ComputerHiresWhereHumansCan);
+        var online = MatchBootstrapFactory.Setup(1996,
+            new MultiplayerGameSettings(
+                ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]),
+            []);
+        Assert.Equal(MatchDeviations.Defaults, online.Deviations);
+
+        bool DefaultIsOn(string id)
+        {
+            var start = ledger.IndexOf($"\n## {id}\n", StringComparison.Ordinal);
+            Assert.True(start >= 0, $"{id} is not in DEVIATIONS.md.");
+            var entry = ledger[(start + 1)..];
+            var next = entry.IndexOf("\n## ", StringComparison.Ordinal);
+            var line = Assert.Single(
+                (next >= 0 ? entry[..next] : entry).Split('\n'),
+                text => text.StartsWith("- Default: ", StringComparison.Ordinal));
+            return line["- Default: ".Length..].Trim() switch
+            {
+                "on" => true,
+                "off" => false,
+                var other => throw new InvalidDataException($"{id} has no switchable Default: {other}."),
+            };
         }
     }
 
@@ -251,8 +287,8 @@ public sealed class AiPolicyTests
         ];
         var setup = new MatchSetup(
             ScenarioId.Greed, GameDuration.SixMonths, 31, setups,
-            new MatchDeviations(computerMovesToNeighboursOnly, computerHiresWhereHumansCan),
-            aiMentality: difficulty, aiPolicy: policy);
+            new MatchDeviations(computerMovesToNeighboursOnly, computerHiresWhereHumansCan, policy),
+            aiMentality: difficulty);
         MatchPlayerState[] players =
         [
             new(setups[0], 50,
