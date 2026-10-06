@@ -381,12 +381,12 @@ dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
 
-`new-game` switches full screen off in memory, silences the game unless
-`--sound` is given (it sets both volumes of the Options dialog, `effects_level`
-and `music_level`, to 0 in memory with the flags RULE-AUDIO-003 derives from
-them, so no effect, movie sound or music plays; nothing the rolls or the state
-depend on reads them; `--sound` sets them to their initialized values, 6 and 5
-(FND-OPTIONS-001), whatever the registry holds), ends the logos and intro movies
+`new-game` switches full screen off in memory, sets both volumes of the
+Options dialog, `effects_level` and `music_level`, in memory (without `--sound`
+to 0 with the flags RULE-AUDIO-003 derives from them, so no effect, movie sound
+or music plays; with `--sound` to their initialized values, 6 and 5
+(FND-OPTIONS-001), whatever the registry holds; nothing the rolls or the state
+depend on reads them), ends the logos and intro movies
 by holding `left_button_down` in memory (RULE-VIDEO-001 ends a movie only when
 the button is held at one of its ticks, so a posted click is missed), presses
 Begin, records the seed and every `roll` with its call site and result, and copies

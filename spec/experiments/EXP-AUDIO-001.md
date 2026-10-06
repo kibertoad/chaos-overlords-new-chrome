@@ -34,15 +34,17 @@ The probe sets a breakpoint on the play helper `fn_0045851A(slot, priority)`
 presses before it, the slot and the address of the call. The effects wrapper
 calls the helper only while effects are enabled; the turn-start cue calls it
 directly. The probe also reads `effects_enabled` (FND-AUDIO-002) at each call
-and at the end of the run, and the fixture records it as `effects_enabled`. The state is dumped at the fifth planning entry, after four turns
-have begun since the first.
+and at the end of the run, and the fixture records it as `effects_enabled`.
+The state is dumped at the fifth planning entry, after four turns have begun
+since the first.
 
 ## Observations
 
 The run made 771 calls of `roll`, and the Done presses came after 328, 427,
 535 and 649 of them. The helper was called five times, each time for slot 2,
 the push cue, through the effects wrapper: once for Begin and once for each
-Done press. Slot 9 was never played. `effects_enabled` was set throughout the run.
+Done press. Slot 9 was never played. `effects_enabled` was set at each call
+and at the end of the run.
 
 ## Results
 
