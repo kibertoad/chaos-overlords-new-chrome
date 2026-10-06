@@ -2459,6 +2459,7 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
+| [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | evidence |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 
 ## EXP-UI-024
