@@ -799,5 +799,32 @@ describe('desync verdicts, snapshots and recovery', () => {
         tieBreakerPlayerId: null,
       })
     })
+
+    /**
+     * Bea's departure breaks the tie and her return restores it. A key naming only the verdict's
+     * content found the first announcement in the log and dropped the third, so every client kept
+     * acting on the departure's verdict while the server enforced the tie: Bea never learned she
+     * was the tie-breaker, and the holders of the hash the clients took for the majority were
+     * refused with `not_tie_breaker`.
+     */
+    it('announces a verdict again when it returns to an earlier one', async () => {
+      const { host, bea, cal, dee, eve } = await startedMatchOfFive()
+      await reportAs(host.token, HASH_C)
+      await reportAs(bea.token, HASH_B)
+      await reportAs(cal.token, HASH_A)
+      await reportAs(dee.token, HASH_A)
+      await reportAs(eve.token, HASH_B)
+      await h.kernel.lobby.leave(await h.principalOf(bea.token))
+      expect(announcements()).toHaveLength(2)
+      await h.kernel.lobby.rejoin(await h.principalOf(bea.token))
+      // The server now enforces [A, B] with Bea as tie-breaker again.
+      await expect(uploadAs(cal.token, HASH_A)).rejects.toMatchObject({
+        details: { reason: 'not_tie_breaker' },
+      })
+      expect(announcements().at(-1)?.payload).toMatchObject({
+        candidateStateHashes: [HASH_A, HASH_B],
+        tieBreakerPlayerId: bea.player.id,
+      })
+    })
   })
 })

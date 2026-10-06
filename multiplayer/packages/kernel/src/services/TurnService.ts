@@ -1,5 +1,6 @@
 import {
   foreignOps,
+  type MatchEventBody,
   type OwnSubmissionView,
   type SubmitOrdersRequest,
   type TurnReportRequest,
@@ -942,12 +943,9 @@ export class TurnService {
         // The verdict was re-run because something changed: a client re-reported after checking
         // its own state, or the roster moved. Either can change who holds the most-reported hash
         // and who breaks a tie, and a client acts on the announcement it last saw, so a changed
-        // verdict is announced again. The key names the verdict's content, which makes an
-        // unchanged one a no-op; the sweep passes `reannounce: false` and never pays for the try.
-        await this.publisher.publishOnce(matchId, desyncAnnouncementKey(payload), {
-          type: 'turn.desynced',
-          payload,
-        })
+        // verdict is announced again. The sweep passes `reannounce: false` and never pays for the
+        // try.
+        await this.reannounceDesync(matchId, payload)
       }
       // Not behind the receipt above: a turn stamped by an older build that died before pausing
       // the match is paused only now, and its pause is still owed to clients.
@@ -971,6 +969,33 @@ export class TurnService {
     if ((await this.deps.storage.matches.get(matchId))?.status === 'running') {
       await this.announceStatus(matchId, 'running')
     }
+  }
+
+  /**
+   * Announce a desync verdict again when it differs from what clients were last told about the
+   * turn. A verdict can return to an earlier one — a seat that left and rejoined restores the tie
+   * its departure broke — and a key naming only the content would find that earlier announcement
+   * in the log and drop the new one, leaving every client acting on the departure's verdict while
+   * the server enforces the tie: the designated player never learned it was named, and everybody
+   * else was refused with `not_tie_breaker`. So the verdict is compared with the latest
+   * announcement and, like a status change, keyed by the event it follows. When the latest
+   * announcement is of another turn the turn's own last word is not at hand, and the content key
+   * is the fallback.
+   */
+  private async reannounceDesync(matchId: string, payload: DesyncPayload): Promise<void> {
+    const last = await this.deps.storage.events.latestOfType(matchId, 'turn.desynced')
+    const lastPayload = last?.type === 'turn.desynced' ? last.payload : null
+    let key = desyncAnnouncementKey(payload)
+    if (last && lastPayload?.turn === payload.turn) {
+      if (
+        (lastPayload.tieBreakerPlayerId ?? null) === payload.tieBreakerPlayerId &&
+        lastPayload.candidateStateHashes.join(',') === payload.candidateStateHashes.join(',')
+      ) {
+        return
+      }
+      key = `${key}:after:${last.seq}`
+    }
+    await this.publisher.publishOnce(matchId, key, { type: 'turn.desynced', payload })
   }
 
   /**
@@ -1111,11 +1136,12 @@ const confirmationKey = (turn: number): string => `turn.confirmed:${turn}`
  * because a report that changes without changing the candidates or the tie-breaker asks nothing
  * new of anybody.
  */
-const desyncAnnouncementKey = (payload: {
-  turn: number
-  candidateStateHashes: readonly string[]
+/** A `turn.desynced` payload as this build writes it: the tie-breaker is always named. */
+type DesyncPayload = Extract<MatchEventBody, { type: 'turn.desynced' }>['payload'] & {
   tieBreakerPlayerId: string | null
-}): string =>
+}
+
+const desyncAnnouncementKey = (payload: DesyncPayload): string =>
   `turn.desynced:${payload.turn}:${payload.candidateStateHashes.join(',')}:${payload.tieBreakerPlayerId ?? ''}`
 
 export interface SettleOptions {
