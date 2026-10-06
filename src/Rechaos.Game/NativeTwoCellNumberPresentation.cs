@@ -32,7 +32,11 @@ public static class NativeTwoCellNumberPresentation
     /// The part of a glyph cell the copy takes from <c>PX00129</c>: <paramref name="Source"/> in the
     /// sheet, drawn <paramref name="Offset"/> pixels right of the cell's left edge.
     /// </summary>
-    public readonly record struct CellCopy(Rectangle Source, int Offset);
+    public readonly record struct CellCopy(Rectangle Source, int Offset)
+    {
+        /// <summary>Where the copy lands for a cell whose left edge is at (<paramref name="cellX"/>, <paramref name="cellY"/>).</summary>
+        public Rectangle Destination(int cellX, int cellY) => new(cellX + Offset, cellY, Source.Width, Source.Height);
+    }
 
     /// <summary>
     /// RULE-UI-004: glyph <c>g</c> is copied from <c>(x, 0, 6, 7)</c> of <c>PX00129</c>, or from

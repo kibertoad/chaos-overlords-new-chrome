@@ -61,7 +61,6 @@ column.
 ## Conclusion
 
 The red row clips as the green row does. A negative column draws nothing
-visible on the black console; -4 is the only negative column a cell can
-partly overlap, and its inside part is black in the sheet, so on any
-background the result looks the same as a clipped copy. The run is one
-system and one seed.
+visible on the black console. The negative columns a cell can partly
+overlap are -4 and -2, whose inside parts lie within the space glyph's cell
+of the sheet; this run covers -4 only. The run is one system and one seed.

@@ -126,6 +126,10 @@ public sealed class ItemInformationLayoutTests
         // becomes a StretchBlt (FND-UI-045) of nothing inside the bitmap (EXP-UI-027, EXP-UI-028).
         Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(0, 0, 2, 7), 4), NativeTwoCellNumberPresentation.AtlasCell(10922, false, 512));
         Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(5461, false, 512));
+        // RULE-UI-004: the other two partly inside columns, 508 from glyph 21930 and -2 from
+        // glyph 21845, keep four of the cell's six pixel columns.
+        Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(508, 0, 4, 7), 0), NativeTwoCellNumberPresentation.AtlasCell(21930, false, 512));
+        Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(0, 8, 4, 7), 2), NativeTwoCellNumberPresentation.AtlasCell(21845, true, 512));
         Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(11008, false, 512));
         Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(int.MaxValue, false, 512));
         // A five-cell score of 109070000 has the leading quotient 10907, glyph 10923.
@@ -134,6 +138,20 @@ public sealed class ItemInformationLayoutTests
         Assert.Equal(new NativeTwoCellNumberPresentation.Value(" 0000", false, false, 10923), score);
         Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(2, 0, 6, 7), 0),
             NativeTwoCellNumberPresentation.AtlasCell(score.OffStripGlyph!.Value, false, 512));
+    }
+
+    [Fact]
+    public void DrawsAPartlyInsideCellAtItsOffsetWithinTheCell()
+    {
+        // RULE-UI-004, EXP-UI-027: at column -4 the two inside pixel columns land four pixels into
+        // the cell, and at column -2 the four inside columns land two pixels in; at 510 the copy
+        // starts at the cell's left edge.
+        Assert.Equal(new Rectangle(104, 40, 2, 7),
+            NativeTwoCellNumberPresentation.AtlasCell(10922, false, 512)!.Value.Destination(100, 40));
+        Assert.Equal(new Rectangle(102, 40, 4, 7),
+            NativeTwoCellNumberPresentation.AtlasCell(21845, true, 512)!.Value.Destination(100, 40));
+        Assert.Equal(new Rectangle(100, 40, 2, 7),
+            NativeTwoCellNumberPresentation.AtlasCell(85, false, 512)!.Value.Destination(100, 40));
     }
 
     [Fact]

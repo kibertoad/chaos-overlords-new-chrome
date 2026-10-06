@@ -98,12 +98,15 @@ every panel passes `leading_zeros` 0. `modifier_cells` is the modifier helper.
   pixels whose source pixel lies inside the bitmap and leaves the others as
   they were: at column 510 the cell's two left pixel columns take the sheet's
   colour at columns 510 and 511, from either row, and a cell wholly outside,
-  such as column 516 or the `StretchBlt` column 32766, changes nothing
-  (EXP-UI-002, EXP-UI-027, EXP-UI-028). What a cell leaves unchanged keeps
-  whatever was drawn there before, an earlier glyph included (EXP-UI-002).
-  At column -4, the only negative column a cell can partly overlap, the
-  inside part is sheet columns 0 and 1, the black of the space glyph
-  (EXP-UI-027).
+  such as column 516, changes nothing (EXP-UI-002, EXP-UI-027, EXP-UI-028).
+  The `StretchBlt` column 32766 left the black console black (EXP-UI-028).
+  What a cell leaves unchanged keeps whatever was drawn there before, an
+  earlier glyph included (EXP-UI-002). Since `6 * g` cut to 16 bits takes
+  every even value, a cell partly overlaps the bitmap at four columns: 508
+  and 510 on the right, with 4 and 2 pixel columns inside, and -4 and -2 on
+  the left (glyphs 10922 and 21845), with 2 and 4. At -4 and -2 the inside
+  part is sheet columns 0 and 1, or 0 to 3, within the space glyph's cell;
+  at -4 it drew black (EXP-UI-027).
 - -2147483648 stays negative when negated, so its quotients are negative: in
   two cells the first is -214748364, at column 13208, outside the bitmap, and
   the second -8, glyph 8, the character `(`, from the red row.
@@ -124,4 +127,8 @@ None known.
   treats a source rectangle outside its bitmap may differ on other versions
   of Windows, which static reading of the game cannot settle (FND-UI-045).
 - No run has drawn a cell at the `StretchBlt` columns 32762 and 32764, or at
-  column 32766 over a cell that already held a glyph.
+  column 32766 over a cell that already held a glyph. The `StretchBlt` source
+  width of -65530 spans the whole bitmap, and a capture over the black
+  console cannot tell a copy that drew nothing at 32766 from one that drew
+  black.
+- No run has drawn a cell at column 508 or -2.

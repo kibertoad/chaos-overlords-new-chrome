@@ -55,7 +55,9 @@ red `BitBlt` from column 516 leave the black console as it was.
 
 ## Conclusion
 
-A cell wholly outside the bitmap draws nothing, through either copy and
-from either row, on this system. The run does not show whether the
-`StretchBlt` leaves a glyph drawn there earlier in place, as the `BitBlt` of
-EXP-UI-002 does at column 516.
+A cell wholly outside the bitmap draws nothing visible on the black console,
+through either copy and from either row, on this system. The `StretchBlt`
+source width of -65530 spans the whole bitmap, so the capture cannot tell a
+copy that drew nothing from one that drew black, and the run does not show
+whether the `StretchBlt` leaves a glyph drawn there earlier in place, as the
+`BitBlt` of EXP-UI-002 does at column 516.

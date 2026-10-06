@@ -61,9 +61,7 @@ public sealed class PixelFont
         Draw(batch, display.Digits, position, color, 1);
         if (display.OffStripGlyph is { } glyph
             && NativeTwoCellNumberPresentation.AtlasCell(glyph, display.IsNegative, _uiAtlas.Width) is { } copy)
-            batch.Draw(_uiAtlas,
-                new Rectangle((int)position.X + copy.Offset, (int)position.Y, copy.Source.Width, copy.Source.Height),
-                copy.Source, Color.White);
+            batch.Draw(_uiAtlas, copy.Destination((int)position.X, (int)position.Y), copy.Source, Color.White);
     }
 
     /// <summary>
