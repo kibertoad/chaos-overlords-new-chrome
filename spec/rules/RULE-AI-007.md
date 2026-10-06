@@ -56,8 +56,8 @@ row or leaves the city.
   attempts; each costs a `roll`.
 - The drawn neighbour is not checked against the six-gang limit [FND-MOVE-003].
 - A neighbour whose owner byte is below -1 is drawn again [FND-MOVE-003]. No
-  instruction stores such a value in an owner byte, so the test never refuses
-  a sector in play [FND-MOVE-007].
+  instruction stores such a value in an owner byte, so the test can refuse a
+  sector only when the value arrives by a block read [FND-MOVE-007].
 - EXP-TURN-097 draws from corner sector 7 and EXP-TURN-098 from corner sector
   63: draws north of the city, south of it and past its eastern edge are drawn
   again, and a drawn sector that the mover then crowds sends it back for
@@ -82,3 +82,5 @@ None known.
 - No run has drawn from a sector in column 0, so the test of the western edge
   rests on FND-MOVE-003 alone, and the status stays `supported` until a run
   reaches it.
+- Which records, if any, bring an owner byte below -1 through a block read is
+  not recorded [FND-MOVE-007].

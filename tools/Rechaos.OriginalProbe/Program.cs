@@ -420,16 +420,13 @@ static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? rai
     }
     foreach (var entry in (cash ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
     {
-        var parts = entry.Split(':');
-        var turns = parts[0].Split('-').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-        if (parts.Length != 3 || turns is not ([>= 1] or [>= 1, _]) || turns[^1] < turns[0])
+        var range = entry.Split(':', 2);
+        var turns = range[0].Split('-').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        int[] parts = range.Length == 2 ? Numbers(range[1]) : [];
+        if (parts.Length != 2 || parts[0] is < 0 or > 5 || turns is not ([>= 1] or [>= 1, _]) || turns[^1] < turns[0])
             throw new FormatException($"A cash write needs a turn or a range of turns from 1, a player 0 to 5 and a value: {entry}");
-        var player = int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
-        var value = int.Parse(parts[2], System.Globalization.CultureInfo.InvariantCulture);
-        if (player is < 0 or > 5)
-            throw new FormatException($"A cash write needs a player 0 to 5: {entry}");
         for (var turn = turns[0]; turn <= turns[^1]; turn++)
-            writes.Add(new ProbePlanning(turn, player, 0, ProbePlanning.Cash, value));
+            writes.Add(new ProbePlanning(turn, parts[0], 0, ProbePlanning.Cash, parts[1]));
     }
     return writes.Count == 0 ? null : writes;
 }

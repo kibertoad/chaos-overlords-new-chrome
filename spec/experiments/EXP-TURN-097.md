@@ -75,7 +75,7 @@ repair sends slot 6 back to Z and then draws its neighbours: offsets +9, +9,
 -9, -7, -7, -9 and +1 from sector 7 give 16, 16, -2, 0, 0, -2 and 8, which
 leave the city or wrap past its eastern edge and are drawn again; -1 gives
 sector 6, which then counts seven, so slot 6 is sent back to sector 7 again;
-+7 gives sector 14, whose earlier mover from sector 22 then goes back, and the
++8 gives sector 15, whose earlier mover from sector 23 then goes back, and the
 repair ends.
 
 ## Conclusion
