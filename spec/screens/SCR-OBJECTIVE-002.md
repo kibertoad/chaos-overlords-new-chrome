@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-OBJECTIVE-002, FND-AWARDS-003, FND-GFX-003, FND-AUDIO-002, FND-AUDIO-010, FND-EXE-004]
+evidence: [FND-OBJECTIVE-002, FND-AWARDS-003, FND-GFX-003, FND-AUDIO-002, FND-AUDIO-010, FND-EXE-004, EXP-UI-018]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-005]
@@ -15,11 +15,11 @@ related: [RULE-OBJECTIVE-005]
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| City screen, left as it was | None | None | Whole screen | Always | FND-OBJECTIVE-002 |
+| City screen, left as it was | None | None | Whole screen | Always; black when the card follows the turn's resolution | FND-OBJECTIVE-002, EXP-UI-018 |
 | Endgame frame | `DATA/PX16/PX00200` | None | `(106, 25, 428, 410)` | Always | FND-OBJECTIVE-002, FND-GFX-003 |
 | Elimination splash | `DATA/PX16/PX00203` | None | From `(110, 30)` | Always | FND-OBJECTIVE-002 |
-| Player name | Font not recorded | `player_names` of the eliminated player, unchanged | Centred on `(158, 46)` | Always | FND-OBJECTIVE-002 |
-| Overlord portrait | Source not recorded | The eliminated player's portrait | `(126, 54, 64, 64)` | Always | FND-OBJECTIVE-002 |
+| Player name | The plain font of `DATA/PX16/PX00129` | `player_names` of the eliminated player, unchanged | Centred on `(158, 46)` | Always | FND-OBJECTIVE-002, EXP-UI-018 |
+| Overlord portrait | Source not recorded; drawn as the interface sheet's `(32 * portrait, 480, 32, 32)` scaled | The eliminated player's portrait, inside the splash's own frame | `(126, 54, 64, 64)` | Always | FND-OBJECTIVE-002, EXP-UI-018 |
 
 ## Mouse input
 

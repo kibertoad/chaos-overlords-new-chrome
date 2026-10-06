@@ -1,0 +1,10 @@
+{
+  "screen": "SCR-UI-006",
+  "state": "The Item Information panel opened by a double-click on a row of the Equip panel",
+  "elements": [
+    {"element": "Item Information panel", "rect": [0, 0, 640, 460]},
+    {"element": "Panel with its labels", "rect": [128, 124, 320, 209]},
+    {"element": "Rotating item", "rect": [162, 141, 48, 48]},
+    {"element": "Edge of the panel underneath", "rect": [104, 124, 24, 209]}
+  ]
+}

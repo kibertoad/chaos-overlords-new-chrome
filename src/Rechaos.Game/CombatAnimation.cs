@@ -38,7 +38,6 @@ public static class CombatAnimationRouting
     public const int FrameMilliseconds = PresentationClock.PeriodMilliseconds;
     public const int FirstAnimationTick = 3;
     public const int LastAnimationTick = 10;
-    public const int PreDamageTick = 12;
 
     /// <summary>
     /// FND-COMBAT-014: on tick 12 the clip player draws black through bitmap 143 over the last
@@ -231,6 +230,7 @@ public sealed class CombatAnimationPlayer
 {
     private readonly Queue<CombatAnimationClip> _queue = [];
     private double _elapsedMilliseconds;
+    private bool _held;
 
     public CombatAnimationClip? Active { get; private set; }
     public int TimelineTick { get; private set; }
@@ -238,7 +238,9 @@ public sealed class CombatAnimationPlayer
         TimelineTick - CombatAnimationRouting.FirstAnimationTick,
         0,
         CombatAnimationRouting.FrameCount - 1);
-    public bool ShowsPreDamageForce => TimelineTick <= CombatAnimationRouting.PreDamageTick;
+    // FND-COMBAT-016: the tracks are painted again only on tick 16; tick 14 copies back the
+    // ones painted before the clip's ticks.
+    public bool ShowsPreDamageForce => TimelineTick < CombatAnimationRouting.FinalResultTick;
     public bool ShowsDimmedFrames => TimelineTick >= CombatAnimationRouting.DimmedFramesTick;
     public bool ShowsDamageFlash => TimelineTick is
         CombatAnimationRouting.FirstDamageFlashTick or
@@ -260,12 +262,33 @@ public sealed class CombatAnimationPlayer
         }
     }
 
-    public IReadOnlyList<CombatAnimationClip> Advance(TimeSpan elapsed)
+    public IReadOnlyList<CombatAnimationClip> Advance(TimeSpan elapsed) => Advance(elapsed, holding: false);
+
+    /// <summary>
+    /// Advances the clip by the ticks that fell in <paramref name="elapsed"/>.
+    /// <paramref name="holding"/> says the Exit face is held, which keeps the original's clip loop
+    /// inside the held-button helper (FND-UI-046, FND-UI-047): the clip stops, and the first pass
+    /// after the release takes one tick if any fell during the hold and drops the others.
+    /// </summary>
+    public IReadOnlyList<CombatAnimationClip> Advance(TimeSpan elapsed, bool holding)
     {
         if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
         if (Active is null) return [];
-        List<CombatAnimationClip>? started = null;
         _elapsedMilliseconds += elapsed.TotalMilliseconds;
+        if (holding)
+        {
+            _held = true;
+            return [];
+        }
+        if (_held)
+        {
+            _held = false;
+            // Timer slot 0's flag holds one tick, however many fell during the hold.
+            if (_elapsedMilliseconds >= CombatAnimationRouting.FrameMilliseconds)
+                _elapsedMilliseconds = CombatAnimationRouting.FrameMilliseconds
+                    + _elapsedMilliseconds % CombatAnimationRouting.FrameMilliseconds;
+        }
+        List<CombatAnimationClip>? started = null;
         while (Active is not null && _elapsedMilliseconds >= CombatAnimationRouting.FrameMilliseconds)
         {
             _elapsedMilliseconds -= CombatAnimationRouting.FrameMilliseconds;
@@ -280,11 +303,24 @@ public sealed class CombatAnimationPlayer
         return started ?? [];
     }
 
+    /// <summary>
+    /// Puts the playing clip at <paramref name="tick"/> without advancing through the ticks before
+    /// it, for a frame drawn at a captured tick of the original's clip (FND-COMBAT-016). A clip whose
+    /// hold flag is cleared ends on tick 16, so it shows only ticks 0 to 15.
+    /// </summary>
+    public void ShowTick(int tick)
+    {
+        if (Active is not { } clip) return;
+        if (tick < 0 || tick >= clip.CompletionTick) throw new ArgumentOutOfRangeException(nameof(tick));
+        TimelineTick = tick;
+    }
+
     public void Clear()
     {
         _queue.Clear();
         Active = null;
         TimelineTick = 0;
         _elapsedMilliseconds = 0;
+        _held = false;
     }
 }

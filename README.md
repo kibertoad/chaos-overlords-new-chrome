@@ -10,9 +10,10 @@ creates a local asset pack containing repaired graphics plus the original
 audio, music, video, help, and currently opaque resources. Compact gameplay
 tables are bundled in the open-source core; original art and media are not.
 
-Original save import/export is not supported. Recreation-native saves and
-replays are development formats until 1.0.0 and may change incompatibly before
-then; the versioned migration machinery is retained for post-1.0 compatibility.
+Saves from the original game cannot be loaded, and the rebuild cannot write
+them. Its own saves and replays are development formats until 1.0.0 and may
+change incompatibly before then; the versioned migration machinery is retained
+for post-1.0 compatibility.
 
 ## Quick start
 
@@ -28,12 +29,15 @@ when importing them.
 
 ## Project status
 
-New Chrome is a playable pre-1.0 recreation. A full match runs from setup to
-the awards for one player, several players at one computer, or players online
-through a coordination server. All ten scenarios, all fourteen gang commands,
-combat, police, the computer players, the original screens, Help, music and
-movies are in, using assets imported from a legal GOG copy. Saves, replays and
-bug reports that carry the whole match are rebuild additions.
+New Chrome is a fully featured reproduction of the original, believed to be
+about 99.9% accurate. A full match runs from setup to the awards for one player,
+several players at one computer, or players online through a coordination
+server. All ten scenarios, all fourteen gang commands, combat, police, the
+computer players, the original screens, saving and loading, Help, music and
+movies are in, using assets imported from a legal GOG copy. The project is now
+in its final phase: hunting down the last small behavioural quirks and nuances
+by comparing the rebuild with recorded runs of the original. Replays, online
+play and bug reports that carry the whole match are rebuild additions.
 
 ### How accurate it is
 
@@ -42,9 +46,15 @@ The rules, balance, AI, screens and file formats were recovered by reading the
 reading found. Every entry of the [spec](spec/README.md) has an implementation,
 and every function of the game's code is cited by at least one entry, so no
 part of the original is known to be left out. The rebuild keeps the original's
-rounding, ordering and quirks, bugs included. Its 65 deliberate departures
+rounding, ordering and quirks, including bugs that players may rely on. It fixes
+only crashes, freezes, corrupted saves and logic that plainly does not do what it
+was written to do; when a bug cannot be told from a design decision, the original
+behaviour stays. Its 63 deliberate departures
 are listed in [DEVIATIONS.md](DEVIATIONS.md); many are interface changes, and
-five have a setting that restores the original behaviour.
+seven have a setting that restores the original behaviour. Two of them, the
+computer players' Moves to distant sectors (DEV-AI-007) and their hires outside
+their own sectors (DEV-AI-008), are switched by `--original-computer-moves` and
+`--original-computer-hires` on the game's command line instead of a screen.
 
 Recorded runs of the original now check it in play. A debugger records every
 random draw of new games from launch and up to twenty-five turns of play, some
@@ -86,7 +96,7 @@ The technical documentation is cataloged in [docs/README.md](docs/README.md);
 
 - Original copyrighted assets are never bundled; a supported legal copy is
   required for import.
-- Original 1996 save import/export is not supported.
+- Saves from the original game cannot be loaded or written.
 - WinSock, IPX, modem, serial, AppleTalk, and other legacy protocol
   interoperability will not be recreated. Online play uses the new documented
   transport instead.
@@ -236,18 +246,33 @@ Tim Jordan, Adam K. Rixey, and George Ruof, for the remarkably thorough
 It has been invaluable for clarifying game mechanics whose presentation in the
 original game and manual can otherwise be delightfully cryptic.
 
-This project copies no source code and redistributes no copyrighted resources
-from the original game. Players are expected to buy and own a legal copy, such
-as the [GOG release](https://www.gog.com/en/game/chaos_overlords), and import
-its assets locally during installation.
-
 ## License
 
-Copyright (C) 2026 kibertoad.
+The code, documentation and other material written for this project, including
+the rebuild, its tools and the spec in `spec/`, are copyright (C) 2026
+kibertoad. This copyright covers only that new work.
 
-The original code in this repository is licensed under the [MIT License](LICENSE).
-The documentation of the original game in `spec/` is licensed under
+The code in this repository is licensed under the [MIT License](LICENSE).
+The spec in `spec/`, this project's own description of how the original game
+works, is licensed under
 [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/),
 and its machine-readable files under the MIT License; `spec/LICENSE` says which
-files each covers. Neither license covers or grants rights to the original
-*Chaos Overlords* assets, which are not distributed by this project.
+files each covers. The MIT and CC BY 4.0 licenses apply only to this project's
+own work. They grant no rights to the original game or its assets.
+
+*Chaos Overlords* was created by Stick Man Games and first published in 1996 by
+New World Computing. According to the
+[GOG store page](https://www.gog.com/en/game/chaos_overlords), the rights to the
+game are now held by Evolution Interactive. All rights to the original game,
+including its name, executable, artwork, music, sounds, video, text and other
+assets, belong to their respective owners.
+
+This project copies no source code from the original game, and this repository
+and its releases contain none of its files. Players are expected to buy and own
+a legal copy, such as the
+[GOG release](https://www.gog.com/en/game/chaos_overlords), and import its
+assets locally during installation. The name
+*Chaos Overlords* is used here only to identify the game this project is
+compatible with. This project is an independent fan recreation, not affiliated
+with or endorsed by Stick Man Games, New World Computing, Evolution Interactive
+or GOG.

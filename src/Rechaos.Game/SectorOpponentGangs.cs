@@ -72,6 +72,42 @@ public static class SectorOpponentGangs
         return null;
     }
 
+    /// <summary>
+    /// RULE-UI-010, FND-UI-015: whose gangs the cards list after a press on <paramref name="owner"/>'s
+    /// portrait, null for the viewer's own. A portrait switches the cards only when the viewer can
+    /// see a gang of that overlord in the sector, and the viewer's own portrait then restores the
+    /// viewer's roster. The portrait of an overlord with no such gang leaves
+    /// <paramref name="current"/> as it is.
+    /// </summary>
+    public static PlayerId? PressPortrait(
+        MatchState state,
+        PlayerId viewer,
+        PlayerId? current,
+        PlayerId owner,
+        int sectorId)
+    {
+        if (!Detected(state, viewer, owner, sectorId).Any()) return current;
+        return owner == viewer ? null : owner;
+    }
+
+    /// <summary>
+    /// RULE-UI-010 <c>sector_card_slots</c>: the gangs the cards list while
+    /// <paramref name="borrowed"/> is the viewed overlord, null for the viewer's own. A borrowed
+    /// roster falls back to the viewer's own gangs once that overlord no longer keeps a gang the
+    /// viewer can see in the sector.
+    /// </summary>
+    public static IReadOnlyList<MatchGangState> Cards(
+        MatchState state,
+        PlayerId viewer,
+        PlayerId? borrowed,
+        int sectorId)
+    {
+        if (borrowed is { } owner && owner != viewer
+            && InSector(state, viewer, owner, sectorId) is { Count: > 0 } listed)
+            return listed;
+        return InSector(state, viewer, viewer, sectorId);
+    }
+
     private static IEnumerable<MatchGangState> Detected(
         MatchState state,
         PlayerId viewer,

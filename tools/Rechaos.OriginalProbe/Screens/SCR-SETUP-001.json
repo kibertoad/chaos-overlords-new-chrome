@@ -1,0 +1,7 @@
+{
+  "screen": "SCR-SETUP-001",
+  "state": "The local setup screen as New Game first opens it in a session",
+  "elements": [
+    {"element": "Full local game setup screen with scenario, settings and six player cards", "rect": [0, 0, 640, 460]}
+  ]
+}

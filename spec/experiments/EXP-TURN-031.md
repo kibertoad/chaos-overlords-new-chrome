@@ -9,7 +9,7 @@ reproduced_by: []
 environment: Windows 11 Pro 10.0.26200, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, run with the compatibility layers DWM8And16BitMitigation, WINXPSP2, DISABLEDWM, 640X480 and DISABLEDXMAXIMIZEDWINDOWEDMODE, windowed, Warn if Idle Gangs and Detailed Combat switched off and the sound levels set to 0 in memory, under the Windows debugging interface of tools/Rechaos.OriginalProbe
 starting_state: new-game
 recording: null
-repetitions: 1
+repetitions: 2
 fixture: EXP-TURN-031.json
 ---
 
@@ -56,6 +56,13 @@ The run made 1908 calls of `roll`. At the end the human had 0 cash, the gang
 in slot 0 held no item, and the gang in slot 1 held armor 24 and
 miscellaneous item 40.
 
+A second run with the same inputs, recorded once the probe kept each call of
+the planning entry panels and whether it stayed open (RULE-SETUP-008), made the
+same calls of `roll` and reached the same end state. Combat Results was called
+at all ten planning entries and returned at once each time. Last Turn Events
+opened at the planning entries of turns 8 and 9, after the failed Equips of
+turns 7 and 8, and was not called at the others. The fixture holds this run.
+
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
@@ -72,4 +79,6 @@ and the Sell by the earlier slot paid for the Equip of turn 9.
 
 ## Conclusion
 
-The run agrees with RULE-EQUIP-001 and RULE-EQUIP-002.
+The run agrees with RULE-EQUIP-001 and RULE-EQUIP-002. At every planning
+entry the rebuild opens Last Turn Events exactly where the original did, and
+shows no combat results (RULE-SETUP-008, RULE-EVENT-005).

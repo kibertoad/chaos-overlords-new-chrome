@@ -6,7 +6,7 @@ namespace Rechaos.Game;
 /// Original Comlink Send composition field: a fixed 4-by-40 character grid.
 /// </summary>
 /// <remarks>
-/// Handler <c>0x0045EAB1</c> (FND-COMLINK-005) stores and overwrites individual cells rather
+/// Handler <c>0x0045EAB1</c> (FND-COMLINK-010) stores and overwrites individual cells rather
 /// than inserting into an append-only string. Its cursor wraps horizontally,
 /// then clamps at the first and last row. The outgoing message trims only
 /// trailing blank cells; interior blanks remain significant.

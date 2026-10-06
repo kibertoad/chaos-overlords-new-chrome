@@ -303,14 +303,14 @@ that the Send panel edits and the recorder copies [FND-COMLINK-001], at
 ## comlink_draft_column
 
 The column, 0 to 39, of the text cursor in `comlink_draft`. Any other value
-the game keeps: an integer [FND-COMLINK-005], a local of the Send handler with
-no fixed address, 0 each time the panel opens [FND-COMLINK-007].
+the game keeps: a 16-bit value [FND-COMLINK-010], a local of the Send handler
+with no fixed address, 0 each time the panel opens [FND-COMLINK-007].
 
 ## comlink_draft_row
 
 The row, 0 to 3, of the text cursor in `comlink_draft`. Any other value the
-game keeps: an integer [FND-COMLINK-005], a local of the Send handler with no
-fixed address, 0 each time the panel opens [FND-COMLINK-007].
+game keeps: a 16-bit value [FND-COMLINK-010], a local of the Send handler with
+no fixed address, 0 each time the panel opens [FND-COMLINK-007].
 
 ## comlink_eligible
 
@@ -1030,6 +1030,12 @@ Any other value the game computes, element `player * 81 + roster_slot`
 Set when the end-of-turn evaluation finds the match finished. Any other value
 the game keeps: `UINT8` at `0x004ABBD4`, cleared when a match starts
 [FND-AI-005, FND-OBJECTIVE-003, FND-OBJECTIVE-004].
+
+## match_saved
+
+Set while the match is as it was last saved or loaded, and always in a network
+game; File, End and File, Exit offer to save first while it is clear. Any other
+value the game keeps: the byte at `0x00498350` [FND-UI-058, EXP-UI-026].
 
 ## mentality
 

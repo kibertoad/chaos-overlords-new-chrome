@@ -21,7 +21,11 @@ public sealed partial class ChaosGame
         int? sectorId = _financeScope == FinanceScope.Sector ? _cursor : null;
         var projection = FinanceProjection.Project(state, player, sectorId);
         ClearFinanceFields(batch, pixel);
-        if (_uiSprites is not null)
+        // FND-FINANCE-002, FND-UI-025, EXP-UI-007: the Sector variant copies the sector's cell
+        // from the unmarked copy of the city map, as Gangs in Sector does, and frames it in black.
+        if (sectorId is { } tileSector)
+            DrawUnmarkedSectorCell(batch, pixel, tileSector, FinanceLayout.SectorTile);
+        else if (_uiSprites is not null)
             batch.Draw(_uiSprites, FinanceLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         int[] rows =
@@ -73,20 +77,34 @@ public sealed partial class ChaosGame
         {
             var row = SiteSearchLayout.Site(index);
             var selected = selection.Contains(sites[index].Id);
-            if (index == _siteSearchCursor) DrawBorder(batch, pixel, row, Color.Gold, 1);
-            DrawBorder(batch, pixel, new Rectangle(row.X + 2, row.Y + 2, 8, 8),
-                selected ? Color.Lime : new Color(90, 100, 100), 1);
-            if (selected)
-                batch.Draw(pixel, new Rectangle(row.X + 4, row.Y + 4, 4, 4), Color.Lime);
-            font.Draw(batch, sites[index].Name,
-                new Vector2(row.X + 14, row.Y + 3), selected ? Color.Lime : Color.White, 1);
+            // DEV-SEARCH-001: the keyboard's row is outlined once a key has moved or flipped it.
+            if (_siteSearchCursorShown && index == _siteSearchCursor) DrawBorder(batch, pixel, row, Color.Gold, 1);
+            // FND-SEARCH-001, FND-SEARCH-004: the definition's marker icon, then the first 15
+            // characters of its name, from the plain font when selected and the row at (152,274)
+            // when not.
+            var icon = SiteSearchLayout.Icon(index);
+            if (_siteMarkerSprites is not null)
+                batch.Draw(_siteMarkerSprites, icon, SiteSearchLayout.IconSource(sites[index].Id), Color.White);
+            var name = sites[index].Name;
+            font.Copy(batch, name[..Math.Min(name.Length, SiteSearchLayout.NameCharacters)],
+                new Point(icon.X + 24, icon.Y + 3),
+                selected ? OriginalFontLayout.PlainStrip : OriginalFontLayout.DimStrip);
         }
     }
+
+    // DEV-SEARCH-001: whether a key has moved or flipped the Search panel's keyboard row since it
+    // opened.
+    private bool _siteSearchCursorShown;
+
+    private int _siteSearchCursor;
+    private readonly SiteSearchSelectionState _siteSearchSelections = new();
+    private readonly IndexedDoubleClickTracker _siteSearchClicks = new();
 
     private void OpenSiteSearch(ClientScreen returnScreen)
     {
         _managementReturnScreen = returnScreen;
         _siteSearchCursor = 0;
+        _siteSearchCursorShown = false;
         _screens.Show(ClientScreen.Search);
     }
 
@@ -95,63 +113,73 @@ public sealed partial class ChaosGame
         if (_definitions is null || _definitions.Sites.Count == 0) return;
         var count = Math.Min(_definitions.Sites.Count, SiteSearchLayout.MaximumSites);
         _siteSearchCursor = (_siteSearchCursor + delta + count) % count;
+        _siteSearchCursorShown = true;
     }
+
+    private short[] SiteSearchRows() => _definitions is null ? [] : SiteSearchPanel.Rows(_definitions);
 
     private void ToggleSiteSearchSelection()
     {
-        if (_definitions is null) return;
-        var sites = _definitions.Sites.OrderBy(site => site.Id)
-            .Take(SiteSearchLayout.MaximumSites).ToArray();
-        if (_siteSearchCursor >= sites.Length) return;
-        var id = sites[_siteSearchCursor].Id;
-        _siteSearchSelections.Toggle(SiteSearchPlayer(), id);
+        var rows = SiteSearchRows();
+        if (_siteSearchCursor >= rows.Length) return;
+        // DEV-SEARCH-001: the row Space flips is outlined, so the key never acts on a row it hides.
+        _siteSearchCursorShown = true;
+        SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
+            new SiteSearchPress(SiteSearchControl.Row, _siteSearchCursor), rows);
     }
 
     private void SelectAllSiteSearch()
     {
         if (_definitions is null) return;
         AcceptInput();
-        _siteSearchSelections.SelectAll(
-            SiteSearchPlayer(),
-            _definitions.Sites.OrderBy(site => site.Id)
-                .Take(SiteSearchLayout.MaximumSites).Select(site => site.Id));
+        SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
+            new SiteSearchPress(SiteSearchControl.All), SiteSearchRows());
     }
 
     private void ClearSiteSearch()
     {
         AcceptInput();
-        _siteSearchSelections.Clear(SiteSearchPlayer());
+        SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(),
+            new SiteSearchPress(SiteSearchControl.None), []);
     }
 
     private void ApplySiteSearch()
     {
         AcceptInput();
         _message = string.Empty;
+        CloseSiteSearch();
+    }
+
+    // FND-SEARCH-004: closing the panel draws the whole city again, gang-status markers included
+    // (RULE-UI-006).
+    private void CloseSiteSearch()
+    {
+        if (_state is { Coordinator.Phase: TurnPhase.Command } state)
+        {
+            var viewer = ViewingPlayer(state);
+            _gangMarkers.RedrawAll(state, viewer, _gangSight.For(state, viewer));
+        }
         _screens.Show(_managementReturnScreen);
     }
 
-    private void CancelSiteSearch() => _screens.Show(_managementReturnScreen);
-
     private void HandleSiteSearchClick(Point point)
     {
-        if (SiteSearchLayout.All.Contains(point)) SelectAllSiteSearch();
-        else if (SiteSearchLayout.None.Contains(point)) ClearSiteSearch();
-        else if (SiteSearchLayout.Ok.Contains(point)) ApplySiteSearch();
-        else if (_definitions is not null)
+        var rows = SiteSearchRows();
+        var click = SiteSearchPanel.Press(_siteSearchSelections, SiteSearchPlayer(), point, rows,
+            _siteSearchClicks, _inputTime);
+        switch (click.Press.Control)
         {
-            var count = Math.Min(_definitions.Sites.Count, SiteSearchLayout.MaximumSites);
-            for (var index = 0; index < count; index++)
-            {
-                if (!SiteSearchLayout.Site(index).Contains(point)) continue;
-                _siteSearchCursor = index;
-                var siteId = _definitions.Sites.OrderBy(site => site.Id)
-                    .Take(SiteSearchLayout.MaximumSites).ElementAt(index).Id;
-                if (_siteSearchClicks.Register(index, _inputTime))
-                    OpenSiteDefinitionDetails(siteId, ClientScreen.Search);
-                else
-                    ToggleSiteSearchSelection();
+            case SiteSearchControl.All:
+            case SiteSearchControl.None:
+                AcceptInput();
                 break;
-            }
+            case SiteSearchControl.Done:
+                ApplySiteSearch();
+                break;
+            case SiteSearchControl.Row:
+                _siteSearchCursor = click.Press.Row;
+                if (click.OpensDetails) OpenSiteDefinitionDetails(rows[click.Press.Row], ClientScreen.Search);
+                break;
         }
     }
 

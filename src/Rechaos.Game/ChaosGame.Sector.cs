@@ -69,42 +69,30 @@ public sealed partial class ChaosGame
     /// gangs of the player whose turn it is, during planning.
     /// </summary>
     private bool ShowsGroupOrderStrip(MatchState state, PlayerId viewer, IReadOnlyList<MatchGangState> cards) =>
+        ShowsGroupOrderStrip(state, PlanningViewer, viewer, cards);
+
+    internal static bool ShowsGroupOrderStrip(
+        MatchState state, PlayerId? planningViewer, PlayerId viewer, IReadOnlyList<MatchGangState> cards) =>
         state.Coordinator.Phase == TurnPhase.Command
-        && PlanningViewer == viewer
+        && planningViewer == viewer
         && cards.Count >= 2
         && cards[0].Owner == viewer;
 
-    /// <summary>
-    /// The gangs the Sector workspace lists. A borrowed opponent roster falls back to the viewer's
-    /// own gangs once the opponent no longer keeps a detectable gang in the selected sector.
-    /// </summary>
-    private IReadOnlyList<MatchGangState> SectorCardGangs(MatchState state, PlayerId viewer)
-    {
-        if (_sectorGangCardOwner is { } owner && owner != viewer
-            && SectorOpponentGangs.InSector(state, viewer, owner, _cursor) is { Count: > 0 } borrowed)
-            return borrowed;
-        return SectorOpponentGangs.InSector(state, viewer, viewer, _cursor);
-    }
+    /// <summary>The gangs the Sector workspace lists (<see cref="SectorOpponentGangs.Cards"/>).</summary>
+    private IReadOnlyList<MatchGangState> SectorCardGangs(MatchState state, PlayerId viewer) =>
+        SectorOpponentGangs.Cards(state, viewer, _sectorGangCardOwner, _cursor);
 
     /// <summary>
-    /// Points the workspace at an overlord's gangs. RULE-UI-010: a portrait switches the cards
-    /// only when the viewer can see a gang of that overlord in the sector, and the viewer's own
-    /// portrait then restores the viewer's roster. The portrait of an overlord with no such gang
-    /// leaves the cards as they are.
+    /// Points the workspace at an overlord's gangs (RULE-UI-010, <see cref="SectorOpponentGangs.PressPortrait"/>).
     /// </summary>
     private void SelectSectorGangCardOwner(MatchState state, PlayerId viewer, PlayerId owner)
     {
         _message = string.Empty;
-        if (owner == viewer)
-        {
-            if (SectorOpponentGangs.InSector(state, viewer, viewer, _cursor).Count > 0)
-                _sectorGangCardOwner = null;
-            return;
-        }
-        if (!SectorOpponentGangs.Detectable(state, viewer, owner, _cursor)) return;
-        _sectorGangCardOwner = owner;
+        _sectorGangCardOwner = SectorOpponentGangs.PressPortrait(state, viewer, _sectorGangCardOwner, owner, _cursor);
         // Borrowing an opponent's cards puts the player's own gangs out of sight, and a pick
-        // nobody can see is a pick nobody meant to keep.
+        // nobody can see is a pick nobody meant to keep. That holds for a press on the overlord
+        // already borrowed whose cards had fallen back to the viewer's own.
+        if (!SectorOpponentGangs.Detectable(state, viewer, owner, _cursor)) return;
         _gangSelection.Clear();
     }
 
@@ -174,10 +162,14 @@ public sealed partial class ChaosGame
         PressSectorCard(_state, playerId, SectorCardGangs(_state, playerId), point, rightButton: true);
     }
 
-    /// <summary>FND-UI-015: the back control returns to the city when the press is released inside it.</summary>
+    /// <summary>
+    /// FND-UI-015: the back control returns to the city when the press is released inside it. The
+    /// held-button helper plays slot 3 when the press starts (FND-AUDIO-011).
+    /// </summary>
     private bool PressSectorBack(Point point, bool rightButton)
     {
         if (!SectorDetailLayout.Back.Contains(point)) return false;
+        AcceptInput();
         _pressedPanelFace = (SectorDetailLayout.Back, ClientScreen.Sector,
             () => _screens.Show(ClientScreen.City));
         _pressedPanelFaceByRightButton = rightButton;
@@ -731,7 +723,13 @@ public sealed partial class ChaosGame
         // and edge labels are drawn over it unlit.
         DrawFlashLightening(batch, TickedPresentationKind.SectorDisplayCellFlash);
         if (_uiKeyedSprites is not null)
+        {
             batch.Draw(_uiKeyedSprites, display, SectorDetailLayout.DisplayFrameSource, Color.White);
+            // FND-UI-048: the pump keys the selection frame over the centre cell, covering the
+            // outline the display's frame draws there.
+            batch.Draw(_uiKeyedSprites, SectorDetailLayout.DisplayCentre,
+                CityMapLayout.SelectionFrameSource(SelectionFrameShown()), Color.White);
+        }
         foreach (var label in SectorDetailLayout.DisplayLabels(_cursor))
             DrawGridLabel(batch, font, label);
     }

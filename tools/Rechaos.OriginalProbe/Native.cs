@@ -26,10 +26,15 @@ internal static partial class Native
     public const int Wow64ContextSize = 0x2CC;
     public const int DebugEventSize = 0xB0;
 
+    public const uint WmKeyDown = 0x0100;
+    public const uint WmKeyUp = 0x0101;
     public const uint WmCommand = 0x0111;
+    public const uint WmClose = 0x0010;
     public const uint WmMouseMove = 0x0200;
     public const uint WmLButtonDown = 0x0201;
     public const uint WmLButtonUp = 0x0202;
+    public const uint WmLButtonDblClk = 0x0203;
+    public const uint MfByCommand = 0x0000;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct StartupInfo
@@ -98,6 +103,54 @@ internal static partial class Native
     [DllImport("user32.dll")]
     public static extern bool IsWindowVisible(IntPtr window);
 
+    [DllImport("user32.dll")]
+    public static extern int GetMenuItemCount(IntPtr menu);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetMenuItemID(IntPtr menu, int position);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetMenuState(IntPtr menu, uint item, uint flags);
+
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool PostMessageW(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Rect
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern bool GetClientRect(IntPtr window, out Rect rect);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDC(IntPtr window);
+
+    [DllImport("user32.dll")]
+    public static extern int ReleaseDC(IntPtr window, IntPtr dc);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr CreateCompatibleDC(IntPtr dc);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool DeleteDC(IntPtr dc);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr CreateDIBSection(IntPtr dc, byte[] info, uint usage, out IntPtr bits, IntPtr section, uint offset);
+
+    [DllImport("gdi32.dll")]
+    public static extern IntPtr SelectObject(IntPtr dc, IntPtr gdiObject);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool DeleteObject(IntPtr gdiObject);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool BitBlt(IntPtr dc, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, uint rop);
+
+    [DllImport("gdi32.dll")]
+    public static extern bool GdiFlush();
+
+    [DllImport("gdi32.dll")]
+    public static extern int GetDeviceCaps(IntPtr dc, int index);
 }

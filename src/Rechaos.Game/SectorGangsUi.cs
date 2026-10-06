@@ -13,7 +13,7 @@ public static class SectorGangsLayout
     /// <summary>SCR-UI-005, FND-UI-014: the close face, panel-local (33,169)-(82,191).</summary>
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
 
-    /// <summary>SCR-UI-005, FND-UI-014: the sector's 54-by-52 map cell, framed in black.</summary>
+    /// <summary>SCR-UI-005, FND-UI-014: the sector's 54-by-52 cell of the unmarked map, framed in black.</summary>
     public static Rectangle SectorTile => new(135, 135, CityMapLayout.TileWidth, CityMapLayout.TileHeight);
 
     /// <summary>SCR-UI-005, FND-UI-014: where the column letter and row digit start.</summary>
@@ -75,6 +75,10 @@ public sealed partial class ChaosGame
     /// <summary>The sector the Gangs in Sector panel was opened for.</summary>
     private int _sectorGangSector;
 
+    // EXP-UI-006, EXP-UI-008: the portraits Gangs in Sector, the Hire comparison and Combat Results
+    // draw scaled, each scaled once.
+    private readonly ScaledPictureCache _scaledGangPortraits = new();
+
     private void OpenSectorGangs(ClientScreen returnScreen)
     {
         if (_state is null || PlanningViewer is not { } playerId) return;
@@ -120,6 +124,17 @@ public sealed partial class ChaosGame
         DrawSectorGangsPanel(batch, pixel, font, state);
     }
 
+    /// <summary>
+    /// FND-UI-014, FND-UI-025: a sector's cell of the unmarked copy of the city map, framed in
+    /// black, so it shows the sector's terrain without its owner's colour or any marker.
+    /// </summary>
+    private void DrawUnmarkedSectorCell(SpriteBatch batch, Texture2D pixel, int sectorId, Rectangle destination)
+    {
+        if (_cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)] is { } neutral)
+            batch.Draw(neutral, destination, CityMapLayout.Source(sectorId), Color.White);
+        DrawBorder(batch, pixel, destination, Color.Black, 1);
+    }
+
     private void DrawSectorGangsPanel(
         SpriteBatch batch,
         Texture2D pixel,
@@ -127,8 +142,7 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawPanelArtwork(batch, pixel, _sectorGangsBackground, SectorGangsLayout.Panel);
-        DrawCitySectorCell(batch, pixel, state, _sectorGangSector, SectorGangsLayout.SectorTile.Location);
-        DrawBorder(batch, pixel, SectorGangsLayout.SectorTile, Color.Black, 1);
+        DrawUnmarkedSectorCell(batch, pixel, _sectorGangSector, SectorGangsLayout.SectorTile);
         font.Draw(batch, SectorGangsLayout.SectorCodeText(_sectorGangSector),
             SectorGangsLayout.SectorCode.ToVector2(), Color.Lime, 1);
         foreach (var entry in _sectorGangRoster.Take(SectorGangsLayout.MaximumGangCount)
@@ -140,8 +154,8 @@ public sealed partial class ChaosGame
             // SCR-UI-005, FND-UI-014: the panel never reads the Base Statistics option.
             var stats = EffectiveStatisticsCalculator.ForGang(state, gang);
             if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, SectorGangsLayout.GangCard(entry.index),
-                    OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
+                _scaledGangPortraits.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
+                    SectorGangsLayout.GangCard(entry.index));
             // SCR-UI-005: Upkeep is drawn negated, so it shows in red.
             int[] values =
             [

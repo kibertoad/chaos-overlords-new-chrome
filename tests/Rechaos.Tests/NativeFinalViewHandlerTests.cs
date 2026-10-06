@@ -9,6 +9,59 @@ namespace Rechaos.Tests;
 
 public sealed class NativeFinalViewHandlerTests
 {
+    [Fact]
+    public void ActiveFirstPlanningDateMatchesOriginalEntry()
+    {
+        // EXP-SETUP-001, FND-UI-040, SCR-EVENT-001: active planning still begins at week 1,
+        // with no previous-turn date available to print in Events.
+        var state = OriginalNewGameExperimentTests.ReplayedMatch("EXP-SETUP-001", 0);
+        Assert.Null(state.Outcome);
+        Assert.True(LocalPlanningLight(state, state.Players[0]));
+        var elapsed = MatchCalendar.PresentationElapsedTurns(state);
+        Assert.Equal(0, elapsed);
+        Assert.Equal((2050, 1), MatchCalendar.Of(elapsed));
+        Assert.Null(LastTurnEventsLayout.Date(elapsed));
+        // FND-UI-043: earlier local seats are dark while later humans still wait.
+        state.Players[2].Setup = state.Players[2].Setup with { Controller = PlayerController.Human };
+        state.Coordinator.FinishCommand(new PlayerId(0));
+        Assert.False(LocalPlanningLight(state, state.Players[0]));
+        Assert.True(LocalPlanningLight(state, state.Players[2]));
+        // FND-TURN-006, FND-UI-043: the next turn's upkeep runs before the reset, which
+        // relights both seats for the next planning round.
+        while (state.Coordinator.Phase != TurnPhase.Upkeep)
+        {
+            _ = state.Coordinator.Phase switch
+            {
+                TurnPhase.Command => state.FinishCommand(state.Coordinator.ActivePlayer!.Value),
+                TurnPhase.Execution => state.FinishExecutionPhase(),
+                TurnPhase.Hire => state.FinishHire(state.Coordinator.ActivePlayer!.Value),
+                _ => state.FinishPlayerElimination(),
+            };
+        }
+        Assert.Equal(2, state.Coordinator.Turn);
+        Assert.False(LocalPlanningLight(state, state.Players[0]));
+        Assert.False(LocalPlanningLight(state, state.Players[2]));
+        state.FinishUpkeep();
+        Assert.True(LocalPlanningLight(state, state.Players[0]));
+        Assert.True(LocalPlanningLight(state, state.Players[2]));
+    }
+
+    [Theory]
+    [InlineData("EXP-TURN-041")]
+    [InlineData("EXP-TURN-042")]
+    public void CompletedMatchDatesPrecedeTheElapsedTurnIncrement(string experiment)
+    {
+        // FND-UI-041, EXP-TURN-042, SCR-EVENT-001: original final city is week 26; its
+        // last-turn report is week 25, before the elapsed counter increments.
+        var state = OriginalNewGameExperimentTests.ReplayedMatch(experiment, 0);
+        Assert.NotNull(state.Outcome);
+        Assert.Equal(27, state.Coordinator.Turn);
+        var elapsed = MatchCalendar.PresentationElapsedTurns(state);
+        Assert.Equal(25, elapsed);
+        Assert.Equal((2050, 26), MatchCalendar.Of(elapsed));
+        Assert.Equal(("2050", "25"), LastTurnEventsLayout.Date(elapsed));
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
@@ -21,10 +74,14 @@ public sealed class NativeFinalViewHandlerTests
         // FND-OBJECTIVE-004, FND-STATE-010, EXP-TURN-041, EXP-TURN-042: final views precede awards.
         var state = OriginalNewGameExperimentTests.ReplayedMatch(experiment, 0);
         Assert.NotNull(state.Outcome);
+        // FND-UI-043: completed local planning leaves the human light dark.
+        Assert.False(LocalPlanningLight(state, state.Players[0]));
         if (multipleHumans)
         {
             state.Players[2].Setup = state.Players[2].Setup with { Controller = PlayerController.Human };
             state.Players[2].Status = PlayerStatus.Active;
+            // FND-UI-043: every local human completed the last round, so the second light is dark too.
+            Assert.False(LocalPlanningLight(state, state.Players[2]));
         }
         if (syntheticReport)
         {
@@ -46,8 +103,18 @@ public sealed class NativeFinalViewHandlerTests
             Assert.Equal(ClientScreen.Handoff, router.Current);
             Call(game, "FinishHandoff");
         }
-        Assert.Equal(syntheticReport || experiment == "EXP-TURN-042" ? ClientScreen.Events : ClientScreen.City,
+        // EXP-TURN-042: the original opens Last Turn Events at a final entry whose viewer holds a
+        // report from the last resolution; EXP-TURN-041's viewer holds none and sees the city.
+        var originalReports = OriginalNewGameExperimentTests.RecordedTerm(experiment, 0, "last_turn_report_count", 0);
+        Assert.Equal(syntheticReport || originalReports > 0 ? ClientScreen.Events : ClientScreen.City,
             router.Current);
+        if (!syntheticReport)
+        {
+            // The panel pages through the reports the replay comparator matches with the original.
+            var shown = (IReadOnlyList<GameNotification>)typeof(ChaosGame).GetMethod("ReviewableReports",
+                BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(game, [state, new PlayerId(0)])!;
+            Assert.Equal(originalReports, shown.Count);
+        }
         CloseReports(game, router, state);
         Call(game, "AdvanceTurn");
         if (multipleHumans)
@@ -66,6 +133,15 @@ public sealed class NativeFinalViewHandlerTests
         Assert.Equal(randomState, state.Random.State);
         Assert.Equal(consumption, state.Random.ConsumptionCount);
         Assert.False((bool)Field("_idleGangWarningOpen").GetValue(game)!);
+    }
+
+    private static bool LocalPlanningLight(MatchState state, MatchPlayerState player)
+    {
+        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
+        GC.SuppressFinalize(game);
+        var method = typeof(ChaosGame).GetMethod("PlanningLightLit", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new MissingMethodException(nameof(ChaosGame), "PlanningLightLit");
+        return (bool)method.Invoke(game, [state, player])!;
     }
 
     [Fact]
@@ -105,7 +181,7 @@ public sealed class NativeFinalViewHandlerTests
         GC.SuppressFinalize(game);
         foreach (var name in new[] { "_pendingFinalViews", "_presentedHotSeatEliminations",
                      "_gangSelection", "_screens", "_lastTurnReportCache", "_combatResultCache",
-                     "_eventViewedPages", "_lastTurnEventArchive", "_planningTimer" })
+                     "_eventViewedPages", "_lastTurnEventArchive", "_planningTimer", "_eventPump" })
         {
             var field = Field(name);
             field.SetValue(game, Activator.CreateInstance(field.FieldType));

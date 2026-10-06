@@ -24,6 +24,15 @@ internal static class OriginalAddresses
     public const uint PrefFullScreen = 0x0048786C;
     public const uint PrefFullScreenCopy = 0x00498354;
 
+    // FND-PLATFORM-009: the depth returned by display setup, used to choose the image set.
+    public const uint DisplayDepth = 0x0048787C;
+
+    // FND-PLATFORM-014: the SetBkColor call of the keyed mask compositor that passes the 16-bit
+    // key RGB(255,252,255), which a 32-bit surface never holds.
+    public const uint KeyColourCall = 0x00427C84;
+    public const int SixteenBitWhiteKey = 0x00FFFCFF;
+    public const int ThirtyTwoBitWhite = 0x00FFFFFF;
+
     // FND-OPTIONS-001, FND-OPTIONS-002: Warn if Idle Gangs, which asks before Done ends a turn
     // with a gang left idle (RULE-OPTIONS-003), and Detailed Combat, which plays combat as the
     // detailed presentation.
@@ -41,11 +50,101 @@ internal static class OriginalAddresses
     // planning loop in fn_0046FD80.
     public const uint PlanningTimeCheck = 0x0041BDD5;
 
+    // FND-EQUIP-008: the Equip panel's list builder, called as (category, tech_level, player,
+    // roster slot), the sixteen INT32 entries it fills, the 16-bit Tech Level of the gang
+    // definition records, 156 bytes apart, and the panel's own instruction that loads the Tech
+    // Level for the call, which the probe uses as the return address of every call it makes.
+    public const uint EquipListBuilder = 0x0043F136;
+    public const uint EquipListEntries = 0x004948A8;
+    public const int EquipListLength = 16;
+    public const uint GangDefinitionTechLevel = 0x004A2882;
+    public const int GangDefinitionSize = 156;
+    public const uint InjectedCallReturn = 0x0043DE80;
+
+    // FND-ATTACK-006: the Attack picker's roster builder, called as (opponent, sector), and the six
+    // INT32 entries it fills.
+    public const uint AttackTargetBuilder = 0x0043D132;
+    public const uint AttackTargetEntries = 0x00494850;
+    public const int AttackTargetLength = 6;
+
+    // FND-UI-020: the PeekMessageA calls of the two message pumps, which every screen and panel
+    // loop of the main thread goes through.
+    public static readonly uint[] PumpPeeks = [0x0045C1DA, 0x0045C2E7];
+
+    // FND-TIMER-001, FND-TIMER-003, EXP-TURN-046: planning_limit_choice, which the match entry maps to
+    // planning_limit_ms; in the start helper fn_0041B8BC, the instruction that stores timer_ms in
+    // planning_start_ms; in the drawing helper fn_0041B8FC, the instruction after the width is
+    // stored, with elapsed * 100 at [ebp-4] and the width at [ebp-8]; in the time-limit test, the
+    // compare with elapsed in eax, and the instruction that runs only when the limit has passed.
+    // fn_00464290 plays an effect slot.
+    public const uint PlanningLimitChoice = 0x00487854;
+    public const uint PlanningLimitMs = 0x0049069C;
+    public const uint PlanningTimerStarted = 0x0041B8C8;
+    public const uint PlanningBarWidth = 0x0041B96D;
+    public const uint PlanningBarDrawStart = 0x0041B8FC;
+    public const uint PlanningBarDrawEnd = 0x0041BCBB;
+    public const uint PlanningTimeCompare = 0x0041BDFD;
+    public const uint PlanningTimeExpired = 0x0041BE09;
+    public const uint PlaySound = 0x00464290;
+    // RULE-UI-007, FND-UI-034: the cursor helper fn_00465BC8(shape, force).
+    public const uint CursorHelper = 0x00465BC8;
+    // RULE-AUDIO-006, FND-AUDIO-006: the play helper fn_0045851A(slot, priority).
+    public const uint PlayHelper = 0x0045851A;
+    // RULE-TIMER-004, FND-TIMER-002: the timer callback and the presentation wait.
+    public const uint TimerCallback = 0x004327C0;
+    public const uint PresentationWait = 0x00464CD9;
+    // RULE-UI-003, FND-UI-011, FND-UI-056, EXP-UI-025: the panel-open helper, the copy in its
+    // slide loop and its last copy, and the startup benchmark count it divides.
+    public const uint PanelOpenHelper = 0x0041953E;
+    public const uint SlideCopy = 0x0041965D;
+    public const uint SlideFinalCopy = 0x004196DC;
+    public const uint BlitBenchmarkCount = 0x004981F8;
+    // RULE-VIDEO-001, FND-VIDEO-002, EXP-VIDEO-001: the frame helper's call of SmackDoFrame, the
+    // close helper fn_0040DD7B, movie slot 0's frame counter and Smack handle, and the movie name
+    // the intro copies.
+    public const uint IntroFrameCall = 0x0040DEF0;
+    public const uint IntroMovieClose = 0x0040DD7B;
+    public const uint IntroFrameCounter = 0x004905CC;
+    public const uint IntroSmackHandle = 0x004905D0;
+    public const uint IntroMovieName = 0x00498762;
+
+    // RULE-COMBAT-004, FND-COMBAT-011: the Detailed Combat presentation fn_0042E040 (to 0x0042EE45,
+    // FND-COMBAT-010), its clip player
+    // fn_00430C23 (to 0x00431C53, FND-EXE-004), the INT16 element numbers of the focal gang and the
+    // other gang of the clip, and the right ends of the focal and other bars it sets before each
+    // clip. FND-AUDIO-006, FND-AUDIO-013: the sound loader fn_0045867C(slot, number).
+    public const uint DetailedCombat = 0x0042E040;
+    public const uint DetailedCombatEnd = 0x0042EE45;
+    public const uint CombatClip = 0x00430C23;
+    public const uint CombatClipEnd = 0x00431C53;
+    // FND-COMBAT-016: the clip player's tick, the local at ebp - CombatClipTick, which the clip sets
+    // to 0 at CombatClipTickSet; the screen shows the passes up to tick local - 1.
+    public const uint CombatClipTickSet = 0x00430C2F;
+    public const uint CombatClipTick = 0x20;
+    public const uint CombatFocal = 0x004945A0;
+    public const uint CombatOther = 0x00494584;
+    public const uint CombatFocalBarRight = 0x0049476E;
+    public const uint CombatOtherBarRight = 0x004947FE;
+    public const uint SoundLoader = 0x0045867C;
+
     // elapsed_turns: 0 through the first turn, up by one after each resolution.
     public const uint ElapsedTurns = 0x0049CA68;
 
     // FND-AWARDS-001: the endgame's row painter, which reads the awards the builder has given.
     public const uint AwardsRows = 0x0042CE61;
+
+    // FND-OBJECTIVE-002: the elimination card of a local human, which blocks until its Done.
+    public const uint EliminationCard = 0x0042C3F5;
+
+    // FND-AWARDS-005: the renderer draws each listed player's name with fn_00413FD5, whose third
+    // argument is the name at 0x004A2589 + 12 * player: the splash's at 0x0042D1A4, the ranked rows'
+    // at 0x0042D2DA and the eliminated rows' at 0x0042DA64.
+    public const uint TextDraw = 0x00413FD5;
+    public const uint SplashNameDraw = 0x0042D1A4;
+    public const uint RankedNameDraw = 0x0042D2DA;
+    public const uint EliminatedNameDraw = 0x0042DA64;
+    public const uint PlayerNames = 0x004A2589;
+    public const int PlayerNameStride = 12;
 
     // match_over: set by the end-of-turn evaluation when the match is finished.
     public const uint MatchOver = 0x004ABBD4;
@@ -60,8 +159,53 @@ internal static class OriginalAddresses
     public const int PanelExitX = 137 + 24;
     public const int PanelExitY = 293 + 11;
 
+    // FND-SEARCH-006: the city redraw fn_004123CC(viewer, ...) passes each site marker to
+    // fn_00412AC4(definition, sector, ordinal, controlled). search_filters: one byte per player
+    // and site definition, element player * 22 + definition, at 0x004A24E8 (FND-SEARCH-001).
+    public const uint CityRedraw = 0x004123CC;
+    public const uint SiteMarker = 0x00412AC4;
+
+    // FND-UI-024, EXP-UI-004: the three copies of the gang-status marker function fn_00412BF7, and
+    // the sector whose cell it saved under the last incoming mark.
+    public const uint GangMarkerFrame = 0x00412DFB;
+    public const uint GangMarkerRestore = 0x00412EB5;
+    public const uint GangMarkerIncoming = 0x00412FF8;
+    public const uint GangMarkerSavedSector = 0x004906A4;
+    public const uint SearchFilters = 0x004A24E8;
+    public const int SiteDefinitionCount = 22;
+
+    // FND-SEARCH-002: fn_00448E32, the Search panel's handler, which runs while the panel is open.
+    public const uint SearchPanel = 0x00448E32;
+
+    // FND-FINANCE-002: fn_0044D1BB(player, sector) builds and draws the Financial panel, -1 for the
+    // City variant; the upper part of the console's Financial control, (552, 178, 48, 33), opens the
+    // City variant and the lower part, (552, 211, 48, 15), the Sector variant of the selected sector
+    // at 0x004ABC80 (SCR-UI-003). FND-FINANCE-003: the panel draws its nine numbers with
+    // fn_00414187, whose third argument is the value, from the calls at 0x0044DFEB to 0x0044E2AB.
+    // It closes on its control at (161, 293, 49, 22) (SCR-FINANCE-001).
+    public const uint FinancePanel = 0x0044D1BB;
+    public const uint NumberDraw = 0x00414187;
+    public const uint FinanceFirstDraw = 0x0044DFEB;
+    public const uint FinanceLastDraw = 0x0044E2AB;
+    public const uint SelectedSector = 0x004ABC80;
+    public const int FinanceCityX = 552 + 24;
+    public const int FinanceCityY = 178 + 16;
+    public const int FinanceSectorX = 552 + 24;
+    public const int FinanceSectorY = 211 + 7;
+    public const int FinanceCloseX = 161 + 24;
+    public const int FinanceCloseY = 293 + 11;
+
+    // FND-UI-040: fn_0046FD80, the planning-entry function, draws the active player's score from
+    // 0x004A2790 and cash from 0x004A25E8, four bytes per player, as five number cells each.
+    public const uint PlanningEntryDraw = 0x0046FD80;
+
     public const int DoneX = 500 + 50;
     public const int DoneY = 282 + 24;
+
+    // FND-UI-020: the two pointer points the window procedure keeps on WM_MOUSEMOVE, the client
+    // point from lParam and the point from GetCursorPos, each with x and y as 16-bit halves.
+    public const uint PointerClientPoint = 0x0049859C;
+    public const uint PointerScreenPoint = 0x004985A0;
 
     // FND-UI-020: left_button_down, the byte the window procedure keeps from the mouse messages.
     public const uint LeftButtonDown = 0x004985A4;
@@ -72,13 +216,155 @@ internal static class OriginalAddresses
     public const uint HireOffers = 0x004ABBC0;
     public const uint HireOrders = 0x004A27C8;
 
+    // SCR-HIRE-002, FND-HIRE-008: the centres of an offer portrait (440 + 66s, 373, 64, 64) and of its
+    // Reject cross (472 + 66s, 437, 32, 13), and of a city map cell, 54 by 52 from (2, 42), eight to
+    // a row, where a dropped offer names that cell's sector.
+    public static int HireOfferX(int slot) => 472 + 66 * slot;
+    public const int HireOfferY = 405;
+    public static int HireRejectX(int slot) => 488 + 66 * slot;
+    public const int HireRejectY = 443;
+    public static (int X, int Y) MapSectorCentre(int sector) => (2 + 54 * (sector % 8) + 27, 42 + 52 * (sector / 8) + 26);
+
+    // FND-UI-021, EXP-TURN-095: the popup helper fn_0042566D(menu, slot, point) and its
+    // TrackPopupMenu call, whose seven stdcall arguments start with the menu handle and whose
+    // result, the chosen command or 0, the helper stores at the next instruction.
+    public const uint PopupMenuTrack = 0x00425715;
+    public const uint PopupMenuTracked = 0x0042571B;
+    public const int PopupMenuTrackArguments = 7;
+
+    // FND-UI-015, FND-UI-018, FND-STATE-008: the view byte, 1 while the city is shown and 0 in the
+    // sector view, the player whose gangs the sector view lists, and its six card slots, a roster
+    // slot or -1 each.
+    public const uint CityViewShown = 0x00487B88;
+    public const uint SectorViewPlayer = 0x00487B8C;
+    public const uint SectorCardSlots = 0x004ABC68;
+    public const int SectorCards = 6;
+
+    // FND-UI-015, FND-UI-018: the sector view's card n at (254 + 76*(n % 2), 80 + 112*(n / 2)),
+    // and the middle of its back control (4,394,32,63).
+    public static int SectorCardX(int card) => 254 + 76 * (card % 2);
+    public static int SectorCardY(int card) => 80 + 112 * (card / 2);
+    public const int SectorBackX = 4 + 16;
+    public const int SectorBackY = 394 + 31;
+
     // FMT-STATE-007: the computer players' planning records, 81 of 16 bytes per player, with the
     // family at offset 0; FND-AI-043: raider_mode, one byte per player.
     public const uint PlanningRecords = 0x0048A250;
     public const int PlanningPlayerStride = 0x510;
     public const int PlanningRecordSize = 0x10;
     public const uint RaiderMode = 0x00482158;
+
+    // FND-UI-038: the 16-bit counter of the viewed player's marker, 0 to 11.
+    public const uint MarkerCounter = 0x00487B90;
+
+    // FND-UI-017, FND-EVENT-006: the pump's dword counter, 0 to 7; the selected-sector frame is
+    // the counter divided by 4, and bit 0 paces the control lights' blink.
+    public const uint PumpCounter = 0x00487804;
+
+    // FND-EVENT-006: the Events lamp's flag and the byte the pump sets when it draws the lamp.
+    public const uint EventsPending = 0x00487814;
+    public const uint EventsLampDrawn = 0x00487818;
+    public const uint ComlinkLampDrawn = 0x00487820;
+
+    // FND-UI-055: the instruction after the title loop's first load of PX00130.
+    public const uint TitleArtLoaded = 0x004615D0;
+
+    // FND-UI-007, FND-UI-055: About's command, and the instruction after its load of PX00100.
+    public const int AboutCommand = 0x8003;
+    public const uint CreditsArtLoaded = 0x00464DFB;
+
+    // FND-UI-051: a panel's slide-in sets 0x004854C8 at 0x004196E4, and while it is set the pump
+    // leaves the selection frame as it was.
+    public const uint SelectionFrameHeld = 0x004854C8;
+    public const uint PanelHoldsSelectionFrame = 0x004196E4;
+
+    // FND-UI-052, FND-UI-053: where Item Information, Sell and Give set their frame local to 0,
+    // the local's offset below ebp, and where each handler returns. FND-UI-054: the idle gang
+    // warning's countdown of ticks, whose phase also needs its shown flag; ShownLocal is 0 for
+    // the others.
+    public static readonly (uint Starts, uint Local, uint Returns, uint ShownLocal)[] ItemFrameHandlers =
+    [
+        (0x0044B6AC, 0x134, 0x0044C475, 0),
+        (0x00443BD1, 0x28, 0x00445654, 0),
+        (0x00445A63, 0x2C, 0x00447ADA, 0),
+        (0x00448730, 0x2C, 0x00448E30, 0xC),
+    ];
     public const uint Cash = 0x004A25E8;
+
+    // FND-OPTIONS-001: Slide Panels, read by the panel helpers that slide a panel in and out.
+    public const uint PrefSlidePanels = 0x00487840;
+
+    // FND-SETUP-016: the handoff card's presenter, which takes the next player's slot and returns
+    // once Ready, (270, 241, 100, 48) on the screen, is released inside.
+    public const uint HandoffCard = 0x004396C0;
+    // FND-RNG-006: the call of roll that draws a hire offer at each player's planning entry.
+    public const uint HireOfferDraw = 0x0047172A;
+    public const int ReadyX = 270 + 50;
+    public const int ReadyY = 241 + 24;
+
+    // FND-COMLINK-001, FND-COMLINK-004: 16 message records of 0xA6 bytes per player in
+    // comlink_messages, with comlink_count and comlink_cursor, one INT32 per player each.
+    // FND-COMLINK-006: comlink_pending and active_player. FND-COMLINK-007, FND-COMLINK-008: the
+    // Send panel's draft buffer and its six selection bytes.
+    public const uint ComlinkMessages = 0x0049CA90;
+    public const int ComlinkPlayerStride = 0xA60;
+    public const int ComlinkRecordSize = 0xA6;
+    public const int ComlinkRecords = 16;
+    public const uint ComlinkCount = 0x004981E0;
+    public const uint ComlinkCursor = 0x004981C8;
+    public const uint ComlinkPending = 0x0048781C;
+    public const uint ComlinkDraft = 0x00498120;
+    public const uint ComlinkSelected = 0x00498114;
+    // FND-COMLINK-010: set while the Send panel's caret cell is drawn plain.
+    public const uint ComlinkCaretPlain = 0x00498110;
+    public const uint ActivePlayer = 0x004ABC84;
+    // FND-STATE-004: player_active, one byte per player slot.
+    public const uint PlayerActive = 0x004ABBE0;
+
+    // RULE-UI-015, FND-UI-058: match_saved, set by a save or a load and cleared by an order or a
+    // resolved turn; the byte that marks no match in play (FND-STATE-010); quit_requested; and the
+    // modal dialog opener fn_00465CEC(id, style) (FND-UI-022).
+    public const uint MatchSaved = 0x00498350;
+    public const uint NoMatchInPlay = 0x004ABC9C;
+    public const uint QuitRequested = 0x00487828;
+    public const uint DialogOpen = 0x00465CEC;
+
+    // RULE-UI-015, FND-UI-058: the save fn_00463CC5, which takes no arguments, and File, Exit's three
+    // stores of 1 to quit_requested, each a 7-byte mov: after a written save, for the third answer,
+    // and when the match is saved.
+    public const uint SaveGame = 0x00463CC5;
+    public static readonly uint[] ExitQuitStores = [0x00470586, 0x004705A8, 0x004705FB];
+    public const uint ExitQuitStoreLength = 7;
+
+    // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler
+    // fn_0045EAB1; FND-COMLINK-004: the helper fn_0045E04D(player, count) that marks and draws one
+    // message; FND-COMLINK-006: fn_00460391(player), which drops the leading read messages when the
+    // player's planning ends. FND-COMLINK-007 gives the ranges of all four.
+    public const uint ComlinkView = 0x0045D61A;
+    public const uint ComlinkSend = 0x0045EAB1;
+    public const uint ComlinkShow = 0x0045E04D;
+    public const uint ComlinkShowEnd = 0x0045E7CD;
+    public const uint ComlinkDropRead = 0x00460391;
+
+    // FND-UI-032: the console's Comlink control, (552, 126, 48, 48), gives its top 33 rows to View and
+    // its bottom 15 rows to Send.
+    public const int ComlinkViewX = 552 + 24;
+    public const int ComlinkViewY = 126 + 16;
+    public const int ComlinkSendX = 552 + 24;
+    public const int ComlinkSendY = 159 + 7;
+
+    // FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-007: the panels' controls on the screen, the
+    // panel at (104, 124). View: Previous (135, 157, 26, 23), Next (163, 157, 26, 23) and Dismiss
+    // (137, 293, 49, 22). Send: the card of slot p at (202 + 121 * (p / 3), 144 + 34 * (p % 3)),
+    // 100 by 32, Cancel (137, 261, 49, 22) and Send (137, 293, 49, 22).
+    public const int ViewPreviousX = 135 + 13;
+    public const int ViewNextX = 163 + 13;
+    public const int ViewArrowY = 157 + 11;
+    public const int PanelButtonX = 137 + 24;
+    public const int SendButtonY = 293 + 11;
+    public const int CancelButtonY = 261 + 11;
+    public static int CardX(int slot) => 202 + 121 * (slot / 3) + 50;
+    public static int CardY(int slot) => 144 + 34 * (slot % 3) + 16;
 
     // FND-SETUP-002: the full local setup handler.
     public const uint LocalSetup = 0x0040E0A0;

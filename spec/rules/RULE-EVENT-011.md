@@ -1,10 +1,10 @@
 ---
 id: RULE-EVENT-011
 title: A Hire refused because the player has the most gangs allowed is reported to its player
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, FND-EVENT-004]
+evidence: [FND-EVENT-001, FND-EVENT-004, EXP-TURN-097, EXP-TURN-098, EXP-TURN-099]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]
@@ -39,7 +39,9 @@ No return value. Records one type-8 report for `player`.
 
 ## Edge cases
 
-None known.
+- EXP-TURN-097, EXP-TURN-098 and EXP-TURN-099 record the report in the
+  original: a hire with 80 gangs gives its player one type-8 report whose
+  `arg1` is the offered definition and whose `arg2` and `arg3` are 0.
 
 ## What the sources say
 

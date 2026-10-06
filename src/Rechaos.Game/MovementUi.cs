@@ -154,7 +154,7 @@ public sealed partial class ChaosGame
     {
         _commandTargetCursor = -1;
         _commandPanelFace = CommandPanelFaceState.NotDrawn;
-        if (_state?.FindGang(_commandTargetOptions[0].Gang)?.QueuedCommand?.Command is not
+        if (_state?.FindGang(_commandTargetGang)?.QueuedCommand?.Command is not
             { Action: GangAction.Move } queued) return;
         _commandPanelFace = CommandPanelFaces.OnOpening(true);
         SelectMovementSector(queued.Target.Id);
@@ -173,7 +173,7 @@ public sealed partial class ChaosGame
             return;
         }
         if (_state is null || _commandTargetOptions.Count == 0) return;
-        var actor = _state.FindGang(_commandTargetOptions[0].Gang)!;
+        var actor = _state.FindGang(_commandTargetGang)!;
         for (var column = 0; column < MovementLayout.Columns; column++)
         for (var row = 0; row < MovementLayout.Rows; row++)
         {
@@ -190,7 +190,7 @@ public sealed partial class ChaosGame
     private void MoveMovementTarget(int deltaX, int deltaY)
     {
         if (_state is null || _commandTargetOptions.Count == 0) return;
-        var actor = _state.FindGang(_commandTargetOptions[0].Gang)!;
+        var actor = _state.FindGang(_commandTargetGang)!;
         var position = _commandTargetCursor < 0
             ? (Column: 1, Row: 1)
             : MovementLayout.PositionOf(actor.SectorId, _commandTargetOptions[_commandTargetCursor].Target.Id);
@@ -225,7 +225,7 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawPanelArtwork(batch, pixel, _movementBackground, MovementLayout.Panel, 248);
-        var actor = state.FindGang(_commandTargetOptions[0].Gang)!;
+        var actor = state.FindGang(_commandTargetGang)!;
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, MovementLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actor.DefinitionId), Color.White);

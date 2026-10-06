@@ -64,6 +64,18 @@ public sealed class PanelSlideTransition
     }
 
     /// <summary>
+    /// Slides in an order panel that opens on the Commands screen: Equip, Research, Move,
+    /// Influence or the Attack picker. The original opens each through its panel-open helper in
+    /// the primary form, over the screen the order was given from (RULE-UI-003, EXP-UI-025); the
+    /// rebuild's own order list on that screen does not slide.
+    /// </summary>
+    public void BeginOrderPanel(ClientScreen previous, TimeSpan now)
+    {
+        Begin(previous, ClientScreen.Commands, now);
+        _screen = ClientScreen.Commands;
+    }
+
+    /// <summary>
     /// How far right of its final place the panel's left edge is at <paramref name="now"/>. Copy
     /// <c>k</c> of RULE-UI-003's sequence is shown from <c>k / NominalBlitBenchmarkCount</c>
     /// seconds after the slide starts.

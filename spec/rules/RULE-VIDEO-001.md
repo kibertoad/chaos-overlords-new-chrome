@@ -4,7 +4,7 @@ title: The intro plays the logos movie and then the intro movie, each ended by t
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-VIDEO-002, FND-VIDEO-003, FND-VIDEO-001, FND-PLATFORM-012, FND-UI-023, FND-EXE-004]
+evidence: [FND-VIDEO-002, FND-VIDEO-003, FND-VIDEO-001, FND-PLATFORM-012, FND-UI-023, FND-EXE-004, EXP-VIDEO-001]
 conflicting: []
 split_with: []
 related: [FMT-VIDEO-001, RULE-AUDIO-003]
@@ -91,7 +91,9 @@ each movie's sound at a library volume of `effects_level * 25 * 256`.
   therefore linear in the level, `effects_level * 6400 / 65535`, and level 10
   stays below the clamp.
 - Each movie closes after the pass that shows the frame whose number equals the
-  frame count, one pass after its last frame.
+  frame count, one pass after its last frame. The library reports that step due
+  at once: it came 6 and 9 ms after the last frame, where the other steps came
+  100 ms apart (EXP-VIDEO-001).
 - When a movie changes its palette, the frame is remapped to the palette of the
   library's buffer before it is drawn; in the 8-bit display set that fits the
   movie to the screen palette.

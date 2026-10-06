@@ -60,25 +60,95 @@ namespace Rechaos.Tests;
 /// EXP-TURN-038 do the same in Acceptance and Dominance with the human hiding every turn, where a
 /// site completed in a turn counts in that turn's score (RULE-OBJECTIVE-002) and in the sector and
 /// gang refresh that ends the match (RULE-SITE-001, RULE-GANG-001). EXP-TURN-041 plays another
-/// six-month Greed to its end and stops at the final city view, before the awards are given.
+/// six-month Greed to its end and stops at the final city view, before the awards are given. In
+/// EXP-TURN-043 a computer player's Moves would put seven of its gangs in one sector, and the Move
+/// repair keeps the mover in its own sector (RULE-MOVE-002).
+/// EXP-TURN-048 to EXP-TURN-051 also hold the computer players' planning state, which the replay
+/// compares byte for byte (FMT-STATE-007, FND-AI-074): Greed, whose Terminate keeps the targets of
+/// the action it replaces, Kill 'Em All with families 5 and 7, and a family-7 Equip that leaves the
+/// focus its handler compares at the next pass (RULE-AI-004, RULE-AI-022, RULE-AI-024, RULE-AI-026).
+/// They hold the combat records and result rows too, which the replay rebuilds from the last
+/// resolution's attack and police events; in EXP-TURN-051 the human's gang attacks and the police
+/// kill a gang (FMT-STATE-003, FMT-STATE-008, RULE-COMBAT-002, RULE-POLICE-001). EXP-TURN-053 plays
+/// forty turns of Eliminate, where family-12 gangs keep their focus and their Moves' destinations
+/// and carry those into a later family (RULE-AI-030, FND-AI-075). In EXP-TURN-054 a family-3 gang
+/// that plans Influence after None stores -1 in the focus (RULE-AI-022, FND-AI-076). In
+/// EXP-TURN-055 and EXP-TURN-056 a family-2 gang plans Equip in a human's sector, and the late
+/// Control gates test the sector numbered like the item and keep the Equip (RULE-AI-021,
+/// BUG-AI-008).
+/// EXP-TURN-057 compares the planning state of thirty turns of Eliminate at Crime Lord, with
+/// families 0, 3, 7 and 10 to 12 (RULE-AI-019, RULE-AI-022, RULE-AI-026, RULE-AI-028 to
+/// RULE-AI-030). EXP-TURN-058 plays Big Man, with families 13 and 14, to its end and compares the
+/// awards and the endgame rows (RULE-AI-031, RULE-OBJECTIVE-004, RULE-AWARDS-001, RULE-AWARDS-002).
+/// EXP-TURN-061 to EXP-TURN-063 give the human's gang a standing Chaos order from turn 1 in Power,
+/// Greed and Big 40, which pays Chaos in a player's own sectors and, halved, outside them and
+/// brings on Crackdowns (RULE-CHAOS-001, RULE-CHAOS-002).
+/// In EXP-TURN-064 and EXP-TURN-066 the human's gangs keep doing Chaos in a sector under police
+/// presence, which cracks down again and pays (RULE-CHAOS-001, RULE-CHAOS-002). In EXP-TURN-065 the
+/// human's recurring Research, Influence and Control end once done (RULE-TURN-004).
+/// EXP-TURN-067 drops a recurring Heal at Force 10 and the recurring Chaos of gangs killed in
+/// Combat (RULE-TURN-004), and in EXP-TURN-068 a Heal with a pool below 1 rolls nothing
+/// (RULE-HEAL-001). In EXP-TURN-069 an Influence with a pool below 1 rolls nothing
+/// (RULE-INFLUENCE-001). EXP-TURN-070 and EXP-TURN-071 drop a recurring Control in a sector
+/// under police presence (RULE-TURN-004), and EXP-TURN-072 prices an item at full Cost beside
+/// another player's completed Factory (RULE-EQUIP-003).
+/// EXP-TURN-073 to EXP-TURN-077 write a family into the computer gangs' planning records and reach
+/// branches no match had reached: family 7 out of research (RULE-AI-026), family-4 attack draws
+/// (RULE-AI-023), the family-10 Heal (RULE-AI-028), an accepted family-3 attack
+/// (RULE-AI-022) and a family-6 guard target already covered (RULE-AI-025).
+/// EXP-TURN-078 to EXP-TURN-081 do the same in Siege, Big Man and Armageddon and reach the further family-6
+/// draws (RULE-AI-025), the family-3 Heal (RULE-AI-022), family-4 attacks after Chaos or Equip
+/// (RULE-AI-023), the family-12 Detect Equip and draw at weight 1 (RULE-AI-030) and the family-0
+/// Move after a Snitch (RULE-AI-019).
+/// EXP-TURN-082 reaches the family-4 Control after two Moves (RULE-AI-023), EXP-TURN-083 the
+/// family-7 draw from human gangs only (RULE-AI-026), EXP-TURN-084 a family-14 draw from an empty
+/// pool (RULE-AI-031), and EXP-TURN-085 and EXP-TURN-086 the forced hunter hire roles
+/// (RULE-AI-010). EXP-TURN-083 is a known divergence under DEV-AI-002.
+/// EXP-TURN-087, EXP-TURN-089 and EXP-TURN-091 reach refused family-4, family-5 and family-0
+/// draws at weight 10 (RULE-AI-023, RULE-AI-024, RULE-AI-019, BUG-AI-007), and EXP-TURN-088 a
+/// family-7 draw that gives no Attack (RULE-AI-026).
+/// EXP-TURN-090 records a computer hire into a sector the player neither controls nor holds a
+/// gang in (RULE-HIRE-001, DEV-AI-008), and EXP-TURN-093 and EXP-TURN-094 the family-5 draw from
+/// human gangs only (RULE-AI-024). EXP-UI-001 stops at the first planning entry of a Greed match,
+/// as EXP-SETUP-001 does, and holds a capture of the screen there (ScreenCaptureTests). EXP-UI-003
+/// takes the same captures with the probe's 32-bit white key.
+/// EXP-EQUIP-001 to EXP-EQUIP-003 replay EXP-TURN-030, EXP-TURN-071 and EXP-TURN-026 and record the
+/// item lists the Equip screen offers each of the human's gangs at the end (RULE-EQUIP-004).
+/// EXP-ATTACK-001 to EXP-ATTACK-003 replay EXP-TURN-072, EXP-TURN-093 and EXP-TURN-026 and record
+/// the targets the Attack picker offers each of them among each opponent's gangs (RULE-ATTACK-002).
+/// EXP-SEARCH-001 and EXP-SEARCH-002 press the Search panel's controls at that entry, with the human
+/// in slot 0 and in slot 2, and record the filter table after each press (RULE-SEARCH-001).
+/// EXP-HIRE-001 and EXP-HIRE-002 drag offers and press Reject on the Hire dock at the endpoints of
+/// EXP-UI-001 and EXP-TURN-071 and record hire_orders after each step (RULE-HIRE-003).
+/// EXP-TURN-095 gives orders through the gang cards' and the group order strip's popup menus at
+/// the endpoint of EXP-TURN-071 and records the menus and the orders after each step
+/// (RULE-TURN-005). EXP-UI-004 and EXP-UI-005 repeat EXP-HIRE-001 and EXP-TURN-071 with hire steps
+/// and a Search close and log every gang-status marker the original draws (RULE-UI-006).
+/// EXP-TURN-096 presses each Overlord portrait of a sector view at the endpoint of EXP-TURN-026
+/// and records whose gangs the cards list after each press (RULE-UI-010).
+/// EXP-TURN-097 to EXP-TURN-099 write the human's cash before every Done press, hire a gang a
+/// turn and order Moves that the Move repair sends back and then gives a random neighbour from a
+/// corner of the city (RULE-MOVE-002, RULE-AI-007), until a hire with 80 gangs is refused and
+/// reported (RULE-HIRE-001, RULE-EVENT-011).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
 /// around the gang's sector, the centre included, which EXP-TURN-017 needs (RULE-AI-005).
 /// </summary>
-public sealed class OriginalNewGameExperimentTests
+public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-TURN-097", "EXP-TURN-098", "EXP-TURN-099", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018", "EXP-COMBAT-001", "EXP-COMBAT-002", "EXP-COMBAT-003", "EXP-COMBAT-004", "EXP-COMBAT-005", "EXP-COMBAT-006", "EXP-COMBAT-007", "EXP-COMBAT-008", "EXP-COMBAT-009", "EXP-UI-019", "EXP-UI-020", "EXP-UI-021", "EXP-UI-022", "EXP-UI-023", "EXP-AUDIO-001", "EXP-VIDEO-001", "EXP-UI-024", "EXP-UI-025", "EXP-UI-026"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
 
     // Runs the rebuild does not replay, with the first roll that differs.
+    // DEV-AI-002: in EXP-TURN-083 a family-7 gang of player 2 plans Influence in neutral sector 10,
+    // which the original resolves and the rebuild gives no command, so the rebuild rolls ten dice
+    // fewer in that turn's Instant phase and reaches the combat dice early.
     private static readonly Dictionary<(string Experiment, int Run), int> KnownDivergences = new()
     {
-        // DEV-AI-007: in turn 5 player 5's gang in sector 9 is given Move to sector 5, which the
-        // original carries out and the rebuild refuses; player 5's next tie count differs.
-        [("EXP-TURN-015", 0)] = 950,
+        [("EXP-TURN-083", 0)] = 1420,
     };
 
     // Runs that stop at the final city view, before the awards controller builds the award table
@@ -105,23 +175,38 @@ public sealed class OriginalNewGameExperimentTests
     // A known divergence stays where it was found; when a fix moves it, the entry above goes.
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(DivergingRuns))]
-    public void AKnownDivergenceIsStillWhereItWasFound(string experiment, int run)
+    public void AKnownDivergenceIsStillWhereItWasFound(string experiment, int run) =>
+        Assert.Equal(KnownDivergences[(experiment, run)], FirstDifferingRoll(Run(experiment, run)));
+
+    // DEV-AI-007 on: in turn 5 player 5's gang in sector 9 is given Move to sector 5, which the
+    // original carries out and the rebuild refuses; player 5's next tie count differs (EXP-TURN-015).
+    [Fact]
+    public void WithDevAi007OnExpTurn015PartsAtTheRefusedMove() =>
+        Assert.Equal(950, FirstDifferingRoll(Run("EXP-TURN-015", 0), computerMovesToNeighboursOnly: true));
+
+    // DEV-AI-008 on: in turn 20 player 3 hires into sector 36, which it neither controls nor holds
+    // a gang in; the original rolls the new gang's Force and the rebuild drops the hire (EXP-TURN-090).
+    [Fact]
+    public void WithDevAi008OnExpTurn090PartsAtTheDroppedHire() =>
+        Assert.Equal(3335, FirstDifferingRoll(Run("EXP-TURN-090", 0), computerHiresWhereHumansCan: true));
+
+    private static int FirstDifferingRoll(
+        RecordedRun recorded, bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false)
     {
-        var recorded = Run(experiment, run);
         var rolls = new List<(int Bound, int Result)>();
         DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
         try
         {
-            StartMatch(recorded, out _);
+            StartMatch(recorded, out _, computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+                computerHiresWhereHumansCan: computerHiresWhereHumansCan);
         }
         finally
         {
             DeterministicRandom.RollObserver = null;
         }
 
-        var first = Enumerable.Range(0, Math.Min(rolls.Count, recorded.Rolls.Count))
+        return Enumerable.Range(0, Math.Min(rolls.Count, recorded.Rolls.Count))
             .First(index => rolls[index] != (recorded.Rolls[index].Bound, recorded.Rolls[index].Result));
-        Assert.Equal(KnownDivergences[(experiment, run)], first);
     }
 
     public static TheoryData<string, int> Runs()
@@ -171,7 +256,7 @@ public sealed class OriginalNewGameExperimentTests
         var human = recorded.Humans[0];
 
         // The first roll that differs, named by the original's call instruction.
-        for (var index = 0; index < Math.Min(rolls.Count, recorded.Rolls.Count); index++)
+        for (var index = 0; index < Math.Min(rolls.Count, recorded.RollsAtDump); index++)
         {
             var (call, bound, result) = recorded.Rolls[index];
             Assert.True(
@@ -187,9 +272,9 @@ public sealed class OriginalNewGameExperimentTests
             donePresses == recorded.DoneCount,
             $"the replay stopped after {donePresses} of the recording's {recorded.DoneCount} Done presses");
 
-        Assert.Equal(recorded.Rolls.Count * 3L, match.Random.ConsumptionCount);
+        Assert.Equal(recorded.RollsAtDump * 3L, match.Random.ConsumptionCount);
         var expectedState = new DeterministicRandom(recorded.Seed);
-        for (var draw = 0; draw < recorded.Rolls.Count * 3; draw++) expectedState.NextRaw();
+        for (var draw = 0; draw < recorded.RollsAtDump * 3; draw++) expectedState.NextRaw();
         Assert.Equal(expectedState.State, match.Random.State);
 
         foreach (var player in match.Players)
@@ -200,6 +285,12 @@ public sealed class OriginalNewGameExperimentTests
             Assert.Equal(recorded.Term("reaction", slot), match.AiStrategy.Reaction(player.Id));
             Assert.Equal(recorded.Term("difficulty_band", slot), (int)OriginalResolutionRules.Band(match, player.Id));
             Assert.Equal(recorded.Term("hire_force_modifier", slot) != 0, player.UsesMaximumHireForce);
+            // FND-STATE-004, RULE-TURN-006: a player is out of the match once its player_active
+            // byte is 0, whether the elimination check or a --retire write cleared it.
+            if (recorded.HasTerm("player_active", slot))
+                Assert.True(
+                    (recorded.Term("player_active", slot) != 0) == (player.Status == PlayerStatus.Active),
+                    $"player_active of player {slot}: the original holds {recorded.Term("player_active", slot)}, the rebuild {player.Status}");
             foreach (var other in match.Players)
                 Assert.Equal(
                     recorded.Term("attitude", slot * 6 + other.Id.Value),
@@ -242,11 +333,16 @@ public sealed class OriginalNewGameExperimentTests
             }
         }
 
+        // RULE-MOVE-002: in EXP-TURN-043 a computer player's Moves would put seven of its gangs in
+        // one sector, and the repair keeps the mover in its own sector; the gang sectors compared
+        // here agree with that, and TheMoveRepairSendsTheMoverBack checks that the repair ran.
         foreach (var player in match.Players)
         {
             var gangs = player.Gangs.Where(gang => gang.IsActive).ToArray();
             var records = recorded.GangRecords(player.Id.Value);
             Assert.Equal(records.Count, gangs.Length);
+            // A run that ends the match has no further turn start (RULE-TURN-004).
+            var comparesRecurringOrders = recorded.Term("controller", player.Id.Value) == 0 && match.Outcome is null;
             for (var slot = 0; slot < gangs.Length; slot++)
             {
                 var record = records[slot];
@@ -258,6 +354,16 @@ public sealed class OriginalNewGameExperimentTests
                 Assert.Equal(recorded.Gang(record, "weapon"), gang.WeaponItemId ?? -1);
                 Assert.Equal(recorded.Gang(record, "armor"), gang.ArmorItemId ?? -1);
                 Assert.Equal(recorded.Gang(record, "misc"), gang.MiscellaneousItemId ?? -1);
+                // RULE-TURN-004: at a human's planning entry each gang's action is its recurring
+                // order, or none once the turn start has cleared it; the rebuild keeps only the
+                // recurring orders that carry on.
+                if (comparesRecurringOrders)
+                {
+                    var carried = gang.QueuedCommand is { Command.Repeat: true } queued ? (int)queued.Command.Action : 0;
+                    Assert.True(recorded.Gang(record, "repeat_action") == carried,
+                        $"player {player.Id.Value} gang {slot}: the original has repeat_action {recorded.Gang(record, "repeat_action")}, the rebuild {carried}");
+                    Assert.Equal(recorded.Gang(record, "repeat_action"), recorded.Gang(record, "action"));
+                }
                 var stats = EffectiveStatisticsCalculator.ForGang(match, gang);
                 int[] values =
                 [
@@ -277,6 +383,16 @@ public sealed class OriginalNewGameExperimentTests
                         recorded.Gang(record, $"visible_to[{observer.Id.Value}]") != 0,
                         observer.Id == player.Id || match.CanPlayerDetectGang(observer.Id, gang.Id));
             }
+        }
+
+        if (recorded.HasTerm("ai_started", 0))
+        {
+            AssertPlanningStateMatches(recorded, match);
+            // The fixtures that hold the planning state also hold the combat records and result rows.
+            // Before the first Done no resolution has written them, and the original holds 0 in
+            // every byte (EXP-UI-001).
+            if (donePresses > 0) AssertLastCombatMatches(recorded, match);
+            else Assert.All(recorded.Values("FMT-STATE-003"), value => Assert.Equal(0, value));
         }
 
         // RULE-EVENT-001, RULE-EVENT-002: each player's Last Turn reports of the last resolution, in
@@ -336,13 +452,15 @@ public sealed class OriginalNewGameExperimentTests
                     ("hire_role", match.AiPlanning.CurrentHireRole(player.Id)),
                     ("previous_hire_role", match.AiPlanning.PreviousHireRole(player.Id)),
                 ];
-                // The original holds -1 in a human player's hire_role and the rebuild 0. A player's
-                // first planning pass writes 0 there before anything reads it (FND-AI-042), so the
-                // difference is one of representation; any other value is still compared.
+                // The original holds -1 in a human player's hire_role, and in a computer player's
+                // until its first planning pass, and the rebuild 0. That pass writes 0 there before
+                // anything reads it (FND-AI-042), so the difference is one of representation; any
+                // other value is still compared.
                 foreach (var (term, value) in totals)
                 {
                     var original = recorded.Term(term, slot);
-                    var expected = term == "hire_role" && original == -1 && player.Setup.Controller == PlayerController.Human
+                    var expected = term == "hire_role" && original == -1
+                        && (player.Setup.Controller == PlayerController.Human || !match.AiPlanning.HasPlanned(player.Id))
                         ? 0
                         : original;
                     Assert.True(expected == value,
@@ -383,10 +501,15 @@ public sealed class OriginalNewGameExperimentTests
             // and after the awards. The rebuild's coordinator has already moved to the next turn, so
             // the count is compared with the outcome turn.
             Assert.Equal(recorded.Term("elapsed_turns", 0), match.Outcome.Turn - 1);
-            if (EndpointsBeforeAwards.Contains(experiment)) return;
+            if (EndpointsBeforeAwards.Contains(experiment))
+            {
+                // A pre-awards fixture holding award rows would leave them uncompared.
+                Assert.False(recorded.HasTerm("player_awards", 0), "a run stopped before the awards holds no award rows");
+                return;
+            }
+            Assert.True(recorded.HasTerm("player_awards", 0), "a run that ends the match after the awards holds their rows");
             EndgameAward[] order =
                 [EndgameAward.Fist, EndgameAward.Skull, EndgameAward.BigFatChicken, EndgameAward.DollarSign, EndgameAward.Safe];
-            Assert.True(recorded.HasTerm("player_awards", 0), "a run that ends the match after the awards holds their rows");
             foreach (var player in match.Players)
             {
                 var slot = player.Id.Value;
@@ -405,6 +528,83 @@ public sealed class OriginalNewGameExperimentTests
         Assert.Equal(recorded.Term("elapsed_turns", 0), match.Coordinator.Turn - 1);
         if (recorded.Term("controller", human.Value) == 0) Assert.Equal(human, match.Coordinator.ActivePlayer);
         else Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
+    }
+
+    public static TheoryData<string, int> PanelRuns()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var (experiment, runs) in Recorded.Value)
+            for (var run = 0; run < runs.Length; run++)
+                // The probe breaks on the handlers at every local human's planning entry, and the
+                // replay compares only the first human's, so a run with several humans is left out.
+                // With Detailed Combat switched on the planning entry calls the presentation in place
+                // of the Combat Results handler (FND-COMBAT-010), so a run that recorded clips is
+                // left out too; DetailedCombatPlaysTheOriginalsClips compares those entries.
+                if (runs[run].Panels is not null && runs[run].Humans.Count == 1 && runs[run].CombatClips is null
+                    && !KnownDivergences.ContainsKey((experiment, run)))
+                    data.Add(experiment, run);
+        return data;
+    }
+
+    // RULE-SETUP-008, RULE-EVENT-005: the probe records each call of the Combat Results and Last
+    // Turn Events panels at the human's planning entries, and whether the panel stayed open until
+    // Exit was pressed; Combat Results returns at once when no fight qualifies. At each planning
+    // entry the rebuild shows Combat Results when the viewer has combat results and then Last Turn
+    // Events when the viewer has reports, or the city when neither applies, and the panels it
+    // shows match the original's at that entry, in the same order.
+    [Theory]
+    [MemberData(nameof(PanelRuns))]
+    public void ThePlanningEntryShowsTheOriginalsPanels(string experiment, int run)
+    {
+        var recorded = Run(experiment, run);
+        var expected = new List<string>[recorded.DoneCount + 1];
+        var combatCalled = new bool[recorded.DoneCount + 1];
+        for (var entry = 0; entry < expected.Length; entry++) expected[entry] = [];
+        foreach (var call in recorded.Panels!)
+        {
+            // Entry e follows e Done presses. The resolution after a press makes rolls, so its calls
+            // come after the roll count of press e and no later than that of press e + 1.
+            var entry = recorded.DoneAtRoll.Count(count => count < call.AfterRoll);
+            if (call.Panel == "Combat Results") combatCalled[entry] = true;
+            if (call.Shown) expected[entry].Add(call.Panel);
+        }
+        // The original calls the Combat Results handler at every planning entry, so an entry
+        // without that call is one the probe did not observe, and comparing it would prove nothing.
+        // Each entry before a Done press is a planning entry; the last is checked below.
+        for (var entry = 0; entry < recorded.DoneCount; entry++)
+            Assert.True(combatCalled[entry], $"planning entry {entry + 1}: the recording holds no call of Combat Results");
+
+        var shown = new List<string>[recorded.DoneCount + 1];
+        static List<string> Panels(MatchState match, PlayerId human)
+        {
+            var hasCombat = CombatResultProjection.Pages(match, human).SelectMany(page => page.Results).Any();
+            var hasReports = LastTurnEventProjection.For(match, human).Count > 0;
+            return HandoffPresentationOrder.First(hasCombat, hasReports) switch
+            {
+                HandoffPresentationStep.Combat => hasReports ? ["Combat Results", "Last Turn Events"] : ["Combat Results"],
+                HandoffPresentationStep.Events => ["Last Turn Events"],
+                _ => [],
+            };
+        }
+        var match = StartMatch(recorded, out var donePresses,
+            (state, human, turn) => shown[turn - 1] = Panels(state, human));
+        // An early stop would leave the recording's later entries uncompared.
+        Assert.Equal(recorded.DoneCount, donePresses);
+        // The last entry is a planning entry unless the match ended or the human was eliminated. An
+        // eliminated human has none, and the final view of an ended match is closed by the probe
+        // with every panel it opens, so neither is compared.
+        var compared = donePresses;
+        if (match.Outcome is null && IsActive(match, recorded.Humans[0]))
+        {
+            Assert.True(combatCalled[donePresses], $"planning entry {donePresses + 1}: the recording holds no call of Combat Results");
+            shown[donePresses] = Panels(match, recorded.Humans[0]);
+            // The run stops at the last entry while its first panel is open, so only that panel is seen.
+            if (expected[donePresses].Count > 0) shown[donePresses] = shown[donePresses].Take(1).ToList();
+            compared++;
+        }
+        for (var entry = 0; entry < compared; entry++)
+            Assert.True(expected[entry].SequenceEqual(shown[entry]),
+                $"planning entry {entry + 1}: the original showed [{string.Join(", ", expected[entry])}], the rebuild [{string.Join(", ", shown[entry])}]");
     }
 
     // RULE-OBJECTIVE-005: -2 stops before the card at the human's own slot; -1
@@ -507,7 +707,10 @@ public sealed class OriginalNewGameExperimentTests
     private static bool IsActive(MatchState match, PlayerId player) =>
         match.FindPlayer(player)!.Status == PlayerStatus.Active;
 
-    private static MatchState StartMatch(RecordedRun recorded, out int donePresses)
+    private static MatchState StartMatch(
+        RecordedRun recorded, out int donePresses, Action<MatchState, PlayerId, int>? beforeDone = null,
+        bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false,
+        Action<MatchState, PlayerId, int>? atPlanningEntry = null, Action<MatchState>? afterDone = null)
     {
         var scenario = OriginalScenario(recorded.Term("scenario", 0));
         var setup = new MatchSetup(
@@ -517,7 +720,11 @@ public sealed class OriginalNewGameExperimentTests
             recorded.Humans.Select(slot => new MatchPlayerSetup(
                 slot, Name(recorded, slot.Value), PlayerController.Human, (short)recorded.Term("portrait", slot.Value))).ToArray(),
             (AiDifficulty)recorded.Term("mentality", 0),
-            allowSparsePlayerIds: true);
+            allowSparsePlayerIds: true,
+            // DEV-AI-007 and DEV-AI-008 switched off unless a test asks for them, so the computer's
+            // Moves and hires go where the original's do.
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);
         match.FinishUpkeep();
         // RULE-SETUP-008: with several local humans the planning phase waits on the Ready card
@@ -537,6 +744,7 @@ public sealed class OriginalNewGameExperimentTests
         donePresses = 0;
         for (var turn = 0; turn < recorded.DoneCount; turn++)
         {
+            atPlanningEntry?.Invoke(match, human, turn + 1);
             // DEV-EQUIP-001: the rebuild resolves Equip and Sell in the order they are submitted.
             // Every recording lists a turn's orders in roster order, the original's scan order.
             foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))
@@ -552,10 +760,24 @@ public sealed class OriginalNewGameExperimentTests
             }
             // FMT-STATE-007, RULE-AI-023, RULE-AI-027: the probe writes a computer player's family or
             // raider flag straight into the original's memory, for branches no local match reaches.
+            // A cleared player_active (FND-STATE-004) takes the player out of the match as the
+            // elimination check does (RULE-TURN-006), with its gangs and sectors left where they are.
+            // A cash write sets the player's cash (FND-AI-055) so a human can pay for a hire every turn.
             foreach (var write in recorded.Planning.Where(write => write.Turn == turn + 1))
-                if (write.Raider) match.AiPlanning.SetRaiderMode(new PlayerId(write.Player));
+                if (write.Cash is { } cash) match.Players[write.Player].Cash = cash;
+                else if (write.Retired) match.Players[write.Player].Status = PlayerStatus.Eliminated;
+                else if (write.Raider) match.AiPlanning.SetRaiderMode(new PlayerId(write.Player));
                 else match.AiPlanning.SetFamily(new PlayerId(write.Player), write.Slot, write.Family);
-            recorder.FinishCommand(human);
+            beforeDone?.Invoke(match, human, turn + 1);
+            if (afterDone is null) recorder.FinishCommand(human);
+            else
+            {
+                // The game ends the human's planning with FinishPlanningTurn, which runs on to the
+                // next planning entry before an update shows the idle pointer. Its steps are the
+                // ones AdvanceToRecordedEndpoint takes, so the replay is unchanged.
+                GameplayTurnFlow.FinishPlanningTurn(recorder, human);
+                afterDone(match);
+            }
             donePresses++;
             AdvanceToRecordedEndpoint(recorder, human, recorded.Term("controller", human.Value));
             if (!IsActive(match, human) || match.Outcome is not null) break;
@@ -588,6 +810,9 @@ public sealed class OriginalNewGameExperimentTests
             // target of a Give is the item mask and target_2 the recipient's roster slot
             // (FMT-STATE-001, RULE-GIVE-001).
             GangAction.Give => GiveCommand(human, gang, match.Players[human.Value].Gangs[order.Target2], order.Target),
+            // target of an Influence is the site slot, 0 to 2, of the gang's sector (FMT-STATE-001).
+            GangAction.Influence => new GameCommand(human, gang.Id, action,
+                CommandTarget.Site(gang.SectorId * MatchLimits.SitesPerSector + order.Target), order.Repeat),
             GangAction.Bribe or GangAction.Chaos or GangAction.Control or GangAction.Heal
                 or GangAction.Hide or GangAction.Snitch or GangAction.Terminate =>
                 new GameCommand(human, gang.Id, action, CommandTarget.None, order.Repeat),
@@ -597,55 +822,9 @@ public sealed class OriginalNewGameExperimentTests
         Assert.True(result.Accepted, $"turn {order.Turn}: the rebuild refused {action}: {result}");
     }
 
-    private sealed record RecordedOrder(int Turn, int Slot, int Action, int Target, int Target2, bool Repeat)
-    {
-        // "turn 3: gang slot 0 action 13 target 0 target_2 0 repeat 0", as the probe writes it.
-        public static RecordedOrder Parse(string value)
-        {
-            var match = System.Text.RegularExpressions.Regex.Match(value,
-                @"^turn (-?\d+): gang slot (-?\d+) action (-?\d+) target (-?\d+) target_2 (-?\d+) repeat ([01])$");
-            Assert.True(match.Success, value);
-            var numbers = match.Groups.Values.Skip(1)
-                .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-            return new(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5] != 0);
-        }
-    }
-
-    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider)
-    {
-        // "turn 2: player 1 gang slot 0 family 4" or "turn 1: player 3 raider_mode 1", as the
-        // probe writes them.
-        public static RecordedPlanning Parse(string value)
-        {
-            var raider = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([1-5]) raider_mode 1$");
-            if (raider.Success)
-                return new(int.Parse(raider.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
-                    int.Parse(raider.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), 0, 0, true);
-            var match = System.Text.RegularExpressions.Regex.Match(value,
-                @"^turn (\d+): player ([1-5]) gang slot (\d+) family (\d+)$");
-            Assert.True(match.Success, value);
-            var numbers = match.Groups.Values.Skip(1)
-                .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-            return new(numbers[0], numbers[1], numbers[2], numbers[3], false);
-        }
-    }
-
-    private sealed record RecordedHire(int Turn, int OfferSlot, int Sector)
-    {
-        // "turn 1: offer slot 0 sector 12", as the probe writes it.
-        public static RecordedHire Parse(string value)
-        {
-            var match = System.Text.RegularExpressions.Regex.Match(value,
-                @"^turn (\d+): offer slot ([0-2]) sector (\d+)$");
-            Assert.True(match.Success, value);
-            var numbers = match.Groups.Values.Skip(1)
-                .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-            return new(numbers[0], numbers[1], numbers[2]);
-        }
-    }
-
     // The fixture keeps the flags a name set rather than the name (FND-SETUP-015), so the name is
-    // the modifier string whose flag is set.
+    // the modifier string whose flag is set. A plain human keeps the slot's default name
+    // (FND-SETUP-017).
     private static string Name(RecordedRun recorded, int slot)
     {
         (string Flag, string Name)[] modifiers =
@@ -658,7 +837,7 @@ public sealed class OriginalNewGameExperimentTests
             ("modifier_cash", OriginalSetupNameRules.MaximumStartingCashName),
         ];
         return modifiers.Where(modifier => recorded.Term(modifier.Flag, slot) != 0)
-            .Select(modifier => modifier.Name).SingleOrDefault() ?? $"PROBE{slot}";
+            .Select(modifier => modifier.Name).SingleOrDefault() ?? LocalSetupPolicy.DefaultPlayerName(slot);
     }
 
     private static GameDuration Duration(int turns) => turns switch
@@ -707,8 +886,16 @@ public sealed class OriginalNewGameExperimentTests
 
     private static RecordedRun Run(string experiment, int run) => Recorded.Value[experiment][run];
 
+    /// <summary>
+    /// Whether the runs of <paramref name="experiment"/> are replayed. A run that changes the
+    /// match from outside, such as EXP-UI-002's <c>--draw-values</c>, is not.
+    /// </summary>
+    internal static bool IsReplayed(string experiment) => Experiments.Contains(experiment);
+
     /// <summary>The rebuild's match after replaying a recorded run to its endpoint.</summary>
     internal static MatchState ReplayedMatch(string experiment, int run) => StartMatch(Run(experiment, run), out _);
+    internal static int RecordedTerm(string experiment, int run, string term, int index) =>
+        Run(experiment, run).Term(term, index);
 
     private static RecordedRun[] LoadRuns(string experiment)
     {
@@ -717,74 +904,5 @@ public sealed class OriginalNewGameExperimentTests
         var inputs = fixture.RootElement.GetProperty("inputs");
         return fixture.RootElement.GetProperty("runs").EnumerateArray()
             .Select(run => new RecordedRun(run, inputs)).ToArray();
-    }
-
-    private sealed class RecordedRun
-    {
-        private readonly Dictionary<(string, int), int> _terms = [];
-        private readonly Dictionary<(string, int, string), int> _fields = [];
-
-        public RecordedRun(JsonElement run, JsonElement inputs)
-        {
-            Orders = inputs.EnumerateArray()
-                .Where(input => input.GetProperty("name").GetString() == "order")
-                .Select(input => RecordedOrder.Parse(input.GetProperty("value").GetString()!))
-                .ToArray();
-            Hires = inputs.EnumerateArray()
-                .Where(input => input.GetProperty("name").GetString() == "hire")
-                .Select(input => RecordedHire.Parse(input.GetProperty("value").GetString()!))
-                .ToArray();
-            Planning = inputs.EnumerateArray()
-                .Where(input => input.GetProperty("name").GetString() == "planning")
-                .Select(input => RecordedPlanning.Parse(input.GetProperty("value").GetString()!))
-                .ToArray();
-            Seed = run.GetProperty("rng_state").GetInt32();
-            DoneCount = run.TryGetProperty("done_at_roll", out var done) ? done.GetArrayLength() : 0;
-            Rolls = run.GetProperty("rolls").EnumerateArray()
-                .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
-                .ToArray();
-            foreach (var row in run.GetProperty("end_state").EnumerateArray())
-            {
-                var value = row.GetProperty("value").GetInt32();
-                if (row.TryGetProperty("term", out var term))
-                    _terms[(term.GetString()!, row.GetProperty("index").GetInt32())] = value;
-                else
-                    _fields[(row.GetProperty("format").GetString()!, row.GetProperty("record").GetInt32(),
-                        row.GetProperty("field").GetString()!)] = value;
-            }
-        }
-
-        public int Seed { get; }
-        public int DoneCount { get; }
-        public IReadOnlyList<RecordedOrder> Orders { get; }
-        public IReadOnlyList<RecordedHire> Hires { get; }
-        public IReadOnlyList<RecordedPlanning> Planning { get; }
-
-        // controller: 0 for a human at this computer (FND-SETUP-002), -2 for one eliminated who has
-        // not yet seen the card and -1 for one who has (RULE-OBJECTIVE-005). Setup fills every
-        // empty slot with a computer player (FND-SETUP-002), so a -1 here is always a retired human.
-        public IReadOnlyList<PlayerId> Humans => Enumerable.Range(0, 6)
-            .Where(slot => Term("controller", slot) is 0 or -1 or -2).Select(slot => new PlayerId(slot)).ToArray();
-        public IReadOnlyList<(string Call, int Bound, int Result)> Rolls { get; }
-
-        public int Term(string term, int index) => _terms[(term, index)];
-
-        public int Sector(int sector, string field) => _fields[("FMT-STATE-002", sector, field)];
-
-        public int Gang(int record, string field) => _fields[("FMT-STATE-001", record, field)];
-
-        public bool HasTerm(string term, int index) => _terms.ContainsKey((term, index));
-
-        /// <summary>FMT-STATE-006: report <paramref name="index"/> of a player's Last Turn reports.</summary>
-        public LastTurnReportRecord Report(int player, int index)
-        {
-            var record = player * 32 + index;
-            return new(_fields[("FMT-STATE-006", record, "report_type")], _fields[("FMT-STATE-006", record, "arg1")],
-                _fields[("FMT-STATE-006", record, "arg2")], _fields[("FMT-STATE-006", record, "arg3")]);
-        }
-
-        public IReadOnlyList<int> GangRecords(int player) => _fields.Keys
-            .Where(key => key.Item1 == "FMT-STATE-001" && key.Item3 == "player" && key.Item2 / 81 == player)
-            .Select(key => key.Item2).Order().ToArray();
     }
 }

@@ -22,7 +22,9 @@ public sealed class MatchSetup
         IReadOnlyList<MatchPlayerSetup> players,
         AiDifficulty aiMentality = AiDifficulty.Criminal,
         bool allowSparsePlayerIds = false,
-        AiPolicyMode aiPolicy = AiPolicyMode.Original)
+        AiPolicyMode aiPolicy = AiPolicyMode.Original,
+        bool computerMovesToNeighboursOnly = true,
+        bool computerHiresWhereHumansCan = true)
     {
         ArgumentNullException.ThrowIfNull(players);
         if (players.Count is < 1 or > MatchLimits.PlayerCount)
@@ -53,6 +55,8 @@ public sealed class MatchSetup
         Players = players.ToArray();
         AiMentality = aiMentality;
         AiPolicy = aiPolicy;
+        ComputerMovesToNeighboursOnly = computerMovesToNeighboursOnly;
+        ComputerHiresWhereHumansCan = computerHiresWhereHumansCan;
         AllowsSparsePlayerIds = allowSparsePlayerIds;
     }
 
@@ -62,6 +66,21 @@ public sealed class MatchSetup
     public IReadOnlyList<MatchPlayerSetup> Players { get; }
     public AiDifficulty AiMentality { get; }
     public AiPolicyMode AiPolicy { get; }
+
+    /// <summary>
+    /// DEV-AI-007: whether a Move the computer planner plans must go to a neighbouring sector, as a
+    /// human's does. Off, the planner's Move goes to any sector, as in the original (RULE-MOVE-001).
+    /// No screen offers it; the game's command line and the tests switch it off.
+    /// </summary>
+    public bool ComputerMovesToNeighboursOnly { get; }
+
+    /// <summary>
+    /// DEV-AI-008: whether a computer player's hire must go to a sector it controls or holds a gang
+    /// in, as a human's does. Off, a computer seat's hire goes to the sector the planner chose, as
+    /// in the original (RULE-AI-012, RULE-HIRE-001); a human seat the planner plays for a
+    /// simulation keeps the human test either way.
+    /// </summary>
+    public bool ComputerHiresWhereHumansCan { get; }
     public bool AllowsSparsePlayerIds { get; }
 
     internal MatchSetup WithController(PlayerId playerId, PlayerController controller)
@@ -78,6 +97,8 @@ public sealed class MatchSetup
                 : player).ToArray(),
             AiMentality,
             AllowsSparsePlayerIds,
-            AiPolicy);
+            AiPolicy,
+            ComputerMovesToNeighboursOnly,
+            ComputerHiresWhereHumansCan);
     }
 }

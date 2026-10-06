@@ -4,7 +4,7 @@ title: Which gangs the detailed sector cards and Gangs in Sector list
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-036, FND-UI-015, FND-UI-018, FND-UI-002, FND-UI-024, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-036, EXP-TURN-096, FND-UI-015, FND-UI-018, FND-UI-002, FND-UI-024, FND-EXE-004, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -88,4 +88,9 @@ None known.
 
 ## Open questions
 
-None.
+EXP-TURN-096 reaches the cards of the active player, of two other players
+with gangs seen in the sector and the return to the active player's own, and
+presses on the portraits of two players with no gang there, which leave the
+cards as they are. No run lists a sector holding a gang hidden from the active
+player, presses the active player's own portrait in a sector without the
+active player's gangs, or opens Gangs in Sector.

@@ -93,15 +93,6 @@ public sealed class SmackerMovieStream : IDisposable
 
 public static class SmackerPcmConversion
 {
-    public static byte[] ToSigned16LittleEndian(ReadOnlySpan<byte> unsignedPcm8)
-    {
-        var output = new byte[checked(unsignedPcm8.Length * 2)];
-        for (var index = 0; index < unsignedPcm8.Length; index++)
-        {
-            var sample = (short)((unsignedPcm8[index] - 128) << 8);
-            output[index * 2] = (byte)sample;
-            output[(index * 2) + 1] = (byte)(sample >> 8);
-        }
-        return output;
-    }
+    public static byte[] ToSigned16LittleEndian(ReadOnlySpan<byte> unsignedPcm8) =>
+        RefurbishedDinosaurs.Media.Audio.Pcm16.FromUnsigned8(unsignedPcm8);
 }

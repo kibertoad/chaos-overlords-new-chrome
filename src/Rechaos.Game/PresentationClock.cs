@@ -9,7 +9,9 @@ namespace Rechaos.Game;
 /// so the ticks are counted from the game clock: tick <c>n</c> falls at <c>n * 166</c> ms after the
 /// program started, and every reader shares that one phase. A reader gets the count the flag would
 /// give a loop that never fell behind. The original's flag drops the ticks that fall while a loop
-/// is busy for longer than a period; the rebuild counts them.
+/// is busy for longer than a period; the rebuild counts them (DEV-TIMER-001). The ticks a hold
+/// keeps from the event pump are the exception: <see cref="EventPumpClock"/> drops them as the
+/// original does.
 /// </remarks>
 public static class PresentationClock
 {

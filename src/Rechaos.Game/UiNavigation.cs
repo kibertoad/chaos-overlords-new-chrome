@@ -34,6 +34,14 @@ public static class OriginalFontLayout
     public static Rectangle AtlasBounds => new(0, 0,
         (LastCharacter - FirstCharacter + 1) * CellWidth, GlyphHeight);
 
+    /// <summary>The plain font strip of PX00129, at its top-left corner.</summary>
+    public static Point PlainStrip => new(0, 0);
+
+    /// <summary>
+    /// FND-UI-019, FND-SEARCH-004: the darker strip at (152,274), laid out as the plain one.
+    /// </summary>
+    public static Point DimStrip => new(152, 274);
+
     /// <summary>
     /// Width of the glyph mask <see cref="PixelFont"/> builds: the original strip followed by one
     /// cell per <see cref="SupplementalFontGlyphs"/> character.
@@ -239,12 +247,16 @@ public sealed class CitySectorClickTracker
 
 public static partial class CityConsoleLayout;
 
+/// <summary>SCR-SETUP-002, FND-SETUP-016: the hand-off card and what is drawn on it.</summary>
 public static class HandoffLayout
 {
-    public static Rectangle Panel => new(266, 148, 108, 164);
-    public static Rectangle Portrait => new(280, 170, 80, 77);
-    public static Rectangle Ready => new(266, 246, 108, 66);
-    public const int NameY = 194;
+    public static Rectangle Panel => new(266, 130, 108, 164);
+    public static Rectangle ColourBar => new(283, 155, 8, 72);
+    public static Rectangle NameBacking => new(293, 155, 60, 7);
+    public static Point Name => new(293, 155);
+    public static Rectangle Portrait => new(293, 163, 64, 64);
+    public static Rectangle Ready => new(270, 241, 100, 48);
+    public static Rectangle ReadyPressedSource => new(388, 512, 100, 48);
 }
 
 public sealed class IndexedDoubleClickTracker
@@ -399,6 +411,12 @@ public static class CityMapLayout
     public static int SelectionFrame(TimeSpan now) => (int)(PresentationClock.Ticks(now) % 8 / 4);
 
     /// <summary>
+    /// FND-UI-048: the frame on screen while the pump's counter stands at <paramref name="counter"/>,
+    /// since the pump draws the frame before it advances the counter.
+    /// </summary>
+    public static int SelectionFrameAfterPass(int counter) => (counter + 7) % 8 / 4;
+
+    /// <summary>
     /// FND-UI-017: the column letter tabs above and below the map and the row number tabs left and
     /// right of it, each with the glyph's offset inside the tab.
     /// </summary>
@@ -445,6 +463,21 @@ public static class ObjectiveSectorMarkerPresentation
     }
 }
 
+/// <summary>
+/// FND-UI-050: the city map puts a sector's police badge at map <c>(53c + 9, 51r + 14)</c>, 5
+/// pixels right of and 11 below the corner of its cell.
+/// </summary>
+public static class PoliceBadgeLayout
+{
+    public static Point CellOffset => new(9 - CityMapLayout.GridInsetX, 14 - CityMapLayout.GridInsetY);
+
+    public static Rectangle Destination(int sectorId)
+    {
+        var sector = CityMapLayout.Destination(sectorId);
+        return new Rectangle(sector.X + CellOffset.X, sector.Y + CellOffset.Y, 20, 28);
+    }
+}
+
 public static partial class OriginalSpriteLayout
 {
     public const int ActivePlayerMarkerFrameCount = 12;
@@ -453,6 +486,8 @@ public static partial class OriginalSpriteLayout
     public static Rectangle SnubbedStamp => new(178, 299, 64, 64);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
+    /// <summary>FND-UI-050: the badge of a sector under police presence.</summary>
+    public static Rectangle PoliceBadge => new(317, 560, 20, 28);
 
     public static Rectangle ActivePlayerMarker(int frame)
     {
@@ -553,6 +588,24 @@ public static class CommandOverlayLayout
         GangAction.Attack or GangAction.Equip or GangAction.Give or GangAction.Influence
         or GangAction.Move or GangAction.Research or GangAction.Sell;
 
+    /// <summary>
+    /// FND-UI-021: menu 1 greys only Attack, Control, Influence, Heal, Sell and Give, so it never
+    /// greys Equip, Move or Research, and their panels open with an empty list when the gang has
+    /// nothing to choose (EXP-UI-011 shows it for Research).
+    /// </summary>
+    public static bool OpensWithoutTargets(GangAction action) =>
+        action is GangAction.Equip or GangAction.Move or GangAction.Research;
+
+    /// <summary>
+    /// Whether the order panel offers <paramref name="action"/>, given the orders the rules allow:
+    /// None always (RULE-TURN-005, EXP-TURN-095), any order with a legal command, and for one gang
+    /// an order whose panel opens without targets.
+    /// </summary>
+    public static bool Offers(GangAction action, IEnumerable<GameCommand> options, bool singleGang) =>
+        action == GangAction.None
+        || options.Any(command => command.Action == action)
+        || (singleGang && OpensWithoutTargets(action));
+
     public static IReadOnlyList<GangAction> ActionsFor(bool recurring) => recurring
         ? Actions.Where(action => action == GangAction.None || CommandRules.CanRepeat(action)).ToArray()
         : Actions;
@@ -564,6 +617,11 @@ public static class SiteInformationLayout
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
     public static Rectangle Portrait => new(156, 139, 120, 64);
+    /// <summary>FND-UI-049: the frame keyed over the portrait, from <c>PX00129</c>.</summary>
+    public static Rectangle PortraitFrameSource => new(242, 299, 120, 64);
+    /// <summary>FND-UI-049: string <c>29 + special</c> for a site with a special effect.</summary>
+    public static Vector2 SpecialLine => new(288, 214);
+    public const int SpecialStringBase = 0x1D;
     public static Rectangle Ok => new(161, 293, 49, 22);
     public static int NameLeft => 288;
     public static int DataValueLeft => 396;
@@ -604,16 +662,27 @@ public static class SiteInformationLayout
 public static class ComlinkViewLayout
 {
     public static Rectangle Panel => SharedPanelLayout.Panel;
+    // DEV-UI-005: the inbox tooltip's hover area, the panel art's frame around the number and
+    // count, which holds both digit cells.
     public static Rectangle Page => SharedPanelLayout.At(29, 9, 59, 13);
+    // FND-COMLINK-007: the View fields of fn_0045E04D, panel-local.
+    public static Rectangle PageNumber => DigitCells(34, 13, 2);
+    public static Rectangle PageCount => DigitCells(70, 13, 2);
     // Native view handler 0x0045D61A (FND-COMLINK-002) uses half-open panel-local rectangles
     // (31,33)-(57,56), (59,33)-(85,56), and (33,169)-(82,191).
     public static Rectangle Previous => SharedPanelLayout.At(31, 33, 26, 23);
     public static Rectangle Next => SharedPanelLayout.At(59, 33, 26, 23);
-    public static Rectangle Date => SharedPanelLayout.At(94, 20, 238, 7);
-    public static Rectangle SenderPortrait => SharedPanelLayout.At(111, 46, 64, 64);
-    public static Rectangle SenderName => SharedPanelLayout.At(181, 46, 151, 7);
-    public static Rectangle Message => SharedPanelLayout.At(94, 123, 238, 34);
+    public static Rectangle Year => DigitCells(95, 20, 4);
+    public static Rectangle Week => DigitCells(125, 20, 2);
+    public const int SenderNameColumns = 10;
+    public static Rectangle SenderName => SharedPanelLayout.At(95, 38, 60, 7);
+    public static Rectangle SenderColour => SharedPanelLayout.At(95, 46, 8, 64);
+    public static Rectangle SenderPortrait => SharedPanelLayout.At(103, 46, 64, 64);
+    public static Point MessageOrigin => new(SharedPanelLayout.X(95), SharedPanelLayout.Y(121));
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
+
+    private static Rectangle DigitCells(int x, int y, int count) =>
+        SharedPanelLayout.At(x, y, count * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
 }
 
 public static class ComlinkSendLayout
@@ -646,7 +715,7 @@ public static class ComlinkSendLayout
     }
 
     /// <summary>
-    /// PX00129 source used by native caret helper <c>0x0046023C</c> (FND-COMLINK-005). The normal
+    /// PX00129 source used by native caret helper <c>0x0046023C</c> (FND-COMLINK-010). The normal
     /// glyph strip is row zero; the same glyphs at y=441 carry the inverse cell.
     /// Only the original strip has that inverse row, so the supplemental glyphs
     /// drawn after it (the status console's brackets) have no caret cell.
@@ -694,10 +763,21 @@ public static class ComlinkSendLayout
         return new Rectangle(cell.X + 2, cell.Y + 2, 7, 30);
     }
 
+    /// <summary>FND-COMLINK-007: the name at (+42, +2) from the card point, one inside the frame.</summary>
     public static Point RecipientNameOrigin(int slot)
     {
         var cell = Recipient(slot);
-        return new Point(cell.X + 42, cell.Y + 2);
+        return new Point(cell.X + 43, cell.Y + 3);
+    }
+
+    /// <summary>
+    /// FND-COMLINK-007: the portrait of a slot that cannot be sent to comes from the row at y 594
+    /// of PX00129, where the others come from y 480.
+    /// </summary>
+    public static Rectangle RecipientPortraitSource(int portraitId, bool eligible)
+    {
+        var source = OriginalSpriteLayout.OverlordPortrait(portraitId);
+        return eligible ? source : new Rectangle(source.X, 594, source.Width, source.Height);
     }
 
     private static void ValidateEditorCell(int column, int row)
@@ -714,17 +794,17 @@ public static class InfluenceCommandLayout
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 
-    public static Rectangle Site(int slot) => slot switch
-    {
-        0 => SharedPanelLayout.At(105, 16, 120, 64),
-        1 => SharedPanelLayout.At(208, 73, 120, 64),
-        2 => SharedPanelLayout.At(105, 130, 120, 64),
-        _ => throw new ArgumentOutOfRangeException(nameof(slot))
-    };
+    /// <summary>
+    /// FND-INFLUENCE-002: the site picture frame over a site that is not completed, the frame over
+    /// a completed one, and the frame of the chosen site, all from <c>PX00129</c> keyed on white.
+    /// </summary>
+    public static Rectangle SiteFrameSource => new(242, 299, 120, 64);
+    public static Rectangle CompletedSiteFrameSource => new(362, 299, 120, 64);
+    public static Rectangle ChosenSiteFrameSource => new(0, 235, 120, 64);
 
     /// <summary>
-    /// FND-INFLUENCE-001: native Influence handler 0x0043F692's half-open site selection targets.
-    /// These differ slightly from the staggered card artwork apertures.
+    /// FND-INFLUENCE-001, FND-INFLUENCE-002: native Influence handler 0x0043F692's half-open site
+    /// selection targets, which are also where it draws each slot's picture (EXP-UI-010).
     /// </summary>
     public static Rectangle SiteHit(int slot) => slot switch
     {
@@ -792,7 +872,6 @@ public static partial class PlayerPortraitLayout
     public static Rectangle SetupLarge(int player) => Player(player, 397, 89, 83, 64, 64, rowStride: 74);
     public static Rectangle Previous(int player) => Player(player, 399, 109, 83, 12, 18, rowStride: 74);
     public static Rectangle Next(int player) => Player(player, 447, 109, 83, 12, 18, rowStride: 74);
-    public static Rectangle Name(int player) => Player(player, 397, 153, 83, 64, 8, rowStride: 74);
 
     private static Rectangle Player(
         int player,

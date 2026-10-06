@@ -1,10 +1,10 @@
 ---
 id: RULE-TURN-003
 title: The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-001, FND-TURN-008, FND-SNITCH-001, FND-GANG-001, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-TURN-001, FND-TURN-008, FND-SNITCH-001, FND-GANG-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-009, EXP-TURN-059]
 conflicting: []
 split_with: []
 related: [RULE-BRIBE-001, RULE-HEAL-001, RULE-HIDE-001, RULE-INFLUENCE-001, RULE-RESEARCH-001, RULE-SNITCH-001, RULE-TOLERANCE-002, FMT-STATE-001]

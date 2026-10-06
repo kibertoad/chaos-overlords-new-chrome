@@ -12,8 +12,19 @@ public sealed class ComlinkUiTests
     {
         Assert.Equal(new Rectangle(104, 124, 344, 209), ComlinkViewLayout.Panel);
         Assert.Equal(ComlinkViewLayout.Panel, ComlinkSendLayout.Panel);
-        Assert.Equal(new Rectangle(215, 170, 64, 64), ComlinkViewLayout.SenderPortrait);
-        Assert.Equal(new Rectangle(198, 247, 238, 34), ComlinkViewLayout.Message);
+        // SCR-COMLINK-001, FND-COMLINK-007: the View fields at screen (104, 124) plus the panel offsets.
+        Assert.Equal(new Rectangle(138, 137, 12, 7), ComlinkViewLayout.PageNumber);
+        Assert.Equal(new Rectangle(174, 137, 12, 7), ComlinkViewLayout.PageCount);
+        // DEV-UI-005: the inbox tooltip answers over the whole frame that holds the two counters.
+        Assert.True(ComlinkViewLayout.Page.Contains(ComlinkViewLayout.PageNumber));
+        Assert.True(ComlinkViewLayout.Page.Contains(ComlinkViewLayout.PageCount));
+        Assert.Equal(new Rectangle(133, 133, 59, 13), ComlinkViewLayout.Page);
+        Assert.Equal(new Rectangle(199, 144, 24, 7), ComlinkViewLayout.Year);
+        Assert.Equal(new Rectangle(229, 144, 12, 7), ComlinkViewLayout.Week);
+        Assert.Equal(new Rectangle(199, 162, 60, 7), ComlinkViewLayout.SenderName);
+        Assert.Equal(new Rectangle(199, 170, 8, 64), ComlinkViewLayout.SenderColour);
+        Assert.Equal(new Rectangle(207, 170, 64, 64), ComlinkViewLayout.SenderPortrait);
+        Assert.Equal(new Point(199, 245), ComlinkViewLayout.MessageOrigin);
         Assert.Equal(new Rectangle(135, 157, 26, 23), ComlinkViewLayout.Previous);
         Assert.Equal(new Rectangle(163, 157, 26, 23), ComlinkViewLayout.Next);
         Assert.Equal(new Rectangle(137, 293, 49, 22), ComlinkViewLayout.Ok);
@@ -36,7 +47,9 @@ public sealed class ComlinkUiTests
         Assert.Equal(new Rectangle(323, 212, 100, 32), ComlinkSendLayout.RecipientHit(5));
         Assert.Equal(new Rectangle(203, 145, 7, 30), ComlinkSendLayout.RecipientAccent(0));
         Assert.Equal(new Rectangle(210, 144, 32, 32), ComlinkSendLayout.RecipientPortrait(0));
-        Assert.Equal(new Point(243, 145), ComlinkSendLayout.RecipientNameOrigin(0));
+        Assert.Equal(new Point(244, 146), ComlinkSendLayout.RecipientNameOrigin(0));
+        Assert.Equal(new Rectangle(96, 480, 32, 32), ComlinkSendLayout.RecipientPortraitSource(3, eligible: true));
+        Assert.Equal(new Rectangle(96, 594, 32, 32), ComlinkSendLayout.RecipientPortraitSource(3, eligible: false));
         Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.Recipient(6));
         Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.RecipientHit(6));
         Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.CaretDestination(40, 0));
@@ -158,5 +171,20 @@ public sealed class ComlinkUiTests
         Assert.True(cadence.UsesInverseGlyph);
         cadence.Advance(ComlinkCaretCadence.TimerEventInterval * 6);
         Assert.False(cadence.UsesInverseGlyph);
+    }
+
+    [Fact]
+    public void SendCaretFirstPhaseEndsOnTheThirdSharedTickAfterOpening()
+    {
+        // SCR-COMLINK-002, FND-COMLINK-010: timer 0 is not restarted when the panel opens, so a
+        // panel opened part-way through a period switches on the third tick after the opening.
+        var interval = ComlinkCaretCadence.TimerEventInterval;
+        var cadence = new ComlinkCaretCadence();
+        cadence.Reset(interval * 10 + interval / 2);
+
+        cadence.Advance(interval * 12);
+        Assert.False(cadence.UsesInverseGlyph);
+        cadence.Advance(interval * 13);
+        Assert.True(cadence.UsesInverseGlyph);
     }
 }

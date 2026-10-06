@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-023
 title: Family-4 computer gangs raise Chaos in owned land, probe weak enemies and move through sector selector mode 2, and no match reaches them
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-072, FND-AI-049, FND-AI-046, FND-AI-048, FND-AI-033, FND-AI-021, FND-AI-002, FND-AI-041, FND-AI-044, FND-EXE-004, EXP-TURN-040]
+evidence: [FND-AI-072, FND-AI-049, FND-AI-046, FND-AI-048, FND-AI-033, FND-AI-021, FND-AI-002, FND-AI-041, FND-AI-044, FND-EXE-004, EXP-TURN-040, EXP-TURN-074, EXP-TURN-079, EXP-TURN-082, EXP-TURN-087]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -136,4 +136,8 @@ None known.
 
 ## Open questions
 
-None.
+- EXP-TURN-087 reaches the `draw_once` after Attack, Hide or Move whose
+  strength test fails and leaves None. No recorded run reaches the refused
+  first draw after Chaos or Equip, so the further `draw_target` draws, with the
+  Attack on the last target drawn when all five fail, rest on the static
+  reading of FND-AI-049 and FND-AI-072.

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-FINANCE-001, FND-FINANCE-002, FND-OPTIONS-001, FND-GANG-004, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-FINANCE-001, FND-FINANCE-002, FND-OPTIONS-001, FND-GANG-004, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-006, EXP-UI-007]
 conflicting: []
 split_with: []
 related: [RULE-FINANCE-001, RULE-UI-003, RULE-UI-004]
@@ -17,7 +17,8 @@ related: [RULE-FINANCE-001, RULE-UI-003, RULE-UI-004]
 |---|---|---|---|---|---|
 | Panel, City | `DATA/PX08/PX05008`, the 320-pixel part from buffer x = 344 | None | `(128, 124, 320, 209)` | When opened as City | FND-FINANCE-001 |
 | Panel, Sector | `DATA/PX08/PX05019`, the same crop | None | `(128, 124, 320, 209)` | When opened as Sector | FND-FINANCE-001, FND-FINANCE-002, SRC-MANUAL-GOG |
-| Overlord portrait | Not recorded | The viewing player's portrait | `(154, 141, 64, 64)` | While the panel is open | FND-FINANCE-001 |
+| Overlord portrait | Not recorded | The viewing player's portrait | `(154, 141, 64, 64)` | When opened as City | FND-FINANCE-001, EXP-UI-006 |
+| Sector cell | The sector's 54-by-52 cell of the unmarked city map, `DATA/PX16/PX10000`, inside a one-pixel black border | The sector | `(159, 141, 54, 52)`, in the box the City variant gives the portrait | When opened as Sector | EXP-UI-007 |
 | Value fields | Not recorded | The amounts of RULE-FINANCE-001, each drawn by `number_cells` (RULE-UI-004) in four glyph cells from the field's left edge: Gang Upkeep at y = 151, New Recruits 160, Equipment 178, City Officials 196, Sector Tax 214, Site Protection 223, Chaos (Estimate) 241 and Cash Adjustment 268 | `(394, y, 24, 7)` | While the panel is open | FND-FINANCE-001, FND-FINANCE-002, FND-GANG-004 |
 | Gang count | Not recorded | The number of gangs counted on the Gang Upkeep row, queued hires included (RULE-FINANCE-001): one bright cell at x = 316 below ten, two cells from x = 316 otherwise, then a closing parenthesis at x = 322 or 328. The opening parenthesis is part of the panel image | On the Gang Upkeep row, y = 151 | While the panel is open | FND-FINANCE-001, FND-FINANCE-002 |
 | Sector name | Not recorded | In the Sector variant, the column letter and row digit of the sector | Buffer `(396, 216)`, screen `(180, 196)` | When opened as Sector | FND-FINANCE-002 |

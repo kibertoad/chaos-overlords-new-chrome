@@ -4,7 +4,7 @@ title: Family-11 computer gangs equip, heal, attack the first visible definition
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-024, FND-AI-021, FND-AI-015, FND-AI-069, FND-AI-028, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-061]
+evidence: [FND-AI-024, FND-AI-021, FND-AI-015, FND-AI-069, FND-AI-028, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-061, EXP-TURN-057]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002]

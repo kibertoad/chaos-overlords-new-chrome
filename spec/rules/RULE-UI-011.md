@@ -4,7 +4,7 @@ title: The sector values on the main console
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-035, FND-UI-027, FND-STATE-001, FND-UI-024, FND-UPKEEP-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-035, FND-UI-027, FND-STATE-001, FND-UI-024, FND-UPKEEP-001, FND-EXE-004, SRC-MANUAL-GOG, EXP-UI-006, EXP-UI-007, EXP-UI-009, EXP-UI-010, EXP-UI-011, EXP-UI-012]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002]

@@ -80,10 +80,12 @@ events are the client coordinates in `lParam`, taken as unsigned 16-bit halves.
 Keys: for `WM_KEYDOWN` the procedure keeps the virtual key in `b` and
 translates it with `MapVirtualKeyA(key, 2)` into `a`. When
 `GetAsyncKeyState(VK_SHIFT)` reports Shift held, it replaces the result for
-thirteen keys by the shifted character of a United States keyboard:
+sixteen characters by the shifted character of a United States keyboard:
 `'` to `"`, `,` to `<`, `.` to `>`, `/` to `?`, `;` to `:`, `=` to `+`, and the
-digits 0 to 9 to `)!@#$%^&*(`. Letters come out in upper case whether or not
-Shift is held, since that translation gives the upper-case letter.
+digits 0 to 9 to `)!@#$%^&*(`. The switch covers the characters `'` to `=`
+(`0x27` to `0x3D`); the seven others in that range, `( ) * + - : <`, keep the
+translated character. Letters come out in upper case whether or not Shift is
+held, since that translation gives the upper-case letter.
 
 The pumps:
 

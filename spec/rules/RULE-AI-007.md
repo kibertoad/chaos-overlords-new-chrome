@@ -4,10 +4,10 @@ title: Sector selector mode 0 picks a random neighbouring sector
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-AI-028, FND-MOVE-003, FND-EXE-004]
+evidence: [FND-AI-005, FND-AI-028, FND-MOVE-003, FND-EXE-004, EXP-TURN-097, EXP-TURN-098, EXP-TURN-099]
 conflicting: []
 split_with: []
-related: [RULE-RNG-002, FMT-STATE-001]
+related: [RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
 ---
 
 ## Summary
@@ -27,7 +27,8 @@ None.
 
 ## Inputs
 
-The gang's `sector` in `gangs`, and `rng_state` through `roll`.
+The gang's `sector` in `gangs`, the `owner` of each sector (FMT-STATE-002),
+and `rng_state` through `roll`.
 
 ## Procedure
 
@@ -39,7 +40,7 @@ define random_neighbour(player, idx):
         let d = offsets[roll(8) - 1]
         let c = src + d
         let dx = c % 8 - src % 8
-        if c >= 0 and c < 64 and dx >= -1 and dx <= 1:
+        if c >= 0 and c < 64 and dx >= -1 and dx <= 1 and sectors[c].owner >= -1:
             return c
 ```
 
@@ -53,8 +54,15 @@ row or leaves the city.
 
 - A gang in a corner has three legal neighbours, so the loop can take several
   attempts; each costs a `roll`.
-- The drawn neighbour is not checked against the six-gang limit or anything
-  else about the sector [FND-MOVE-003].
+- The drawn neighbour is not checked against the six-gang limit [FND-MOVE-003].
+- A neighbour whose owner byte is below -1 is drawn again [FND-MOVE-003]. No
+  instruction stores such a value in an owner byte, so the test can refuse a
+  sector only when the value arrives by a block read [FND-MOVE-007].
+- EXP-TURN-097, EXP-TURN-098 and EXP-TURN-099 draw from corner sectors 7, 63
+  and 0: draws north of the city, south of it and past its eastern and western
+  edges are drawn again, and a drawn sector that the mover then crowds sends
+  it back for another draw. Every western draw of EXP-TURN-099 gives a sector
+  below 0, which the range test refuses as well.
 - `fn_00476A94`, the Move-capacity repair, stores the result as the gang's new
   destination (RULE-MOVE-002) [FND-MOVE-003].
 - FND-MOVE-001 described this call as one draw over all 64 sectors followed by
@@ -72,4 +80,9 @@ None known.
 
 ## Open questions
 
-None known.
+- No run has made a draw that only the test of the western edge refuses (from
+  a sector in column 0, an offset of -9, -1 or +7 that stays within 0 to 63),
+  so that test rests on FND-MOVE-003 alone.
+- Which records, if any, bring an owner byte below -1 through a block read is
+  not recorded [FND-MOVE-007]. No run has reached the owner test either, so
+  the status stays `supported` until runs reach both tests.

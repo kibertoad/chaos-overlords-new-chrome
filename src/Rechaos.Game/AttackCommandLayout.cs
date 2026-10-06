@@ -95,6 +95,32 @@ public static class AttackCommandLayout
         return SharedPanelLayout.At(x, 16 + row * 89, width, row == 0 ? 89 : 88);
     }
 
+    /// <summary>SCR-ATTACK-001, FND-ATTACK-005: the 66-by-87 card of target cell <paramref name="targetSlot"/>.</summary>
+    public static Rectangle TargetCard(int targetSlot)
+    {
+        if (targetSlot is < 0 or >= VisibleTargets)
+            throw new ArgumentOutOfRangeException(nameof(targetSlot));
+        return SharedPanelLayout.At(135 + targetSlot % 3 * 68, 16 + targetSlot / 3 * 90, 66, 87);
+    }
+
+    /// <summary>SCR-ATTACK-001, FND-ATTACK-005: the card frame, with its portrait well and item boxes, in PX00129.</summary>
+    public static Rectangle TargetCardSource => new(0, 299, 66, 87);
+
+    /// <summary>SCR-ATTACK-001, FND-ATTACK-005: the black fill under a target's Force track.</summary>
+    public static Rectangle TargetForceBackground(int targetSlot)
+    {
+        var card = TargetCard(targetSlot);
+        return new Rectangle(card.X + 2, card.Y + 58, 62, 5);
+    }
+
+    /// <summary>SCR-ATTACK-001, FND-ATTACK-005: a target's 60-by-3 Force track.</summary>
+    public static Rectangle TargetForceTrack(int targetSlot)
+    {
+        var card = TargetCard(targetSlot);
+        return new Rectangle(card.X + 3, card.Y + 59, CombatPanelLayout.RedTrackSource.Width,
+            CombatPanelLayout.ForceBarHeight);
+    }
+
     /// <summary>SCR-ATTACK-001, FND-ATTACK-004: the portrait of target cell <paramref name="targetSlot"/>.</summary>
     public static Rectangle TargetPortrait(int targetSlot)
     {
@@ -104,12 +130,26 @@ public static class AttackCommandLayout
             17 + targetSlot / 3 * 90, 64, 64);
     }
 
-    /// <summary>SCR-ATTACK-001, FND-ATTACK-004: a target's item icons, 65 rows below its portrait's top.</summary>
+    /// <summary>
+    /// SCR-ATTACK-001, FND-ATTACK-004: the 20-by-20 double-click rectangle of a target's item icon,
+    /// 65 rows below its portrait's top.
+    /// </summary>
     public static Rectangle TargetItem(int targetSlot, int itemSlot)
     {
         if (itemSlot is < 0 or >= EquippedItemCount) throw new ArgumentOutOfRangeException(nameof(itemSlot));
         var portrait = TargetPortrait(targetSlot);
         return new Rectangle(portrait.X + itemSlot * 22, portrait.Y + 65, 20, 20);
+    }
+
+    /// <summary>
+    /// SCR-ATTACK-001, FND-ATTACK-007: the box a target's item icon is drawn in. The second and
+    /// third are 19 pixels wide, and the original's squeeze of the 20-pixel icon into them keeps
+    /// its first 19 columns (EXP-UI-011). The double-click rectangle stays 20 wide.
+    /// </summary>
+    public static Rectangle TargetItemBox(int targetSlot, int itemSlot)
+    {
+        var hit = TargetItem(targetSlot, itemSlot);
+        return itemSlot == 0 ? hit : hit with { Width = 19 };
     }
 
     /// <summary>SCR-ATTACK-001, FND-ATTACK-002: the marker on the chosen target, 8 right of and 2 below the cell's corner.</summary>

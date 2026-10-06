@@ -75,8 +75,11 @@ public static partial class AiTurnPlanner
 
             // Command validation lets a computer player's Move into a full sector through for the
             // Move repair (DEV-MOVE-001); the expansion does not trade a useful order for one.
+            // With DEV-AI-007 switched off validation also lets the Move go to any sector, which
+            // is for the original planner's Moves; the expansion still steps to a neighbour.
             var move = CommandOptionCatalog.LegalCommands(state, player.Id, gang.Id, targets)
                 .Where(command => command.Action == GangAction.Move
+                    && CommandValidator.AreNeighbours(gang.SectorId, command.Target.Id)
                     && state.Sectors[command.Target.Id].Owner != player.Id
                     && player.Gangs.Count(candidate => candidate.IsActive
                         && candidate.SectorId == command.Target.Id) < MatchLimits.FriendlyGangsPerSector)

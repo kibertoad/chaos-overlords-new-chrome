@@ -4,7 +4,7 @@ title: A human player holds at most one hire or snub order, set by dragging an o
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-004, FND-HIRE-001, FND-HIRE-008, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-HIRE-004, FND-HIRE-001, FND-HIRE-008, FND-EXE-004, EXP-HIRE-001, EXP-HIRE-002, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: []
@@ -87,3 +87,7 @@ None known.
 
 - The order a computer player's hire planner writes is covered by the AI
   rules, not here.
+- EXP-HIRE-001 and EXP-HIRE-002 reach every case above but one: no run drops
+  an offer on a sector already holding six of the player's gangs, which rests
+  on the static reading of FND-HIRE-008. Their drops are all on the city map;
+  none is made on the detailed sector view.

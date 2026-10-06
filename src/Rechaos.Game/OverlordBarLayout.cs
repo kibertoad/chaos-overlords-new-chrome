@@ -48,10 +48,30 @@ public static class OverlordBarLayout
 
     /// <summary>
     /// FND-UI-017: the light is lit while the seat is human (<c>players_human</c>) and its orders
-    /// are not in. Only the network code marks a human seat's orders as in, so on a machine that
-    /// seats every player the lights of the human seats stay lit.
+    /// are not in.
     /// </summary>
     public static bool PlanningLightLit(bool human, bool ordersIn) => human && !ordersIn;
+
+    /// <summary>
+    /// FND-UI-043: whether a seat's orders are in on a machine that seats every player. A seat's
+    /// planning visit marks them in when it returns, the visits go in ascending slot order, and
+    /// the marks hold through resolution and the final visits until the next round's reset. The
+    /// reset comes after the upkeep scans (FND-TURN-006), so a later turn's Upkeep still shows
+    /// the previous round's marks; the first turn has no completed round.
+    /// </summary>
+    public static bool LocalOrdersIn(MatchState state, PlayerId player)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (state.Outcome is not null) return true;
+        var coordinator = state.Coordinator;
+        return coordinator.Phase switch
+        {
+            TurnPhase.Command => coordinator.ActivePlayer is { } active && player.Value < active.Value,
+            TurnPhase.Upkeep => coordinator.Turn > 1,
+            TurnPhase.Execution or TurnPhase.Hire or TurnPhase.PlayerElimination => true,
+            _ => false,
+        };
+    }
 
     private static int Stride(int seat)
     {

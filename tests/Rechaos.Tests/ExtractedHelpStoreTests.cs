@@ -12,6 +12,7 @@ public sealed class ExtractedHelpStoreTests : IDisposable
     [Fact]
     public void CurrentBoundedDocumentLoads()
     {
+        // DEV-HELP-001: the viewer reads the help the extractor took from the player's own help file.
         var expected = Document() with
         {
             Topics = [Topic(0, "Topic", "Readable text", true) with

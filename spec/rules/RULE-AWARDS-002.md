@@ -1,10 +1,10 @@
 ---
 id: RULE-AWARDS-002
 title: The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AWARDS-004, FND-OBJECTIVE-004, FND-AWARDS-003, FND-AI-005, FND-AWARDS-001, SRC-MANUAL-GOG]
+evidence: [FND-AWARDS-004, FND-OBJECTIVE-004, FND-AWARDS-003, FND-AI-005, FND-AWARDS-001, FND-AWARDS-005, EXP-TURN-038, EXP-TURN-039, SRC-MANUAL-GOG, EXP-TURN-058, EXP-UI-023]
 conflicting: []
 split_with: []
 related: [RULE-AWARDS-001, SCR-AWARDS-001, SCR-AWARDS-002]

@@ -4,7 +4,7 @@ title: In a Crackdown sector the police may find each gang and attack it with 25
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [EXP-TURN-010, FND-COMBAT-001, FND-COMBAT-008, FND-EXE-004, FND-POLICE-001, FND-POLICE-003, FND-RNG-003, FND-STATE-005, SRC-MANUAL-GOG]
+evidence: [EXP-TURN-010, FND-COMBAT-001, FND-COMBAT-008, FND-EXE-004, FND-POLICE-001, FND-POLICE-003, FND-RNG-003, FND-STATE-005, SRC-MANUAL-GOG, EXP-TURN-051]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, RULE-HIDE-001, FMT-STATE-001, FMT-STATE-002, FMT-STATE-003, FMT-STATE-008]
