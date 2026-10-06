@@ -121,6 +121,15 @@ public sealed class MatchHandle
         _client.SendAsync<Unit>(
             HttpMethod.Post, ApiRoutes.Snapshots(MatchId), request, cancellationToken);
 
+    /// <summary>
+    /// In a match played from views, this seat's view of the open turn: the snapshot archive of the
+    /// view's save payload. Refused with <c>view_not_ready</c> until the server has resolved the
+    /// turn before.
+    /// </summary>
+    public Task<ServedSeatView> SeatViewAsync(CancellationToken cancellationToken) =>
+        _client.SendAsync<ServedSeatView>(
+            HttpMethod.Get, ApiRoutes.SeatView(MatchId), body: null, cancellationToken);
+
     public Task<SnapshotView> LatestSnapshotAsync(CancellationToken cancellationToken) =>
         _client.SendAsync<SnapshotView>(
             HttpMethod.Get, ApiRoutes.LatestSnapshot(MatchId), body: null, cancellationToken);

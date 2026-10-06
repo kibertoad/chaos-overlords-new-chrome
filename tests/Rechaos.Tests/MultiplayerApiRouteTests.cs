@@ -38,6 +38,7 @@ public sealed class MultiplayerApiRouteTests
         (RouteTemplates.SealedOrders, $"GET {ApiRoutes.Orders(MatchId, 7)}"),
         (RouteTemplates.ReportTurn, $"POST {ApiRoutes.Report(MatchId, 7)}"),
         (RouteTemplates.UploadSnapshot, $"POST {ApiRoutes.Snapshots(MatchId)}"),
+        (RouteTemplates.SeatView, $"GET {ApiRoutes.SeatView(MatchId)}"),
         (RouteTemplates.LatestSnapshot, $"GET {ApiRoutes.LatestSnapshot(MatchId)}"),
         (RouteTemplates.Snapshot, $"GET {ApiRoutes.Snapshot(MatchId, 7)}"),
         (RouteTemplates.ListEvents, $"GET {ApiRoutes.Events(MatchId, 0, 200)}"),
