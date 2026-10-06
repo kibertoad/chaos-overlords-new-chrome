@@ -266,7 +266,8 @@ public sealed record TurnDesyncedEventPayloadReports(
 public sealed record TurnDesyncedEventPayload(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("reports")] IReadOnlyList<TurnDesyncedEventPayloadReports> Reports,
-    [property: JsonPropertyName("candidateStateHashes")] IReadOnlyList<string> CandidateStateHashes
+    [property: JsonPropertyName("candidateStateHashes")] IReadOnlyList<string> CandidateStateHashes,
+    [property: JsonPropertyName("tieBreakerPlayerId")] string? TieBreakerPlayerId
 );
 
 public sealed record TurnDesyncedEvent(

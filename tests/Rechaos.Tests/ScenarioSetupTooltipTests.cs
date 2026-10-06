@@ -13,7 +13,7 @@ public sealed class ScenarioSetupTooltipTests
         {
             var lines = ScenarioSetupTooltip.Lines(scenario, GameDuration.SixMonths);
 
-            Assert.Equal(ScenarioCatalog.Get(scenario).Name, lines[0]);
+            Assert.Equal(ExecutableStrings.ScenarioTitle(scenario), lines[0]);
             Assert.True(lines.Count >= 4);
             Assert.All(lines, line => Assert.False(string.IsNullOrWhiteSpace(line)));
         }
