@@ -520,14 +520,23 @@ public sealed class MultiplayerEventStreamTests
     /// <summary>
     /// A body that ends inside a line delivers the frames before it and nothing of that line.
     /// </summary>
+    /// <remarks>
+    /// The last line is a whole event with nothing after it, so a reader that delivered what it
+    /// held at the end of the body would yield it as a second event.
+    /// </remarks>
     [Fact]
     public async Task DropsAnUnterminatedLastLine()
     {
-        var events = await ReadAsync(
-            Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}") + "id: 4");
+        var frame = Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}");
+        var events = await ReadAsync(frame + frame.TrimEnd('\n'));
 
         Assert.IsType<LobbyHostChangedEvent>(Assert.Single(events));
     }
+
+    /// <summary>Reconnects within milliseconds and keeps trying, for the re-handshake cases.</summary>
+    private static readonly RetryPolicy QuickReconnect =
+        new(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(5), MaxAttempts: 0,
+            MaxElapsed: TimeSpan.FromMinutes(1));
 
     /// <summary>
     /// Every fresh connection establishes the protocol again before it asks for the stream.
@@ -541,10 +550,7 @@ public sealed class MultiplayerEventStreamTests
     {
         using var server = new FakeMultiplayerServer();
         using var http = new HttpClient(server);
-        var stream = new MatchEventStream(
-            Handle(http),
-            new RetryPolicy(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(5), MaxAttempts: 0,
-                MaxElapsed: TimeSpan.FromMinutes(1)));
+        var stream = new MatchEventStream(Handle(http), QuickReconnect);
         await using var read = PendingRead.Start(stream);
 
         await Until(() => server.CallsTo(HttpMethod.Get, "/stream") == 1 && !server.Events.Ended);
@@ -568,10 +574,7 @@ public sealed class MultiplayerEventStreamTests
     {
         using var server = new FakeMultiplayerServer();
         using var http = new HttpClient(server);
-        var stream = new MatchEventStream(
-            Handle(http),
-            new RetryPolicy(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(5), MaxAttempts: 0,
-                MaxElapsed: TimeSpan.FromMinutes(1)));
+        var stream = new MatchEventStream(Handle(http), QuickReconnect);
         await using var read = PendingRead.Start(stream);
 
         await Until(() => server.CallsTo(HttpMethod.Get, "/stream") == 1 && !server.Events.Ended);

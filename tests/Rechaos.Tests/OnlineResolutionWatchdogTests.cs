@@ -14,13 +14,15 @@ public sealed class OnlineResolutionWatchdogTests
 
     /// <summary>
     /// The grace outlasts the stream's idle detector plus its first reconnect, including that
-    /// reconnect's own connect deadline, so the recovery already on its way is not pre-empted.
+    /// reconnect's handshake and connect deadlines, so the recovery already on its way is not
+    /// pre-empted.
     /// </summary>
     [Fact]
     public void TheGraceOutlastsTheStreamsOwnRecovery()
     {
-        var firstReconnect = RetryPolicy.Stream.InitialDelay
-            + new MultiplayerClientOptions(new Uri("http://server.test")).EffectiveTimeout;
+        var deadline = new MultiplayerClientOptions(new Uri("http://server.test")).EffectiveTimeout;
+        // Every reconnect handshakes again before it opens the stream, each under its own deadline.
+        var firstReconnect = RetryPolicy.Stream.InitialDelay + deadline + deadline;
 
         Assert.True(
             OnlineResolutionWatchdog.Grace > MatchEventStream.DefaultIdleTimeout + firstReconnect,

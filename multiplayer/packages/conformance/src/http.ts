@@ -431,11 +431,10 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
     })
 
     it('names the refused field without echoing what was sent, and caps every body', async () => {
-      const response = await harness.fetch('http://conformance/api/v1/matches/join', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ joinCode: 'ABCDEFGH', displayName: '', password: 'hunter2' }),
-      })
+      const response = await post(
+        '/matches/join',
+        JSON.stringify({ joinCode: 'ABCDEFGH', displayName: '', password: 'hunter2' }),
+      )
       expect(response.status).toBe(422)
       const body = await response.json()
       expect(body.error.details.reason).toBe('invalid_request')
@@ -443,11 +442,10 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(issues.some((issue) => issue.path.join('.') === 'displayName')).toBe(true)
       expect(JSON.stringify(body)).not.toContain('hunter2')
 
-      const oversized = await harness.fetch('http://conformance/api/v1/matches/join', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'x'.repeat(20 * 1024) }),
-      })
+      const oversized = await post(
+        '/matches/join',
+        JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'x'.repeat(20 * 1024) }),
+      )
       expect(oversized.status).toBe(413)
       expect((await oversized.json()).error.code).toBe('payload_too_large')
     })
@@ -589,6 +587,10 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
               signal: controller.signal,
             })
             expect(response.status).toBe(200)
+            // Read and thrown away, so the hub does not drop the stream as stalled: unread, an
+            // in-process stream fills its queue within a couple of seconds of 50 ms keepalives, and
+            // one dropped stream leaves room for the stream this case expects refused.
+            void response.body?.pipeTo(new WritableStream()).catch(() => undefined)
           }
         }
         const leaver = members.at(-1)
@@ -632,6 +634,9 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
     // request the client queued on that connection next; docs/MULTIPLAYER-REVIEW.md tracks it.
     it('answers an oversized snapshot with 413 before reading it', async () => {
       const { matchId, host } = await lobbyOfTwo()
+      // The cap is the snapshot limit plus an allowance for the rest of the envelope (16 KB in
+      // packages/server/src/app.ts). Going over it by 32 KB keeps the case on the 413 path; an
+      // allowance of 32 KB or more would let the body through to the schema and answer 422.
       const response = await post(
         `/matches/${matchId}/snapshots`,
         JSON.stringify({

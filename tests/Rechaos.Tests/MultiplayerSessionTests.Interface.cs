@@ -10,7 +10,7 @@ namespace Rechaos.Tests;
 public sealed partial class MultiplayerSessionTests
 {
     /// <summary>
-    /// A vote the server refused reaches the player as a message, with the question still open.
+    /// A vote the server refused reaches the player as a message telling them to vote again.
     /// </summary>
     /// <remarks>
     /// The interface fires a vote and forgets it, so the notice is the only way the player learns

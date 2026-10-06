@@ -25,16 +25,19 @@ internal static class OnlineResolutionWatchdog
     /// `turn.sealed` goes out on a stream a suspended laptop or an expired NAT entry has silently
     /// killed; the stream notices at <see cref="MatchEventStream.DefaultIdleTimeout"/>, fifty
     /// seconds, and comes back from its `Last-Event-ID`. At thirty seconds this watchdog was tearing
-    /// the session down twenty seconds before the mechanism that fixes it even woke up.
+    /// the session down twenty seconds before the mechanism that fixes it even woke up. The first
+    /// reconnect waits out its backoff step and then handshakes again before it opens the stream,
+    /// each under its own request deadline, so it can take a second plus two fifteen-second
+    /// deadlines; the forty seconds over the detector cover that with nine to spare.
     /// <para>
     /// The margin covers the stream's detector only while the pump is reading: time a handler spends
-    /// on an event is not silence, so a dead socket found during a long handler — a desync repair
-    /// waiting on its reports — can outlast this grace. Losing that race costs a resync and nothing
+    /// on an event is not silence, so a dead socket found during a long handler (a desync repair
+    /// waiting on its reports) can outlast this grace. Losing that race costs a resync and nothing
     /// more: <see cref="MultiplayerMatchSession.RequestResync"/> also ends that wait.
     /// </para>
     /// </remarks>
     internal static readonly TimeSpan Grace =
-        MatchEventStream.DefaultIdleTimeout + TimeSpan.FromSeconds(25);
+        MatchEventStream.DefaultIdleTimeout + TimeSpan.FromSeconds(40);
 
     /// <summary>
     /// Starts the grace when the turn can only be waiting on its seal, and clears it otherwise.
