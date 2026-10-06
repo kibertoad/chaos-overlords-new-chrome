@@ -68,7 +68,7 @@ branches of the computer players' planning, and the end of Power, Big 40,
 Siege, Armageddon, Kill 'Em All and Eliminate matches
 ([docs/AI-SPEC.md](docs/AI-SPEC.md#how-far-the-planner-is-proved)). The
 [parity matrix](PARITY.md) shows the state of every rule, format and screen;
-206 of its 224 rows are compared with evidence from the original. The
+207 of its 224 rows are compared with evidence from the original. The
 [parity achievement plan](parity-achievement-plan.md) and the
 [static](static_validation_plan.md) and [manual](manual_validation_plan.md)
 validation plans list the open questions.
