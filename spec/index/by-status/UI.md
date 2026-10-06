@@ -44,7 +44,7 @@ Entries by status.
 
 ## recorded
 
-83 entries.
+85 entries.
 
 | ID | Title |
 |---|---|
@@ -74,6 +74,8 @@ Entries by status.
 | [EXP-UI-024](../../experiments/EXP-UI-024.md) | How long do the original's presentation waits last against its six-per-second clock? |
 | [EXP-UI-025](../../experiments/EXP-UI-025.md) | Which copies does the original make when a panel slides in? |
 | [EXP-UI-026](../../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? |
+| [EXP-UI-027](../../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? |
+| [EXP-UI-028](../../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? |
 | [FND-UI-001](../../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures |
 | [FND-UI-002](../../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each |
 | [FND-UI-003](../../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables |
