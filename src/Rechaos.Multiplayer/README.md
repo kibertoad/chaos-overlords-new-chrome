@@ -16,6 +16,7 @@ for them.
 | `Protocol/` | Canonical JSON, the order digests, and the serializer settings every payload goes through. |
 | `Http/` | The REST client, the typed refusal, a resumable server-sent event stream, and one definition of which failures are worth another attempt. |
 | `Session/` | Bootstrapping a match from the server's seed, applying a sealed turn, and the two sessions that drive the lobby and the barrier. |
+| `Resolution/` | `AuthoritativeMatch`, the match as the coordination server's turn resolver holds it, built from the same steps a client takes. See [Resolving turns on the server](../../docs/MULTIPLAYER.md#resolving-turns-on-the-server). |
 
 ## The parts worth reading first
 

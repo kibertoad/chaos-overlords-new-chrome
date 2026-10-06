@@ -33,6 +33,11 @@ characters without disturbing the player-name field.
 - [Retention](#retention)
 - [Security model](#security-model)
 - [What the server does and does not defend against](#what-the-server-does-and-does-not-defend-against)
+- [Resolving turns on the server](#resolving-turns-on-the-server)
+  - [Pieces](#pieces)
+  - [What the resolver is fed](#what-the-resolver-is-fed)
+  - [Versions](#versions)
+  - [Cost](#cost)
 - [Two languages, one contract](#two-languages-one-contract)
 - [Client integration contract](#client-integration-contract)
   - [What a hot-seat core does not say](#what-a-hot-seat-core-does-not-say)
@@ -464,16 +469,15 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   client that *changes* the outcome, not one that merely reads. Nor does it attribute blame: a
   client that diverges deliberately can grief a match by desyncing it every turn, and the remedy is
   social — `turn.desynced` names every player's hash and the candidates, so the host can see who is
-  the odd one out and kick them. Moving resolution server-side (a WebAssembly build of
-  `Rechaos.Core` behind a `TurnResolver` port) would close both gaps and is the one design change
-  this layout leaves room for; the wire protocol would not change.
+  the odd one out and kick them. Resolving turns on the server closes the griefing in its first
+  step and the read leak in its second; see [Resolving turns on the server](#resolving-turns-on-the-server).
 - **Corroboration assumes one human per seat.** There are no accounts, so nothing stops one person
   holding several seats in a public lobby. A host with two of three seats can report a doctored
   hash twice and then upload a snapshot claiming it, and the honest third player is told to
   converge. Counting reports is a defence against one client, not against one person wearing three
   hats, and the server has no way to tell the two apart. It is sound among people who found each
-  other elsewhere and it is not a guarantee to strangers; the real fix is the `TurnResolver` port
-  above.
+  other elsewhere and it is not a guarantee to strangers. The fix is the server resolving the turn
+  itself, so that its hash decides; see [Resolving turns on the server](#resolving-turns-on-the-server).
 - **Which join codes exist is observable to somebody already scanning the code space.** An unknown
   code and a match that has already started answer the same 404, but a code-gated lobby answers 401
   rather than 404, so a caller who guesses a live code learns that it is live. The space is about
@@ -548,6 +552,80 @@ ask; a latecomer taking such a seat over sends that same face back rather than t
 value outside the atlas stops the bootstrap (`MatchBootstrapFactory`) instead of being clamped to
 something drawable: a client that quietly substituted one would be playing a city no peer agrees
 with.
+
+## Resolving turns on the server
+
+Status: decided (`docs/DECISIONS.md`, 2026-10-06); the C# resolver and its WebAssembly build are
+implemented and checked, and the server does not call them yet.
+
+Lockstep leaves three gaps that the security model above names: recovery counts reports, so one
+person in several seats outvotes the rest; a client that diverges on purpose pauses the match every
+turn; and every client holds hidden state it can read. All three exist because only the clients
+know the state. The server will therefore resolve each sealed turn itself, with the game's own
+rules compiled to WebAssembly, in two steps.
+
+**Referee.** The server resolves every sealed turn as it seals and its hash decides the turn. A
+report that matches confirms that seat; a report that differs is that client's divergence alone:
+the server tells it so and serves its own snapshot of the turn, which the client adopts as it adopts
+a repair today. Nobody votes, the host uploads nothing, and the other players are not paused. This
+closes multi-seat corroboration and desync griefing: a doctored hash, reported from any number of
+seats, only puts those seats on the server's state. The order wire does not change. Clients still
+resolve, so the read leak stays.
+
+**Per-seat views.** Later, and as a separate decision: the server sends each seat the part of the
+state the original shows that player, and the client plans against it instead of resolving. That
+closes the read leak, and needs what the referee does not: a spec of what each seat may see, a
+projection of the state per seat, and a client that renders and plans from a projection.
+
+### Pieces
+
+| Piece | Where | What it does |
+|---|---|---|
+| `AuthoritativeMatch` | `src/Rechaos.Multiplayer/Resolution` | The match as the server holds it. Bootstrap, sealed turn, handover and snapshot each call the code a client calls for the same fact (`MatchBootstrapFactory` and `CommandPhase`, `SealedTurnApplier`, `SeatControl`, `MatchStateClone`), so the two cannot drift apart. `AuthoritativeMatchTests` holds it to a client's hashes. |
+| `Rechaos.Resolver.Wasm` | `src/Rechaos.Resolver.Wasm` | `AuthoritativeMatch` behind `[JSExport]` functions that take the wire's JSON: the stored `gameSettings` blob, the roster, a sealed set as `GET /turns/:n/orders` answers it. A match lives in the runtime under an integer handle between calls. |
+| `TurnResolver` port | `multiplayer/packages/kernel` (to come) | What the kernel calls. A runtime supplies it; a server without one keeps today's report counting. |
+| Node host | `runtimes/node` (to come) | Loads the bundle in a worker thread, because a turn costs hundreds of milliseconds of CPU that must not stall the event loop and every stream on it. |
+| Cloudflare host | a resolver Worker (to come) | A Worker of its own without `nodejs_compat`, holding matches in a Durable Object per match and called over a service binding. It needs the paid plan: a turn takes about half a second of CPU against the free plan's 10 ms. |
+| Determinism check | `tools/ResolverDeterminism` | Plays a match natively and holds the WebAssembly build to every hash, under Node and under workerd. The multiplayer workflow runs it. |
+
+### What the resolver is fed
+
+The resolver applies the facts that change the state, in event-log order, exactly as a reconnecting
+client replays them:
+
+- `match.started`: bootstrap from the seed, the stored `gameSettings` and the seated roster.
+- `match.playerTakenOver`: the seat goes to the computer. `match.playerReturned` that replaced the
+  computer, and `match.latePlayerJoined`: the seat goes to a human. A handover on a finished match is
+  ignored, as on every client.
+- `turn.sealed`: the frozen set, checked against its own digest, then resolved.
+
+It keeps the state in memory and checkpoints it, every ten turns as the host does today and at
+every desync it settles. A checkpoint is the snapshot archive clients already read, so the server's
+checkpoints replace the host's uploads. A host that lost its runtime restores the newest checkpoint
+and replays the facts after it. The browser-wasm runtime has no Brotli codec, so the resolver hands
+out and takes the uncompressed save payload, and its host writes and reads the archive's header and
+compression.
+
+### Versions
+
+A resolver plays one session version, the one its build was compiled with, because that number is
+what names the rules, the order schema and the state hashing. A match stored under another session
+version is not refereed: the server falls back to report counting for it. A deployment that wants to
+referee a session version runs the resolver built for it, so the bundle is versioned and published
+with the session version it plays. A server whose hash differs from every client's on the same turn
+is most likely running rules that changed without a session version bump. It still decides the turn,
+which keeps the match consistent, and logs the disagreement for the operator.
+
+The referee changes `turn.desynced` and the snapshot routes, so it moves the protocol version. It
+does not move the session version: nothing stored changes meaning.
+
+### Cost
+
+Measured for the decision on a 26-turn match: under the Mono interpreter a turn takes 190 to 800 ms
+on Node and about 470 ms under workerd, against 20 to 120 ms natively, and the runtime starts in
+under 150 ms. The WebAssembly heap is 46 MiB after start and 80 to 96 MiB with one or two matches
+held, within a 128 MB Cloudflare isolate but not by much: a trimmed bundle, which needs
+source-generated JSON contracts in `Rechaos.Core`, takes about 15 MiB off the start.
 
 ## Two languages, one contract
 

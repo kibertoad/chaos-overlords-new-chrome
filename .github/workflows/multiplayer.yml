@@ -8,7 +8,9 @@ on:
       - "src/Rechaos.Multiplayer/Generated/**"
       - "src/Rechaos.Core/**"
       - "src/Rechaos.Multiplayer/**"
+      - "src/Rechaos.Resolver.Wasm/**"
       - "tools/OnlineSmoke/**"
+      - "tools/ResolverDeterminism/**"
       - ".github/workflows/multiplayer.yml"
   pull_request:
     paths: *watched
@@ -119,3 +121,14 @@ jobs:
           done
           curl --fail http://127.0.0.1:8787/health
           dotnet run --project ../tools/OnlineSmoke/OnlineSmoke.csproj -- http://127.0.0.1:8787 3
+
+      # The coordination server is to resolve turns with a WebAssembly build of the game's rules
+      # (docs/MULTIPLAYER.md, "Resolving turns on the server"). This plays a whole match natively,
+      # with real orders, a takeover and a return, and holds that build to the same state hash after
+      # every step, under Node and under workerd, including a match picked up from a snapshot.
+      - name: Hold the WebAssembly resolver to the native build's hashes
+        shell: bash
+        run: |
+          dotnet build ../src/Rechaos.Resolver.Wasm/Rechaos.Resolver.Wasm.csproj -c Release
+          dotnet run --project ../tools/ResolverDeterminism/ResolverDeterminism.csproj -c Release -- "${RUNNER_TEMP}/resolver-transcript.json"
+          node ../tools/ResolverDeterminism/check.mjs ../src/Rechaos.Resolver.Wasm/bin/Release/net10.0/wwwroot/_framework "${RUNNER_TEMP}/resolver-transcript.json"
