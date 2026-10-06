@@ -316,7 +316,7 @@ no fixed address, 0 each time the panel opens [FND-COMLINK-007].
 
 For each player slot, whether the Send panel lets the active player pick that
 player as a recipient. Any other value the game keeps: `UINT8[6]`, rebuilt
-each time the Send panel opens [FND-COMLINK-003], a local of the Send handler
+each time the Send panel opens [FND-COMLINK-011], a local of the Send handler
 with no fixed address [FND-COMLINK-007].
 
 ## comlink_messages
@@ -338,7 +338,7 @@ incoming-message alert repeat. Any other value the game keeps: `UINT8` at
 
 For each player slot, whether the player is picked as a recipient in the Send
 panel; shown as a green card frame. Any other value the game keeps:
-`UINT8[6]` [FND-COMLINK-003] at `0x00498114`, set to 0 each time the Send
+`UINT8[6]` [FND-COMLINK-011] at `0x00498114`, set to 0 each time the Send
 panel opens [FND-COMLINK-007].
 
 ## comlink_view_open
@@ -577,7 +577,7 @@ RULE-EVENT-014, run at once [FND-EVENT-001].
 The index of the report the Last Turn Events panel shows, which is also the
 index of its record in `last_turn_reports`. Any other value the game keeps: an
 integer at `0x004948EC`, set to 0 at the start of each human planning visit
-and changed only by the panel's Previous and Next [FND-EVENT-005].
+and changed only by the panel's Previous and Next [FND-EVENT-007].
 
 ## events_page_drawn
 
@@ -594,7 +594,7 @@ RULE-EVENT-005.
 
 For each of the active player's 32 Last Turn records, whether the panel has
 shown it since the planning visit began; unoccupied records start as seen.
-Any other value the game keeps: `UINT8[32]` at `0x00494870` [FND-EVENT-005].
+Any other value the game keeps: `UINT8[32]` at `0x00494870` [FND-EVENT-007].
 
 ## events_show
 
@@ -606,7 +606,7 @@ RULE-EVENT-005.
 
 Set while some Last Turn report of the active player has not been shown; it
 makes the Events control's light blink. Any other value the game keeps:
-`UINT8` at `0x00487814` [FND-EVENT-005, FND-EVENT-006].
+`UINT8` at `0x00487814` [FND-EVENT-007, FND-EVENT-006].
 
 ## family_count
 

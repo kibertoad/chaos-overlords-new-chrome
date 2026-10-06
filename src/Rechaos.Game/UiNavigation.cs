@@ -698,12 +698,13 @@ public static class ComlinkSendLayout
         (MessageRows - 1) * TextRowStride + OriginalFontLayout.GlyphHeight);
     public static Rectangle Cancel => SharedPanelLayout.At(33, 137, 49, 22);
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
-    // Native press helper 0x00418821 (FND-COMLINK-003) draws a one-pixel-larger held sprite than
-    // either half-open activation target, then restores the baked face on exit.
+    // The held-button helper fn_00418821 (FND-COMLINK-011, FND-UI-062) draws a face one pixel
+    // larger than either half-open activation target: the lit face while the pointer is over the
+    // held button, and the plain face while it is off it and after the release.
     public static Rectangle CancelPressed => new(Cancel.X, Cancel.Y, 50, 23);
     public static Rectangle OkPressed => new(Ok.X, Ok.Y, 50, 23);
-    public static Rectangle CancelPressedSource => new(50, 409, 50, 23);
-    public static Rectangle OkPressedSource => new(50, 386, 50, 23);
+    public static Rectangle CancelPressedSource => HeldButtonFaces.Lit(HeldButtonKind.Cancel);
+    public static Rectangle OkPressedSource => HeldButtonFaces.Lit(HeldButtonKind.Confirm);
 
     /// <summary>Native Send caret destination for a cell in the fixed 4-by-40 editor.</summary>
     public static Rectangle CaretDestination(int column, int row)
@@ -740,7 +741,7 @@ public static class ComlinkSendLayout
     }
 
     /// <summary>
-    /// FND-COMLINK-003: native Send handler 0x0045EAB1's half-open recipient click target.
+    /// FND-COMLINK-011: native Send handler 0x0045EAB1's half-open recipient click target.
     /// This intentionally includes each recipient's name/text region rather
     /// than only the smaller portrait cell returned by <see cref="Recipient"/>.
     /// </summary>

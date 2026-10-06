@@ -208,7 +208,7 @@ public sealed partial class ChaosGame
 
     private void BeginComlinkSendButton(ComlinkSendButton button)
     {
-        // Native Send handler 0x0045EAB1 (FND-COMLINK-003) rejects the face immediately when no
+        // Native Send handler 0x0045EAB1 (FND-COMLINK-011) rejects the face immediately when no
         // recipient is selected; it only enters shared held-button helper
         // 0x00418821 after that predicate passes.
         if (button == ComlinkSendButton.Send && !_comlinkRecipients.Any(selected => selected))

@@ -9,7 +9,7 @@ byte_order: little
 size: 10
 text: false
 definition: fmt_state_006.ksy
-evidence: [FND-EVENT-001, FND-EVENT-004, FND-EVENT-005, FND-SAVE-001, EXP-TURN-010, EXP-TURN-011, EXP-TURN-014, EXP-TURN-017, EXP-TURN-033, EXP-TURN-034, EXP-TURN-035]
+evidence: [FND-EVENT-001, FND-EVENT-004, FND-EVENT-007, FND-SAVE-001, EXP-TURN-010, EXP-TURN-011, EXP-TURN-014, EXP-TURN-017, EXP-TURN-033, EXP-TURN-034, EXP-TURN-035]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002, RULE-EVENT-005]
@@ -29,9 +29,9 @@ are not saved [FND-SAVE-001].
 | `0x00` | 1 | `UINT8` | `occupied` | 1 when the record holds a report of the last resolution, 0 after the clearing before each resolution | supported | FND-EVENT-004 |
 | `0x01` | 1 | `UINT8` | `unk_01` | Padding. Neither the recorder nor the clearing writes it | supported | FND-EVENT-004 |
 | `0x02` | 2 | `INT16LE` | `report_type` | The kind of report, 0 to 9 (Enumerations) | supported | FND-EVENT-001, FND-EVENT-004 |
-| `0x04` | 2 | `INT16LE` | `arg1` | First argument; its meaning depends on `report_type` (Enumerations) | supported | FND-EVENT-004, FND-EVENT-005 |
-| `0x06` | 2 | `INT16LE` | `arg2` | Second argument | supported | FND-EVENT-004, FND-EVENT-005 |
-| `0x08` | 2 | `INT16LE` | `arg3` | Third argument | supported | FND-EVENT-004, FND-EVENT-005 |
+| `0x04` | 2 | `INT16LE` | `arg1` | First argument; its meaning depends on `report_type` (Enumerations) | supported | FND-EVENT-004, FND-EVENT-007 |
+| `0x06` | 2 | `INT16LE` | `arg2` | Second argument | supported | FND-EVENT-004, FND-EVENT-007 |
+| `0x08` | 2 | `INT16LE` | `arg3` | Third argument | supported | FND-EVENT-004, FND-EVENT-007 |
 | `0x0A` | | | | Total size 10 | | |
 
 ## Enumerations and flags
@@ -43,16 +43,16 @@ reads them. An argument not listed is stored as 0 and never read.
 
 | Value | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|
-| 0 | `REPORT_NONE` | Never recorded. `arg1` to `arg3` are not read | supported | FND-EVENT-001, FND-EVENT-005 |
-| 1 | `REPORT_CRACKDOWN` | A Crackdown in sector `arg1` | supported | FND-EVENT-004, FND-EVENT-005 |
-| 2 | `REPORT_CONTROL_GAINED` | The recipient took sector `arg1` from player `arg2`, -1 when it had no owner. `arg2` is not read by the panel | supported | FND-EVENT-004, FND-EVENT-005 |
-| 3 | `REPORT_CONTROL_LOST` | The recipient lost sector `arg1`: to player `arg2` through Control, or with `arg2` 0 through a third Crackdown. `arg2` is not read by the panel | supported | FND-EVENT-004, FND-EVENT-005 |
-| 4 | `REPORT_SITE_COMPLETED` | Influence completed the site in slot `arg2` of sector `arg1` | supported | FND-EVENT-004, FND-EVENT-005 |
-| 5 | `REPORT_RESEARCH_COMPLETED` | Research completed item `arg1` | supported | FND-EVENT-004, FND-EVENT-005 |
-| 6 | `REPORT_CASH_SHORT` | An order failed for lack of cash; `arg1` tells which (below) | supported | FND-EVENT-004, FND-EVENT-005 |
-| 7 | `REPORT_HIRE_SECTOR_FULL` | A hire into sector `arg1` failed because the player already has 6 gangs there | supported | FND-EVENT-004, FND-EVENT-005 |
-| 8 | `REPORT_HIRE_ROSTER_FULL` | A hire of gang definition `arg1` failed for want of a free roster slot | supported | FND-EVENT-004, FND-EVENT-005 |
-| 9 | `REPORT_ELIMINATION` | Player `arg1` was eliminated | supported | FND-EVENT-004, FND-EVENT-005 |
+| 0 | `REPORT_NONE` | Never recorded. `arg1` to `arg3` are not read | supported | FND-EVENT-001, FND-EVENT-007 |
+| 1 | `REPORT_CRACKDOWN` | A Crackdown in sector `arg1` | supported | FND-EVENT-004, FND-EVENT-007 |
+| 2 | `REPORT_CONTROL_GAINED` | The recipient took sector `arg1` from player `arg2`, -1 when it had no owner. `arg2` is not read by the panel | supported | FND-EVENT-004, FND-EVENT-007 |
+| 3 | `REPORT_CONTROL_LOST` | The recipient lost sector `arg1`: to player `arg2` through Control, or with `arg2` 0 through a third Crackdown. `arg2` is not read by the panel | supported | FND-EVENT-004, FND-EVENT-007 |
+| 4 | `REPORT_SITE_COMPLETED` | Influence completed the site in slot `arg2` of sector `arg1` | supported | FND-EVENT-004, FND-EVENT-007 |
+| 5 | `REPORT_RESEARCH_COMPLETED` | Research completed item `arg1` | supported | FND-EVENT-004, FND-EVENT-007 |
+| 6 | `REPORT_CASH_SHORT` | An order failed for lack of cash; `arg1` tells which (below) | supported | FND-EVENT-004, FND-EVENT-007 |
+| 7 | `REPORT_HIRE_SECTOR_FULL` | A hire into sector `arg1` failed because the player already has 6 gangs there | supported | FND-EVENT-004, FND-EVENT-007 |
+| 8 | `REPORT_HIRE_ROSTER_FULL` | A hire of gang definition `arg1` failed for want of a free roster slot | supported | FND-EVENT-004, FND-EVENT-007 |
+| 9 | `REPORT_ELIMINATION` | Player `arg1` was eliminated | supported | FND-EVENT-004, FND-EVENT-007 |
 
 ### arg1
 
@@ -61,9 +61,9 @@ Only for `REPORT_CASH_SHORT`; for other types `arg1` holds the value the
 
 | Value | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|
-| 1 | `CASH_SHORT_BRIBE` | A Bribe by a gang in sector `arg2` | supported | FND-EVENT-004, FND-EVENT-005 |
-| 2 | `CASH_SHORT_EQUIP` | An Equip by a gang in sector `arg2`; `arg3` is the gang's byte at FMT-STATE-001 offset `0x01` (`definition`) | supported | FND-EVENT-004, FND-EVENT-005 |
-| 4 | `CASH_SHORT_HIRE` | A hire of gang definition `arg2` | supported | FND-EVENT-004, FND-EVENT-005 |
+| 1 | `CASH_SHORT_BRIBE` | A Bribe by a gang in sector `arg2` | supported | FND-EVENT-004, FND-EVENT-007 |
+| 2 | `CASH_SHORT_EQUIP` | An Equip by a gang in sector `arg2`; `arg3` is the gang's byte at FMT-STATE-001 offset `0x01` (`definition`) | supported | FND-EVENT-004, FND-EVENT-007 |
+| 4 | `CASH_SHORT_HIRE` | A hire of gang definition `arg2` | supported | FND-EVENT-004, FND-EVENT-007 |
 
 ## Differences between builds
 

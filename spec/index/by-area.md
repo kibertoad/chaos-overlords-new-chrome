@@ -773,8 +773,9 @@
 | [FND-EVENT-002](../findings/FND-EVENT-002.md) | The Last Turn Events handler tests only Previous, Next and one exit control, and has no Delete branch | recorded |
 | [FND-EVENT-003](../findings/FND-EVENT-003.md) | Last Turn reports other than Influence and Research load the illustration numbered 6000 plus the report type | recorded |
 | [FND-EVENT-004](../findings/FND-EVENT-004.md) | A Last Turn report record holds an occupied byte at +0, a padding byte at +1 and four 16-bit fields from +2, and the resolver's twelve recorder calls pass fixed arguments | recorded |
-| [FND-EVENT-005](../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item | recorded |
+| [FND-EVENT-005](../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item | superseded |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | The event pump blinks the Events, Comlink and Done lights together, lit for two timer-0 ticks and dark for two | recorded |
+| [FND-EVENT-007](../findings/FND-EVENT-007.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item | recorded |
 | [RULE-EVENT-001](../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | established |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution | supported |
 | [RULE-EVENT-003](../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | established |
@@ -799,7 +800,7 @@
 | [EXP-COMLINK-002](../experiments/EXP-COMLINK-002.md) | Are Comlink Send and View both refused when the only human has no one to write to and no messages? | recorded |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | Each player keeps at most 16 Comlink messages, and a 17th drops the oldest | recorded |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls | recorded |
-| [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
+| [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | superseded |
 | [FND-COMLINK-004](../findings/FND-COMLINK-004.md) | Comlink View marks the shown message read and draws it from a self-contained 166-byte record | recorded |
 | [FND-COMLINK-005](../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer | superseded |
 | [FND-COMLINK-006](../findings/FND-COMLINK-006.md) | Comlink messages are stored only on the recipient's computer, cleared when the match loop starts, and read messages at the front of an inbox are dropped when its player finishes planning | recorded |
@@ -807,6 +808,7 @@
 | [FND-COMLINK-008](../findings/FND-COMLINK-008.md) | The Send panel builds a message in a 166-byte buffer, with 160 characters from space to Z filled with spaces and no terminator, a signed turn, and a last byte nothing writes | recorded |
 | [FND-COMLINK-009](../findings/FND-COMLINK-009.md) | A message recorded for the active player while the View panel is open makes the panel redraw the shown message with the new count | recorded |
 | [FND-COMLINK-010](../findings/FND-COMLINK-010.md) | Comlink Send edits a fixed grid of four rows of 40 characters from space to Z, wraps the cursor between rows, and switches the caret every third tick of a 6 Hz timer | recorded |
+| [FND-COMLINK-011](../findings/FND-COMLINK-011.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
 | [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | supported |
 | [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | supported |
 | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | established |
@@ -966,6 +968,7 @@
 | [FND-UI-057](../findings/FND-UI-057.md) | The gang order popups play no sound, and only the picker panels they open play the panel-open sound | recorded |
 | [FND-UI-058](../findings/FND-UI-058.md) | A byte marks the match as saved; a save or a load sets it, a resolved turn and each accepted order clear it, and File, End and File, Exit offer dialog 129 while it is clear | recorded |
 | [FND-UI-059](../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation | recorded |
+| [FND-UI-062](../findings/FND-UI-062.md) | The held-button helper draws the lit face of its kind while the pointer is inside and the plain face when it leaves and when the button comes up | recorded |
 | [RULE-UI-001](../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |

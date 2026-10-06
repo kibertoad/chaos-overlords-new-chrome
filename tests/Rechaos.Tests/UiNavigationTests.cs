@@ -892,6 +892,21 @@ public sealed partial class UiNavigationTests
     // the row as the first press set it; a press on another control between the two presses makes
     // the second a plain press that flips the row back.
     [Fact]
+    public void SiteSearchHeldFacesFollowScrSearch001()
+    {
+        // SCR-SEARCH-001, FND-UI-062: the lit faces while ALL, NONE and Done are held.
+        Assert.Equal(new Rectangle(137, 140, 50, 23), SiteSearchLayout.HeldFace(SiteSearchControl.All));
+        Assert.Equal(new Rectangle(137, 172, 50, 23), SiteSearchLayout.HeldFace(SiteSearchControl.None));
+        Assert.Equal(new Rectangle(137, 293, 50, 23), SiteSearchLayout.HeldFace(SiteSearchControl.Done));
+        Assert.Equal(new Rectangle(97, 560, 50, 23),
+            HeldButtonFaces.Lit(SiteSearchLayout.HeldKind(SiteSearchControl.All)));
+        Assert.Equal(new Rectangle(197, 560, 50, 23),
+            HeldButtonFaces.Lit(SiteSearchLayout.HeldKind(SiteSearchControl.None)));
+        Assert.Equal(new Rectangle(0, 386, 50, 23),
+            HeldButtonFaces.Lit(SiteSearchLayout.HeldKind(SiteSearchControl.Done)));
+    }
+
+    [Fact]
     public void SiteSearchDoubleClickOpensDetailsOnlyForTwoPressesInARow()
     {
         var rows = Enumerable.Range(0, SiteSearchLayout.MaximumSites).Select(row => (short)row).ToArray();
@@ -910,6 +925,9 @@ public sealed partial class UiNavigationTests
         SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(100));
         Assert.Equal(SiteSearchControl.None,
             SiteSearchPanel.Press(selections, player, none, rows, clicks, TimeSpan.FromMilliseconds(200)).Press.Control);
+        // FND-UI-062: the press on NONE only holds the face; its release inside clears the filter.
+        Assert.True(selections.IsSelected(player, 5));
+        SiteSearchPanel.Apply(selections, player, new SiteSearchPress(SiteSearchControl.None), rows);
         Assert.False(SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(300)).OpensDetails);
         Assert.True(selections.IsSelected(player, 5));
 

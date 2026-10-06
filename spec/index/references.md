@@ -340,6 +340,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-COMLINK-008](../findings/FND-COMLINK-008.md) | builds, locations |
 | [FND-COMLINK-009](../findings/FND-COMLINK-009.md) | builds, locations |
 | [FND-COMLINK-010](../findings/FND-COMLINK-010.md) | builds, locations |
+| [FND-COMLINK-011](../findings/FND-COMLINK-011.md) | builds, locations |
 | [FND-CONTROL-001](../findings/FND-CONTROL-001.md) | builds, locations |
 | [FND-CONTROL-002](../findings/FND-CONTROL-002.md) | builds, locations |
 | [FND-CONTROL-003](../findings/FND-CONTROL-003.md) | builds, locations |
@@ -372,6 +373,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-EVENT-004](../findings/FND-EVENT-004.md) | builds, locations |
 | [FND-EVENT-005](../findings/FND-EVENT-005.md) | builds, locations |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | builds, locations |
+| [FND-EVENT-007](../findings/FND-EVENT-007.md) | builds, locations |
 | [FND-EXE-001](../findings/FND-EXE-001.md) | builds, locations |
 | [FND-EXE-002](../findings/FND-EXE-002.md) | builds, locations |
 | [FND-EXE-003](../findings/FND-EXE-003.md) | builds, locations |
@@ -585,6 +587,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-057](../findings/FND-UI-057.md) | builds, locations |
 | [FND-UI-058](../findings/FND-UI-058.md) | builds, locations |
 | [FND-UI-059](../findings/FND-UI-059.md) | body, builds, locations |
+| [FND-UI-062](../findings/FND-UI-062.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -4523,11 +4526,6 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-COMLINK-001](../experiments/EXP-COMLINK-001.md) | body |
-| glossary: comlink_eligible | glossary |
-| glossary: comlink_selected | glossary |
-| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | evidence |
-| [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | evidence |
-| [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 
 ## FND-COMLINK-004
 
@@ -4617,10 +4615,22 @@ None.
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | body |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | body |
 | [FND-COMLINK-005](../findings/FND-COMLINK-005.md) | superseded_by |
+| [FND-COMLINK-011](../findings/FND-COMLINK-011.md) | body |
 | [FND-NET-003](../findings/FND-NET-003.md) | body |
 | glossary: comlink_draft_column | glossary |
 | glossary: comlink_draft_row | glossary |
 | [RULE-COMLINK-006](../rules/RULE-COMLINK-006.md) | evidence |
+| [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
+
+## FND-COMLINK-011
+
+| Cited by | In |
+|---|---|
+| [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | superseded_by |
+| glossary: comlink_eligible | glossary |
+| glossary: comlink_selected | glossary |
+| [RULE-COMLINK-002](../rules/RULE-COMLINK-002.md) | evidence |
+| [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) | evidence |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 
 ## FND-CONTROL-001
@@ -4989,20 +4999,10 @@ None.
 
 | Cited by | In |
 |---|---|
-| [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, evidence |
-| [FMT-DATA-002](../formats/FMT-DATA-002.md) | body, evidence |
-| [FMT-DATA-003](../formats/FMT-DATA-003.md) | body, evidence |
-| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
 | [FND-COMLINK-007](../findings/FND-COMLINK-007.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-046](../findings/FND-UI-046.md) | body |
 | [FND-UI-059](../findings/FND-UI-059.md) | body |
-| glossary: events_page | glossary |
-| glossary: events_seen | glossary |
-| glossary: events_unviewed | glossary |
-| [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | evidence |
-| [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
-| [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | body, evidence |
 
 ## FND-EVENT-006
 
@@ -5015,6 +5015,22 @@ None.
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | evidence |
 | [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## FND-EVENT-007
+
+| Cited by | In |
+|---|---|
+| [FMT-DATA-001](../formats/FMT-DATA-001.md) | body, evidence |
+| [FMT-DATA-002](../formats/FMT-DATA-002.md) | body, evidence |
+| [FMT-DATA-003](../formats/FMT-DATA-003.md) | body, evidence |
+| [FMT-STATE-006](../formats/FMT-STATE-006.md) | body, evidence |
+| [FND-EVENT-005](../findings/FND-EVENT-005.md) | superseded_by |
+| glossary: events_page | glossary |
+| glossary: events_seen | glossary |
+| glossary: events_unviewed | glossary |
+| [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | evidence |
+| [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
+| [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | body, evidence |
 
 ## FND-EXE-001
 
@@ -5156,6 +5172,7 @@ None.
 | [FND-UI-047](../findings/FND-UI-047.md) | body |
 | [FND-UI-048](../findings/FND-UI-048.md) | body |
 | [FND-UI-050](../findings/FND-UI-050.md) | body |
+| [FND-UI-062](../findings/FND-UI-062.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -7159,6 +7176,7 @@ None.
 | [FND-COMBAT-014](../findings/FND-COMBAT-014.md) | body |
 | [FND-EVENT-005](../findings/FND-EVENT-005.md) | body |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
+| [FND-EVENT-007](../findings/FND-EVENT-007.md) | body |
 | glossary: presentation_tick_pending | glossary |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | evidence |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | evidence |
@@ -7331,6 +7349,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-EVENT-005](../findings/FND-EVENT-005.md) | body |
+| [FND-EVENT-007](../findings/FND-EVENT-007.md) | body |
 | [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | body, evidence |
 
 ## FND-UI-017
@@ -7384,6 +7403,7 @@ None.
 | [FND-MOVE-007](../findings/FND-MOVE-007.md) | body |
 | [FND-RESEARCH-005](../findings/FND-RESEARCH-005.md) | body |
 | [FND-UI-040](../findings/FND-UI-040.md) | body |
+| [FND-UI-062](../findings/FND-UI-062.md) | body |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 | [SCR-MOVE-001](../screens/SCR-MOVE-001.md) | body, evidence |
@@ -7552,6 +7572,7 @@ None.
 | [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | body |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | body |
 | [FND-EVENT-005](../findings/FND-EVENT-005.md) | body |
+| [FND-EVENT-007](../findings/FND-EVENT-007.md) | body |
 | [FND-GFX-004](../findings/FND-GFX-004.md) | body |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | body |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | body |
@@ -7726,6 +7747,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-047](../findings/FND-UI-047.md) | body |
+| [FND-UI-062](../findings/FND-UI-062.md) | body |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | body, evidence |
 | [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
 
@@ -7835,6 +7857,17 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## FND-UI-062
+
+| Cited by | In |
+|---|---|
+| [FND-COMLINK-011](../findings/FND-COMLINK-011.md) | body |
+| [FND-EVENT-007](../findings/FND-EVENT-007.md) | body |
+| [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
+| [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
+| [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | body, evidence |
+| [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | body, evidence |
 
 ## FND-UPKEEP-001
 

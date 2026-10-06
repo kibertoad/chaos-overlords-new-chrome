@@ -1,9 +1,9 @@
 ---
-id: FND-EVENT-005
+id: FND-EVENT-007
 title: The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item
-status: superseded
+status: recorded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: [FND-EVENT-007]
+superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
 method: static
@@ -123,9 +123,10 @@ Input:
   outside, and changes the page only when the release is inside. For a key it
   waits through `fn_00464CD9(1)` and changes the page. It draws the plain face
   in both cases before returning.
-- The exit control goes through the shared helper `fn_00418821` with button 0,
-  whose pressed face is `PX00129` (50, 386), 50 by 23, and whose plain face is
-  (0, 386), at screen (137, 293).
+- The exit control goes through the shared helper `fn_00418821` with kind 0
+  (FND-UI-062), at screen (137, 293): its lit face, shown while the pointer is
+  inside, is `PX00129` (0, 386), 50 by 23, and its plain face, shown while the
+  pointer is outside and after the release, is (50, 386).
 - While `g_004948F8` is set (the compositor sets it for type 5 and clears it
   for every other type), each timer-0 event consumed by the handler advances a
   frame counter 0, 1, ..., 14, 0, and copies frame `n`, the rectangle
