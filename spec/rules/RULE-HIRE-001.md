@@ -4,7 +4,7 @@ title: Hires and snubs are carried out player by player and offer slot by offer 
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-001, FND-HIRE-002, FND-HIRE-005, FND-HIRE-006, FND-EQUIP-006, FND-EVENT-001, FND-TURN-005, FND-EXE-004, EXP-TURN-027, EXP-TURN-035, SRC-MANUAL-GOG, EXP-TURN-090, EXP-TURN-097, EXP-TURN-098]
+evidence: [FND-HIRE-001, FND-HIRE-002, FND-HIRE-005, FND-HIRE-006, FND-EQUIP-006, FND-EVENT-001, FND-TURN-005, FND-EXE-004, EXP-TURN-027, EXP-TURN-035, SRC-MANUAL-GOG, EXP-TURN-090, EXP-TURN-097, EXP-TURN-098, EXP-TURN-099]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-DATA-002]
