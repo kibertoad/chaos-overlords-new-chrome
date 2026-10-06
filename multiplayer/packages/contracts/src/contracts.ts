@@ -12,6 +12,7 @@ import {
   joinMatchRequestSchema,
   joinRunningMatchRequestSchema,
   submitOrdersRequestSchema,
+  removalVoteRequestSchema,
   takeoverVoteRequestSchema,
   turnReportRequestSchema,
   updatePlayerProfileRequestSchema,
@@ -69,6 +70,7 @@ const matchParams = withObjectKeys(object({ matchId: resourceIdSchema }))
 const turnParams = withObjectKeys(object({ matchId: resourceIdSchema, turn: turnPathParamSchema }))
 const kickParams = withObjectKeys(object({ matchId: resourceIdSchema, playerId: resourceIdSchema }))
 const takeoverVoteParams = kickParams
+const removalVoteParams = kickParams
 
 // ---------------------------------------------------------------------------
 // Protocol handshake
@@ -187,6 +189,20 @@ export const takeoverVoteContract = defineApiContract({
   requestBodySchema: takeoverVoteRequestSchema,
   responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
   summary: 'Vote to keep waiting for an absent player or hand their seat to the computer.',
+})
+
+/**
+ * The players' own remedy for a seat nobody else can remove: a host who never readies an untimed
+ * turn, or a player who desyncs every turn while the host will not kick them. The seat is removed,
+ * exactly as a kick removes it, once every other active player's latest choice is `remove`.
+ */
+export const removalVoteContract = defineApiContract({
+  method: 'post',
+  requestPathParamsSchema: removalVoteParams,
+  pathResolver: ({ matchId, playerId }) => `/matches/${matchId}/players/${playerId}/removal-vote`,
+  requestBodySchema: removalVoteRequestSchema,
+  responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
+  summary: 'Vote to remove another player from a running match, or withdraw that vote.',
 })
 
 // ---------------------------------------------------------------------------
@@ -325,6 +341,7 @@ export const API_CONTRACTS = {
   rejoinMatch: rejoinMatchContract,
   kickPlayer: kickPlayerContract,
   takeoverVote: takeoverVoteContract,
+  removalVote: removalVoteContract,
   submitOrders: submitOrdersContract,
   ownSubmission: ownSubmissionContract,
   sealedOrders: sealedOrdersContract,

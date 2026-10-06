@@ -16,6 +16,7 @@ import type {
   SealedSlot,
   Snapshot,
   SnapshotSummary,
+  RemovalVote,
   TakeoverDecision,
   TakeoverVote,
   Turn,
@@ -455,11 +456,32 @@ export interface TakeoverRepository {
   listVotes(matchId: string, targetPlayerId: string): Promise<TakeoverVote[]>
 }
 
+/**
+ * Votes to remove a seat from a running match (`removal_votes`).
+ *
+ * There is no prompt row: a removal vote is open exactly while some active player other than the
+ * seat holds `remove`, which the kernel reads off the votes themselves. Rows are the latest choice of
+ * each voter and are discarded together when the vote closes.
+ */
+export interface RemovalVoteRepository {
+  /** Records or replaces one voter's choice on a seat. */
+  castVote(vote: RemovalVote): Promise<void>
+  listVotes(matchId: string, targetPlayerId: string): Promise<RemovalVote[]>
+  /** Seats with at least one vote on file, in a stable order. */
+  listTargets(matchId: string): Promise<string[]>
+  /**
+   * Discards every vote on a seat, in ONE statement. True only for the caller whose statement
+   * deleted rows, so of two callers closing the same vote exactly one announces it.
+   */
+  clear(matchId: string, targetPlayerId: string): Promise<boolean>
+}
+
 export interface MultiplayerStorage {
   matches: MatchRepository
   players: PlayerRepository
   turns: TurnRepository
   takeovers: TakeoverRepository
+  removals: RemovalVoteRepository
   snapshots: SnapshotRepository
   events: EventRepository
 }

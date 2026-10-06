@@ -7,6 +7,7 @@ import {
   LIMITS,
   type MatchSettings,
   type MembershipView,
+  type RemovalVoteRequest,
   type TakeoverVoteRequest,
   type UpdatePlayerProfileRequest,
 } from '@chaos-overlords/contracts'
@@ -550,11 +551,115 @@ export class LobbyService {
     await this.turns.resumeAfterTakeoverVotes(match.id)
   }
 
-  /** Re-tally every open prompt, for when the set of voters has just shrunk. */
+  /** Re-tally every open prompt and removal vote, for when the set of voters has just shrunk. */
   private async retallyOpenPrompts(match: Match): Promise<void> {
     for (const playerId of await this.deps.storage.takeovers.listOpenPrompts(match.id)) {
       await this.tallyTakeoverVote(match, playerId)
     }
+    for (const playerId of await this.deps.storage.removals.listTargets(match.id)) {
+      await this.tallyRemovalVote(match.id, playerId)
+    }
+  }
+
+  /**
+   * Record one active player's latest choice on removing another seat from a running match.
+   *
+   * Only the host can kick, so before this a host who never readied an untimed turn held the match
+   * for as long as they liked, and a host could keep a player who desynced every turn. The vote is
+   * the other players' remedy, and its outcome is the kick itself: the seat is `kicked`, its token
+   * revoked, its streams closed, the turn stops waiting on it, a takeover vote decides who plays it
+   * and a removed host's role moves to the lowest active slot. It takes every other active player,
+   * which is the same bar the takeover vote sets for handing a seat to the computer; in a match of
+   * two the proposer is the only other player, so either can remove the other, as the host already
+   * could. See docs/DECISIONS.md, "Let the other players remove a seat by unanimous vote".
+   *
+   * A removal vote has no prompt row. It is open while some active player other than the seat
+   * holds `remove`, so `keep` on a seat nobody proposes removing changes nothing and is answered as
+   * done, which also covers a `keep` that crossed the vote closing.
+   */
+  async voteOnRemoval(
+    principal: Principal,
+    targetPlayerId: string,
+    request: RemovalVoteRequest,
+  ): Promise<void> {
+    const { match, player } = principal
+    requireInProgress(match)
+    const currentVoter = await this.deps.storage.players.get(player.id)
+    if (currentVoter?.status !== 'active') {
+      throw new ForbiddenError('Only present players may vote', { reason: 'not_active' })
+    }
+    if (targetPlayerId === player.id) {
+      throw new ConflictError('Leave the match instead of voting to remove yourself', {
+        reason: 'self_removal',
+      })
+    }
+    const target = await this.requireTarget(match, targetPlayerId)
+    if (target.status === 'kicked') {
+      throw new ConflictError('That player has already been removed', {
+        reason: 'already_removed',
+      })
+    }
+    if (
+      request.decision === 'keep' &&
+      (await this.deps.storage.removals.listVotes(match.id, target.id)).length === 0
+    ) {
+      return
+    }
+    await this.deps.storage.removals.castVote({
+      matchId: match.id,
+      targetPlayerId: target.id,
+      voterPlayerId: player.id,
+      decision: request.decision,
+      castAt: this.deps.clock.now(),
+    })
+    await this.publisher.publish(match.id, {
+      type: 'match.removalVoteCast',
+      payload: { playerId: target.id, voterPlayerId: player.id, decision: request.decision },
+    })
+    await this.tallyRemovalVote(match.id, target.id)
+  }
+
+  /**
+   * Remove a seat once every other active player's latest choice is `remove`, or close the vote
+   * when none of them holds it any more.
+   *
+   * Run after every vote and whenever the set of voters shrinks, for the same reason the takeover
+   * tally is: when the one player who had not approved leaves, everyone left already has.
+   */
+  private async tallyRemovalVote(matchId: string, targetPlayerId: string): Promise<void> {
+    const votes = await this.deps.storage.removals.listVotes(matchId, targetPlayerId)
+    if (votes.length === 0) return
+    const players = await this.deps.storage.players.listByMatch(matchId)
+    const target = players.find((candidate) => candidate.id === targetPlayerId)
+    if (!target || target.status === 'kicked') {
+      await this.closeRemovalVote(matchId, targetPlayerId, target !== undefined)
+      return
+    }
+    const choices = new Map(votes.map((vote) => [vote.voterPlayerId, vote.decision]))
+    const voters = activePlayers(players).filter((voter) => voter.id !== targetPlayerId)
+    const approvals = voters.filter((voter) => choices.get(voter.id) === 'remove').length
+    if (approvals === 0) {
+      await this.closeRemovalVote(matchId, targetPlayerId, false)
+      return
+    }
+    if (approvals < voters.length) return
+    const match = await this.deps.storage.matches.get(matchId)
+    if (!match || !isInProgress(match)) return
+    await this.remove(match, target, 'kicked')
+    await this.closeRemovalVote(matchId, targetPlayerId, true)
+  }
+
+  /** Discard a seat's removal votes and announce the outcome, once however many callers race. */
+  private async closeRemovalVote(
+    matchId: string,
+    targetPlayerId: string,
+    removed: boolean,
+  ): Promise<void> {
+    if (!(await this.deps.storage.removals.clear(matchId, targetPlayerId))) return
+    await this.publisher.publish(matchId, {
+      type: 'match.removalVoteClosed',
+      payload: { playerId: targetPlayerId, removed },
+    })
   }
 
   async start(principal: Principal): Promise<void> {
@@ -605,6 +710,7 @@ export class LobbyService {
       if (reason === 'kicked') {
         await this.deps.storage.players.revokeToken(target.id)
         await this.hangUp(match.id, target.id)
+        await this.closeRemovalVote(match.id, target.id, true)
       }
       return
     }
@@ -666,6 +772,8 @@ export class LobbyService {
     if (reason === 'kicked') {
       await this.deps.storage.players.revokeToken(target.id)
       await this.hangUp(match.id, target.id)
+      // A kick ends a vote to remove the same seat: there is nothing left for it to decide.
+      await this.closeRemovalVote(match.id, target.id, true)
     }
     if (claimed) {
       await this.publisher.publish(match.id, {

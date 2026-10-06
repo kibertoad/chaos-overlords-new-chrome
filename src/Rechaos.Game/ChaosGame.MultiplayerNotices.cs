@@ -277,6 +277,41 @@ public sealed partial class ChaosGame
                 _online.RecordTakeoverVote(new TakeoverVotePrompt(
                     changed.PlayerId, name, changed.Turn, changed.Votes));
                 return;
+            case MultiplayerNotice.RemovalVoteChanged removalChanged:
+                _online.RecordRemovalVote(new RemovalVotePrompt(
+                    removalChanged.PlayerId,
+                    _online.Match?.Players
+                        .FirstOrDefault(player => player.Id == removalChanged.PlayerId)?.DisplayName
+                        ?? "A PLAYER",
+                    removalChanged.Votes));
+                return;
+            case MultiplayerNotice.RemovalVoteClosed removalClosed:
+                _online.CloseRemovalVote(removalClosed.PlayerId);
+                // The player removed is told by their session ending, since a removal revokes
+                // their token; everyone else is told here.
+                if (!string.Equals(
+                        removalClosed.PlayerId, _online.SelfPlayerId, StringComparison.Ordinal))
+                {
+                    _message = removalClosed.Removed
+                        ? "THE PLAYERS VOTED TO REMOVE A PLAYER"
+                        : "THE VOTE TO REMOVE A PLAYER IS OFF";
+                }
+                else if (!removalClosed.Removed)
+                {
+                    _message = "THE VOTE TO REMOVE YOU IS OFF";
+                }
+                return;
+            case MultiplayerNotice.RemovalVoteFailed failedRemoval:
+                _message = "THE VOTE DID NOT REACH THE SERVER  TRY AGAIN";
+                _online.Status = _message;
+                _diagnostics?.Write("multiplayer.removal-vote.failed",
+                    new Dictionary<string, string?>
+                    {
+                        ["player"] = failedRemoval.PlayerId,
+                        ["choice"] = failedRemoval.Choice.ToString(),
+                        ["reason"] = failedRemoval.Reason,
+                    });
+                return;
             case MultiplayerNotice.TakeoverVoteClosed closed:
                 _online.CloseTakeoverVote(closed.PlayerId);
                 var ownSeat = string.Equals(

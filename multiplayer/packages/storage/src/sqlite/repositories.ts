@@ -41,6 +41,7 @@ import {
 } from '../shared/mappers'
 import type { SqliteDatabase } from './database'
 import { sqliteEventRepository } from './events'
+import { sqliteRemovalVoteRepository } from './removals'
 import * as schema from './schema'
 import { sqliteTakeoverRepository } from './takeovers'
 
@@ -52,6 +53,7 @@ export function createSqliteStorage(db: SqliteDatabase): MultiplayerStorage {
     players: sqlitePlayerRepository(db),
     turns: sqliteTurnRepository(db),
     takeovers: sqliteTakeoverRepository(db),
+    removals: sqliteRemovalVoteRepository(db),
     snapshots: sqliteSnapshotRepository(db),
     events: sqliteEventRepository(db),
   }

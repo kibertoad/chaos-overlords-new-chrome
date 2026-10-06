@@ -170,6 +170,8 @@ public sealed partial class MultiplayerMatchSession
         _notices.Enqueue(new MultiplayerNotice.Resumed(view, state, submission, turn));
         foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
             PublishTakeoverVote(vote);
+        foreach (var playerId in _removalVotes.Keys.Order(StringComparer.Ordinal).ToList())
+            PublishRemovalVote(playerId);
         // The interface counts the seats from the roster alone, which cannot see a departed seat the
         // server is still holding the turn for while the vote on it is open — nor, without being
         // told, which seats finished the open turn while this client was away. The view is the
@@ -391,6 +393,12 @@ public sealed partial class MultiplayerMatchSession
                 return;
             case MatchTakeoverVoteCancelledEvent cancelled:
                 _takeoverVotes.Remove(cancelled.Payload.PlayerId);
+                return;
+            case MatchRemovalVoteCastEvent removalCast:
+                RecordRemovalVote(removalCast);
+                return;
+            case MatchRemovalVoteClosedEvent removalClosed:
+                _removalVotes.Remove(removalClosed.Payload.PlayerId);
                 return;
             case MatchPlayerTakenOverEvent takenOver:
                 _takeoverVotes.Remove(takenOver.Payload.PlayerId);

@@ -39,6 +39,8 @@ public static class RouteTemplates
     public const string KickPlayer = "POST /matches/:matchId/players/:playerId/kick";
     /// <summary><c>POST /matches/:matchId/players/:playerId/takeover-vote</c></summary>
     public const string TakeoverVote = "POST /matches/:matchId/players/:playerId/takeover-vote";
+    /// <summary><c>POST /matches/:matchId/players/:playerId/removal-vote</c></summary>
+    public const string RemovalVote = "POST /matches/:matchId/players/:playerId/removal-vote";
     /// <summary><c>PUT /matches/:matchId/turns/:turn/orders</c></summary>
     public const string SubmitOrders = "PUT /matches/:matchId/turns/:turn/orders";
     /// <summary><c>GET /matches/:matchId/turns/:turn/orders/mine</c></summary>
@@ -76,6 +78,7 @@ public static class RouteTemplates
         RejoinMatch,
         KickPlayer,
         TakeoverVote,
+        RemovalVote,
         SubmitOrders,
         OwnSubmission,
         SealedOrders,

@@ -205,3 +205,22 @@ export const takeoverVotes = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.matchId, table.targetPlayerId, table.voterPlayerId] })],
 )
+
+/**
+ * The latest choice of each active player on removing another seat from a running match. There is
+ * no prompt row: a removal vote is open while some active player other than the seat holds
+ * `remove`, and every row on the seat is discarded when it closes.
+ */
+export const removalVotes = sqliteTable(
+  'removal_votes',
+  {
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
+    targetPlayerId: text('target_player_id').notNull(),
+    voterPlayerId: text('voter_player_id').notNull(),
+    decision: text('decision').notNull(),
+    castAt: integer('cast_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.matchId, table.targetPlayerId, table.voterPlayerId] })],
+)

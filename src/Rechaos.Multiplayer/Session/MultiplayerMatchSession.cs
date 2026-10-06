@@ -490,6 +490,14 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot);
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
+            case MatchRemovalVoteCastEvent removalCast:
+                PublishRemovalVote(RecordRemovalVote(removalCast));
+                return;
+            case MatchRemovalVoteClosedEvent removalClosed:
+                _removalVotes.Remove(removalClosed.Payload.PlayerId);
+                _notices.Enqueue(new MultiplayerNotice.RemovalVoteClosed(
+                    removalClosed.Payload.PlayerId, removalClosed.Payload.Removed));
+                return;
             case LobbyPlayerJoinedEvent or LobbyPlayerUpdatedEvent or LobbyHostChangedEvent:
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;

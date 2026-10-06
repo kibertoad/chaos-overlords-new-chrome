@@ -31,8 +31,10 @@ import {
   startMatchContract,
   streamEventsContract,
   submitOrdersContract,
+  type RemovalVoteRequest,
   type TakeoverVoteRequest,
   type TurnReportRequest,
+  removalVoteContract,
   takeoverVoteContract,
   type UploadSnapshotRequest,
   updateMatchSettingsContract,
@@ -338,6 +340,15 @@ export class MatchHandle {
     return this.client.call(
       takeoverVoteContract,
       takeoverVoteContract.pathResolver({ matchId: this.matchId, playerId }),
+      request,
+    )
+  }
+
+  /** `remove` proposes or approves removing another seat; `keep` withdraws that vote. */
+  voteOnRemoval(playerId: string, request: RemovalVoteRequest): Promise<void> {
+    return this.client.call(
+      removalVoteContract,
+      removalVoteContract.pathResolver({ matchId: this.matchId, playerId }),
       request,
     )
   }

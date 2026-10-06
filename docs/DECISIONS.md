@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-06 | [Let the other players remove a seat by unanimous vote](#2026-10-06--let-the-other-players-remove-a-seat-by-unanimous-vote) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
 | 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
@@ -44,6 +45,48 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-06 — Let the other players remove a seat by unanimous vote
+
+- In a running online match, any active player may propose removing another
+  seat (`POST /matches/:id/players/:pid/removal-vote`, `{ decision: "remove" }`).
+  The seat is removed once the latest choice of every other active player is
+  `remove`. The host is one voter among them. A `keep` withdraws a player's
+  approval, and the vote stays open while any active player other than the
+  seat holds `remove`.
+- Removal is the host's kick, unchanged: the seat becomes `kicked`, its token is
+  revoked and its streams closed, the open turn stops waiting on it, a takeover
+  vote decides whether the computer plays it, and a removed host's role moves
+  to the lowest active slot. A removed player cannot come back.
+- The game offers it from a PLAYERS entry in the online game menu, and puts an
+  open vote to every other active player who has not answered it in a modal
+  with KEEP and REMOVE. The seat being voted on is told on the turn status
+  line.
+- Reason: only the host can kick, and the game never offered even that, so a
+  host who never readied an untimed turn held the match for as long as they
+  liked, and nobody could remove a player who desynced every turn (#457). The
+  other players' only remedy was to leave.
+- Unanimity is the bar the takeover vote already sets for taking a seat away
+  from its human. In a match of two the proposer is the only other player, so
+  either player can remove the other, which the host could already do.
+  Players who collude (two seats that refuse every removal of each other) are
+  outside what a unanimous vote can settle; the security model already assumes
+  one human per seat.
+- Rejected:
+  - A ready timeout for untimed matches. An untimed match is one whose players
+    chose to take as long as they need, possibly days, and a timeout that
+    removes or skips a slow player imposes the clock they opted out of.
+    Players who want a clock choose a timed match.
+  - A vote that only moves the host role. The new host could then kick, but
+    the stalling host would have to be removed in a second step, and moving
+    the role needs the same agreement as removing the seat, so it adds a step
+    without changing who has to agree.
+  - A majority vote. It would let two players of three remove the third on a
+    whim, with no way back for the removed player, where today only a host
+    that the players chose to join holds that power.
+- The vote is a protocol change (version 30) and adds the `removal_votes`
+  table. The session version is unchanged: a removal produces the same stored
+  facts as a kick, and nothing stored changes meaning.
 
 ## 2026-10-06 — Count a row its mandatory deviations replace as deviated
 

@@ -23,6 +23,8 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonDerivedType(typeof(MatchTakeoverVoteRequestedEvent), "match.takeoverVoteRequested")]
 [JsonDerivedType(typeof(MatchTakeoverVoteCastEvent), "match.takeoverVoteCast")]
 [JsonDerivedType(typeof(MatchTakeoverVoteCancelledEvent), "match.takeoverVoteCancelled")]
+[JsonDerivedType(typeof(MatchRemovalVoteCastEvent), "match.removalVoteCast")]
+[JsonDerivedType(typeof(MatchRemovalVoteClosedEvent), "match.removalVoteClosed")]
 [JsonDerivedType(typeof(MatchPlayerTakenOverEvent), "match.playerTakenOver")]
 [JsonDerivedType(typeof(MatchPlayerReturnedEvent), "match.playerReturned")]
 [JsonDerivedType(typeof(MatchLatePlayerJoinedEvent), "match.latePlayerJoined")]
@@ -161,6 +163,40 @@ public sealed record MatchTakeoverVoteCancelledEvent(
     string CreatedAt,
     [property: JsonPropertyName("payload")] MatchTakeoverVoteCancelledEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "match.takeoverVoteCancelled");
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum MatchRemovalVoteCastEventPayloadDecision
+{
+    [JsonStringEnumMemberName("remove")]
+    Remove,
+    [JsonStringEnumMemberName("keep")]
+    Keep
+}
+
+public sealed record MatchRemovalVoteCastEventPayload(
+    [property: JsonPropertyName("playerId")] string PlayerId,
+    [property: JsonPropertyName("voterPlayerId")] string VoterPlayerId,
+    [property: JsonPropertyName("decision")] MatchRemovalVoteCastEventPayloadDecision Decision
+);
+
+public sealed record MatchRemovalVoteCastEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] MatchRemovalVoteCastEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "match.removalVoteCast");
+
+public sealed record MatchRemovalVoteClosedEventPayload(
+    [property: JsonPropertyName("playerId")] string PlayerId,
+    [property: JsonPropertyName("removed")] bool Removed
+);
+
+public sealed record MatchRemovalVoteClosedEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] MatchRemovalVoteClosedEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "match.removalVoteClosed");
 
 public sealed record MatchPlayerTakenOverEventPayload(
     [property: JsonPropertyName("playerId")] string PlayerId
@@ -536,6 +572,19 @@ public enum TakeoverVoteRequestDecision
 
 public sealed record TakeoverVoteRequest(
     [property: JsonPropertyName("decision")] TakeoverVoteRequestDecision Decision
+);
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum RemovalVoteRequestDecision
+{
+    [JsonStringEnumMemberName("remove")]
+    Remove,
+    [JsonStringEnumMemberName("keep")]
+    Keep
+}
+
+public sealed record RemovalVoteRequest(
+    [property: JsonPropertyName("decision")] RemovalVoteRequestDecision Decision
 );
 
 public sealed record AiSeatSummary(

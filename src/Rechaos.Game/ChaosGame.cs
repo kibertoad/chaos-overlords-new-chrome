@@ -588,7 +588,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     else if (!_screens.Back()) Exit();
                 }
             }
-            if (!_gameMenuOpen && !TakeoverVoteBlocksInput) switch (_screens.Current)
+            if (!_gameMenuOpen && !TakeoverVoteBlocksInput && !RemovalVoteBlocksInput)
+                switch (_screens.Current)
             {
                 case ClientScreen.Title:
                     UpdateTitle(keyboard);
@@ -820,7 +821,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             HandleGameMenuClick(point);
             return;
         }
-        if (HandleTakeoverVoteClick(point)) return;
+        if (HandleTakeoverVoteClick(point) || HandleRemovalVoteClick(point)) return;
         switch (_screens.Current)
         {
             case ClientScreen.Title:

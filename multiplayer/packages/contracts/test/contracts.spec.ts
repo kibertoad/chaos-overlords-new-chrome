@@ -55,6 +55,7 @@ describe('API_CONTRACTS', () => {
         'POST /matches/:matchId/rejoin',
         'POST /matches/:matchId/players/:playerId/kick',
         'POST /matches/:matchId/players/:playerId/takeover-vote',
+        'POST /matches/:matchId/players/:playerId/removal-vote',
         'PUT /matches/:matchId/turns/:turn/orders',
         'GET /matches/:matchId/turns/:turn/orders/mine',
         'GET /matches/:matchId/turns/:turn/orders',

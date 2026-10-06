@@ -41,6 +41,7 @@ import {
 } from '../shared/mappers'
 import type { PostgresDatabase } from './database'
 import { postgresEventRepository } from './events'
+import { postgresRemovalVoteRepository } from './removals'
 import * as schema from './schema'
 import { postgresTakeoverRepository } from './takeovers'
 
@@ -57,6 +58,7 @@ export function createPostgresStorage(db: PostgresDatabase): MultiplayerStorage 
     players: postgresPlayerRepository(db),
     turns: postgresTurnRepository(db),
     takeovers: postgresTakeoverRepository(db),
+    removals: postgresRemovalVoteRepository(db),
     snapshots: postgresSnapshotRepository(db),
     events: postgresEventRepository(db),
   }

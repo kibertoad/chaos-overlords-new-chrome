@@ -276,6 +276,45 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(detail.match.status).toBe('running')
     })
 
+    it('removes a host who never readies once every other player votes for it', async () => {
+      const { matchId, host, guest } = await lobbyOfTwo()
+      const third = await client().join({ joinCode: host.joinCode, displayName: 'Linus' })
+      const thirdApi = client().withToken(third.token).match(host.match.id)
+      await host.api.start()
+      await guest.api.submitOrders(1, { orders: orders(1, 2), ready: true })
+      await thirdApi.submitOrders(1, { orders: orders(2, 3), ready: true })
+      await expect(
+        guest.api.voteOnRemoval(guest.player.id, { decision: 'remove' }),
+      ).rejects.toMatchObject({ status: 409, reason: 'self_removal' })
+      await guest.api.voteOnRemoval(host.player.id, { decision: 'remove' })
+      expect((await thirdApi.get()).match.currentTurn).toBe(1)
+      await thirdApi.voteOnRemoval(host.player.id, { decision: 'remove' })
+      const detail = await thirdApi.get()
+      expect(detail.match.currentTurn).toBe(2)
+      expect(detail.match.hostPlayerId).toBe(guest.player.id)
+      expect(detail.match.players.find((p) => p.id === host.player.id)?.status).toBe('kicked')
+      await expect(host.api.get()).rejects.toMatchObject({ status: 401 })
+      await expect(
+        guest.api.voteOnRemoval(host.player.id, { decision: 'remove' }),
+      ).rejects.toMatchObject({ status: 409, reason: 'already_removed' })
+      const { events } = await client().withToken(third.token).match(matchId).events(0)
+      expect(
+        events
+          .filter((event) => event.type.startsWith('match.removalVote'))
+          .map((event) => [event.type, event.payload]),
+      ).toEqual([
+        [
+          'match.removalVoteCast',
+          { playerId: host.player.id, voterPlayerId: guest.player.id, decision: 'remove' },
+        ],
+        [
+          'match.removalVoteCast',
+          { playerId: host.player.id, voterPlayerId: third.player.id, decision: 'remove' },
+        ],
+        ['match.removalVoteClosed', { playerId: host.player.id, removed: true }],
+      ])
+    })
+
     it('lets a former member rejoin and puts the seats that went quiet to them', async () => {
       const { host, guest } = await lobbyOfTwo()
       await host.api.start()
