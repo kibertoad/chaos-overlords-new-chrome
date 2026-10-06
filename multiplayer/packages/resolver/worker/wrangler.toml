@@ -1,0 +1,46 @@
+# The resolver Worker's configuration: what a deployment of it needs, with nothing deployment-specific
+# in it. Copy it into the deployment, with `main` pointing at this package's worker/index.js and
+# `base_dir` at the package directory.
+#
+# It needs the Workers Paid plan: a turn takes about half a second of CPU, against the 10 ms the free
+# plan allows a request. Without the resolver the coordination server keeps settling turns by the
+# hashes the clients report (docs/MULTIPLAYER.md, "Resolving turns on the server").
+name = "chaos-overlords-resolver"
+main = "index.js"
+compatibility_date = "2025-06-01"
+# No `nodejs_compat`: under it the .NET loader takes workerd for Node.
+no_bundle = true
+find_additional_modules = true
+base_dir = ".."
+rules = [
+  { type = "Data", globs = [
+    "bundle/assemblies/*.bin",
+  ], fallthrough = false },
+  { type = "CompiledWasm", globs = [
+    "bundle/*.wasm",
+  ], fallthrough = false },
+  { type = "ESModule", globs = [
+    "bundle/*.js",
+    "dist/**/*.js",
+    "worker/*.js",
+  ], fallthrough = false },
+]
+
+[limits]
+# Resolving a turn is CPU-bound; 30 s is the paid plan's default per request and leaves a long match
+# ample room.
+cpu_ms = 30000
+
+[vars]
+# How many matches one isolate holds, and the live managed heap it keeps them under, in MiB. The
+# defaults (4 and 24) keep the isolate inside its 128 MB.
+# RESOLVER_MAX_MATCHES = "4"
+# RESOLVER_MANAGED_HEAP_MIB = "24"
+
+[[durable_objects.bindings]]
+name = "MATCH_RESOLVER"
+class_name = "MatchResolverObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MatchResolverObject"]

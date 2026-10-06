@@ -24,6 +24,7 @@ This file is the operator and contributor manual.
 | `packages/server` | The Hono app: routes, bearer auth, error envelope, the SSE response builder, the in-process event hub. |
 | `packages/client` | TypeScript client (REST + resumable SSE iterator). The conformance suite drives every runtime through it; the game's C# client in `src/Rechaos.Multiplayer` mirrors it. |
 | `scripts/generate-csharp.mjs` | Regenerates the game's C# mirror of the contracts. See "Generating the C# client" below. |
+| `packages/resolver` | The game's turn resolver, the C# rules compiled to WebAssembly (`src/Rechaos.Resolver.Wasm`), with a Node host (a worker thread) and a Cloudflare host (a Worker of its own, a Durable Object per match). See its [README](packages/resolver/README.md). |
 | `packages/conformance` | Storage and HTTP behaviour suites every implementation and runtime runs. |
 | `runtimes/node` | Node facade: `@hono/node-server`, SQLite or Postgres, timer-based deadlines plus a sweeper. |
 | `runtimes/cloudflare` | Worker facade: D1, a `MatchHub` Durable Object per match for SSE fan-out and deadline alarms, a cron sweeper. |
@@ -225,7 +226,7 @@ deployment consumes `@chaos-overlords/worker` and the two migration lineages as 
 dependencies rather than as a checkout of this repository.
 
 They share one release version. `workspace:*` is what the packages depend on each other by, and pnpm
-rewrites it to that exact version as it packs, so every package must be bumped together. The nine
+rewrites it to that exact version as it packs, so every package must be bumped together. The ten
 manifests are also where the released version is written down — what `version.txt` is for the
 installers — and `pnpm check-versions` holds them to one number before anything is packed.
 
@@ -247,7 +248,7 @@ branch protection forced the bump to be landed by hand — so the workflow publi
 rather than a number past it, and the release kind is ignored for that run; the log says so. And a
 set of manifests that has fallen behind a version already tagged stops the release outright, because
 counting on from it would land on a number that is taken: correct the manifests on `main` first, with
-`pnpm set-version <version>` if it is quicker than nine edits.
+`pnpm set-version <version>` if it is quicker than ten edits.
 
 Release from *Actions → Publish multiplayer packages → Run workflow*, which runs
 [`.github/workflows/multiplayer-publish.yml`](../.github/workflows/multiplayer-publish.yml). Choose
@@ -256,7 +257,7 @@ how far the version advances and pick a mode:
 | Mode | What it does |
 | --- | --- |
 | `rehearse` (default) | Lints, builds, typechecks, tests, checks the C# codegen, and packs every tarball, then stops without contacting either the registry or `main`. A rehearsal never advances the recorded version, so it keeps naming the same one. |
-| `release` | Records the version in the nine manifests on `main`, runs the same checks, publishes all nine packages, then tags the commit it published `multiplayer-v0.2.0`. |
+| `release` | Records the version in the ten manifests on `main`, runs the same checks, publishes all ten packages, then tags the commit it published `multiplayer-v0.2.0`. |
 
 Both cut from the tip of main and pin that commit, so the checks, tarballs, and tag describe one
 commit even if someone pushes to main mid-run; releases also run one at a time, since two started

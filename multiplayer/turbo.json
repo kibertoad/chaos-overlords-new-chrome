@@ -21,6 +21,13 @@
       "cache": false,
       "persistent": true
     },
+    "@chaos-overlords/resolver#typecheck": {
+      "dependsOn": ["build", "^build"]
+    },
+    "@chaos-overlords/resolver#test:run": {
+      "dependsOn": ["build", "^build"],
+      "passThroughEnv": ["REQUIRE_RESOLVER", "RESOLVER_TRANSCRIPT", "DOTNET"]
+    },
     "@chaos-overlords/worker#build": {
       "dependsOn": ["^build"],
       "outputs": []
