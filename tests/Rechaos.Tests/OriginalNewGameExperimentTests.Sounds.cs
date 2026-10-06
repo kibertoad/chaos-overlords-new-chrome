@@ -43,7 +43,9 @@ public sealed partial class OriginalNewGameExperimentTests
         else
         {
             // With effects off the wrapper calls nothing, so no press reaches the helper with the
-            // push cue; only a direct call, as the turn-start cue's (BUG-AUDIO-001), is recorded.
+            // push cue; only a direct call, such as the turn-start cue's (BUG-AUDIO-001), can be
+            // recorded, and the check below finds none of those. No press confirms that the
+            // breakpoint was armed, so an empty list passes as well.
             Assert.DoesNotContain(calls, call => call.Slot == AudioRouting.PointerPushSound());
         }
         Assert.DoesNotContain(calls, call => call.Slot == GeneralSoundSlot.TurnStartCue);

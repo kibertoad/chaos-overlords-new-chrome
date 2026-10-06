@@ -847,6 +847,7 @@ internal sealed partial class NewGameSession(
         _process.Write(OriginalAddresses.PrefFullScreenCopy, [0]);
         if (settings.Sound) Unmute();
         else Mute();
+        _preferencesSet = true;
         if (settings.Comlink is not null) _process.Write(OriginalAddresses.PrefSlidePanels, BitConverter.GetBytes(0));
         if (settings.EndTurns == 0 && settings.Comlink is null) return;
         _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(0));

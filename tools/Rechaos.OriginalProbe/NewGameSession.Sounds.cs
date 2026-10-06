@@ -13,6 +13,10 @@ internal sealed partial class NewGameSession
     // The values of effects_enabled the run read: at each call of the play helper and at the end.
     private readonly HashSet<byte> _effectsEnabled = [];
 
+    // Set once the preferences are loaded and the volumes written: before that the byte holds the
+    // image's value, which no run plays under.
+    private bool _preferencesSet;
+
     // RULE-AUDIO-006: with --sound-calls the probe records every call of the play helper
     // fn_0045851A(slot, priority), which the effects wrapper calls only while effects are enabled
     // and the turn-start cue calls directly (FND-AUDIO-006). Which calls a run can hold depends on
@@ -37,11 +41,20 @@ internal sealed partial class NewGameSession
     }
 
     // Whether effects were enabled for the whole run, read once more at its end: null when the run
-    // could not read the byte or read values that disagree, so a fixture never claims a setting the
-    // run did not keep. Nothing the probe does after the preferences are loaded writes the byte.
+    // stopped before the preferences were loaded, could not read the byte or read values that
+    // disagree, so a fixture never claims a setting the run did not keep. Nothing the probe does after the preferences are loaded writes the byte.
     private bool? EffectsEnabledThroughout()
     {
-        if (!_process.Exited) _effectsEnabled.Add(_process.Read(OriginalAddresses.EffectsEnabled, 1)[0]);
+        // A process that is exiting but has not reported its exit yet can refuse the read; the trace
+        // is still written, with the values read at the calls.
+        try
+        {
+            if (_preferencesSet && !_process.Exited) _effectsEnabled.Add(_process.Read(OriginalAddresses.EffectsEnabled, 1)[0]);
+        }
+        catch (System.ComponentModel.Win32Exception exception)
+        {
+            _notes.Add($"effects_enabled could not be read at the end of the run: {exception.Message}");
+        }
         if (_effectsEnabled.Count > 1)
             _notes.Add($"effects_enabled changed during the run: {string.Join(", ", _effectsEnabled)}");
         return _effectsEnabled.Count == 1 ? _effectsEnabled.Single() != 0 : null;
