@@ -85,14 +85,18 @@ jobs:
           KSC: ${{ steps.kaitai.outputs.ksc }}
 
       # The gate runs inside a private session bus with GNOME Keyring's login collection created
-      # and unlocked with an empty password, and REQUIRE_SECRET_SERVICE makes
-      # PlatformSecretStoreTests fail instead of skipping when the store does not answer.
+      # and unlocked, and REQUIRE_SECRET_SERVICE makes PlatformSecretStoreTests fail instead of
+      # skipping when the store does not answer. The `default` file names the login collection as
+      # the default one, which a desktop session sets up: without it, libsecret's first write asks
+      # a GUI prompter to create a default collection, which fails on a runner with no display.
       - name: Verify, build, and test (with a Secret Service keyring)
         if: runner.os == 'Linux'
         shell: bash
         run: |
+          mkdir -p ~/.local/share/keyrings
+          printf login > ~/.local/share/keyrings/default
           dbus-run-session -- bash -euo pipefail -c '
-            printf "" | gnome-keyring-daemon --unlock --components=secrets > /dev/null
+            printf ci-keyring | gnome-keyring-daemon --unlock --components=secrets > /dev/null
             pwsh -NoProfile -File ./tools/Invoke-Validation.ps1
           '
         env:
