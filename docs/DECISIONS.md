@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-07 | [Draw the game's own controls in place of the Windows controls](#2026-10-07--draw-the-games-own-controls-in-place-of-the-windows-controls) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
 | 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
@@ -44,6 +45,25 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-07 — Draw the game's own controls in place of the Windows controls
+
+- Decision: the rebuild does not reproduce the original's Windows controls: the menu bar, the
+  popup menus, the common file dialogs, the dialog boxes with their edit controls, list boxes,
+  combo boxes and buttons, and the message boxes. It draws its own controls in the style of the
+  game's screens, offering the same choices with the same results. DEV-UI-029 records the
+  principle and lists every such control the spec records, with the entry that covers each
+  replacement where one already did (DEV-UI-011, DEV-UI-019, DEV-UI-021, DEV-NET-001 and others).
+- Reason: the controls do not match the game's art. Windows draws them in the style of the
+  Windows version that runs the game, so they show the platform the original was built for rather
+  than an art choice, and no single look of them is the original's. A setting that drew
+  Windows-looking controls in the rebuild would be an imitation of one Windows version, not a
+  reproduction.
+- Scope: only the look of a control changes. Where a replacement also changes what the player can
+  do, that change needs an entry of its own, as DEV-UI-021 is for the order menus. Behaviour that
+  belongs to a control, such as the setup name editor's caret and editing keys, is still the
+  original's to match. The window's own frame and the rebuild's message box for a failed start or
+  a crash stay the system's.
 
 ## 2026-10-06 — Count a row its mandatory deviations replace as deviated
 

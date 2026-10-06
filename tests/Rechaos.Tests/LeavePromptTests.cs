@@ -7,7 +7,10 @@ using Xunit;
 
 namespace Rechaos.Tests;
 
-/// <summary>RULE-UI-015: leaving a match that changed since it was last saved asks to save first.</summary>
+/// <summary>
+/// RULE-UI-015, DEV-UI-029: leaving a match that changed since it was last saved asks to save first,
+/// in a prompt the rebuild draws with the three answers of the original's dialog 129.
+/// </summary>
 public sealed class LeavePromptTests
 {
     [Fact]
