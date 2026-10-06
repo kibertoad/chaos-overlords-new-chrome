@@ -898,8 +898,7 @@ original silent unless `--sound` is given.
   run with the same seed gives.
 - EXP-UI-001 captures the first planning entry of two seeds, and
   `ScreenCaptureTests` finds no differing element of SCR-UI-003 or
-  SCR-HIRE-002 in either; SCR-HIRE-002 is `validated`, and SCR-UI-003 lists the
-  test but stays `supported` while its code is `partial`. The harness:
+  SCR-HIRE-002 in either; both rows are `validated`. The harness:
   `new-game --capture` takes the drawing area at the dump, `extract --screens`
   or `digest` records each element's digest in the fixture, and
   `ScreenCaptureTests` renders the replayed endpoint with `--reference-frame`
