@@ -202,27 +202,24 @@ branches no ordinary match reaches; the replay makes the same writes.
 
 The planning pass (RULE-AI-001), the family dispatch (RULE-AI-002), the hire
 choice (RULE-AI-008 to RULE-AI-013) and every family handler (RULE-AI-019 to
-RULE-AI-031) run in each replayed turn, so every row of the `AI` area in
+RULE-AI-031) run in each replayed turn, and every row of the `AI` area in
 [PARITY.md](../PARITY.md) is `validated`. A rule's spec status says how much of
-it the runs prove:
-
-- `established`: a static reading and the runs agree, and the runs reach every
-  branch the rule describes. RULE-AI-003, RULE-AI-005, RULE-AI-006, RULE-AI-008,
-  RULE-AI-011, RULE-AI-012, RULE-AI-014 to RULE-AI-019 and RULE-AI-027.
-- `supported`: the runs agree wherever they reach, and some branches rest on
-  the static reading alone. The rule's Open questions and its PARITY.md notes
-  name those branches. RULE-AI-001, RULE-AI-002, RULE-AI-004, RULE-AI-007,
-  RULE-AI-009, RULE-AI-010, RULE-AI-013, RULE-AI-020 to RULE-AI-026 and
-  RULE-AI-028 to RULE-AI-031.
+it the evidence proves: an `established` rule has a static reading and the
+runs in agreement, and a `supported` one rests on one kind of evidence, so
+branches of it that no run reaches rest on the static reading alone; its Open
+questions and its PARITY.md notes name them. The current status of each rule is
+in the generated [index by status](../spec/index/by-status.md), which this
+document does not repeat.
 
 ### How matches end
 
 RULE-OBJECTIVE-004 gives each scenario's end. Recorded runs reach the end of
 six-month Greed, Acceptance and Dominance matches (EXP-TURN-037 to
 EXP-TURN-039, EXP-TURN-041) and of a Big Man match (EXP-TURN-058), and EXP-UI-023
-ends a match with a lone survivor after the probe retires the five computer
-players. No recorded run ends Power, Big 40, Siege or Armageddon on its
-objective, or Kill 'Em All or Eliminate on the last player left. The recorded
+ends a Kill 'Em All match with a lone survivor after the probe retires the five
+computer players before the first Done press. No recorded run ends Power,
+Big 40, Siege or Armageddon on its objective, Eliminate on the last player
+left, or Kill 'Em All on the last player left in ordinary play. The recorded
 runs stop when the only human is eliminated, since the original then ends the
 match for that human (RULE-OBJECTIVE-005), so a computer player's win can be
 recorded only while the human survives.
@@ -230,9 +227,13 @@ recorded only while the human survives.
 ### Tournaments
 
 `AiTournamentTests` (category `LongRunning`, run each night by
-`.github/workflows/nightly-ai-campaigns.yml`) plays six computer players through
-every scenario at several seeds. Each match must replay from its journal to the
-same state hash, save and load to the same hash, stay within its phase-boundary
-limit and make progress toward its scenario's objective; Big Man must end on
+`.github/workflows/nightly-ai-campaigns.yml`) plays matches of six computer
+players. Power, Acceptance and Dominance run to their time limit, and Kill 'Em
+All, Big 40, Siege, Eliminate, Big Man and Armageddon run for 20 and 40 turns at
+several seeds; Greed is played to its time limit in the fast gate by
+`HeadlessMatchRunnerTests`. Each tournament match must replay from its journal
+to the same state hash, save and load to the same hash and stay within its
+phase-boundary limit; each objective campaign must also resolve a hire and make
+progress toward its scenario's objective, and one Big Man campaign must end on
 its objective. These matches are not compared with the original: they guard the
 rebuild against crashes, nondeterminism and stalled matches.

@@ -64,8 +64,9 @@ and the rebuild has to make the same draws and reach the same state (the
 scenario and Mentality, the computer players' planning and hiring, every order,
 combat, the police, events, and the end of Greed, Acceptance, Dominance and Big
 Man matches. A static reading can still be wrong where no run reaches: some
-branches of the computer players' planning, and the end of Power, Big 40,
-Siege, Armageddon, Kill 'Em All and Eliminate matches
+branches of the computer players' planning, the end of Power, Big 40, Siege,
+Armageddon and Eliminate matches, and a Kill 'Em All match played down to one
+player without the probe retiring the others
 ([docs/AI-SPEC.md](docs/AI-SPEC.md#how-far-the-planner-is-proved)). The
 [parity matrix](PARITY.md) shows the state of every rule, format and screen;
 207 of its 224 rows are compared with evidence from the original. The
