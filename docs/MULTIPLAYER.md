@@ -436,12 +436,16 @@ guarantee sets `synchronous = FULL` or runs Postgres.
 - **Rate limits** come in three tiers: the unauthenticated doors per client address, every
   authenticated call per player, and snapshot uploads per player on a tighter budget, because a
   member is a cost too — order documents are a quarter of a megabyte and snapshots four times that.
-  Match creation also has one process-wide budget shared by every caller, because a per-address
+  Match creation also has one deployment-wide budget shared by every caller, because a per-address
   budget does nothing against many addresses and every create is a stored lobby; only a create whose
   body validates spends it. The Node runtime also caps connections and sets header and request
-  deadlines, so a client that never finishes sending a request cannot hold a socket for long. The
-  windows are per process, which is what a self-hosted server needs; a public deployment puts its
-  platform's rate limiting in front as the real gate.
+  deadlines, so a client that never finishes sending a request cannot hold a socket for long. A
+  budget holds across the whole deployment: the Node runtime counts in memory on SQLite, where one
+  process is the deployment, and in a `rate_limit_windows` table every instance shares on Postgres;
+  the Worker counts in a `RateLimitCounter` Durable Object per budget and caller (the `RATE_LIMITS`
+  binding), because Cloudflare's rate limiting binding counts per location and cannot express the
+  day-long journal budget or `Retry-After`. A counter that fails lets the request through and logs,
+  so an outage of the counter does not refuse every player.
 - **A refused request is described, not echoed.** A validation failure names the field and the
   rule; the value the client sent (a mistyped password, an order document) is never written back
   into the response or, through it, into a proxy log.
@@ -795,8 +799,8 @@ dock a player plans against the dock the sealed turn grants.
 
 - **One server process.** The Node runtime fans events out in memory, so two instances behind a
   load balancer would each wake only their own subscribers: a client on instance A would sit silent
-  through everything written on instance B, with no error to show for it. Rate-limit windows
-  fragment the same way. Postgres is offered for durability and operational familiarity, not as a
+  through everything written on instance B, with no error to show for it. Rate limits do not
+  fragment: on Postgres every instance counts in one shared table. Postgres is offered for durability and operational familiarity, not as a
   way to scale out; running more than one instance needs a shared fan-out (the Cloudflare runtime's
   Durable Object is the worked example) before it is safe. The `GET /events?after=` fallback is the
   one path that does work under it, because it reads the log directly.

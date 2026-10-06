@@ -4,6 +4,12 @@ export interface Env {
   DB: D1Database
   MATCH_HUB: DurableObjectNamespace
   /**
+   * The rate limit counters, one `RateLimitCounter` object per budget and caller, so every isolate
+   * spends the same budgets. Unbound, each isolate counts on its own and the Worker logs a warning:
+   * a budget is then multiplied by however many isolates a caller's requests reach.
+   */
+  RATE_LIMITS?: DurableObjectNamespace
+  /**
    * Bug reports, in a D1 instance of their own.
    *
    * Separate from `DB` on purpose: reports arrive unauthenticated, outlive every match they
