@@ -847,7 +847,9 @@ dock a player plans against the dock the sealed turn grants.
   host when the host holds one of the tied hashes, which covers every tie of four players or fewer,
   and otherwise the lowest seat that does. A departure, kick, takeover or rejoin during the pause re-runs
   the verdict, and the server announces `turn.desynced` again when the candidates or the
-  tie-breaker differ from the turn's latest announcement, even when they return to an earlier one. A match where nobody ever uploads stays paused indefinitely, and the escape
+  tie-breaker differ from the turn's latest announcement, even when they return to an earlier one. With
+  another turn desynced as well, it announces again without comparing. The sweep re-runs the verdict
+  too and announces only a difference it can see, which retries a re-announcement that failed. A match where nobody ever uploads stays paused indefinitely, and the escape
   is the ordinary one: players leave. The match is not abandoned when the last active player goes
   (it stays `running` so anybody can rejoin, with its turn clock stopped), and retention collects
   it once it has been silent for long enough. The counting assumes one human per seat; see the

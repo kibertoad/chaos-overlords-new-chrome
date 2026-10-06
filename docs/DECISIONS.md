@@ -73,8 +73,13 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   candidates or the designee differ from the turn's latest announcement the
   server announces `turn.desynced` again, keyed by the announcement it follows,
   so a verdict that returns to an earlier one (a seat that leaves and rejoins)
-  is announced too. The sweep re-runs verdicts without announcing, so a paused
-  match costs no extra writes while nothing changes.
+  is announced too. While another turn is desynced as well, the latest
+  announcement is often that turn's, and the verdict is announced again
+  without the comparison. The sweep re-runs verdicts quietly: it announces
+  only a verdict that differs from the turn's own latest announcement, which
+  retries a re-announcement whose publish failed after the roster change it
+  follows was committed, and a paused match costs one indexed read per
+  desynced turn and no writes while nothing changes.
 - Unchanged: a snapshot may still only claim a hash the most players reported,
   and a sole most-reported hash may still be posted by anyone holding it. The
   self-check changes nothing but this client's own report: the server still
