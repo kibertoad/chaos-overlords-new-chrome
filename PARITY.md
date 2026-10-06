@@ -19,9 +19,9 @@ does what the deviation says; until then it is `implemented`.
 | `supported` | 5 |
 | `established` | 0 |
 | `disputed` | 0 |
-| `implemented` | 2 |
+| `implemented` | 0 |
 | `deviated` | 14 |
-| `validated` | 203 |
+| `validated` | 205 |
 
 | Code | Rows |
 |---|---|
