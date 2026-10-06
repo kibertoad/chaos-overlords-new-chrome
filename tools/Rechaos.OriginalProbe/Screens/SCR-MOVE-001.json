@@ -1,0 +1,9 @@
+{
+  "screen": "SCR-MOVE-001",
+  "state": "The detailed sector screen of player 0 with the Move panel open for a gang and no destination chosen",
+  "elements": [
+    {"element": "Move panel", "rect": [0, 0, 640, 460]},
+    {"element": "Neighborhood", "rect": [236, 150, 162, 156]},
+    {"element": "Acting gang", "rect": [130, 141, 64, 64]}
+  ]
+}

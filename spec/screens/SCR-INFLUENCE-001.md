@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003, FND-RESEARCH-005, FND-TURN-001, FND-AUDIO-011, FND-EXE-004, FND-PLATFORM-002]
+evidence: [FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003, FND-RESEARCH-005, FND-TURN-001, FND-AUDIO-011, FND-EXE-004, FND-PLATFORM-002, FND-INFLUENCE-005, EXP-UI-010]
 conflicting: []
 split_with: []
 related: [RULE-INFLUENCE-001]
@@ -18,7 +18,7 @@ related: [RULE-INFLUENCE-001]
 | Panel | `DATA/PX16/PX05005` | None | `(104, 124, 344, 209)` | The picker is open | FND-INFLUENCE-001, FND-INFLUENCE-002 |
 | Gang portrait | `DATA/PX16/PX03000`, the 64-by-64 cell of the acting gang's definition | The acting gang | Panel `(26, 17, 64, 64)` | The picker is open | FND-INFLUENCE-003 |
 | Site picture, slot `s` | `DATA/PX16/PX02000`, the 120-by-64 cell of the slot's site definition, opaque | The sector's site in slot `s` | Panel `(106, 17, 120, 64)`, `(208, 73, 120, 64)` and `(106, 127, 120, 64)` for slots 0, 1 and 2 | The picker is open, for a site not completed | FND-INFLUENCE-002 |
-| Completed site | The same cell through the pattern mask on black, under the keyed `DATA/PX16/PX00129` frame `(362,299,120,64)` | A site whose progress equals its Resistance | As the site picture | The site is completed | FND-INFLUENCE-002 |
+| Completed site | The same cell through pattern 147 on black, under the keyed `DATA/PX16/PX00129` frame `(362,299,120,64)` | A site whose progress equals its Resistance | As the site picture | The site is completed | FND-INFLUENCE-002, FND-INFLUENCE-005 |
 | Site frame | `DATA/PX16/PX00129` `(242,299,120,64)`, keyed on exact white | None | Over each site picture | For each site not completed | FND-INFLUENCE-002 |
 | Chosen site | The site picture with the keyed `DATA/PX16/PX00129` frame `(0,235,120,64)` over it, prepared off screen | The chosen slot | Over the chosen slot | Once a slot is chosen | FND-INFLUENCE-002 |
 

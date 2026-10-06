@@ -1,0 +1,12 @@
+{
+  "screen": "SCR-UI-007",
+  "state": "A planning entry of player 0 with the Site Information panel open over the detailed sector screen",
+  "elements": [
+    {"element": "Panel with its labels", "rect": [128, 124, 320, 209]},
+    {"element": "Site portrait", "rect": [156, 139, 120, 64]},
+    {"element": "Site name", "rect": [288, 151, 150, 7]},
+    {"element": "Resistance, Tolerance, Support, Cash", "rect": [396, 169, 12, 43]},
+    {"element": "Special line", "rect": [288, 214, 120, 7]},
+    {"element": "The fourteen statistics", "rect": [300, 244, 108, 70]}
+  ]
+}

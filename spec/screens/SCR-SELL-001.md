@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EQUIP-004, FND-EXE-004, FND-SELL-001, FND-SELL-002, FND-OPTIONS-001, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-004, FND-EXE-004, FND-SELL-001, FND-SELL-002, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-UI-004, FND-UI-019, FND-UI-047, FND-UI-053, EXP-UI-010]
 conflicting: []
 split_with: []
 related: [RULE-SELL-001, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
@@ -17,9 +17,9 @@ related: [RULE-SELL-001, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
 |---|---|---|---|---|---|
 | Panel | `DATA/PX08/Px05013` | None | `(104, 124, 344, 209)`, the shared panel position | While the panel is open | FND-EQUIP-004, FND-OPTIONS-001 |
 | Gang portrait | `DATA/PX08/Px03000` 64-by-64 cell of the gang's definition | None | `(130, 141, 64, 64)` | While the panel is open | FND-SELL-001 |
-| Item pictures | The item's strip `PX04xxx` (resource 4000 plus the item's `id`), 15 frames of 48 by 48 | The carried item, animated | `(217, 141 + 64 * k, 48, 48)` for slot `k` | For each filled slot | FND-SELL-001 |
-| Item name | The font of `fn_00413FD5` | The item's name | From `(272, 156 + 64 * k)` | For each filled slot | FND-SELL-001 |
-| Sale price | Two-cell number (`fn_00414187`) | Half the item's `cost`, rounded down | From `(386, 174 + 64 * k)` | For each filled slot | FND-SELL-001 |
+| Item pictures | The item's strip `PX04xxx` (resource 4000 plus the item's `id`), 15 frames of 48 by 48 | The carried item, animated together with the others from frame 0 when the panel opens | `(217, 141 + 64 * k, 48, 48)` for slot `k` | For each filled slot | FND-SELL-001, FND-UI-053 |
+| Item name | The font of `fn_00413FD5`, whose opaque cells cover the placeholder digits of the panel image | The item's name | From `(272, 156 + 64 * k)` | For each filled slot | FND-SELL-001, FND-UI-019 |
+| Sale price | Two-cell number (`fn_00414187`), opaque cells over the panel image's placeholder | Half the item's `cost`, rounded down | From `(386, 174 + 64 * k)` | For each filled slot | FND-SELL-001, FND-UI-004 |
 | Empty row | Black fill | None | `(272, 149 + 64 * k, 125, 32)` | For each empty slot | FND-SELL-001 |
 | Selection highlight | `DATA/PX16/PX00129` crop `(222,363,192,54)`, keyed on exact white; an unselected row gets the panel's own pixels back | Which rows are selected | `(214, 138 + 64 * k, 192, 54)`, one pixel outside row `k`'s input rectangle | For each selected row | FND-SELL-001, FND-SELL-002 |
 | OK face | Enabled or disabled state drawn by `fn_00418E66` | Whether the order can be confirmed | `(137, 293, 50, 23)` | Enabled while a row is selected, and on opening when the gang already has a Sell order | FND-SELL-001 |
@@ -67,6 +67,11 @@ None.
 
 The panel slides in and out as the shared panels do, in about a quarter of a
 second (FND-OPTIONS-001), as RULE-UI-003 describes.
+
+The item pictures share one frame counter that steps on each tick of the
+presentation clock the panel takes. While Cancel or Sell is held with the
+pointer, the counter stops; the pass that ends with the release takes one tick
+if any fell during the hold and loses the others (FND-UI-047).
 
 ## Differences between builds
 

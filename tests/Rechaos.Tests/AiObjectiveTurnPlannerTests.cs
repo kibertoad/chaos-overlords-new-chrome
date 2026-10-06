@@ -174,8 +174,9 @@ public sealed class AiObjectiveTurnPlannerTests
     }
 
     // RULE-AI-031, FND-AI-062: on an objective another player owns, the pool is that owner's
-    // visible gangs. With none there no draw is made, and a gang at Force 10 that fails the Heal
-    // test gets no write, where FND-AI-039 read Control.
+    // visible gangs. With none there the only draw is one roll(0) on the turns that fight
+    // (EXP-TURN-084), and a gang at Force 10 that fails the Heal test gets no write, where
+    // FND-AI-039 read Control.
     [Theory]
     [InlineData(1, 13, false)]
     [InlineData(2, 14, false)]
@@ -203,10 +204,20 @@ public sealed class AiObjectiveTurnPlannerTests
         var turnsRemaining = ScenarioCatalog.TurnLimit(match.Setup.Scenario, match.Setup.Duration)
             - (match.Coordinator.Turn - 1);
 
-        match.PrepareAiPlanning(player);
+        var bounds = new List<int>();
+        DeterministicRandom.RollObserver = (bound, _) => bounds.Add(bound);
+        try
+        {
+            match.PrepareAiPlanning(player);
+        }
+        finally
+        {
+            DeterministicRandom.RollObserver = null;
+        }
 
         Assert.True(match.CanPlayerDetectGang(player, new GangId(20)));
         Assert.Equal(expectedFamily, match.AiPlanning.Family(player, 0));
+        Assert.Equal(turnsRemaining % 2 == 0 ? 1 : 0, bounds.Count(bound => bound == 0));
         Assert.Equal(turnsRemaining % 2 == 0 ? GangAction.None : GangAction.Control,
             match.AiPlanning.PlannedAction(player, 0));
         Assert.Equal(AiPlanningState.InactiveFocusValue, match.AiPlanning.FocusValue(player, 0));

@@ -1,10 +1,10 @@
 ---
 id: RULE-COMLINK-004
 title: Comlink View opens at the oldest unread message and refuses an empty inbox
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-002, FND-COMLINK-006, SRC-MANUAL-GOG]
+evidence: [FND-COMLINK-002, FND-COMLINK-006, SRC-MANUAL-GOG, EXP-COMLINK-001, EXP-COMLINK-002]
 conflicting: []
 split_with: []
 related: [SCR-COMLINK-001, FMT-STATE-005]

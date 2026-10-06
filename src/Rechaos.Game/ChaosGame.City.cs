@@ -215,7 +215,7 @@ public sealed partial class ChaosGame
                 CityMapLayout.Bounds with { X = 0, Y = 0 }, CityMapLayout.Bounds.Location);
             if (_uiKeyedSprites is not null)
                 batch.Draw(_uiKeyedSprites, CityMapLayout.Destination(_cursor),
-                    CityMapLayout.SelectionFrameSource(CityMapLayout.SelectionFrame(_inputTime)), Color.White);
+                    CityMapLayout.SelectionFrameSource(SelectionFrameShown()), Color.White);
             else
                 DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
             // FND-UI-037: the city-cell flash lightens the cell copied from the map, markers
@@ -239,22 +239,31 @@ public sealed partial class ChaosGame
 
         var selectedSector = state.Sectors[_cursor];
         var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
-        var scenario = ScenarioCatalog.Get(state.Setup.Scenario);
-        font.Draw(batch, scenario.Name,
+        font.Draw(batch, ExecutableStrings.ScenarioTitle(state.Setup.Scenario),
             new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
-        var (year, week) = TurnCalendar(state.Coordinator.Turn);
+        var (year, week) = MatchCalendar.Of(MatchCalendar.PresentationElapsedTurns(state));
         // FND-UI-040: separate calendar fields leave the template's separator intact.
         // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
-        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.YearLeft, StatusConsoleLayout.DateY,
-            4 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+        DrawOpaqueNativeFixedWidthValue(batch, pixel, font, year, StatusConsoleLayout.YearLeft,
+            StatusConsoleLayout.DateY, 4);
         batch.Draw(pixel, new Rectangle(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY,
             2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
-        DrawNativeFixedWidthValue(font, batch, year, StatusConsoleLayout.YearLeft,
-            StatusConsoleLayout.DateY, 4);
         font.Draw(batch, week.ToString("00"),
             new Vector2(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
-        DrawPanelValue(font, batch, StatusConsolePresentation.Score(state, player).ToString(),
-            StatusConsoleLayout.ValueRight, StatusConsoleLayout.ScoreY);
+        // FND-UI-040, FND-STATE-010: completion replaces the timed countdown in the final view.
+        // FND-UI-019: string cells are copied opaquely, like the numeric cells.
+        if (_finalViewPlayer is not null)
+        {
+            DrawOpaqueText(batch, pixel, font, ExecutableStrings.Get(StatusConsoleLayout.CompleteString),
+                StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY);
+        }
+        else if (StatusConsolePresentation.RemainingTurns(state.Setup.Scenario, state.Setup.Duration,
+                     state.Coordinator.Turn) is { } remainingTurns)
+            DrawOpaqueNativeFixedWidthValue(batch, pixel, font, remainingTurns,
+                StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY, 3);
+        // FND-UI-040, RULE-UI-004: five opaque numeric cells, including red unsigned magnitudes.
+        DrawOpaqueNativeFixedWidthValue(batch, pixel, font, StatusConsolePresentation.Score(state, player),
+            StatusConsoleLayout.ScoreLeft, StatusConsoleLayout.ScoreY, StatusConsoleLayout.ScoreCells);
         DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
                 StatusConsolePresentation.UnspentCash(state, player),
                 FinanceProjection.Project(state, player, sectorId: null).CashAdjustment),
@@ -275,14 +284,14 @@ public sealed partial class ChaosGame
             new Vector2(438, 354), Color.Gold, 1);
         if (_state is not null && PlanningViewer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
-            && PresentationClock.BlinkLit(_inputTime))
+            && LampInLitPhase(_referenceFrame?.Lamps?.Events))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
         if (_state is not null && PlanningViewer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
-            && PresentationClock.BlinkLit(_inputTime))
+            && LampInLitPhase(_referenceFrame?.Lamps?.Comlink))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
-        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(_inputTime))
+        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
@@ -312,9 +321,9 @@ public sealed partial class ChaosGame
     private static void DrawSectorNumber(PixelFont font, SpriteBatch batch, int value, int y, Color color)
     {
         var display = NativeTwoCellNumberPresentation.Format(value, NativeTwoCellNumberPresentation.Kind.Baseline);
-        font.Draw(batch, display.Digits,
+        font.DrawNumber(batch, display,
             new Vector2(StatusConsoleLayout.SectorValueLeft + (2 - display.Digits.Length) * OriginalFontLayout.CellWidth, y),
-            display.IsNegative ? Color.Red : color, 1);
+            display.IsNegative ? Color.Red : color);
     }
 
     /// <summary>A lit console light; a dark one is the console art under it (FND-EVENT-006).</summary>
@@ -414,11 +423,6 @@ public sealed partial class ChaosGame
     /// the map holds there for the active player: ground, owner's art, pylons, site markers and
     /// gang marker (SCR-UI-005, FND-UI-014).
     /// </summary>
-    private void DrawCitySectorCell(
-        SpriteBatch batch, Texture2D pixel, MatchState state, int sectorId, Point topLeft) =>
-        DrawPreparedCityMap(batch, pixel, state, state.Players[PlanningViewer?.Value ?? 0].Id,
-            CityMapLayout.Source(sectorId), topLeft);
-
     private Rectangle GangStatusSource(
         MatchState state,
         PlayerId viewer,
@@ -444,11 +448,9 @@ public sealed partial class ChaosGame
     private static string SectorCode(int sectorId) =>
         $"{(char)('A' + sectorId % MatchLimits.BoardWidth)}{sectorId / MatchLimits.BoardWidth + 1}";
 
-    private static (int Year, int Week) TurnCalendar(int turn) => MatchCalendar.Of(Math.Max(0, turn - 1));
-
     private static string MatchDate(int turn)
     {
-        var (year, week) = TurnCalendar(turn);
+        var (year, week) = MatchCalendar.Of(Math.Max(0, turn - 1));
         return $"{year}.{week:00}";
     }
 

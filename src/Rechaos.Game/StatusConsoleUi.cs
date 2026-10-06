@@ -31,9 +31,15 @@ public static class StatusConsoleLayout
     public const int LabelLeft = 480;
     // FND-UI-040: five six-pixel numeric cells at x 550 end at x 580, exclusive.
     public const int ValueRight = 580;
+    public const int ScoreCells = 5;
+    public const int ScoreLeft = ValueRight - ScoreCells * OriginalFontLayout.CellWidth;
     public const int ScenarioLeft = 481;
     public const int YearLeft = 481;
     public const int WeekLeft = 511;
+    public const int RemainingTurnsLeft = 562;
+    public const int CompleteLeft = 532;
+    /// <summary>FND-UI-040: the string resource drawn at <see cref="CompleteLeft"/> in the final view.</summary>
+    public const int CompleteString = 19;
     /// <summary>RULE-UI-011: the sector code and the four sector values start at x 568.</summary>
     public const int SectorValueLeft = 568;
     public const int ScenarioY = 6;
@@ -221,6 +227,12 @@ public static class StatusConsoleTooltip
 
 public static class StatusConsolePresentation
 {
+    /// <summary>FND-UI-040, FND-OBJECTIVE-003: the planning-entry countdown excludes this turn.</summary>
+    public static int? RemainingTurns(ScenarioId scenario, GameDuration duration, int currentTurn) =>
+        ScenarioCatalog.Get(scenario).IsTimed
+            ? ScenarioCatalog.TurnLimit(scenario, duration) - currentTurn
+            : null;
+
     /// <summary>
     /// The status-console SCORE row: the scenario score the last evaluation stored, when the match
     /// started or the last turn ended (RULE-OBJECTIVE-002), the same one the ranking screen ranks
@@ -228,7 +240,7 @@ public static class StatusConsolePresentation
     /// sectors held, or the inactive-seat count Kill 'Em All and Eliminate share) rather than only
     /// the timed scenarios' scores.
     /// </summary>
-    public static long Score(MatchState state, MatchPlayerState player) => player.ScenarioScore;
+    public static int Score(MatchState state, MatchPlayerState player) => player.ScenarioScore;
 
     public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>
         range.CanTriggerCrackdown(tolerance) ? Color.Red : Color.Lime;
@@ -260,9 +272,10 @@ public static class StatusConsolePresentation
     {
         ArgumentNullException.ThrowIfNull(spends);
         ArgumentNullException.ThrowIfNull(projection);
-        var bribes = spends.Where(spend => spend.Action == GangAction.Bribe).Sum(spend => spend.Price);
-        var equips = spends.Where(spend => spend.Action == GangAction.Equip).Sum(spend => spend.Price);
-        var unspent = checked(cash - bribes - equips);
+        var bribes = spends.Where(spend => spend.Kind == QueuedSpendKind.Bribe).Sum(spend => spend.Price);
+        var equips = spends.Where(spend => spend.Kind == QueuedSpendKind.Equip).Sum(spend => spend.Price);
+        var hires = spends.Where(spend => spend.Kind == QueuedSpendKind.Hire).Sum(spend => spend.Price);
+        var unspent = checked(cash - bribes - equips - hires);
         var delta = ProjectedChange(projection.CashAdjustment);
         List<string> lines =
         [
@@ -270,9 +283,14 @@ public static class StatusConsolePresentation
             "",
             $"{cash} - CASH: MONEY ON HAND RIGHT NOW.",
             "",
-            $"[{unspent}] - UNSPENT: CASH LEFT AFTER QUEUED BRIBES AND EQUIPS.",
-            $"  {cash} CASH - {bribes} BRIBES - {equips} EQUIPS = {unspent}",
+            $"[{unspent}] - UNSPENT: CASH LEFT AFTER QUEUED BRIBES, EQUIPS AND HIRES.",
+            "",
+            $"  CASH {cash} - BRIBES {bribes} - EQUIPS {equips} - HIRES {hires} = UNSPENT {unspent}",
+            "",
             "  BRIBES PAY FIRST, THEN EQUIPS IN SUBMISSION ORDER.",
+            // RULE-TURN-002, RULE-HIRE-001: hire_phase comes after the transactions and the Chaos
+            // payout, and a hire costing more than the cash left then fails.
+            "  HIRES PAY LAST, AFTER CHAOS INCOME.",
             "  NO CASH IS RESERVED; EARLIER SELLS MAY FUND EQUIPS.",
             "  BELOW ZERO, A QUEUED PURCHASE MAY FAIL.",
             "",
@@ -283,8 +301,10 @@ public static class StatusConsolePresentation
         lines.AddRange(components.Select(component =>
             $"  {component.Label,-18}{ProjectedChange(component.Value)}"));
         lines.Add($"  {"TOTAL",-18}{delta}");
-        lines.Add("  TAX, SITE CASH AND CHAOS ARRIVE AFTER PURCHASES,");
-        lines.Add("  SO A POSITIVE DELTA CANNOT PAY FOR AN EQUIP.");
+        // RULE-TURN-002, RULE-UPKEEP-001: tax and site cash arrive at the next turn start and Chaos
+        // income after the transactions, so the delta comes too late for this turn's purchases.
+        lines.Add("  THE DELTA CANNOT PAY FOR EQUIPS OR NEW GANGS:");
+        lines.Add("  ONLY UNSPENT CASH FROM THE TURN START CAN.");
         lines.Add("");
         lines.Add("QUEUED SPENDING IN RESOLUTION ORDER:");
         return lines;
@@ -302,22 +322,35 @@ public static class StatusConsolePresentation
     ];
 
     public static IReadOnlyList<QueuedCashSpend> QueuedCashSpends(
-        MatchState state, MatchPlayerState player) => state.Commands.ExecutionPlan()
+        MatchState state, MatchPlayerState player)
+    {
         // The plan is ordered by phase and then by sequence, so Instant Bribes precede every
         // Transaction Equip and each group keeps the submission order the resolver uses.
-        .Where(entry => entry.Command.Player == player.Id
-            && entry.Command.Action is GangAction.Bribe or GangAction.Equip)
-        .Select((entry, index) =>
+        var purchases = state.Commands.ExecutionPlan()
+            .Where(entry => entry.Command.Player == player.Id
+                && entry.Command.Action is GangAction.Bribe or GangAction.Equip)
+            .Select(entry =>
+            {
+                var gang = state.FindGang(entry.Command.Gang)!;
+                var gangName = state.Definitions.Gang(gang.DefinitionId).Name;
+                if (entry.Command.Action == GangAction.Bribe)
+                    return new QueuedCashSpend(0, gang.Id, gangName, QueuedSpendKind.Bribe,
+                        "BRIBE", CommandRules.ByAction[GangAction.Bribe].CashCost);
+                var item = state.Definitions.Items[entry.Command.Target.Id];
+                return new QueuedCashSpend(0, gang.Id, gangName, QueuedSpendKind.Equip,
+                    item.Name, SpecialSiteRules.EquipmentCost(state, gang, item));
+            });
+        // RULE-TURN-002, RULE-HIRE-001: hire_phase pays the hires after every purchase. A hire
+        // whose cost was already paid takes no more cash.
+        var hires = player.PendingHires.Where(hire => !hire.InitialCostPaid).Select(hire =>
         {
-            var gang = state.FindGang(entry.Command.Gang)!;
-            var gangName = state.Definitions.Gang(gang.DefinitionId).Name;
-            if (entry.Command.Action == GangAction.Bribe)
-                return new QueuedCashSpend(index + 1, gang.Id, gangName, GangAction.Bribe,
-                    "BRIBE", CommandRules.ByAction[GangAction.Bribe].CashCost);
-            var item = state.Definitions.Items[entry.Command.Target.Id];
-            return new QueuedCashSpend(index + 1, gang.Id, gangName, GangAction.Equip,
-                item.Name, SpecialSiteRules.EquipmentCost(state, gang, item));
-        }).ToArray();
+            var definition = state.Definitions.Gang(hire.GangDefinitionId);
+            return new QueuedCashSpend(0, null, definition.Name, QueuedSpendKind.Hire,
+                "HIRE", HireRules.InitialCost(definition));
+        });
+        return purchases.Concat(hires)
+            .Select((spend, index) => spend with { Position = index + 1 }).ToArray();
+    }
 
     public static int UnspentCash(MatchState state, MatchPlayerState player) =>
         UnspentCash(player, QueuedCashSpends(state, player));
@@ -384,8 +417,16 @@ public static class StatusConsolePresentation
     }
 }
 
+public enum QueuedSpendKind
+{
+    Bribe,
+    Equip,
+    Hire
+}
+
+/// <summary>A queued purchase. A hire has no gang yet, so its <paramref name="Gang"/> is null.</summary>
 public sealed record QueuedCashSpend(
-    int Position, GangId Gang, string GangName, GangAction Action, string Description, int Price);
+    int Position, GangId? Gang, string GangName, QueuedSpendKind Kind, string Description, int Price);
 
 public static class HoverTooltipLayout
 {

@@ -1,0 +1,18 @@
+{
+  "screen": "SCR-UI-004",
+  "state": "A planning entry of player 0 with the detailed sector screen open for a sector holding the player's gangs",
+  "elements": [
+    {"element": "Detailed sector screen", "rect": [0, 0, 640, 460]},
+    {"element": "Background", "rect": [2, 42, 432, 416]},
+    {"element": "Owner strip and back control", "rect": [4, 43, 32, 414]},
+    {"element": "9 Sector Display", "rect": [64, 60, 162, 156]},
+    {"element": "Selected-sector frame", "rect": [117, 111, 54, 52]},
+    {"element": "Site portraits, slot 0", "rect": [86, 228, 120, 64]},
+    {"element": "Site portraits, slot 1", "rect": [86, 294, 120, 64]},
+    {"element": "Site portraits, slot 2", "rect": [86, 360, 120, 64]},
+    {"element": "Gang card frame", "rect": [254, 80, 150, 336]},
+    {"element": "Group order strip", "rect": [253, 61, 152, 16]},
+    {"element": "Console, Overlord bar", "rect": [12, 5, 420, 32]},
+    {"element": "Sector values", "rect": [568, 60, 36, 43]}
+  ]
+}

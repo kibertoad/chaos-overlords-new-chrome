@@ -133,6 +133,8 @@ public sealed partial class ChaosGame
         _sellGang = gang.Id;
         _sellReturnScreen = returnScreen;
         _sellRepeats = repeat;
+        _equipmentRotationStart = _eventPump.Ticks;
+        _equipmentRotationHeld = null;
         _screens.Show(ClientScreen.Sell);
     }
 
@@ -237,10 +239,12 @@ public sealed partial class ChaosGame
                 continue;
             }
             ItemDefinition item = state.Definitions.Items[itemId];
-            font.Draw(batch, item.Name, EquipmentSellLayout.NameOrigin(slot).ToVector2(), Color.Lime, 1);
+            // FND-UI-019, FND-UI-004: the name and price cells are copied opaquely, so they hide
+            // the placeholder digits of the panel art.
+            var name = EquipmentSellLayout.NameOrigin(slot);
+            DrawOpaqueText(batch, pixel, font, item.Name, name.X, name.Y);
             var price = EquipmentSellLayout.PriceField(slot);
-            DrawNativeTwoCellValue(font, batch, EquipmentRules.SaleValue(item), price.X, price.Y,
-                NativeTwoCellNumberPresentation.Kind.Baseline);
+            DrawOpaqueNativeFixedWidthValue(batch, pixel, font, EquipmentRules.SaleValue(item), price.X, price.Y, 2);
         }
         for (var slot = 0; slot < equipped.Length; slot++)
             if (_sellSelections[slot] && _uiKeyedSprites is not null)
@@ -252,12 +256,24 @@ public sealed partial class ChaosGame
         DrawCommandPanelFaces(batch);
     }
 
-    /// <summary>The current 48-by-48 frame of an item's 15-frame strip.</summary>
+    // FND-UI-053: the Sell and Give panels turn every item picture together from frame 0 when
+    // they open, and hold the frame while Item Information, drawn over them, runs.
+    private long _equipmentRotationStart;
+    private long? _equipmentRotationHeld;
+
+    /// <summary>
+    /// The current 48-by-48 frame of an item's 15-frame strip. Sell and Give step it on the ticks
+    /// the event pump takes, so a held face stops it and the release takes one tick (FND-UI-047).
+    /// </summary>
     private void DrawItemRotation(SpriteBatch batch, short itemId, Rectangle destination)
     {
         if (itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
-            batch.Draw(rotation, destination, ItemRotationPresentation.Frame(_inputTime), Color.White);
+            batch.Draw(rotation, destination, _referenceFrame?.ItemFrame is { } frame
+                ? ItemRotationPresentation.Frame(frame)
+                : ItemRotationPresentation.FrameAfter(
+                    _equipmentRotationHeld ?? _eventPump.Ticks - _equipmentRotationStart),
+                Color.White);
     }
 
     private static short?[] EquippedItems(MatchGangState gang) =>

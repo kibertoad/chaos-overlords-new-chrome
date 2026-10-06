@@ -4,7 +4,7 @@ title: Each Influence gang rolls on its own and adds its successes to the site's
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-INFLUENCE-004, EXP-TURN-023, FND-TURN-001, FND-TURN-007, FND-STATE-002, FND-TURN-009, FND-AI-007, FND-GANG-001, FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003, FND-CONTROL-001, FND-EVENT-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-INFLUENCE-004, EXP-TURN-023, FND-TURN-001, FND-TURN-007, FND-STATE-002, FND-TURN-009, FND-AI-007, FND-GANG-001, FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003, FND-CONTROL-001, FND-EVENT-001, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-059, EXP-TURN-062, EXP-TURN-063, EXP-TURN-069, EXP-TURN-083]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -106,6 +106,13 @@ None known.
 
 ## Open questions
 
+- EXP-TURN-069 reaches a pool of 0 or less at band 1, which rolls nothing.
+  No recorded run reaches one at band 0, where the reduced pool becomes the
+  progress and a negative pool leaves negative progress (BUG-INFLUENCE-001).
+  Only a computer player of a Goon game resolves at band 0, and its Influence
+  plans do not test the gang's Influence (RULE-AI-022, RULE-AI-026,
+  RULE-AI-031), so the case can arise; it rests on the static reading
+  [FND-INFLUENCE-004].
 - The report itself is RULE-EVENT-006, the handler of `SiteCooperationAchieved`.
 - The picker's own rule for which sites can be chosen is in SCR-INFLUENCE-001.
   The resolver's case does not check that the player owns the sector

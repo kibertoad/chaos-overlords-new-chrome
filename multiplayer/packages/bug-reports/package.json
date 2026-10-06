@@ -1,6 +1,6 @@
 {
   "name": "@chaos-overlords/bug-reports",
-  "version": "0.9.8",
+  "version": "0.9.9",
   "description": "Bug report intake: its own Drizzle schema, migration lineage and database, plus the blob store the compressed match journals are kept in. Deliberately shares nothing with the multiplayer storage.",
   "keywords": [
     "chaos-overlords",
@@ -64,14 +64,14 @@
   "dependencies": {
     "@chaos-overlords/contracts": "workspace:*",
     "@chaos-overlords/kernel": "workspace:*",
-    "drizzle-orm": "^0.45.2"
+    "drizzle-orm": "^0.45.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260920.1",
+    "@cloudflare/workers-types": "^5.20260927.1",
     "@types/better-sqlite3": "^9.6.0",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "better-sqlite3": "^13.0.3",
-    "drizzle-kit": "^0.31.10",
+    "drizzle-kit": "^0.31.11",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   },

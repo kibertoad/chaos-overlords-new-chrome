@@ -26,8 +26,8 @@ public sealed class SectorGangCardLayoutTests
         Assert.Equal(0, SectorGangCardLayout.ForceWidth(0));
         Assert.Equal(6, SectorGangCardLayout.ForceWidth(1));
         Assert.Equal(60, SectorGangCardLayout.ForceWidth(10));
-        Assert.Equal(new Rectangle(259, 88, 31, 9), SectorGangCardLayout.OneOffAction(0));
-        Assert.Equal(new Rectangle(291, 88, 32, 9), SectorGangCardLayout.RepeatingAction(0));
+        Assert.Equal(new Rectangle(259, 88, 33, 9), SectorGangCardLayout.OneOffAction(0));
+        Assert.Equal(new Rectangle(292, 88, 31, 9), SectorGangCardLayout.RepeatingAction(0));
         Assert.Equal(new Rectangle(259, 100, 64, 64), SectorGangCardLayout.Portrait(0));
         Assert.Equal(new Rectangle(303, 166, 20, 20), SectorGangCardLayout.ItemSlot(0, 2));
         Assert.Equal(new Rectangle(303, 166, 20, 20), SectorGangCardLayout.ItemPortrait(0, 2));

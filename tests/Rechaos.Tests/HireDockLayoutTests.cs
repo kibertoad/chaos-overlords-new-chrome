@@ -8,6 +8,28 @@ namespace Rechaos.Tests;
 public sealed class HireDockLayoutTests
 {
     [Fact]
+    public void HirePriceSitsBesideRejectControl()
+    {
+        Assert.Equal(new Rectangle(472, 437, 32, 13), HireDockLayout.Reject(0));
+        // SCR-HIRE-002, FND-HIRE-007: retain the original number helper's origin.
+        Assert.Equal(new Point(450, 440), HireDockLayout.Price(0));
+        Assert.Equal(new Point(516, 440), HireDockLayout.Price(1));
+        Assert.Equal(new Point(582, 440), HireDockLayout.Price(2));
+        // FND-UI-006: the console passes the helper's leading-zero flag.
+        Assert.Equal("06", HireDockLayout.PriceCells(6).Digits);
+        Assert.Equal("12", HireDockLayout.PriceCells(12).Digits);
+        // FND-UI-023: two cells only; the first takes the whole quotient, 12 places after '0'.
+        Assert.Equal("<3", HireDockLayout.PriceCells(123).Digits);
+        // FND-UI-006: a negative value shows its magnitude; the colour carries the sign.
+        Assert.Equal("07", HireDockLayout.PriceCells(-7).Digits);
+        // RULE-UI-004: a quotient past the strip's last character leaves a blank in the text and
+        // is drawn from the raw PX00129 cell of glyph 16 + 43.
+        Assert.Equal(" 0", HireDockLayout.PriceCells(430).Digits);
+        Assert.Equal(59, HireDockLayout.PriceCells(430).OffStripGlyph);
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value("06", false, false), HireDockLayout.PriceCells(6));
+    }
+
+    [Fact]
     public void HireDockMatchesOriginalThreeCellStripAndRetainsHiredSlot()
     {
         Assert.Equal(new Rectangle(438, 370, 66, 90), HireDockLayout.Cell(0));
@@ -27,7 +49,6 @@ public sealed class HireDockLayoutTests
         Assert.Equal(new HireDockEntry(1, HireDockMark.None), cells[0]);
         Assert.Equal(new HireDockEntry(2, HireDockMark.Hired), cells[1]);
         Assert.Equal(new HireDockEntry(3, HireDockMark.None), cells[2]);
-        Assert.Equal(new Rectangle(570, 436, 33, 24), HireDockLayout.PriceCell(2));
         Assert.Equal(new Rectangle(604, 437, 32, 13), HireDockLayout.Reject(2));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireDockLayout.Cell(3));
     }
@@ -47,7 +68,6 @@ public sealed class HireDockLayoutTests
         Assert.Equal(
             [HireDockMark.None, HireDockMark.None, HireDockMark.Snubbed],
             cells.Select(cell => cell!.Mark));
-        Assert.False(cells[2]!.Hired);
     }
 
     [Fact]

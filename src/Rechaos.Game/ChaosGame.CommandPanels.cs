@@ -14,6 +14,13 @@ public sealed partial class ChaosGame
     private CommandPanelButton? _pressedCommandPanelButton;
     private readonly IndexedDoubleClickTracker _commandPanelClicks = new();
 
+    // The order the open picker gives and the gang it is for, kept apart from its targets so the
+    // Research panel can open with none (FND-UI-021, EXP-UI-011). The gang the order panel was
+    // opened for is null for a bulk or group order.
+    private GangAction _commandTargetAction;
+    private GangId _commandTargetGang;
+    private GangId? _commandGang;
+
     /// <summary>
     /// Whether one of the panels with the shared faces is the one taking input: the Equip,
     /// Research, Influence, Move, Give and Sell panels, whose keys all press the faces through
@@ -154,24 +161,75 @@ public sealed partial class ChaosGame
                 CommandPanelFaces.HeldSource(pressed), Color.White);
     }
 
-    /// <summary>
-    /// SCR-EQUIP-001: the panel opens on category 0, or, when the gang already has an Equip
-    /// order, on the category of its item with that row chosen when it is listed and the
-    /// confirm face drawn enabled either way (FND-EQUIP-009, FND-EQUIP-010).
-    /// </summary>
+    /// <summary>SCR-EQUIP-001: opens the Equip list as <see cref="OpenItemListPanel"/> describes.</summary>
     private void OpenEquipmentPurchasePanel()
+    {
+        _commandPanelClicks.Cancel();
+        OpenItemListPanel(GangAction.Equip);
+    }
+
+    /// <summary>
+    /// SCR-RESEARCH-001, EXP-UI-009: opens the Research list as <see cref="OpenItemListPanel"/>
+    /// describes.
+    /// </summary>
+    private void OpenResearchPanel() => OpenItemListPanel(GangAction.Research);
+
+    /// <summary>
+    /// SCR-EQUIP-001, SCR-RESEARCH-001: the panel opens on category 0 with no row chosen, or, when
+    /// the gang's order is already the panel's, on the category of its item with that row chosen
+    /// when it is listed and the confirm face drawn enabled either way (FND-EQUIP-009,
+    /// FND-EQUIP-010, FND-RESEARCH-004).
+    /// </summary>
+    private void OpenItemListPanel(GangAction action)
     {
         _equipmentCategory = 0;
         _commandTargetCursor = -1;
         _commandPanelFace = CommandPanelFaceState.NotDrawn;
-        _commandPanelClicks.Cancel();
-        if (_state?.FindGang(_commandTargetOptions[0].Gang)?.QueuedCommand?.Command is not
-            { Action: GangAction.Equip, Target.Kind: CommandTargetKind.Item } queued) return;
-        var item = _state.Definitions.Items[queued.Target.Id];
-        _equipmentCategory = EquipmentCommandLayout.CategoryForItemType(item.Type);
+        if (_state?.FindGang(_commandTargetGang)?.QueuedCommand?.Command is not
+                { Target.Kind: CommandTargetKind.Item } queued
+            || queued.Action != action) return;
+        _equipmentCategory = EquipmentCommandLayout.CategoryForItemType(_state.Definitions.Items[queued.Target.Id].Type);
         _commandPanelFace = CommandPanelFaces.OnOpening(true);
         _commandTargetCursor = EquipmentCommandIndices(_state)
             .FirstOrDefault(index => _commandTargetOptions[index].Target.Id == queued.Target.Id, -1);
+    }
+
+    // FND-INFLUENCE-002, FND-INFLUENCE-005: the mode 0 copy of a completed site keeps the picture
+    // where pattern 147 takes the source and the black underneath elsewhere, by screen phase.
+    private readonly Dictionary<(int X, int Y), Texture2D> _influenceCompletedMasks = [];
+
+    /// <summary>
+    /// SCR-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-005, EXP-UI-010: a completed site is its
+    /// picture through pattern 147 on black under the completed frame; another site is its picture
+    /// under the site frame, or under the chosen frame once chosen.
+    /// </summary>
+    private void DrawInfluenceSite(
+        SpriteBatch batch, Texture2D pixel, MatchSiteState site, Rectangle destination, bool completed, bool chosen)
+    {
+        if (completed) batch.Draw(pixel, destination, Color.Black);
+        if (_sitePortraits is not null)
+            batch.Draw(_sitePortraits, destination, OriginalSpriteLayout.SitePortrait(site.DefinitionId), Color.White);
+        if (completed) batch.Draw(InfluenceCompletedMask(destination), destination, Color.White);
+        if (_uiKeyedSprites is not null)
+            batch.Draw(_uiKeyedSprites, destination,
+                completed ? InfluenceCommandLayout.CompletedSiteFrameSource
+                : chosen ? InfluenceCommandLayout.ChosenSiteFrameSource
+                : InfluenceCommandLayout.SiteFrameSource, Color.White);
+    }
+
+    private Texture2D InfluenceCompletedMask(Rectangle destination)
+    {
+        var phase = (destination.X & 7, destination.Y & 1);
+        if (_influenceCompletedMasks.TryGetValue(phase, out var mask)) return mask;
+        var pixels = new Color[destination.Width * destination.Height];
+        for (var y = 0; y < destination.Height; y++)
+        for (var x = 0; x < destination.Width; x++)
+            pixels[y * destination.Width + x] = OriginalPatternMask.PreservesDestination(
+                OriginalPatternMask.Dense, destination.X + x, destination.Y + y) ? Color.Black : Color.Transparent;
+        mask = new Texture2D(GraphicsDevice, destination.Width, destination.Height);
+        mask.SetData(pixels);
+        _influenceCompletedMasks[phase] = mask;
+        return mask;
     }
 
     private void HandleEquipmentCommandClick(Point point)
@@ -192,7 +250,7 @@ public sealed partial class ChaosGame
             SelectEquipmentCategory(category);
             return;
         }
-        if (_state is null || _state.FindGang(_commandTargetOptions[0].Gang) is not { } actor) return;
+        if (_state is null || _state.FindGang(_commandTargetGang) is not { } actor) return;
         if (EquipmentCommandLayout.Portrait.Contains(point))
         {
             // One target only, so every portrait click registers the same index.
@@ -200,7 +258,7 @@ public sealed partial class ChaosGame
                 OpenGangDetails(actor, ClientScreen.Commands);
             return;
         }
-        var purchase = _commandTargetOptions[0].Action == GangAction.Equip;
+        var purchase = _commandTargetAction == GangAction.Equip;
         if (purchase)
         {
             var carried = EquippedItems(actor);

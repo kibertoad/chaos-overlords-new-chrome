@@ -1,0 +1,12 @@
+{
+  "screen": "SCR-UI-008",
+  "state": "A planning entry of player 0 with the Game Information panel open",
+  "elements": [
+    {"element": "Panel with its labels", "rect": [128, 124, 320, 209]},
+    {"element": "Scenario", "rect": [228, 151, 180, 7]},
+    {"element": "Mentality", "rect": [228, 169, 180, 7]},
+    {"element": "Time limit", "rect": [228, 187, 180, 7]},
+    {"element": "Player names", "rect": [240, 214, 90, 54]},
+    {"element": "Player status", "rect": [330, 214, 78, 54]}
+  ]
+}

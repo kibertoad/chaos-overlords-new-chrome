@@ -1,10 +1,10 @@
 ---
 id: RULE-UI-012
 title: Objective sectors marked on the city map
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-033, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-UI-033, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-013, EXP-UI-014, EXP-UI-001, EXP-UI-006]
 conflicting: []
 split_with: []
 related: []

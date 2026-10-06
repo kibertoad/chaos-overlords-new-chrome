@@ -47,6 +47,11 @@ public static class GameMenuLayout
 
     public static Rectangle ConfirmQuit => new(206, 284, 108, 34);
     public static Rectangle CancelQuit => new(326, 284, 108, 34);
+
+    /// <summary>RULE-UI-015: the save-first prompt's three answers, left to right.</summary>
+    public static Rectangle SaveFirst => new(186, 284, 84, 34);
+    public static Rectangle CancelLeave => new(278, 284, 84, 34);
+    public static Rectangle LeaveWithoutSaving => new(370, 284, 84, 34);
     public static Rectangle BrowserPanel => new(36, 15, 568, 430);
     public static Rectangle UseSlot => new(374, 397, 92, 30);
     public static Rectangle CancelBrowser => new(478, 397, 92, 30);
@@ -109,6 +114,8 @@ public sealed partial class ChaosGame
         _gameMenuOpen = true;
         _bugReportOpen = false;
         _quitToMainMenuConfirmationOpen = false;
+        _leavePrompt = LeaveKind.None;
+        _leaveAfterSave = LeaveKind.None;
         _saveBrowserMode = SaveBrowserMode.None;
         _gameMenuCursor = 0;
         _planningTimer.Pause(_inputTime);
@@ -120,10 +127,12 @@ public sealed partial class ChaosGame
         _gameMenuOpen = false;
         _bugReportOpen = false;
         _quitToMainMenuConfirmationOpen = false;
+        _leavePrompt = LeaveKind.None;
+        _leaveAfterSave = LeaveKind.None;
         _saveBrowserMode = SaveBrowserMode.None;
         _editingSaveName = false;
         _saveName.IsFocused = false;
-        _planningTimer.Resume(_inputTime);
+        _planningTimer.Resume(_inputTime, _eventPump.Ticks);
         _message = string.Empty;
     }
 
@@ -138,6 +147,7 @@ public sealed partial class ChaosGame
         _saveBrowserFromTitle = fromTitle;
         _saveBrowserMode = saving ? SaveBrowserMode.Save : SaveBrowserMode.Load;
         _quitToMainMenuConfirmationOpen = false;
+        _leavePrompt = LeaveKind.None;
         _editingSaveName = false;
         _saveName.IsFocused = false;
         _planningTimer.Pause(_inputTime);
@@ -170,6 +180,11 @@ public sealed partial class ChaosGame
         if (_saveBrowserMode != SaveBrowserMode.None)
         {
             UpdateSaveBrowser(keyboard);
+            return;
+        }
+        if (_leavePrompt != LeaveKind.None)
+        {
+            UpdateLeavePrompt(keyboard);
             return;
         }
         if (_quitToMainMenuConfirmationOpen)
@@ -226,7 +241,13 @@ public sealed partial class ChaosGame
             case GameMenuAction.Load: OpenSaveBrowser(saving: false); break;
             case GameMenuAction.Options: OpenOptionsFromGameMenu(); break;
             case GameMenuAction.ReportBug: OpenBugReport(); break;
-            case GameMenuAction.QuitToMainMenu: OpenQuitToMainMenuConfirmation(); break;
+            // RULE-UI-015: a local match asks to save first only while it is unsaved. An online
+            // match, which the original never asks about, keeps the confirmation that says the
+            // server holds it (DEV-NET-001).
+            case GameMenuAction.QuitToMainMenu:
+                if (_session is null) RequestLeave(LeaveKind.End);
+                else OpenQuitToMainMenuConfirmation();
+                break;
             default: throw new ArgumentOutOfRangeException(nameof(action));
         }
     }
@@ -277,6 +298,7 @@ public sealed partial class ChaosGame
         _saveSlots[_saveSlotCursor] = summary;
         _editingSaveName = false;
         _saveName.IsFocused = false;
+        LeaveAfterSave();
     }
 
     private void CancelSaveName()
@@ -288,6 +310,7 @@ public sealed partial class ChaosGame
 
     private void CloseSaveBrowser()
     {
+        if (CancelLeaveAfterSave()) return;
         _saveBrowserMode = SaveBrowserMode.None;
         _editingSaveName = false;
         _saveName.IsFocused = false;
@@ -316,6 +339,11 @@ public sealed partial class ChaosGame
         if (_saveBrowserMode != SaveBrowserMode.None)
         {
             HandleSaveBrowserClick(point);
+            return;
+        }
+        if (_leavePrompt != LeaveKind.None)
+        {
+            HandleLeavePromptClick(point);
             return;
         }
         if (_quitToMainMenuConfirmationOpen)
@@ -366,7 +394,7 @@ public sealed partial class ChaosGame
         _bugReportOpen = false;
         _quitToMainMenuConfirmationOpen = false;
         _saveBrowserMode = SaveBrowserMode.None;
-        StopPlanningTimer();
+        ClearPlanningTimer();
         ResetTransientMatchUi();
         if (_session is not null)
         {
@@ -393,6 +421,11 @@ public sealed partial class ChaosGame
             DrawSaveBrowser(batch, pixel, font);
             return;
         }
+        if (_leavePrompt != LeaveKind.None)
+        {
+            DrawLeavePrompt(batch, pixel, font);
+            return;
+        }
         IReadOnlyList<string> session =
             _quitToMainMenuConfirmationOpen ? [] : OnlineSessionLines();
         var panel = GameMenuLayout.PanelWith(
@@ -401,18 +434,12 @@ public sealed partial class ChaosGame
         DrawBorder(batch, pixel, panel, Color.Gold, 2);
         if (_quitToMainMenuConfirmationOpen)
         {
+            // Only an online match opens this confirmation; a local one asks to save first instead
+            // (RULE-UI-015).
             DrawCentered(font, batch, "QUIT TO MAIN MENU?", 132, Color.Gold, 2);
-            if (_session is null)
-            {
-                DrawCentered(font, batch, "YOUR CURRENT GAME WILL BE LOST", 190, Color.White, 1);
-                DrawCentered(font, batch, "IF NOT SAVED.", 207, Color.White, 1);
-            }
-            else
-            {
-                DrawCentered(font, batch, "SERVER SAVES EACH TURN.", 178, Color.White, 1);
-                DrawCentered(font, batch, "RESUME IT LATER FROM ONLINE.", 195, Color.White, 1);
-                DrawCentered(font, batch, "AVAILABLE UNTIL COMPLETED OR EXPIRED.", 212, Color.White, 1);
-            }
+            DrawCentered(font, batch, "SERVER SAVES EACH TURN.", 178, Color.White, 1);
+            DrawCentered(font, batch, "RESUME IT LATER FROM ONLINE.", 195, Color.White, 1);
+            DrawCentered(font, batch, "AVAILABLE UNTIL COMPLETED OR EXPIRED.", 212, Color.White, 1);
             DrawButton(batch, pixel, font, GameMenuLayout.ConfirmQuit, "QUIT", _gameMenuCursor == 0);
             DrawButton(batch, pixel, font, GameMenuLayout.CancelQuit, "CANCEL", _gameMenuCursor == 1);
             return;

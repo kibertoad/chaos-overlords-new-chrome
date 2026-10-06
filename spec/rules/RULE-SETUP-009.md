@@ -4,7 +4,7 @@ title: A press on a setup player card selects it first, then works its portrait 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-015]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001]

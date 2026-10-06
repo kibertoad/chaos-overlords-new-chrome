@@ -45,6 +45,7 @@ public static class MatchBootstrapFactory
                     new PlayerId(slot), DerivedSeatName(slot), PlayerController.Computer,
                     settings.Portraits[slot]);
         }
+        // DEV-AI-007 stays on online: the command line that switches it off reaches local matches.
         return new MatchSetup(
             settings.Scenario, settings.Duration, seed, setups, settings.AiMentality,
             aiPolicy: settings.AiPolicy);

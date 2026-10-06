@@ -1,0 +1,200 @@
+{
+  "experiment": "EXP-COMLINK-002",
+  "build": "BLD-GOG-EN-1.1",
+  "starting_state": null,
+  "recording_xxh3": null,
+  "clock": "step",
+  "inputs": [
+    {"tick":0,"name":"command","value":"File, New Game (0x8101)"},
+    {"tick":0,"name":"setup","value":"pref_slide_panels 0"},
+    {"tick":0,"name":"setup","value":"slot 0: human"},
+    {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
+    {"tick":0,"name":"comlink","value":"visit 0"},
+    {"tick":1,"name":"comlink","value":"dump start"},
+    {"tick":2,"name":"comlink","value":"send"},
+    {"tick":3,"name":"comlink","value":"view"},
+    {"tick":4,"name":"comlink","value":"dump end"}
+  ],
+  "seeds": [1],
+  "runs": [
+    {
+      "rng_state": 1,
+      "humans": [0],
+      "events": [],
+      "steps": [
+        {
+          "step": "visit 0",
+          "active_player": 0,
+          "elapsed_turns": 0,
+          "send_open": false,
+          "view_open": false,
+          "entered": [],
+          "sounds": [],
+          "comlink": {
+            "counts": [0,0,0,0,0,0],
+            "cursors": [0,0,0,0,0,0],
+            "pending": 0,
+            "records": {
+              "0": [
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null]
+              ]
+            }
+          }
+        },
+        {
+          "step": "dump start",
+          "active_player": 0,
+          "elapsed_turns": 0,
+          "send_open": false,
+          "view_open": false,
+          "entered": [],
+          "sounds": [],
+          "comlink": {
+            "counts": [0,0,0,0,0,0],
+            "cursors": [0,0,0,0,0,0],
+            "pending": 0,
+            "records": {
+              "0": [
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null]
+              ]
+            }
+          }
+        },
+        {
+          "step": "send",
+          "active_player": 0,
+          "elapsed_turns": 0,
+          "send_open": false,
+          "view_open": false,
+          "entered": ["send"],
+          "sounds": [2,4],
+          "selected": [0,0,0,0,0,0],
+          "draft": [0,0,0,0,0,null],
+          "comlink": {
+            "counts": [0,0,0,0,0,0],
+            "cursors": [0,0,0,0,0,0],
+            "pending": 0,
+            "records": {
+              "0": [
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null]
+              ]
+            }
+          }
+        },
+        {
+          "step": "view",
+          "active_player": 0,
+          "elapsed_turns": 0,
+          "send_open": false,
+          "view_open": false,
+          "entered": ["view"],
+          "sounds": [2,4],
+          "comlink": {
+            "counts": [0,0,0,0,0,0],
+            "cursors": [0,0,0,0,0,0],
+            "pending": 0,
+            "records": {
+              "0": [
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null]
+              ]
+            }
+          }
+        },
+        {
+          "step": "dump end",
+          "active_player": 0,
+          "elapsed_turns": 0,
+          "send_open": false,
+          "view_open": false,
+          "entered": [],
+          "sounds": [],
+          "comlink": {
+            "counts": [0,0,0,0,0,0],
+            "cursors": [0,0,0,0,0,0],
+            "pending": 0,
+            "records": {
+              "0": [
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null],
+                [0,1,0,0,0,null]
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

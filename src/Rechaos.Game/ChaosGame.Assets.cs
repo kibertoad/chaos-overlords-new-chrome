@@ -20,11 +20,7 @@ public sealed partial class ChaosGame
         if (!transparentWhite) return texture;
         var colors = new Color[texture.Width * texture.Height];
         texture.GetData(colors);
-        for (var index = 0; index < colors.Length; index++)
-            // Native mode-1 copies key the maximum RGB555 white. Depending on
-            // the BMP decoder, a maximum five-bit channel expands to 248 or 255.
-            if (colors[index].R >= 248 && colors[index].G >= 248 && colors[index].B >= 248)
-                colors[index] = Color.Transparent;
+        OriginalWhiteKey.Apply(colors);
         texture.SetData(colors);
         return texture;
     }
@@ -191,14 +187,7 @@ public sealed partial class ChaosGame
         if (first == events.Count) return;
         if (_detailedCombat && _combatAnimationTextures.Count > 0)
         {
-            var presented = new List<GameEvent>();
-            for (var index = first; index < events.Count; index++)
-            {
-                var gameEvent = events[index];
-                if (CombatResultProjection.IsFromLastCompletedTurn(gameEvent.Turn, _state.Coordinator.Turn)
-                    && IsVisibleCombatEvent(_state, viewer, gameEvent))
-                    presented.Add(gameEvent);
-            }
+            var presented = CombatResultProjection.AutomaticPresentationEvents(_state, viewer, events.Skip(first));
             foreach (var clip in CombatAnimationRouting.ForPresentation(_state, presented, viewer))
                 _combatAnimationPlayer.Enqueue(clip);
         }

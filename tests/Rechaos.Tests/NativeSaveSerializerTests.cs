@@ -598,7 +598,7 @@ public sealed partial class NativeSaveSerializerTests
         while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
     }
 
-    private static MatchState CreateMatch(
+    internal static MatchState CreateMatch(
         string firstPlayerName = "ONE",
         bool secondPlayerHuman = false)
     {

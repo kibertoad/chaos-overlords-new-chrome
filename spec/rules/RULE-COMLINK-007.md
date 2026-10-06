@@ -1,10 +1,10 @@
 ---
 id: RULE-COMLINK-007
 title: When a player finishes planning, the read messages at the front of the inbox are dropped
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-006]
+evidence: [FND-COMLINK-006, EXP-COMLINK-001]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-001, RULE-COMLINK-004, FMT-STATE-005]
@@ -19,9 +19,10 @@ at the first message the next time.
 
 ## When it runs
 
-In `planning_phase`, once for each player whose planning ends at this
+In `planning_phase`, once for each human player whose planning ends at this
 computer, right after that player's planning loop and before the next player's
-turn.
+turn. A computer player has no planning loop, and in EXP-COMLINK-001 the
+function ran once for each Done and never for a computer player.
 
 ## Parameters
 

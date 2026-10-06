@@ -24,47 +24,36 @@ public readonly record struct SmackerTimelineAdvance(
 /// <summary>Presentation-only fixed-cadence clock for a decoded movie.</summary>
 public sealed class SmackerPlaybackTimeline
 {
-    private readonly int _frameCount;
-    private readonly TimeSpan _frameDuration;
-    private TimeSpan _elapsedInFrame;
-    private int _frameIndex = -1;
+    private readonly RefurbishedDinosaurs.Media.Playback.MoviePlayback playback;
+    private readonly int frameCount;
+    private int decoded;
 
     public SmackerPlaybackTimeline(int frameCount, TimeSpan frameDuration)
     {
-        if (frameCount <= 0) throw new ArgumentOutOfRangeException(nameof(frameCount));
-        if (frameDuration <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(frameDuration));
-        _frameCount = frameCount;
-        _frameDuration = frameDuration;
+        playback = new(frameCount, frameDuration);
+        this.frameCount = frameCount;
     }
 
-    public bool IsComplete { get; private set; }
-    public int FrameIndex => _frameIndex;
+    public bool IsComplete => playback.IsComplete;
+    public int FrameIndex => playback.FrameIndex;
 
     public SmackerTimelineAdvance Advance(TimeSpan elapsed)
     {
-        if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
-        if (IsComplete) return new SmackerTimelineAdvance(0, true);
-        if (_frameIndex < 0)
+        if (playback.IsComplete) return new SmackerTimelineAdvance(0, true);
+        // RULE-VIDEO-001, EXP-VIDEO-001: the original closes a movie that played out at the step
+        // after its last frame, which comes within 10 ms of that frame instead of a frame time
+        // later. The movie therefore ends at the first update after the one that decoded its last
+        // frame, so the last frame is drawn once and the movie does not hold it for a frame time.
+        if (frameCount > 0 && decoded == frameCount)
         {
-            _frameIndex = 0;
-            return new SmackerTimelineAdvance(1, false);
+            playback.Skip();
+            return new SmackerTimelineAdvance(0, true);
         }
-
-        _elapsedInFrame += elapsed;
         var frames = 0;
-        while (_elapsedInFrame >= _frameDuration)
-        {
-            _elapsedInFrame -= _frameDuration;
-            if (_frameIndex + 1 >= _frameCount)
-            {
-                IsComplete = true;
-                break;
-            }
-            _frameIndex++;
-            frames++;
-        }
-        return new SmackerTimelineAdvance(frames, IsComplete);
+        playback.Advance(elapsed, _ => frames++);
+        decoded += frames;
+        return new SmackerTimelineAdvance(frames, playback.IsComplete);
     }
 
-    public void Skip() => IsComplete = true;
+    public void Skip() => playback.Skip();
 }

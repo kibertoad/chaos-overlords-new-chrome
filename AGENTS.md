@@ -31,18 +31,19 @@ correct or approve the remote configuration instead of modifying it.
 
 ## Validation scope
 
-Do not run the full test suite by default. It contains deliberately separated
-long-running campaign coverage and takes too long for routine changes. Use the
-default fast gate in `tools/Invoke-Validation.ps1`, or pass `-TestFilter` for a
-smaller relevant scope. Run with `-IncludeLongRunningTests` or otherwise execute
-the full suite only when the user explicitly requests it or when a specific
-change to long-running coverage provides a documented exceptional reason.
+Never run the full validation gate (`tools/Invoke-Validation.ps1` without
+`-TestFilter`) or the full test suite locally. CI runs the whole set on every
+pull request. Locally, run only the tests directly relevant to the change: the
+test classes that cover the code and spec entries it touches, through
+`dotnet test --filter` or the gate's `-TestFilter`. The pre-commit hook runs the
+spec and documentation checks below on every commit. Run more only when the
+user asks for it.
 
 On Windows, the PowerShell execution policy may reject repository scripts and
-the `pnpm.ps1` command wrapper. Invoke the fast gate explicitly with:
+the `pnpm.ps1` command wrapper. Invoke the gate with a filter explicitly with:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Validation.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Validation.ps1 -TestFilter <filter>
 ```
 
 Pass validation arguments after the script path when needed. Run pnpm-based
@@ -56,7 +57,9 @@ The project follows the [methodology](https://dinorefurb.com/methodology/) and
 version 1 of the
 [documentation standard](https://dinorefurb.com/documentation-standard/)
 published at dinorefurb.com. This section summarizes them; where they differ,
-the published pages win.
+the published pages win. `docs/upstream/` holds a copy of the standard, the
+methodology and the work protocol as published at refurbished-dinosaurs
+`11dbbc5`, the revision this repository follows.
 
 ### The spec
 
@@ -118,6 +121,10 @@ the repository. Tool procedure is in `docs/GHIDRA.md`.
   superseded, with how much of it the rebuild does and which tests compare the
   rebuild with evidence from the original. Behaviour without a spec entry gets
   an `unknown` entry before any code. Manual play never counts as a test.
+  A complete row that a `mandatory` deviation's Replaces item names, because
+  nothing of it is left to compare with the original, is `deviated` once each
+  `mandatory` deviation it lists has a Tests item naming the tests that check
+  the rebuild does what the deviation's Reason says.
 - `docs/DECISIONS.md` keeps dated product and scope decisions that are not
   departures from the original (network play, saves, bug reports).
 

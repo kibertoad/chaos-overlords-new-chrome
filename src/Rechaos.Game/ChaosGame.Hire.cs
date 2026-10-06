@@ -24,13 +24,13 @@ public sealed partial class ChaosGame
                 batch.Draw(_gangPortraits, HireDockLayout.Portrait(slot),
                     OriginalSpriteLayout.GangPortrait(entry.GangDefinitionId), Color.White);
             DrawHireDockMark(batch, entry.Mark, HireDockLayout.Portrait(slot));
-            if (!entry.Hired)
-            {
-                var definition = state.Definitions.Gang(entry.GangDefinitionId);
-                var price = HireDockLayout.Price(slot);
-                font.Draw(batch, HireDockLayout.PriceText(HireRules.InitialCost(definition)),
-                    price.ToVector2(), Color.Lime, 1);
-            }
+            // SCR-HIRE-002, FND-HIRE-007, FND-HIRE-008: every offer keeps its price; a hire or
+            // snub mark redraws only the portrait above it. FND-UI-006: a negative price is
+            // drawn as its magnitude from the red row.
+            var definition = state.Definitions.Gang(entry.GangDefinitionId);
+            var price = HireRules.InitialCost(definition);
+            font.DrawNumber(batch, HireDockLayout.PriceCells(price),
+                HireDockLayout.Price(slot).ToVector2(), price < 0 ? Color.Red : Color.Lime);
         }
     }
 
@@ -70,9 +70,10 @@ public sealed partial class ChaosGame
         {
             if (entries[slot] is not { } entry) continue;
             var definition = state.Definitions.Gang(entry.GangDefinitionId);
+            // EXP-UI-008: halved from the cell's odd rows and columns, as Gangs in Sector halves them.
             if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, HireComparisonLayout.Portrait(slot),
-                    OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
+                _scaledGangPortraits.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
+                    HireComparisonLayout.Portrait(slot));
             var values = HireComparisonValues(definition);
             for (var row = 0; row < values.Length; row++)
                 DrawNativeTwoCellValue(font, batch, values[row],
@@ -84,10 +85,14 @@ public sealed partial class ChaosGame
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.HireAt(hover));
     }
 
-    private static short[] HireComparisonValues(GangDefinition definition) =>
+    // FND-HIRE-009, EXP-UI-008: Upkeep is drawn negated, so in red, and the Combat row adds the
+    // Strength, Fighting and Martial Arts fields to Combat.
+    internal static short[] HireComparisonValues(GangDefinition definition) =>
     [
-        definition.TechLevel, definition.Upkeep,
-        definition.Stats.Combat, definition.Stats.Defense,
+        definition.TechLevel, (short)-definition.Upkeep,
+        (short)(definition.Stats.Combat + definition.Stats.Strength + definition.Stats.Fighting
+                + definition.Stats.MartialArts),
+        definition.Stats.Defense,
         definition.Stats.Stealth, definition.Stats.Detect,
         definition.Stats.Chaos, definition.Stats.Control,
         definition.Stats.Heal, definition.Stats.Influence,

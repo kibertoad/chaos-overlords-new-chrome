@@ -1,10 +1,10 @@
 ---
 id: RULE-RESEARCH-001
 title: Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-RESEARCH-001, FND-RESEARCH-002, FND-RESEARCH-003, FND-RESEARCH-004, FND-TURN-007, FND-STATE-002, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EVENT-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-RESEARCH-001, FND-RESEARCH-002, FND-RESEARCH-003, FND-RESEARCH-004, FND-TURN-007, FND-STATE-002, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EVENT-001, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-059, EXP-TURN-062, EXP-TURN-063]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001]

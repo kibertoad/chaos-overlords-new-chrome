@@ -1,0 +1,11 @@
+{
+  "screen": "SCR-SETUP-002",
+  "state": "The hand-off card the planning entry of player 0 opens when several local humans play",
+  "elements": [
+    {"element": "Hot-seat handoff card that waits for the next local player to press Ready", "rect": [0, 0, 640, 460]},
+    {"element": "Handoff card", "rect": [266, 130, 108, 164]},
+    {"element": "Colour bar", "rect": [283, 155, 8, 72]},
+    {"element": "Name", "rect": [293, 155, 60, 7]},
+    {"element": "Portrait", "rect": [293, 163, 64, 64]}
+  ]
+}

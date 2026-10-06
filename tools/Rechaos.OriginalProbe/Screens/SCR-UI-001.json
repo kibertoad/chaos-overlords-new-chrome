@@ -1,0 +1,7 @@
+{
+  "screen": "SCR-UI-001",
+  "state": "The title screen before New Game, with no movie playing",
+  "elements": [
+    {"element": "Title screen", "rect": [0, 0, 640, 460]}
+  ]
+}

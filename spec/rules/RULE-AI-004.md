@@ -4,7 +4,7 @@ title: Queries the computer players' handlers share
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-072, EXP-TURN-022, FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057, FND-SETUP-018, EXP-TURN-021]
+evidence: [FND-AI-072, EXP-TURN-022, FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057, FND-SETUP-018, EXP-TURN-021, FND-AI-074, EXP-TURN-048, EXP-TURN-049, EXP-TURN-050]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, RULE-RNG-002]
@@ -45,16 +45,21 @@ define is_human(p):
 define turns_remaining():
     return turn_limit - elapsed_turns
 
-# Write a planned action into the planning record and into the gang record
+# Write a planned action into the planning record and into the gang record,
+# with only the target bytes the action uses (FND-AI-074)
 define plan(idx, action, t1, t2):
     let r = planning_records[idx]
-    r.planned_action = action
-    r.planned_target = t1
-    r.planned_target_2 = t2
     let g = gangs[idx]
+    r.planned_action = action
     g.action = action
-    g.target = t1
-    g.target_2 = t2
+    if action == ACTION_ATTACK:
+        r.planned_target = t1
+        r.planned_target_2 = t2
+        g.target = t1
+        g.target_2 = t2
+    else if action == ACTION_MOVE or action == ACTION_EQUIP or action == ACTION_INFLUENCE or action == ACTION_RESEARCH:
+        r.planned_target = t1
+        g.target = t1
     return
 
 # How dangerous the first gang the observer can see in sector s is:
@@ -223,6 +228,11 @@ Greed, Power, Acceptance and Dominance. Every other scenario plays with a
 `turn_limit` of 65535 (FND-SETUP-018), so there it is 65535 minus
 `elapsed_turns`: odd on the first turn, and never small.
 
+`plan` leaves the target bytes an action does not use. When a handler replaces
+an action it planned earlier in the same pass, as the Greed Terminate replaces
+a Move or Attack, the record keeps the earlier action's targets
+(EXP-TURN-048).
+
 `visible_weight` decides on the first visible gang it finds: a visible
 computer gang found before a hostile human gang gives 1. `strength_check`
 divides with truncation toward zero. `solo_control_ok` is strict: equal
@@ -237,8 +247,11 @@ whose `visible_to` byte for the player was still set when they died
 (FMT-STATE-001), and a draw past its end compares with the zero record
 before `gangs[0]`. With an empty
 pool, `roll(0)` gives 1 and the draw reads the first element of an empty list;
-what the original reads there is not recorded. `previous_action_count` never
-counts an inactive gang, whose sector is 100.
+what the original reads there is not recorded. The family-13 and family-14
+draw of RULE-AI-031 makes the same `roll(0)` on an empty pool, and its lookup
+gives no gang (EXP-TURN-084); no run shows whether the lookups of `draw_once`
+and `draw_target` do the same. `previous_action_count` never counts an inactive
+gang, whose sector is 100.
 
 `hostile_owner` makes no test of the owner. For the player's own sector it
 reads the player's attitude toward itself. For a neutral sector or one under

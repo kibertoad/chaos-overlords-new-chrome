@@ -302,8 +302,12 @@ public sealed class CombatAnimationTests
         Assert.True(player.ShowsDamageFlash);
         player.Advance(TimeSpan.FromMilliseconds(CombatAnimationRouting.FrameMilliseconds));
         Assert.False(player.ShowsDamageFlash);
+        // FND-COMBAT-016: tick 14 shows the Force before the clip again, and tick 16 the lowered one.
+        Assert.True(player.ShowsPreDamageForce);
         player.Advance(TimeSpan.FromMilliseconds(CombatAnimationRouting.FrameMilliseconds));
         Assert.True(player.ShowsDamageFlash);
+        player.Advance(TimeSpan.FromMilliseconds(CombatAnimationRouting.FrameMilliseconds));
+        Assert.False(player.ShowsPreDamageForce);
         player.Advance(TimeSpan.FromMilliseconds(
             (CombatAnimationRouting.CompletionTick - player.TimelineTick)
             * CombatAnimationRouting.FrameMilliseconds));

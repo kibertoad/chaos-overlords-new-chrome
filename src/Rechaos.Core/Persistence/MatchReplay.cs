@@ -363,7 +363,7 @@ public static class MatchReplaySerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: a journal is verified step
     // by step against the fingerprint of its day, so a journal from format 31 would diverge on its
     // first step and be reported as damage rather than as an older format.
-    public const int CurrentFormatVersion = 51;
+    public const int CurrentFormatVersion = 53;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -859,14 +859,14 @@ public static class MatchReplayStore
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(recorder);
         var fullPath = Path.GetFullPath(path);
-        var directory = Path.GetDirectoryName(fullPath)
-            ?? throw new ArgumentException("Replay path has no parent directory.", nameof(path));
+        if (Path.GetDirectoryName(fullPath) is null)
+            throw new ArgumentException("Replay path has no parent directory.", nameof(path));
         // Replays are long-lived verification artifacts. Read back the new
         // file before promotion and preserve the last valid generation. A replay that cannot
         // reproduce itself reaches the player as a failed save, so report it as one rather than
         // as an InvalidDataException no caller filters for.
         AtomicGenerationRecovery.SaveAtomic(
-            fullPath, directory, BackupSuffix,
+            fullPath, BackupSuffix,
             "The replay was written but could not be replayed back, so it was not promoted.",
             stream => MatchReplaySerializer.Save(stream, recorder),
             candidate => _ = LoadAndReplay(candidate, recorder.State.Definitions));

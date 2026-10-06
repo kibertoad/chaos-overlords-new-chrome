@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-003, FND-UI-011, FND-UI-032, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-003, FND-UI-011, FND-UI-032, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, EXP-UI-006]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-009, SCR-UI-003]

@@ -18,6 +18,12 @@ public static class FinanceLayout
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
     public static Rectangle Portrait => new(154, 141, 64, 64);
+
+    /// <summary>
+    /// SCR-FINANCE-001, FND-FINANCE-002: the Sector variant's sector cell, buffer (375,161) to
+    /// (429,213), in place of the portrait.
+    /// </summary>
+    public static Rectangle SectorTile => new(159, 141, CityMapLayout.TileWidth, CityMapLayout.TileHeight);
     public static Rectangle Ok => new(161, 293, 49, 22);
 
     /// <summary>SCR-FINANCE-001, FND-FINANCE-002: the Sector variant's sector code, buffer (396,216).</summary>

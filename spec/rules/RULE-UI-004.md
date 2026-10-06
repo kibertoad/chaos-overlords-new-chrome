@@ -4,7 +4,7 @@ title: Drawing numbers in fixed glyph cells
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-006, FND-UI-004, FND-UI-023, FND-EXE-004]
+evidence: [FND-UI-006, FND-UI-004, FND-UI-023, FND-EXE-004, FND-UI-040, FND-UI-045]
 conflicting: []
 split_with: []
 related: []
@@ -19,7 +19,8 @@ bright green 0; modifiers show 0 as a dim green 0.
 ## When it runs
 
 Whenever a panel draws a number: Gang, Gang Definition, Hire, Gangs in Sector,
-Item and Site Information.
+Item and Site Information, and the main console's year, remaining turns and
+score (FND-UI-040).
 
 ## Parameters
 
@@ -34,9 +35,10 @@ None.
 ```text
 define number_cells(value, width, leading_zeros) -> INT32[]:
     let row = 0
-    let v = value
+    let v: INT32 = value
     if v < 0:
         row = 100
+        # a 32-bit negate: -2147483648 stays negative
         v = -v
     let divisor = 1
     for k in 0..width - 1:
@@ -44,8 +46,9 @@ define number_cells(value, width, leading_zeros) -> INT32[]:
     let cells: INT32[] = []
     let started = leading_zeros
     for i in 0..width:
-        # the first cell takes the whole quotient, which can exceed 9
-        let q = v / divisor
+        # the first cell takes the whole quotient, which can exceed 9;
+        # signed 32-bit division, truncating toward zero
+        let q: INT32 = v / divisor
         v = v % divisor
         if q != 0 or i == width - 1:
             started = 1
@@ -83,6 +86,18 @@ every panel passes `leading_zeros` 0. `modifier_cells` is the modifier helper.
 - A value with more digits than cells puts its whole leading quotient in the
   first cell: 123 in two cells draws glyph 28, the character `<`, and then 3.
   The strip's glyph after `9` is drawn, so the value shows a punctuation mark.
+- A quotient above 42 addresses a glyph past `Z`, the strip's last character.
+  The cell is still copied from source column `x`, at y 0, or y 8 when
+  negative, where `x` is `6 * (16 + q)` cut to its low 16 bits and read as a
+  signed number (FND-UI-045). While `0 <= x <= 506` the cell shows whatever art
+  of `PX00129` lies there: quotients 0 to 68, and quotients whose product wraps
+  back into that range, first 10907 to 10991, at columns 2 to 506.
+- For any other `x` (a quotient of 69 or more outside those wrapped ranges, or
+  a negative column) the source cell is wholly or partly outside the 512-by-646
+  bitmap the sheet is held in, and what is drawn is left to the GDI copy.
+- -2147483648 stays negative when negated, so its quotients are negative: in
+  two cells the first is -214748364, at column 13208, outside the bitmap, and
+  the second -8, glyph 8, the character `(`, from the red row.
 
 ## What the sources say
 
@@ -96,3 +111,11 @@ None known.
 
 - Which panels use which helper for which field is listed in FND-UI-006 and in
   each screen entry.
+- What the original draws for a source cell not wholly inside the bitmap has
+  not been recorded. The copy is a GDI `BitBlt` (or, at the three columns where
+  the right edge wraps, a `StretchBlt`) from a memory DC, and static reading of
+  the game cannot say what GDI does with a source rectangle outside its bitmap
+  (FND-UI-045). A run of the original that draws a two-cell value of 690 (column
+  510, 2 pixel columns inside) and one of 700 (column 516, none inside) on a
+  known background, for example the console's Tolerance from a prepared save,
+  and captures the cell, would settle it for the system the run uses.

@@ -4,7 +4,7 @@ title: Family-7 computer gangs sit where sites add the most Research, influence 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060, EXP-TURN-020]
+evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060, EXP-TURN-020, FND-AI-074, EXP-TURN-050, EXP-TURN-057, EXP-TURN-073, EXP-TURN-083, EXP-TURN-088]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -79,18 +79,17 @@ if w == 10:
         plan(idx, ACTION_ATTACK, t / 81, t % 81)
         aux_records[idx].focus = s
         done = true
-if not done and danger_near(player, idx):
+else if danger_near(player, idx):
+    # Equip leaves the focus as it was (FND-AI-074)
     let wp = weapon_upgrade(player, idx)
     let ar = armor_upgrade(player, idx)
     if wp != -1 and r.weapon_cooldown <= 0:
         plan(idx, ACTION_EQUIP, wp, 0)
         r.weapon_cooldown = item_definitions[wp].cost * 3
-        aux_records[idx].focus = -1
         done = true
     else if ar != -1 and r.armor_cooldown <= 0:
         plan(idx, ACTION_EQUIP, ar, 0)
         r.armor_cooldown = item_definitions[ar].cost * 3
-        aux_records[idx].focus = -1
         done = true
 if not done:
     if prev == ACTION_EQUIP or prev == ACTION_MOVE or prev == ACTION_ATTACK or prev == ACTION_INFLUENCE:
@@ -153,8 +152,9 @@ or -1. The handler returns nothing; it writes the gang's planned action and
 targets through `plan` (Research and Equip target the item, Influence the site
 slot, Move the sector `select_sector` returns, Attack the drawn gang's player
 and roster slot), updates `focus`, may clear the first target byte of the
-previous action, and may set the family to 0. An Equip sets the matching
-cooldown to three times the item's cost. Draws one `roll` for the target draw
+previous action, and may set the family to 0. An Equip leaves `focus` as the
+previous pass left it and sets the matching cooldown to three times the item's
+cost; it is considered only when the sector's weight is not 10. Draws one `roll` for the target draw
 at weight 10, plus the draws inside `select_sector`.
 
 ## Edge cases
@@ -186,12 +186,13 @@ None known.
 
 - EXP-TURN-020 directly checks the successful weight-10 attack branch: call
   10549 draws the sole human target and the attack resolves. The fixture
-  compares the complete draw stream and final state, but does not isolate the
-  failed or non-hostile attack fallthrough, weapon and armor upgrade cooldowns,
-  Heal, best-Research-sector routing and ties, Research-site Influence,
-  continuation and type cycling, fallback scans and the fixed item list,
-  research exhaustion and family change, or the late Greed Terminate override.
-  The attack check alone does not establish the research procedure.
+  compares the complete draw stream and final state. EXP-TURN-073 reaches the
+  fallback scans and the fixed item list, and a gang that finds no item to
+  research, takes family 0 and moves through selector mode 5. No recorded run
+  isolates the failed or non-hostile attack fallthrough, weapon and armor
+  upgrade cooldowns, Heal, best-Research-sector routing and ties,
+  Research-site Influence, continuation and type cycling, or the late Greed
+  Terminate override, so the research procedure is not established.
 - The item `type` numbers (0 melee, 1 blade, 2 ranged, 3 armor, 4
   miscellaneous) are assumptions shared with RULE-AI-005.
 - A previous Research of an item of type 4 that is not on the fixed list, or of

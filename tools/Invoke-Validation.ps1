@@ -12,6 +12,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+# Windows PowerShell 5.1 has no $IsWindows, and runs only on Windows.
+$isWindowsHost = ($PSVersionTable.PSEdition -eq 'Desktop') -or $IsWindows
 $sha256 = [Security.Cryptography.SHA256]::Create()
 try {
     # -TestFilter combines with -IncludeLongRunningTests (the filter then may reach long-running
@@ -23,8 +25,8 @@ try {
     # The lock and build roots are keyed by the checkout's path. Windows and macOS file systems are
     # case-insensitive by default, so two spellings of one checkout must share a lock there; on
     # Linux they are two checkouts, and folding them together would make one refuse to run while
-    # the other validates. Windows PowerShell 5.1 has no $IsWindows, and runs only on Windows.
-    $caseInsensitivePaths = ($PSVersionTable.PSEdition -eq 'Desktop') -or $IsWindows -or $IsMacOS
+    # the other validates.
+    $caseInsensitivePaths = $isWindowsHost -or $IsMacOS
     $identityPath = if ($caseInsensitivePaths) { $repositoryRoot.ToUpperInvariant() } else { $repositoryRoot }
     $repositoryHash = $sha256.ComputeHash([Text.Encoding]::UTF8.GetBytes($identityPath))
 }
@@ -37,10 +39,51 @@ $validationBuildRoot = Join-Path $temporaryRoot (
     "rechaos-validation-$($repositoryIdentity.Substring(0, 16))-$([Guid]::NewGuid().ToString('N'))")
 $lock = $null
 
+# On Windows the first `dotnet` on PATH can be a dotnet.cmd shim. cmd.exe reparses its
+# arguments, so the & and | of a compound -TestFilter run as shell operators instead of reaching
+# the test runner. Only then does the script pick a native host itself: the dotnet.exe in
+# DOTNET_ROOT, else the first dotnet.exe on PATH, in either case only one with an `sdk`
+# directory beside it, because a runtime-only install (often C:\Program Files\dotnet) cannot
+# restore or build. A DOTNET_ROOT that cannot be probed (a missing drive, characters a path
+# cannot hold) is skipped. With no such host the shim is kept, so an unfiltered run still works;
+# only compound filters are at risk there. When the first `dotnet` is a native host, and on
+# Unix, the plain command name runs as before.
+function Test-DotnetSdkHost {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
+    try {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
+        $sdkRoot = Join-Path ([IO.Path]::GetDirectoryName($Path)) 'sdk'
+        return [bool](Get-ChildItem -LiteralPath $sdkRoot -Directory -ErrorAction Stop | Select-Object -First 1)
+    }
+    catch {
+        return $false
+    }
+}
+
+$dotnetExecutable = 'dotnet'
+$pathDotnet = Get-Command -Name 'dotnet' -CommandType Application -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+if ($isWindowsHost -and $pathDotnet -and [IO.Path]::GetExtension($pathDotnet.Source) -ne '.exe') {
+    $hostCandidates = @()
+    if ($env:DOTNET_ROOT) {
+        try { $hostCandidates += [IO.Path]::Combine($env:DOTNET_ROOT, 'dotnet.exe') } catch { }
+    }
+    $hostCandidates += @(Get-Command -Name 'dotnet.exe' -CommandType Application -All -ErrorAction SilentlyContinue |
+        ForEach-Object { $_.Source })
+    $nativeHost = $hostCandidates | Where-Object { Test-DotnetSdkHost -Path $_ } | Select-Object -First 1
+    if ($nativeHost) {
+        $dotnetExecutable = $nativeHost
+    }
+    else {
+        Write-Warning "The first dotnet on PATH is $($pathDotnet.Source), and no native dotnet.exe with an SDK was found; test filters containing & or | may not reach the runner intact."
+    }
+}
+
 function Invoke-CheckedDotnet {
     param([Parameter(Mandatory = $true)][string[]] $Arguments)
 
-    & dotnet @Arguments
+    & $dotnetExecutable @Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet $($Arguments[0]) failed with exit code $LASTEXITCODE."
     }
@@ -155,7 +198,7 @@ try {
     # or discovery change that silently drops tests fails the run; theories whose rows are only
     # expanded at run time make the executed count somewhat higher. Full = fast + long-running;
     # raise all three together when tests are added.
-    $minimumFastTests = 3060
+    $minimumFastTests = 3063
     $minimumLongRunningTests = 53
     $minimumAllTests = $minimumFastTests + $minimumLongRunningTests
     if ($TestFilter) {
@@ -213,7 +256,7 @@ try {
 finally {
     if ($ShutdownBuildServersAfterRun) {
         Write-Host 'Stopping .NET build servers for the current user.'
-        & dotnet build-server shutdown
+        & $dotnetExecutable build-server shutdown
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "dotnet build-server shutdown returned exit code $LASTEXITCODE."
         }

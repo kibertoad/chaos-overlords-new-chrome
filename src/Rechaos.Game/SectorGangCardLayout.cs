@@ -26,9 +26,11 @@ public static class SectorGangCardLayout
     private const int ActionTop = 8;
     private const int ActionWidth = 64;
     private const int ActionHeight = 9;
-    private const int OneOffActionWidth = 31;
-    private const int RepeatingActionLeft = 37;
-    private const int RepeatingActionWidth = 32;
+    // FND-UI-021, EXP-TURN-095: the strip's press splits after card x 37, so the one-off part runs
+    // from x 5 to 37 and the recurring part from 38 to 68.
+    private const int OneOffActionWidth = 33;
+    private const int RepeatingActionLeft = 38;
+    private const int RepeatingActionWidth = 31;
     private const int PortraitTop = 20;
     private const int PortraitSize = 64;
     private const int EquipmentTop = 86;

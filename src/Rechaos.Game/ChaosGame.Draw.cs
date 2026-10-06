@@ -11,10 +11,12 @@ public sealed partial class ChaosGame
     /// <remarks>
     /// Returning false skips both <see cref="Draw"/> and the present for this tick, the same path
     /// MonoGame takes when the graphics device is not ready, so the last presented frame stays on
-    /// screen until the cadence allows the next one.
+    /// screen until the cadence allows the next one. A reference frame draws every tick: its clock
+    /// stands at zero, so the cadence would never allow a second draw to a window without focus.
     /// </remarks>
     protected override bool BeginDraw() =>
-        _backgroundRedrawCadence.ShouldRedraw(IsActive, _inputTime) && base.BeginDraw();
+        (_referenceFrame is not null || _backgroundRedrawCadence.ShouldRedraw(IsActive, _inputTime))
+        && base.BeginDraw();
 
     protected override void Draw(GameTime gameTime)
     {
