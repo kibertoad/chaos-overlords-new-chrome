@@ -112,8 +112,9 @@ than it looks: the number and the row become visible together, so a committed `s
 lower one is committed too. A counter handed out before the write could leave a hole that a cursor
 moving forward would skip forever.
 
-The fan-out (an in-process hub on Node, a per-match Durable Object on Cloudflare) is only a wake-up
-hint: every wake and heartbeat drains the log from the last delivered sequence, so a lost
+The fan-out (an in-process hub on Node, announced to the other instances over Postgres
+`LISTEN/NOTIFY` when several share a database; a per-match Durable Object on Cloudflare) is only a
+wake-up hint: every wake and heartbeat drains the log from the last delivered sequence, so a lost
 notification costs at most one heartbeat, never an event, and a reconnecting client resumes from
 the last `seq` it saw. A stored row the server's own build cannot validate (a payload reshaped by
 another build) is withheld from both the stream and `GET /events`, so a jump in the sequence numbers
@@ -793,13 +794,14 @@ dock a player plans against the dock the sealed turn grants.
 
 ## Limitations and next steps
 
-- **One server process.** The Node runtime fans events out in memory, so two instances behind a
-  load balancer would each wake only their own subscribers: a client on instance A would sit silent
-  through everything written on instance B, with no error to show for it. Rate-limit windows
-  fragment the same way. Postgres is offered for durability and operational familiarity, not as a
-  way to scale out; running more than one instance needs a shared fan-out (the Cloudflare runtime's
-  Durable Object is the worked example) before it is safe. The `GET /events?after=` fallback is the
-  one path that does work under it, because it reads the log directly.
+- **Several Node instances need Postgres, and some limits stay per instance.** Instances that share a
+  Postgres database announce each event and each kick to one another over `LISTEN/NOTIFY`, so a
+  stream held by any instance is woken at once, and they take the turn sweep and the retention pass
+  in turn through advisory locks. The stream caps count one instance's streams, a player's stale
+  stream on another instance is not replaced by their reconnect (it ends at its stall check or when
+  its socket closes), the rate-limit windows live in each instance's memory, so every budget is
+  multiplied by the number of instances, and the bug report intake is a SQLite file per instance. A
+  SQLite store serves one process.
 - **Late joining is offered, and narrowly.** A host may set `allowLateJoin`, and once the match
   has its bootstrap snapshot a newcomer can take a slot that never belonged to a human. A public match
   can be named by its id or its join code; a `private` one only by its code, because the id rides

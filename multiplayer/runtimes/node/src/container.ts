@@ -30,6 +30,7 @@ import { getConnInfo } from '@hono/node-server/conninfo'
 import type { Hono } from 'hono'
 import type { NodeConfig } from './config.js'
 import { startCleanup } from './cleanup.js'
+import { type ClusterBus, PostgresClusterBus, singleProcessBus } from './cluster.js'
 import { createLogger } from './logger.js'
 import { startSweeper, TimerDeadlineScheduler } from './TimerDeadlineScheduler.js'
 
@@ -45,6 +46,8 @@ export interface NodeRuntime {
    * cannot return while one is open; ending them lets the HTTP server go quiet at once and lets
    * clients reconnect to the next process with their `Last-Event-ID` instead of seeing a reset.
    */
+  /** Event streams this instance holds open right now. */
+  readonly openStreams: number
   closeStreams(): void
   /** Releases timers and both databases. */
   close(): Promise<void>
@@ -106,13 +109,35 @@ export async function buildNodeRuntime(
     config.retentionBatchSize ?? (opened.dialect === 'sqlite' ? 10 : 50),
   )
 
+  // Instances sharing a Postgres database announce their appends and kicks to each other and take
+  // the background jobs in turn; a SQLite file has one process and nobody to tell. See `ClusterBus`.
+  let bus: ClusterBus = singleProcessBus
+  if (opened.dialect === 'postgres') {
+    try {
+      bus = await PostgresClusterBus.start({ connectionString: config.databaseUrl, hub, logger })
+    } catch (error) {
+      await opened.close()
+      throw error
+    }
+  }
+
   let scheduler: TimerDeadlineScheduler | undefined
   let warnedAboutProxy = false
   const kernel = createKernel(
     {
       storage: opened.storage,
-      notifier: hub,
-      streams: hub,
+      notifier: {
+        notify: async (event) => {
+          await hub.notify(event)
+          await bus.appended(event)
+        },
+      },
+      streams: {
+        close: async (input) => {
+          await hub.close(input)
+          await bus.revoked(input)
+        },
+      },
       clock,
       logger,
       scheduler: { schedule: (input) => (scheduler as TimerDeadlineScheduler).schedule(input) },
@@ -123,8 +148,11 @@ export async function buildNodeRuntime(
   )
   scheduler = new TimerDeadlineScheduler(kernel.turns, clock, logger)
   const bugReports = openBugReports(config, clock, logger)
-  const stopSweeper = startSweeper(kernel, config.sweepIntervalMs, logger)
-  const stopCleanup = startCleanup(kernel, config.retentionIntervalMs, logger, bugReports?.service)
+  const stopSweeper = startSweeper(kernel, config.sweepIntervalMs, logger, bus)
+  const stopCleanup = startCleanup(kernel, config.retentionIntervalMs, logger, {
+    bus,
+    bugReports: bugReports?.service,
+  })
 
   const perMinute = (limit: number) => new RateLimiter(clock, { limit, windowMs: 60_000 })
   const container: ServerContainer = {
@@ -191,9 +219,13 @@ export async function buildNodeRuntime(
     app,
     kernel,
     ...(bugReports ? { bugReports: bugReports.service } : {}),
+    get openStreams() {
+      return hub.openStreams
+    },
     closeStreams,
     close: async () => {
       closeStreams()
+      await bus.close()
       await opened.close()
       await bugReports?.close()
     },

@@ -94,6 +94,29 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 
 Put TLS in front of it (Caddy, nginx, a tunnel): player tokens are bearer credentials.
 
+### Several instances
+
+A SQLite file serves one process. Against Postgres, any number of instances can share the database
+behind a load balancer, with no sticky sessions:
+
+- Each instance keeps its own event streams. It announces every event it appends, and every kick,
+  over `LISTEN/NOTIFY` on the channel `chaos_overlords_cluster`, and the other instances wake the
+  streams of that match, which then read the event from the log. Each instance holds one extra
+  connection for listening (its `application_name` is `chaos-cluster-<id>`) and a pool of up to
+  four for announcements and job locks, so size the database's `max_connections` for both on top
+  of the storage pool.
+- The turn sweep and the retention pass run on one instance at a time, through Postgres advisory
+  locks; an instance that finds the lock taken skips that pass. A turn deadline timer lives on the
+  instance that opened the turn, and if that instance stops, the next sweep on any instance seals
+  the turn within `SWEEP_INTERVAL_MS`.
+- `MAX_EVENT_STREAMS` and the per-match and per-player stream caps count the streams of one
+  instance, so a match's ceiling is its per-match cap times the number of instances its players
+  reached.
+- The rate-limit windows live in each instance's memory, so every budget above is multiplied by the
+  number of instances a client's requests reach.
+- The bug report intake is a SQLite file of each instance's own. Turn it on in one instance and
+  route `/api/v1/bug-reports` to that instance, or keep it off.
+
 ### Behind a proxy
 
 `X-Forwarded-For` is appended to, not replaced, so everything left of the last entry is whatever
@@ -316,10 +339,9 @@ Rules that keep the two runtimes honest:
   conformance suite in the same change.
 - Anything the Node facade wires (a scheduler, a notifier) has a Worker twin, asserted by the HTTP
   conformance suite running on both.
-- **Run one process.** Events fan out in memory, so a second instance behind a load balancer would
-  wake only its own subscribers and a client could sit silent through everything the other instance
-  wrote — with no error to show for it. Postgres is for durability and familiar operations, not for
-  scaling out; see "Limitations and next steps" in `docs/MULTIPLAYER.md`.
+- **One process per SQLite file.** Events fan out in memory within a process, and only the Postgres
+  runtime announces them to other instances (see "Several instances"). Anything a process keeps in
+  memory that another instance needs to act on goes over that bus.
 - No transactions: D1 has none. Every race is a single conditional statement whose row count says
   who won (see the port comments in `packages/kernel/src/ports/storage.ts`).
 - A write a unique index can refuse returns `false` instead of throwing. Driver error shapes are
