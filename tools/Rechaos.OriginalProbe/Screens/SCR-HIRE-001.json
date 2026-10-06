@@ -1,0 +1,8 @@
+{
+  "screen": "SCR-HIRE-001",
+  "state": "A planning entry of player 0 with the Hire comparison panel open",
+  "elements": [
+    {"element": "Hire comparison panel showing the three offers side by side", "rect": [0, 0, 640, 460]},
+    {"element": "Offer portraits", "rect": [292, 138, 112, 32]}
+  ]
+}

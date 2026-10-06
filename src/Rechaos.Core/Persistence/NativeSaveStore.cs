@@ -53,15 +53,15 @@ public static class NativeSaveStore
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(state);
         var fullPath = Path.GetFullPath(path);
-        var directory = Path.GetDirectoryName(fullPath)
-            ?? throw new ArgumentException("Save path has no parent directory.", nameof(path));
+        if (Path.GetDirectoryName(fullPath) is null)
+            throw new ArgumentException("Save path has no parent directory.", nameof(path));
         // Do not promote bytes that cannot be read back, and never replace a
         // known-good backup with a corrupt current file. A state that fails its own round trip
         // is a defect in the serializer, not a disk problem, but it reaches the player as a
         // failed save either way, so report it as one: every caller filters for IOException,
         // and an InvalidDataException escaping here ended the process at the end of the turn.
         AtomicGenerationRecovery.SaveAtomic(
-            fullPath, directory, BackupSuffix,
+            fullPath, BackupSuffix,
             "The save was written but could not be read back, so it was not promoted.",
             stream => NativeSaveSerializer.Save(stream, state),
             candidate => _ = Load(candidate, state.Definitions));
@@ -94,10 +94,10 @@ public static class NativeSaveStore
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(definitions);
         var fullPath = Path.GetFullPath(path);
-        var directory = Path.GetDirectoryName(fullPath)
-            ?? throw new ArgumentException("Save path has no parent directory.", nameof(path));
+        if (Path.GetDirectoryName(fullPath) is null)
+            throw new ArgumentException("Save path has no parent directory.", nameof(path));
         AtomicGenerationRecovery.SaveAtomic(
-            fullPath, directory, BackupSuffix,
+            fullPath, BackupSuffix,
             "The save was written but could not be read back, so it was not promoted.",
             stream => stream.Write(snapshot.Span),
             candidate => _ = Load(candidate, definitions),

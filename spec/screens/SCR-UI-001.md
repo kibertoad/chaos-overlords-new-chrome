@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-009, FND-UI-008, FND-AUDIO-001, FND-PLATFORM-009, FND-UI-021, FND-GFX-004, FND-EXE-004]
+evidence: [FND-UI-009, FND-UI-008, FND-AUDIO-001, FND-PLATFORM-009, FND-UI-021, FND-GFX-004, FND-EXE-004, FND-UI-055, EXP-UI-015]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-001, SCR-UI-009, SCR-UI-002, RULE-UI-013]
@@ -15,7 +15,7 @@ related: [RULE-AUDIO-001, SCR-UI-009, SCR-UI-002, RULE-UI-013]
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| Title art with logo and copyright notice | `DATA/PX16/PX00130` | None | `(0,0,640,460)`, copied opaquely | Always | FND-UI-009 |
+| Title art with logo and copyright notice | `DATA/PX16/PX00130` | None | `(0,0,640,460)`, copied opaquely | Always | FND-UI-009, EXP-UI-015 |
 
 ## Mouse input
 

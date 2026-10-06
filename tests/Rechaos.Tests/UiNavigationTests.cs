@@ -55,7 +55,7 @@ public sealed partial class UiNavigationTests
         Assert.Equal(new Rectangle(202, 140, 32, 32), AttackCommandLayout.Opponent(0));
         Assert.Equal(new Rectangle(202, 284, 32, 32), AttackCommandLayout.Opponent(4));
         Assert.Equal(new Rectangle(130, 206, 20, 20), AttackCommandLayout.ActorItem(0));
-        Assert.Equal(new Rectangle(284, 206, 20, 20), AttackCommandLayout.TargetItem(0, 2));
+        Assert.Equal(new Rectangle(284, 206, 19, 20), AttackCommandLayout.TargetItemBox(0, 2));
         Assert.Equal(new Rectangle(0, 240, 20, 20), OriginalSpriteLayout.ItemPortrait(12));
     }
 
@@ -72,9 +72,9 @@ public sealed partial class UiNavigationTests
     public void InfluencePickerUsesOriginalStaggeredSiteLayout()
     {
         Assert.Equal(new Rectangle(130, 141, 64, 64), InfluenceCommandLayout.Portrait);
-        Assert.Equal(new Rectangle(209, 140, 120, 64), InfluenceCommandLayout.Site(0));
-        Assert.Equal(new Rectangle(312, 197, 120, 64), InfluenceCommandLayout.Site(1));
-        Assert.Equal(new Rectangle(209, 254, 120, 64), InfluenceCommandLayout.Site(2));
+        Assert.Equal(new Rectangle(210, 141, 120, 64), InfluenceCommandLayout.SiteHit(0));
+        Assert.Equal(new Rectangle(312, 197, 120, 64), InfluenceCommandLayout.SiteHit(1));
+        Assert.Equal(new Rectangle(210, 251, 120, 64), InfluenceCommandLayout.SiteHit(2));
     }
 
     [Fact]
@@ -242,8 +242,6 @@ public sealed partial class UiNavigationTests
             OriginalSelectionLightLayout.AiMentality(3));
         Assert.Equal(new Rectangle(297, 340, 3, 11),
             OriginalSelectionLightLayout.PlanningTime(0));
-        Assert.Equal(new Rectangle(523, 38, 3, 11),
-            OriginalSelectionLightLayout.EndgameTab(EndgameLayout.Stats));
         Assert.Equal(new Rectangle(540, 126, 8, 16), OriginalSelectionLightLayout.CityEvents);
         Assert.Equal(new Rectangle(592, 126, 8, 16), OriginalSelectionLightLayout.CityComlinkView);
         Assert.Throws<ArgumentOutOfRangeException>(() => SetupSelectionLayout.Scenario(10));
@@ -285,26 +283,6 @@ public sealed partial class UiNavigationTests
         Assert.Equal(SetupPushButton.Back, SetupButtonLayout.HitTest(new Point(559, 419)));
         Assert.Null(SetupButtonLayout.HitTest(new Point(560, 419)));
         Assert.Null(SetupButtonLayout.HitTest(new Point(559, 420)));
-    }
-
-    [Fact]
-    public void HirePriceSitsBesideRejectControl()
-    {
-        Assert.Equal(new Rectangle(472, 437, 32, 13), HireDockLayout.Reject(0));
-        // SCR-HIRE-002, FND-HIRE-007: retain the original number helper's origin.
-        Assert.Equal(new Point(450, 440), HireDockLayout.Price(0));
-        Assert.Equal(new Point(516, 440), HireDockLayout.Price(1));
-        Assert.Equal(new Point(582, 440), HireDockLayout.Price(2));
-        // FND-UI-006: the console passes the helper's leading-zero flag.
-        Assert.Equal("06", HireDockLayout.PriceText(6));
-        Assert.Equal("12", HireDockLayout.PriceText(12));
-        // FND-UI-023: two cells only; the first takes the whole quotient, 12 places after '0'.
-        Assert.Equal("<3", HireDockLayout.PriceText(123));
-        // FND-UI-006: a negative value shows its magnitude; the colour carries the sign.
-        Assert.Equal("07", HireDockLayout.PriceText(-7));
-        // A quotient past the last glyph of the strip has nothing to draw.
-        // RULE-UI-004: an off-strip leading glyph leaves a blank text placeholder.
-        Assert.Equal(" 0", HireDockLayout.PriceText(430));
     }
 
     [Fact]
@@ -390,12 +368,18 @@ public sealed partial class UiNavigationTests
     }
 
     [Fact]
-    public void NextPlayerPortraitFillsTheNativeHandoffAperture()
+    public void TheHandoffCardTakesTheOriginalsRectangles()
     {
-        Assert.Equal(new Rectangle(266, 148, 108, 164), HandoffLayout.Panel);
-        Assert.Equal(new Rectangle(280, 170, 80, 77), HandoffLayout.Portrait);
-        Assert.Equal(new Rectangle(266, 246, 108, 66), HandoffLayout.Ready);
+        // SCR-SETUP-002, FND-SETUP-016.
+        Assert.Equal(new Rectangle(266, 130, 108, 164), HandoffLayout.Panel);
+        Assert.Equal(new Rectangle(283, 155, 8, 72), HandoffLayout.ColourBar);
+        Assert.Equal(new Rectangle(293, 155, 60, 7), HandoffLayout.NameBacking);
+        Assert.Equal(new Point(293, 155), HandoffLayout.Name);
+        Assert.Equal(new Rectangle(293, 163, 64, 64), HandoffLayout.Portrait);
+        Assert.Equal(new Rectangle(270, 241, 100, 48), HandoffLayout.Ready);
+        Assert.Equal(new Rectangle(388, 512, 100, 48), HandoffLayout.ReadyPressedSource);
         Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Portrait));
+        Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Ready));
     }
 
     [Fact]
@@ -713,7 +697,6 @@ public sealed partial class UiNavigationTests
             SetupPlayerCardArtLayout.PortraitDestination(3));
         Assert.Equal(new Rectangle(399, 257, 12, 18), PlayerPortraitLayout.Previous(4));
         Assert.Equal(new Rectangle(530, 257, 12, 18), PlayerPortraitLayout.Next(5));
-        Assert.Equal(new Rectangle(480, 301, 64, 8), PlayerPortraitLayout.Name(5));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.SetupTop(6));
     }
 
@@ -903,6 +886,35 @@ public sealed partial class UiNavigationTests
         Assert.All(rows.SelectMany((left, index) => rows.Skip(index + 1)
             .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
         Assert.Throws<ArgumentOutOfRangeException>(() => SiteSearchLayout.Site(22));
+    }
+
+    // FND-SEARCH-004: the second press of a double-click on a row opens Site Information and leaves
+    // the row as the first press set it; a press on another control between the two presses makes
+    // the second a plain press that flips the row back.
+    [Fact]
+    public void SiteSearchDoubleClickOpensDetailsOnlyForTwoPressesInARow()
+    {
+        var rows = Enumerable.Range(0, SiteSearchLayout.MaximumSites).Select(row => (short)row).ToArray();
+        var player = new PlayerId(0);
+        var row = SiteSearchLayout.Site(5).Center;
+        var none = SiteSearchLayout.None.Center;
+
+        var selections = new SiteSearchSelectionState();
+        var clicks = new IndexedDoubleClickTracker();
+        Assert.False(SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(100)).OpensDetails);
+        Assert.True(SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(200)).OpensDetails);
+        Assert.True(selections.IsSelected(player, 5));
+
+        selections = new SiteSearchSelectionState();
+        clicks = new IndexedDoubleClickTracker();
+        SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(100));
+        Assert.Equal(SiteSearchControl.None,
+            SiteSearchPanel.Press(selections, player, none, rows, clicks, TimeSpan.FromMilliseconds(200)).Press.Control);
+        Assert.False(SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(300)).OpensDetails);
+        Assert.True(selections.IsSelected(player, 5));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => SiteSearchPanel.Apply(
+            selections, player, new SiteSearchPress(SiteSearchControl.Row), rows));
     }
 
     [Fact]

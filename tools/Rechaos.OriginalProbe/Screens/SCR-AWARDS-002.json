@@ -1,0 +1,14 @@
+{
+  "screen": "SCR-AWARDS-002",
+  "state": "The endgame of a match that ended with one player active, on the Awards tab",
+  "elements": [
+    {"element": "Endgame frame", "rect": [106, 25, 428, 410]},
+    {"element": "Tab mark", "rect": [468, 33, 8, 16]},
+    {"element": "Victory splash", "rect": [110, 30, 311, 393]},
+    {"element": "Colour fills, fill 1", "rect": [110, 30, 40, 12]},
+    {"element": "Colour fills, fill 2", "rect": [110, 42, 13, 79]},
+    {"element": "Colour fills, fill 3", "rect": [110, 121, 40, 302]},
+    {"element": "Name", "rect": [124, 44, 68, 9]},
+    {"element": "Portrait", "rect": [126, 54, 64, 64]}
+  ]
+}

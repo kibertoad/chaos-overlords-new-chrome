@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
@@ -14,6 +15,19 @@ public static class SiteSearchLayout
     public static Rectangle None => SharedPanelLayout.At(33, 48, 49, 23);
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
 
+    /// <summary>FND-SEARCH-001: a row's name is cut to its first 15 characters.</summary>
+    public const int NameCharacters = 15;
+
+    /// <summary>FND-SEARCH-001: row <paramref name="index"/>'s 20-by-14 marker icon.</summary>
+    public static Rectangle Icon(int index) => new(Site(index).Location, new Point(20, 14));
+
+    /// <summary>FND-SEARCH-001: the icon of site definition <paramref name="definition"/> in PX00150.</summary>
+    public static Rectangle IconSource(int definition)
+    {
+        if (definition is < 0 or >= MaximumSites) throw new ArgumentOutOfRangeException(nameof(definition));
+        return new Rectangle(definition % RowsPerColumn * 20, definition / RowsPerColumn * 14, 20, 14);
+    }
+
     public static Rectangle Site(int index)
     {
         if (index is < 0 or >= MaximumSites) throw new ArgumentOutOfRangeException(nameof(index));
@@ -21,6 +35,109 @@ public static class SiteSearchLayout
         // targets with Point(102 + 116 * column, 22 + 15 * row), 114, 15.
         return SharedPanelLayout.At(102 + index / RowsPerColumn * 116,
             22 + index % RowsPerColumn * 15, 114, 15);
+    }
+}
+
+/// <summary>The control of the Search panel a press lands on (FND-SEARCH-002).</summary>
+public enum SiteSearchControl
+{
+    Nothing,
+    All,
+    None,
+    Done,
+    Row
+}
+
+/// <summary>A press on the Search panel: the control it hit and, for a row, the row's index.</summary>
+public readonly record struct SiteSearchPress(SiteSearchControl Control, int Row = -1);
+
+/// <summary>A pointer press handled by the open panel, and whether it opens a row's Site Information.</summary>
+public readonly record struct SiteSearchClick(SiteSearchPress Press, bool OpensDetails);
+
+public static class SiteSearchPanel
+{
+    /// <summary>The site definition of each row the panel lists, in row order.</summary>
+    public static short[] Rows(OriginalData definitions)
+    {
+        ArgumentNullException.ThrowIfNull(definitions);
+        return definitions.Sites.OrderBy(site => site.Id)
+            .Take(SiteSearchLayout.MaximumSites).Select(site => site.Id).ToArray();
+    }
+
+    /// <summary>
+    /// FND-SEARCH-002: the control under a press, tested as the handler tests its half-open
+    /// rectangles, ALL, NONE and Done first and then the rows the panel lists.
+    /// </summary>
+    public static SiteSearchPress HitTest(Point point, int rowCount)
+    {
+        if (SiteSearchLayout.All.Contains(point)) return new(SiteSearchControl.All);
+        if (SiteSearchLayout.None.Contains(point)) return new(SiteSearchControl.None);
+        if (SiteSearchLayout.Ok.Contains(point)) return new(SiteSearchControl.Done);
+        for (var row = 0; row < Math.Min(rowCount, SiteSearchLayout.MaximumSites); row++)
+            if (SiteSearchLayout.Site(row).Contains(point)) return new(SiteSearchControl.Row, row);
+        return new(SiteSearchControl.Nothing);
+    }
+
+    /// <summary>
+    /// RULE-SEARCH-001: ALL selects every listed site and NONE clears the player's filter; a row
+    /// flips its site. A double-click on a row opens Site Information instead, which the caller
+    /// decides, and Done changes no filter.
+    /// </summary>
+    public static void Apply(
+        SiteSearchSelectionState selections,
+        PlayerId player,
+        SiteSearchPress press,
+        IReadOnlyList<short> rowSites)
+    {
+        ArgumentNullException.ThrowIfNull(selections);
+        ArgumentNullException.ThrowIfNull(rowSites);
+        switch (press.Control)
+        {
+            case SiteSearchControl.All:
+                selections.SelectAll(player, rowSites);
+                break;
+            case SiteSearchControl.None:
+                selections.Clear(player);
+                break;
+            case SiteSearchControl.Row:
+                if (press.Row < 0 || press.Row >= rowSites.Count)
+                    throw new ArgumentOutOfRangeException(nameof(press), press.Row, "A row press needs a listed row.");
+                selections.Toggle(player, rowSites[press.Row]);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// A press of the pointer on the open panel: finds the control under it and changes the
+    /// player's filter as <see cref="Apply"/> does, except for the second press of a double-click
+    /// on a row, which changes nothing and opens that row's Site Information instead
+    /// (FND-SEARCH-004). The caller closes the panel on Done and opens Site Information when
+    /// <see cref="SiteSearchClick.OpensDetails"/> is set.
+    /// </summary>
+    public static SiteSearchClick Press(
+        SiteSearchSelectionState selections,
+        PlayerId player,
+        Point point,
+        IReadOnlyList<short> rowSites,
+        IndexedDoubleClickTracker clicks,
+        TimeSpan time)
+    {
+        ArgumentNullException.ThrowIfNull(rowSites);
+        ArgumentNullException.ThrowIfNull(clicks);
+        var press = HitTest(point, rowSites.Count);
+        // FND-SEARCH-004: the original opens Site Information on the window's double-click, which
+        // Windows reports only for a second press close to the first, so a press on ALL, NONE or
+        // no control between two presses of a row keeps the second a plain press.
+        if (press.Control != SiteSearchControl.Row)
+        {
+            clicks.Cancel();
+        }
+        else if (clicks.Register(press.Row, time))
+        {
+            return new SiteSearchClick(press, OpensDetails: true);
+        }
+        Apply(selections, player, press, rowSites);
+        return new SiteSearchClick(press, OpensDetails: false);
     }
 }
 
@@ -123,12 +240,9 @@ public static class CitySiteMarkerProjection
         ArgumentNullException.ThrowIfNull(marker);
         if (marker.SiteDefinitionId is < 0 or >= SiteSearchLayout.MaximumSites)
             throw new ArgumentOutOfRangeException(nameof(marker));
-        return new Rectangle(
-            marker.SiteDefinitionId % SiteSearchLayout.RowsPerColumn * 20,
-            marker.SiteDefinitionId / SiteSearchLayout.RowsPerColumn * 14
-                + (marker.Controlled ? 0 : 28),
-            20,
-            14);
+        // The uncontrolled icons sit in the two rows below the controlled ones Search draws.
+        var icon = SiteSearchLayout.IconSource(marker.SiteDefinitionId);
+        return marker.Controlled ? icon : icon with { Y = icon.Y + 28 };
     }
 
     public static Rectangle Destination(CitySiteMarker marker)

@@ -93,6 +93,20 @@ public sealed class AiPolicyTests
         Assert.Equal(passiveAction, match.AiPlanning.PlannedAction(player, 0));
     }
 
+    // DEV-AI-007 switched off lets the original planner's Moves go to any sector; the expansion,
+    // the rebuild's own (DEV-AI-003), still steps only to a neighbour. Every neighbour of sector 0
+    // is owned here, so the only unowned destinations are further away.
+    [Fact]
+    public void AdvancedExpertExpansionStaysWithTheNeighboursWithDevAi007Off()
+    {
+        var match = IdleMatch(AiPolicyMode.Advanced, AiDifficulty.CrimeLord,
+            force: 10, ownsStartingSector: true, gangCount: 2,
+            computerMovesToNeighboursOnly: false, ownedNeighbours: true);
+
+        Assert.DoesNotContain(AiPolicyPlanner.Plan(match, new PlayerId(0)),
+            command => command.Action == GangAction.Move);
+    }
+
     [Fact]
     public void PolicyContributesToCanonicalHash()
     {
@@ -121,6 +135,39 @@ public sealed class AiPolicyTests
         replay.Position = 0;
         var replayed = MatchReplaySerializer.LoadAndReplay(replay, data);
         Assert.Equal(AiPolicyMode.Advanced, replayed.Setup.AiPolicy);
+    }
+
+    // DEV-AI-007 and DEV-AI-008: each setting belongs to the match, so the fingerprint, a save and
+    // a replay journal carry it, and switching one off leaves the other on.
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void ComputerSettingsRoundTripThroughSaveAndReplay(
+        bool computerMovesToNeighboursOnly, bool computerHiresWhereHumansCan)
+    {
+        var match = IdleMatch(AiPolicyMode.Original,
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
+        var data = match.Definitions;
+        Assert.NotEqual(MatchStateHasher.ComputeFingerprint(IdleMatch(AiPolicyMode.Original)),
+            MatchStateHasher.ComputeFingerprint(match));
+        using var save = new MemoryStream();
+        NativeSaveSerializer.Save(save, match);
+        save.Position = 0;
+
+        AssertSettings(NativeSaveSerializer.Load(save, data).Setup);
+
+        var recorder = new MatchReplayRecorder(match);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        AssertSettings(MatchReplaySerializer.LoadAndReplay(replay, data).Setup);
+
+        void AssertSettings(MatchSetup setup)
+        {
+            Assert.Equal(computerMovesToNeighboursOnly, setup.ComputerMovesToNeighboursOnly);
+            Assert.Equal(computerHiresWhereHumansCan, setup.ComputerHiresWhereHumansCan);
+        }
     }
 
     [Fact]
@@ -191,7 +238,10 @@ public sealed class AiPolicyTests
         int force = 5,
         bool ownsStartingSector = false,
         int gangCount = 1,
-        int rivalSector = 1)
+        int rivalSector = 1,
+        bool computerMovesToNeighboursOnly = true,
+        bool ownedNeighbours = false,
+        bool computerHiresWhereHumansCan = true)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -201,7 +251,9 @@ public sealed class AiPolicyTests
         ];
         var setup = new MatchSetup(
             ScenarioId.Greed, GameDuration.SixMonths, 31, setups,
-            aiMentality: difficulty, aiPolicy: policy);
+            aiMentality: difficulty, aiPolicy: policy,
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
         MatchPlayerState[] players =
         [
             new(setups[0], 50,
@@ -217,7 +269,9 @@ public sealed class AiPolicyTests
                 new MatchSiteState(0, 0, 7),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ], owner: ownsStartingSector && id == 0 ? setups[0].Id : null))
+            ], owner: (ownsStartingSector && id == 0) || (ownedNeighbours && id is 1 or 8 or 9)
+                ? setups[0].Id
+                : null))
             .ToArray();
         var match = new MatchState(data, setup, players, sectors);
         match.FinishUpkeep();

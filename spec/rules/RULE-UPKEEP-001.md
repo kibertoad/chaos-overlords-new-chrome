@@ -1,10 +1,10 @@
 ---
 id: RULE-UPKEEP-001
 title: Upkeep charges each active gang its Upkeep and pays each owned sector's Cash byte, player by player
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UPKEEP-001, SRC-MANUAL-GOG]
+evidence: [FND-UPKEEP-001, SRC-MANUAL-GOG, EXP-TURN-059]
 conflicting: []
 split_with: []
 related: [RULE-SITE-001, FMT-STATE-001, FMT-STATE-002, FMT-DATA-002]

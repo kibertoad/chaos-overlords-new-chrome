@@ -48,7 +48,7 @@ internal static class OriginalAiHirePlacementRules
         // The executable's bounded wrapper clamps a zero bound to one. It
         // therefore still consumes three raw rand() calls before the empty
         // ordinal scan leaves the destination at -1.
-        var ordinal = random.NextInclusive(Math.Max(1, candidates.Count));
+        var ordinal = random.NextInclusive(candidates.Count);
         var target = candidates.Count == 0 ? -1 : candidates[ordinal - 1];
         return new OriginalAiHirePlacementResult(target, WritesDestination: true);
     }

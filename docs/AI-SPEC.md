@@ -351,17 +351,18 @@ explicit M6 gap rather than an unmeasured claim.
    improvement it chooses Chaos unless another gang in the sector has previous
    Chaos, in which case it Hides. The intentional second selector call and its
    independent tie RNG are replay-recorded.
-   Family 12's complete handler branches first on current-sector visibility.
-   With no visible opponent it prefers weapon, armor, and maximum-Detect
+   Family 12's complete handler branches first on the player's cached weight
+   of the current sector (RULE-AI-030).
+   At weight 0 it prefers weapon, armor, and maximum-Detect
    miscellaneous upgrades (selector 0x74, FND-AI-055), using raw-cost weapon/armor cooldowns, then Heals
    below Force 10 at effective Heal `-3` or better, and otherwise steps toward
-   its player's roster-slot-0 gang through the encoded mode (FND-AI-070). With visible opponents it
-   makes up to five bounded target draws, preserves the human-pool/full-pool
+   its player's roster-slot-0 gang through the encoded mode (FND-AI-070). At any other weight it
+   makes up to five bounded target draws, from the human players' gangs only at
+   weight 10 in a hostile human's sector and from every visible gang otherwise
+   (EXP-TURN-080), preserves the human-pool/full-pool
    ordinal asymmetry, and attacks the final target even when every combat
    comparison fails. Greed's final three turns overwrite the result with
-   Terminate. An empty human-only actual-target pool consumes one safe bounded
-   draw and preserves None, preventing a zero-range RNG failure; the reference
-   outcome for that sparse multiplayer edge is not yet runtime-corroborated.
+   Terminate.
    Exact actions, targets, cooldowns, and RNG consumption are live and
    replay-recorded.
    Family 6 is also live. An uncontested gang routes toward the first visible

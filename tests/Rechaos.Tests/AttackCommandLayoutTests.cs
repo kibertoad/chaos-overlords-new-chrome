@@ -52,6 +52,27 @@ public sealed class AttackCommandLayoutTests
     }
 
     [Fact]
+    public void TargetCardsFollowTheListBuilder()
+    {
+        // SCR-ATTACK-001, FND-ATTACK-005: card n is composed at panel-local
+        // (135 + 68 * (n % 3), 16 + 90 * (n / 3)); the panel sits at (104,124).
+        Assert.Equal(new Rectangle(0, 299, 66, 87), AttackCommandLayout.TargetCardSource);
+        Assert.Equal(new Rectangle(239, 140, 66, 87), AttackCommandLayout.TargetCard(0));
+        Assert.Equal(new Rectangle(375, 230, 66, 87), AttackCommandLayout.TargetCard(5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => AttackCommandLayout.TargetCard(6));
+        for (var cell = 0; cell < AttackCommandLayout.VisibleTargets; cell++)
+        {
+            var card = AttackCommandLayout.TargetCard(cell);
+            Assert.Equal(new Point(card.X + 1, card.Y + 1), AttackCommandLayout.TargetPortrait(cell).Location);
+            Assert.Equal(new Point(card.X + 1, card.Y + 66), AttackCommandLayout.TargetItem(cell, 0).Location);
+            Assert.Equal(new Rectangle(card.X + 2, card.Y + 58, 62, 5),
+                AttackCommandLayout.TargetForceBackground(cell));
+            Assert.Equal(new Rectangle(card.X + 3, card.Y + 59, 60, 3),
+                AttackCommandLayout.TargetForceTrack(cell));
+        }
+    }
+
+    [Fact]
     public void TargetPortraitsAndItemsFollowTheDoubleClickRectangles()
     {
         // SCR-ATTACK-001, FND-ATTACK-004: portrait (136 + 68 * (k % 3), 17 + 90 * (k / 3)), and
@@ -64,6 +85,15 @@ public sealed class AttackCommandLayoutTests
         Assert.Equal(new Rectangle(240, 206, 20, 20), AttackCommandLayout.TargetItem(0, 0));
         Assert.Equal(new Rectangle(398, 296, 20, 20), AttackCommandLayout.TargetItem(5, 1));
         Assert.Equal(new Rectangle(420, 296, 20, 20), AttackCommandLayout.TargetItem(5, 2));
+    }
+
+    [Fact]
+    public void TargetItemBoxesFollowTheDrawRectangles()
+    {
+        // SCR-ATTACK-001, FND-ATTACK-007: the weapon box is 20 wide, the armor and misc boxes 19.
+        Assert.Equal(new Rectangle(240, 206, 20, 20), AttackCommandLayout.TargetItemBox(0, 0));
+        Assert.Equal(new Rectangle(398, 296, 19, 20), AttackCommandLayout.TargetItemBox(5, 1));
+        Assert.Equal(new Rectangle(420, 296, 19, 20), AttackCommandLayout.TargetItemBox(5, 2));
     }
 
     [Fact]

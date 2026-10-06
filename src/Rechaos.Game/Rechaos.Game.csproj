@@ -7,8 +7,10 @@
     <Company>kibertoad</Company>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="RefurbishedDinosaurs.Core" Version="1.3.0" />
     <ProjectReference Include="../Rechaos.Core/Rechaos.Core.csproj" />
     <ProjectReference Include="../Rechaos.Multiplayer/Rechaos.Multiplayer.csproj" />
+    <PackageReference Include="RefurbishedDinosaurs.Media.Playback" Version="1.0.0" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
     <!-- DPAPI, for sealing the multiplayer membership token in the local recovery file to the
          current user account. Windows only at runtime; MultiplayerRecoveryStore guards the call. -->

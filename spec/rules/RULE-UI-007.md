@@ -4,7 +4,7 @@ title: The pointer shape
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-034, FND-UI-020, FND-UI-023, FND-EXE-004]
+evidence: [FND-UI-034, FND-UI-020, FND-UI-023, FND-EXE-004, EXP-UI-022]
 conflicting: []
 split_with: []
 related: []
@@ -13,8 +13,8 @@ related: []
 ## Summary
 
 The pointer is always a stock Windows cursor: the arrow, or the hourglass while
-the game sets up a city, loads a game or resolves a turn. Every pointer
-message the window receives puts the arrow back.
+the game sets up a city, loads a game, plans a computer's turn or resolves a
+turn. Every pointer message the window receives puts the arrow back.
 
 ## When it runs
 
@@ -63,6 +63,11 @@ Every call in the game's code passes `force` 1; only `on_pointer_query` passes
 0 (FND-UI-023). The music selector also shows the hourglass while it sends the
 play command (RULE-AUDIO-001).
 
+In a local match the stretches of work from a Done press to the next planning
+entry follow one another with an arrow and the next hourglass between them and
+no `roll` in between, so the player sees the hourglass from the press until the
+planning entry shows the arrow (EXP-UI-022).
+
 ## What the sources say
 
 None of the sources describes the pointer.
@@ -73,4 +78,7 @@ None known.
 
 ## Open questions
 
-- How long the hourglass is actually visible needs a run of the original.
+- Whether a message is dispatched between the arrow that ends one stretch of
+  work and the hourglass of the next, which would let a moving pointer show the
+  arrow for that moment, is not known (EXP-UI-022).
+- No run has loaded a game.

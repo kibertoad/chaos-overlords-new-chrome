@@ -16,12 +16,21 @@ the deviation, never the option it is carried by: when the deviation is to start
 that the original starts on, the Setting item says the setting is inverted and which value is the
 original's.
 
+A `mandatory` deviation may have a Replaces item directly after Departs from, naming the entries of
+Departs from it replaces entirely, so that nothing of them is left to compare with the original. A
+deviation may have a Tests item between Justification (or Default) and Dropped. It lists the test
+files that check the rebuild does what the Reason says; each of them cites the deviation's ID and
+runs without the original's files. A complete parity row that a Replaces item names has no tests
+of its own, and it is `deviated` once every `mandatory` deviation it lists has a Tests item
+(docs/DECISIONS.md, 2026-10-06).
+
 Dated product decisions behind many of these entries, with their full reasoning, are in
 [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## DEV-HELP-001
 
 - Departs from: FMT-HELP-001, SCR-UI-009, RULE-HELP-001
+- Replaces: RULE-HELP-001
 - Reason: The rebuild shows the help topics in its own viewer, opened with F1 or from the menu.
   In the original, Help Topics does nothing and no key opens help: the call that would start the
   Windows help program on the help file is never reached (RULE-HELP-001). The viewer reads the
@@ -34,6 +43,8 @@ Dated product decisions behind many of these entries, with their full reasoning,
   original would have started is no longer part of Windows, so a viewer of the rebuild's own is
   the only way to show the file, and a setting that brings back an inert menu item gives the
   player nothing.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs,
+  tests/Rechaos.Tests/ExtractedHelpStoreTests.cs
 - Dropped: no
 
 ## DEV-HELP-002
@@ -100,6 +111,7 @@ Made a setting that starts off on 2026-09-25, and switched to start on on 2026-0
 ## DEV-AUDIO-001
 
 - Departs from: RULE-AUDIO-010
+- Replaces: RULE-AUDIO-010
 - Reason: The rebuild does not run the original's startup drive check or its unused search of the
   CD drives. It plays the music tracks from the files of the GOG release (`MUSIC/TrackNN.ogg`) and
   never looks for a drive or a disc.
@@ -108,18 +120,27 @@ Made a setting that starts off on 2026-09-25, and switched to start on on 2026-0
 - Justification: The check always passes and the search is never called, so neither changes any
   game state. Its only effect in the original, the prefix of the movie paths, is replaced by the
   rebuild's own asset paths. A setting would have nothing to switch.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs
 - Dropped: no
 
 ## DEV-SAVE-001
 
 - Departs from: FMT-SAVE-001, FMT-SAVE-002
+- Replaces: FMT-SAVE-001, FMT-SAVE-002
 - Reason: The rebuild neither reads nor writes the original's save files. It keeps its own save
-  format, with a version number and bounded readers.
+  format, with a version number and bounded readers. Each player's selected sector
+  (`cursor_sectors`, FND-SAVE-003) goes into the small file the save browser keeps beside each
+  save, the autosave and the crash-recovery save, and a load restores it from there. A save whose
+  companion file is missing or belongs to another file, and a load that falls back to the backup
+  generation, start every player on the sector of its roster slot 0, as a new match starts.
+  An online match the client takes up or resumes starts every player on that sector too, since
+  the server keeps no selection (DEV-NET-001).
 - Setting: None
 - Default: mandatory
 - Justification: What a player can do in a match is the same whichever format holds it, and the
   rebuild's format adds a version number and bounded readers. A setting would need a reader and
   writer for the original's format, which is a separate scope decision (2026-09-10).
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs
 - Dropped: no
 
 Decided 2026-09-10 ("Save compatibility scope").
@@ -442,7 +463,7 @@ The correction applied under the Original AI policy as well. Decided 2026-09-17.
 
 ## DEV-AI-002
 
-- Departs from: RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-MOVE-002, RULE-EQUIP-001, RULE-EVENT-014, RULE-INFLUENCE-001
+- Departs from: RULE-AI-002, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031, RULE-MOVE-002, RULE-EQUIP-001, RULE-EVENT-014, RULE-INFLUENCE-001, RULE-SITE-001
 - Reason: A computer player's planned action becomes a command only when a human could give the
   same order and the planner's running total of this turn's costs leaves cash for it; any other
   planned action is kept in the planning state and gives the gang no command. The original stores
@@ -450,7 +471,8 @@ The correction applied under the Original AI policy as well. Decided 2026-09-17.
   into a full sector goes to the six-gang repair (RULE-MOVE-002), an Equip the player can no
   longer pay for is refused when it resolves (RULE-EQUIP-001) and leaves the player a cash report
   (RULE-EVENT-014), and an Influence in a sector the player does not control rolls with no owner
-  test (RULE-INFLUENCE-001). In 21 computer-only
+  test (RULE-INFLUENCE-001, EXP-TURN-083), and a site it completes in a neutral sector counts in
+  the sector record (RULE-SITE-001). In 21 computer-only
   matches of 26 turns those three kinds came to 478 orders, and no other planned action a human
   could not order was seen. A fourth kind follows from `local_tech_cap` reading the research
   level of a sector whoever owns it (RULE-AI-026): a Research above the Tech limit the Research
@@ -543,8 +565,10 @@ started with.
   Move when the planned action becomes a command, as DEV-AI-002 does with the other planned
   actions a human could not order, so the gang has no order that turn and keeps its planning
   history.
-- Setting: None
-- Default: mandatory
+- Setting: `--original-computer-moves` on the game's command line, inverted (the flag switches the
+  deviation off for the local matches started in that session). No screen offers it, and an
+  online match keeps the deviation on.
+- Default: on
 - Justification: The jump comes from a pair left over from another gang's search, which the
   selector was not written to return, and it lets a computer player's gang do what no human's can:
   the same rules apply to every player. It costs no measurable balance. Such Moves come to about
@@ -552,8 +576,40 @@ started with.
   played to turn 208 from the same seeds with a planner-played human seat that could not jump, the
   human seat survived to the end in 45% of the matches when the computer players could jump and in
   47% when they could not, a difference within the matches' noise (95% interval of 2.8 points
-  either way), and its turns survived and sectors held did not change beyond noise either. A
-  setting would keep an unfair advantage that makes no difference a player could notice.
+  either way), and its turns survived and sectors held did not change beyond noise either. Since
+  no player can notice the difference, the setting stays off the Options screen; the flag serves
+  the replays of recorded runs, which run with it switched off, and a player who wants the
+  original's Moves.
+- Dropped: no
+
+## DEV-AI-008
+
+- Departs from: RULE-AI-012, RULE-HIRE-001
+- Reason: A computer player's hire goes only to a sector the player controls or holds a gang in, as
+  a human's does. The original's hire resolver has no such test, so a hire the computer planner
+  places anywhere else is carried out: the new gang's Force is rolled and the gang appears there
+  (RULE-HIRE-001, EXP-TURN-090). The rebuild drops such a hire when the planner makes it, so the
+  player hires nothing that turn and the offer stays in its pool.
+- Setting: `--original-computer-hires` on the game's command line, inverted (the flag switches the
+  deviation off for the local matches started in that session). No screen offers it, and an
+  online match keeps the deviation on.
+- Default: on
+- Justification: The same rules apply to every player, and the difference costs no measurable
+  balance. The original tests the owner where each hire is placed instead of in the resolver:
+  the hire panel accepts a drop only on a sector the player owns or holds a living gang in
+  (SCR-HIRE-002), and the two random modes of the computer's own destination helper choose only
+  among such sectors (RULE-AI-012). The planner's encoded sector passes neither place, so the
+  hire EXP-TURN-090 reaches falls through a gap between them. No recorded or simulated match
+  reaches it without the probe's written families, so no player meets it or can build a strategy
+  on it. In 500 pairs of four-year matches, 50 seeds of every scenario played from the same
+  seeds with a planner-played human seat that keeps the human hire rule, no computer hire went to
+  such a sector, and every pair ended the same way with the deviation on and off: computer players
+  won 164 of the 438 matches that ended, and the human seat survived in 173. The other 62 pairs,
+  untimed matches still running at the simulation's turn limit, stopped at the same turn with the
+  same events either way. EXP-TURN-090 reaches such a hire only after the probe writes family 5
+  into every computer gang. Since no player can notice the difference, the setting stays off the
+  Options screen; the flag serves the replays of recorded runs, which run with it switched off,
+  and a player who wants the original's hires.
 - Dropped: no
 
 ## DEV-EVENT-001
@@ -593,7 +649,8 @@ it.
 
 - Departs from: SCR-SEARCH-001
 - Reason: The keyboard moves between Search rows and toggles them. The original's handler reacts
-  only to Enter and Execute.
+  only to Enter and Execute. A gold border marks the keyboard's row once an arrow key has moved
+  it or Space has flipped it; until then the panel draws what the original draws.
 - Setting: None
 - Default: mandatory
 - Justification: It adds keys, and Enter and Execute work as before.
@@ -667,7 +724,7 @@ it.
 
 ## DEV-UI-006
 
-- Departs from: SCR-UI-003, SCR-FINANCE-001
+- Departs from: SCR-UI-003, SCR-UI-004, SCR-FINANCE-001
 - Reason: The city console shows next turn's projected cash beside the current Cash, as
   `CASH 20 [18] (+1)`: cash, the cash left after queued Bribe and Equip prices, and the change
   over the whole cycle, with a breakdown on hover.
@@ -682,7 +739,7 @@ it.
 
 ## DEV-UI-007
 
-- Departs from: SCR-UI-004, RULE-UI-011
+- Departs from: SCR-UI-003, SCR-UI-004, RULE-UI-011
 - Reason: Hovering the Tolerance value shows the range the player's queued Chaos can reach, and
   the value turns orange when that range can set off a Crackdown.
 - Setting: None
@@ -740,6 +797,8 @@ it.
 - Default: mandatory
 - Justification: Saving and loading stay available wherever the original allows them, and slots with
   names replace a file dialog that the original's menu bar opens.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs,
+  tests/Rechaos.Tests/SaveSlotCatalogTests.cs
 - Dropped: no
 
 ## DEV-UI-012
@@ -792,27 +851,34 @@ Whether the original shows the count is not recorded.
 ## DEV-UI-015
 
 - Departs from: RULE-UI-013
-- Reason: A second copy of the rebuild starts and runs beside the first, and a file named on the
-  command line is not opened. The original refuses a second copy, bringing the running one to the
-  front, and opens a save named on its command line.
+- Reason: A second copy of the rebuild starts and runs beside the first. The original refuses a
+  second copy and brings the running one to the front.
 - Setting: None
 - Default: mandatory
-- Justification: A second copy is how one computer holds two seats of an online match. Nothing
-  associates saves with the program, and the save browser reaches every save (DEV-UI-011), so the
-  command line has nothing to open.
+- Justification: Refusing a second copy only takes a choice from the player. Nothing in a match
+  depends on there being one copy: the copies share only the rolling autosave, which a file guard
+  keeps one writer at a time, and each keeps its own match. A second copy is also how one computer
+  holds two seats of an online match. A setting that restored the refusal would offer nothing
+  but the loss of that choice.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs,
+  tests/Rechaos.Tests/RollingAutoSaveTests.cs
 - Dropped: no
 
 ## DEV-UI-016
 
 - Departs from: RULE-UI-013, RULE-UI-014, SCR-UI-009, FMT-DATA-004
+- Replaces: FMT-DATA-004
 - Reason: Only the 16-bit image set is drawn, and there is no Thousands of Colors option. The
   original draws the same set at any display deeper than 8 bits, and loads the 256-colour palette
-  of `DATA/CLT00002` and the 8-bit set only on an 8-bit display, so the rebuild never reads either.
+  of `DATA/CLT00002` and the 8-bit set only on an 8-bit display, so the game never reads either.
+  The extractor still copies both into the asset pack, and decodes the 8-bit set there, where
+  nothing loads them.
 - Setting: None
 - Default: mandatory
 - Justification: The original defaults to the 16-bit set. The 8-bit set holds the same pictures
   reduced for 256-colour displays, which no current display is, so a setting would switch to a
   poorer copy of the same pictures.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs
 - Dropped: no
 
 ## DEV-UI-017
@@ -825,11 +891,16 @@ Whether the original shows the count is not recorded.
 - Justification: The rolling autosave keeps the match as it stood at the start of the turn, and
   orders given since then can be saved from the Escape menu before closing. The rebuild's saves go
   to named slots, so the original's save dialog has no counterpart to offer.
-- Dropped: no
+- Dropped: 2026-10-06, the rebuild now asks as the original does (RULE-UI-015): closing the window
+  or quitting to the title while the match changed since it was last saved or loaded offers to save
+  first, cancel, or leave without saving. Asking only when something would be lost costs a player
+  nothing, and the autosave holds only the start of the turn. The autosave is still written on the
+  way out.
 
 ## DEV-UI-018
 
 - Departs from: RULE-UI-014, FMT-STATE-009
+- Replaces: FMT-STATE-009
 - Reason: Keyboard and mouse state is read once per frame, 60 times a second, and each screen acts
   on what changed since the last frame. There is no event queue, accelerator table or menu command
   event; the options are on the Options screen. A double-click is two presses on the same target
@@ -838,17 +909,19 @@ Whether the original shows the count is not recorded.
 - Default: mandatory
 - Justification: It changes how commands are reached and leaves what they do alone. Every option
   and command the original's event step handles stays reachable.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs
 - Dropped: no
 
 ## DEV-UI-019
 
 - Departs from: SCR-UI-009, SCR-UI-002, SCR-UI-001, RULE-UI-013
+- Replaces: SCR-UI-009
 - Reason: The rebuild has no menu bar. Its commands are reached elsewhere: saving, loading and
   quitting from the Escape menu (DEV-UI-011), the options from the Options screen, Help Topics
   with F1 (DEV-HELP-001), full screen with F11 (DEV-OPTIONS-003), and About, which shows the
   credits screen, with Shift+F1. On the title screen, buttons for New Game, Load, Online,
-  Options, Help and Quit stand in for the menu, drawn over the title art with the rebuild's name,
-  its credit line and a box for notices left by the previous screen. Ctrl+H and Ctrl+J open the
+  Options, Help, Intro and Quit stand in for the menu, drawn over the title art with the rebuild's
+  name, its credit line and a box for notices left by the previous screen. Ctrl+H and Ctrl+J open the
   Online screen, where hosting and joining happen, and Enter and F9 also start a new game and
   open a saved one. A left press on the title outside the buttons does nothing, where the
   original's title loop takes a press anywhere as New Game.
@@ -859,6 +932,8 @@ Whether the original shows the count is not recorded.
   title buttons are the only way to Online and Options before a match, and the clicks that skip
   the intro movies land on the title; if a press anywhere started a new game, those clicks would
   carry a player past the menu into setup. New Game stays one button or one key away.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs,
+  tests/Rechaos.Tests/ProgramShellParityTests.cs
 - Dropped: no
 
 ## DEV-UI-020
@@ -884,7 +959,9 @@ Whether the original shows the count is not recorded.
 - Reason: The order menus of a gang card and of the group order strip are a panel the rebuild
   draws at (248,50,174,400), listing the same orders, where the original opens a Windows popup
   menu at the card's corner or at (290,65). An order the rules refuse for the gang is refused when
-  it is chosen, with a message on the console.
+  it is chosen, with a message on the console. The panel opens and closes without sliding and
+  without a sound, as the popup does (FND-UI-057), and the order panel chosen from it slides in
+  with the panel-open sound (RULE-UI-003).
 - Setting: None
 - Default: mandatory
 - Justification: The rebuild draws the whole game in its own window without the Windows frame
@@ -896,14 +973,21 @@ Whether the original shows the count is not recorded.
 ## DEV-UI-022
 
 - Departs from: SCR-UI-004
-- Reason: Dragging the portrait of one of the player's gang cards onto the 3-by-3 display gives
-  that gang a Move to the neighbouring sector it is dropped on, or a recurring Control when it is
-  dropped on its own sector. The sectors the gang may move to are highlighted during the drag.
+- Reason: The original's drag of a gang card's portrait (FND-UI-044) gives a one-off Move to an
+  enabled neighbour of the nine-sector display or a recurring Influence of an unfinished site of
+  an owned sector (FND-TURN-009). The rebuild's drag also gives an Attack when dropped on an enemy
+  gang's card and a recurring Control when dropped on the gang's own sector, highlights the
+  sectors the gang may move to while it is dragged, and drops the drag without an order on Escape
+  or a right press. The hold itself, from the press until the left button comes up, and the
+  distance the pointer moves before the drag starts are the original's.
 - Setting: None
 - Default: mandatory
-- Justification: It adds a shortcut to orders the card's menu already gives, and each drop is
-  validated as the menu's order would be. The original has a second input path for gang orders
-  that the spec has not read (RULE-TURN-005), so this drag is the rebuild's own until it is.
+- Justification: Each extra drop gives an order the card's menu already gives, validated as the
+  menu's order would be, so the drag changes how an order is entered and never which orders are
+  possible or what they do; the original's Move and Influence drops are kept. A setting could only
+  take the extra drop targets, the highlight and the cancel away, which no rule or strategy
+  depends on. The original's drop rules have not yet been compared case by case with the
+  rebuild's.
 - Dropped: no
 
 ## DEV-UI-023
@@ -937,18 +1021,23 @@ Whether the original shows the count is not recorded.
 
 ## DEV-GFX-001
 
-- Departs from: RULE-GFX-002, RULE-UI-014
-- Reason: The 640-by-460 drawing area is drawn into a resizable window, scaled by the largest
-  whole multiple up to 2 that fits, and letterboxed. Full screen is a borderless window at the
-  desktop's mode in 32-bit colour, with no menu bar above the area, and it stays open when it
-  loses focus. The original sizes a window under the Windows menu bar, or switches the display to
-  640 by 480 at 8 or 16 bits and minimizes itself when it loses focus.
+- Departs from: RULE-GFX-002, RULE-UI-013, RULE-UI-014
+- Replaces: RULE-GFX-002
+- Reason: The 640-by-460 drawing area is drawn into a resizable window. The window opens at the
+  largest whole multiple of the area, up to 2, that fits in nine tenths of the display; a resized
+  window draws the area at the largest scale that fits, whole or not, and letterboxes it. Full
+  screen is a borderless window at the desktop's mode in 32-bit colour, with no menu bar above the
+  area, and it stays open when it loses focus. The original sizes a window under the Windows menu
+  bar, or switches the display to 640 by 480 at 8 or 16 bits and minimizes itself when it loses
+  focus.
 - Setting: None
 - Default: mandatory
-- Justification: Every pixel of the drawing area is the original's, repeated at a whole multiple.
-  At one to one the area is a small patch on a current display, and many current drivers no longer
-  offer 640 by 480 at 8 or 16 bits, so a mode-switch setting would offer a mode the display may
-  refuse. No rule depends on the window.
+- Justification: Every pixel of the drawing area is the original's. The window opens at a whole
+  multiple, which keeps each pixel square, and only a window the player resizes scales by a
+  fraction. At one to one the area is a small patch on a current display, and many current
+  drivers no longer offer 640 by 480 at 8 or 16 bits, so a mode-switch setting would offer a mode
+  the display may refuse. No rule depends on the window.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs
 - Dropped: no
 
 ## DEV-GFX-002
@@ -971,25 +1060,34 @@ Whether the original shows the count is not recorded.
 - Departs from: RULE-TIMER-004, RULE-UI-008, RULE-UI-003
 - Reason: The panel slide takes its step from a fixed benchmark of 84 copies a second where the
   original measures the machine for one second at startup. Presentation ticks are counted from the
-  game clock, so a tick that falls during a long frame is counted rather than lost.
+  game clock, so a tick that falls during a long frame is counted rather than lost. The ticks a
+  pointer hold or a soundtrack fade keeps from the event pump, or a hold keeps from a panel's own
+  loop, are dropped as in the original (FND-UI-046, FND-UI-047, FND-AUDIO-017).
 - Setting: None
 - Default: mandatory
 - Justification: The original's slide speed depends on the machine it runs on, which AGENTS.md
-  lets the rebuild fix; 84 copies a second gives the original's 16-pixel step. A tick is lost in
-  the original only when the machine stalls, and no rule reads the ticks.
+  lets the rebuild fix; 84 copies a second gives the original's 16-pixel step. Apart from a
+  pointer hold and a soundtrack fade, which the rebuild reproduces, a tick is lost in the original
+  only when the machine stalls, and no rule reads the ticks.
 - Dropped: no
 
 ## DEV-OPTIONS-001
 
 - Departs from: RULE-OPTIONS-001, RULE-OPTIONS-002, BUG-OPTIONS-001, BUG-OPTIONS-002
+- Replaces: RULE-OPTIONS-002
 - Reason: The original opens its registry key read-only for loading and for writing, so no option
   is ever saved, and a missing value takes the previous value's data from a shared buffer. The
-  rebuild writes a checked per-user file in one step and falls back to the default for each
-  missing field.
+  rebuild writes a checked per-user file in one step. A file that is missing, unreadable or of an
+  unknown version, or that lacks a field its version requires, is read as the defaults as a whole,
+  so no option takes another's value. A field a later version added takes its own default when an
+  older file is upgraded, and the lobby presentation, Intro only once and the preferred scenario,
+  which a file of the current version may leave out, take their own defaults when it does.
 - Setting: None
 - Default: mandatory
 - Justification: The Options menu was written to keep the player's choices, and the original loses
   them only because of the two bugs. Nobody gains from choosing the options again at every launch.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs,
+  tests/Rechaos.Tests/GamePreferencesStoreTests.cs
 - Dropped: no
 
 ## DEV-OPTIONS-002
@@ -1020,6 +1118,7 @@ Whether the original shows the count is not recorded.
 ## DEV-NET-001
 
 - Departs from: SCR-NET-001, SCR-NET-002, SCR-NET-003, SCR-NET-004, SCR-NET-005, RULE-COMLINK-001, FMT-SAVE-001, SCR-UI-003
+- Replaces: SCR-NET-001, SCR-NET-002, SCR-NET-003, SCR-NET-004, SCR-NET-005
 - Reason: The original's network play, its lobbies, its protocols and its WinSock, TAPI and serial
   paths are not reproduced. Online play uses a new coordination server, so no Comlink message is
   sent to or received from another computer in the original's form, and the network form of the
@@ -1030,6 +1129,7 @@ Whether the original shows the count is not recorded.
 - Justification: The original's WinSock, TAPI and serial paths cannot reach anything a current
   player can connect to, so there is nothing to keep, and the coordination server is what makes
   online play possible at all.
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs
 - Dropped: no
 
 Decided 2026-09-10 ("Networking scope").

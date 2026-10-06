@@ -1,0 +1,11 @@
+{
+  "screen": "SCR-EVENT-001",
+  "state": "A planning entry of player 0 with the Last Turn Events panel open on its first page",
+  "elements": [
+    {"element": "Last Turn Events panel", "rect": [0, 0, 640, 460]},
+    {"element": "Page number", "rect": [138, 137, 12, 7]},
+    {"element": "Page count", "rect": [174, 137, 12, 7]},
+    {"element": "Illustration", "rect": [198, 135, 242, 158]},
+    {"element": "Footer backing", "rect": [226, 298, 210, 16]}
+  ]
+}

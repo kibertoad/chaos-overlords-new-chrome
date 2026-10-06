@@ -22,6 +22,7 @@ public sealed partial class ChaosGame
         DrawTickedPresentation(GraphicsDevice.Viewport);
         base.Draw(gameTime);
         CaptureRequestedScreenshot();
+        CaptureReferenceFrame();
     }
 
     /// <summary>

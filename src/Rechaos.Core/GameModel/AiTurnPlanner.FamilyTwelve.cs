@@ -9,12 +9,15 @@ public static partial class AiTurnPlanner
         int gangSlot,
         FamilyPlanningSnapshot snapshot)
     {
+        // RULE-AI-030: the handler branches on the player's cached weight of the sector.
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        if (visible.Count == 0)
+        var visibleWeight = state.AiPlanning.SectorWeight(playerId, gang.SectorId);
+        if (visibleWeight == 0)
             PrepareFamilyTwelveUncontestedCommand(
                 state, playerId, gang, gangSlot, snapshot);
         else
-            PrepareFamilyTwelveAttack(state, playerId, gang, gangSlot, visible);
+            PrepareFamilyTwelveAttack(
+                state, playerId, gang, gangSlot, visible, visibleWeight);
 
         TerminateForGreed(state, playerId, gangSlot);
     }
@@ -61,13 +64,14 @@ public static partial class AiTurnPlanner
             state.AiPlanning.SetPlannedAction(
                 playerId, gangSlot, GangAction.Equip,
                 new AiActionTarget(checked((byte)miscellaneousId), 0));
+            state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
             return;
         }
 
         var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
         if (OriginalAiFamilyTwelveRules.ShouldHeal(gang.Force, effectiveHeal))
         {
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
             return;
         }
 
@@ -87,7 +91,9 @@ public static partial class AiTurnPlanner
             hasPriorChaos: _ => false,
             ownerTests: SelectorOwnerTests(state, playerId),
             state.Random, planning: state.AiPlanning);
-        SetRecoveredMoveAction(state, playerId, gangSlot, target);
+        // FND-AI-075: the Move clears the focus and keeps its destination as the coverage sector.
+        SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
+        state.AiPlanning.SetCoverageSector(playerId, gangSlot, target);
     }
 
     /// <summary>
@@ -113,6 +119,7 @@ public static partial class AiTurnPlanner
             playerId, gangSlot, slot,
             OriginalAiFamilyTwelveRules.EquipmentCooldown(
                 state.Definitions.Items[itemId].Cost));
+        state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static void PrepareFamilyTwelveAttack(
@@ -120,22 +127,23 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<ObjectiveTarget> visible)
+        IReadOnlyList<ObjectiveTarget> visible,
+        int visibleWeight)
     {
+        var owner = state.Sectors[gang.SectorId].Owner;
+        // RULE-AI-030: the human-only pool needs weight 10 and hostile_human_owner
+        // (RULE-AI-004): the owner byte, then hostile_owner's query.
+        var targetPool = visibleWeight == 10
+            && owner is { } sectorOwner
+            && IsHostileOwner(state, playerId, gang.SectorId)
+            && state.FindPlayer(sectorOwner)?.Setup.Controller == PlayerController.Human
+                ? HumanTargets(state, visible)
+                : visible;
         ObjectiveTarget? selected = null;
         for (var attempt = 0; attempt < OriginalAiFamilyTwelveRules.AttackAttempts;
              attempt++)
         {
-            var owner = state.Sectors[gang.SectorId].Owner;
-            // RULE-AI-004 hostile_human_owner: the owner byte, then hostile_owner's query.
-            var targetPool = owner is { } sectorOwner
-                && IsHostileOwner(state, playerId, gang.SectorId)
-                && state.FindPlayer(sectorOwner)?.Setup.Controller == PlayerController.Human
-                    ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
-                            .Setup.Controller == PlayerController.Human)
-                        .ToArray()
-                    : visible;
-            var ordinal = state.Random.NextInclusive(Math.Max(1, targetPool.Count));
+            var ordinal = state.Random.NextInclusive(targetPool.Count);
             selected = ordinal <= targetPool.Count ? targetPool[ordinal - 1] : null;
             if (selected is null) break;
             var comparisonTarget = visible[ordinal - 1].Gang;
@@ -147,16 +155,15 @@ public static partial class AiTurnPlanner
                 break;
         }
 
+        // A positive weight means a visible gang, and weight 10 a visible human gang, so the pool
+        // is never empty (RULE-AI-030). The guard keeps an inconsistent loaded state from throwing.
         if (selected is null)
         {
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.None);
             return;
         }
 
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Attack,
-            new AiActionTarget(
-                checked((byte)selected.Value.Gang.Owner.Value),
-                checked((byte)selected.Value.Slot)));
+        // FND-AI-075: the Attack stores the gang's sector as the focus.
+        SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, selected.Value);
     }
 }

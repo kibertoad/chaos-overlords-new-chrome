@@ -67,9 +67,6 @@ public static class OriginalSelectionLightLayout
         return new Rectangle(297, OptionRows[limit], 3, 11);
     }
 
-    public static Rectangle EndgameTab(Rectangle tab) =>
-        new(tab.Right - 5, tab.Y + 5, 3, 11);
-
     /// <summary>SCR-UI-003, FND-EVENT-006: the lit console light the pump copies from the sheet.</summary>
     public static Rectangle CityLightSource => new(488, 512, 8, 16);
 

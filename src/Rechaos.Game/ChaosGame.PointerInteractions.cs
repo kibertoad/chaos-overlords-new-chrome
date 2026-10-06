@@ -12,14 +12,16 @@ public sealed partial class ChaosGame
     private bool _pressedPanelFaceByRightButton;
 
     /// <summary>
-    /// A press on an information panel: on the close face it holds the face until the release,
-    /// outside the panel it is refused with slot 4, and elsewhere inside it does nothing
-    /// (SCR-GANG-001, SCR-GANG-002, SCR-UI-005).
+    /// A press on an information panel: on the close face it plays slot 3 and holds the face until
+    /// the release, outside the panel it is refused with slot 4, and elsewhere inside it does
+    /// nothing (SCR-GANG-001, SCR-GANG-002, SCR-UI-005). The held-button helper plays slot 3 when
+    /// the press starts, whether or not the release lands inside the face (FND-AUDIO-011).
     /// </summary>
     private void PressPanelFace(Point point, Rectangle panel, Rectangle face, Action close)
     {
         if (face.Contains(point))
         {
+            AcceptInput();
             _pressedPanelFace = (face, _screens.Current, close);
             _pressedPanelFaceByRightButton = false;
         }
@@ -32,17 +34,21 @@ public sealed partial class ChaosGame
         Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute);
 
     /// <summary>
-    /// A button let go while the music fade blocks game events: lets go of what its press holds
-    /// without completing it.
+    /// The pointer while the music fade blocks game events: a move shows the arrow, and a button let
+    /// go lets go of what its press holds without completing it.
     /// </summary>
     /// <remarks>
-    /// FND-AUDIO-016: the fade dispatches window messages without running the game's event step, so
-    /// the release does nothing in the game. The press still has to end, or the control would stay
-    /// held until some later release, possibly on another screen. It ends as a release outside the
-    /// window does, which every held control already takes as a cancel.
+    /// FND-AUDIO-016: the fade dispatches window messages without running the game's event step.
+    /// Each pointer message the window handles selects the arrow (RULE-UI-007), so a pointer moved
+    /// during a fade that holds a computer's planning back shows the arrow until that planning
+    /// selects the hourglass again. A release does nothing in the game, but the press still has to
+    /// end, or the control would stay held until some later release, possibly on another screen. It
+    /// ends as a release outside the window does, which every held control already takes as a
+    /// cancel.
     /// </remarks>
-    private void CancelSwallowedPointerReleases(MouseState mouse)
+    private void UpdatePointerDuringFade(MouseState mouse)
     {
+        if (mouse.Position != _previousMouse.Position) _pointer.PointerMoved();
         if (PointerButtonEdges.Released(mouse.LeftButton, _previousMouse.LeftButton))
             CompletePointerRelease(pointerMapped: false, Point.Zero, rightButton: false);
         if (PointerButtonEdges.Released(mouse.RightButton, _previousMouse.RightButton))
@@ -61,11 +67,18 @@ public sealed partial class ChaosGame
             _pressedPanelFace = null;
             if (pointerMapped && pressedFace.Screen == _screens.Current
                 && pressedFace.Face.Contains(point))
-                AcceptAndInvoke(pressedFace.Close);
+                pressedFace.Close();
             return;
         }
 
         if (rightButton) return;
+
+        if (_handoffReadyHeld)
+        {
+            if (pointerMapped) CompleteHandoffReady(point);
+            else _handoffReadyHeld = false;
+            return;
+        }
 
         if (_pressedSetupButton is not null)
         {

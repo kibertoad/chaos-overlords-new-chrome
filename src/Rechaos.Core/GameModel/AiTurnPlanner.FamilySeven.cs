@@ -15,10 +15,12 @@ public static partial class AiTurnPlanner
 
         if (visibleWeight == 10)
             TryPrepareFamilySevenAttack(state, playerId, gang, gangSlot, visible);
+        // The handler's Equip leaves the focus as it was, so a research item number stored there
+        // stays for the next pass's comparison with the best research sector.
         else if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                      state, player, gang, gangSlot) is { } upgrade)
-            SetRecoveredFocusedReplacementEquipmentAction(
-                state, playerId, gangSlot, upgrade);
+            SetRecoveredReplacementEquipmentAction(
+                state, playerId, gangSlot, upgrade.ItemId, upgrade.Slot);
 
         var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
         if (!OriginalAiFamilySevenRules.EndsAfterPreliminaryAction(plannedAction))

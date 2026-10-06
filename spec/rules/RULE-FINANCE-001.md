@@ -4,7 +4,7 @@ title: The Financial panel projects next turn's cash flow for the whole city or 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-FINANCE-001, FND-FINANCE-002, FND-EQUIP-008, SRC-MANUAL-GOG]
+evidence: [FND-FINANCE-001, FND-FINANCE-002, FND-FINANCE-003, FND-EQUIP-008, EXP-TURN-044, SRC-MANUAL-GOG]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-003, RULE-UPKEEP-001, RULE-SITE-001, FMT-STATE-001, FMT-STATE-002, FMT-DATA-002]

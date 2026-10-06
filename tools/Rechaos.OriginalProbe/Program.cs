@@ -16,6 +16,8 @@ return args.FirstOrDefault() switch
 {
     "new-game" => NewGame(args),
     "extract" => Extract(args),
+    "extract-comlink" => ComlinkExtractor.Extract(args),
+    "digest" => Digest(args),
     _ => Usage(),
 };
 
@@ -28,9 +30,21 @@ static int Usage()
               [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
               [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer_slot:sector>,...] [--sound]
-              [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...]
+              [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...]
+              [--search <turn:definition+definition...>,...]
+              [--finance <turn:sector>,...]
+              [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture] [--white-key]
+              [--comlink <script file>]
+              [--draw-values <hex address>=<int32>[/<int32>...],...]
+              [--equip-lists] [--attack-lists] [--search-clicks <x:y>,...]
+              [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
+              [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|wait:ms|type:TEXT|shot:SCR-ID+...>,...] [--gang-markers]
+              [--title-capture] [--credits-capture] [--setup-capture] [--setup-steps <strip:x:y|drag:x:y:x2:y2|shot>,...]
+              [--detailed-combat] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
-          Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>...
+          Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
+          Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
+          Rechaos.OriginalProbe digest --fixture <fixture.json> --run <n> --screens <SCR-ID>,...
         """);
     return 2;
 }
@@ -41,6 +55,11 @@ static int NewGame(string[] args)
     var output = Option(args, "--out");
     var timeout = int.Parse(Option(args, "--timeout") ?? "180", System.Globalization.CultureInfo.InvariantCulture);
     if (output is null) return Usage();
+    if (IntOption(args, "--time-limit") is { } timeLimit and not (>= 0 and <= 3))
+        throw new ArgumentException($"--time-limit takes 0 to 3, not {timeLimit}.");
+    // --expire-turns waits for the planning time to run out, which needs a limit to run out.
+    if (Option(args, "--expire-turns") is not null && IntOption(args, "--time-limit") is not (>= 1 and <= 3))
+        throw new ArgumentException("--expire-turns needs --time-limit 1, 2 or 3.");
     var settings = new NewGameSettings(
         IntOption(args, "--scenario"), IntOption(args, "--mentality"), IntOption(args, "--turns"),
         Option(args, "--humans")?.Split(',').Select(entry =>
@@ -59,7 +78,41 @@ static int NewGame(string[] args)
         Option(args, "--orders") is { } orders ? ParseOrders(orders) : null,
         args.Contains("--sound"),
         Option(args, "--hires") is { } hires ? ParseHires(hires) : null,
-        ParsePlanning(Option(args, "--families"), Option(args, "--raiders")));
+        ParsePlanning(Option(args, "--families"), Option(args, "--raiders"), Option(args, "--retire"), Option(args, "--cash")),
+        Option(args, "--finance") is { } finance ? ParseFinance(finance) : null,
+        Option(args, "--search") is { } search ? ParseSearch(search) : null,
+        IntOption(args, "--time-limit"),
+        Option(args, "--expire-turns")?.Split(',').Select(value =>
+            int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)).ToArray(),
+        Option(args, "--comlink") is { } script ? File.ReadAllLines(script) : null,
+        args.Contains("--capture"),
+        args.Contains("--white-key"),
+        Option(args, "--draw-values") is { } drawValues ? ParseDrawValues(drawValues) : null,
+        args.Contains("--equip-lists"),
+        args.Contains("--attack-lists"),
+        Option(args, "--search-clicks") is { } searchClicks ? ParseClicks(searchClicks) : null,
+        Option(args, "--hire-steps") is { } hireSteps ? ParseHireSteps(hireSteps) : null,
+        Option(args, "--order-steps") is { } orderSteps ? ParseOrderSteps(orderSteps) : null,
+        args.Contains("--gang-markers"),
+        args.Contains("--title-capture"),
+        args.Contains("--credits-capture"),
+        args.Contains("--setup-capture"),
+        Option(args, "--setup-steps") is { } setupSteps ? ParseSetupSteps(setupSteps) : null,
+        args.Contains("--detailed-combat"),
+        args.Contains("--pointer"),
+        args.Contains("--sound-calls"),
+        args.Contains("--watch-intro"),
+        args.Contains("--waits"),
+        args.Contains("--slides"),
+        Option(args, "--saved") is { } saved ? ParseSavedWrites(saved) : null,
+        Option(args, "--closes") is { } closes ? ParseCloses(closes) : null);
+    // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
+    // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
+    // A first slot that is not the lowest would compare one player's lists with another player's
+    // gangs.
+    if ((settings.EquipLists || settings.AttackLists) && settings.Humans is { Count: > 1 } listed
+        && listed[0].Slot != listed.Min(human => human.Slot))
+        throw new ArgumentException("--equip-lists and --attack-lists record the first --humans slot; list the lowest slot first.");
 
     // --executable runs a copy from another path in the game directory, which escapes the
     // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
@@ -68,6 +121,11 @@ static int NewGame(string[] args)
     if (hash != OriginalAddresses.ExecutableSha256)
     {
         Console.Error.WriteLine($"{executable} is not BLD-GOG-EN-1.1 (SHA-256 {hash}).");
+        return 1;
+    }
+    if (settings.DrawValues is { } drawn && DrawValuesProblem(drawn, settings.Humans, executable) is { } problem)
+    {
+        Console.Error.WriteLine(problem);
         return 1;
     }
 
@@ -82,11 +140,14 @@ static int NewGame(string[] args)
 
 static int Extract(string[] args)
 {
-    var experiment = Option(args, "--experiment");
-    var output = Option(args, "--out");
-    var runs = args.Skip(1).Where((_, i) => i >= 4).ToArray();
-    if (experiment is null || output is null || runs.Length == 0 || args[1] != "--experiment" || args[3] != "--out")
+    // --screens SCR-ID,... names the screen entries whose elements a capture's digests cover
+    // (CaptureScreen); it may stand anywhere after the run directories' options.
+    var screens = CaptureScreen.Load(Option(args, "--screens"));
+    if (Array.IndexOf(args, "--screens") is var at and >= 0)
+        args = args.Where((_, index) => index != at && index != at + 1).ToArray();
+    if (StateExtractor.ExtractArguments(args) is not { } arguments)
         return Usage();
+    var (experiment, output, runs) = arguments;
 
     var runArray = new JsonArray();
     var seeds = new JsonArray();
@@ -111,32 +172,32 @@ static int Extract(string[] args)
 
         settings = runSettings;
         turns = runTurns;
-        var extracted = StateExtractor.ExtractRun(run);
+        var extracted = StateExtractor.ExtractRun(run, screens);
         seeds.Add(extracted["rng_state"]!.GetValue<int>());
         runArray.Add(extracted);
     }
 
-    var fixture = new JsonObject
-    {
-        ["experiment"] = experiment,
-        ["build"] = "BLD-GOG-EN-1.1",
-        ["starting_state"] = null,
-        ["recording_xxh3"] = null,
-        ["clock"] = "roll",
-        ["inputs"] = new JsonArray(
-        [
-            new JsonObject { ["tick"] = 0, ["name"] = "command", ["value"] = "File, New Game (0x8101)" },
-            .. settings!.Select(setting => new JsonObject { ["tick"] = 0, ["name"] = "setup", ["value"] = setting }),
-            new JsonObject { ["tick"] = 0, ["name"] = "left_click", ["value"] = "Begin (416, 397)" },
-            // An order is written and a Done pressed once the planning phase has settled, at the
-            // roll count its run gives in done_at_roll.
-            .. turns!.Select(turn => new JsonObject { ["tick"] = null, ["name"] = turn.Name, ["value"] = turn.Value }),
-        ]),
-        ["seeds"] = seeds,
-        ["runs"] = runArray,
-    };
-    File.WriteAllText(output, StateExtractor.Serialize(fixture) + "\n");
+    // An order is written and a Done pressed once the planning phase has settled, at the roll count
+    // its run gives in done_at_roll.
+    StateExtractor.WriteFixture(output, experiment, "roll", settings!,
+        turns!.Select(turn => new JsonObject { ["tick"] = null, ["name"] = turn.Name, ["value"] = turn.Value }),
+        seeds, runArray);
     Console.WriteLine($"Wrote {runs.Length} runs to {output}.");
+    return 0;
+}
+
+// digest: adds element digests to a capture a fixture already records, from the bitmap kept under
+// GAME_DIR/captures (CaptureFixture.AddScreens).
+static int Digest(string[] args)
+{
+    var path = Option(args, "--fixture");
+    var run = IntOption(args, "--run");
+    var screens = CaptureScreen.Load(Option(args, "--screens"));
+    if (path is null || run is null || screens.Count == 0) return Usage();
+    var fixture = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+    var count = CaptureFixture.AddScreens(fixture["runs"]![run.Value]!.AsObject(), screens);
+    File.WriteAllText(path, StateExtractor.Serialize(fixture) + "\n");
+    Console.WriteLine($"Wrote the digests of {count} elements to run {run} of {path}.");
     return 0;
 }
 
@@ -162,9 +223,176 @@ static IReadOnlyList<ProbeHire> ParseHires(string value) =>
         return new ProbeHire(parts[0], parts[1], parts[2]);
     }).ToArray();
 
+// --search turn:definition+definition+...,... sets the human's Search filter entries (ProbeSearch).
+static IReadOnlyList<ProbeSearch> ParseSearch(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        if (parts.Length != 2) throw new FormatException($"A Search write needs a turn and definitions: {entry}");
+        var definitions = parts[1].Split('+').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        if (definitions.Any(definition => definition is < 0 or >= OriginalAddresses.SiteDefinitionCount))
+            throw new FormatException($"A site definition is 0 to 21: {entry}");
+        return new ProbeSearch(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), definitions);
+    }).ToArray();
+
+// --search-clicks x:y,... posts a click at each client point after the dump (SearchClickRecord).
+static IReadOnlyList<ProbeClick> ParseClicks(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        if (parts.Length != 2) throw new FormatException($"A click needs x and y: {entry}");
+        return new ProbeClick(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture),
+            int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture));
+    }).ToArray();
+
+// --saved turn:value,... writes match_saved before the Done press of the turn, or at the dump for
+// the turn after the last (ProbeSavedWrite).
+static IReadOnlyList<ProbeSavedWrite> ParseSavedWrites(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        return parts is [>= 1, 0 or 1]
+            ? new ProbeSavedWrite(parts[0], parts[1])
+            : throw new FormatException($"A saved write needs a turn from 1 and a value 0 or 1: {entry}");
+    }).ToArray();
+
+// --closes saved:answer,... closes the window after the dump and answers the dialog the close
+// opens: saved is -, 0 or 1 (written to match_saved first); answer 1w saves first and the save is
+// written, 1c saves first and the save is cancelled, 2 cancels and 3 goes on without saving
+// (ProbeClose).
+static IReadOnlyList<ProbeClose> ParseCloses(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        int? saved = parts.Length == 2 && parts[0] is "0" or "1" ? int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture) : null;
+        ProbeClose? close = parts.Length == 2 && (saved is not null || parts[0] == "-")
+            ? parts[1] switch
+            {
+                "1w" => new ProbeClose(saved, 1, 1),
+                "1c" => new ProbeClose(saved, 1, 0),
+                "2" => new ProbeClose(saved, 2),
+                "3" => new ProbeClose(saved, 3),
+                _ => null
+            }
+            : null;
+        return close ?? throw new FormatException(
+            $"A close is saved:answer, saved -, 0 or 1 and answer 1w, 1c, 2 or 3: {entry}");
+    }).ToArray();
+
+// --hire-steps drag:slot:sector,reject:slot,exit,... drags offers onto map sectors, presses their
+// Reject crosses and presses a result panel's Exit after the dump (ProbeHireStep).
+static IReadOnlyList<ProbeHireStep> ParseHireSteps(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        var numbers = parts.Skip(1).Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        return parts[0] switch
+        {
+            "drag" when numbers is [>= 0 and < 3, >= 0 and < 64] => new ProbeHireStep(numbers[0], numbers[1]),
+            "reject" when numbers is [>= 0 and < 3] => new ProbeHireStep(numbers[0], -2),
+            "exit" when numbers is [] => new ProbeHireStep(-1, -1),
+            _ => throw new FormatException($"A hire step is drag:slot:sector, reject:slot or exit: {entry}"),
+        };
+    }).ToArray();
+
+// --order-steps open:sector,card:n:x:y:command,strip:x:y:command,back,exit,... opens a sector view,
+// presses a gang card's strip at (x, y) within the card or the window at (x, y), and answers the
+// popup menu with the command, 0 for none, after the dump (ProbeOrderStep).
+static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        // shot:SCR-ID+SCR-ID names the screen entries the capture is compared at.
+        if (parts is ["shot", var screens] && screens.Length > 0)
+            return new ProbeOrderStep("shot", -1, 0, 0, 0, screens.Replace('+', ','));
+        // type:TEXT presses a key for each character: upper-case letters, digits and spaces.
+        if (parts is ["type", var text] && text.Length > 0
+            && text.All(character => character is ' ' or (>= '0' and <= '9') or (>= 'A' and <= 'Z')))
+            return new ProbeOrderStep("type", -1, 0, 0, 0, Text: text);
+        var numbers = parts.Skip(1).Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        return parts[0] switch
+        {
+            "open" when numbers is [>= 0 and < 64] => new ProbeOrderStep("open", numbers[0], 0, 0, 0),
+            "card" when numbers is [>= 0 and < 6, >= 0 and < 74, >= 0 and < 110, >= 0] =>
+                new ProbeOrderStep("card", numbers[0], numbers[1], numbers[2], numbers[3]),
+            "strip" when numbers is [>= 0 and < 640, >= 0 and < 480, >= 0] =>
+                new ProbeOrderStep("strip", -1, numbers[0], numbers[1], numbers[2]),
+            "dbl" when numbers is [>= 0 and < 640, >= 0 and < 480] =>
+                new ProbeOrderStep("dbl", -1, numbers[0], numbers[1], 0),
+            "back" or "exit" or "warn" when numbers is [] => new ProbeOrderStep(parts[0], -1, 0, 0, 0),
+            "wait" when numbers is [> 0] => new ProbeOrderStep("wait", -1, 0, 0, numbers[0]),
+            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn, wait:ms, type:TEXT or shot:SCR-ID+...: {entry}"),
+        };
+    }).ToArray();
+
+// --setup-steps strip:x:y,drag:x:y:x2:y2,shot,... presses window points of the setup screen, or
+// drags from one to another, and copies it, each copy compared at SCR-SETUP-001.
+static IReadOnlyList<ProbeOrderStep> ParseSetupSteps(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':');
+        if (parts is ["shot"]) return new ProbeOrderStep("shot", -1, 0, 0, 0, "SCR-SETUP-001");
+        var numbers = parts.Skip(1).Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        const int width = CaptureFixture.Width, height = CaptureFixture.Height;
+        return (parts[0], numbers) switch
+        {
+            ("strip", [>= 0 and < width, >= 0 and < height]) =>
+                new ProbeOrderStep("strip", -1, numbers[0], numbers[1], 0),
+            // drag:x:y:x2:y2 presses at (x, y), moves to (x2, y2) with the button down and releases
+            // there; Target and Choice carry the release point.
+            ("drag", [>= 0 and < width, >= 0 and < height, >= 0 and < width, >= 0 and < height]) =>
+                new ProbeOrderStep("drag", numbers[2], numbers[0], numbers[1], numbers[3]),
+            _ => throw new FormatException($"A setup step is strip:x:y, drag:x:y:x2:y2 or shot: {entry}"),
+        };
+    }).ToArray();
+
+// --finance turn:sector,... opens the Financial panel before that turn's Done, the City variant for
+// sector -1 (ProbeFinance).
+static IReadOnlyList<ProbeFinance> ParseFinance(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(panel =>
+    {
+        var parts = panel.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        if (parts.Length != 2 || parts[1] is < -1 or > 63)
+            throw new FormatException($"A Financial panel needs a turn and a sector -1 to 63: {panel}");
+        return new ProbeFinance(parts[0], parts[1]);
+    }).ToArray();
+
+// --draw-values address=value/value...,... writes 32-bit values whenever the planning-entry function
+// starts drawing the console, the nth value at its nth call (ProbeDrawValue).
+static IReadOnlyList<ProbeDrawValue> ParseDrawValues(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split('=');
+        if (parts.Length != 2) throw new FormatException($"A drawn value needs an address and a value: {entry}");
+        var address = parts[0].StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? parts[0][2..] : parts[0];
+        return new ProbeDrawValue(
+            uint.Parse(address, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture),
+            parts[1].Split('/').Select(number => int.Parse(number, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
+    }).ToArray();
+
+// The calls of the planning-entry function are counted over every human's entries, and each
+// human's console draws its own slot, so with a second human the nth value would not reach the nth
+// entry of the seat it was meant for. An address outside the writable sections would overwrite
+// code or a constant instead of a value the console draws.
+static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnlyList<HumanSlot>? humans, string executable)
+{
+    if (humans is { Count: > 1 })
+        return "--draw-values counts the planning entries of one human; give at most one --humans slot.";
+    var writable = PeSection.Read(executable, out _).Where(section => section.IsWritable).ToArray();
+    foreach (var value in values)
+    {
+        if (!writable.Any(section => value.Address >= section.VirtualAddress
+            && (ulong)value.Address + 4 <= (ulong)section.VirtualAddress + section.VirtualSize))
+            return $"--draw-values address 0x{value.Address:X8} does not lie in a writable section of the executable.";
+    }
+    return null;
+}
+
 // --families turn:player:slot:family,... writes a planning record's family; --raiders
-// turn:player,... sets a player's raider_mode (ProbePlanning).
-static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders)
+// turn:player,... sets a player's raider_mode; --retire turn:player,... clears a player's
+// player_active; --cash turns:player:value,... sets a player's cash before the Done press of each
+// turn, turns being one turn or a range first-last (ProbePlanning).
+static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired, string? cash)
 {
     static int[] Numbers(string entry) =>
         entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
@@ -183,6 +411,23 @@ static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? rai
             throw new FormatException($"A raider needs a turn and a player 1 to 5: {entry}");
         writes.Add(new ProbePlanning(parts[0], parts[1], 0, ProbePlanning.Raider));
     }
+    foreach (var entry in (retired ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var parts = Numbers(entry);
+        if (parts.Length != 2 || parts[1] is < 0 or > 5)
+            throw new FormatException($"A retired player needs a turn and a player 0 to 5: {entry}");
+        writes.Add(new ProbePlanning(parts[0], parts[1], 0, ProbePlanning.Retired));
+    }
+    foreach (var entry in (cash ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var range = entry.Split(':', 2);
+        var turns = range[0].Split('-').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        int[] parts = range.Length == 2 ? Numbers(range[1]) : [];
+        if (parts.Length != 2 || parts[0] is < 0 or > 5 || turns is not ([>= 1] or [>= 1, _]) || turns[^1] < turns[0])
+            throw new FormatException($"A cash write needs a turn or a range of turns from 1, a player 0 to 5 and a value: {entry}");
+        for (var turn = turns[0]; turn <= turns[^1]; turn++)
+            writes.Add(new ProbePlanning(turn, parts[0], 0, ProbePlanning.Cash, parts[1]));
+    }
     return writes.Count == 0 ? null : writes;
 }
 
@@ -192,8 +437,4 @@ static uint? HexOption(string[] args, string name) =>
             System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture)
         : null;
 
-static string? Option(string[] args, string name)
-{
-    var at = Array.IndexOf(args, name);
-    return at >= 0 && at + 1 < args.Length ? args[at + 1] : null;
-}
+static string? Option(string[] args, string name) => StateExtractor.Option(args, name);

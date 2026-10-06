@@ -1,0 +1,11 @@
+{
+  "screen": "SCR-SELL-001",
+  "state": "The detailed sector screen of player 0 with the Sell panel open for a gang carrying items and no item chosen",
+  "elements": [
+    {"element": "Sell panel", "rect": [0, 0, 640, 460]},
+    {"element": "Gang portrait", "rect": [130, 141, 64, 64]},
+    {"element": "Item pictures, slot 0", "rect": [217, 141, 48, 48]},
+    {"element": "Item pictures, slot 1", "rect": [217, 205, 48, 48]},
+    {"element": "Item pictures, slot 2", "rect": [217, 269, 48, 48]}
+  ]
+}

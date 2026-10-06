@@ -11,8 +11,8 @@ public sealed class LocalSetupUiTests
     public void LocalSetupStartsWithOneHumanAndOriginalDefaultNames()
     {
         Assert.Equal(1, LocalSetupPolicy.DefaultHumanPlayerCount);
-        Assert.Equal("PLAYER#1", LocalSetupPolicy.DefaultPlayerName(0));
-        Assert.Equal("PLAYER#6", LocalSetupPolicy.DefaultPlayerName(5));
+        Assert.Equal("PLAYER #1", LocalSetupPolicy.DefaultPlayerName(0));
+        Assert.Equal("PLAYER #6", LocalSetupPolicy.DefaultPlayerName(5));
         Assert.Throws<ArgumentOutOfRangeException>(() => LocalSetupPolicy.DefaultPlayerName(6));
         Assert.Equal(15, PlayerPortraitLayout.SelectableCount);
         Assert.Equal(16, PlayerPortraitLayout.Count);
@@ -53,7 +53,7 @@ public sealed class LocalSetupUiTests
     {
         Assert.Equal([0], LocalSetupSnapshot.Initial.HumanSlots);
         Assert.Equal(0, LocalSetupSnapshot.Initial.Portraits[0]);
-        Assert.Equal("PLAYER#3", LocalSetupSnapshot.Initial.Names[2]);
+        Assert.Equal("PLAYER #3", LocalSetupSnapshot.Initial.Names[2]);
 
         var roster = new LocalSetupRoster();
         roster.Restore([4, 1]);

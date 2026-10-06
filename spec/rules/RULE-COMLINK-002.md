@@ -4,7 +4,7 @@ title: Comlink Send opens only when another human player can receive a message
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-003, FND-COMLINK-007, SRC-MANUAL-GOG]
+evidence: [FND-COMLINK-003, FND-COMLINK-007, SRC-MANUAL-GOG, EXP-COMLINK-001, EXP-COMLINK-002]
 conflicting: []
 split_with: []
 related: [SCR-COMLINK-002]
@@ -81,4 +81,9 @@ None known.
 
 ## Open questions
 
-None known.
+- No run reaches a human whose `player_active` is 0: EXP-COMLINK-001 and
+  EXP-COMLINK-002 refuse only a computer player's card and the sender's own,
+  and no human is eliminated in either. The exclusion of an eliminated human
+  rests on FND-COMLINK-007.
+- No run reaches an empty slot or a network player whose slot has been
+  handed to the computer [FND-COMLINK-007].

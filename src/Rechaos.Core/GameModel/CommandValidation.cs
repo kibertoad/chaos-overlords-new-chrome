@@ -310,17 +310,20 @@ public static class CommandValidator
         if (rule.SpatialConstraint != SpatialConstraint.AdjacentSector)
             return CommandValidation.Valid();
         // DEV-AI-007: every seat's Move goes to a neighbour, the computer planner's included, where
-        // the original carries out a planned Move to any distance (RULE-MOVE-001).
-        var sourceX = actor.SectorId % MatchLimits.BoardWidth;
-        var sourceY = actor.SectorId / MatchLimits.BoardWidth;
-        var targetX = target.Id % MatchLimits.BoardWidth;
-        var targetY = target.Id / MatchLimits.BoardWidth;
-        var deltaX = Math.Abs(sourceX - targetX);
-        var deltaY = Math.Abs(sourceY - targetY);
-        return Math.Max(deltaX, deltaY) == 1
+        // the original carries out a planned Move to any distance (RULE-MOVE-001). With the
+        // setting off, the planner's Move goes anywhere, as in the original.
+        if (!state.Setup.ComputerMovesToNeighboursOnly && state.IsPlannedByComputer(actor.Owner))
+            return CommandValidation.Valid();
+        return AreNeighbours(actor.SectorId, target.Id)
             ? CommandValidation.Valid()
             : CommandValidation.Reject(CommandValidationCode.DestinationNotAdjacent);
     }
+
+    /// <summary>Whether two sectors touch, along an edge or at a corner.</summary>
+    internal static bool AreNeighbours(int first, int second) =>
+        Math.Max(
+            Math.Abs(first % MatchLimits.BoardWidth - second % MatchLimits.BoardWidth),
+            Math.Abs(first / MatchLimits.BoardWidth - second / MatchLimits.BoardWidth)) == 1;
 
     private static CommandValidation ValidateSiteTarget(
         MatchState state,

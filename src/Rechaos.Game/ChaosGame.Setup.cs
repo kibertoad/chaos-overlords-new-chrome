@@ -12,6 +12,10 @@ public sealed partial class ChaosGame
 {
     private AiDifficulty _selectedAiMentality = OriginalOptionsPolicy.MentalityByDefault;
     private AiPolicyMode _defaultAiPolicy = OriginalOptionsPolicy.AiPolicyByDefault;
+    // DEV-AI-007: set by --original-computer-moves, for the local matches this session starts.
+    private readonly bool _originalComputerMoves;
+    // DEV-AI-008: set by --original-computer-hires, for the local matches this session starts.
+    private readonly bool _originalComputerHires;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
     private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
@@ -521,7 +525,9 @@ public sealed partial class ChaosGame
         var setup = new MatchSetup(
             _selectedScenario, _selectedDuration, unchecked((int)_runRandomState), players,
             _selectedAiMentality, allowSparsePlayerIds: true,
-            aiPolicy: _defaultAiPolicy);
+            aiPolicy: _defaultAiPolicy,
+            computerMovesToNeighboursOnly: !_originalComputerMoves,
+            computerHiresWhereHumansCan: !_originalComputerHires);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
         {
             ["scenario"] = _selectedScenario.ToString(),
@@ -530,14 +536,28 @@ public sealed partial class ChaosGame
             ["computerPlayers"] = "0",
             ["mentality"] = _selectedAiMentality.ToString(),
             ["aiPolicy"] = _defaultAiPolicy.ToString(),
+            ["computerMovesToNeighboursOnly"] = setup.ComputerMovesToNeighboursOnly.ToString(),
+            ["computerHiresWhereHumansCan"] = setup.ComputerHiresWhereHumansCan.ToString(),
             ["seed"] = setup.InitialSeed.ToString()
         });
         var created = OriginalMatchFactory.Create(_definitions, setup);
+        EnterNewMatch(created, advanceToPlanning: !_debugPhaseStepping);
+    }
+
+    /// <summary>
+    /// Puts a newly created match on screen at its first planning entry. A match that already
+    /// stands at that entry, as a reference frame's does, is shown without advancing it.
+    /// </summary>
+    private void EnterNewMatch(MatchState created, bool advanceToPlanning)
+    {
         ReplaceMatch(created, new MatchActions(new MatchReplayRecorder(created)));
         ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: false);
-        if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
-        if (!_debugPhaseStepping) PrepareCurrentHireOffers();
-        _cursor = _state.Players[0].Gangs[0].SectorId;
+        if (advanceToPlanning) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
+        if (advanceToPlanning) PrepareCurrentHireOffers();
+        // FND-SAVE-003: every player starts on the sector of its roster slot 0. A reference frame's
+        // save may stand where player 0 has lost every gang.
+        _planningSelections.Reset(_state);
+        _cursor = _planningSelections.For(_state.Players[0].Id, Math.Clamp(_cursor, 0, _state.Sectors.Count - 1));
         _selectedGangIndex = 0;
         _message = string.Empty;
         _combatPresentationProgress.Clear();
@@ -549,7 +569,8 @@ public sealed partial class ChaosGame
         _resumedMatchTurn = null;
         _continuePlanningEntryAfterGameInfo = false;
         _deferComlinkAlertUntilPlanningVisible = false;
-        PresentHotSeatPlanningEntry();
+        if (_referenceFrame is not null) PresentReferenceFramePlanningEntry();
+        else PresentHotSeatPlanningEntry();
     }
 
     private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)
@@ -620,6 +641,23 @@ public sealed partial class ChaosGame
         else DrawSelectionLight(batch, pixel, lit);
     }
 
+    /// <summary>
+    /// FND-SETUP-013: the scenario's title and description over a black box at the top of the
+    /// left panel.
+    /// </summary>
+    private void DrawSetupScenarioText(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        batch.Draw(pixel, SetupScenarioTextLayout.Box, Color.Black);
+        var title = SetupScenarioTextLayout.Title;
+        font.Draw(batch, ExecutableStrings.ScenarioTitle(_selectedScenario), new Vector2(title.X, title.Y), Color.Lime, 1);
+        var lines = SetupScenarioTextLayout.DescriptionLines(ExecutableStrings.ScenarioDescription(_selectedScenario));
+        for (var line = 0; line < lines.Count; line++)
+        {
+            var at = SetupScenarioTextLayout.Line(line);
+            font.Draw(batch, lines[line], new Vector2(at.X, at.Y), Color.Lime, 1);
+        }
+    }
+
     private void DrawSetup(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         if (_setupBackground is not null)
@@ -632,6 +670,7 @@ public sealed partial class ChaosGame
             && SetupButtonLayout.HitTest(buttonHover) == pressed)
             batch.Draw(_setupControls, SetupButtonLayout.Destination(pressed),
                 SetupButtonLayout.PressedSource(pressed), Color.White);
+        DrawSetupScenarioText(batch, pixel, font);
         DrawSetupLight(batch, pixel, OriginalSelectionLightLayout.Scenario(
             SetupScenarioButtons.ButtonForScenario(_selectedScenario)));
         if (ScenarioCatalog.Get(_selectedScenario).IsTimed)
@@ -664,6 +703,8 @@ public sealed partial class ChaosGame
             : _localSetupRoster.HumanSlots;
         foreach (var index in shownHumans)
         {
+            // FND-SETUP-014: the bar in the slot's colour at the card's left edge.
+            batch.Draw(pixel, SetupPlayerCardArtLayout.ColourBar(index), SetupPlayerCardArtLayout.Colours[index]);
             var portrait = SetupPlayerCardArtLayout.PortraitDestination(index);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, portrait,
@@ -682,11 +723,21 @@ public sealed partial class ChaosGame
                         PlayerPortraitLayout.Next(index), left: false, Color.Lime);
                 }
             }
-            var label = _configuringOnlineLobby ? onlinePlayers[index].DisplayName : _editingPlayerName == index
-                ? _setupNameEditor.Text + ((int)(_inputTime.TotalMilliseconds / 350) % 2 == 0 ? "_" : "")
+            // An online seat shows the ten-character projection its overlord plays under, which
+            // fits the card as a local name does; the lobby's display name can run to 32 characters.
+            var text = _configuringOnlineLobby ? OriginalPlayerName.Project(onlinePlayers[index].DisplayName)
+                : _editingPlayerName == index
+                ? _setupNameEditor.Text
                 : _playerNames[index];
-            var name = PlayerPortraitLayout.Name(index);
-            font.Draw(batch, label, new Vector2(name.X, name.Y), PlayerColors[index], 1);
+            var label = _editingPlayerName == index && !_configuringOnlineLobby
+                && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0
+                ? text + "_"
+                : text;
+            // FND-SETUP-014: the name in the screen's green, centred on the card. The blinking
+            // cursor of the rebuild's name editor is left out of the centring, so the name holds
+            // still while it blinks.
+            var name = SetupPlayerCardArtLayout.NameStart(index, text.Length);
+            font.Draw(batch, label, new Vector2(name.X, name.Y), Color.Lime, 1);
         }
         if (_setupPlayerDragStarted && _draggedSetupPlayerSlot is { } dragged
             && _uiSprites is not null)
@@ -741,12 +792,6 @@ public sealed partial class ChaosGame
                     DurationSetupTooltip.Lines(Durations[duration.Index]));
             else if (control is { Kind: SetupPanelControlKind.AiMentality } difficulty)
                 DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)difficulty.Index);
-            else if (!_configuringOnlineLobby && SetupButtonLayout.HitTest(hover) == SetupPushButton.AddPlayer)
-                DrawHoverTooltip(batch, pixel, font, hover, SetupRosterTooltip.AddPlayer);
-            else if (!_configuringOnlineLobby && _localSetupRoster.IsHuman(_selectedSetupPlayerSlot)
-                     && (PlayerPortraitLayout.PreviousHit(_selectedSetupPlayerSlot).Contains(hover)
-                         || PlayerPortraitLayout.NextHit(_selectedSetupPlayerSlot).Contains(hover)))
-                DrawHoverTooltip(batch, pixel, font, hover, SetupRosterTooltip.PortraitArrow);
         }
     }
 

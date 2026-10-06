@@ -12,6 +12,7 @@ public sealed class GameMenuLayoutTests
     [Fact]
     public void GameMenuProvidesSaveLoadOptionsReportBugAndConfirmedMainMenuExit()
     {
+        // DEV-UI-011, DEV-UI-019: the pause menu Escape opens holds saving, loading and leaving.
         Assert.Equal(new Rectangle(226, 162, 188, 32), GameMenuLayout.Save);
         Assert.Equal(new Rectangle(226, 200, 188, 32), GameMenuLayout.Load);
         Assert.Equal(new Rectangle(226, 238, 188, 32), GameMenuLayout.Options);

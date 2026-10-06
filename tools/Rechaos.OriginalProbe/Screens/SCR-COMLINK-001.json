@@ -1,0 +1,17 @@
+{
+  "screen": "SCR-COMLINK-001",
+  "state": "Comlink View open on a player's first message",
+  "elements": [
+    {"element": "Panel", "rect": [104, 124, 344, 209]},
+    {"element": "Message number", "rect": [138, 137, 12, 7]},
+    {"element": "Message count", "rect": [174, 137, 12, 7]},
+    {"element": "Previous", "rect": [135, 157, 26, 23]},
+    {"element": "Next", "rect": [163, 157, 26, 23]},
+    {"element": "Year", "rect": [199, 144, 24, 7]},
+    {"element": "Week", "rect": [229, 144, 12, 7]},
+    {"element": "Sender name", "rect": [199, 162, 60, 7]},
+    {"element": "Sender colour", "rect": [199, 170, 8, 64]},
+    {"element": "Sender portrait", "rect": [207, 170, 64, 64]},
+    {"element": "Message", "rect": [199, 245, 240, 32]}
+  ]
+}

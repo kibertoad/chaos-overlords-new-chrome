@@ -1,0 +1,11 @@
+{
+  "screen": "SCR-OBJECTIVE-002",
+  "state": "The elimination card of the only local human, opened where its planning would have come",
+  "elements": [
+    {"element": "Private elimination card shown to an eliminated local human over the city screen", "rect": [0, 0, 640, 460]},
+    {"element": "Endgame frame", "rect": [106, 25, 428, 410]},
+    {"element": "Elimination splash", "rect": [110, 30, 311, 393]},
+    {"element": "Player name", "rect": [110, 42, 96, 11]},
+    {"element": "Overlord portrait", "rect": [126, 54, 64, 64]}
+  ]
+}

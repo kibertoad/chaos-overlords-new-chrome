@@ -1,0 +1,9 @@
+{
+  "screen": "SCR-GANG-001",
+  "state": "The compact gang information panel opened by a double-click on the Equip panel's portrait",
+  "elements": [
+    {"element": "Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels", "rect": [0, 0, 640, 460]},
+    {"element": "Panel", "rect": [128, 124, 320, 209]},
+    {"element": "Portrait", "rect": [154, 141, 64, 64]}
+  ]
+}

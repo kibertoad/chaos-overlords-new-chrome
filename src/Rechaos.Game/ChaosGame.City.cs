@@ -215,7 +215,7 @@ public sealed partial class ChaosGame
                 CityMapLayout.Bounds with { X = 0, Y = 0 }, CityMapLayout.Bounds.Location);
             if (_uiKeyedSprites is not null)
                 batch.Draw(_uiKeyedSprites, CityMapLayout.Destination(_cursor),
-                    CityMapLayout.SelectionFrameSource(CityMapLayout.SelectionFrame(_inputTime)), Color.White);
+                    CityMapLayout.SelectionFrameSource(SelectionFrameShown()), Color.White);
             else
                 DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
             // FND-UI-037: the city-cell flash lightens the cell copied from the map, markers
@@ -241,7 +241,7 @@ public sealed partial class ChaosGame
         var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
         font.Draw(batch, ExecutableStrings.ScenarioTitle(state.Setup.Scenario),
             new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
-        var (year, week) = TurnCalendar(state.Coordinator.Turn);
+        var (year, week) = MatchCalendar.Of(MatchCalendar.PresentationElapsedTurns(state));
         // FND-UI-040: separate calendar fields leave the template's separator intact.
         // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
         DrawOpaqueNativeFixedWidthValue(batch, pixel, font, year, StatusConsoleLayout.YearLeft,
@@ -254,11 +254,8 @@ public sealed partial class ChaosGame
         // FND-UI-019: string cells are copied opaquely, like the numeric cells.
         if (_finalViewPlayer is not null)
         {
-            var complete = ExecutableStrings.Get(StatusConsoleLayout.CompleteString);
-            batch.Draw(pixel, new Rectangle(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY,
-                complete.Length * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
-            font.Draw(batch, complete,
-                new Vector2(StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
+            DrawOpaqueText(batch, pixel, font, ExecutableStrings.Get(StatusConsoleLayout.CompleteString),
+                StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY);
         }
         else if (StatusConsolePresentation.RemainingTurns(state.Setup.Scenario, state.Setup.Duration,
                      state.Coordinator.Turn) is { } remainingTurns)
@@ -287,14 +284,14 @@ public sealed partial class ChaosGame
             new Vector2(438, 354), Color.Gold, 1);
         if (_state is not null && PlanningViewer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
-            && PresentationClock.BlinkLit(_inputTime))
+            && LampInLitPhase(_referenceFrame?.Lamps?.Events))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
         if (_state is not null && PlanningViewer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
-            && PresentationClock.BlinkLit(_inputTime))
+            && LampInLitPhase(_referenceFrame?.Lamps?.Comlink))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
-        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(_inputTime))
+        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
@@ -426,11 +423,6 @@ public sealed partial class ChaosGame
     /// the map holds there for the active player: ground, owner's art, pylons, site markers and
     /// gang marker (SCR-UI-005, FND-UI-014).
     /// </summary>
-    private void DrawCitySectorCell(
-        SpriteBatch batch, Texture2D pixel, MatchState state, int sectorId, Point topLeft) =>
-        DrawPreparedCityMap(batch, pixel, state, state.Players[PlanningViewer?.Value ?? 0].Id,
-            CityMapLayout.Source(sectorId), topLeft);
-
     private Rectangle GangStatusSource(
         MatchState state,
         PlayerId viewer,
@@ -456,11 +448,9 @@ public sealed partial class ChaosGame
     private static string SectorCode(int sectorId) =>
         $"{(char)('A' + sectorId % MatchLimits.BoardWidth)}{sectorId / MatchLimits.BoardWidth + 1}";
 
-    private static (int Year, int Week) TurnCalendar(int turn) => MatchCalendar.Of(Math.Max(0, turn - 1));
-
     private static string MatchDate(int turn)
     {
-        var (year, week) = TurnCalendar(turn);
+        var (year, week) = MatchCalendar.Of(Math.Max(0, turn - 1));
         return $"{year}.{week:00}";
     }
 

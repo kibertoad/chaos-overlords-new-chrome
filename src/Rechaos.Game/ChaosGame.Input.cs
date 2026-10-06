@@ -58,6 +58,7 @@ public sealed partial class ChaosGame
         }
         if (_pressedCityConsoleControl is not null)
         {
+            KeepLeftHoldUntilRelease();
             CancelCityConsolePress();
             _message = string.Empty;
             return;
@@ -88,6 +89,7 @@ public sealed partial class ChaosGame
         }
         if (_pressedHireRejectSlot is not null)
         {
+            KeepLeftHoldUntilRelease();
             CancelHireReject();
             _message = string.Empty;
             return;
@@ -100,12 +102,14 @@ public sealed partial class ChaosGame
         }
         if (_draggedHireDefinitionId is not null)
         {
+            KeepLeftHoldUntilRelease();
             CancelHireDrag();
             _message = string.Empty;
             return;
         }
         if (_draggedGangId is not null)
         {
+            KeepLeftHoldUntilRelease();
             CancelGangDrag();
             _message = string.Empty;
             return;
@@ -177,8 +181,20 @@ public sealed partial class ChaosGame
                 CloseSellEquipment();
                 break;
             case ClientScreen.Search:
-                CancelSiteSearch();
+                CloseSiteSearch();
                 break;
         }
     }
+
+    private static bool DragMoved(Point press, Point current) =>
+        Math.Abs(current.X - press.X) >= 4 || Math.Abs(current.Y - press.Y) >= 4;
+
+    /// <summary>
+    /// FND-UI-044: the individual command handler counts a press on a portrait as moved once the
+    /// point leaves the half-open rectangle (x-2,y-2)-(x+2,y+2) around it, that is two pixels
+    /// right or down or three pixels left or up.
+    /// </summary>
+    private static bool GangDragMoved(Point press, Point current) =>
+        current.X < press.X - 2 || current.X >= press.X + 2
+        || current.Y < press.Y - 2 || current.Y >= press.Y + 2;
 }

@@ -1,0 +1,12 @@
+{
+  "screen": "SCR-EQUIP-001",
+  "state": "The detailed sector screen of player 0 with the Equip panel open on category 0 and no item chosen",
+  "elements": [
+    {"element": "Equip panel", "rect": [0, 0, 640, 460]},
+    {"element": "Gang portrait", "rect": [130, 141, 64, 64]},
+    {"element": "Carried item icons, slot 0", "rect": [130, 206, 20, 20]},
+    {"element": "Carried item icons, slot 1", "rect": [152, 206, 20, 20]},
+    {"element": "Carried item icons, slot 2", "rect": [174, 206, 20, 20]},
+    {"element": "Item list", "rect": [252, 150, 180, 143]}
+  ]
+}

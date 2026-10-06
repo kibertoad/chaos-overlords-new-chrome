@@ -79,16 +79,40 @@ public sealed class FinanceUiTests
             GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
 
         var spends = StatusConsolePresentation.QueuedCashSpends(state, player);
-        Assert.Equal([second.Id, first.Id], spends.Select(spend => spend.Gang).ToArray());
+        Assert.Equal([(GangId?)second.Id, first.Id], spends.Select(spend => spend.Gang).ToArray());
         Assert.Equal([1, 2], spends.Select(spend => spend.Position).ToArray());
         Assert.Equal(player.Cash - spends.Sum(spend => spend.Price),
             StatusConsolePresentation.UnspentCash(state, player));
 
         Assert.True(state.Submit(new GameCommand(player.Id, second.Id,
             GangAction.Equip, CommandTarget.Item(item.Id))).Accepted);
-        Assert.Equal([first.Id, second.Id],
+        Assert.Equal([(GangId?)first.Id, second.Id],
             StatusConsolePresentation.QueuedCashSpends(state, player)
                 .Select(spend => spend.Gang).ToArray());
+    }
+
+    [Fact]
+    public void UnspentCashListsTheQueuedHireAfterThePurchases()
+    {
+        var state = CreatePlanningMatch();
+        var player = state.Players[0];
+        var gang = player.Gangs.Single(candidate => candidate.IsActive);
+        Assert.True(state.Submit(new GameCommand(player.Id, gang.Id,
+            GangAction.Bribe, CommandTarget.None)).Accepted);
+        state.PrepareHireOffers(player.Id);
+        var offer = player.HirePool[0];
+        Assert.True(state.QueueHire(player.Id, offer, gang.SectorId).Accepted);
+
+        // RULE-TURN-002: hire_phase comes after the Instant and Transaction phases.
+        var spends = StatusConsolePresentation.QueuedCashSpends(state, player);
+        var recruit = state.Definitions.Gang(offer);
+        Assert.Equal([QueuedSpendKind.Bribe, QueuedSpendKind.Hire], spends.Select(spend => spend.Kind));
+        Assert.Equal([1, 2], spends.Select(spend => spend.Position));
+        Assert.Null(spends[1].Gang);
+        Assert.Equal(recruit.Name, spends[1].GangName);
+        Assert.Equal(HireRules.InitialCost(recruit), spends[1].Price);
+        Assert.Equal(player.Cash - ManualRules.OriginalBribeCost - HireRules.InitialCost(recruit),
+            StatusConsolePresentation.UnspentCash(state, player));
     }
 
     [Fact]
@@ -108,8 +132,8 @@ public sealed class FinanceUiTests
             GangAction.Bribe, CommandTarget.None)).Accepted);
 
         var spends = StatusConsolePresentation.QueuedCashSpends(state, player);
-        Assert.Equal([(briber.Id, GangAction.Bribe), (buyer.Id, GangAction.Equip)],
-            spends.Select(spend => (spend.Gang, spend.Action)).ToArray());
+        Assert.Equal([((GangId?)briber.Id, QueuedSpendKind.Bribe), (buyer.Id, QueuedSpendKind.Equip)],
+            spends.Select(spend => (spend.Gang, spend.Kind)).ToArray());
         Assert.Equal("BRIBE", spends[0].Description);
         Assert.Equal(ManualRules.OriginalBribeCost, spends[0].Price);
         Assert.Equal(SpecialSiteRules.EquipmentCost(state, buyer, item), spends[1].Price);
@@ -123,8 +147,9 @@ public sealed class FinanceUiTests
         var gang = new GangId(1);
         QueuedCashSpend[] spends =
         [
-            new(1, gang, "TEST", GangAction.Bribe, "BRIBE", 2),
-            new(2, gang, "TEST", GangAction.Equip, "PISTOL", 5)
+            new(1, gang, "TEST", QueuedSpendKind.Bribe, "BRIBE", 2),
+            new(2, gang, "TEST", QueuedSpendKind.Equip, "PISTOL", 5),
+            new(3, null, "RECRUIT", QueuedSpendKind.Hire, "HIRE", 4)
         ];
         var projection = new FinanceProjection(
             GangUpkeep: -3, NewContracts: 0, ProjectedGangCount: 1, Equipment: -5,
@@ -133,21 +158,26 @@ public sealed class FinanceUiTests
 
         var lines = StatusConsolePresentation.CashTooltip(20, spends, projection);
 
-        Assert.Equal("CASH  20 [13] (-5)", lines[0]);
+        Assert.Equal("CASH  20 [9] (-5)", lines[0]);
         Assert.Equal(
             [
                 "20 - CASH: MONEY ON HAND RIGHT NOW.",
-                "[13] - UNSPENT: CASH LEFT AFTER QUEUED BRIBES AND EQUIPS.",
+                "[9] - UNSPENT: CASH LEFT AFTER QUEUED BRIBES, EQUIPS AND HIRES.",
+                "  CASH 20 - BRIBES 2 - EQUIPS 5 - HIRES 4 = UNSPENT 9",
+                "  BRIBES PAY FIRST, THEN EQUIPS IN SUBMISSION ORDER.",
                 "(-5) - DELTA: ESTIMATED CHANGE OVER THE WHOLE TURN.",
                 "QUEUED SPENDING IN RESOLUTION ORDER:"
             ],
             lines.Select((line, index) => (line, index))
                 .Where(entry => entry.index > 0 && lines[entry.index - 1].Length == 0)
                 .Select(entry => entry.line));
-        Assert.Contains("  20 CASH - 2 BRIBES - 5 EQUIPS = 13", lines);
+        Assert.Contains("  HIRES PAY LAST, AFTER CHAOS INCOME.", lines);
         Assert.Contains("  GANG UPKEEP       -3", lines);
         Assert.Contains("  CHAOS ESTIMATE    +4", lines);
         Assert.Contains("  TOTAL             -5", lines);
+        // RULE-TURN-002, RULE-UPKEEP-001: the delta arrives after this turn's purchases.
+        Assert.Contains("  THE DELTA CANNOT PAY FOR EQUIPS OR NEW GANGS:", lines);
+        Assert.Contains("  ONLY UNSPENT CASH FROM THE TURN START CAN.", lines);
         Assert.DoesNotContain(lines, line => line.StartsWith("  NEW CONTRACTS", StringComparison.Ordinal)
             || line.StartsWith("  SITE CASH", StringComparison.Ordinal));
     }

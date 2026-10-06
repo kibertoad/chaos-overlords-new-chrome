@@ -13,10 +13,16 @@ public static partial class AiTurnPlanner
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
         var sectorWeight = state.AiPlanning.SectorWeight(playerId, gang.SectorId);
 
+        // BUG-AI-008: the late gates read the local that last held a selector's pick as the
+        // sector: the item when an Equip is planned, the gang's sector otherwise.
+        var gateSector = gang.SectorId;
         if (OriginalAiEquipmentRules.SelectFamilyTwoUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)
+        {
             SetRecoveredFocusedReplacementEquipmentAction(
                 state, playerId, gangSlot, upgrade);
+            gateSector = upgrade.ItemId;
+        }
         else if (OriginalAiFamilyTwoRules.ShouldHeal(
                      gang.Force,
                      EffectiveStatisticsCalculator.ForGang(state, gang).Heal,
@@ -31,7 +37,7 @@ public static partial class AiTurnPlanner
             PrepareFamilyTwoNonOwnedSector(
                 state, playerId, gang, gangSlot, visible, sectorWeight, snapshot);
 
-        ApplyFamilyTwoControlOverride(state, playerId, gang, gangSlot, visible);
+        ApplyFamilyTwoControlOverride(state, playerId, gang, gangSlot, visible, gateSector);
         TerminateForGreed(state, playerId, gangSlot);
     }
 
@@ -95,23 +101,28 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<ObjectiveTarget> visible)
+        IReadOnlyList<ObjectiveTarget> visible,
+        int gateSector)
     {
         // FND-AI-058: both late gates read the owner query, with the out-of-row attitude read for a
         // neutral sector or one under police presence, and the human test reads the raw owner.
         // The combat-advantage flags of other rows are cleared each pass, so a negative query
-        // reads 0.
-        var ownerQuery = OwnerQuery(state, gang.SectorId);
+        // reads 0. BUG-AI-008: the owner query, its attitude and the owner's visible gangs are
+        // read for gateSector; the human gang count and the human-owner test for the gang's own.
+        var ownerQuery = OwnerQuery(state, gateSector);
         var visibleHumanCount = visible.Count(target =>
             state.FindPlayer(target.Gang.Owner)?.Setup.Controller == PlayerController.Human);
-        var visibleOwnerCount = visible.Count(target => target.Gang.Owner.Value == ownerQuery);
+        var gateVisible = gateSector == gang.SectorId
+            ? visible
+            : VisibleOpponentsInSector(state, playerId, gateSector);
+        var visibleOwnerCount = gateVisible.Count(target => target.Gang.Owner.Value == ownerQuery);
         var combatAdvantage = ownerQuery >= 0
             && ownerQuery != playerId.Value
             && state.FindPlayer(new PlayerId(ownerQuery)) is not null
             && state.AiStrategy.HasSectorCombatAdvantageHostility(
                 state, playerId, new PlayerId(ownerQuery));
         if (!OriginalAiFamilyTwoRules.ShouldOverrideWithControl(
-                IsHostileOwner(state, playerId, gang.SectorId),
+                IsHostileOwner(state, playerId, gateSector),
                 OwnerIsHuman(state, gang.SectorId),
                 visibleHumanCount,
                 visibleOwnerCount,
