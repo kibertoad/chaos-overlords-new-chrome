@@ -34,6 +34,21 @@ export function releasedTurn(
   return Math.max(0, match.currentTurn - 1 - delay)
 }
 
+/**
+ * Whether the state the match started from, which the players plan turn 1 on, is released.
+ *
+ * `releasedTurn` cannot say this: it answers 0 both for "nothing yet" and for "the start and no turn
+ * after it". While the match runs, the start is released once the players are `delay` turns past
+ * it, that is once `currentTurn - 1 - delay` reaches 0. Before that the turn-0 snapshot is the board
+ * the players are planning on now, or only a turn or two old.
+ */
+export function startReleased(match: Pick<Match, 'status' | 'currentTurn' | 'settings'>): boolean {
+  if (match.currentTurn < 1) return false
+  if (match.status === 'finished' || match.status === 'abandoned') return true
+  if (match.status !== 'running' && match.status !== 'desynced') return false
+  return match.currentTurn - 1 - (spectatorDelay(match) ?? 0) >= 0
+}
+
 /** Whether releasing a turn needs the open turn's row; see `releasedTurn`. */
 export function releaseReadsCurrentTurn(match: Pick<Match, 'status' | 'currentTurn'>): boolean {
   return match.currentTurn >= 1 && (match.status === 'finished' || match.status === 'abandoned')

@@ -323,14 +323,16 @@ votes) can see one.
 | `GET /spectate/:id` | spectator | The match as a spectator may see it: status, settings without `seatSummaries`, roster, `currentTurn`, `delayTurns`, `releasedTurn`, and the seed once `releasedTurn` is at least 1. |
 | `GET /spectate/:id/events?after=&limit=` | spectator | The released part of the log, filtered to `match.started`, `match.playerTakenOver`, `match.playerReturned`, `match.latePlayerJoined`, `turn.opened` and `turn.sealed`, with a `cursor` to continue from. It stops at the seal of the first turn not yet released. |
 | `GET /spectate/:id/turns/:turn/orders` | spectator | A released turn's sealed set. A later turn answers `409 turn_not_released` with the released turn. |
-| `GET /spectate/:id/snapshots/latest` | spectator | The newest snapshot at or below the released turn (`404 no_snapshot` before the host's bootstrap upload). |
+| `GET /spectate/:id/snapshots/latest` | spectator | The newest snapshot at or below the released turn (`404 no_snapshot` before the host's bootstrap upload, and until the bootstrap is the delay old). |
 | `POST /spectate/:id/leave` | spectator | Stops watching and revokes the token. |
 | `GET /matches/:id/spectators` | member | Who is watching. |
 | `POST /matches/:id/spectators/:sid/kick` | host | Removes a spectator and revokes their token. |
 
 **Released turns.** While the match runs, or is paused on a desync, the released turn is
 `currentTurn - 1 - delay`, and never below 0: with a delay of 2 on turn 6, turns 1 to 3 are
-released. Once the match is finished or abandoned, every sealed turn is. In the lobby nothing is.
+released. The bootstrap snapshot is the board the players plan turn 1 on, so it and the events
+are held back until `currentTurn - 1 - delay` reaches 0: with a delay of 2, until turn 3 opens.
+Once the match is finished or abandoned, every sealed turn is. In the lobby nothing is.
 Every spectator read is checked against that number on the server, so a client cannot ask past it.
 
 **What a spectator sees.** The whole city as every client holds it, on the released turn: every
@@ -352,8 +354,9 @@ to the caller's address like the other doors, and every spectator read to the me
 the spectator's own key.
 
 **Retention.** Spectator rows go with their match. The snapshot pruning that keeps a running match
-to a few recent snapshots also keeps the newest one at or below the released turn, so a spectator
-always has a state to start from.
+to a few recent snapshots also keeps the newest one at or below the released turn and every later
+one, so a spectator always has a state to start from and the start moves forward as turns are
+released. While the match runs that is at most the delay plus a few snapshots.
 
 Both runtimes serve the same routes from the same app. The Cloudflare worker stores spectators in
 D1 through the same migrations, and neither runtime's event fan-out is involved.

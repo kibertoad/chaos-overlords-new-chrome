@@ -1,8 +1,4 @@
-import {
-  RateLimitedError,
-  type SpectatorPrincipal,
-  UnauthorizedError,
-} from '@chaos-overlords/kernel'
+import { RateLimitedError, UnauthorizedError } from '@chaos-overlords/kernel'
 import type { Context, MiddlewareHandler } from 'hono'
 import type { RateLimiters } from '../container'
 import type { AppEnv } from './types'
@@ -43,20 +39,11 @@ function safeRequestId(raw: string | undefined): string | null {
  * 256-bit token is not the concern; the database reads are.
  */
 export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const header = c.req.header('authorization') ?? ''
-  const [scheme, token] = header.split(' ', 2)
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    chargeAnonymous(c)
-    throw new UnauthorizedError('Send the player token as a Bearer credential', {
-      reason: 'missing_token',
-    })
-  }
-  try {
-    c.set('principal', await c.get('container').kernel.auth.authenticate(token))
-  } catch (error) {
-    if (error instanceof UnauthorizedError) chargeAnonymous(c)
-    throw error
-  }
+  const token = bearerToken(c, 'player')
+  c.set(
+    'principal',
+    await chargingRefusals(c, () => c.get('container').kernel.auth.authenticate(token)),
+  )
   await next()
 }
 
@@ -69,24 +56,36 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
  * cannot spend anybody else's.
  */
 export const spectatorAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const token = bearerToken(c, 'spectator')
+  const principal = await chargingRefusals(c, () =>
+    c.get('container').kernel.spectators.authenticate(token),
+  )
+  c.set('spectator', principal)
+  enforce(c.get('container').rateLimiters, 'member', `spectator:${principal.spectator.id}`, c)
+  await next()
+}
+
+/** The Bearer credential of a request, or a 401 charged to the caller's address. */
+function bearerToken(c: Context<AppEnv>, holder: 'player' | 'spectator'): string {
   const header = c.req.header('authorization') ?? ''
   const [scheme, token] = header.split(' ', 2)
   if (scheme?.toLowerCase() !== 'bearer' || !token) {
     chargeAnonymous(c)
-    throw new UnauthorizedError('Send the spectator token as a Bearer credential', {
+    throw new UnauthorizedError(`Send the ${holder} token as a Bearer credential`, {
       reason: 'missing_token',
     })
   }
-  let principal: SpectatorPrincipal
+  return token
+}
+
+/** Runs a token lookup, charging a refused token to the caller's address; see `bearerAuth`. */
+async function chargingRefusals<T>(c: Context<AppEnv>, authenticate: () => Promise<T>): Promise<T> {
   try {
-    principal = await c.get('container').kernel.spectators.authenticate(token)
+    return await authenticate()
   } catch (error) {
     if (error instanceof UnauthorizedError) chargeAnonymous(c)
     throw error
   }
-  c.set('spectator', principal)
-  enforce(c.get('container').rateLimiters, 'member', `spectator:${principal.spectator.id}`, c)
-  await next()
 }
 
 /**

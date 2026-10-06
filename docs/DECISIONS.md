@@ -78,10 +78,14 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   - the seed, once at least turn 1 is released;
   - the sealed order set of any released turn;
   - the newest snapshot at or below the released turn. Snapshot pruning keeps
-    that snapshot while the match runs, so a spectator can always start;
+    that snapshot and every later one while the match runs, so a spectator
+    can always start and the start moves forward with the released turn. The
+    turn-0 bootstrap is the board the players plan turn 1 on, so it is held
+    back until `currentTurn - 1 - delay` reaches 0, and the events below with
+    it;
   - the events that change who controls a seat (start, turn opened and
-    sealed, takeover, return, late join, status) logged before the seal of
-    the first unreleased turn. A rebuild from sealed sets needs them; see
+    sealed, takeover, return, late join) logged before the seal of the first
+    unreleased turn. A rebuild from sealed sets needs them; see
     the control handovers in the match session.
   Once the match has finished or been abandoned every sealed turn is
   released. A request for anything later answers `409 turn_not_released`.

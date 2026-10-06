@@ -1,6 +1,6 @@
 import { LIMITS } from '@chaos-overlords/contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { releasedTurn } from '../src/logic/spectating'
+import { releasedTurn, startReleased } from '../src/logic/spectating'
 import { spectatorStartTurn } from '../src/services/spectatorRelease'
 import { createHarness, type Harness } from './harness'
 
@@ -29,6 +29,14 @@ describe('releasedTurn', () => {
     expect(releasedTurn(match('finished', 10), { status: 'open', orderSetHash: null })).toBe(9)
     expect(releasedTurn(match('finished', 10), { status: 'confirmed', orderSetHash: 'h' })).toBe(10)
     expect(releasedTurn(match('abandoned', 6), null)).toBe(5)
+  })
+
+  it('holds the start back until the players are the delay past it', () => {
+    expect(startReleased(match('lobby', 0))).toBe(false)
+    expect(startReleased(match('running', 1))).toBe(false)
+    expect(startReleased(match('running', 2))).toBe(false)
+    expect(startReleased(match('running', 3))).toBe(true)
+    expect(startReleased(match('abandoned', 1))).toBe(true)
   })
 })
 

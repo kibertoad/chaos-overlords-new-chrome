@@ -431,6 +431,12 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
             reason: 'turn_not_released',
           })
           expect((await spectator.get()).seed).toBeNull()
+          // Turn 2 is open: the bootstrap is one turn old, inside the delay.
+          await expect(spectator.latestSnapshot()).rejects.toMatchObject({
+            status: 404,
+            reason: 'no_snapshot',
+          })
+          expect((await spectator.events(0)).events).toEqual([])
         }
       }
       const view = await spectator.get()
