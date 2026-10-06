@@ -295,7 +295,7 @@
 
 ## recorded
 
-529 entries.
+531 entries.
 
 | ID | Title |
 |---|---|
@@ -449,6 +449,8 @@
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | How long do the original's presentation waits last against its six-per-second clock? |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | Which copies does the original make when a panel slides in? |
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? |
+| [EXP-UI-027](../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? |
+| [EXP-UI-028](../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | How many steps does the intro show of each movie when it plays out? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
