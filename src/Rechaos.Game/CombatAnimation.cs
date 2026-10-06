@@ -53,6 +53,12 @@ public static class CombatAnimationRouting
     public const short PoliceAttackAnimation = 28;
     public const short PoliceHitAnimation = 20;
 
+    /// <summary>
+    /// FND-COMBAT-010: the gang definition whose unarmed attack plays attack strip 2
+    /// (<c>PX07002</c>, mirrored <c>PX07202</c>).
+    /// </summary>
+    public const short OwnAttackStripDefinition = 63;
+
     /// <summary>The detailed-combat clips of one event, as <paramref name="viewer"/> sees them.</summary>
     /// <remarks>
     /// The original presents each of the viewer's gangs on the left. Its own attack plays the
@@ -203,9 +209,11 @@ public static class CombatAnimationRouting
         }
         var definition = state.Definitions.Gang(gang.DefinitionId);
         var martialArts = definition.Stats.MartialArts > 0;
-        return (
-            martialArts ? (short)1 : (short)0,
-            HitAnimation(martialArts ? (short)18 : (short)2, damage));
+        // FND-COMBAT-010: unarmed, definition 63 takes attack strip 2 in place of the one Martial
+        // Arts picks, and its hit strip still follows Martial Arts (EXP-UI-046).
+        var attack = gang.DefinitionId == OwnAttackStripDefinition ? (short)2
+            : martialArts ? (short)1 : (short)0;
+        return (attack, HitAnimation(martialArts ? (short)18 : (short)2, damage));
     }
 
     private static short HitAnimation(short animation, int damage) =>

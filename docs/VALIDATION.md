@@ -778,7 +778,8 @@ shot of the Comlink Send panel, `caret_phase`, 3 while its caret is drawn
 inverse and 0 while plain, read from the byte at `0x00498110`
 (FND-COMLINK-010); and while a Detailed Combat clip plays, `clip_tick`, the
 clip's tick (FND-COMBAT-016), and `clip_index`, the clip's index within its
-presentation, counted from 0 (FND-COMBAT-011). Each is read before and after
+presentation, counted from 0 (FND-COMBAT-011); a shot taken between two clips
+keeps neither. Each is read before and after
 the capture, which is taken again when the two reads differ, and a value that
 moved during every attempt is left out. A `warn` step
 switches Warn if Idle Gangs back on for the steps after it. `extract` gives that

@@ -84,6 +84,8 @@ public sealed class CombatAnimationTests
     [Theory]
     [InlineData((short)0, (short)0, (short)2)]
     [InlineData((short)54, (short)1, (short)18)]
+    // FND-COMBAT-010: definition 63 takes attack strip 2, its hit strip chosen by Martial Arts (EXP-UI-046).
+    [InlineData((short)63, (short)2, (short)2)]
     public void UnarmedStyleSelectsOrdinaryOrMartialArtsPair(
         short gangDefinition,
         short expectedAttack,

@@ -46,7 +46,11 @@ public sealed partial class ScreenCaptureTests
     // local human sees where its planning would have come (RULE-OBJECTIVE-005). EXP-UI-019 and
     // EXP-UI-020 compare the Detailed Combat panel SCR-COMBAT-002 at the ticks of a gang's clip and
     // a police clip the console's control started, the rebuild's clip drawn at the captured tick
-    // (FND-COMBAT-016). EXP-UI-021 compares Comlink View SCR-COMLINK-001 on a message one human
+    // (FND-COMBAT-016); EXP-UI-029 a second police clip, drawn at the captured clip index
+    // (FND-COMBAT-011); EXP-UI-046 an armed and an unarmed attack on the viewer's gang, the second by
+    // definition 63 (FND-COMBAT-010); EXP-UI-047 a Martial Arts attack; EXP-UI-048 an attack of the
+    // viewer's that its target evades; EXP-UI-049 and EXP-UI-054 two evaded attacks on the viewer's
+    // gang, EXP-UI-054 at the ticks before the second clip's first frame. EXP-UI-021 compares Comlink View SCR-COMLINK-001 on a message one human
     // typed and sent the other, the text typed into the rebuild's Send panel. EXP-UI-023 compares
     // the victory splash SCR-AWARDS-002 of a match left with one active player.
     [Theory(SkipTestWithoutData = true)]
@@ -61,9 +65,13 @@ public sealed partial class ScreenCaptureTests
         if (capture.Elements.Count == 0)
             Assert.Skip($"{capture} records no screen elements; the probe's digest command adds them.");
         // FND-COMBAT-016: the probe keeps a shot whose clip tick moved during every attempt without
-        // the tick, and drawing the clip at its first tick would compare a different picture.
+        // the tick, and drawing the clip at its first tick would compare a different picture. A shot
+        // taken between two clips of a presentation, after one returned and before the next set its
+        // tick up, has no tick either (EXP-UI-029).
         if (capture.ClipTick is null && capture.Screens.Contains("SCR-COMBAT-002"))
-            Assert.Skip($"{capture} shows a Detailed Combat clip, but the probe could not settle its tick.");
+            Assert.Skip($"{capture} shows the Detailed Combat panel without a clip tick: the tick moved during every copy, or the shot fell between two clips.");
+        if (Repainted.TryGetValue((experiment, run, step), out var repaint))
+            Assert.Skip($"{capture} cannot be compared: {repaint}.");
         var masks = ScreenCaptureMasks.For(capture.Screens);
         // The capture itself is only needed for elements with white or masked pixels; the
         // others are compared by digest.
@@ -87,16 +95,28 @@ public sealed partial class ScreenCaptureTests
         Assert.Empty(results.Where(result => result.Verdict == ElementVerdict.Differs).Select(result => result.ToString()));
     }
 
+    // Shots whose screen a repaint of the original's window changed. The rebuild never loses what it
+    // drew, so it draws the screen as it stood before the repaint.
+    private static readonly Dictionary<(string Experiment, int Run, int Step), string> Repainted = new()
+    {
+        // FND-COMBAT-032: before tick 3 frame 0 of the strips is on the screen only, and a paint
+        // restores the apertures as the panel's back buffer holds them, black. EXP-UI-054 shows
+        // frame 0 at ticks 0 to 3 of the same clip.
+        [("EXP-UI-049", 0, 13)] = "its apertures are black at tick 2 of the second clip, as a paint before tick 3 leaves them (FND-COMBAT-032)",
+    };
+
     // FND-COMBAT-011: a Detailed Combat shot without clip_index is drawn at the presentation's
     // first clip. Shots are taken after the dump, where only the console's control (flag 0) opens
     // a presentation, and every planning presentation (flag 1) has returned by then, so such a shot
-    // shows a first clip when no console presentation of its run started a second.
+    // shows a first clip when no console presentation of its run started a second. A shot with
+    // neither a tick nor an index, taken between two clips, is skipped and left out here.
     [Fact]
     public void ADetailedCombatShotWithoutAClipIndexShowsAFirstClip()
     {
         var directory = Path.Combine(AppContext.BaseDirectory, "spec", "experiments");
         foreach (var run in ScreenCaptureRecord.LoadAll()
-                     .Where(capture => capture.Screens.Contains("SCR-COMBAT-002") && capture.ClipIndex is null)
+                     .Where(capture => capture.Screens.Contains("SCR-COMBAT-002") && capture.ClipIndex is null
+                                       && capture.ClipTick is not null)
                      .Select(capture => (capture.Experiment, capture.Run)).Distinct())
         {
             using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, run.Experiment + ".json")));

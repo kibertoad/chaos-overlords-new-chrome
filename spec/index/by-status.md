@@ -295,7 +295,7 @@
 
 ## recorded
 
-530 entries.
+537 entries.
 
 | ID | Title |
 |---|---|
@@ -451,6 +451,12 @@
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? |
+| [EXP-UI-029](../experiments/EXP-UI-029.md) | Does the Detailed Combat panel look the same in the rebuild through the second clip of a presentation? |
+| [EXP-UI-046](../experiments/EXP-UI-046.md) | Does the Detailed Combat panel look the same in the rebuild through an armed and an unarmed attack on the viewer's gang? |
+| [EXP-UI-047](../experiments/EXP-UI-047.md) | Does the Detailed Combat panel look the same in the rebuild through a bare-handed Martial Arts attack? |
+| [EXP-UI-048](../experiments/EXP-UI-048.md) | Does the Detailed Combat panel look the same in the rebuild through an attack of the viewer's that its target evades? |
+| [EXP-UI-049](../experiments/EXP-UI-049.md) | Does the Detailed Combat panel look the same in the rebuild through two evaded attacks on the viewer's gang? |
+| [EXP-UI-054](../experiments/EXP-UI-054.md) | What do the Detailed Combat apertures show before the second clip's first strip frame? |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | How many steps does the intro show of each movie when it plays out? |
 | [FND-AI-001](../findings/FND-AI-001.md) | The per-gang AI dispatcher stores a family byte and switches on it to fourteen handlers |
 | [FND-AI-002](../findings/FND-AI-002.md) | The dispatcher maps scenario and hire role to a family, and keeps the family for unmapped pairs |
@@ -570,6 +576,7 @@
 | [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | Detailed Combat draws each gang portrait and its two Force tracks into the same surface, 68 and 75 rows below the portrait's top |
 | [FND-COMBAT-016](../findings/FND-COMBAT-016.md) | The Detailed Combat clip player keeps its tick in a stack local, and paints the Force tracks again only on tick 16 |
 | [FND-COMBAT-017](../findings/FND-COMBAT-017.md) | Detailed Combat copies each clip's sector tile from the unowned city map art and frames it in black |
+| [FND-COMBAT-032](../findings/FND-COMBAT-032.md) | The Detailed Combat clip player puts the strips' first frames on the screen only, and definition 63 changes only the attack strip |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | Each player keeps at most 16 Comlink messages, and a 17th drops the oldest |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send |
