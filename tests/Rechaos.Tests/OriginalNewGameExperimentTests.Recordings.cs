@@ -49,9 +49,15 @@ public sealed partial class OriginalNewGameExperimentTests
         }
     }
 
-    // The players of the names the endgame's first drawing listed, in drawing order, and each row's
-    // kind: splash, ranked or eliminated (FND-AWARDS-005).
-    private sealed record RecordedEndgame(IReadOnlyList<int> Players, IReadOnlyList<string> Kinds);
+    // The three arguments the endgame renderer was called with, the players of the names its first
+    // drawing listed, in drawing order, and each row's kind: splash, ranked or eliminated
+    // (FND-AWARDS-005).
+    private sealed record RecordedEndgame(IReadOnlyList<int> Arguments, IReadOnlyList<int> Players, IReadOnlyList<string> Kinds)
+    {
+        // FND-AWARDS-005: the renderer draws the victory splash of the player in its third argument
+        // when its first argument is not 0 and its second is 0, and the table otherwise.
+        public bool DrawsSplash => Arguments[0] != 0 && Arguments[1] == 0;
+    }
     // The viewer of the last city redraw and its site markers as definition, sector, ordinal and
     // controlled flag (FND-SEARCH-006).
     private sealed record RecordedMarkers(int Viewer, IReadOnlyList<int[]> Markers);
@@ -218,6 +224,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 : null;
             EndgameRows = run.TryGetProperty("endgame_rows", out var endgame)
                 ? new RecordedEndgame(
+                    endgame.GetProperty("arguments").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
                     endgame.GetProperty("players").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
                     endgame.GetProperty("kinds").EnumerateArray().Select(value => value.GetString()!).ToArray())
                 : null;
