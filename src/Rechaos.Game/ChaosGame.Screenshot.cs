@@ -18,6 +18,8 @@ public sealed partial class ChaosGame
 
     private void CompleteDraw(GameTime gameTime)
     {
+        // FND-UI-062: the held-button helper copies its faces straight to the window.
+        DrawHeldPanelFace(GraphicsDevice.Viewport);
         // RULE-TIMER-004: a pressed key face or a flash is drawn over whatever the screen shows.
         DrawTickedPresentation(GraphicsDevice.Viewport);
         base.Draw(gameTime);

@@ -47,4 +47,16 @@ public static class HeldButtonFaces
         HeldButtonKind.SearchNone => new Rectangle(247, 560, 50, 23),
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
+
+    /// <summary>
+    /// What the helper copies to the window for a held face (FND-UI-062): the lit face while the
+    /// pointer is over it and the plain face otherwise, each at the face's top-left corner at the
+    /// size of its image on the sheet. A panel's face tests a rectangle one pixel narrower and
+    /// shorter than the image (FND-UI-067).
+    /// </summary>
+    public static (Rectangle Destination, Rectangle Source) Drawn(HeldButtonKind kind, Rectangle face, bool pointerInside)
+    {
+        var source = pointerInside ? Lit(kind) : Plain(kind);
+        return (new Rectangle(face.X, face.Y, source.Width, source.Height), source);
+    }
 }

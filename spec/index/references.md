@@ -590,6 +590,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-058](../findings/FND-UI-058.md) | builds, locations |
 | [FND-UI-059](../findings/FND-UI-059.md) | body, builds, locations |
 | [FND-UI-062](../findings/FND-UI-062.md) | builds, locations |
+| [FND-UI-067](../findings/FND-UI-067.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -4091,6 +4092,7 @@ None.
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 | [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | body, evidence |
+| [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, evidence |
 | [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | body, evidence |
 | [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | body, evidence |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | body, evidence |
@@ -5193,6 +5195,7 @@ None.
 | [FND-UI-048](../findings/FND-UI-048.md) | body |
 | [FND-UI-050](../findings/FND-UI-050.md) | body |
 | [FND-UI-062](../findings/FND-UI-062.md) | body |
+| [FND-UI-067](../findings/FND-UI-067.md) | body |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | body |
 | [FND-VIDEO-002](../findings/FND-VIDEO-002.md) | body |
 | [RULE-AI-001](../rules/RULE-AI-001.md) | evidence |
@@ -7453,6 +7456,7 @@ None.
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | [FND-UI-021](../findings/FND-UI-021.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
+| [FND-UI-067](../findings/FND-UI-067.md) | body |
 | glossary: app_deactivated | glossary |
 | glossary: full_screen_active | glossary |
 | glossary: input_event | glossary |
@@ -7887,10 +7891,39 @@ None.
 |---|---|
 | [FND-COMLINK-011](../findings/FND-COMLINK-011.md) | body |
 | [FND-EVENT-007](../findings/FND-EVENT-007.md) | body |
+| [FND-UI-067](../findings/FND-UI-067.md) | body |
+| [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
 | [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
 | [SCR-COMLINK-002](../screens/SCR-COMLINK-002.md) | body, evidence |
 | [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | body, evidence |
+| [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, evidence |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | body, evidence |
+| [SCR-GANG-002](../screens/SCR-GANG-002.md) | body, evidence |
+| [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | body, evidence |
+| [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, evidence |
+| [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | body, evidence |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | body, evidence |
+| [SCR-UI-005](../screens/SCR-UI-005.md) | body, evidence |
+| [SCR-UI-006](../screens/SCR-UI-006.md) | body, evidence |
+| [SCR-UI-007](../screens/SCR-UI-007.md) | body, evidence |
+| [SCR-UI-008](../screens/SCR-UI-008.md) | body, evidence |
+
+## FND-UI-067
+
+| Cited by | In |
+|---|---|
+| [SCR-COMBAT-001](../screens/SCR-COMBAT-001.md) | body, evidence |
+| [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) | body, evidence |
+| [SCR-FINANCE-001](../screens/SCR-FINANCE-001.md) | body, evidence |
+| [SCR-GANG-001](../screens/SCR-GANG-001.md) | body, evidence |
+| [SCR-GANG-002](../screens/SCR-GANG-002.md) | body, evidence |
+| [SCR-HIRE-001](../screens/SCR-HIRE-001.md) | body, evidence |
+| [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, evidence |
+| [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | body, evidence |
+| [SCR-UI-005](../screens/SCR-UI-005.md) | body, evidence |
+| [SCR-UI-006](../screens/SCR-UI-006.md) | body, evidence |
+| [SCR-UI-007](../screens/SCR-UI-007.md) | body, evidence |
+| [SCR-UI-008](../screens/SCR-UI-008.md) | body, evidence |
 
 ## FND-UPKEEP-001
 

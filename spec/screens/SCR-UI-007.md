@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-005, FND-UI-006, FND-UI-011, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-049, EXP-UI-007]
+evidence: [FND-UI-005, FND-UI-006, FND-UI-011, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-049, EXP-UI-007, FND-UI-062, FND-UI-067]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-004, SCR-UI-004]
@@ -22,12 +22,13 @@ related: [RULE-UI-003, RULE-UI-004, SCR-UI-004]
 | Resistance, Tolerance, Support, Cash | The digits of `DATA/PX16/PX00129` | The site's values, by `modifier_cells` with width 2 (RULE-UI-004). Resistance is the definition's value less the site's progress when the site's sector belongs to the active player and the panel was opened from the console or Influence, and the definition's value otherwise, including from Search | Two cells from x 396 on rows 169, 187, 196 and 205 | Always | FND-UI-005, FND-UI-006 |
 | Special line | String resource `0x1D + special` of the executable, 20 characters, in the font strip of `DATA/PX16/PX00129` | The label and amount of the site's special effect | From `(288,214)` | When the definition's `special` is not 0 | FND-UI-049, EXP-UI-007 |
 | The fourteen statistics | The digits of `DATA/PX16/PX00129` | The site's fourteen statistic modifiers, by `modifier_cells` with width 2 | Two cells from x 300 and from x 396 on rows 244, 253, 271, 280, 289, 298 and 307 | Always | FND-UI-005, FND-UI-006 |
+| Close pressed | `DATA/PX16/PX00129` rectangle (0, 386, 50, 23); plain face (50, 386, 50, 23) while the pointer is outside and after a release that leaves the panel open | None | (161, 293, 50, 23) | While the face is held with the pointer inside it | FND-UI-062, FND-UI-067 |
 
 ## Mouse input
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Close face | `(161,293,49,22)` | While open | Closes the panel (RULE-UI-003) and returns to the screen it was opened from | FND-UI-005 |
+| Close face | `(161,293,49,22)` | While open | Held through the held-button helper; closes the panel (RULE-UI-003) and returns to the screen it was opened from only when the button is released inside it | FND-UI-005, FND-UI-067 |
 | Inside the panel, off the face | The rest of `(128,124,320,209)` | While open | None | FND-UI-024 |
 | Outside the panel | Outside `(128,124,320,209)` | While open | Refused; plays slot 4 | FND-UI-024 |
 

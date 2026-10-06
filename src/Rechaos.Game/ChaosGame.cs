@@ -261,6 +261,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             // A pressed face acts on the screen it was pressed on; if something else moved the
             // screen during the wait, the key's action is dropped.
             _tickedPresentation.Clear();
+            // FND-UI-062: a plain face a release left stays only until its panel goes.
+            _releasedPanelFace = null;
             _citySectorClicks.Cancel();
             _sectorSiteClicks.Cancel();
             _sectorNeighborClicks.Cancel();
@@ -899,8 +901,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 PressPanelFace(point, GangDetailsPanel, GangDetailsOk, CloseGangDetails);
                 break;
             case ClientScreen.Site:
-                if (SiteInformationLayout.Ok.Contains(point))
-                    AcceptAndInvoke(CloseSiteDetails);
+                // SCR-UI-007, FND-UI-067: the held close face closes on a release inside it.
+                PressPanelFace(point, SiteInformationLayout.Panel, SiteInformationLayout.Ok, CloseSiteDetails);
                 break;
             case ClientScreen.ItemInformation:
                 // SCR-UI-006, FND-UI-047: the held exit face closes on a release inside it.
@@ -912,12 +914,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     CloseGameInformation);
                 break;
             case ClientScreen.Finance:
-                if (FinanceLayout.Ok.Contains(point))
-                    AcceptAndShow(_managementReturnScreen);
+                // SCR-FINANCE-001, FND-UI-067: the press is tested against the shared panel
+                // rectangle, wider than the panel drawn.
+                PressPanelFace(point, SharedPanelLayout.Panel, FinanceLayout.Ok,
+                    () => _screens.Show(_managementReturnScreen));
                 break;
             case ClientScreen.Ranking:
-                if (PlayerRankingLayout.Ok.Contains(point))
-                    AcceptAndShow(_managementReturnScreen);
+                // SCR-OBJECTIVE-001, FND-UI-067.
+                PressPanelFace(point, PlayerRankingLayout.Panel, PlayerRankingLayout.Ok,
+                    () => _screens.Show(_managementReturnScreen));
                 break;
             case ClientScreen.Search:
                 HandleSiteSearchClick(point);
