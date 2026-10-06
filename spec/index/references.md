@@ -179,6 +179,8 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | builds |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | builds |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | builds |
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | builds |
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | builds |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
@@ -587,6 +589,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-057](../findings/FND-UI-057.md) | builds, locations |
 | [FND-UI-058](../findings/FND-UI-058.md) | builds, locations |
 | [FND-UI-059](../findings/FND-UI-059.md) | body, builds, locations |
+| [FND-UI-070](../findings/FND-UI-070.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -1310,6 +1313,8 @@ None.
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | body |
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | body |
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | body |
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | body |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | body |
 
 ## EXP-TURN-002
@@ -1638,6 +1643,7 @@ None.
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
 | [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | body |
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | body |
 | [RULE-AI-025](../rules/RULE-AI-025.md) | evidence |
 
 ## EXP-TURN-027
@@ -2018,6 +2024,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | body |
 | [RULE-TURN-004](../rules/RULE-TURN-004.md) | body, evidence |
 
 ## EXP-TURN-066
@@ -2304,6 +2311,8 @@ None.
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
 | [EXP-UI-012](../experiments/EXP-UI-012.md) | body |
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | body |
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | body |
 | [FND-UI-048](../findings/FND-UI-048.md) | body |
 | [RULE-UI-002](../rules/RULE-UI-002.md) | evidence |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | evidence |
@@ -2501,6 +2510,21 @@ None.
 |---|---|
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 
+## EXP-UI-045
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | body |
+| [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
+
+## EXP-UI-050
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | body |
+| [RULE-UI-005](../rules/RULE-UI-005.md) | evidence |
+| [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
+
 ## EXP-VIDEO-001
 
 | Cited by | In |
@@ -2523,6 +2547,8 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | body |
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FND-DATA-011](../findings/FND-DATA-011.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
@@ -2739,6 +2765,8 @@ None.
 | [EXP-TURN-070](../experiments/EXP-TURN-070.md) | body |
 | [EXP-TURN-071](../experiments/EXP-TURN-071.md) | body |
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | body |
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-004](../formats/FMT-STATE-004.md) | body |
 | [FND-AI-027](../findings/FND-AI-027.md) | body |
@@ -2750,6 +2778,7 @@ None.
 | [FND-TOLERANCE-001](../findings/FND-TOLERANCE-001.md) | body |
 | [FND-UI-024](../findings/FND-UI-024.md) | body |
 | [FND-UI-050](../findings/FND-UI-050.md) | body |
+| [FND-UI-070](../findings/FND-UI-070.md) | body |
 | glossary: sector | glossary |
 | glossary: sectors | glossary |
 | glossary: site | glossary |
@@ -7340,6 +7369,7 @@ None.
 | [FND-UI-018](../findings/FND-UI-018.md) | body |
 | [FND-UI-019](../findings/FND-UI-019.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
+| [FND-UI-070](../findings/FND-UI-070.md) | body |
 | glossary: viewed_player | glossary |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | body, evidence |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body, evidence |
@@ -7360,6 +7390,7 @@ None.
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [EXP-UI-006](../experiments/EXP-UI-006.md) | body |
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | body |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-015](../findings/FND-UI-015.md) | body |
@@ -7378,6 +7409,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body, evidence |
 | [FND-MOVE-007](../findings/FND-MOVE-007.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
@@ -7388,6 +7420,7 @@ None.
 | [FND-UI-048](../findings/FND-UI-048.md) | body |
 | [FND-UI-049](../findings/FND-UI-049.md) | body |
 | [FND-UI-050](../findings/FND-UI-050.md) | body |
+| [FND-UI-070](../findings/FND-UI-070.md) | body |
 | glossary: viewed_player | glossary |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -7548,6 +7581,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-070](../findings/FND-UI-070.md) | body |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | evidence |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | body, evidence |
 
@@ -7655,11 +7689,13 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | body |
 | [FMT-STATE-001](../formats/FMT-STATE-001.md) | body, evidence |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-010](../findings/FND-UI-010.md) | body |
 | [FND-UI-018](../findings/FND-UI-018.md) | body |
+| [FND-UI-070](../findings/FND-UI-070.md) | body |
 | glossary: active_player | glossary |
 | glossary: gang | glossary |
 | glossary: gangs | glossary |
@@ -7858,6 +7894,15 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## FND-UI-070
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | body |
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | body |
+| [FND-UI-036](../findings/FND-UI-036.md) | body |
+| [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
 
 ## FND-UPKEEP-001
 
@@ -9635,6 +9680,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | body |
 | glossary: force_meter_length | glossary |
 | glossary: site_meter_length | glossary |
 | [SCR-UI-004](../screens/SCR-UI-004.md) | body, related |
@@ -10046,6 +10092,8 @@ None.
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | body |
 | [EXP-UI-010](../experiments/EXP-UI-010.md) | body |
 | [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | body |
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | body |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, related |
 | [SCR-UI-005](../screens/SCR-UI-005.md) | body |

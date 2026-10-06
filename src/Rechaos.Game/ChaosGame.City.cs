@@ -198,11 +198,12 @@ public sealed partial class ChaosGame
         var player = state.Players[playerIndex];
         // FND-UI-017, FND-UI-018: the marker follows the viewed player, which on the sector view is
         // the player whose cards are shown, and there a portrait dims when the active player sees
-        // none of that player's gangs in the sector.
+        // none of that player's gangs in the sector. When it sees no gang of any seat there, the
+        // bar's redraw sets the viewed player to -1 and draws no marker (FND-UI-017, EXP-UI-045).
         if (sectorView is { } view)
         {
             _overlordMarkerClock.SectorView(_cursor, view.Viewed, _inputTime);
-            DrawOverlordBar(batch, pixel, state, view.Viewed, view.SeatsSeen);
+            DrawOverlordBar(batch, pixel, state, view.SeatsSeen.Contains(true) ? view.Viewed : null, view.SeatsSeen);
         }
         else
         {

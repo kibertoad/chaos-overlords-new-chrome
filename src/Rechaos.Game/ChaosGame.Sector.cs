@@ -254,8 +254,8 @@ public sealed partial class ChaosGame
             && _hoverPoint is { } backHover && SectorDetailLayout.Back.Contains(backHover))
             DrawPressedSectorBack(batch);
         DrawSectorNeighborhood(batch, pixel, font, state);
-        // FND-UI-018: each site is its portrait under the keyed frame, with the progress meter
-        // when the sector's owner is the active player.
+        // FND-UI-018, FND-UI-070: each site is its portrait under the keyed frame, with the progress
+        // meter only when the sector's owner is the active player, whoever the viewed player is.
         foreach (var site in sector.Sites)
         {
             var definition = state.Definitions.Site(site.DefinitionId);
