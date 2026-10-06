@@ -123,11 +123,20 @@ internal sealed class StateExtractor
                 call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Shape"]!.GetValue<int>(),
                 call["Force"]!.GetValue<int>(), (int)call["Call"]!.GetValue<uint>())).ToArray());
         // RULE-AUDIO-006: each call of the play helper as after_roll, done, slot and the call's
-        // address (FND-AUDIO-006).
+        // address (FND-AUDIO-006), with effects_enabled as the run read it at each call, each Done
+        // press and its end: the effects wrapper calls the helper only while it is set
+        // (FND-AUDIO-002), so the calls cannot be read without it, and a run that does not record
+        // it is refused.
         if (trace["SoundCalls"] is JsonArray soundCalls)
+        {
+            if (trace["EffectsEnabled"] is not JsonValue effectsEnabled)
+                throw new InvalidDataException(
+                    $"{runDirectory} records sound calls but not whether effects were enabled, or read different values during the run.");
+            run["effects_enabled"] = effectsEnabled.GetValue<bool>();
             run["sound_calls"] = new JsonArray(soundCalls.Select(call => (JsonNode)new JsonArray(
                 call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Slot"]!.GetValue<int>(),
                 (int)call["Call"]!.GetValue<uint>())).ToArray());
+        }
         // RULE-VIDEO-001: each intro movie with its header's frame count, the frame counter at each
         // frame shown, the milliseconds from the first movie's first frame to each, and the counter at
         // its close.

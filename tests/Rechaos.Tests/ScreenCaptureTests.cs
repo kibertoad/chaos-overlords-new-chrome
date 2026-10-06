@@ -26,33 +26,25 @@ public sealed partial class ScreenCaptureTests
         ScreenCaptureRecord.LoadAll().Single(record =>
             record.Experiment == experiment && record.Run == run && record.Step == step);
 
-    // The captures cover SCR-UI-003 and SCR-HIRE-002 (EXP-UI-001, EXP-UI-006), SCR-UI-004 and
-    // SCR-UI-005 (EXP-UI-006, EXP-UI-007), SCR-UI-007 (EXP-UI-007), SCR-UI-008 (EXP-UI-006) and
-    // both variants of SCR-FINANCE-001 (EXP-UI-006, EXP-UI-007), and SCR-EVENT-001, SCR-COMBAT-001,
-    // SCR-OBJECTIVE-001, SCR-SEARCH-001, SCR-HIRE-001 and SCR-GANG-002 (EXP-UI-008), and SCR-MOVE-001,
-    // SCR-EQUIP-001, SCR-RESEARCH-001, SCR-UI-006 and SCR-GANG-001 (EXP-UI-009), and SCR-GIVE-001,
-    // SCR-SELL-001 and SCR-INFLUENCE-001 (EXP-UI-010), SCR-ATTACK-001 (EXP-UI-011), and
-    // SCR-OPTIONS-001 (EXP-UI-012), and the title screen SCR-UI-001, the credits SCR-UI-002 and the
-    // setup screen SCR-SETUP-001 (EXP-UI-015). The site and Force meters of RULE-UI-005 and the
-    // sector values of RULE-UI-011 are compared as elements of those screens, and the pylons of
-    // RULE-UI-012 on the city map of Siege (EXP-UI-013) and Big Man (EXP-UI-014). The setup steps
-    // of EXP-UI-015 compare the first setup of RULE-SETUP-002 and RULE-SETUP-010, the card presses
-    // of RULE-SETUP-009, Add and Remove of RULE-SETUP-010, and setup buttons released inside and
-    // outside (RULE-UI-001). The Done press of EXP-UI-012 opens the warning of RULE-OPTIONS-003
-    // from the original's gangs, one of them idle. EXP-UI-016 compares the hand-off card SCR-SETUP-002
-    // and the Comlink Send panel SCR-COMLINK-002 of a match of two humans. The console presses
-    // before these captures route as RULE-UI-002 reads them. EXP-UI-017 compares the endgame
-    // SCR-AWARDS-001 on both tabs, and EXP-UI-018 the elimination card SCR-OBJECTIVE-002 the only
-    // local human sees where its planning would have come (RULE-OBJECTIVE-005). EXP-UI-019 and
-    // EXP-UI-020 compare the Detailed Combat panel SCR-COMBAT-002 at the ticks of a gang's clip and
-    // a police clip the console's control started, the rebuild's clip drawn at the captured tick
-    // (FND-COMBAT-016); EXP-UI-029 a second police clip, drawn at the captured clip index
-    // (FND-COMBAT-011); EXP-UI-046 an armed and an unarmed attack on the viewer's gang, the second by
-    // definition 63 (FND-COMBAT-010); EXP-UI-047 a Martial Arts attack; EXP-UI-048 an attack of the
-    // viewer's that its target evades; EXP-UI-049 and EXP-UI-054 two evaded attacks on the viewer's
-    // gang, EXP-UI-054 at the ticks before the second clip's first frame. EXP-UI-021 compares Comlink View SCR-COMLINK-001 on a message one human
-    // typed and sent the other, the text typed into the rebuild's Send panel. EXP-UI-023 compares
-    // the victory splash SCR-AWARDS-002 of a match left with one active player.
+    // The captures compare SCR-UI-001, SCR-UI-002, SCR-SETUP-001, SCR-SETUP-002, SCR-UI-003,
+    // SCR-HIRE-002, SCR-UI-004, SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-FINANCE-001,
+    // SCR-HIRE-001, SCR-GANG-002, SCR-COMBAT-001, SCR-EVENT-001, SCR-OBJECTIVE-001, SCR-SEARCH-001,
+    // SCR-MOVE-001, SCR-EQUIP-001, SCR-RESEARCH-001, SCR-GANG-001, SCR-GIVE-001, SCR-SELL-001,
+    // SCR-INFLUENCE-001, SCR-ATTACK-001, SCR-OPTIONS-001, SCR-COMLINK-002, SCR-COMLINK-001,
+    // SCR-AWARDS-001, SCR-OBJECTIVE-002, SCR-COMBAT-002 and SCR-AWARDS-002. docs/VALIDATION.md,
+    // "Screen capture coverage", lists the experiments whose captures each screen is compared at,
+    // and CoverageTableNamesEveryComparedCapture holds that table to the fixtures.
+    // The site and Force meters of RULE-UI-005 and the sector values of RULE-UI-011 are compared
+    // as elements of those screens, and the pylons of RULE-UI-012 on the city map of Siege
+    // (EXP-UI-013) and Big Man (EXP-UI-014). The setup steps of EXP-UI-015 compare the first setup
+    // of RULE-SETUP-002 and RULE-SETUP-010, the card presses of RULE-SETUP-009, Add and Remove of
+    // RULE-SETUP-010, and setup buttons released inside and outside (RULE-UI-001). The Done press
+    // of EXP-UI-012 opens the warning of RULE-OPTIONS-003 from the original's gangs, one of them
+    // idle. The console presses before these captures route as RULE-UI-002 reads them. EXP-UI-018
+    // compares the elimination card the only local human sees where its planning would have come
+    // (RULE-OBJECTIVE-005). The Detailed Combat captures draw the rebuild's clip at the captured
+    // tick (FND-COMBAT-016), after passing over as many clips as the captured index
+    // (FND-COMBAT-011).
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
@@ -182,6 +174,49 @@ public sealed partial class ScreenCaptureTests
             Assert.True(departures.TryGetValue(mask.Deviation, out var from), $"{mask.Deviation} is not in DEVIATIONS.md.");
             Assert.Contains(screen, from);
         }
+    }
+
+    [GeneratedRegex(@"^\| (SCR-[A-Z]+-\d{3}) \| ([^|]*) \|", RegexOptions.Multiline)]
+    private static partial Regex CoverageRow();
+
+    [GeneratedRegex(@"EXP-UI-(\d{3})(?: to EXP-UI-(\d{3}))?")]
+    private static partial Regex CoverageExperiments();
+
+    // docs/VALIDATION.md, "Screen capture coverage": for every screen, the table names exactly the
+    // experiments whose captures TheRebuildDrawsWhatTheOriginalDrew compares at that screen.
+    [Fact]
+    public void CoverageTableNamesEveryComparedCapture()
+    {
+        var doc = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "VALIDATION.md")).Replace("\r\n", "\n");
+        var start = doc.IndexOf("\n## Screen capture coverage\n", StringComparison.Ordinal);
+        Assert.True(start >= 0, "docs/VALIDATION.md has no Screen capture coverage section.");
+        var end = doc.IndexOf("\n## ", start + 1, StringComparison.Ordinal);
+        var section = end < 0 ? doc[start..] : doc[start..end];
+        var table = CoverageRow().Matches(section).ToDictionary(
+            row => row.Groups[1].Value,
+            row => CoverageExperiments().Matches(row.Groups[2].Value)
+                .SelectMany(match =>
+                {
+                    var first = int.Parse(match.Groups[1].Value);
+                    var last = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : first;
+                    return Enumerable.Range(first, last - first + 1).Select(n => $"EXP-UI-{n:000}");
+                })
+                .ToHashSet());
+
+        var compared = ScreenCaptureRecord.LoadAll()
+            .Where(capture => capture.Elements.Count > 0 && capture.Unreplayable is null
+                && (capture.BeforeMatch is not null || OriginalNewGameExperimentTests.IsReplayed(capture.Experiment))
+                && !(capture.ClipTick is null && capture.Screens.Contains("SCR-COMBAT-002")))
+            .SelectMany(capture => capture.Screens.Select(screen => (Screen: screen, capture.Experiment)))
+            .GroupBy(pair => pair.Screen)
+            .ToDictionary(group => group.Key, group => group.Select(pair => pair.Experiment).ToHashSet());
+
+        Assert.Equal(compared.Keys.Order(StringComparer.Ordinal),
+            table.Where(row => row.Value.Count > 0).Select(row => row.Key).Order(StringComparer.Ordinal));
+        foreach (var (screen, experiments) in compared)
+            Assert.True(experiments.SetEquals(table[screen]),
+                $"{screen}: the captures compare {string.Join(", ", experiments.Order(StringComparer.Ordinal))}, "
+                + $"the table names {string.Join(", ", table[screen].Order(StringComparer.Ordinal))}.");
     }
 
     [Fact]
