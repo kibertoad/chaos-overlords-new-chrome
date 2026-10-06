@@ -955,7 +955,9 @@ const deviations = new Map();
       const item = Object.fromEntries(items);
       const order = ["Departs from", ...("Replaces" in item ? ["Replaces"] : []), "Reason", "Setting", "Default", ...("Justification" in item ? ["Justification"] : []), ...("Tests" in item ? ["Tests"] : []), "Dropped"];
       if (items.slice(0, order.length).map((x) => x[0]).join("|") !== order.join("|")) problem(path, `${s.title}: items must be ${order.join(", ")} in that order`);
-      const departs = idsIn(item["Departs from"]);
+      // Any item may wrap onto indented lines; the ID-bearing ones are read whole.
+      const multiline = (name) => (new RegExp(`^- ${name}: (.*(?:\n  .*)*)`, "m").exec(s.text)?.[1] ?? "");
+      const departs = idsIn(multiline("Departs from"));
       const dropped = item.Dropped && item.Dropped !== "no";
       if (dropped && !/^\d{4}-\d{2}-\d{2}\b/.test(item.Dropped)) problem(path, `${s.title}: Dropped gives the date, YYYY-MM-DD, and the reason`);
       checkResolves(path, departs, `${s.title} Departs from`);
@@ -967,8 +969,7 @@ const deviations = new Map();
       // Replaces names the entries of Departs from that a mandatory deviation replaces entirely, which
       // leaves nothing of them to compare with the original. The Tests item lists the test files that
       // check the rebuild does what the deviation says; nothing records a local run of them, so they
-      // run in CI and never need GAME_DIR. Either may wrap onto indented lines like any other item.
-      const multiline = (name) => (new RegExp(`^- ${name}: (.*(?:\n  .*)*)`, "m").exec(s.text)?.[1] ?? "");
+      // run in CI and never need GAME_DIR.
       const replaces = idsIn(multiline("Replaces"));
       const tests = multiline("Tests").split(",").map((x) => x.replaceAll("`", "").trim()).filter(Boolean);
       checkResolves(path, replaces, `${s.title} Replaces`);
