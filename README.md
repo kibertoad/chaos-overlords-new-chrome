@@ -257,10 +257,12 @@ the rebuild, its tools and the spec in `spec/`, are copyright (C) 2026
 kibertoad. This copyright covers only that new work.
 
 The code in this repository is licensed under the [MIT License](LICENSE).
-The documentation of the original game in `spec/` is licensed under
+The spec in `spec/`, this project's own description of how the original game
+works, is licensed under
 [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/),
 and its machine-readable files under the MIT License; `spec/LICENSE` says which
-files each covers.
+files each covers. The MIT and CC BY 4.0 licenses apply only to this project's
+own work. They grant no rights to the original game or its assets.
 
 *Chaos Overlords* was created by Stick Man Games and first published in 1996 by
 New World Computing. According to the
@@ -269,9 +271,9 @@ game are now held by Evolution Interactive. All rights to the original game,
 including its name, executable, artwork, music, sounds, video, text and other
 assets, belong to their respective owners.
 
-Neither license above covers or grants any rights to the original game or its
-assets. This project does not distribute them: each player imports the assets
-from their own legal copy. *Chaos Overlords* is used here only to identify the
-game this project is compatible with. This is an independent fan project, not
-affiliated with or endorsed by Stick Man Games, New World Computing, Evolution
-Interactive or GOG.
+This repository and its releases contain none of the original game's files.
+Each player imports the assets from their own legal copy. The name
+*Chaos Overlords* is used here only to identify the game this project is
+compatible with. This project is an independent fan recreation, not affiliated
+with or endorsed by Stick Man Games, New World Computing, Evolution Interactive
+or GOG.
