@@ -28,11 +28,12 @@ public sealed partial class OriginalNewGameExperimentTests
         return data;
     }
 
-    // RULE-SEARCH-002, FND-SEARCH-006: the probe writes the human's Search filter entries as the
+    // RULE-SEARCH-002, FND-SEARCH-006: the probe writes a human's Search filter entries as the
     // Search panel does and keeps every site marker of the last city redraw before the dump:
-    // definition, sector, ordinal and controlled flag, in drawing order. The rebuild's city shows
-    // the same markers for the same filter. EXP-TURN-045 selects every even site definition, so the
-    // ordinals skip the sites left out, and the human's Headquarters is drawn as controlled.
+    // definition, sector, ordinal and controlled flag, in drawing order, with the human it was
+    // drawn for. The rebuild's city shows that human the same markers for the filter the probe set
+    // for that human. EXP-TURN-045 selects every even site definition, so the ordinals skip the
+    // sites left out, and the human's Headquarters is drawn as controlled.
     [Theory]
     [MemberData(nameof(MarkerRuns))]
     public void TheCityShowsTheOriginalsSiteMarkers(string experiment, int run)
@@ -40,9 +41,9 @@ public sealed partial class OriginalNewGameExperimentTests
         var recorded = Run(experiment, run);
         var match = StartMatch(recorded, out _);
         var drawn = recorded.CityMarkers!;
-        // The probe writes the first human's filter, so only that human's redraw is compared.
-        Assert.Equal(recorded.Humans[0].Value, drawn.Viewer);
-        var filter = recorded.SearchFilter.Select(definition => (short)definition).ToHashSet();
+        var viewer = new PlayerId(drawn.Viewer);
+        Assert.Contains(viewer, recorded.Humans);
+        var filter = recorded.SearchFilter(viewer).Select(definition => (short)definition).ToHashSet();
         var markers = CitySiteMarkerProjection.Project(match, new PlayerId(drawn.Viewer), filter)
             .Select(marker => $"{marker.SiteDefinitionId},{marker.SectorId},{marker.VisibleSlot},{(marker.Controlled ? 1 : 0)}")
             .ToArray();

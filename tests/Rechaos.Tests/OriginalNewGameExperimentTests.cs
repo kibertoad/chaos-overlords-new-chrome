@@ -748,14 +748,15 @@ public sealed partial class OriginalNewGameExperimentTests
             // DEV-EQUIP-001: the rebuild resolves Equip and Sell in the order they are submitted.
             // Every recording lists a turn's orders in roster order, the original's scan order.
             foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))
-                Submit(recorder, match, human, order);
+                Submit(recorder, match, new PlayerId(order.Player), order);
             // RULE-HIRE-003: the probe writes the offer slot's hire order as the hire screen does;
             // the rebuild queues the gang that slot offers.
             foreach (var hire in recorded.Hires.Where(hire => hire.Turn == turn + 1))
             {
-                var offered = match.Players[human.Value].HireOfferSlots[hire.OfferSlot].GangDefinitionId;
+                var hiring = new PlayerId(hire.Player);
+                var offered = match.Players[hiring.Value].HireOfferSlots[hire.OfferSlot].GangDefinitionId;
                 Assert.NotNull(offered);
-                var result = recorder.QueueHire(human, offered.Value, hire.Sector);
+                var result = recorder.QueueHire(hiring, offered.Value, hire.Sector);
                 Assert.True(result.Accepted, $"turn {hire.Turn}: the rebuild refused the hire: {result}");
             }
             // FMT-STATE-007, RULE-AI-023, RULE-AI-027: the probe writes a computer player's family or
@@ -788,9 +789,10 @@ public sealed partial class OriginalNewGameExperimentTests
         return match;
     }
 
-    // The probe writes an order straight into the human's gang record (FMT-STATE-001) as the order
-    // screens do (RULE-TURN-005); the rebuild takes the same order as a command. A slot is the
-    // gang's roster slot (FMT-STATE-001), the index of its player's gang list.
+    // The probe writes an order straight into the gang record of the human the input names
+    // (FMT-STATE-001) as the order screens do (RULE-TURN-005); the rebuild takes the same order as
+    // that human's command. A slot is the gang's roster slot (FMT-STATE-001), the index of its
+    // player's gang list.
     private static void Submit(MatchReplayRecorder recorder, MatchState match, PlayerId human, RecordedOrder order)
     {
         var gang = match.Players[human.Value].Gangs[order.Slot];
