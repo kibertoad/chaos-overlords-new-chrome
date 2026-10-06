@@ -5970,6 +5970,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-UI-059](../findings/FND-UI-059.md) | body |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, evidence |
 
 ## FND-OBJECTIVE-006
@@ -6173,6 +6174,7 @@ None.
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
 | [FND-UI-058](../findings/FND-UI-058.md) | body |
+| [FND-UI-059](../findings/FND-UI-059.md) | body |
 | glossary: cd_present | glossary |
 | glossary: display_depth | glossary |
 | glossary: full_screen_active | glossary |
@@ -7428,6 +7430,7 @@ None.
 | [FND-UI-020](../findings/FND-UI-020.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
 | [FND-UI-057](../findings/FND-UI-057.md) | body |
+| [FND-UI-059](../findings/FND-UI-059.md) | body |
 | [RULE-HEAL-001](../rules/RULE-HEAL-001.md) | body, evidence |
 | [RULE-HELP-001](../rules/RULE-HELP-001.md) | evidence |
 | [RULE-UI-014](../rules/RULE-UI-014.md) | evidence |
