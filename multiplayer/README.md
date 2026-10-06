@@ -167,7 +167,7 @@ and defaults as the Node environment variables above. A deployment also wants th
 the sweeper and the retention sweeps are written for —
 and Cloudflare rate limiting rules on `/api/v1/matches`, `/api/v1/matches/join` and
 `/api/v1/bug-reports`: the in-Worker limiter counts per isolate, so it softens abuse on one edge node
-rather than globally.
+rather than globally. Replacing it with a global limiter is [#455](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/455).
 
 For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all four to throwaway local resources.
 It is a development and test fixture, not a deployment.
