@@ -100,7 +100,7 @@ public sealed class AdvancedAiPlaytestTests
             new(new PlayerId(1), "CPU TWO", PlayerController.Computer)
         ];
         var state = OriginalMatchFactory.Create(data, new MatchSetup(
-            scenario, GameDuration.FourYears, seed, setups,
+            scenario, GameDuration.FourYears, seed, setups, MatchDeviations.Original,
             difficulty,
             aiPolicy: feature == AiTurnPlanner.AdvancedFeature.None
                 ? AiPolicyMode.Original

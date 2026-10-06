@@ -224,7 +224,7 @@ public sealed class AiStrategicStateTests
         var preparedFirstAction = match.AiPlanning.PlannedAction(player, 0);
 
         var rejected = match.Submit(new GameCommand(
-            player, new GangId(0), GangAction.Move, CommandTarget.Sector(18)));
+            player, new GangId(0), GangAction.Move, CommandTarget.None));
         var accepted = match.Submit(new GameCommand(
             player, new GangId(7), GangAction.Hide, CommandTarget.None));
 
@@ -258,6 +258,7 @@ public sealed class AiStrategicStateTests
             new MatchPlayerSetup(new PlayerId(0), "HUMAN", PlayerController.Human),
             new MatchPlayerSetup(new PlayerId(1), "CPU", PlayerController.Computer)
         ],
+        MatchDeviations.Original,
         difficulty);
 
     // DEV-AI-007: the original carries out a computer player's Move to a sector several steps away
@@ -267,7 +268,8 @@ public sealed class AiStrategicStateTests
     [InlineData(PlayerController.Human)]
     public void NoSeatMovesBeyondTheNeighbours(PlayerController controller)
     {
-        var validation = ValidateDistantMove(CreateOnePlayerMatch(controller));
+        var validation = ValidateDistantMove(
+            CreateOnePlayerMatch(controller, computerMovesToNeighboursOnly: true));
 
         Assert.False(validation.IsValid);
         Assert.Equal(CommandValidationCode.DestinationNotAdjacent, validation.Code);
@@ -300,7 +302,7 @@ public sealed class AiStrategicStateTests
     private static MatchState CreateOnePlayerMatch(
         PlayerController controller = PlayerController.Computer,
         AiDifficulty difficulty = AiDifficulty.Criminal,
-        bool computerMovesToNeighboursOnly = true)
+        bool computerMovesToNeighboursOnly = false)
     {
         var definitions = BundledOriginalData.Load();
         var setup = new MatchSetup(
@@ -308,8 +310,8 @@ public sealed class AiStrategicStateTests
             GameDuration.SixMonths,
             1996,
             [new MatchPlayerSetup(new PlayerId(0), "PLAYER", controller)],
-            difficulty,
-            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly);
+            MatchDeviations.Original with { ComputerMovesToNeighboursOnly = computerMovesToNeighboursOnly },
+            difficulty);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
@@ -349,7 +351,8 @@ public sealed class AiStrategicStateTests
             ], owner: id == 0 ? new PlayerId(0) : null, income: 3))
             .ToArray();
         return new MatchState(definitions, new MatchSetup(
-            ScenarioId.KillEmAll, GameDuration.SixMonths, 1996, setups, difficulty), players, sectors);
+            ScenarioId.KillEmAll, GameDuration.SixMonths, 1996, setups,
+                MatchDeviations.Original, difficulty), players, sectors);
     }
 
     private static MatchState CreateTerritorialPressureMatch(
@@ -392,6 +395,7 @@ public sealed class AiStrategicStateTests
             ], owner: id < 4 ? new PlayerId(1) : null, income: 3))
             .ToArray();
         return new MatchState(definitions, new MatchSetup(
-            ScenarioId.KillEmAll, GameDuration.SixMonths, 1996, setups, difficulty), players, sectors);
+            ScenarioId.KillEmAll, GameDuration.SixMonths, 1996, setups,
+                MatchDeviations.Original, difficulty), players, sectors);
     }
 }

@@ -268,9 +268,8 @@ public static class OriginalMatchFactory
         return new MatchSetup(
             setup.Scenario, setup.Duration, setup.InitialSeed,
             playersById.OrderBy(entry => entry.Key).Select(entry => entry.Value).ToArray(),
+            setup.Deviations,
             setup.AiMentality,
-            aiPolicy: setup.AiPolicy,
-            computerMovesToNeighboursOnly: setup.ComputerMovesToNeighboursOnly,
-            computerHiresWhereHumansCan: setup.ComputerHiresWhereHumansCan);
+            aiPolicy: setup.AiPolicy);
     }
 }

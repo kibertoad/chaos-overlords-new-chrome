@@ -12,10 +12,8 @@ public sealed partial class ChaosGame
 {
     private AiDifficulty _selectedAiMentality = OriginalOptionsPolicy.MentalityByDefault;
     private AiPolicyMode _defaultAiPolicy = OriginalOptionsPolicy.AiPolicyByDefault;
-    // DEV-AI-007: set by --original-computer-moves, for the local matches this session starts.
-    private readonly bool _originalComputerMoves;
-    // DEV-AI-008: set by --original-computer-hires, for the local matches this session starts.
-    private readonly bool _originalComputerHires;
+    // DEV-AI-007 and DEV-AI-008, for the local matches this session starts.
+    private readonly MatchDeviations _localDeviations;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
     private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
@@ -521,10 +519,8 @@ public sealed partial class ChaosGame
         KeepRunRandomState();
         var setup = new MatchSetup(
             _selectedScenario, _selectedDuration, unchecked((int)_runRandomState), players,
-            _selectedAiMentality, allowSparsePlayerIds: true,
-            aiPolicy: _defaultAiPolicy,
-            computerMovesToNeighboursOnly: !_originalComputerMoves,
-            computerHiresWhereHumansCan: !_originalComputerHires);
+            _localDeviations, _selectedAiMentality, allowSparsePlayerIds: true,
+            aiPolicy: _defaultAiPolicy);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
         {
             ["scenario"] = _selectedScenario.ToString(),

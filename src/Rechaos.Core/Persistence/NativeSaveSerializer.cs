@@ -149,13 +149,14 @@ public static class NativeSaveSerializer
             document.Setup.InitialSeed,
             document.Setup.Players.Select(player => new MatchPlayerSetup(
                 new PlayerId(player.Id), player.Name, player.Controller, player.PortraitId)).ToArray(),
+            new MatchDeviations(
+                ComputerMovesToNeighboursOnly: document.Setup.ComputerMovesToNeighboursOnly
+                    ?? throw new InvalidDataException("Native save computer Move setting is missing."),
+                ComputerHiresWhereHumansCan: document.Setup.ComputerHiresWhereHumansCan
+                    ?? throw new InvalidDataException("Native save computer hire setting is missing.")),
             document.Setup.AiMentality,
             aiPolicy: document.Setup.AiPolicy
-                ?? throw new InvalidDataException("Native save AI policy is missing."),
-            computerMovesToNeighboursOnly: document.Setup.ComputerMovesToNeighboursOnly
-                ?? throw new InvalidDataException("Native save computer Move setting is missing."),
-            computerHiresWhereHumansCan: document.Setup.ComputerHiresWhereHumansCan
-                ?? throw new InvalidDataException("Native save computer hire setting is missing."));
+                ?? throw new InvalidDataException("Native save AI policy is missing."));
         var players = document.Players
             .Select(player => RestorePlayer(setup, player))
             .ToArray();

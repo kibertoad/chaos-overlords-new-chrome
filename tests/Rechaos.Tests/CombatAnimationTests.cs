@@ -505,7 +505,7 @@ public sealed class CombatAnimationTests
             ]))
             .ToArray();
         return new MatchState(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1, setups),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1, setups, MatchDeviations.Original),
             players, sectors);
     }
 }

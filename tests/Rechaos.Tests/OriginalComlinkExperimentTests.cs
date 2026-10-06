@@ -67,7 +67,8 @@ public sealed class OriginalComlinkExperimentTests
                     : new MatchPlayerSetup(new PlayerId(slot), $"CPU{slot}", PlayerController.Computer))
                 .ToArray();
             _match = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
-                ScenarioId.Greed, GameDuration.SixMonths, run.GetProperty("rng_state").GetInt32(), players));
+                ScenarioId.Greed, GameDuration.SixMonths, run.GetProperty("rng_state").GetInt32(), players,
+                    MatchDeviations.Original));
             _match.FinishUpkeep();
             _recorder = new MatchReplayRecorder(_match);
         }

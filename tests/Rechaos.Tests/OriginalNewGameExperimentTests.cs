@@ -651,6 +651,7 @@ public sealed partial class OriginalNewGameExperimentTests
             var state = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
                 ScenarioId.Power, GameDuration.OneYear, 12345,
                 [new MatchPlayerSetup(new PlayerId(slot), "PROBE", PlayerController.Human, 0)],
+                    MatchDeviations.Original,
                 AiDifficulty.Goon, allowSparsePlayerIds: true));
             state.FindPlayer(new PlayerId(slot))!.Status = PlayerStatus.Eliminated;
             foreach (var gang in state.FindPlayer(new PlayerId(slot))!.Gangs) gang.Force = 0;
@@ -685,7 +686,7 @@ public sealed partial class OriginalNewGameExperimentTests
         var human = new PlayerId(2);
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
             ScenarioId.Power, GameDuration.OneYear, 12345,
-            [new MatchPlayerSetup(human, "PROBE", PlayerController.Human, 0)],
+            [new MatchPlayerSetup(human, "PROBE", PlayerController.Human, 0)], MatchDeviations.Original,
             AiDifficulty.Goon, allowSparsePlayerIds: true));
         foreach (var player in match.Players.Where(player => player.Id != human))
         {
@@ -719,12 +720,11 @@ public sealed partial class OriginalNewGameExperimentTests
             recorded.Seed,
             recorded.Humans.Select(slot => new MatchPlayerSetup(
                 slot, Name(recorded, slot.Value), PlayerController.Human, (short)recorded.Term("portrait", slot.Value))).ToArray(),
-            (AiDifficulty)recorded.Term("mentality", 0),
-            allowSparsePlayerIds: true,
             // DEV-AI-007 and DEV-AI-008 switched off unless a test asks for them, so the computer's
             // Moves and hires go where the original's do.
-            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
-            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
+            new MatchDeviations(computerMovesToNeighboursOnly, computerHiresWhereHumansCan),
+            (AiDifficulty)recorded.Term("mentality", 0),
+            allowSparsePlayerIds: true);
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);
         match.FinishUpkeep();
         // RULE-SETUP-008: with several local humans the planning phase waits on the Ready card

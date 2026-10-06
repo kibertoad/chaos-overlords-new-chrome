@@ -229,18 +229,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     public ChaosGame(
         string assetRoot,
+        MatchDeviations localDeviations,
         bool debugPhaseStepping = false,
         RuntimeDiagnostics? diagnostics = null,
         string? screenshotFolder = null,
-        bool originalComputerMoves = false,
-        bool originalComputerHires = false,
         ReferenceFrameRequest? referenceFrame = null,
         string? startupSavePath = null)
     {
         _assetRoot = assetRoot;
         _startupSavePath = startupSavePath;
-        _originalComputerMoves = originalComputerMoves;
-        _originalComputerHires = originalComputerHires;
+        _localDeviations = localDeviations;
         _referenceFrame = referenceFrame;
         _pointer = new(shape => Mouse.SetCursor(shape == PointerShape.Hourglass ? MouseCursor.Wait : MouseCursor.Arrow),
             () => ComputerTurnsCanRun() ? PresentationPointer.Idle(_state) : PointerShape.Arrow);

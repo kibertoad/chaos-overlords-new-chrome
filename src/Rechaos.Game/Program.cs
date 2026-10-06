@@ -1,4 +1,5 @@
 using Rechaos.Core;
+using Rechaos.Core.GameModel;
 using Rechaos.Game;
 
 // Answers the question a support thread always opens with, without starting a window.
@@ -53,14 +54,17 @@ try
 
     using var game = new ChaosGame(
         assetRoot,
+        new MatchDeviations(
+            // DEV-AI-007: --original-computer-moves lets the computer planner's Moves in the local
+            // matches started in this session go to any sector, as the original's do.
+            ComputerMovesToNeighboursOnly: MatchDeviations.Defaults.ComputerMovesToNeighboursOnly
+                && !args.Contains("--original-computer-moves", StringComparer.OrdinalIgnoreCase),
+            // DEV-AI-008: --original-computer-hires lets the computer planner's hires in the local
+            // matches started in this session go to any sector, as the original's do.
+            ComputerHiresWhereHumansCan: MatchDeviations.Defaults.ComputerHiresWhereHumansCan
+                && !args.Contains("--original-computer-hires", StringComparer.OrdinalIgnoreCase)),
         args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
         diagnostics,
-        // DEV-AI-007: local matches started in this session let the computer planner's Moves go
-        // to any sector, as the original's do.
-        originalComputerMoves: args.Contains("--original-computer-moves", StringComparer.OrdinalIgnoreCase),
-        // DEV-AI-008: local matches started in this session let the computer planner's hires go
-        // to any sector, as the original's do.
-        originalComputerHires: args.Contains("--original-computer-hires", StringComparer.OrdinalIgnoreCase),
         referenceFrame: referenceFrame,
         // RULE-UI-013: a save named on the command line is opened at start.
         startupSavePath: StartupSave.PathFrom(args));

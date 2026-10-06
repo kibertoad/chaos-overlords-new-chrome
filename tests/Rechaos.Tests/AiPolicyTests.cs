@@ -239,9 +239,9 @@ public sealed class AiPolicyTests
         bool ownsStartingSector = false,
         int gangCount = 1,
         int rivalSector = 1,
-        bool computerMovesToNeighboursOnly = true,
+        bool computerMovesToNeighboursOnly = false,
         bool ownedNeighbours = false,
-        bool computerHiresWhereHumansCan = true)
+        bool computerHiresWhereHumansCan = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -251,9 +251,8 @@ public sealed class AiPolicyTests
         ];
         var setup = new MatchSetup(
             ScenarioId.Greed, GameDuration.SixMonths, 31, setups,
-            aiMentality: difficulty, aiPolicy: policy,
-            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
-            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
+            new MatchDeviations(computerMovesToNeighboursOnly, computerHiresWhereHumansCan),
+            aiMentality: difficulty, aiPolicy: policy);
         MatchPlayerState[] players =
         [
             new(setups[0], 50,
