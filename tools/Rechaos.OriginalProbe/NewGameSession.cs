@@ -691,6 +691,8 @@ internal sealed partial class NewGameSession(
         }, oneShot: true);
     }
 
+    // FND-SEARCH-007: every caller pushes the viewer, the definition, the sector and the ordinal as
+    // full dwords with no leftover high bits, so they are read unmasked.
     private void OnSiteMarker(BreakContext context) =>
         _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3) & 0xFF]);
 

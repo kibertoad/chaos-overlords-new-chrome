@@ -304,6 +304,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | body, builds, locations |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | body, builds, locations |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | builds, locations |
+| [FND-AUDIO-018](../findings/FND-AUDIO-018.md) | builds, locations |
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | builds, locations |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | builds, locations |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | builds, locations |
@@ -484,6 +485,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | builds, locations |
 | [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | builds, locations |
 | [FND-SEARCH-006](../findings/FND-SEARCH-006.md) | builds, locations |
+| [FND-SEARCH-007](../findings/FND-SEARCH-007.md) | builds, locations |
 | [FND-SELL-001](../findings/FND-SELL-001.md) | builds, locations |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | builds, locations |
 | [FND-SETUP-001](../findings/FND-SETUP-001.md) | builds, locations |
@@ -2525,6 +2527,7 @@ None.
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FND-DATA-011](../findings/FND-DATA-011.md) | body |
+| [FND-SEARCH-007](../findings/FND-SEARCH-007.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-TURN-006](../findings/FND-TURN-006.md) | body |
@@ -4102,14 +4105,8 @@ None.
 
 | Cited by | In |
 |---|---|
+| [FND-AUDIO-018](../findings/FND-AUDIO-018.md) | body |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
-| glossary: comlink_blink_step | glossary |
-| glossary: ComlinkAlert | glossary |
-| [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | body, evidence |
-| [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | evidence |
-| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | evidence |
-| [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | evidence |
-| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-AUDIO-013
 
@@ -4160,6 +4157,19 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
+
+## FND-AUDIO-018
+
+| Cited by | In |
+|---|---|
+| [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | superseded_by |
+| glossary: comlink_blink_step | glossary |
+| glossary: ComlinkAlert | glossary |
+| [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | body, evidence |
+| [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | evidence |
+| [RULE-COMLINK-001](../rules/RULE-COMLINK-001.md) | evidence |
+| [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## FND-AWARDS-001
 
@@ -5084,6 +5094,7 @@ None.
 | [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | body |
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | body |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | body |
+| [FND-AUDIO-018](../findings/FND-AUDIO-018.md) | body |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | body |
 | [FND-COMBAT-007](../findings/FND-COMBAT-007.md) | body |
 | [FND-COMBAT-008](../findings/FND-COMBAT-008.md) | body |
@@ -5139,6 +5150,7 @@ None.
 | [FND-RNG-006](../findings/FND-RNG-006.md) | body |
 | [FND-SAVE-002](../findings/FND-SAVE-002.md) | body |
 | [FND-SAVE-003](../findings/FND-SAVE-003.md) | body |
+| [FND-SEARCH-007](../findings/FND-SEARCH-007.md) | body |
 | [FND-SELL-001](../findings/FND-SELL-001.md) | body |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | body |
 | [FND-SETUP-014](../findings/FND-SETUP-014.md) | body |
@@ -6569,7 +6581,12 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-TURN-045](../experiments/EXP-TURN-045.md) | body |
+| [FND-SEARCH-007](../findings/FND-SEARCH-007.md) | body |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | evidence |
+
+## FND-SEARCH-007
+
+None.
 
 ## FND-SELL-001
 
@@ -7173,6 +7190,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | body |
+| [FND-AUDIO-018](../findings/FND-AUDIO-018.md) | body |
 | [FND-COMBAT-005](../findings/FND-COMBAT-005.md) | body |
 | [FND-COMBAT-009](../findings/FND-COMBAT-009.md) | body |
 | [FND-COMBAT-010](../findings/FND-COMBAT-010.md) | body |

@@ -4,7 +4,7 @@ title: Storing a Comlink message keeps each player's newest 16 messages
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-001, FND-COMLINK-006, FND-COMLINK-009, FND-AUDIO-002, FND-AUDIO-012, SRC-MANUAL-GOG, FND-EXE-004, EXP-COMLINK-001]
+evidence: [FND-COMLINK-001, FND-COMLINK-006, FND-COMLINK-009, FND-AUDIO-002, FND-AUDIO-018, SRC-MANUAL-GOG, FND-EXE-004, EXP-COMLINK-001]
 conflicting: []
 split_with: []
 related: [FMT-STATE-005]

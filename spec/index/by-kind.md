@@ -224,7 +224,7 @@
 
 ## findings
 
-388 entries.
+390 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -322,12 +322,13 @@
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | CD music opens a shareable cdaudio device in TMSF format, a timer poll restarts a stopped program, and the MCI notification changes nothing | recorded |
 | [FND-AUDIO-010](../findings/FND-AUDIO-010.md) | Slot 2 is the sound of pressing a push-button control, and setup plays slots 3 and 4 for accepted and refused choices | recorded |
 | [FND-AUDIO-011](../findings/FND-AUDIO-011.md) | Panels play slot 3 for an accepted choice and slot 4 for a refused one, and the pagers stop at both ends | recorded |
-| [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read | recorded |
+| [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read | superseded |
 | [FND-AUDIO-013](../findings/FND-AUDIO-013.md) | Detailed Combat loads each attack's sound into slot 5 and picks the attack and hit strips from the weapon, Martial Arts and outcome | recorded |
 | [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | The shipped GOG CD wrapper rejects MCI_PAUSE and treats MCI_PLAY without MCI_FROM as a successful no-op | recorded |
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | Title music is requested after successful game entry and return, not after cancelled preparation or loading | recorded |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | The CD fade uses zero-based wait deadlines and dispatches window messages without handling game events | recorded |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | The CD fade runs inside the event pump's music poll and mute command, and never touches timer slot 0 | recorded |
+| [FND-AUDIO-018](../findings/FND-AUDIO-018.md) | An unread Comlink message sounds slot 6 on arrival and once at planning entry, and repeats it every 24 timer ticks until read | recorded |
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | The award builder takes five categories in a fixed order with fixed starting thresholds and keeps every tied player, but only three awards per row are drawn | recorded |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not | recorded |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions | recorded |
@@ -508,6 +509,7 @@
 | [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | Search rows show the controlled-site icon and the site name, a press flips a row between 0 and 1, the filter is not saved, and the city counts a site as controlled when its progress reaches its Resistance in a sector the viewer owns | recorded |
 | [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry | recorded |
 | [FND-SEARCH-006](../findings/FND-SEARCH-006.md) | The city redraw passes each site marker's definition, sector, ordinal and controlled flag to fn_00412AC4 from two calls, and takes the viewing player as its first argument | recorded |
+| [FND-SEARCH-007](../findings/FND-SEARCH-007.md) | Every argument the city redraw and the site marker renderer take is pushed as a full dword with no leftover high bits | recorded |
 | [FND-SELL-001](../findings/FND-SELL-001.md) | The Sell panel handler shows each carried item at half its cost and stores the chosen items as a three-bit mask in the target byte | recorded |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | The Sell panel marks each selected row with a 192-by-54 keyed overlay from PX00129 and restores the panel's own pixels for the others | recorded |
 | [FND-SETUP-001](../findings/FND-SETUP-001.md) | Starting cash is $500 in Armageddon and $20 otherwise, and one exact player name overrides it with $1,500 after setup | recorded |

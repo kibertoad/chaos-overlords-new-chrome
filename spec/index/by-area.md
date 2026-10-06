@@ -92,12 +92,13 @@
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | CD music opens a shareable cdaudio device in TMSF format, a timer poll restarts a stopped program, and the MCI notification changes nothing | recorded |
 | [FND-AUDIO-010](../findings/FND-AUDIO-010.md) | Slot 2 is the sound of pressing a push-button control, and setup plays slots 3 and 4 for accepted and refused choices | recorded |
 | [FND-AUDIO-011](../findings/FND-AUDIO-011.md) | Panels play slot 3 for an accepted choice and slot 4 for a refused one, and the pagers stop at both ends | recorded |
-| [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read | recorded |
+| [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read | superseded |
 | [FND-AUDIO-013](../findings/FND-AUDIO-013.md) | Detailed Combat loads each attack's sound into slot 5 and picks the attack and hit strips from the weapon, Martial Arts and outcome | recorded |
 | [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | The shipped GOG CD wrapper rejects MCI_PAUSE and treats MCI_PLAY without MCI_FROM as a successful no-op | recorded |
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | Title music is requested after successful game entry and return, not after cancelled preparation or loading | recorded |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | The CD fade uses zero-based wait deadlines and dispatches window messages without handling game events | recorded |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | The CD fade runs inside the event pump's music poll and mute command, and never touches timer slot 0 | recorded |
+| [FND-AUDIO-018](../findings/FND-AUDIO-018.md) | An unread Comlink message sounds slot 6 on arrival and once at planning entry, and repeats it every 24 timer ticks until read | recorded |
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | Starting a music program | supported |
 | [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | Music repeats its program when it ends and pauses while the window is inactive | supported |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | Applying the music and effects levels | supported |
@@ -829,6 +830,7 @@
 | [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | Search rows show the controlled-site icon and the site name, a press flips a row between 0 and 1, the filter is not saved, and the city counts a site as controlled when its progress reaches its Resistance in a sector the viewer owns | recorded |
 | [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry | recorded |
 | [FND-SEARCH-006](../findings/FND-SEARCH-006.md) | The city redraw passes each site marker's definition, sector, ordinal and controlled flag to fn_00412AC4 from two calls, and takes the viewing player as its first argument | recorded |
+| [FND-SEARCH-007](../findings/FND-SEARCH-007.md) | Every argument the city redraw and the site marker renderer take is pushed as a full dword with no leftover high bits | recorded |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | established |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | established |
 | [SCR-SEARCH-001](../screens/SCR-SEARCH-001.md) | Search panel | supported |

@@ -82,6 +82,5 @@ None known.
 
 ## Open questions
 
-- What a panel that animates on the clock in its own loop does with the tick
-  the flag kept when a hold of one of its faces ends is not recorded
-  (FND-UI-046).
+- Whether the network setup screens' own hold loops stop their slot 0 steps
+  as the panels' do has not been read (FND-UI-047).

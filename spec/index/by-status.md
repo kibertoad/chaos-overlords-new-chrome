@@ -276,7 +276,7 @@
 
 ## superseded
 
-12 entries.
+13 entries.
 
 | ID | Title |
 |---|---|
@@ -290,12 +290,13 @@
 | [FND-AI-038](../findings/FND-AI-038.md) | The family-12 handler equips and heals when unopposed and wanders at random, and attacks when opposed |
 | [FND-AI-059](../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself |
 | [FND-AI-067](../findings/FND-AI-067.md) | The sector selector adds 1 to an encoded mode's sector for every sector a ring visits |
+| [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read |
 | [FND-COMLINK-005](../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer |
 | [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM |
 
 ## recorded
 
-530 entries.
+531 entries.
 
 | ID | Title |
 |---|---|
@@ -536,12 +537,12 @@
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | CD music opens a shareable cdaudio device in TMSF format, a timer poll restarts a stopped program, and the MCI notification changes nothing |
 | [FND-AUDIO-010](../findings/FND-AUDIO-010.md) | Slot 2 is the sound of pressing a push-button control, and setup plays slots 3 and 4 for accepted and refused choices |
 | [FND-AUDIO-011](../findings/FND-AUDIO-011.md) | Panels play slot 3 for an accepted choice and slot 4 for a refused one, and the pagers stop at both ends |
-| [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read |
 | [FND-AUDIO-013](../findings/FND-AUDIO-013.md) | Detailed Combat loads each attack's sound into slot 5 and picks the attack and hit strips from the weapon, Martial Arts and outcome |
 | [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | The shipped GOG CD wrapper rejects MCI_PAUSE and treats MCI_PLAY without MCI_FROM as a successful no-op |
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | Title music is requested after successful game entry and return, not after cancelled preparation or loading |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | The CD fade uses zero-based wait deadlines and dispatches window messages without handling game events |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | The CD fade runs inside the event pump's music poll and mute command, and never touches timer slot 0 |
+| [FND-AUDIO-018](../findings/FND-AUDIO-018.md) | An unread Comlink message sounds slot 6 on arrival and once at planning entry, and repeats it every 24 timer ticks until read |
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | The award builder takes five categories in a fixed order with fixed starting thresholds and keeps every tied player, but only three awards per row are drawn |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions |
@@ -721,6 +722,7 @@
 | [FND-SEARCH-004](../findings/FND-SEARCH-004.md) | Search rows show the controlled-site icon and the site name, a press flips a row between 0 and 1, the filter is not saved, and the city counts a site as controlled when its progress reaches its Resistance in a sector the viewer owns |
 | [FND-SEARCH-005](../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry |
 | [FND-SEARCH-006](../findings/FND-SEARCH-006.md) | The city redraw passes each site marker's definition, sector, ordinal and controlled flag to fn_00412AC4 from two calls, and takes the viewing player as its first argument |
+| [FND-SEARCH-007](../findings/FND-SEARCH-007.md) | Every argument the city redraw and the site marker renderer take is pushed as a full dword with no leftover high bits |
 | [FND-SELL-001](../findings/FND-SELL-001.md) | The Sell panel handler shows each carried item at half its cost and stores the chosen items as a three-bit mask in the target byte |
 | [FND-SELL-002](../findings/FND-SELL-002.md) | The Sell panel marks each selected row with a 192-by-54 keyed overlay from PX00129 and restores the panel's own pixels for the others |
 | [FND-SETUP-001](../findings/FND-SETUP-001.md) | Starting cash is $500 in Armageddon and $20 otherwise, and one exact player name overrides it with $1,500 after setup |
@@ -1013,7 +1015,6 @@ Entries whose Open questions section says more than None known.
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | established |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | Applying the music and effects levels | supported |
 | [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | The turn-start sound | supported |
-| [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | The Comlink alert plays slot 6 through the effects gate | supported |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks | supported |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | established |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
