@@ -818,6 +818,8 @@ dock a player plans against the dock the sealed turn grants.
 - **The lobby is polled, not streamed.** The game reads the match about once a second while the
   lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
   facts too; opening it earlier would mean unwinding a session for every player who backs out.
+  Cutting the cost of an unchanged poll is
+  [#458](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/458).
 - No chat. A WebSocket lane for lobby chat would sit beside the stream without touching turns.
 - **Comlink is closed in an online match.** The original's player-to-player messaging writes hashed
   state on both sides: a message lands in a recipient's inbox, and merely opening the view clears
