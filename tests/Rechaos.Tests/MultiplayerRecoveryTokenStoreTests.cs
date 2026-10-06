@@ -277,7 +277,9 @@ public sealed class MultiplayerRecoveryTokenStoreTests : IDisposable
 /// <remarks>
 /// On macOS this is the login Keychain, and on Linux the Secret Service. A machine whose store
 /// refuses the write (a runner with a locked keychain or without a keyring daemon) skips the test,
-/// and says so in the skip reason.
+/// and says so in the skip reason. <c>REQUIRE_SECRET_SERVICE=1</c> turns that skip into a
+/// failure: the Linux leg of the fast gate sets it after starting an unlocked keyring, so a broken
+/// binding or keyring setup fails there instead of passing as a skip.
 /// Every item goes under a service of the test's own, and is removed again.
 /// </remarks>
 public sealed class PlatformSecretStoreTests
@@ -289,13 +291,13 @@ public sealed class PlatformSecretStoreTests
         ISecretStore? store = null;
         if (OperatingSystem.IsMacOS()) store = KeychainSecretStore.TryCreate(service);
         else if (OperatingSystem.IsLinux()) store = SecretServiceStore.TryCreate(service);
-        Assert.SkipWhen(store is null, "This platform has no operating-system secret store to test.");
+        SkipUnlessRequired(store is null, "This platform has no operating-system secret store to test.");
 
         const string account = "test/match-1/player-1@https://games.example.test/";
         var stored = store!.TryStore(account, "Chaos Overlords test seat", "cop_secret_1");
         // A runner whose keyring is locked or absent answers the write with a refusal, which is
         // the fallback path, not a failure of the binding: a broken binding throws instead.
-        Assert.SkipWhen(!stored, "The store refused the write: no keyring is running or it is locked.");
+        SkipUnlessRequired(!stored, "The store refused the write: no keyring is running or it is locked.");
         try
         {
             Assert.True(stored);
@@ -312,6 +314,15 @@ public sealed class PlatformSecretStoreTests
         }
         Assert.Equal(SecretLookup.Missing, store.TryLookup(account, out _));
         Assert.True(store.TryDelete(account));
+    }
+
+    private static void SkipUnlessRequired(bool condition, string reason)
+    {
+        if (!condition) return;
+        Assert.False(
+            Environment.GetEnvironmentVariable("REQUIRE_SECRET_SERVICE") == "1",
+            $"REQUIRE_SECRET_SERVICE=1, but the test would skip: {reason}");
+        Assert.Skip(reason);
     }
 }
 

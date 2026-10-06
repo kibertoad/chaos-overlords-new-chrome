@@ -68,8 +68,33 @@ jobs:
         id: kaitai
         uses: $/.github/actions/install-kaitai
 
+      # The recovery token's Secret Service store (libsecret) needs a session bus and an unlocked
+      # keyring, which the runner image does not start. Without them its test skips, and the
+      # binding would never run anywhere in automation.
+      - name: Install a Secret Service keyring
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dbus gnome-keyring libsecret-1-0
+
       - name: Verify, build, and test
+        if: runner.os != 'Linux'
         shell: pwsh
         run: ./tools/Invoke-Validation.ps1
         env:
           KSC: ${{ steps.kaitai.outputs.ksc }}
+
+      # The gate runs inside a private session bus with GNOME Keyring's login collection created
+      # and unlocked with an empty password, and REQUIRE_SECRET_SERVICE makes
+      # PlatformSecretStoreTests fail instead of skipping when the store does not answer.
+      - name: Verify, build, and test (with a Secret Service keyring)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          dbus-run-session -- bash -euo pipefail -c '
+            printf "" | gnome-keyring-daemon --unlock --components=secrets > /dev/null
+            pwsh -NoProfile -File ./tools/Invoke-Validation.ps1
+          '
+        env:
+          KSC: ${{ steps.kaitai.outputs.ksc }}
+          REQUIRE_SECRET_SERVICE: "1"
