@@ -130,6 +130,10 @@ namespace Rechaos.Tests;
 /// turn and order Moves that the Move repair sends back and then gives a random neighbour from a
 /// corner of the city (RULE-MOVE-002, RULE-AI-007), until a hire with 80 gangs is refused and
 /// reported (RULE-HIRE-001, RULE-EVENT-011).
+/// EXP-UI-032 and EXP-UI-034 play hot seat in Eliminate with a write that takes a human's Right
+/// Hands out of the match, which eliminates that human (RULE-TURN-006, RULE-OBJECTIVE-005).
+/// EXP-UI-035 plays timed hot-seat turns, one of them run out, and EXP-TURN-102 opens the menu bar
+/// in timed turns (RULE-TIMER-002, RULE-TIMER-003).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -137,7 +141,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-TURN-097", "EXP-TURN-098", "EXP-TURN-099", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018", "EXP-COMBAT-001", "EXP-COMBAT-002", "EXP-COMBAT-003", "EXP-COMBAT-004", "EXP-COMBAT-005", "EXP-COMBAT-006", "EXP-COMBAT-007", "EXP-COMBAT-008", "EXP-COMBAT-009", "EXP-UI-019", "EXP-UI-020", "EXP-UI-021", "EXP-UI-022", "EXP-UI-023", "EXP-AUDIO-001", "EXP-VIDEO-001", "EXP-UI-024", "EXP-UI-025", "EXP-UI-026"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-TURN-097", "EXP-TURN-098", "EXP-TURN-099", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018", "EXP-COMBAT-001", "EXP-COMBAT-002", "EXP-COMBAT-003", "EXP-COMBAT-004", "EXP-COMBAT-005", "EXP-COMBAT-006", "EXP-COMBAT-007", "EXP-COMBAT-008", "EXP-COMBAT-009", "EXP-UI-019", "EXP-UI-020", "EXP-UI-021", "EXP-UI-022", "EXP-UI-023", "EXP-AUDIO-001", "EXP-VIDEO-001", "EXP-UI-024", "EXP-UI-025", "EXP-UI-026", "EXP-UI-032", "EXP-UI-034", "EXP-UI-035", "EXP-UI-036", "EXP-TURN-102"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -623,6 +627,32 @@ public sealed partial class OriginalNewGameExperimentTests
         } while (match.Outcome is null && match.Coordinator.Phase != TurnPhase.Upkeep);
     }
 
+    // RULE-SETUP-008, RULE-OBJECTIVE-005: the rest of a hot-seat round after the first human's
+    // Done. Each later human still playing draws its offers at its planning entry and presses Done
+    // with no orders; an eliminated one's slot is crossed, its card being presentation only. The
+    // round ends before the first human's next planning entry, where the probe stops at the
+    // hand-off card before the offers are drawn, or at the match's outcome.
+    private static void AdvanceHotSeatRound(MatchReplayRecorder recorder, PlayerId first)
+    {
+        var match = recorder.State;
+        while (match.Outcome is null)
+        {
+            if (match.Coordinator.Phase == TurnPhase.Command
+                && match.Coordinator.ActivePlayer is { } player
+                && match.FindPlayer(player)!.Setup.Controller == PlayerController.Human)
+            {
+                if (player == first && IsActive(match, first)) return;
+                if (IsActive(match, player))
+                {
+                    recorder.PrepareHireOffers(player);
+                    recorder.FinishCommand(player);
+                    continue;
+                }
+            }
+            HeadlessMatchRunner.Advance(recorder);
+        }
+    }
+
     private static void AssertReplayEndpoint(MatchState match, PlayerId human, int controller)
     {
         if (controller != 0)
@@ -741,9 +771,14 @@ public sealed partial class OriginalNewGameExperimentTests
             ? new MatchReplayRecorder(match)
             : MatchReplayRecorder.Unverified(match);
         var human = recorded.Humans[0];
+        // RULE-SETUP-008: in a hot-seat run the probe presses Ready on the first human's hand-off
+        // card, which draws its offers, before it writes the turn's inputs, and every later human
+        // presses Ready and Done with no orders; each round ends at the first human's next card.
+        var hotSeat = recorded.Humans.Count > 1;
         donePresses = 0;
         for (var turn = 0; turn < recorded.DoneCount; turn++)
         {
+            if (hotSeat) recorder.PrepareHireOffers(human);
             atPlanningEntry?.Invoke(match, human, turn + 1);
             // DEV-EQUIP-001: the rebuild resolves Equip and Sell in the order they are submitted.
             // Every recording lists a turn's orders in roster order, the original's scan order.
@@ -763,8 +798,11 @@ public sealed partial class OriginalNewGameExperimentTests
             // A cleared player_active (FND-STATE-004) takes the player out of the match as the
             // elimination check does (RULE-TURN-006), with its gangs and sectors left where they are.
             // A cash write sets the player's cash (FND-AI-055) so a human can pay for a hire every turn.
+            // A gang record whose sector byte the probe set to GANG_INACTIVE (FMT-STATE-001) is a
+            // gang gone as after a fight, its Force kept in the record.
             foreach (var write in recorded.Planning.Where(write => write.Turn == turn + 1))
-                if (write.Cash is { } cash) match.Players[write.Player].Cash = cash;
+                if (write.Deactivated) match.Players[write.Player].Gangs[write.Slot].Retire(match.Players[write.Player].Gangs[write.Slot].Force);
+                else if (write.Cash is { } cash) match.Players[write.Player].Cash = cash;
                 else if (write.Retired) match.Players[write.Player].Status = PlayerStatus.Eliminated;
                 else if (write.Raider) match.AiPlanning.SetRaiderMode(new PlayerId(write.Player));
                 else match.AiPlanning.SetFamily(new PlayerId(write.Player), write.Slot, write.Family);
@@ -779,10 +817,11 @@ public sealed partial class OriginalNewGameExperimentTests
                 afterDone(match);
             }
             donePresses++;
-            AdvanceToRecordedEndpoint(recorder, human, recorded.Term("controller", human.Value));
+            if (hotSeat) AdvanceHotSeatRound(recorder, human);
+            else AdvanceToRecordedEndpoint(recorder, human, recorded.Term("controller", human.Value));
             if (!IsActive(match, human) || match.Outcome is not null) break;
 
-            recorder.PrepareHireOffers(human);
+            if (!hotSeat) recorder.PrepareHireOffers(human);
         }
 
         return match;

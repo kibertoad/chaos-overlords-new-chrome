@@ -4,7 +4,7 @@ title: An eliminated local human sees the elimination card at that player's plac
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-004, FND-OBJECTIVE-002, FND-SETUP-010, FND-AUDIO-001, SRC-MANUAL-GOG, EXP-UI-018]
+evidence: [FND-OBJECTIVE-004, FND-OBJECTIVE-002, FND-SETUP-010, FND-AUDIO-001, SRC-MANUAL-GOG, EXP-UI-018, EXP-UI-032, EXP-UI-034]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-002, SCR-OBJECTIVE-002, RULE-AUDIO-001]
@@ -82,6 +82,16 @@ of the last local human in slot order the endgame music keeps playing for the
 humans before it until another card or a new game changes it. The round in which the last local
 human retires still lets later computer players plan; the next round finds no
 local human and the game ends.
+
+With humans in slots 0 and 1 and slot 1 eliminated, slot 0 plans the next
+round behind its Ready card, and slot 1's Ready card and then its card follow
+slot 0's Done (EXP-UI-032).
+
+When the resolution ends the match, the walk does not run again. Each local
+human in slot order gets the Ready card, under `handoff`, and then either the
+final view or, when eliminated, the elimination card, and the awards come after
+the last of them (FND-OBJECTIVE-004). EXP-UI-034 shows slot 0's final view,
+then slot 1's Ready card and elimination card, then the awards.
 
 ## What the sources say
 

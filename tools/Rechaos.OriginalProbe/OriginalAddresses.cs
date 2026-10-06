@@ -7,6 +7,8 @@ internal static class OriginalAddresses
     public const uint GangRecords = 0x00498DA8;
     public const int PlayerGangStride = 0xA20;
     public const int GangRecordSize = 0x20;
+    // FMT-STATE-001: the sector byte at offset 2 holds GANG_INACTIVE once the gang is gone.
+    public const byte GangInactive = 100;
 
     public const string ExecutableSha256 = "a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89";
 
@@ -79,6 +81,7 @@ internal static class OriginalAddresses
     // fn_00464290 plays an effect slot.
     public const uint PlanningLimitChoice = 0x00487854;
     public const uint PlanningLimitMs = 0x0049069C;
+    public const uint PlanningStartMs = 0x004906A0;
     public const uint PlanningTimerStarted = 0x0041B8C8;
     public const uint PlanningBarWidth = 0x0041B96D;
     public const uint PlanningBarDrawStart = 0x0041B8FC;
@@ -135,6 +138,9 @@ internal static class OriginalAddresses
 
     // FND-OBJECTIVE-002: the elimination card of a local human, which blocks until its Done.
     public const uint EliminationCard = 0x0042C3F5;
+    // FND-OBJECTIVE-002: the card's Done, from (428, 377) up to but not including (528, 425).
+    public const int CardDoneX = 428 + 50;
+    public const int CardDoneY = 377 + 24;
 
     // FND-AWARDS-005: the renderer draws each listed player's name with fn_00413FD5, whose third
     // argument is the name at 0x004A2589 + 12 * player: the splash's at 0x0042D1A4, the ranked rows'

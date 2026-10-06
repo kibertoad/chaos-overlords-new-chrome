@@ -26,6 +26,27 @@ public sealed class ReferenceFrameRequestTests
         Assert.Null(next.MarkerFrame);
     }
 
+    // EXP-UI-036: an endpoint capture stands at the probe's dump, before the planning entry's Last
+    // Turn Events is exited; a shot step stands after it.
+    [Fact]
+    public void EntryPanelsAreAskedForByAFlag()
+    {
+        Assert.True(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--entry-panels"])!.EntryPanels);
+        Assert.False(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp"])!.EntryPanels);
+    }
+
+    // RULE-OPTIONS-003: the probe switches Warn if Idle Gangs off in a run that presses Done.
+    [Fact]
+    public void TheIdleGangWarningCanBeSwitchedOff()
+    {
+        Assert.False(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--no-idle-warning"])!.IdleGangWarning);
+        Assert.True(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp"])!.IdleGangWarning);
+    }
+
     // SCR-UI-001, SCR-UI-002, SCR-SETUP-001: a screen's name in place of the save asks for that
     // screen.
     [Theory]
@@ -56,6 +77,10 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--reference-frame", "save", "save" },
         new[] { "--reference-clicks", "1:2" },
         new[] { "--pump-counter", "1" },
+        new[] { "--entry-panels" },
+        new[] { "--no-idle-warning" },
+        new[] { "--reference-frame", "title", "frame", "--entry-panels" },
+        new[] { "--reference-frame", "save", "frame", "--entry-panels", "--entry-panels" },
         new[] { "--selected-sector", "1" },
         new[] { "--reference-frame", "save", "frame", "--selected-sector", "64" },
         new[] { "--reference-frame", "save", "frame", "--selected-sector", "-1" },

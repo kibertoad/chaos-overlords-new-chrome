@@ -151,6 +151,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | builds |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | builds |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | builds |
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | builds |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | builds |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | builds |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | builds |
@@ -177,6 +178,10 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | builds |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | builds |
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | builds |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | builds |
+| [EXP-UI-034](../experiments/EXP-UI-034.md) | builds |
+| [EXP-UI-035](../experiments/EXP-UI-035.md) | builds |
+| [EXP-UI-036](../experiments/EXP-UI-036.md) | builds |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
@@ -1002,6 +1007,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-020](../experiments/EXP-UI-020.md) | body |
+| [EXP-UI-036](../experiments/EXP-UI-036.md) | body |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | evidence |
 | [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | evidence |
 
@@ -1284,6 +1290,7 @@ None.
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | body |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | body |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | body |
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | body |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | body |
 | [EXP-UI-004](../experiments/EXP-UI-004.md) | body |
 | [EXP-UI-005](../experiments/EXP-UI-005.md) | body |
@@ -1308,6 +1315,10 @@ None.
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | body |
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | body |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | body |
+| [EXP-UI-034](../experiments/EXP-UI-034.md) | body |
+| [EXP-UI-035](../experiments/EXP-UI-035.md) | body |
+| [EXP-UI-036](../experiments/EXP-UI-036.md) | body |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | body |
 
 ## EXP-TURN-002
@@ -1829,6 +1840,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | body |
 | [RULE-TIMER-001](../rules/RULE-TIMER-001.md) | evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | evidence |
 | [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | evidence |
@@ -2256,6 +2268,13 @@ None.
 | [RULE-HIRE-001](../rules/RULE-HIRE-001.md) | body, evidence |
 | [RULE-MOVE-002](../rules/RULE-MOVE-002.md) | body, evidence |
 
+## EXP-TURN-102
+
+| Cited by | In |
+|---|---|
+| [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body, evidence |
+| [RULE-TIMER-003](../rules/RULE-TIMER-003.md) | body, evidence |
+
 ## EXP-UI-001
 
 | Cited by | In |
@@ -2265,6 +2284,7 @@ None.
 | [EXP-SEARCH-002](../experiments/EXP-SEARCH-002.md) | body |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
+| [EXP-UI-035](../experiments/EXP-UI-035.md) | body |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
 
 ## EXP-UI-002
@@ -2439,6 +2459,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-036](../experiments/EXP-UI-036.md) | body |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 
 ## EXP-UI-021
@@ -2480,6 +2501,36 @@ None.
 |---|---|
 | glossary: match_saved | glossary |
 | [RULE-UI-015](../rules/RULE-UI-015.md) | evidence |
+
+## EXP-UI-032
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-034](../experiments/EXP-UI-034.md) | body |
+| [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body, evidence |
+| [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | body, evidence |
+
+## EXP-UI-034
+
+| Cited by | In |
+|---|---|
+| [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body, evidence |
+| [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, evidence |
+| [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
+| [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | evidence |
+
+## EXP-UI-035
+
+| Cited by | In |
+|---|---|
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | body |
+| [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body, evidence |
+
+## EXP-UI-036
+
+| Cited by | In |
+|---|---|
+| [SCR-EVENT-001](../screens/SCR-EVENT-001.md) | evidence |
 
 ## EXP-VIDEO-001
 
@@ -2627,6 +2678,7 @@ None.
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
 | [EXP-TURN-090](../experiments/EXP-TURN-090.md) | body |
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | body |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | body |
 | [FMT-SAVE-001](../formats/FMT-SAVE-001.md) | body |
 | [FMT-STATE-002](../formats/FMT-STATE-002.md) | body |
 | [FMT-STATE-006](../formats/FMT-STATE-006.md) | body |
@@ -5975,7 +6027,7 @@ None.
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body, evidence |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | body, evidence |
 | [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) | body, evidence |
-| [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | evidence |
+| [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body, evidence |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | body, evidence |
 | [RULE-SITE-001](../rules/RULE-SITE-001.md) | body, evidence |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | evidence |
@@ -6865,6 +6917,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
+| [EXP-UI-034](../experiments/EXP-UI-034.md) | body |
 | [FND-AI-056](../findings/FND-AI-056.md) | body |
 | [FND-STATE-007](../findings/FND-STATE-007.md) | body |
 | glossary: player_active | glossary |
@@ -6962,6 +7015,7 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | body |
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | body |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
@@ -6979,6 +7033,8 @@ None.
 | [EXP-TURN-046](../experiments/EXP-TURN-046.md) | body |
 | [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body |
 | [EXP-TURN-052](../experiments/EXP-TURN-052.md) | body |
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | body |
+| [EXP-UI-035](../experiments/EXP-UI-035.md) | body |
 | [FND-STATE-010](../findings/FND-STATE-010.md) | body |
 | [FND-UI-023](../findings/FND-UI-023.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
@@ -7776,6 +7832,7 @@ None.
 | [EXP-UI-007](../experiments/EXP-UI-007.md) | body |
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | body |
+| [EXP-UI-036](../experiments/EXP-UI-036.md) | body |
 | [FND-UI-056](../findings/FND-UI-056.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
@@ -9111,6 +9168,8 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-018](../experiments/EXP-UI-018.md) | body |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | body |
+| [EXP-UI-034](../experiments/EXP-UI-034.md) | body |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | body |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | body, related |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | body, related |
@@ -9439,6 +9498,8 @@ None.
 | [EXP-TURN-046](../experiments/EXP-TURN-046.md) | body |
 | [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body |
 | [EXP-TURN-052](../experiments/EXP-TURN-052.md) | body |
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | body |
+| [EXP-UI-035](../experiments/EXP-UI-035.md) | body |
 | glossary: planning_time_expired | glossary |
 | glossary: planning_timer_start | glossary |
 | glossary: timer_ms | glossary |
@@ -9452,6 +9513,8 @@ None.
 | [EXP-TURN-046](../experiments/EXP-TURN-046.md) | body |
 | [EXP-TURN-047](../experiments/EXP-TURN-047.md) | body |
 | [EXP-TURN-052](../experiments/EXP-TURN-052.md) | body |
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | body |
+| [EXP-UI-035](../experiments/EXP-UI-035.md) | body |
 | glossary: timer_ms | glossary |
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | body |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body |
@@ -9543,6 +9606,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | body |
 | [RULE-TURN-002](../rules/RULE-TURN-002.md) | body, related |
 
 ## RULE-UI-001
@@ -9744,6 +9808,7 @@ None.
 |---|---|
 | [BUG-AWARDS-001](../bugs/BUG-AWARDS-001.md) | related |
 | [EXP-UI-017](../experiments/EXP-UI-017.md) | body |
+| [EXP-UI-034](../experiments/EXP-UI-034.md) | body |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body, related |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, related |
 | [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | body |
@@ -9753,8 +9818,11 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-023](../experiments/EXP-UI-023.md) | body |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | body |
+| [EXP-UI-034](../experiments/EXP-UI-034.md) | body |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | body, related |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, related |
+| [SCR-OBJECTIVE-002](../screens/SCR-OBJECTIVE-002.md) | body |
 
 ## SCR-COMBAT-001
 
@@ -9810,6 +9878,7 @@ None.
 |---|---|
 | [EXP-TURN-009](../experiments/EXP-TURN-009.md) | body |
 | [EXP-UI-008](../experiments/EXP-UI-008.md) | body |
+| [EXP-UI-036](../experiments/EXP-UI-036.md) | body |
 | [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | body, related |
 
 ## SCR-FINANCE-001
@@ -9915,6 +9984,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-018](../experiments/EXP-UI-018.md) | body |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | body |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body, related |
 
 ## SCR-OPTIONS-001
@@ -9969,6 +10039,7 @@ None.
 |---|---|
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | body |
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | body |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | body |
 | [RULE-OBJECTIVE-005](../rules/RULE-OBJECTIVE-005.md) | body, related |
 | [RULE-SETUP-008](../rules/RULE-SETUP-008.md) | body, related |
 
@@ -10004,6 +10075,7 @@ None.
 | [EXP-UI-014](../experiments/EXP-UI-014.md) | body |
 | [EXP-UI-016](../experiments/EXP-UI-016.md) | body |
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | body |
+| [EXP-UI-036](../experiments/EXP-UI-036.md) | body |
 | [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | body |
 | [SCR-OBJECTIVE-001](../screens/SCR-OBJECTIVE-001.md) | body, related |
 | [SCR-OPTIONS-001](../screens/SCR-OPTIONS-001.md) | related |

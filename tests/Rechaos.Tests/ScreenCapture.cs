@@ -104,6 +104,12 @@ public sealed record ScreenCaptureRecord(
     /// <summary>FND-UI-052, FND-UI-053: the frame of the rotating item pictures a shot shows.</summary>
     public int? ItemFrame { get; init; }
 
+    /// <summary>
+    /// RULE-OPTIONS-003: whether Warn if Idle Gangs was on for the shot's clicks. The probe switches it
+    /// off in a run that presses Done, and a <c>warn</c> step switches it back on.
+    /// </summary>
+    public bool IdleGangWarning { get; init; } = true;
+
     /// <summary>FND-COMBAT-016: the tick of the Detailed Combat clip a shot shows.</summary>
     public int? ClipTick { get; init; }
 
@@ -152,8 +158,9 @@ public sealed record ScreenCaptureRecord(
                         records.Add(Parse(experiment, run, before, whiteKeyed) with { Step = step, BeforeMatch = screen });
                 if (recorded.TryGetProperty("setup_steps", out var setupSteps))
                     records.AddRange(SetupStepCaptures(experiment, run, setupSteps.EnumerateArray().ToArray(), whiteKeyed));
+                var pressesDone = recorded.TryGetProperty("done_at_roll", out var done) && done.GetArrayLength() > 0;
                 if (recorded.TryGetProperty("order_steps", out var steps))
-                    records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray(), whiteKeyed));
+                    records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray(), whiteKeyed, !pressesDone));
                 run++;
             }
         }
@@ -264,7 +271,7 @@ public sealed record ScreenCaptureRecord(
     }
 
     private static IEnumerable<ScreenCaptureRecord> StepCaptures(
-        string experiment, int run, JsonElement[] steps, bool whiteKeyed)
+        string experiment, int run, JsonElement[] steps, bool whiteKeyed, bool idleGangWarning)
     {
         var clicks = new List<ReferenceClick>();
         string? unreplayable = null;
@@ -302,6 +309,9 @@ public sealed record ScreenCaptureRecord(
                 case "back":
                     clicks.Add(new ReferenceClick(SectorDetailLayout.Back.Center));
                     break;
+                case "warn":
+                    idleGangWarning = true;
+                    break;
                 case "type":
                     clicks.Add(new ReferenceClick(Point.Zero)
                     {
@@ -313,6 +323,7 @@ public sealed record ScreenCaptureRecord(
                     yield return Parse(experiment, run, capture, whiteKeyed) with
                     {
                         Step = index, Clicks = clicks.ToArray(), Unreplayable = unreplayable,
+                        IdleGangWarning = idleGangWarning,
                     };
                     break;
             }
@@ -338,8 +349,10 @@ public static class ScreenCaptureMasks
                 new("DEV-UI-006", StatusConsoleLayout.Cash),
                 // DEV-UI-023: the key line along the bottom of the city map, one 7-pixel text row.
                 new("DEV-UI-023", new Rectangle(2, 439, 432, 7)),
-                // DEV-UI-007 turns Tolerance orange only while the queued Chaos can set off a
-                // Crackdown, which no city capture shows, so Tolerance is compared here.
+                // DEV-UI-007: the Tolerance value turns orange when the Chaos the player can raise
+                // there can set off a Crackdown, as at the endpoint of EXP-UI-036.
+                new("DEV-UI-007", new Rectangle(StatusConsoleLayout.SectorValueLeft, StatusConsoleLayout.SectorValueY(2),
+                    16, 7)),
             ],
             ["SCR-HIRE-002"] = [],
             // DEV-FINANCE-001 changes the Equipment field only while a Sell of several items is queued.
@@ -527,7 +540,7 @@ public static class RebuildFrame
     public static ScreenFrame Render(
         MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
         int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null,
-        string? screen = null, int? clipTick = null)
+        string? screen = null, int? clipTick = null, bool entryPanels = false, bool idleGangWarning = true)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -565,6 +578,8 @@ public static class RebuildFrame
                 start.ArgumentList.Add("--clip-tick");
                 start.ArgumentList.Add(tick.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
+            if (entryPanels) start.ArgumentList.Add("--entry-panels");
+            if (!idleGangWarning) start.ArgumentList.Add("--no-idle-warning");
             if (pumpCounter is { } counter)
             {
                 start.ArgumentList.Add("--pump-counter");

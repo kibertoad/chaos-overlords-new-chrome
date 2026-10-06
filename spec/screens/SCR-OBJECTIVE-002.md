@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-OBJECTIVE-002, FND-AWARDS-003, FND-GFX-003, FND-AUDIO-002, FND-AUDIO-010, FND-EXE-004, EXP-UI-018]
+evidence: [FND-OBJECTIVE-002, FND-AWARDS-003, FND-GFX-003, FND-AUDIO-002, FND-AUDIO-010, FND-EXE-004, EXP-UI-018, EXP-UI-032, EXP-UI-034]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-005]
@@ -15,9 +15,10 @@ related: [RULE-OBJECTIVE-005]
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| City screen, left as it was | None | None | Whole screen | Always; black when the card follows the turn's resolution | FND-OBJECTIVE-002, EXP-UI-018 |
+| City screen, left as it was | None | None | Whole screen | Always; black when the card follows the turn's resolution or the Ready card, which blanks the screen around itself and lies inside the frame | FND-OBJECTIVE-002, EXP-UI-018, EXP-UI-032 |
 | Endgame frame | `DATA/PX16/PX00200` | None | `(106, 25, 428, 410)` | Always | FND-OBJECTIVE-002, FND-GFX-003 |
 | Elimination splash | `DATA/PX16/PX00203` | None | From `(110, 30)` | Always | FND-OBJECTIVE-002 |
+| Colour fills | None | The eliminated player's colour | `(110, 30, 40, 12)`, `(110, 42, 13, 79)`, `(110, 121, 40, 302)`, as on SCR-AWARDS-002 | Always | EXP-UI-018, EXP-UI-032 |
 | Player name | The plain font of `DATA/PX16/PX00129` | `player_names` of the eliminated player, unchanged | Centred on `(158, 46)` | Always | FND-OBJECTIVE-002, EXP-UI-018 |
 | Overlord portrait | Source not recorded; drawn as the interface sheet's `(32 * portrait, 480, 32, 32)` scaled | The eliminated player's portrait, inside the splash's own frame | `(126, 54, 64, 64)` | Always | FND-OBJECTIVE-002, EXP-UI-018 |
 
@@ -65,4 +66,6 @@ None known.
   recorded for this card.
 - Whether the Awards and Stats controls of the frame react on this card is not
   recorded.
+- The colour fills are seen in captures of slots 0 and 1 (EXP-UI-018,
+  EXP-UI-032); no static reading of `0x0042C3F5` records them.
 - In 256-colour mode the game uses the `DATA/PX08` files of the same names.

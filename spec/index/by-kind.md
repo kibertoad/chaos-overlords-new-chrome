@@ -619,7 +619,7 @@
 
 ## experiments
 
-151 entries.
+156 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -747,6 +747,7 @@
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? | recorded |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? | recorded |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? | recorded |
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | Does the planning clock run while the menu bar is open? | recorded |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? | recorded |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? | recorded |
@@ -773,6 +774,10 @@
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | How long do the original's presentation waits last against its six-per-second clock? | recorded |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | Which copies does the original make when a panel slides in? | recorded |
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? | recorded |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | What does the elimination card show behind it after an earlier human has planned? | recorded |
+| [EXP-UI-034](../experiments/EXP-UI-034.md) | What does the endgame show behind it after an elimination card? | recorded |
+| [EXP-UI-035](../experiments/EXP-UI-035.md) | What does the planning clock bar show at the next planning entry? | recorded |
+| [EXP-UI-036](../experiments/EXP-UI-036.md) | What does the drawing area show at the state dump when the planning entry has a report? | recorded |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | How many steps does the intro show of each movie when it plays out? | recorded |
 
 ## bugs

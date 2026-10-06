@@ -96,6 +96,25 @@ public sealed class PlanningTimerLoopTests
         Assert.True(AtPlanningLoopPass(game));
     }
 
+    // RULE-TIMER-002, EXP-UI-035: the planning entry redraws the console, so the next player's entry
+    // panels show the console's full bar, not the bar of the turn that ran out before them.
+    [Fact]
+    public void ThePlanningEntryPutsBackTheConsolesBar()
+    {
+        var (game, router, timer) = TimedGame();
+        timer.Advance(TimeSpan.Zero, 0);
+        timer.Advance(TimeSpan.FromSeconds(29), PresentationClock.Ticks(TimeSpan.FromSeconds(29)));
+        timer.Stop();
+        Assert.True(timer.ShowsBar);
+        Assert.NotEqual(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
+
+        Field("_state").SetValue(game, null);
+        router.Show(ClientScreen.Handoff);
+        Method("FinishHandoff").Invoke(game, null);
+        Assert.False(timer.ShowsBar);
+        Assert.Equal(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
+    }
+
     /// <summary>A game on a human player's planning turn with a 30-second limit started at zero.</summary>
     private static (ChaosGame Game, ScreenRouter Router, PlanningTimer Timer) TimedGame()
     {

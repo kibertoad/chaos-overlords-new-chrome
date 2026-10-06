@@ -34,6 +34,10 @@ internal static partial class Native
     public const uint WmLButtonDown = 0x0201;
     public const uint WmLButtonUp = 0x0202;
     public const uint WmLButtonDblClk = 0x0203;
+    public const uint WmSysCommand = 0x0112;
+    public const int ScKeyMenu = 0xF100;
+    public const int VkEscape = 0x1B;
+    public const int VkDown = 0x28;
     public const uint MfByCommand = 0x0000;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -153,4 +157,24 @@ internal static partial class Native
 
     [DllImport("gdi32.dll")]
     public static extern int GetDeviceCaps(IntPtr dc, int index);
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GuiThreadInfo
+    {
+        public int Size;
+        public uint Flags;
+        public IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret;
+        public Rect CaretRect;
+    }
+
+    // GUI_INMENUMODE, GUI_SYSTEMMENUMODE and GUI_POPUPMENUMODE of GUITHREADINFO.flags.
+    public const uint GuiInMenuMode = 0x4;
+    public const uint GuiSystemMenuMode = 0x8;
+    public const uint GuiPopupMenuMode = 0x10;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool GetGUIThreadInfo(uint threadId, ref GuiThreadInfo info);
+
+    // The system's millisecond clock, the one the original's timeGetTime reads (FND-TIMER-003).
+    [DllImport("winmm.dll")]
+    public static extern uint timeGetTime();
 }

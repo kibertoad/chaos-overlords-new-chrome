@@ -285,6 +285,7 @@
 | [EXP-TURN-097](../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? | recorded |
 | [EXP-TURN-098](../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? | recorded |
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? | recorded |
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | Does the planning clock run while the menu bar is open? | recorded |
 | [FND-TURN-001](../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls | recorded |
 | [FND-TURN-002](../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one | recorded |
 | [FND-TURN-003](../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective | recorded |
@@ -909,6 +910,10 @@
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | How long do the original's presentation waits last against its six-per-second clock? | recorded |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | Which copies does the original make when a panel slides in? | recorded |
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? | recorded |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | What does the elimination card show behind it after an earlier human has planned? | recorded |
+| [EXP-UI-034](../experiments/EXP-UI-034.md) | What does the endgame show behind it after an elimination card? | recorded |
+| [EXP-UI-035](../experiments/EXP-UI-035.md) | What does the planning clock bar show at the next planning entry? | recorded |
+| [EXP-UI-036](../experiments/EXP-UI-036.md) | What does the drawing area show at the state dump when the planning entry has a report? | recorded |
 | [FND-UI-001](../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |
