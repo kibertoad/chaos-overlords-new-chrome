@@ -104,7 +104,7 @@ public sealed partial class ChaosGame
             DrawNativeTwoCellValue(font, batch, left[row], SiteInformationLayout.LeftValueLeft, y);
             DrawNativeTwoCellValue(font, batch, right[row], SiteInformationLayout.RightValueLeft, y);
         }
-        if (_hoverPoint is { } hover)
+        if (TooltipHoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.SiteAt(hover, definition.Special));
     }
 

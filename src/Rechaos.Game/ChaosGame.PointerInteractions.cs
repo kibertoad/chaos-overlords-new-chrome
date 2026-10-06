@@ -25,6 +25,13 @@ public sealed partial class ChaosGame
     private (Rectangle Face, ClientScreen Screen, HeldButtonKind Kind)? _releasedPanelFace;
 
     /// <summary>
+    /// The point the information panels' hover tooltips (DEV-UI-005) explain: none while one of
+    /// their faces is held, since the held-button helper draws nothing but the face until the
+    /// release (FND-UI-046, EXP-UI-041).
+    /// </summary>
+    private Point? TooltipHoverPoint => _pressedPanelFace is null ? _hoverPoint : null;
+
+    /// <summary>
     /// A press on a panel whose close face goes through the held-button helper: on the face it
     /// plays slot 3 and holds the face until the release, outside the panel it is refused with
     /// slot 4, and elsewhere inside it does nothing (SCR-GANG-001, SCR-GANG-002, SCR-UI-005,

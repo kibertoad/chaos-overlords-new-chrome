@@ -81,7 +81,7 @@ public sealed partial class ChaosGame
                     row < 6 ? NativeTwoCellNumberPresentation.Kind.Baseline
                         : NativeTwoCellNumberPresentation.Kind.Modifier);
         }
-        if (_hoverPoint is { } hover)
+        if (TooltipHoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.HireAt(hover));
     }
 

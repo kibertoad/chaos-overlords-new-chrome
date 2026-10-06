@@ -786,6 +786,19 @@ point `(x, y)` as `open` does (FND-UI-020), `strip:x:y:0` presses a point,
 control and `exit` the Exit of the panel the planning entry left open.
 EXP-UI-006 to EXP-UI-014 are taken this way.
 
+A shot can also show a control while a button holds it. `down:x:y` presses the
+left button at `(x, y)` and keeps it down, `move:x:y` moves the pointer there
+with the button down, and `up:x:y` releases it there; `rdown:x:y` and
+`rup:x:y` press and release the right button. The helpers that hold a button
+read the pointer record and the two pointer points of FND-UI-020 (FND-UI-046),
+so the probe writes both points itself, as the hire steps do, and posts only
+the button messages. The desktop cursor's own moves also reach those points, so
+a shot taken while a button is down writes the held point again and waits
+0.3 seconds before it copies. Every order step also keeps `slot_zero_clears`,
+the milliseconds from the step's start to each tick of timer slot 0 a panel
+loop took before the next step began (FND-UI-047), read from breakpoints on the
+calls that clear the slot. EXP-UI-041 to EXP-UI-043 are taken with these steps.
+
 `new-game --title-capture` copies the title screen before the run presses New
 Game: a breakpoint at the title loop's first load of its art (FND-UI-055)
 stops the presses, and the drawing area is copied two seconds later. `extract`
@@ -828,7 +841,7 @@ save, and starts the game with
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
     [--pump-counter <0-7>] [--selected-sector <0-63>] [--lamps <0|1>,<0|1>]
     [--item-frame <0-14>] [--clip-tick <0-21>]
-    [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]
+    [--reference-clicks <x:y[:2|:d|:m|:u|:rd|:ru]|x:y>x:y|'TEXT>,...]
 ```
 
 which shows the save at its planning entry in a 640-by-460 window, holds the
@@ -850,14 +863,20 @@ and cycling parts of the screen stay at time zero however many clicks were
 made: the marker is drawn at `--marker-frame`, or at its first frame without it.
 `--reference-clicks` lists the presses that take the rebuild from the planning
 entry to a shot step's screen, `:2` marking a double-click, and `'TEXT` text
-typed into the Comlink Send panel a character at a time. They run on a clock
+typed into the Comlink Send panel a character at a time. `:d`, `:m` and `:u`
+make one edge of a click on their own: the left button pressed and kept down,
+the pointer moved with it down, and its release; `:rd` and `:ru` press and
+release the right button, which reaches the game as a live right press does.
+They run on a clock
 of their own, one button edge every 50 ms, wait while a pressed face or a flash
 holds the input (RULE-TIMER-004), and the frame is drawn 20 updates after the
 last one. Panels are drawn in place, without the slide. For a shot step the test
 works the presses out from the order steps before it: a double-click at the
 centre of the opened sector's cell for `open`, the step's point for `dbl` and
-`strip`, a card's point for `card`, `(20, 425)` for `back` and the step's text
-for `type`. It leaves out `wait`, which presses nothing, and `exit`, since the
+`strip`, a card's point for `card`, `(20, 425)` for `back`, the step's text
+for `type`, and the edge of its own at the step's point for `down`, `move`,
+`up`, `rdown` and `rup`. It leaves out `wait`, which presses nothing, and
+`exit`, since the
 reference frame does not draw the planning entry's panels.
 For a `title_capture`, `credits_capture` or `setup_capture` the test passes
 `title`, `credits` or `setup` in place of the save; the game draws its title
@@ -927,7 +946,8 @@ the first page would: the Events light stays on only while the player has anothe
 to see (RULE-EVENT-005). EXP-UI-007's capture, after the original's planning
 entry showed its one report and the Exit closed the panel, has the light's
 flag clear. A capture taken with Combat Results or Last Turn Events open, at
-the final view, during a drag or with a popup menu open cannot be compared.
+the final view, during a drag or with a popup menu open cannot be compared; a
+shot step holds a drag or a pressed control with the button steps above.
 
 The selected-sector outline cycles through two frames on the pump's counter
 (FND-UI-017), and the reference frame draws the one the capture's

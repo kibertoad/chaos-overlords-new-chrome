@@ -101,7 +101,7 @@ public sealed partial class ChaosGame
             DrawItemPanelValue(font, batch, left[row], ItemInformationLayout.LeftValueLeft, y);
             DrawItemPanelValue(font, batch, right[row], ItemInformationLayout.RightValueLeft, y);
         }
-        if (_hoverPoint is { } hover)
+        if (TooltipHoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.ItemAt(hover));
     }
 

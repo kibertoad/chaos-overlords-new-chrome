@@ -128,6 +128,7 @@ public sealed partial class ChaosGame
         EquipmentSellSelection.OpeningSelection(queued, EquippedItems(gang)).CopyTo(_sellSelections, 0);
         _commandPanelFace = CommandPanelFaces.OnOpening(queued?.Action == GangAction.Sell);
         _pressedCommandPanelButton = null;
+        _commandCancelFacePlain = false;
         _commandPanelClicks.Cancel();
         _equipmentPortraitClicks.Cancel();
         _sellGang = gang.Id;

@@ -171,6 +171,21 @@ public sealed class ReferenceFrameRequestTests
         Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("'"));
     }
 
+    // FND-UI-046: a held button is pressed, moved and released as edges of their own, so a frame
+    // can be drawn while it is down.
+    [Fact]
+    public void ButtonEdgesAreReadOnTheirOwn()
+    {
+        var clicks = ReferenceClick.ParseList("161:304:d,300:200:m,300:200:u,524:150:rd,524:150:ru,10:10");
+        Assert.Equal(
+            [ReferenceButtonEdge.Down, ReferenceButtonEdge.Move, ReferenceButtonEdge.Up,
+                ReferenceButtonEdge.RightDown, ReferenceButtonEdge.RightUp, null],
+            clicks.Select(click => click.Edge));
+        Assert.Equal("161:304:d,300:200:m,300:200:u,524:150:rd,524:150:ru,10:10", string.Join(",", clicks));
+        Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("161:304:x"));
+        Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("640:304:d"));
+    }
+
     // FND-COMBAT-016: the screen shows a clip's ticks 0 to 21.
     [Fact]
     public void TheClipTickIsReadAsGiven()

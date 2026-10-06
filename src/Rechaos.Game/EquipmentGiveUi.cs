@@ -208,6 +208,7 @@ public sealed partial class ChaosGame
         _giveCursor = recipient is { } chosen ? IndexOfGiveRecipient(chosen) : -1;
         _commandPanelFace = CommandPanelFaces.OnOpening(queued?.Action == GangAction.Give);
         _pressedCommandPanelButton = null;
+        _commandCancelFacePlain = false;
         _commandPanelClicks.Cancel();
         _equipmentPortraitClicks.Cancel();
         _giveGang = gang.Id;

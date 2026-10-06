@@ -45,6 +45,9 @@ public sealed partial class OriginalNewGameExperimentTests
             var label = $"{step.Kind} {step.Target} ({step.X}, {step.Y}) command {step.Choice}";
             if (step.Kind == "open") (sector, owner) = (step.Target, null);
             if (step.Kind == "back") sector = null;
+            // EXP-UI-043: a right press on the sector view's back control returns to the city at
+            // once, before its release.
+            if (step.Kind == "rdown" && SectorDetailLayout.Back.Contains(step.X, step.Y)) sector = null;
             var portrait = step.Kind == "strip" && sector is not null
                 ? SectorOpponentGangs.PortraitAt(match, new Point(step.X, step.Y))
                 : null;

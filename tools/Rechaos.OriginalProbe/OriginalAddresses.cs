@@ -278,6 +278,13 @@ internal static class OriginalAddresses
     public const uint SelectionFrameHeld = 0x004854C8;
     public const uint PanelHoldsSelectionFrame = 0x004196E4;
 
+    // FND-UI-047: the calls of fn_004328F8(0) by which each panel loop that holds a face through
+    // the held-button helper takes a tick of timer slot 0 for its animation: Item Information,
+    // Last Turn Events, Sell, Give, gang information, Comlink Send, Detailed Combat and the
+    // idle-gang warning.
+    public static readonly uint[] PanelSlotZeroClears =
+        [0x0044C34D, 0x0044FC61, 0x004451C7, 0x0044764D, 0x0044B415, 0x0045FD63, 0x00431100, 0x00448C6B];
+
     // FND-UI-052, FND-UI-053: where Item Information, Sell and Give set their frame local to 0,
     // the local's offset below ebp, and where each handler returns. FND-UI-054: the idle gang
     // warning's countdown of ticks, whose phase also needs its shown flag; ShownLocal is 0 for

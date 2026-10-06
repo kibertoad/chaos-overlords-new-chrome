@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-HIRE-003, FND-HIRE-007, FND-HIRE-009, FND-UI-006, FND-AUDIO-011, FND-PLATFORM-002, FND-EXE-004, EXP-UI-008, FND-UI-062, FND-UI-067]
+evidence: [FND-HIRE-003, FND-HIRE-007, FND-HIRE-009, FND-UI-006, FND-AUDIO-011, FND-PLATFORM-002, FND-EXE-004, EXP-UI-008, FND-UI-062, FND-UI-067, EXP-UI-041]
 conflicting: []
 split_with: []
 related: [RULE-HIRE-002]

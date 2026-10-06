@@ -294,7 +294,7 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.GroupOrderStrip, Color.White);
         DrawQueuedCommandTargetHighlight(batch, pixel, viewer, visibleGangs);
         DrawGangMoveDrag(batch, pixel, state);
-        DrawSectorHireDrag(batch, pixel, state);
+        DrawSectorHireDrag(batch);
         // The Sector workspace covers the left side of right-edge tooltips drawn by
         // DrawBoard, so composite the tooltip again after the workspace is complete.
         DrawStatusConsoleTooltip(batch, pixel, font);
@@ -387,41 +387,25 @@ public sealed partial class ChaosGame
         }
     }
 
-    private void DrawSectorHireDrag(SpriteBatch batch, Texture2D pixel, MatchState state)
+    /// <summary>
+    /// FND-HIRE-010, EXP-UI-041: an offer in flight is its 40-by-40 image under the pointer, the
+    /// portrait shrunk with the drag frame of PX00129 keyed over it, and nothing else; the drop
+    /// sector is not marked.
+    /// </summary>
+    private void DrawSectorHireDrag(SpriteBatch batch)
     {
-        if (!_hireDragStarted || _draggedHireDefinitionId is not { } definitionId) return;
-        var playerId = ViewingPlayer(state);
-        var overMap = SectorDetailLayout.TrySectorAt(_dragPoint, _cursor, out var dropSector);
-        if (!overMap && SectorDetailLayout.Workspace.Contains(_dragPoint)) dropSector = _cursor;
-        if (overMap)
-        {
-            var marker = SectorDetailLayout.Marker(_cursor, dropSector);
-            if (marker is { } destination && _uiKeyedSprites is not null)
-            {
-                var friendlyGangs = state.FindPlayer(playerId)!.Gangs.Where(
-                    gang => gang.IsActive && gang.SectorId == dropSector).ToArray();
-                var source = friendlyGangs.Length == 0
-                    ? OriginalSpriteLayout.IncomingGangStatus
-                    : GangStatusSource(
-                        state, playerId, dropSector, friendlyGangs, hasPendingHire: true);
-                batch.Draw(_uiKeyedSprites, destination, source, Color.White);
-            }
-            for (var column = 0; column < SectorDetailLayout.Columns; column++)
-            for (var row = 0; row < SectorDetailLayout.Rows; row++)
-                if (SectorDetailLayout.SectorAt(_cursor, column, row) == dropSector)
-                    DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row),
-                        state.Sectors[dropSector].Owner == playerId ? Color.Lime : Color.OrangeRed, 2);
-        }
-        else if (SectorDetailLayout.Workspace.Contains(_dragPoint))
-        {
-            DrawBorder(batch, pixel, SectorDetailLayout.Workspace,
-                state.Sectors[_cursor].Owner == playerId ? Color.Lime : Color.OrangeRed, 2);
-        }
+        if (_hireDragStarted && _draggedHireDefinitionId is { } definitionId)
+            DrawHireDragImage(batch, definitionId);
+    }
+
+    private void DrawHireDragImage(SpriteBatch batch, short definitionId)
+    {
         if (_gangPortraits is null) return;
-        var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 18, 36, 36);
-        batch.Draw(_gangPortraits, token,
-            OriginalSpriteLayout.GangPortrait(definitionId), Color.White);
-        DrawBorder(batch, pixel, token, Color.White, 1);
+        var image = HireDockLayout.DragImage(_dragPoint);
+        _scaledGangPortraits.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definitionId), image);
+        // The frame the setup cards' drag keys over its portrait goes over this one as well.
+        if (_uiKeyedSprites is not null)
+            batch.Draw(_uiKeyedSprites, image, OriginalSpriteLayout.SetupDragFrame, Color.White);
     }
 
     private void BeginGangDrag(MatchGangState gang, Point point)

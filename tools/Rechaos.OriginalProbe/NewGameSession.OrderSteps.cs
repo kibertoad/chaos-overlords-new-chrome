@@ -8,7 +8,9 @@ namespace Rechaos.OriginalProbe;
 /// press of the sector view's back control (back), or of a result panel's Exit (exit), or a capture
 /// of the drawing area compared at the elements of the screen entries <c>Screens</c> (shot), or a
 /// wait of <c>Choice</c> milliseconds with no input (wait), or a key press for each character of
-/// <c>Text</c> (type).
+/// <c>Text</c> (type). A press of the left button at <c>(X, Y)</c> that stays down (down), the
+/// pointer moved to <c>(X, Y)</c> with it down (move) and its release there (up) let a shot show a
+/// held control; rdown and rup press and release the right button.
 /// </summary>
 internal sealed record ProbeOrderStep(
     string Kind, int Target, int X, int Y, int Choice, string? Screens = null, string? Text = null)
@@ -22,6 +24,11 @@ internal sealed record ProbeOrderStep(
         "dbl" => $"double-click ({X}, {Y})",
         "wait" => $"wait {Choice} ms",
         "type" => $"type {Text}",
+        "down" => $"left button down at ({X}, {Y})",
+        "move" => $"pointer to ({X}, {Y}) with the button down",
+        "up" => $"left button up at ({X}, {Y})",
+        "rdown" => $"right button down at ({X}, {Y})",
+        "rup" => $"right button up at ({X}, {Y})",
         _ => Kind,
     };
 }
@@ -31,11 +38,16 @@ internal sealed record ProbeOrderStep(
 /// each item's command and greyed state (FND-UI-021), whether the city view is shown, the player
 /// whose gangs the sector view lists and its card slots, and the order bytes of every gang of the active player in use, slot 80 with
 /// them (FMT-STATE-001): slot, sector, action, target, target_2, repeat_action and repeat_target.
-/// A shot keeps its capture, null when no two agreeing copies were taken.
+/// A shot keeps its capture, null when no two agreeing copies were taken. SlotZeroClears holds the
+/// milliseconds from the start of the step to each tick of timer slot 0 a panel loop took
+/// (FND-UI-047) before the next step started.
 /// </summary>
 internal sealed record OrderStepRecord(
     ProbeOrderStep Step, int Menu, List<List<int>>? Items, bool CityView, List<int> Cards, List<List<int>> Gangs,
-    int Viewed, CaptureShot? Shot = null);
+    int Viewed, CaptureShot? Shot = null)
+{
+    public List<int> SlotZeroClears { get; set; } = [];
+}
 
 /// <summary>
 /// A capture taken after the dump: the bitmap <c>File</c> in the run directory with its repeat
@@ -123,8 +135,25 @@ internal sealed partial class NewGameSession
         int? ClipTick() => clipEbp is { } ebp
             ? Math.Max(_process.ReadInt32(ebp - OriginalAddresses.CombatClipTick) - 1, 0)
             : null;
+        // FND-UI-046, FND-UI-047: while the held-button helper or a console tile holds the
+        // button, the panel loops take no tick of timer slot 0. Each tick a panel loop takes is
+        // kept with the step during which it came, as milliseconds from that step's start.
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var stepStarted = TimeSpan.Zero;
+        var slotZeroClears = new List<int>();
+        foreach (var clear in OriginalAddresses.PanelSlotZeroClears)
+            _process.SetBreakpoint(clear,
+                _ => slotZeroClears.Add((int)(clock.Elapsed - stepStarted).TotalMilliseconds), quiet: true);
+        // The point a held button is at. The window procedure also stores the desktop cursor's
+        // point on each WM_MOUSEMOVE the system sends (FND-UI-020), so the probe writes the held
+        // point again before a shot and lets the helper read it.
+        (int X, int Y)? heldAt = null;
         foreach (var step in settings.OrderSteps!)
         {
+            if (_orderSteps.Count > 0)
+                _orderSteps[^1].SlotZeroClears = [.. slotZeroClears];
+            slotZeroClears.Clear();
+            stepStarted = clock.Elapsed;
             if (step.Kind == "wait")
             {
                 // A wait presses nothing, so it is not a post-dump step of the marker log.
@@ -141,6 +170,11 @@ internal sealed partial class NewGameSession
             {
                 // A capture moves nothing, so it is not a post-dump step of the marker log.
                 var file = $"capture-step-{_orderSteps.Count}";
+                if (heldAt is var (heldX, heldY))
+                {
+                    PointerAt(heldX, heldY);
+                    _process.Pump(TimeSpan.FromSeconds(0.3));
+                }
                 // The item, the warning line or the Send caret steps every few ticks, so a capture it
                 // moved under is taken again.
                 // So is one a clip's tick moved under.
@@ -214,6 +248,34 @@ internal sealed partial class NewGameSession
                     // FND-UI-020: a key press for each character, as the Comlink script types.
                     Type(window, step.Text!);
                     break;
+                // FND-UI-020: the window procedure sets the button's bytes of the pointer record on
+                // the press and clears them on the release; the helpers that hold a button read
+                // the record and the two pointer points (FND-UI-046), which the probe writes
+                // itself, so only the button messages are posted.
+                case "down":
+                    PointerAt(step.X, step.Y);
+                    Post(window, Native.WmLButtonDown, 1, step.X, step.Y);
+                    heldAt = (step.X, step.Y);
+                    break;
+                case "move":
+                    PointerAt(step.X, step.Y);
+                    heldAt = (step.X, step.Y);
+                    break;
+                case "up":
+                    PointerAt(step.X, step.Y);
+                    Post(window, Native.WmLButtonUp, 0, step.X, step.Y);
+                    heldAt = null;
+                    break;
+                case "rdown":
+                    PointerAt(step.X, step.Y);
+                    Post(window, Native.WmRButtonDown, 2, step.X, step.Y);
+                    heldAt = (step.X, step.Y);
+                    break;
+                case "rup":
+                    PointerAt(step.X, step.Y);
+                    Post(window, Native.WmRButtonUp, 0, step.X, step.Y);
+                    heldAt = null;
+                    break;
             }
             _process.Pump(TimeSpan.FromSeconds(0.8));
             if (_process.Exited) return "The original exited during the order steps.";
@@ -228,6 +290,7 @@ internal sealed partial class NewGameSession
                 _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),
                 _process.ReadInt32(OriginalAddresses.SectorViewPlayer)));
         }
+        if (_orderSteps.Count > 0) _orderSteps[^1].SlotZeroClears = [.. slotZeroClears];
         return null;
     }
 

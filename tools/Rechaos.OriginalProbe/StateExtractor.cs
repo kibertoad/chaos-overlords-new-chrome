@@ -216,6 +216,9 @@ internal sealed class StateExtractor
                 if (step["Viewed"] is JsonNode viewed) record["viewed"] = viewed.GetValue<int>();
                 record["cards"] = Integers(step["Cards"]);
                 record["gangs"] = new JsonArray(step["Gangs"]!.AsArray().Select(Integers).ToArray());
+                // FND-UI-047: the ticks of timer slot 0 the panel loops took during the step.
+                if (step["SlotZeroClears"] is JsonArray clears && clears.Count > 0)
+                    record["slot_zero_clears"] = Integers(clears);
                 // A shot keeps its capture with the screens it is compared at.
                 if (probeStep["Screens"] is JsonNode screens)
                 {
