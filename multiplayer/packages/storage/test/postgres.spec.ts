@@ -177,6 +177,38 @@ describe.skipIf(!url)('postgres', () => {
     }
   })
 
+  it('serializes spectator joins before counting the cap', async () => {
+    const { storage, match } = await matchWithPlayers(2, 1, false)
+    const spectator = (n: number) => ({
+      id: `${match.id}-s${n}`,
+      matchId: match.id,
+      displayName: `Watcher ${n}`,
+      tokenHash: `${match.id}-spectator-${n}`,
+      joinedAt: new Date(),
+      leftAt: null,
+    })
+    expect(await storage.spectators.create(spectator(0), 2)).toBe(true)
+    const client = new pg.Client({ connectionString: url as string })
+    await client.connect()
+    try {
+      // Both joins queue behind the held row and start counting only after the commit. A count
+      // taken in the insert's own snapshot would see one spectator in each and admit both.
+      await client.query('BEGIN')
+      await client.query('SELECT id FROM matches WHERE id = $1 FOR UPDATE', [match.id])
+      const joins = [
+        storage.spectators.create(spectator(1), 2),
+        storage.spectators.create(spectator(2), 2),
+      ]
+      await waitUntilBlocked(client, 2)
+      await client.query('COMMIT')
+      expect((await Promise.all(joins)).sort()).toEqual([false, true])
+      expect(await storage.spectators.listActive(match.id)).toHaveLength(2)
+    } finally {
+      await client.query('ROLLBACK').catch(() => {})
+      await client.end()
+    }
+  })
+
   async function openTurn(matchId: string, playerId: string) {
     const storage = (opened as OpenedStorage).storage
     await storage.turns.open(
