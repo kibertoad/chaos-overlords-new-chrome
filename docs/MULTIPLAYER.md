@@ -442,7 +442,8 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   deadlines, so a client that never finishes sending a request cannot hold a socket for long. The
   windows are per process, which is what a self-hosted server needs; a public deployment puts its
   platform's rate limiting in front as the real gate. On Cloudflare the in-Worker windows are per
-  isolate; moving them to a global limiter is [#455](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/455).
+  isolate; moving them to a global limiter is
+  [#455](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/455).
 - **A refused request is described, not echoed.** A validation failure names the field and the
   rule; the value the client sent (a mistyped password, an order document) is never written back
   into the response or, through it, into a proxy log.
@@ -759,8 +760,9 @@ the recovery record, and a retired record is dropped rather than written back: t
 capability for that seat, so keeping a spent one on disk buys nothing. On Windows the token is
 sealed with DPAPI to the current user account, so another account on the same machine cannot read
 it out of the file; macOS and Linux keep it in clear under the user's own data root, because their
-keystores want a native dependency the game does not otherwise carry ([#456](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/456)). Neither
-defends against something already running as the player.
+keystores want a native dependency the game does not otherwise carry
+([#456](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/456)). Neither defends
+against something already running as the player.
 
 The session password is kept in clear on every platform. It opens one session's door to whoever the
 player was going to read it out to anyway, where the token is that seat itself, and the player who
@@ -839,7 +841,8 @@ dock a player plans against the dock the sealed turn grants.
   indefinitely, and the escape is the ordinary one: players leave. The match is not abandoned when
   the last active player goes — it stays `running` so anybody can rejoin, with its turn clock
   stopped — and retention collects it once it has been silent for long enough. The counting assumes
-  one human per seat; see the security model.
+  one human per seat; see the security model and
+  [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
 - **A host who never presses ready stalls an untimed match.** Only the host can kick, and without a
   turn timer nothing seals on its own, so the other players' only remedy is to leave. A unanimous
   vote of the remaining active players, reusing the takeover machinery, is the obvious next step
@@ -848,7 +851,8 @@ dock a player plans against the dock the sealed turn grants.
   host has `left`, been `kicked` or been voted to `computer`. A host who is merely
   `takeoverPending` (one missed timed deadline, still connected) keeps the role, or any former
   member could take it at that moment and then kick the real host, whose token a kick revokes for
-  good. A vote that moves the role away from a present host is part of [#457](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/457).
+  good. A vote that moves the role away from a present host is part of
+  [#457](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/457).
 - An event is published after it is durable, so a process dying mid-publish can lose the
   notification but never the event. The stream heartbeat rechecks the durable log even while its
   connection remains healthy. A process dying between persisting an event and its successor simply
