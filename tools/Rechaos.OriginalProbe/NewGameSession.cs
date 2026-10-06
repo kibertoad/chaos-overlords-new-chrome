@@ -31,18 +31,22 @@ internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector)
 /// A player's state written before a Done press, for branches no local match reaches: family 99
 /// or less writes the <c>family</c> of a computer player's planning record in the slot
 /// (FMT-STATE-007), <see cref="Raider"/> sets a computer player's byte of <c>raider_mode</c>, which
-/// a takeover of a network seat sets (RULE-AI-027), and <see cref="Retired"/> clears the player's
-/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006).
+/// a takeover of a network seat sets (RULE-AI-027), <see cref="Retired"/> clears the player's
+/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006), and
+/// <see cref="Cash"/> sets the player's <c>cash</c> to <paramref name="Value"/>, so a human can pay
+/// for a hire every turn.
 /// </summary>
-internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family)
+internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family, int Value = 0)
 {
     public const int Raider = -1;
     public const int Retired = -2;
+    public const int Cash = -3;
 
     public override string ToString() => Family switch
     {
         Raider => $"turn {Turn}: player {Player} raider_mode 1",
         Retired => $"turn {Turn}: player {Player} player_active 0",
+        Cash => $"turn {Turn}: player {Player} cash {Value}",
         _ => $"turn {Turn}: player {Player} gang slot {Slot} family {Family}",
     };
 }
@@ -759,6 +763,8 @@ internal sealed partial class NewGameSession(
             _process.Write(OriginalAddresses.RaiderMode + (uint)write.Player, [1]);
         else if (write.Family == ProbePlanning.Retired)
             _process.Write(OriginalAddresses.PlayerActive + (uint)write.Player, [0]);
+        else if (write.Family == ProbePlanning.Cash)
+            _process.Write(OriginalAddresses.Cash + (uint)(write.Player * 4), BitConverter.GetBytes(write.Value));
         else
             _process.Write(OriginalAddresses.PlanningRecords
                 + (uint)(write.Player * OriginalAddresses.PlanningPlayerStride

@@ -16,7 +16,7 @@
 
 ## supported
 
-145 entries.
+144 entries.
 
 | ID | Title |
 |---|---|
@@ -89,7 +89,6 @@
 | [RULE-CONTROL-001](../rules/RULE-CONTROL-001.md) | Control pools each player's strength per sector and settles contested sectors in ascending order, with the owner's defense added to its own pool and a neutral candidate at a zero margin |
 | [RULE-EVENT-002](../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution |
 | [RULE-EVENT-005](../rules/RULE-EVENT-005.md) | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded |
-| [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | A Hire refused because the player has the most gangs allowed is reported to its player |
 | [RULE-FINANCE-001](../rules/RULE-FINANCE-001.md) | The Financial panel projects next turn's cash flow for the whole city or one sector |
 | [RULE-GANG-001](../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon |
 | [RULE-GFX-001](../rules/RULE-GFX-001.md) | Decoding the RLE8 pixel data of a PX08 image |
@@ -168,7 +167,7 @@
 
 ## established
 
-97 entries.
+98 entries.
 
 | ID | Title |
 |---|---|
@@ -224,6 +223,7 @@
 | [RULE-EVENT-008](../rules/RULE-EVENT-008.md) | A Bribe that fails for lack of cash is reported to its player |
 | [RULE-EVENT-009](../rules/RULE-EVENT-009.md) | A Hire that fails for lack of cash is reported to its player |
 | [RULE-EVENT-010](../rules/RULE-EVENT-010.md) | A Hire refused because its sector is full is reported to its player |
+| [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | A Hire refused because the player has the most gangs allowed is reported to its player |
 | [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner |
 | [RULE-EVENT-013](../rules/RULE-EVENT-013.md) | Losing control of a sector is reported to the previous owner |
 | [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player |
@@ -295,7 +295,7 @@
 
 ## recorded
 
-524 entries.
+526 entries.
 
 | ID | Title |
 |---|---|
@@ -420,6 +420,8 @@
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs in Big Man, as the spec gives? |
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | Which order menu does each press open, which items does it grey, and what does each choice write? |
 | [EXP-TURN-096](../experiments/EXP-TURN-096.md) | Whose gangs do the sector view's cards list after each Overlord portrait press? |
+| [EXP-TURN-097](../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? |
+| [EXP-TURN-098](../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? |
@@ -886,6 +888,7 @@ Entries whose status is established and whose findings and experiments are all o
 | [RULE-EVENT-008](../rules/RULE-EVENT-008.md) | A Bribe that fails for lack of cash is reported to its player |
 | [RULE-EVENT-009](../rules/RULE-EVENT-009.md) | A Hire that fails for lack of cash is reported to its player |
 | [RULE-EVENT-010](../rules/RULE-EVENT-010.md) | A Hire refused because its sector is full is reported to its player |
+| [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | A Hire refused because the player has the most gangs allowed is reported to its player |
 | [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner |
 | [RULE-EVENT-013](../rules/RULE-EVENT-013.md) | Losing control of a sector is reported to the previous owner |
 | [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player |
@@ -980,6 +983,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-AI-004](../rules/RULE-AI-004.md) | Queries the computer players' handlers share | supported |
 | [RULE-AI-005](../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | established |
 | [RULE-AI-006](../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established |
+| [RULE-AI-007](../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector | supported |
 | [RULE-AI-008](../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | established |
 | [RULE-AI-009](../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
 | [RULE-AI-011](../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | established |

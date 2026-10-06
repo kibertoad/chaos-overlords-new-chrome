@@ -139,7 +139,7 @@
 | [RULE-EVENT-008](../rules/RULE-EVENT-008.md) | A Bribe that fails for lack of cash is reported to its player | established |
 | [RULE-EVENT-009](../rules/RULE-EVENT-009.md) | A Hire that fails for lack of cash is reported to its player | established |
 | [RULE-EVENT-010](../rules/RULE-EVENT-010.md) | A Hire refused because its sector is full is reported to its player | established |
-| [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | A Hire refused because the player has the most gangs allowed is reported to its player | supported |
+| [RULE-EVENT-011](../rules/RULE-EVENT-011.md) | A Hire refused because the player has the most gangs allowed is reported to its player | established |
 | [RULE-EVENT-012](../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner | established |
 | [RULE-EVENT-013](../rules/RULE-EVENT-013.md) | Losing control of a sector is reported to the previous owner | established |
 | [RULE-EVENT-014](../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player | established |
@@ -618,7 +618,7 @@
 
 ## experiments
 
-148 entries.
+150 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -743,6 +743,8 @@
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | Does a family-5 computer gang in a hostile human's sector draw only human gangs in Big Man, as the spec gives? | recorded |
 | [EXP-TURN-095](../experiments/EXP-TURN-095.md) | Which order menu does each press open, which items does it grey, and what does each choice write? | recorded |
 | [EXP-TURN-096](../experiments/EXP-TURN-096.md) | Whose gangs do the sector view's cards list after each Overlord portrait press? | recorded |
+| [EXP-TURN-097](../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? | recorded |
+| [EXP-TURN-098](../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? | recorded |
 | [EXP-UI-001](../experiments/EXP-UI-001.md) | What does the original draw on the city screen and console at the first planning entry of a new Greed match? | recorded |
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | What does the original draw for a number cell whose source column lies partly or wholly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | With the 32-bit white key, does the rebuild draw the selected sector and the grid tabs as the original does at the first planning entry? | recorded |
