@@ -689,6 +689,11 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    as an exceptional repair (the same state as a quick-save), declaring the **native save** format
    version — the replay format's says nothing about those bytes. Every other client refuses a version
    newer than it reads, and otherwise loads it, recomputes the hash and re-reports.
+   Planning stays closed for the whole pause, including on a client that corrected its own
+   report: the corrected state is shown, but the server still refuses orders. It reopens when the
+   client adopts a repair it did not hold, or on `match.statusChanged` to `running`, which the
+   server logs after every confirmation that settled the pause. A client that reopens on the status
+   change restores the draft the server holds for the open turn, as a reconnect does.
 6. On `turn.deadlineExtended`, replace the countdown for that turn. A null deadline pauses it for an
    absence vote; a later timestamp restarts it after that vote or a desync pause closes. Show that
    countdown and warn against it — the client runs no planning clock of its own online, so the
