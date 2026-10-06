@@ -230,7 +230,7 @@ public sealed partial class ChaosGame
 
         line = ReplayControlLayout.Buttons[^1].Bounds.Bottom + 10;
         Text(viewer.DescribeTransport(), Color.White);
-        Text(viewer.DescribeStatus(), viewer.AtEnd ? Color.Gold : Color.Lime);
+        Text(viewer.DescribeStatus(), viewer.AtEnd || viewer.PrimaryFailure is not null ? Color.Gold : Color.Lime);
         if (viewer.PrimaryFailure is { } primaryFailure)
             Text(ReplayViewer.DescribePrimaryFailure(primaryFailure), Color.OrangeRed);
 

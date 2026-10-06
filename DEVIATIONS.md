@@ -1015,7 +1015,8 @@ Whether the original shows the count is not recorded.
   turn, the step and what it did, a timeline, and buttons to go to the start, back a turn, back a
   step, play or pause, on a step, on a turn, to the end, slower, faster and exit. Space, the
   arrows, Page Up, Page Down, Home and End do the same; W, A, S and D or a click on the map select
-  the sector whose values are shown; Escape, Backspace or a right click close the viewer. While it
+  the sector whose values are shown; Escape, Backspace or a right click close the viewer, which the
+  key line along the bottom of the map (DEV-UI-023) says in place of the city's keys. While it
   is open the live match is set aside: its planning clock is paused, no computer turn runs, and
   closing the viewer puts it back as it was. The original has no replay.
 - Setting: None

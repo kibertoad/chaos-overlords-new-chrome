@@ -302,9 +302,10 @@ public sealed partial class ChaosGame
             DrawBorder(batch, pixel, token, Color.White, 1);
         }
         // Online, the footer says where the turn stands instead of which keys save: a match nobody
-        // can save is one where the only thing worth knowing is whether it is waiting on you.
-        var footer = _session is null
-            ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
+        // can save is one where the only thing worth knowing is whether it is waiting on you. Over
+        // a replay (DEV-UI-026) none of the city's keys act, so it says how to get back instead.
+        var footer = _replayViewer is not null ? "WATCHING A REPLAY  ESC RETURNS TO YOUR MATCH"
+            : _session is null ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
             : OnlineTurnStatus();
         font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
         DrawPressedCityConsole(batch);
