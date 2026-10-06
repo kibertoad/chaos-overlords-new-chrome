@@ -118,7 +118,7 @@ public sealed partial class ChaosGame
         switch (_screens.Current)
         {
             case ClientScreen.Options:
-                if (_editingKeyBindings && _capturingKeyBinding) _capturingKeyBinding = false;
+                if (_editingKeyBindings && _capturingKeyBinding) CancelKeyCapture();
                 else if (_editingKeyBindings) CloseKeyBindings();
                 else CloseOptions();
                 break;

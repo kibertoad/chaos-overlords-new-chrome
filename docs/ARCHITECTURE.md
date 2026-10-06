@@ -304,8 +304,19 @@ hashes.
 The game's single-key shortcuts use a separate bounded `keybindings.json` in
 the same local data directory. `KeyBindingMap` maps logical shortcut keys to
 unique physical keys, swapping assignments on collisions. The Options Keys
-panel edits and resets the map. Text-entry fields continue to read physical
-characters, and key binding data never enters a match, save, replay, or hash.
+panel edits and resets the map and shows `KeyBindingDescriptions`, which says
+what each shortcut does on each screen that reads it. Text-entry fields
+continue to read physical characters, and key binding data never enters a
+match, save, replay, or hash.
+
+The file carries a format version, and `KeyBindingFormat` keeps the append-only
+list of shortcuts each version has; the current version's list is the map's, so
+adding or removing a shortcut means adding a version. A file of an older version
+is migrated: starting from the new defaults, each stored binding is made in
+turn with the editor's swap rule, so every stored binding is kept and a new
+shortcut keeps its default key unless a stored binding took it. A newer
+version's file lends the shortcuts both builds have, and `NewerBuildFileGuard`
+stops the older build from writing over it.
 
 Platform distribution scripts publish self-contained game and extractor
 payloads while forcing original assets out of every package. On Windows the

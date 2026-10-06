@@ -6,12 +6,21 @@ namespace Rechaos.Game;
 
 public static class KeyBindingsLayout
 {
-    public const int VisibleRows = 16;
+    public const int VisibleRows = 11;
+    /// <summary>The most screens a shortcut's description lists, one line each.</summary>
+    public const int DetailLines = 8;
+    /// <summary>The most characters of a row's description, after the two key columns.</summary>
+    public const int SummaryCharacters = 40;
+    /// <summary>The most characters of a key name in a row's key columns.</summary>
+    public const int KeyNameCharacters = 10;
+    /// <summary>The most characters of one line of the selected shortcut's description.</summary>
+    public const int DetailCharacters = 74;
     public static Rectangle Panel => OptionsLayout.Panel;
     public static Rectangle Reset => new(120, 400, 112, 28);
     public static Rectangle Back => new(264, 400, 112, 28);
     public static Rectangle Capture => new(408, 400, 112, 28);
     public static Rectangle Row(int visibleRow) => new(120, 65 + visibleRow * 19, 400, 18);
+    public static Point Detail(int line) => new(98, 281 + line * 11);
 }
 
 public sealed partial class ChaosGame
@@ -21,6 +30,7 @@ public sealed partial class ChaosGame
     private int _keyBindingCursor;
     private int _keyBindingOffset;
     private string _keyBindingStatus = string.Empty;
+    private KeyBindingSource _keyBindingSource;
 
     /// <summary>
     /// Whether the Keys panel is on screen. The flag alone outlives a forced exit from Options, such
@@ -35,7 +45,9 @@ public sealed partial class ChaosGame
         _capturingKeyBinding = false;
         _keyBindingCursor = 0;
         _keyBindingOffset = 0;
-        _keyBindingStatus = string.Empty;
+        _keyBindingStatus = _keyBindingSource == KeyBindingSource.NewerBuild
+            ? "KEYS FROM A NEWER VERSION: CHANGES ARE NOT SAVED"
+            : string.Empty;
     }
 
     private void CloseKeyBindings()
@@ -45,16 +57,27 @@ public sealed partial class ChaosGame
         _keyBindingStatus = string.Empty;
     }
 
+    private void CancelKeyCapture()
+    {
+        _capturingKeyBinding = false;
+        _keyBindingStatus = "CHANGE CANCELLED";
+    }
+
     private void UpdateKeyBindings(KeyboardState keyboard)
     {
         if (_capturingKeyBinding)
         {
             var pressed = keyboard.GetPressedKeys().Where(key => RawPressed(keyboard, key)).ToArray();
-            if (pressed.Length == 0) return;
-            if (pressed.Length > 1)
+            switch (KeyCapture.Read(pressed))
             {
-                _keyBindingStatus = "PRESS ONE KEY";
-                return;
+                case KeyCaptureResult.Waiting:
+                    return;
+                case KeyCaptureResult.Cancel:
+                    CancelKeyCapture();
+                    return;
+                case KeyCaptureResult.TooManyKeys:
+                    _keyBindingStatus = "PRESS ONE KEY";
+                    return;
             }
             if (!_keyBindings.Assign(KeyBindingMap.LogicalKeys[_keyBindingCursor], pressed[0]))
             {
@@ -63,7 +86,7 @@ public sealed partial class ChaosGame
             }
             _capturingKeyBinding = false;
             _keyBindingStatus = KeyBindingStore.TrySave(_keyBindingsPath, _keyBindings)
-                ? "KEY SAVED" : "KEY COULD NOT BE SAVED";
+                ? "KEY SAVED" : KeysNotSavedStatus();
             return;
         }
 
@@ -78,8 +101,18 @@ public sealed partial class ChaosGame
         if (RawPressed(keyboard, Keys.PageDown)) MoveKeyBindingCursor(KeyBindingsLayout.VisibleRows);
         if (RawPressed(keyboard, Keys.Home)) MoveKeyBindingCursor(-KeyBindingMap.LogicalKeys.Count);
         if (RawPressed(keyboard, Keys.End)) MoveKeyBindingCursor(KeyBindingMap.LogicalKeys.Count);
-        if (RawPressed(keyboard, Keys.Enter)) _capturingKeyBinding = true;
+        if (RawPressed(keyboard, Keys.Enter)) StartKeyCapture();
     }
+
+    private void StartKeyCapture()
+    {
+        _capturingKeyBinding = true;
+        _keyBindingStatus = string.Empty;
+    }
+
+    private string KeysNotSavedStatus() => KeyBindingStore.IsFromNewerBuild(_keyBindingsPath)
+        ? "NOT SAVED: A NEWER VERSION OWNS THE KEYS FILE"
+        : "KEYS COULD NOT BE SAVED";
 
     private void MoveKeyBindingCursor(int delta)
     {
@@ -112,13 +145,13 @@ public sealed partial class ChaosGame
             _keyBindings = KeyBindingMap.Default();
             _capturingKeyBinding = false;
             _keyBindingStatus = KeyBindingStore.TrySave(_keyBindingsPath, _keyBindings)
-                ? "DEFAULT KEYS RESTORED" : "KEYS COULD NOT BE SAVED";
+                ? "DEFAULT KEYS RESTORED" : KeysNotSavedStatus();
             return;
         }
         if (KeyBindingsLayout.Capture.Contains(point))
         {
-            _capturingKeyBinding = !_capturingKeyBinding;
-            _keyBindingStatus = string.Empty;
+            if (_capturingKeyBinding) CancelKeyCapture();
+            else StartKeyCapture();
             return;
         }
         if (_capturingKeyBinding) return;
@@ -146,16 +179,28 @@ public sealed partial class ChaosGame
             var index = _keyBindingOffset + row;
             if (index >= KeyBindingMap.LogicalKeys.Count) break;
             var rectangle = KeyBindingsLayout.Row(row);
-            if (index == _keyBindingCursor)
+            var selected = index == _keyBindingCursor;
+            if (selected)
                 batch.Draw(pixel, rectangle, new Color(72, 54, 18, 245));
             var logical = KeyBindingMap.LogicalKeys[index];
             var physical = _keyBindings.Physical(logical);
-            font.Draw(batch, $"{logical,-15} {physical}".ToUpperInvariant(),
-                new Vector2(rectangle.X + 8, rectangle.Y + 5),
-                index == _keyBindingCursor ? Color.Gold : Color.White, 1);
+            var text = selected ? Color.Gold : Color.White;
+            var x = rectangle.X + 8;
+            var y = rectangle.Y + 5;
+            font.Draw(batch, RowKeyName(logical), new Vector2(x, y), text, 1);
+            // A key moved off its default stands out, so the player sees what was changed.
+            font.Draw(batch, RowKeyName(physical), new Vector2(x + 66, y),
+                physical == logical ? text : Color.LightGreen, 1);
+            font.Draw(batch, KeyBindingDescriptions.Of(logical)?.Summary ?? string.Empty,
+                new Vector2(x + 132, y), text, 1);
         }
+        batch.Draw(pixel, new Rectangle(98, 276, 444, 1), new Color(80, 180, 130));
+        var uses = KeyBindingDescriptions.Of(KeyBindingMap.LogicalKeys[_keyBindingCursor])?.Uses ?? [];
+        for (var line = 0; line < uses.Count && line < KeyBindingsLayout.DetailLines; line++)
+            font.Draw(batch, uses[line].ToString(), KeyBindingsLayout.Detail(line).ToVector2(),
+                Color.LightGray, 1);
         var status = _capturingKeyBinding
-            ? "PRESS ONE KEY   RIGHT-CLICK OR CANCEL TO STOP"
+            ? "PRESS A KEY   ESC, RIGHT-CLICK OR CANCEL STOPS"
             : string.IsNullOrEmpty(_keyBindingStatus)
                 ? "UP/DOWN SELECT   ENTER CHANGES   ESC BACK"
                 : _keyBindingStatus;
@@ -164,5 +209,44 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, KeyBindingsLayout.Back, "BACK", true);
         DrawButton(batch, pixel, font, KeyBindingsLayout.Capture,
             _capturingKeyBinding ? "CANCEL" : "CHANGE", true);
+    }
+
+    private static string RowKeyName(Keys key)
+    {
+        var name = KeyBindingDescriptions.KeyName(key);
+        return name.Length <= KeyBindingsLayout.KeyNameCharacters
+            ? name
+            : name[..KeyBindingsLayout.KeyNameCharacters];
+    }
+}
+
+/// <summary>What the keys that went down while the Keys editor waits for a key mean.</summary>
+public enum KeyCaptureResult
+{
+    Waiting,
+    /// <summary>Escape went down: the capture stops and nothing changes (DEV-UI-024).</summary>
+    Cancel,
+    TooManyKeys,
+    /// <summary>One key other than Escape went down, and becomes the binding.</summary>
+    Bind
+}
+
+public static class KeyCapture
+{
+    /// <summary>
+    /// Escape cancels the capture rather than being bound, because it is the key players press to
+    /// back out. The physical Escape can still be given to any shortcut: bind the shortcut that
+    /// holds Escape to that shortcut's key, and the two swap.
+    /// </summary>
+    public static KeyCaptureResult Read(IReadOnlyCollection<Keys> pressed)
+    {
+        ArgumentNullException.ThrowIfNull(pressed);
+        if (pressed.Contains(Keys.Escape)) return KeyCaptureResult.Cancel;
+        return pressed.Count switch
+        {
+            0 => KeyCaptureResult.Waiting,
+            1 => KeyCaptureResult.Bind,
+            _ => KeyCaptureResult.TooManyKeys
+        };
     }
 }

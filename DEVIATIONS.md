@@ -1008,15 +1008,21 @@ Whether the original shows the count is not recorded.
 ## DEV-UI-024
 
 - Departs from: SCR-UI-003, SCR-UI-004
-- Reason: Options > Keys lists every single key the rebuild's screens read and lets the player
-  bind each to another key. Binding a key that another shortcut holds swaps the two, so no key
-  triggers two shortcuts. The bindings are kept in a local `keybindings.json`. The original reads
-  fixed keys.
+- Reason: Options > Keys lists every single key the rebuild's screens read, says what each does on
+  every screen that reads it, and lets the player bind each to another key. Binding a key that
+  another shortcut holds swaps the two, so no key triggers two shortcuts. Escape stops a key
+  capture instead of becoming the binding. Text fields, the title screen's Ctrl chords and
+  Alt+Enter keep the printed keys. The bindings are kept in a local, versioned
+  `keybindings.json`: a file from an older version keeps its bindings and gains the shortcuts
+  added since, and a newer version's file lends this build the shortcuts both have and is never
+  overwritten. The original reads fixed keys.
 - Setting: None
 - Default: mandatory
-- Justification: With the default map every key does what it does without the editor, including
-  the original's arrows and Enter, and rebinding changes nothing in a match: the bindings never
-  enter a save, a replay or a state hash.
+- Justification: The default map binds every shortcut to its own key, so a player who never opens
+  the editor presses the keys the original reads, with the rebuild's own keys from the other
+  deviations; a setting that turned the editor off would only take the choice away. Rebinding changes nothing in a match: the
+  bindings never enter a save, a replay or a state hash.
+- Tests: tests/Rechaos.Tests/KeyBindingTests.cs
 - Dropped: no
 
 ## DEV-GFX-001

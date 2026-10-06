@@ -289,7 +289,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
         _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
         _keyBindingsPath = Path.Combine(userDataRoot, "keybindings.json");
-        _keyBindings = KeyBindingStore.LoadOrDefault(_keyBindingsPath);
+        var keyBindings = KeyBindingStore.Load(_keyBindingsPath);
+        _keyBindings = keyBindings.Map;
+        _keyBindingSource = keyBindings.Source;
         _multiplayerRecoveryPath = Path.Combine(userDataRoot, "multiplayer-recovery.json");
         var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
         _musicVolumeLevel = preferences.MusicVolumeLevel;
