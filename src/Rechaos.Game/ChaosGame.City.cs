@@ -248,7 +248,8 @@ public sealed partial class ChaosGame
         font.Draw(batch, ExecutableStrings.ScenarioTitle(state.Setup.Scenario),
             new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
         var (year, week) = MatchCalendar.Of(MatchCalendar.PresentationElapsedTurns(state));
-        // FND-UI-040: separate calendar fields leave the template's separator intact.
+        // FND-UI-040: separate calendar fields leave the template's separator intact; the week is
+        // the one console number drawn with leading zeroes (FND-UI-060).
         // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
         DrawOpaqueNativeFixedWidthValue(batch, pixel, font, year, StatusConsoleLayout.YearLeft,
             StatusConsoleLayout.DateY, 4);
@@ -267,7 +268,8 @@ public sealed partial class ChaosGame
                      state.Coordinator.Turn) is { } remainingTurns)
             DrawOpaqueNativeFixedWidthValue(batch, pixel, font, remainingTurns,
                 StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY, 3);
-        // FND-UI-040, RULE-UI-004: five opaque numeric cells, including red unsigned magnitudes.
+        // FND-UI-040, FND-UI-060, RULE-UI-004: five opaque cells of the base-value helper, so 0 is
+        // the bright 0, including red unsigned magnitudes.
         DrawOpaqueNativeFixedWidthValue(batch, pixel, font, StatusConsolePresentation.Score(state, player),
             StatusConsoleLayout.ScoreLeft, StatusConsoleLayout.ScoreY, StatusConsoleLayout.ScoreCells);
         DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
@@ -369,7 +371,8 @@ public sealed partial class ChaosGame
             var lines = StatusConsoleTooltip.At(
                 statusHover, state.Setup.Scenario, state.Setup.Duration, sector.Tolerance,
                 chaosEstimate, StatusConsolePresentation.ChaosBreakdown(state, chaosEstimate),
-                enemyGangsPresent, StatusConsoleTooltip.ToleranceParts.Of(state, sector));
+                enemyGangsPresent, StatusConsoleTooltip.ToleranceParts.Of(state, sector),
+                complete: _finalViewPlayer is not null);
             DrawHoverTooltip(batch, pixel, font, statusHover, lines,
                 StatusConsoleTooltip.QueuedChaosRangeRow,
                 StatusConsoleTooltip.QueuedChaosRangePrefix,

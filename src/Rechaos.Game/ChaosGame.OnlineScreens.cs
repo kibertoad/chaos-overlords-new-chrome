@@ -242,7 +242,7 @@ public sealed partial class ChaosGame
         // so rather than naming a scenario and a mentality that were never read.
         font.Draw(batch,
             settings is { } known
-                ? $"{ScenarioCatalog.Get(known.Scenario).Name}  " +
+                ? $"{ExecutableStrings.ScenarioTitle(known.Scenario)}  " +
                     $"{DifficultyPresentation.Label(known.AiMentality)}"
                 : "SETTINGS THIS VERSION OF THE GAME CANNOT READ",
             new Vector2(bounds.X + 7, bounds.Y + 21), OnlineSecondaryText, 1);
