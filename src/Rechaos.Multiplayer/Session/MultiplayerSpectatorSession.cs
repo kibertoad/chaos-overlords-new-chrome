@@ -96,9 +96,7 @@ public sealed class MultiplayerSpectatorSession
     public bool HasState => _replay is not null;
 
     /// <summary>The last turn the shown state has resolved, or null before there is a state.</summary>
-    public int? ShownTurn => _replay is null
-        ? null
-        : _replay.State.Outcome is null ? _replay.State.Coordinator.Turn - 1 : LastAppliedTurn;
+    public int? ShownTurn => _replay is null ? null : LastAppliedTurn;
 
     /// <summary>The last sealed turn applied, or the snapshot's turn when none has been.</summary>
     private int LastAppliedTurn { get; set; }
