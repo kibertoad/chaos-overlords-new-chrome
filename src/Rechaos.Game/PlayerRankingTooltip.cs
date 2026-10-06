@@ -49,7 +49,7 @@ public static class PlayerRankingTooltip
         {
             player.Setup.Name.ToUpperInvariant(),
             $"PLACE {entry.Standing + 1} OF {entries.Count}{(tied ? " (TIED)" : "")}",
-            $"{ScenarioCatalog.Get(state.Setup.Scenario).Name} RATES: {Basis(state.Setup.Scenario)}",
+            $"{ExecutableStrings.ScenarioTitle(state.Setup.Scenario)} RATES: {Basis(state.Setup.Scenario)}",
             ScoreLine(state, entry.Score),
             "NOW:"
         };

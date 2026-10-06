@@ -38,7 +38,7 @@ public static class DiscoveryFilters
         Status => StatusLabels[option],
         Scenario => option == 0
             ? "ALL MODES"
-            : ScenarioCatalog.Get((ScenarioId)(option - 1)).Name,
+            : ExecutableStrings.ScenarioTitle((ScenarioId)(option - 1)),
         Ai => option == 0
             ? "ALL AI"
             : DifficultyPresentation.Label((AiDifficulty)(option - 1)),
