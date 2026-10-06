@@ -34,6 +34,9 @@ public sealed class CommandPanelFacesTests
         Assert.Equal(new Rectangle(100, 386, 50, 23), CommandPanelFaces.Source(CommandPanelFaceState.Disabled));
         Assert.Equal(new Rectangle(0, 409, 50, 23), CommandPanelFaces.HeldSource(CommandPanelButton.Cancel));
         Assert.Equal(new Rectangle(0, 386, 50, 23), CommandPanelFaces.HeldSource(CommandPanelButton.Confirm));
+        // FND-UI-062: the plain face the helper leaves after a release is the available face.
+        Assert.Equal(HeldButtonFaces.Plain(HeldButtonKind.Confirm), CommandPanelFaces.Source(CommandPanelFaceState.Enabled));
+        Assert.Equal(new Rectangle(50, 409, 50, 23), HeldButtonFaces.Plain(HeldButtonKind.Cancel));
     }
 
     [Fact]

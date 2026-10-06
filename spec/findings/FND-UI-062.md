@@ -100,7 +100,9 @@ inside them.
 
 ## Alternatives
 
-- What the kind 2, 4 and 5 controls are on screen was not read.
+- What the kind 2 controls are on screen was not read. Kinds 4 and 5 are
+  taken as ALL and NONE because the Search handler tests the helper's result
+  for ALL and NONE right after those two calls.
 
 ## How to reproduce
 

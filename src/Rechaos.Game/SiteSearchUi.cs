@@ -19,13 +19,8 @@ public static class SiteSearchLayout
     /// SCR-SEARCH-001, FND-UI-062: the 50-by-23 rectangle the held-button helper draws the face of
     /// a held ALL, NONE or Done into, one pixel wider and taller than the control it tests.
     /// </summary>
-    public static Rectangle HeldFace(SiteSearchControl control) => control switch
-    {
-        SiteSearchControl.All => SharedPanelLayout.At(33, 16, 50, 23),
-        SiteSearchControl.None => SharedPanelLayout.At(33, 48, 50, 23),
-        SiteSearchControl.Done => SharedPanelLayout.At(33, 169, 50, 23),
-        _ => throw new ArgumentOutOfRangeException(nameof(control))
-    };
+    public static Rectangle HeldFace(SiteSearchControl control) =>
+        new(Target(control).Location, new Point(50, 23));
 
     /// <summary>FND-UI-062: the face kind the Search handler passes the held-button helper for each control.</summary>
     public static HeldButtonKind HeldKind(SiteSearchControl control) => control switch
@@ -143,7 +138,7 @@ public static class SiteSearchPanel
     /// changes nothing and opens that row's Site Information instead (FND-SEARCH-004). A press on
     /// ALL, NONE or Done changes nothing yet: the handler holds the face in the held-button helper
     /// and acts only when the button comes up inside it (FND-UI-062), when the
-    /// caller passes the press to <see cref="Apply"/>. The caller opens Site Information when
+    /// caller passes the control to <see cref="Release"/>. The caller opens Site Information when
     /// <see cref="SiteSearchClick.OpensDetails"/> is set.
     /// </summary>
     public static SiteSearchClick Press(
@@ -169,6 +164,22 @@ public static class SiteSearchPanel
             return new SiteSearchClick(press, OpensDetails: true);
         Apply(selections, player, press, rowSites);
         return new SiteSearchClick(press, OpensDetails: false);
+    }
+
+    /// <summary>
+    /// The release inside a held ALL, NONE or Done (FND-UI-062): changes the player's filter as
+    /// <see cref="Apply"/> does and returns whether the panel closes, which it does for Done.
+    /// </summary>
+    public static bool Release(
+        SiteSearchSelectionState selections,
+        PlayerId player,
+        SiteSearchControl held,
+        IReadOnlyList<short> rowSites)
+    {
+        if (held is not (SiteSearchControl.All or SiteSearchControl.None or SiteSearchControl.Done))
+            throw new ArgumentOutOfRangeException(nameof(held), held, "Only ALL, NONE and Done are held.");
+        Apply(selections, player, new SiteSearchPress(held), rowSites);
+        return held == SiteSearchControl.Done;
     }
 }
 
