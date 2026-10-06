@@ -276,7 +276,7 @@
 
 ## superseded
 
-12 entries.
+13 entries.
 
 | ID | Title |
 |---|---|
@@ -291,6 +291,7 @@
 | [FND-AI-059](../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself |
 | [FND-AI-067](../findings/FND-AI-067.md) | The sector selector adds 1 to an encoded mode's sector for every sector a ring visits |
 | [FND-COMLINK-005](../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer |
+| [FND-UI-045](../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits |
 | [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM |
 
 ## recorded
@@ -809,7 +810,6 @@
 | [FND-UI-042](../findings/FND-UI-042.md) | The seeded completed match enters its final city without an open report panel |
 | [FND-UI-043](../findings/FND-UI-043.md) | Local human planning completion clears the seat's waiting light |
 | [FND-UI-044](../findings/FND-UI-044.md) | A left press on a gang card's portrait holds the individual command handler in its own loops until the button is released, so the planning loop does not run while a gang is held |
-| [FND-UI-045](../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits |
 | [FND-UI-046](../findings/FND-UI-046.md) | The pointer hold loops of the console tiles, the held-button helper and the event page arrows never reach the event pump, and no hold loop touches timer slot 0 |
 | [FND-UI-047](../findings/FND-UI-047.md) | The panels that animate on timer slot 0 take the flag after their event switch, so a held face stops the animation and the release pass takes one tick |
 | [FND-UI-048](../findings/FND-UI-048.md) | The pump draws the selection frame from its counter before it advances the counter, so the frame on screen is the one for the counter less one |
@@ -824,6 +824,7 @@
 | [FND-UI-057](../findings/FND-UI-057.md) | The gang order popups play no sound, and only the picker panels they open play the panel-open sound |
 | [FND-UI-058](../findings/FND-UI-058.md) | A byte marks the match as saved; a save or a load sets it, a resolved turn and each accepted order clear it, and File, End and File, Exit offer dialog 129 while it is clear |
 | [FND-UI-059](../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation |
+| [FND-UI-065](../findings/FND-UI-065.md) | The number helpers copy each glyph cell from the 512-by-646 sheet surface at a source column cut to 16 bits, which every even column can take |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file |

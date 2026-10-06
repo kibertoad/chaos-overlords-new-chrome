@@ -41,7 +41,7 @@ public static class NativeTwoCellNumberPresentation
     /// <summary>
     /// RULE-UI-004: glyph <c>g</c> is copied from <c>(x, 0, 6, 7)</c> of <c>PX00129</c>, or from
     /// <c>(x, 8, 6, 7)</c> for a negative value, where <c>x</c> is <c>6g</c> cut to a signed 16-bit
-    /// number (FND-UI-045), so a large enough glyph wraps back into the bitmap. Only the pixel
+    /// number (FND-UI-065), so a large enough glyph wraps back into the bitmap. Only the pixel
     /// columns inside the bitmap are copied, and the rest of the cell keeps what was drawn under it
     /// (EXP-UI-002). Null when no column of the cell lies inside the bitmap.
     /// </summary>
@@ -63,7 +63,7 @@ public static class NativeTwoCellNumberPresentation
     /// reads <c>&lt;3</c>. A quotient off the strip is returned in <see cref="Value.OffStripGlyph"/>
     /// instead of as a character. The arithmetic is the original's 32-bit arithmetic, so
     /// <see cref="int.MinValue"/> stays negative when negated and its quotients select glyphs below
-    /// the digits (FND-UI-045). <paramref name="leadingZeros"/> is the helper's leading-zero flag,
+    /// the digits (FND-UI-065). <paramref name="leadingZeros"/> is the helper's leading-zero flag,
     /// which draws the cells before the first nonzero quotient as <c>0</c> instead of leaving them
     /// out.
     /// </summary>

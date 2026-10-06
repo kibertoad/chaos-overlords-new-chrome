@@ -4,7 +4,7 @@ title: Drawing numbers in fixed glyph cells
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-006, FND-UI-004, FND-UI-023, FND-EXE-004, FND-UI-040, FND-UI-045, EXP-UI-002, EXP-UI-027, EXP-UI-028]
+evidence: [FND-UI-006, FND-UI-004, FND-UI-023, FND-EXE-004, FND-UI-040, FND-UI-065, EXP-UI-002, EXP-UI-027, EXP-UI-028]
 conflicting: []
 split_with: []
 related: []
@@ -89,7 +89,7 @@ every panel passes `leading_zeros` 0. `modifier_cells` is the modifier helper.
 - A quotient above 42 addresses a glyph past `Z`, the strip's last character.
   The cell is still copied from source column `x`, at y 0, or y 8 when
   negative, where `x` is `6 * (16 + q)` cut to its low 16 bits and read as a
-  signed number (FND-UI-045). While `0 <= x <= 506` the cell shows whatever art
+  signed number (FND-UI-065). While `0 <= x <= 506` the cell shows whatever art
   of `PX00129` lies there: quotients 0 to 68, and quotients whose product wraps
   back into that range, first 10907 to 10991, at columns 2 to 506.
 - For any other `x` (a quotient of 69 or more outside those wrapped ranges, or
@@ -125,7 +125,7 @@ None known.
   each screen entry.
 - The runs are one system (EXP-UI-002, EXP-UI-027, EXP-UI-028). How GDI
   treats a source rectangle outside its bitmap may differ on other versions
-  of Windows, which static reading of the game cannot settle (FND-UI-045).
+  of Windows, which static reading of the game cannot settle (FND-UI-065).
 - No run has drawn a cell at the `StretchBlt` columns 32762 and 32764, or at
   column 32766 over a cell that already held a glyph. The `StretchBlt` source
   width of -65530 spans the whole bitmap, and a capture over the black
