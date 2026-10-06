@@ -587,6 +587,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-057](../findings/FND-UI-057.md) | builds, locations |
 | [FND-UI-058](../findings/FND-UI-058.md) | builds, locations |
 | [FND-UI-059](../findings/FND-UI-059.md) | body, builds, locations |
+| [FND-UI-064](../findings/FND-UI-064.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -7433,6 +7434,7 @@ None.
 | [FND-TIMER-002](../findings/FND-TIMER-002.md) | body |
 | [FND-UI-021](../findings/FND-UI-021.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
+| [FND-UI-064](../findings/FND-UI-064.md) | body |
 | glossary: app_deactivated | glossary |
 | glossary: full_screen_active | glossary |
 | glossary: input_event | glossary |
@@ -7482,6 +7484,7 @@ None.
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-UI-028](../findings/FND-UI-028.md) | body |
+| [FND-UI-064](../findings/FND-UI-064.md) | body |
 | glossary: DialogShown | glossary |
 | [RULE-UI-013](../rules/RULE-UI-013.md) | evidence |
 | [RULE-UI-015](../rules/RULE-UI-015.md) | evidence |
@@ -7858,6 +7861,13 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## FND-UI-064
+
+| Cited by | In |
+|---|---|
+| [FND-UI-022](../findings/FND-UI-022.md) | body |
+| [RULE-UI-014](../rules/RULE-UI-014.md) | body, evidence |
 
 ## FND-UPKEEP-001
 

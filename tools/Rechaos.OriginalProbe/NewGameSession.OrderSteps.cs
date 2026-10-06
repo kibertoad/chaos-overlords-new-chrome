@@ -22,6 +22,8 @@ internal sealed record ProbeOrderStep(
         "dbl" => $"double-click ({X}, {Y})",
         "wait" => $"wait {Choice} ms",
         "type" => $"type {Text}",
+        "keys" => $"keys {Text}",
+        "name" => $"name {Text}",
         _ => Kind,
     };
 }
@@ -213,6 +215,9 @@ internal sealed partial class NewGameSession
                 case "type":
                     // FND-UI-020: a key press for each character, as the Comlink script types.
                     Type(window, step.Text!);
+                    break;
+                case "keys":
+                    PressKeys(window, step.Text!);
                     break;
             }
             _process.Pump(TimeSpan.FromSeconds(0.8));
