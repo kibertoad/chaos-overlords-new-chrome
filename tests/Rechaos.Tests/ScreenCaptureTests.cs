@@ -121,7 +121,7 @@ public sealed partial class ScreenCaptureTests
         }
     }
 
-    [GeneratedRegex(@"^## (DEV-[A-Z]+-\d{3})\s*$\n(?:.*\n)*?- Departs from: (?<from>.*)$", RegexOptions.Multiline)]
+    [GeneratedRegex(@"^## (DEV-[A-Z]+-\d{3})\s*$\n(?:.*\n)*?- Departs from: (?<from>.*(?:\n  .*)*)$", RegexOptions.Multiline)]
     private static partial Regex DeviationDepartures();
 
     // A mask may only hide what a deviation of that screen draws.

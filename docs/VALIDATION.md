@@ -894,7 +894,8 @@ The test then compares each element:
 - `ScreenCaptureMasks` lists, for each screen, the rectangles a deviation draws
   over, each under the ID of the deviation. All the masks of the screens a
   capture names apply to the whole frame. `EveryMaskCitesADeviationFromItsScreen`
-  checks that each deviation's Departs from line names the screen.
+  checks that each deviation's Departs from item, wrapped lines included,
+  names the screen.
 
 The test prints every element's verdict and fails on an element that differs.
 It skips a capture that records no screen elements, and skips the rendering
