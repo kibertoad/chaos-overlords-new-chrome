@@ -198,7 +198,7 @@ public sealed partial class ChaosGame
     private void DrawHeldSiteSearchFace(SpriteBatch batch)
     {
         if (_uiSprites is null || _pressedPanelFace is not { Screen: ClientScreen.Search } held
-            || _pressedPanelFaceByRightButton || _hoverPoint is not { } hover || !held.Face.Contains(hover))
+            || _hoverPoint is not { } hover || !held.Face.Contains(hover))
             return;
         foreach (var control in (ReadOnlySpan<SiteSearchControl>)
                  [SiteSearchControl.All, SiteSearchControl.None, SiteSearchControl.Done])

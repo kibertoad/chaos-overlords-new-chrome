@@ -38,7 +38,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheCityShowsTheOriginalsSiteMarkers(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var drawn = recorded.CityMarkers!;
         // The probe writes the first human's filter, so only that human's redraw is compared.
         Assert.Equal(recorded.Humans[0].Value, drawn.Viewer);
@@ -87,7 +87,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheHireDockSetsTheOriginalsOrders(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var player = match.FindPlayer(human)!;
         foreach (var step in recorded.HireSteps)
@@ -154,7 +154,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheSearchPanelChangesTheOriginalsFilters(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var rows = SiteSearchPanel.Rows(match.Definitions);
         Assert.Equal(Enumerable.Range(0, SiteSearchLayout.MaximumSites).Select(row => (short)row), rows);
@@ -209,7 +209,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheEquipListOffersTheOriginalsItems(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var gangs = match.Players[human.Value].Gangs;
         // The probe builds lists for every living gang, so the recorded slots are the living ones.
@@ -255,7 +255,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheAttackPickerOffersTheOriginalsTargets(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var gangs = match.Players[human.Value].Gangs;
         // The probe builds a list for every other player and every living gang, so the recorded
@@ -297,18 +297,25 @@ public sealed partial class OriginalNewGameExperimentTests
     // splash. The rebuild's endgame lists the same players in the same order and places.
     // EXP-TURN-038 has two players tied at standing 0 and EXP-TURN-039 two tied at standing 1,
     // listed in slot order. EXP-UI-023 ends with one player active and draws only its splash.
+    // TheRebuildStartsTheSameMatch requires these rows of every run that ends after the awards.
     [Theory]
     [MemberData(nameof(EndgameRuns))]
     public void TheEndgameListsThePlayersInTheOriginalsOrder(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var drawn = recorded.EndgameRows!;
-        if (drawn.Kinds is ["splash"])
+        Assert.Equal(3, drawn.Arguments.Count);
+        // The mode comes from the renderer's arguments, so a drawing whose names the probe missed
+        // fails on the names it lacks and is not taken for the other mode.
+        if (drawn.DrawsSplash)
         {
-            Assert.Equal(drawn.Players[0], EndgameNoticePresentation.Survivor(match)?.Player.Value);
+            Assert.True(drawn.Kinds.SequenceEqual(["splash"]) && drawn.Players.SequenceEqual([drawn.Arguments[2]]),
+                $"the splash of player {drawn.Arguments[2]} listed [{string.Join(", ", drawn.Players)}] as [{string.Join(", ", drawn.Kinds)}]");
+            Assert.Equal(drawn.Arguments[2], EndgameNoticePresentation.Survivor(match)?.Player.Value);
             return;
         }
+        Assert.DoesNotContain("splash", drawn.Kinds);
         Assert.Null(EndgameNoticePresentation.Survivor(match));
         var rows = EndgamePresentation.Rows(match);
         Assert.Equal(drawn.Players, rows.Select(row => row.Player.Value));
