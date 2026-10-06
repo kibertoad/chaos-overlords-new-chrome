@@ -808,6 +808,21 @@ then replace only what they set: any other choice keeps what the presses left,
 and the trace notes which choices the presses changed. EXP-UI-015 is taken this
 way, with an earlier drag that posted the moves as `WM_MOUSEMOVE` instead.
 
+Two steps type keys, from tokens `{VKhh}` (a press and release of virtual key
+`hh`), `{CHARhh}` (character `hh` posted as `WM_CHAR`), `{SHIFT}` and
+`{PLAIN}`. The setup step `name:TOKENS` presses the name band of card 0, which
+opens the name editor (dialog 139, FND-UI-064), posts the keys to its edit
+control with Shift set in the keyboard state the probe shares with the game's
+thread while `{SHIFT}` holds, presses OK and keeps slot 0's 12-byte name
+record; `extract` lists the records as `name_entries`. The order step
+`keys:TOKENS` posts the keys to the game window and makes the window
+procedure's Shift test at `0x0045CA62` report Shift held or not as the tokens
+say, since a posted message cannot hold the key; it keeps the type, character
+and key the procedure stores at `0x0045CC35` for each, listed as
+`key_events`. Num Lock plays no part in either: Windows turns a number-pad key
+into a virtual key before it is posted, so a run posts the virtual key each
+Num Lock state would give.
+
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
 `GAME_DIR/captures/` without another run of the original:

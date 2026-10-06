@@ -194,6 +194,22 @@ internal sealed class StateExtractor
             run["gang_markers"] = new JsonArray(gangMarkers.Select(draw => (JsonNode)new JsonArray(
                 draw!["Step"]!.GetValue<int>(), draw["Kind"]!.GetValue<int>(), draw["Player"]!.GetValue<int>(),
                 draw["Sector"]!.GetValue<int>(), draw["Frame"]!.GetValue<int>())).ToArray());
+        // RULE-UI-014, FND-UI-020: each key event the window procedure stored for a posted key, as
+        // the virtual key, whether the Shift test reported Shift held, and the event's type,
+        // character and key.
+        if (trace["KeyEvents"] is JsonArray keyEvents)
+            run["key_events"] = new JsonArray(keyEvents.Select(entry => (JsonNode)new JsonArray(
+                entry!["VirtualKey"]!.GetValue<int>(), entry["Shift"]!.GetValue<bool>() ? 1 : 0,
+                entry["Type"]!.GetValue<int>(), entry["Character"]!.GetValue<int>(), entry["Key"]!.GetValue<int>())).ToArray());
+        // RULE-SETUP-009, FND-UI-022: each name typed into the setup name editor, with the name
+        // record of its slot after OK.
+        if (trace["NameEntries"] is JsonArray nameEntries)
+            run["name_entries"] = new JsonArray(nameEntries.Select(entry => (JsonNode)new JsonObject
+            {
+                ["keys"] = entry!["Keys"]!.GetValue<string>(),
+                ["slot"] = entry["Slot"]!.GetValue<int>(),
+                ["name"] = Integers(entry["Name"]),
+            }).ToArray());
         // RULE-TURN-005, SCR-UI-004: each order step after the dump, the popup it opened with its
         // items' commands and greyed states, the view, the card slots and the active player's orders.
         if (trace["OrderSteps"] is JsonArray orderSteps)
