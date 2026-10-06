@@ -254,6 +254,27 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(started).toMatchObject({ displayName: 'Hopper', portraitId: 6 })
     })
 
+    it('relays lobby chat through the event log until the match starts', async () => {
+      const { host, guest } = await lobbyOfTwo()
+      await guest.api.postChat('  helló there  ')
+      await host.api.postChat('ready when you are')
+      const { events } = await host.api.events(0)
+      const chat = events.filter((event) => event.type === 'lobby.chatMessage')
+      expect(chat.map((event) => event.payload)).toEqual([
+        { playerId: guest.player.id, text: 'helló there' },
+        { playerId: host.player.id, text: 'ready when you are' },
+      ])
+      await expect(guest.api.postChat('‮evil')).rejects.toMatchObject({
+        status: 422,
+      })
+      await expect(guest.api.postChat('x'.repeat(161))).rejects.toMatchObject({ status: 422 })
+      await host.api.start()
+      await expect(guest.api.postChat('too late')).rejects.toMatchObject({
+        status: 409,
+        reason: 'match_not_in_lobby',
+      })
+    })
+
     it('kicking opens a takeover vote and unblocks readiness; leaving as host passes the crown', async () => {
       const { host, guest } = await lobbyOfTwo()
       const third = await client().join({ joinCode: host.joinCode, displayName: 'Linus' })

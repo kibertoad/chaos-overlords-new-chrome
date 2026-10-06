@@ -60,6 +60,8 @@ public sealed partial class ChaosGame
         switch (notice)
         {
             case LobbyNotice.Seated seated:
+                // The session reads the new seat's log from its start, chat included.
+                _online.ClearChat();
                 _online.IsHost = seated.Membership.Player.IsHost;
                 _online.JoinCodeShown = seated.Membership.JoinCode;
                 _online.Match = seated.Membership.Match;
@@ -105,6 +107,9 @@ public sealed partial class ChaosGame
                 // A running or desynced match both count as started, as they do for a resumed seat;
                 // one the server is still starting is left for a later poll.
                 if (_session is null) TryStartOnlineMatch(updated.Match);
+                return;
+            case LobbyNotice.Chatted chatted:
+                _online.RecordChat(chatted.Lines);
                 return;
             case LobbyNotice.Listed listed:
                 _online.Listings = Describe(listed.Matches);

@@ -104,7 +104,7 @@ confirmed"). Nothing is latency-critical below a second.
 | Option | Verdict |
 |---|---|
 | **REST + SSE** (chosen) | Intents get HTTP semantics for free: bearer auth, idempotent retries, `413`/`429`, immutable caching of a sealed order set. The event log is exactly what SSE models: ordered, resumable with `Last-Event-ID`, one-directional, over plain HTTP/1.1 or HTTP/2 through any proxy or tunnel a self-hoster already has. Works on Node and on Workers with the same code. |
-| WebSocket | Bidirectional and lower overhead per message, neither of which this traffic needs. It brings a bespoke resume protocol, ping/pong, and on Cloudflare a hibernation dance; behind reverse proxies it is the thing that breaks. Reasonable later for lobby chat, never required for turns. |
+| WebSocket | Bidirectional and lower overhead per message, neither of which this traffic needs. It brings a bespoke resume protocol, ping/pong, and on Cloudflare a hibernation dance; behind reverse proxies it is the thing that breaks. Lobby chat rides the event log instead, read by the lobby's existing poll. Never required for turns. |
 | gRPC | No Workers support (HTTP/2 trailers), no browser path without grpc-web, and a code generator on the C# side for a dozen calls. |
 | Polling | Kept as the fallback, not the design: `GET /events?after=N` reads the same log the stream serves, for networks that cannot hold a streaming response. |
 
@@ -167,6 +167,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
+| `POST /matches/:id/chat` | member | Posts `{ text }` to the lobby chat before start (`409 match_not_in_lobby` after it). The text is 1 to 160 characters after trimming and NFC, with no control, format or private-use characters. Each player may post ten a minute (`429 rate_limited`), and a lobby whose log holds 1,000 events takes no more (`409 lobby_log_full`). Announced as `lobby.chatMessage`, which is the message's only store. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
 | `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the departure and opens a takeover vote; it does not transfer control. A leaving host hands the role to the lowest active slot. The durable membership token is retained for later rejoin. |
 | `POST /matches/:id/rejoin` | former member | Reactivates the caller's durable seat, restores host authority when appropriate, and transfers an AI-controlled reserved seat back to its owner. |
@@ -827,7 +828,10 @@ dock a player plans against the dock the sealed turn grants.
 - **The lobby is polled, not streamed.** The game reads the match about once a second while the
   lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
   facts too; opening it earlier would mean unwinding a session for every player who backs out.
-- No chat. A WebSocket lane for lobby chat would sit beside the stream without touching turns.
+- **Chat is a lobby feature.** Seated players chat until the match starts, through
+  `lobby.chatMessage` events the lobby poll reads when the log has grown; a player who arrives later
+  reads what was said before them. Inside a match the Comlink is the channel, under its own rules.
+  The game draws chat in the original font, so its input takes only characters that font can draw.
 - **Comlink is closed in an online match.** The original's player-to-player messaging writes hashed
   state on both sides: a message lands in a recipient's inbox, and merely opening the view clears
   that inbox's read mark. Either done on one client alone is a desync rather than a lost message, so
