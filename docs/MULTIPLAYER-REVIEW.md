@@ -92,7 +92,7 @@ Fixes without a test that would fail if they were reverted:
   - malformed JSON answering 422;
   - an oversized snapshot answering 413;
   - `Retry-After` on every 429 and `X-Request-Id` on every response, the event stream included.
-- **Cloudflare end to end.** `tools/OnlineSmoke` runs in the multiplayer workflow against the Node
-  runtime. Nothing plays a match against the workerd runtime, and nothing runs on a schedule to
-  catch drift on a branch nobody touched. Running it on a schedule is tracked in
+- **End to end on a schedule.** `tools/OnlineSmoke` plays a match against the Node server and
+  against the Worker under `wrangler dev` whenever the multiplayer workflow runs, but nothing runs
+  it on a schedule to catch drift on a branch nobody touched. Running it on a schedule is tracked in
   [#459](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/459).
