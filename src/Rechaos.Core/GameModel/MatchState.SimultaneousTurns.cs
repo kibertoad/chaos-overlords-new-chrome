@@ -28,6 +28,7 @@ public sealed partial class MatchState
     /// </remarks>
     public IReadOnlyList<PlayerId> PrepareSimultaneousHireOffers()
     {
+        RefuseOnView();
         if (Coordinator.Phase != TurnPhase.Command)
             throw new InvalidOperationException("Simultaneous hire offers are drawn during Command.");
         var drawn = new List<PlayerId>();

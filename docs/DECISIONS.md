@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-06 | [Send each seat only what the original shows it](#2026-10-06--send-each-seat-only-what-the-original-shows-it) |
 | 2026-10-06 | [Resolve online turns on the server with a WebAssembly build of the rules](#2026-10-06--resolve-online-turns-on-the-server-with-a-webassembly-build-of-the-rules) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
@@ -46,6 +47,68 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-06 — Send each seat only what the original shows it
+
+- Decision: once the server resolves turns, an online match may send each seat a
+  view of the match instead of the whole state. A view is what the original
+  draws for that player at their planning entry, and nothing else: their own
+  gangs and orders, the other seats' gangs they detect, every sector's public
+  values, the fights and reports of the last resolution they would be shown,
+  and the rankings rail at the rail's own resolution. It is a `MatchState`
+  built by `SeatView.Project` from the match's save document with the hidden
+  parts removed or set to neutral values, and it refuses every call that draws
+  or resolves. The client plans on it with the code it plans with today and
+  sends the same order document; the server alone resolves, and the computer
+  seats plan only there. A server operator turns views on per deployment and
+  each match keeps the mode it was created with. What each seat may know, part
+  by part, and the design are in
+  [MULTIPLAYER.md](MULTIPLAYER.md#per-seat-views).
+- Reason: under lockstep every client holds the whole match, so a modified
+  client can read every hidden gang, every order once sealed, every site's
+  progress and the seed that draws every die. Between friends that is a matter
+  of trust; in a public match with strangers it decides the game, and the
+  rebuild has a public match list. The referee closes the other two gaps
+  of the security model and leaves this one. The original showed each player
+  only part of the city, and its strategy rests on that: hiding, detection,
+  Search and the Bribe and Snitch orders are about who knows what.
+- Options weighed:
+  - A view as a `MatchState` restored from a redacted save document (chosen).
+    The option catalog, the order validator, `SpeculativeTurn`, the screens and
+    the save format all work on it unchanged, so a view is checked by asking
+    the same code the same questions on the view and on the whole match, at
+    every planning entry of every recorded run of the original.
+  - A separate view document with its own client model. Every screen and the
+    validator would need a second input, and the two models would drift.
+    Refused.
+  - Lockstep with each seat's hidden parts encrypted for that seat. Resolution
+    needs every hidden part, so every client must be able to decrypt
+    everything, which hides nothing. Refused.
+  - The referee alone, keeping lockstep's whole state on each client. Enough
+    for friends, and the default for a server that does not turn views on.
+    Refused as the only mode, because of public matches.
+- Evidence:
+  - The visibility of each part of the state comes from the spec entries the
+    table in MULTIPLAYER.md cites; where the spec leaves it open the table says
+    so, and the view follows the reading the entries give.
+  - `OriginalNewGameExperimentTests.ASeatPlansTheSameTurnFromItsView` takes a
+    view at every planning entry of every recorded run (165 runs) and finds
+    that every order offered for each of the seat's gangs and every hire is
+    judged as on the whole match, that the city, console, rankings, sector,
+    finance and combat screens read the same, and that the recorded orders
+    build the same order document.
+  - Cost, at all 2,504 planning entries of the recorded runs, natively: 0.3 ms
+    to project a view at the median and 2.4 ms at most; 3 KB of Brotli-compressed
+    payload at the median and 9 KB at most, against up to 301 KB for the whole
+    match.
+- Rules out: resolving on the client in a match with views, and with it the
+  client's desync machinery and journals during the match; the computer
+  players planning anywhere but the server; and any rebuild addition that
+  shows a player more than the original does without a view-aware form
+  (the DEV-UI-005 tooltip and the Bribe and Snitch tooltips need one).
+- Status: `SeatView` and its tests are in `Rechaos.Core`. Serving views,
+  playing an online match from them, the tooltips and the journals of a match
+  with views are tracked from #515.
 
 ## 2026-10-06 — Resolve online turns on the server with a WebAssembly build of the rules
 

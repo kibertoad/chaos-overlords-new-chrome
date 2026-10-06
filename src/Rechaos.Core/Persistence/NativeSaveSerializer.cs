@@ -75,8 +75,12 @@ public static class NativeSaveSerializer
     internal static MatchState LoadRewritten(Stream source, OriginalData definitions) =>
         Load(source, definitions, verifyStateFingerprint: false);
 
+    /// <summary>Restores a seat's view that <see cref="SeatView.Save"/> wrote.</summary>
+    internal static MatchState LoadView(Stream source, OriginalData definitions, PlayerId seat) =>
+        Load(source, definitions, verifyStateFingerprint: true, seat);
+
     private static MatchState Load(
-        Stream source, OriginalData definitions, bool verifyStateFingerprint)
+        Stream source, OriginalData definitions, bool verifyStateFingerprint, PlayerId? viewedBy = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(definitions);
@@ -100,7 +104,7 @@ public static class NativeSaveSerializer
         }
         try
         {
-            return RestoreDocument(document, definitions, verifyStateFingerprint);
+            return RestoreDocument(document, definitions, verifyStateFingerprint, viewedBy);
         }
         catch (InvalidDataException)
         {
@@ -138,8 +142,9 @@ public static class NativeSaveSerializer
         }
     }
 
-    private static MatchState RestoreDocument(
-        NativeSaveDocument document, OriginalData definitions, bool verifyStateFingerprint)
+    internal static MatchState RestoreDocument(
+        NativeSaveDocument document, OriginalData definitions, bool verifyStateFingerprint,
+        PlayerId? viewedBy = null)
     {
         if (document.FormatVersion != CurrentFormatVersion)
             throw UnsupportedFormat(document.FormatVersion);
@@ -243,7 +248,8 @@ public static class NativeSaveSerializer
             document.Runtime.PhaseHashes,
             document.Runtime.Outcome,
             aiStrategy,
-            aiPlanning);
+            aiPlanning,
+            viewedBy);
         var state = new MatchState(definitions, setup, players, sectors, runtime);
         if (verifyStateFingerprint
             && !string.Equals(
@@ -270,10 +276,15 @@ public static class NativeSaveSerializer
                 : IncompatibleSaveReason.OlderFormat,
             $"Unsupported native save format {declared}.");
 
-    private static NativeSaveDocument Capture(MatchState state) => new(
+    /// <summary>
+    /// The document a save of <paramref name="state"/> holds. Without
+    /// <paramref name="fingerprint"/> its state fingerprint is left empty, for a caller that
+    /// rewrites the document before restoring it unverified.
+    /// </summary>
+    internal static NativeSaveDocument Capture(MatchState state, bool fingerprint = true) => new(
         CurrentFormatVersion,
         DefinitionFingerprint(state.Definitions),
-        MatchStateHasher.ComputeFingerprint(state),
+        fingerprint ? MatchStateHasher.ComputeFingerprint(state) : string.Empty,
         new MatchSetupDocument(
             state.Setup.Scenario,
             state.Setup.Duration,
@@ -306,33 +317,36 @@ public static class NativeSaveSerializer
             new AiStrategyDocument(
                 state.AiStrategy.CaptureReactions(),
                 state.AiStrategy.CaptureAttitudes()),
-            new AiPlanningDocument(
-                state.AiPlanning.CaptureCurrentHireRoles(),
-                state.AiPlanning.CapturePreviousHireRoles(),
-                state.AiPlanning.CaptureFamilies(),
-                state.AiPlanning.CaptureSectorAnchors(),
-                state.AiPlanning.CaptureOlderActions(),
-                state.AiPlanning.CapturePreviousActions(),
-                state.AiPlanning.CapturePlannedActions(),
-                state.AiPlanning.CaptureOlderTargets(),
-                state.AiPlanning.CapturePreviousTargets(),
-                state.AiPlanning.CapturePlannedTargets(),
-                state.AiPlanning.CaptureHasPlanned(),
-                state.AiPlanning.CaptureWeaponCooldowns(),
-                state.AiPlanning.CaptureArmorCooldowns(),
-                state.AiPlanning.CaptureFormationSectors(),
-                state.AiPlanning.CaptureCoverageSectors(),
-                state.AiPlanning.CaptureNeedsFamily(),
-                state.AiPlanning.CaptureRaiderMode(),
-                checked((byte)state.AiPlanning.FirstCombatRecordDefinition),
-                state.AiPlanning.CaptureSectorWeights(),
-                state.AiPlanning.CaptureSectorChoiceScores()),
+            CaptureAiPlanning(state.AiPlanning),
             state.Players.Select(player => new PlayerComlinkDocument(
                 player.Id.Value,
                 state.ComlinkFor(player.Id).NextSequence,
                 state.ComlinkFor(player.Id).LegacyReadThroughSequence,
                 state.ComlinkFor(player.Id).Messages,
                 state.ComlinkFor(player.Id).ReadSequences)).ToArray()));
+
+    /// <summary>The document <paramref name="planning"/> is saved as.</summary>
+    internal static AiPlanningDocument CaptureAiPlanning(AiPlanningState planning) => new(
+        planning.CaptureCurrentHireRoles(),
+        planning.CapturePreviousHireRoles(),
+        planning.CaptureFamilies(),
+        planning.CaptureSectorAnchors(),
+        planning.CaptureOlderActions(),
+        planning.CapturePreviousActions(),
+        planning.CapturePlannedActions(),
+        planning.CaptureOlderTargets(),
+        planning.CapturePreviousTargets(),
+        planning.CapturePlannedTargets(),
+        planning.CaptureHasPlanned(),
+        planning.CaptureWeaponCooldowns(),
+        planning.CaptureArmorCooldowns(),
+        planning.CaptureFormationSectors(),
+        planning.CaptureCoverageSectors(),
+        planning.CaptureNeedsFamily(),
+        planning.CaptureRaiderMode(),
+        checked((byte)planning.FirstCombatRecordDefinition),
+        planning.CaptureSectorWeights(),
+        planning.CaptureSectorChoiceScores());
 
     private static PlayerDocument CapturePlayer(MatchPlayerState player) => new(
         player.Id.Value,
