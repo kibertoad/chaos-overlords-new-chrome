@@ -159,6 +159,7 @@ public sealed partial class ChaosGame
             _saveName.Type(character);
             return;
         }
+        if (TypeSetupName(character)) return;
         if (_screens.Current == ClientScreen.Lobby)
         {
             if (_online.IsHost && _online.SessionName.IsFocused) _online.SessionName.Type(character);

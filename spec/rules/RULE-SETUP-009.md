@@ -7,7 +7,7 @@ superseded_by: []
 evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-015]
 conflicting: []
 split_with: []
-related: [SCR-SETUP-001]
+related: [SCR-SETUP-001, SCR-SETUP-003]
 ---
 
 ## Summary
@@ -84,8 +84,9 @@ if offset_y < 58:
         # fn_00468CFC: one step up, skipping portraits any slot holds
         step_portrait(card, 1)
 else:
-    # the name editor: dialog Chaos Overlords.exe#DIALOG/139, at most ten
-    # characters; accepting an empty editor keeps the old name
+    # the name editor: dialog Chaos Overlords.exe#DIALOG/139 (SCR-SETUP-003);
+    # OK keeps the first ten characters of its text, and an empty text keeps
+    # the old name
     fn_0040F63D(card)
 ```
 
@@ -115,5 +116,6 @@ None known.
 
 ## Open questions
 
-- `fn_0040F63D` is the name editor; its dialog's layout is not described.
+- `fn_0040F63D` keeps its neutral name; it opens the name dialog SCR-SETUP-003
+  describes and copies the name from it.
 - What a press or a drag that starts on an empty card does is not recorded.

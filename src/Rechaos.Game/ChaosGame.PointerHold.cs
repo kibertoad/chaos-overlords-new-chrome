@@ -10,6 +10,7 @@ public sealed partial class ChaosGame
     /// </summary>
     private void HoldPointerAt(Point point)
     {
+        HoldSetupName(point);
         if (_draggedSetupPlayerSlot is not null && !_setupPlayerDragStarted
             && PlayerPortraitLayout.SetupDragMoved(_setupPlayerPressPoint, point))
         {

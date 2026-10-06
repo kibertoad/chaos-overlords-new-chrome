@@ -124,6 +124,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _selectedSetupPlayerSlot;
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
+    private bool _setupNameSelecting;
+    private TimeSpan _setupNameCaretShownAt;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.OneYear;
     // RULE-SETUP-002: the scenario a fresh local setup selects, Greed when nothing is stored.
@@ -347,6 +349,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // The only text the game takes: a server address, a name and a join code. The platform has
         // already decoded the keystroke, so a non-US layout types what it should.
         Window.TextInput += (_, args) => HandleTextInput(args.Character);
+        // The setup name editor's editing keys repeat while held, as the edit control's do.
+        Window.KeyDown += (_, args) => HandleKeyDown(args.Key);
     }
 
     protected override void LoadContent()
@@ -794,6 +798,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released)
         {
             _leftHoldOutlivesCancel = false;
+            _setupNameSelecting = false;
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: false);
         }
         if (_previousMouse.RightButton == ButtonState.Pressed && mouse.RightButton == ButtonState.Released)
@@ -839,7 +844,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleLobbyClick(point);
                 break;
             case ClientScreen.Setup:
-                var timed = ScenarioCatalog.Get(_selectedScenario).IsTimed;
+                if (PressSetupName(point)) break;
+                var timed =ScenarioCatalog.Get(_selectedScenario).IsTimed;
                 var panelControl = SetupPanelLayout.HitTest(point, timed);
                 var durationRefused = !timed && SetupPanelLayout.DurationArea.Contains(point);
                 var setupButton = SetupButtonLayout.HitTest(point);

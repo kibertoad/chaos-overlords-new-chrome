@@ -199,6 +199,32 @@ The reasoning is in `docs/MULTIPLAYER.md`.
 - Justification: It adds keyboard input beside the original's mouse input, which works as before.
 - Dropped: no
 
+## DEV-SETUP-003
+
+- Departs from: SCR-SETUP-003
+- Reason: The player's name is edited on the card instead of in the Windows dialog. A press on
+  the selected card's name band clears the name row and puts a caret in it; the row shows ten
+  characters of the text, scrolled to keep the caret in view, drawn in the screen's font and
+  green. The editor keeps the edit control's text, insertion point and selection: characters come
+  from the platform's keyboard layout with letters in capitals, Left, Right, Home and End move the
+  caret and with Shift select, Backspace and Delete delete, a press on the row places the caret
+  (with Shift it extends the selection) and dragging selects, the text may run to 32,767
+  characters, and Enter or a press elsewhere keeps the first ten characters as OK does while
+  Escape or the right button leaves the name as Cancel does. The caret is a one-pixel line in the
+  name's green that blinks every 530 ms and shows at once when it moves, and a selection is drawn
+  in black on green. There is no prompt, no OK or Cancel button, no Tab between controls, no
+  clipboard, undo, double-click word selection or context menu.
+- Setting: None
+- Default: mandatory
+- Justification: Windows draws the dialog, frame, buttons and caret in the style and colours of
+  the Windows version it runs on, so there is no picture of the game's to reproduce, and the
+  rebuild draws no Windows elements anywhere (DEV-GFX-001, DEV-UI-019). The name typed, the way it
+  is edited and the name OK keeps are those of the control, so a player can type and correct a
+  name as before. The keys left out copy text between programs or undo one edit of a name ten
+  characters long, and Tab only reaches buttons whose work Enter and Escape do.
+- Tests: tests/Rechaos.Tests/SetupNameEditControlTests.cs
+- Dropped: no
+
 ## DEV-HIRE-001
 
 - Departs from: RULE-HIRE-003, SCR-HIRE-002
