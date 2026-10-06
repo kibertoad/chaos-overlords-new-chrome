@@ -123,6 +123,30 @@ export interface Turn {
    * this still null is what `TurnRepository.listUnannouncedVerdicts` hands the sweep to finish.
    */
   settledAt: Date | null
+  /**
+   * The state the server's own resolver reached by applying the sealed set, or null when the turn
+   * was not resolved on the server: the deployment has no resolver, the match was stored under a
+   * session version it does not play, or the resolver failed. Written once, by
+   * `TurnRepository.recordResolution`.
+   *
+   * When it is set it decides the turn: the verdict confirms the turn on it whatever the reports
+   * say, and a report that differs is that seat's divergence alone.
+   */
+  resolvedHash: string | null
+  /** Whether the resolved state is the end of the match; null while `resolvedHash` is. */
+  resolvedFinished: boolean | null
+  /**
+   * The sequence number of this turn's `turn.sealed` event. A match the resolver holds after this
+   * turn has been fed the log through exactly that event, so the next feed starts after it.
+   */
+  resolvedSeq: number | null
+}
+
+/** What the server's resolver reached for a sealed turn; see `Turn.resolvedHash`. */
+export interface TurnResolution {
+  resolvedHash: string
+  resolvedFinished: boolean
+  resolvedSeq: number
 }
 
 /** One player's row for a turn. Rows are pre-created when the turn opens (see TurnRepository). */

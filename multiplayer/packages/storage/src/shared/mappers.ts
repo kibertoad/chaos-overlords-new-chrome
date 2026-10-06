@@ -67,6 +67,9 @@ export interface TurnRow {
   stateHash: string | null
   desyncedAt: Date | null
   settledAt: Date | null
+  resolvedHash: string | null
+  resolvedFinished: boolean | null
+  resolvedSeq: number | null
 }
 
 export interface TurnOrdersRow {

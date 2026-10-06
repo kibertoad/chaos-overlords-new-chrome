@@ -52,6 +52,8 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonSerializable(typeof(TurnDesyncedEventPayloadReports))]
 [JsonSerializable(typeof(TurnDesyncedEventPayload))]
 [JsonSerializable(typeof(TurnDesyncedEvent))]
+[JsonSerializable(typeof(TurnDivergedEventPayload))]
+[JsonSerializable(typeof(TurnDivergedEvent))]
 [JsonSerializable(typeof(SnapshotAvailableEventPayload))]
 [JsonSerializable(typeof(SnapshotAvailableEvent))]
 [JsonSerializable(typeof(CommandTarget))]

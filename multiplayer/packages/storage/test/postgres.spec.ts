@@ -192,6 +192,9 @@ describe.skipIf(!url)('postgres', () => {
         stateHash: null,
         desyncedAt: null,
         settledAt: null,
+        resolvedHash: null,
+        resolvedFinished: null,
+        resolvedSeq: null,
       },
       [playerId],
     )

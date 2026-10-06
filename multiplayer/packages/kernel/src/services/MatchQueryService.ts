@@ -42,14 +42,19 @@ export function matchStartedEvent(
 
 /** Read models. Every view is assembled from list reads, never one query per player. */
 export class MatchQueryService {
-  constructor(private readonly storage: MultiplayerStorage) {}
+  constructor(
+    private readonly storage: MultiplayerStorage,
+    /** Whether the server referees a match; see `Referee.referees`. */
+    private readonly referees: (match: Match) => Promise<boolean> = async () => false,
+  ) {}
 
   async view(match: Match): Promise<MatchView> {
     const players = await this.storage.players.listByMatch(match.id)
-    const [turn, previousTurn, lastEventSeq] = await Promise.all([
+    const [turn, previousTurn, lastEventSeq, refereed] = await Promise.all([
       this.turnView(match.id, match.currentTurn),
       this.turnView(match.id, match.currentTurn - 1),
       this.storage.events.lastSeq(match.id),
+      this.referees(match),
     ])
     return {
       id: match.id,
@@ -64,6 +69,7 @@ export class MatchQueryService {
       turn,
       previousTurn,
       lastEventSeq,
+      ...(refereed ? { refereed } : {}),
       createdAt: match.createdAt.toISOString(),
     }
   }

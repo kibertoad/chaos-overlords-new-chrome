@@ -4,6 +4,8 @@ import { Worker } from 'node:worker_threads'
 import { nodeBrotliCodec } from '../codec-node.js'
 import type {
   BootstrapInput,
+  FeedResult,
+  FeedStep,
   MatchStatus,
   ResolverInfo,
   ResolverLimits,
@@ -141,6 +143,8 @@ export async function startNodeResolverHost(
       call<MatchStatus>('restore', [matchId, savePayload, stateHash, input], matchId),
     applyEvent: (matchId: string, event: unknown, sealedOrders?: unknown) =>
       call<MatchStatus>('applyEvent', [matchId, event, sealedOrders ?? null], matchId),
+    applyEvents: (matchId: string, fromTurn: number, steps: readonly FeedStep[]) =>
+      call<FeedResult>('applyEvents', [matchId, fromTurn, steps], matchId),
     status: (matchId: string) => call<MatchStatus | null>('status', [matchId], matchId),
     savePayload: (matchId: string) =>
       call<{ payload: Uint8Array; status: MatchStatus }>('savePayload', [matchId], matchId),

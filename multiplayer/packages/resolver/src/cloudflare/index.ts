@@ -31,6 +31,8 @@ export function cloudflareResolverHost(binding: ResolverService): PayloadResolve
       call(matchId, () => binding.restore(matchId, payload, stateHash, input)),
     applyEvent: (matchId, event, sealedOrders) =>
       call(matchId, () => binding.applyEvent(matchId, event, sealedOrders ?? null)),
+    applyEvents: (matchId, fromTurn, steps) =>
+      call(matchId, () => binding.applyEvents(matchId, fromTurn, steps)),
     status: (matchId) => call(matchId, () => binding.status(matchId)),
     savePayload: (matchId) => call(matchId, () => binding.savePayload(matchId)),
     release: (matchId) => call(matchId, () => binding.release(matchId)),

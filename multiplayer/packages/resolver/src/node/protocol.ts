@@ -6,6 +6,7 @@ export type ThreadMethod =
   | 'bootstrap'
   | 'restore'
   | 'applyEvent'
+  | 'applyEvents'
   | 'status'
   | 'savePayload'
   | 'release'

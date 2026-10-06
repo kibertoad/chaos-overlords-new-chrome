@@ -31,6 +31,7 @@ interface TranscriptStep {
   kind: string
   event?: { type: string; payload: { turn?: number } }
   sealedOrders?: unknown
+  hash?: string
 }
 
 /** Feeds one event step to a match; a snapshot step does nothing. */
@@ -42,6 +43,33 @@ export async function apply(resolver: MatchResolver, matchId: string, step: Tran
 /** The seals among `steps`. */
 export function seals(steps: TranscriptStep[]) {
   return steps.filter((step) => step.event?.type === 'turn.sealed')
+}
+
+/**
+ * The log up to the snapshot fed in one call reaches the native hash of every seal on the way, and
+ * the same feed again is refused as stale.
+ */
+export async function expectBatchedFeed(resolver: MatchResolver, matchId: string) {
+  await resolver.bootstrap(matchId, {
+    seed: transcript.seed,
+    gameSettings: transcript.gameSettings,
+    players: transcript.players,
+  })
+  const at = transcript.steps.findIndex((step: { kind: string }) => step.kind === 'snapshot')
+  const fed = transcript.steps.slice(0, at)
+  const steps = fed.map((step: TranscriptStep) => ({
+    event: step.event,
+    sealedOrders: step.sealedOrders,
+  }))
+  const result = await resolver.applyEvents(matchId, 1, steps)
+  expect(result.applied).toBe(true)
+  expect(result.seals.map((seal) => seal.stateHash)).toEqual(
+    seals(fed).map((step) => step.hash),
+  )
+  expect(result.status.stateHash).toBe(transcript.steps[at].hash)
+  const again = await resolver.applyEvents(matchId, 1, steps)
+  expect(again).toEqual({ applied: false, status: result.status, seals: [] })
+  await resolver.release(matchId)
 }
 
 /** The roster the transcript's match is played with, as a restore takes it. */

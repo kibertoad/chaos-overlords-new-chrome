@@ -1,5 +1,5 @@
 import { type BrotliCodec, readSnapshotArchive, writeSnapshotArchive } from './archive.js'
-import type { BootstrapInput, MatchStatus, RestoreInput } from './core.js'
+import type { BootstrapInput, FeedResult, FeedStep, MatchStatus, RestoreInput } from './core.js'
 
 /** What a resolver build plays. */
 export interface ResolverDescription {
@@ -27,6 +27,7 @@ export interface PayloadResolver {
     input: RestoreInput,
   ): Promise<MatchStatus>
   applyEvent(matchId: string, event: unknown, sealedOrders?: unknown): Promise<MatchStatus>
+  applyEvents(matchId: string, fromTurn: number, steps: readonly FeedStep[]): Promise<FeedResult>
   status(matchId: string): Promise<MatchStatus | null>
   savePayload(matchId: string): Promise<{ payload: Uint8Array; status: MatchStatus }>
   release(matchId: string): Promise<void>
@@ -57,6 +58,13 @@ export interface MatchResolver {
    * `GET /turns/:n/orders` answers it. Every other event is accepted and ignored.
    */
   applyEvent(matchId: string, event: unknown, sealedOrders?: unknown): Promise<MatchStatus>
+  /**
+   * Folds a run of the log in one call, only if the match is planning `fromTurn`: otherwise
+   * nothing is applied and the result says so. A feed that fails part way releases the match. The
+   * coordination server feeds through this, so two of its callers racing to feed the same events
+   * cannot both apply them.
+   */
+  applyEvents(matchId: string, fromTurn: number, steps: readonly FeedStep[]): Promise<FeedResult>
   /** Where a held match stands, or `null` when the host does not hold it. */
   status(matchId: string): Promise<MatchStatus | null>
   /** The held match as a snapshot every client can adopt. */
@@ -72,6 +80,7 @@ export function withArchives(host: PayloadResolver, codec: BrotliCodec): MatchRe
     restore: (matchId, snapshot, input) =>
       host.restore(matchId, readSnapshotArchive(snapshot.body, codec), snapshot.stateHash, input),
     applyEvent: (matchId, event, sealedOrders) => host.applyEvent(matchId, event, sealedOrders),
+    applyEvents: (matchId, fromTurn, steps) => host.applyEvents(matchId, fromTurn, steps),
     status: (matchId) => host.status(matchId),
     snapshot: async (matchId) => {
       const { payload, status } = await host.savePayload(matchId)

@@ -91,6 +91,9 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `HTTP_REQUEST_TIMEOUT_MS` | `120000` | How long a client may take to send a whole request, body included. Sized for an 8 MiB bug report on a slow uplink. Event streams are unaffected: their request is complete once the headers arrive. |
 | `MAX_EVENT_STREAMS` | `512` | Event streams this process holds at once, across every match; further opens answer 429. At most one quarter of this cap may be occupied by lobby streams, leaving capacity for running matches even if unauthenticated lobby creation is abused. A lobby stream stops using that share when its match starts. Raise the cap and the file descriptor limit together. |
 | `CORS_ORIGINS` | *(none)* | Comma-separated browser origins allowed to call the API. The game is not a browser and needs none; a web front end using `@chaos-overlords/client` lists its origin here, which also permits the preflighted `Authorization` and `Last-Event-ID` headers. |
+| `RESOLVE_TURNS` | `false` | Resolve every sealed turn on the server and decide it on the server's state (docs/MULTIPLAYER.md, "Running the referee"). Starts the WebAssembly resolver in a worker thread; the server refuses to start if it cannot. Off, turns are settled by counting reports. |
+| `RESOLVER_MAX_MATCHES` | `64` | Matches the resolver holds in memory at once; the least recently used beyond it is released and rebuilt from its checkpoint when next needed. |
+| `RESOLVER_MANAGED_HEAP_MIB` | `512` | Live managed heap, in MiB, past which the resolver releases matches. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 
 Put TLS in front of it (Caddy, nginx, a tunnel): player tokens are bearer credentials.
@@ -157,20 +160,22 @@ deployment has to satisfy:
 | `BUG_DB` | D1 | Bug reports, from `packages/bug-reports/migrations/sqlite`. Its own database; see "Bug reports" below. Leave it unbound and `POST /api/v1/bug-reports` answers 404. |
 | `BUG_BLOBS` | R2 | Compressed match journals. Leave it unbound and only journals under 256 KiB are kept. |
 | `MATCH_HUB` | Durable Object | `MatchHub`, one per match: SSE fan-out and the turn deadline alarm. Its migration lineage starts at tag `v1`, `new_sqlite_classes = ["MatchHub"]`. |
+| `RESOLVER` | Service | The resolver Worker (`packages/resolver/README.md`), used only with `RESOLVE_TURNS` set. It needs the Workers Paid plan. Leave it unbound and keep `RESOLVE_TURNS` off on the free plan; with the flag set and no binding the Worker warns once per isolate and counts reports. |
 
 `PUBLIC_LISTING`, `CORS_ORIGINS`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
 `UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`,
 `MATCH_CREATION_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
 `LOBBY_RETENTION_DAYS`, `ABANDONED_RETENTION_DAYS`, `SILENT_RETENTION_DAYS`, `RETENTION_BATCH_SIZE`
-(`50`), `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars, with the same meanings
-and defaults as the Node environment variables above. A deployment also wants the cron trigger the
+(`50`), `BUG_REPORT_RETENTION_DAYS`, `BUG_REPORT_DAILY_STATE_MB` and `RESOLVE_TURNS` are vars, with
+the same meanings and defaults as the Node environment variables above. A deployment also wants the cron trigger the
 `scheduled` handler expects — `wrangler.dev.toml` declares `crons = ["*/5 * * * *"]`, the interval
 the sweeper and the retention sweeps are written for —
 and Cloudflare rate limiting rules on `/api/v1/matches`, `/api/v1/matches/join` and
 `/api/v1/bug-reports`: the in-Worker limiter counts per isolate, so it softens abuse on one edge node
 rather than globally.
 
-For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all four to throwaway local resources.
+For local work, `runtimes/cloudflare/wrangler.dev.toml` binds the first four to throwaway local
+resources and leaves `RESOLVER` unbound.
 It is a development and test fixture, not a deployment.
 
 ```sh

@@ -389,6 +389,9 @@ importers:
       '@chaos-overlords/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@chaos-overlords/resolver':
+        specifier: workspace:*
+        version: link:../../packages/resolver
       '@chaos-overlords/server':
         specifier: workspace:*
         version: link:../../packages/server
@@ -435,6 +438,9 @@ importers:
       '@chaos-overlords/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@chaos-overlords/resolver':
+        specifier: workspace:*
+        version: link:../../packages/resolver
       '@chaos-overlords/server':
         specifier: workspace:*
         version: link:../../packages/server

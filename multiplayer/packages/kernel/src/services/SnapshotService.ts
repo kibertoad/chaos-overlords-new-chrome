@@ -13,13 +13,8 @@ import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
 import { requireInProgress, requireParticipant, requireTurn } from './guards'
+import { type Referee, SNAPSHOTS_KEPT_PER_MATCH } from './Referee'
 import type { TurnService } from './TurnService'
-
-/**
- * Snapshots kept per live match. Enough to cover a desync being repaired while an earlier one is
- * still being fetched by a straggler, and far fewer than a long match would otherwise accumulate.
- */
-const SNAPSHOTS_KEPT_PER_MATCH = 5
 
 /**
  * Host-uploaded native snapshots: the recovery path for a desync and the bootstrap for a
@@ -31,6 +26,7 @@ export class SnapshotService {
     private readonly deps: KernelDeps,
     private readonly publisher: EventPublisher,
     private readonly turns: TurnService,
+    private readonly referee?: Referee,
   ) {}
 
   async upload(principal: Principal, request: UploadSnapshotRequest): Promise<void> {
@@ -56,8 +52,22 @@ export class SnapshotService {
       })
     }
     if (isBootstrap) {
-      // Nothing has been reported yet, so there is no consensus a bootstrap could contradict.
-      await this.store(match, player.id, request)
+      // A refereed match starts from the state the server built itself, which it stores as the
+      // turn-0 snapshot; the host's upload has to be that state, and only its seat summaries are
+      // kept. Otherwise nothing has been reported yet, so there is no consensus a bootstrap could
+      // contradict.
+      const serverStart = (await this.referee?.ensureSnapshot(match, 0)) ?? null
+      if (serverStart === null) {
+        await this.store(match, player.id, request)
+        return
+      }
+      if (serverStart !== request.stateHash) {
+        throw new ConflictError('The starting snapshot must be the state the server built', {
+          reason: 'uncorroborated_state_hash',
+          candidateStateHashes: [serverStart],
+        })
+      }
+      await this.storeSeatSummaries(match, request)
       return
     }
     const turn = await requireTurn(this.deps.storage.turns, match.id, request.turn)
@@ -112,7 +122,24 @@ export class SnapshotService {
         candidateStateHashes: turn.stateHash === null ? [] : [turn.stateHash],
       })
     }
+    // A server that referees the match writes its own checkpoints of the same state, and the
+    // bytes are not written twice.
+    const stored = await this.deps.storage.snapshots.getSummary(match.id, turn.number)
+    if (stored?.stateHash === request.stateHash) {
+      await this.storeSeatSummaries(match, request)
+      return
+    }
     await this.store(match, player.id, request)
+  }
+
+  /** The seat summaries an upload carries, held to the settings cap, without its bytes. */
+  private async storeSeatSummaries(
+    match: Principal['match'],
+    request: UploadSnapshotRequest,
+  ): Promise<void> {
+    const current = await this.deps.storage.matches.get(match.id)
+    if (current) mergeSeatSummaries(current.settings.gameSettings, request.seatSummaries)
+    await this.writeSeatSummaries(match.id, request.seatSummaries)
   }
 
   /**

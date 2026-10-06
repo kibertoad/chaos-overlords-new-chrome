@@ -34,9 +34,12 @@ function fakeRuntime(matchBytes = 10, garbagePerTurn = 0) {
       matches.set(nextHandle, { turn: payload[0] ?? 0 })
       return nextHandle++
     },
+    // A bare `{ turn }` or a `turn.sealed` event seals; any other event changes nothing.
     ApplyEvent: (handle, json) => {
       const match = held(handle)
-      if (JSON.parse(json).turn !== match.turn)
+      const event = JSON.parse(json)
+      if (event.type !== undefined && event.type !== 'turn.sealed') return ''
+      if ((event.payload?.turn ?? event.turn) !== match.turn)
         throw new ManagedError('the sealed set is for another turn')
       match.turn++
       garbage += garbagePerTurn
@@ -121,6 +124,43 @@ describe('ResolverCore', () => {
     }
     const core = new ResolverCore(booted, { maxMatches: 4, managedHeapBudgetBytes: 1000 })
     expect(() => core.bootstrap('a', input)).toThrow(TypeError)
+  })
+
+  it('feeds a run of the log in one call when the match is on the turn it was written for', () => {
+    const core = new ResolverCore(fakeRuntime().booted, {
+      maxMatches: 4,
+      managedHeapBudgetBytes: 1000,
+    })
+    core.bootstrap('a', input)
+    const seal = (turn: number) => ({ event: { type: 'turn.sealed', payload: { turn } } })
+    const opened = (turn: number) => ({ event: { type: 'turn.opened', payload: { turn } } })
+    const steps = [seal(1), opened(2), seal(2)]
+    expect(core.applyEvents('a', 1, steps)).toEqual({
+      applied: true,
+      status: { stateHash: 'turn-3', turn: 3, finished: false },
+      seals: [
+        { turn: 1, stateHash: 'turn-2', finished: false },
+        { turn: 2, stateHash: 'turn-3', finished: false },
+      ],
+    })
+    // A second caller that read the match on turn 1 is told nothing was applied.
+    expect(core.applyEvents('a', 1, steps)).toEqual({
+      applied: false,
+      status: { stateHash: 'turn-3', turn: 3, finished: false },
+      seals: [],
+    })
+    expect(() => core.applyEvents('b', 1, steps)).toThrow(MatchNotHeldError)
+  })
+
+  it('releases a match whose feed failed part way', () => {
+    const core = new ResolverCore(fakeRuntime().booted, {
+      maxMatches: 4,
+      managedHeapBudgetBytes: 1000,
+    })
+    core.bootstrap('a', input)
+    const steps = [{ event: { turn: 1 } }, { event: { turn: 5 } }]
+    expect(() => core.applyEvents('a', 1, steps)).toThrow(ResolverRefusedError)
+    expect(core.status('a')).toBeNull()
   })
 
   it('releases the least recently used match beyond maxMatches', () => {

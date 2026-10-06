@@ -12,7 +12,9 @@ import {
   type Logger,
   RateLimiter,
   retentionPolicyFromDays,
+  type TurnResolver,
 } from '@chaos-overlords/kernel'
+import { startNodeMatchResolver } from '@chaos-overlords/resolver/node'
 import {
   type AppEnv,
   createApp,
@@ -56,6 +58,11 @@ export interface NodeRuntimeOptions {
    * facade with it; nothing else has a reason to.
    */
   clock?: Clock
+  /**
+   * The turn resolver, in place of the one `RESOLVE_TURNS` starts. Tests referee with a resolver
+   * whose rules are a digest chain; a server has no other reason to pass one.
+   */
+  resolver?: TurnResolver
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -106,6 +113,7 @@ export async function buildNodeRuntime(
     config.retentionBatchSize ?? (opened.dialect === 'sqlite' ? 10 : 50),
   )
 
+  const resolver = await startResolver(config, options, logger)
   let scheduler: TimerDeadlineScheduler | undefined
   let warnedAboutProxy = false
   const kernel = createKernel(
@@ -116,6 +124,7 @@ export async function buildNodeRuntime(
       clock,
       logger,
       scheduler: { schedule: (input) => (scheduler as TimerDeadlineScheduler).schedule(input) },
+      ...(resolver ? { resolver: resolver.resolver } : {}),
     },
     {
       retention,
@@ -180,6 +189,7 @@ export async function buildNodeRuntime(
       intervalMs: config.retentionIntervalMs,
     },
     bugReports: bugReports ? 'on' : 'off',
+    resolveTurns: resolver ? 'on' : 'off',
   })
   const closeStreams = (): void => {
     stopSweeper()
@@ -196,6 +206,7 @@ export async function buildNodeRuntime(
       closeStreams()
       await opened.close()
       await bugReports?.close()
+      await resolver?.close()
     },
   }
 }
@@ -270,4 +281,28 @@ function redactUrl(url: string): string {
   } catch {
     return '(unparseable url)'
   }
+}
+
+/**
+ * The turn resolver `RESOLVE_TURNS` asks for, in a worker thread of its own, or the one the caller
+ * passed. A server told to resolve turns that cannot start the resolver refuses to start rather
+ * than quietly running without it; a resolver that fails later only hands the turns it cannot
+ * resolve back to the reports.
+ */
+async function startResolver(
+  config: NodeConfig,
+  options: NodeRuntimeOptions,
+  logger: Logger,
+): Promise<{ resolver: TurnResolver; close(): Promise<void> } | undefined> {
+  if (options.resolver) return { resolver: options.resolver, close: async () => {} }
+  if (!config.resolveTurns) return undefined
+  const resolver = await startNodeMatchResolver({
+    ...(config.resolverMaxMatches === undefined ? {} : { maxMatches: config.resolverMaxMatches }),
+    ...(config.resolverManagedHeapMib === undefined
+      ? {}
+      : { managedHeapBudgetBytes: config.resolverManagedHeapMib * 1024 * 1024 }),
+  })
+  const { sessionVersion } = await resolver.describe()
+  logger.info('turn resolver started', { sessionVersion })
+  return { resolver, close: () => resolver.close() }
 }

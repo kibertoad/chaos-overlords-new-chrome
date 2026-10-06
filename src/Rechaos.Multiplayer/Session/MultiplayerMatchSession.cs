@@ -432,6 +432,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             case SnapshotAvailableEvent snapshot:
                 await AdoptSnapshotAsync(snapshot.Payload, cancellationToken).ConfigureAwait(false);
                 return;
+            case TurnDivergedEvent diverged:
+                await AdoptServerStateAsync(diverged.Payload, cancellationToken).ConfigureAwait(false);
+                return;
             case TurnOpenedEvent opened:
                 _notices.Enqueue(new MultiplayerNotice.DeadlineChanged(
                     opened.Payload.Turn, ParseInstant(opened.Payload.DeadlineAt)));
@@ -756,6 +759,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             token => _match.GetAsync(token), _pumpLane, cancellationToken).ConfigureAwait(false);
         var view = detail.Match;
         RequireResumableSession(view.SessionVersion, "match");
+        _refereed = view.Refereed == true;
         // Follow the roster's word on who hosts; the promoted client repairs desyncs.
         _isHost = string.Equals(view.HostPlayerId, PlayerId, StringComparison.Ordinal);
         _awaitedSlots = view.Players

@@ -6,6 +6,7 @@ import { WORKERD_RESOLVER_DEFAULTS } from '../dist/workerd/limits.js'
 import { startWorkerdResolver } from './harness/workerd.mjs'
 import {
   apply,
+  expectBatchedFeed,
   expectNativeHashes,
   missing,
   playToSnapshot,
@@ -29,6 +30,10 @@ describe.skipIf(missing)('the Cloudflare host under workerd', () => {
 
   it('reaches every hash the native build reached, from the start and from its snapshot', async () => {
     await expectNativeHashes(host.resolver, 'workerd-')
+  })
+
+  it('feeds a run of the log in one call, once', async () => {
+    await expectBatchedFeed(host.resolver, 'workerd-batch')
   })
 
   it('answers match_not_held for a match its object does not hold', async () => {

@@ -598,6 +598,21 @@ function postgresTurnRepository(db: PostgresDatabase): TurnRepository {
       return rows.length === 1
     },
     ...postgresVerdictReceipts(db),
+    async recordResolution(matchId, number, resolution) {
+      const rows = await db
+        .update(turns)
+        .set(resolution)
+        .where(
+          and(
+            eq(turns.matchId, matchId),
+            eq(turns.number, number),
+            ne(turns.status, 'open'),
+            isNull(turns.resolvedHash),
+          ),
+        )
+        .returning({ number: turns.number })
+      return rows.length === 1
+    },
     async claimDesyncAnnouncement(matchId, number, at) {
       const rows = await db
         .update(turns)

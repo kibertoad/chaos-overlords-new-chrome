@@ -91,6 +91,7 @@ public sealed partial class MultiplayerSessionTests
         new TurnView(1, TurnStatus.Open, "2026-09-10T12:00:00.000Z", deadlineAt, null, null, [], []),
         PreviousTurn: null,
         LastEventSeq: 7,
+        Refereed: null,
         "2026-09-10T11:59:00.000Z");
 
     /// <summary>The sealed set for a turn nobody ordered anything in, with honest digests.</summary>

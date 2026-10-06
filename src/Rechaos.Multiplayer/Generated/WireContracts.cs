@@ -32,6 +32,7 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonDerivedType(typeof(TurnSealedEvent), "turn.sealed")]
 [JsonDerivedType(typeof(TurnConfirmedEvent), "turn.confirmed")]
 [JsonDerivedType(typeof(TurnDesyncedEvent), "turn.desynced")]
+[JsonDerivedType(typeof(TurnDivergedEvent), "turn.diverged")]
 [JsonDerivedType(typeof(SnapshotAvailableEvent), "snapshot.available")]
 public abstract record MatchEvent(
     [property: JsonPropertyName("seq")] int Seq,
@@ -276,6 +277,20 @@ public sealed record TurnDesyncedEvent(
     string CreatedAt,
     [property: JsonPropertyName("payload")] TurnDesyncedEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "turn.desynced");
+
+public sealed record TurnDivergedEventPayload(
+    [property: JsonPropertyName("turn")] int Turn,
+    [property: JsonPropertyName("playerId")] string PlayerId,
+    [property: JsonPropertyName("stateHash")] string StateHash,
+    [property: JsonPropertyName("reportedStateHash")] string ReportedStateHash
+);
+
+public sealed record TurnDivergedEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] TurnDivergedEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "turn.diverged");
 
 public sealed record SnapshotAvailableEventPayload(
     [property: JsonPropertyName("turn")] int Turn,
@@ -638,6 +653,7 @@ public sealed record MatchView(
     [property: JsonPropertyName("turn")] TurnView? Turn,
     [property: JsonPropertyName("previousTurn")] TurnView? PreviousTurn,
     [property: JsonPropertyName("lastEventSeq")] int LastEventSeq,
+    [property: JsonPropertyName("refereed"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? Refereed,
     [property: JsonPropertyName("createdAt")] string CreatedAt
 );
 

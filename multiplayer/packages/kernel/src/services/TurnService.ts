@@ -29,6 +29,7 @@ import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
 import { requireInProgress, requireParticipant, requireTurn } from './guards'
 import { matchStartedEvent } from './MatchQueryService'
+import type { Referee, ResolveOutcome } from './Referee'
 import { publishSeatSummaries } from './SnapshotService'
 
 export type SealTrigger = 'ready' | 'deadline'
@@ -77,6 +78,7 @@ export class TurnService {
   constructor(
     private readonly deps: KernelDeps,
     private readonly publisher: EventPublisher,
+    private readonly referee?: Referee,
   ) {}
 
   async submitOrders(
@@ -184,7 +186,14 @@ export class TurnService {
     const match = await this.claimSeal(matchId, number, trigger)
     if (!match) return false
     await this.completeSeal(match, number)
+    await this.resolveOnServer(match, number)
     return true
+  }
+
+  /** Resolve a refereed match on the server through turn `number`; see `Referee.settleThrough`. */
+  private async resolveOnServer(match: Match, number: number): Promise<ResolveOutcome['kind']> {
+    if (!this.referee) return 'unavailable'
+    return this.referee.settleThrough(match, number, (turn) => this.settle(match.id, turn))
   }
 
   /**
@@ -514,6 +523,9 @@ export class TurnService {
       stateHash: null,
       desyncedAt: null,
       settledAt: null,
+      resolvedHash: null,
+      resolvedFinished: null,
+      resolvedSeq: null,
     }
     const created = await this.deps.storage.turns.open(
       turn,
@@ -642,6 +654,8 @@ export class TurnService {
 
   async report(principal: Principal, number: number, request: TurnReportRequest): Promise<void> {
     const { match, player } = principal
+    // A turn the server confirmed on its own state takes a report only to check it against that.
+    if (await this.referee?.judgeDecided(match, player, number, request.stateHash)) return
     requireInProgress(match)
     requireParticipant(player)
     const turn = await requireTurn(this.deps.storage.turns, match.id, number)
@@ -670,6 +684,7 @@ export class TurnService {
         reportedAt: this.deps.clock.now(),
       }))
     ) {
+      if (await this.referee?.judgeDecided(match, player, number, request.stateHash)) return
       throw new ConflictError('That turn is already confirmed', { reason: 'turn_confirmed' })
     }
     // The order set is the turn increment the server retains. Publishing these few derived counters
@@ -687,7 +702,17 @@ export class TurnService {
         })
       }
     }
+    // A refereed turn is decided by the server's state, not by this report. It is resolved here as
+    // well as at the seal, so a resolution the seal could not finish is retried by every report.
+    const resolved = await this.resolveOnServer(match, number)
+    // Another caller is feeding the match and records the turn; its verdict judges this report.
+    if (resolved === 'pending') return
     await this.settle(match.id, number)
+    // The verdict judged the reports it read when it confirmed the turn, and this one may have
+    // landed after that read. The announcement is keyed, so a report judged twice is told once.
+    if (resolved === 'resolved') {
+      await this.referee?.judgeDecided(match, player, number, request.stateHash)
+    }
   }
 
   /** Authenticated turn activity wins the race with an AI vote and restores the human seat. */
@@ -860,12 +885,14 @@ export class TurnService {
       // finished match `running` for good, since nothing else revisits a confirmed turn.
       // `settledAt` says whether the follow-ups completed, and they are all safe to repeat.
       if (turn.settledAt === null && turn.stateHash !== null) {
-        const reports = await this.deps.storage.turns.listReports(matchId, number)
-        const verdict = {
-          stateHash: turn.stateHash,
-          finished: confirmedFinished(reports, turn.stateHash),
-        }
-        return this.finishConfirmation(match, number, verdict, true)
+        const finished =
+          turn.resolvedHash === turn.stateHash
+            ? turn.resolvedFinished === true
+            : confirmedFinished(
+                await this.deps.storage.turns.listReports(matchId, number),
+                turn.stateHash,
+              )
+        return this.finishConfirmation(match, number, { stateHash: turn.stateHash, finished }, true)
       }
       // A desync pause lifted by this verdict whose lift was cut short: `resumeAfterDesync` is
       // private and `reevaluate` only visits sealed and desynced turns, so this is the way back.
@@ -873,6 +900,11 @@ export class TurnService {
         return this.resumeAfterDesync(matchId, this.deps.clock.now())
       }
       return false
+    }
+    if (turn.resolvedHash !== null && this.referee) {
+      const finish = (verdict: { stateHash: string; finished: boolean }) =>
+        this.finishConfirmation(match, number, verdict, false)
+      return this.referee.confirm(match, turn, finish)
     }
     const [players, reports, snapshot] = await Promise.all([
       this.deps.storage.players.listByMatch(matchId),

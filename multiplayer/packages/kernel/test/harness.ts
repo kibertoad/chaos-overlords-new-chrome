@@ -1,5 +1,5 @@
 import type { OrderDocument } from '@chaos-overlords/contracts'
-import { createKernel, type Kernel, type Principal } from '../src'
+import { createKernel, type Kernel, type Principal, type TurnResolver } from '../src'
 import {
   type CountingStorage,
   InMemoryStorage,
@@ -57,14 +57,22 @@ export interface Harness {
   }>
 }
 
-export function createHarness(): Harness {
+export function createHarness(options: { resolver?: TurnResolver } = {}): Harness {
   const storage = new InMemoryStorage()
   const clock = new ManualClock()
   const notifier = new RecordingNotifier()
   const scheduler = new RecordingScheduler()
   const streams = new RecordingStreamCloser()
   const logger = new RecordingLogger()
-  const kernel = createKernel({ storage, notifier, scheduler, streams, clock, logger })
+  const kernel = createKernel({
+    storage,
+    notifier,
+    scheduler,
+    streams,
+    clock,
+    logger,
+    ...(options.resolver ? { resolver: options.resolver } : {}),
+  })
 
   const principalOf = (token: string) => kernel.auth.authenticate(token)
 

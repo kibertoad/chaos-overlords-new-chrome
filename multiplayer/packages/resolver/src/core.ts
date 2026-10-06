@@ -35,6 +35,32 @@ export interface RestoreInput {
   logTurn?: number
 }
 
+/** One step of a feed: an event of the match's log, with its sealed set when it is a seal. */
+export interface FeedStep {
+  event: unknown
+  sealedOrders?: unknown
+}
+
+/** What a seal the feed applied resolved to. */
+export interface ResolvedSeal {
+  turn: number
+  stateHash: string
+  finished: boolean
+}
+
+/** The outcome of {@link ResolverCore.applyEvents}. */
+export interface FeedResult {
+  /**
+   * False when the match was not planning the turn the feed was written for, in which case
+   * nothing was applied: another caller fed the same events first.
+   */
+  applied: boolean
+  /** Where the match stands after the feed, or as it was found when nothing was applied. */
+  status: MatchStatus
+  /** Every seal the feed applied, in log order, with the state it left. */
+  seals: ResolvedSeal[]
+}
+
 export interface ResolverLimits {
   /** The most matches held at once; the least recently used goes first. */
   maxMatches: number
@@ -133,6 +159,48 @@ export class ResolverCore {
     return status
   }
 
+  /**
+   * Folds a run of the log in one call, if the match is planning `fromTurn`.
+   *
+   * A feed is not idempotent: a handover fed twice is applied twice. Two callers that each read
+   * where a match stands and then feed it the events after that point would otherwise both apply
+   * them. The check and the feed run here, in one call the host never interleaves with another, so
+   * the second caller finds the match on a later turn and is told nothing was applied.
+   *
+   * A feed that fails part way leaves a state that matches no point of the log, so the match is
+   * released and the error rethrown; the caller rebuilds it.
+   */
+  applyEvents(matchId: string, fromTurn: number, steps: readonly FeedStep[]): FeedResult {
+    const handle = this.use(matchId)
+    const found = this.statusOf(handle)
+    if (found.turn !== fromTurn) return { applied: false, status: found, seals: [] }
+    const seals: ResolvedSeal[] = []
+    try {
+      for (const step of steps) {
+        const turn = this.exports.Turn(handle)
+        const finished = this.exports.IsFinished(handle)
+        const sealed =
+          step.sealedOrders === undefined || step.sealedOrders === null
+            ? null
+            : JSON.stringify(step.sealedOrders)
+        this.refused(() => this.exports.ApplyEvent(handle, JSON.stringify(step.event), sealed))
+        if (!finished && sealedTurnOf(step.event) === turn) {
+          seals.push({
+            turn,
+            stateHash: this.exports.StateHash(handle),
+            finished: this.exports.IsFinished(handle),
+          })
+        }
+      }
+    } catch (error: unknown) {
+      this.release(matchId)
+      throw error
+    }
+    const status = this.statusOf(handle)
+    this.fit(matchId)
+    return { applied: true, status, seals }
+  }
+
   /** Where a held match stands, or `null` when it is not held. */
   status(matchId: string): MatchStatus | null {
     const handle = this.handles.get(matchId)
@@ -220,4 +288,12 @@ export class ResolverCore {
       throw error
     }
   }
+}
+
+/** The turn a `turn.sealed` event seals, or undefined for any other event. */
+function sealedTurnOf(event: unknown): number | undefined {
+  if (typeof event !== 'object' || event === null) return undefined
+  const { type, payload } = event as { type?: unknown; payload?: { turn?: unknown } }
+  if (type !== 'turn.sealed' || typeof payload?.turn !== 'number') return undefined
+  return payload.turn
 }

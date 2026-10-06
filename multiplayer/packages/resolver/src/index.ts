@@ -1,7 +1,10 @@
 export * from './archive.js'
 export type {
   BootstrapInput,
+  FeedResult,
+  FeedStep,
   MatchStatus,
+  ResolvedSeal,
   ResolverInfo,
   ResolverLimits,
   RestoreInput,

@@ -21,6 +21,7 @@ import type {
   Turn,
   TurnOrders,
   TurnReport,
+  TurnResolution,
 } from '../domain/entities'
 
 /**
@@ -287,6 +288,13 @@ export interface TurnRepository {
    * every sweep, for every paused match.
    */
   claimDesyncAnnouncement(matchId: string, number: number, at: Date): Promise<boolean>
+  /**
+   * Record what the server's resolver reached for a sealed turn, in ONE statement conditional on
+   * the turn being past `open` and on no resolution being recorded yet. True only for the caller
+   * that wrote it: a resolution is a fact about the sealed set, and two callers that resolved the
+   * same set reached the same state, so the first one stands.
+   */
+  recordResolution(matchId: string, number: number, resolution: TurnResolution): Promise<boolean>
   /**
    * Stamp `settledAt` on a confirmed turn whose follow-ups are all done, in ONE statement
    * conditional on it being null. True only for the caller that stamped it.

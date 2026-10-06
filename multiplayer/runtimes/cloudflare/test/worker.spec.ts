@@ -1,11 +1,17 @@
 import { env, SELF } from 'cloudflare:test'
-import { defineHttpConformance, defineStorageConformance } from '@chaos-overlords/conformance'
+import {
+  defineHttpConformance,
+  defineRefereeConformance,
+  defineStorageConformance,
+} from '@chaos-overlords/conformance'
+import { FakeTurnResolver } from '@chaos-overlords/kernel/testing'
+import type { ResolverService } from '@chaos-overlords/resolver/cloudflare'
 import { createApp } from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import { drizzle } from 'drizzle-orm/d1'
 import { describe, expect, it } from 'vitest'
 import { buildContainer, containerFor } from '../src/index'
-import { retentionPolicyFor } from '../src/kernel'
+import { buildKernel, resolverFor, retentionPolicyFor } from '../src/kernel'
 
 describe('D1', () => {
   defineStorageConformance({
@@ -17,6 +23,37 @@ describe('worker facade', () => {
   defineHttpConformance({
     fetch: (input, init) => SELF.fetch(input, init),
     publicListing: true,
+  })
+})
+
+/**
+ * Refereed turns over D1 under workerd, with the game's rules replaced by the kernel's digest-chain
+ * resolver. The binding to the resolver Worker and the rules themselves are held to the native
+ * build by the resolver package's workerd tests and tools/ResolverDeterminism.
+ */
+describe('refereed worker facade', () => {
+  const app = createApp({
+    ...buildContainer(env),
+    kernel: buildKernel(env, { resolver: new FakeTurnResolver() }),
+  })
+  defineRefereeConformance({
+    fetch: async (input, init) => app.request(input.replace('http://conformance', ''), init, env),
+  })
+})
+
+describe('turn resolver configuration', () => {
+  const binding = {} as ResolverService
+
+  it('referees only when RESOLVE_TURNS is set and the RESOLVER binding is there', () => {
+    expect(resolverFor({ ...env, RESOLVER: binding })).toBeUndefined()
+    expect(resolverFor({ ...env, RESOLVE_TURNS: 'false', RESOLVER: binding })).toBeUndefined()
+    expect(resolverFor({ ...env, RESOLVE_TURNS: 'true', RESOLVER: binding })).toBeDefined()
+  })
+
+  it('falls back to deciding turns by reports when the binding is missing', () => {
+    const { RESOLVER: _unbound, ...unbound } = { ...env, RESOLVE_TURNS: 'true' }
+    expect(resolverFor(unbound)).toBeUndefined()
+    expect(buildKernel(unbound).deps.resolver).toBeUndefined()
   })
 })
 
