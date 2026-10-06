@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
@@ -37,15 +36,12 @@ public static class WireOrder
     /// <c>op</c>.
     /// </summary>
     /// <remarks>
-    /// Declared attributes only (<c>inherit: false</c>): a union's members inherit the attribute from
-    /// their base, and counting them would say the same three names several times over.
+    /// The code generator reads them off the <see cref="JsonPolymorphicAttribute"/> declarations it
+    /// writes, so the list needs no reflection, which the trimmed WebAssembly resolver could not rely
+    /// on.
     /// </remarks>
-    private static readonly HashSet<string> Discriminators = typeof(Generated.MatchEvent).Assembly
-        .GetTypes()
-        .Select(type => type.GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false))
-        .Select(attribute => attribute?.TypeDiscriminatorPropertyName)
-        .OfType<string>()
-        .ToHashSet(StringComparer.Ordinal);
+    private static readonly HashSet<string> Discriminators =
+        Generated.WireJsonContext.TypeDiscriminators.ToHashSet(StringComparer.Ordinal);
 
     /// <summary>
     /// The same document with every union's tag first, at any depth.

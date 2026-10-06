@@ -62,12 +62,12 @@ public sealed record MultiplayerGameSettings(
 
     /// <summary>The blob the host sends and every client reads back.</summary>
     public IReadOnlyDictionary<string, JsonElement> ToWire() =>
-        JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+        JsonSerializer.Deserialize(
             JsonSerializer.Serialize(new Wire(
                 (int)Scenario, (int)Duration, (int)AiMentality, [.. Portraits],
                 (int)AiPolicy, AllowLateJoin),
-                WriteOptions),
-            WireJson.Options)!;
+                WireJson.Contract<Wire>(WriteOptions)),
+            WireJson.Contract<Dictionary<string, JsonElement>>(WireJson.Options))!;
 
     /// <summary>
     /// The settings inside a blob the server relayed.
@@ -80,8 +80,9 @@ public sealed record MultiplayerGameSettings(
     public static MultiplayerGameSettings FromWire(IReadOnlyDictionary<string, JsonElement> blob)
     {
         ArgumentNullException.ThrowIfNull(blob);
-        var wire = JsonSerializer.Deserialize<Wire>(
-            JsonSerializer.Serialize(blob, WireJson.Options), ReadOptions)
+        var wire = JsonSerializer.Deserialize(
+            JsonSerializer.Serialize(blob, WireJson.Contract<IReadOnlyDictionary<string, JsonElement>>(WireJson.Options)),
+            WireJson.Contract<Wire>(ReadOptions))
             ?? throw new MultiplayerProtocolException("the match carries no game settings");
         return new MultiplayerGameSettings(
             Defined<ScenarioId>(wire.Scenario, nameof(wire.Scenario)),
@@ -127,7 +128,7 @@ public sealed record MultiplayerGameSettings(
     /// member is a refactor nobody expects to break a lobby, and the numeric value is what the save
     /// format already carries.
     /// </remarks>
-    private sealed record Wire(
+    internal sealed record Wire(
         int Scenario,
         int Duration,
         int AiMentality,

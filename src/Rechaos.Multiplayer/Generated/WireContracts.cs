@@ -51,7 +51,7 @@ public sealed record LobbyPlayerJoinedEvent(
     [property: JsonPropertyName("payload")] LobbyPlayerJoinedEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "lobby.playerJoined");
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<LobbyPlayerLeftEventPayloadReason>))]
 public enum LobbyPlayerLeftEventPayloadReason
 {
     [JsonStringEnumMemberName("left")]
@@ -129,7 +129,7 @@ public sealed record MatchTakeoverVoteRequestedEvent(
     [property: JsonPropertyName("payload")] MatchTakeoverVoteRequestedEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "match.takeoverVoteRequested");
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<MatchTakeoverVoteCastEventPayloadDecision>))]
 public enum MatchTakeoverVoteCastEventPayloadDecision
 {
     [JsonStringEnumMemberName("computer")]
@@ -358,7 +358,7 @@ public sealed record DismissNotificationOp(
     int Player
 ) : OrderOp(Player, "dismissNotification");
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<BugReportCodec>))]
 public enum BugReportCodec
 {
     [JsonStringEnumMemberName("none")]
@@ -369,7 +369,7 @@ public enum BugReportCodec
     Zstd
 }
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<BugReportMatchType>))]
 public enum BugReportMatchType
 {
     [JsonStringEnumMemberName("single")]
@@ -411,7 +411,7 @@ public sealed record SubmitBugReportRequest(
     [property: JsonPropertyName("state"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] BugReportState? State
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<BugReportReceiptStateStored>))]
 public enum BugReportReceiptStateStored
 {
     [JsonStringEnumMemberName("stored")]
@@ -428,7 +428,7 @@ public sealed record BugReportReceipt(
     [property: JsonPropertyName("stateStored")] BugReportReceiptStateStored StateStored
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<ErrorCode>))]
 public enum ErrorCode
 {
     [JsonStringEnumMemberName("bad_request")]
@@ -525,7 +525,7 @@ public sealed record SubmitOrdersRequest(
     [property: JsonPropertyName("ready")] bool Ready
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<TakeoverVoteRequestDecision>))]
 public enum TakeoverVoteRequestDecision
 {
     [JsonStringEnumMemberName("computer")]
@@ -561,7 +561,7 @@ public sealed record UploadSnapshotRequest(
     [property: JsonPropertyName("seatSummaries")] IReadOnlyList<AiSeatSummary> SeatSummaries
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<MatchStatus>))]
 public enum MatchStatus
 {
     [JsonStringEnumMemberName("lobby")]
@@ -576,7 +576,7 @@ public enum MatchStatus
     Abandoned
 }
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<PlayerStatus>))]
 public enum PlayerStatus
 {
     [JsonStringEnumMemberName("active")]
@@ -591,7 +591,7 @@ public enum PlayerStatus
     Kicked
 }
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<TurnStatus>))]
 public enum TurnStatus
 {
     [JsonStringEnumMemberName("open")]
@@ -704,7 +704,7 @@ public sealed record LobbyList(
     [property: JsonPropertyName("matches")] IReadOnlyList<LobbyListing> Matches
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<MatchVisibility>))]
 public enum MatchVisibility
 {
     [JsonStringEnumMemberName("public")]

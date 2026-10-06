@@ -623,9 +623,21 @@ does not move the session version: nothing stored changes meaning.
 
 Measured for the decision on a 26-turn match: under the Mono interpreter a turn takes 190 to 800 ms
 on Node and about 470 ms under workerd, against 20 to 120 ms natively, and the runtime starts in
-under 150 ms. The WebAssembly heap is 46 MiB after start and 80 to 96 MiB with one or two matches
-held, within a 128 MB Cloudflare isolate but not by much: a trimmed bundle, which needs
-source-generated JSON contracts in `Rechaos.Core`, takes about 15 MiB off the start.
+under 150 ms.
+
+The bundle is the trimmed publish of `Rechaos.Resolver.Wasm`: 3.2 MB of assemblies and a 3.0 MB
+runtime. Trimming strips the constructor parameter names that reflection-based System.Text.Json
+binds records by, so `Rechaos.Core` reads and writes its definitions, saves and replays through
+`CoreJsonContext`, and `WireJson` reads and writes the wire through `WireJsonContext` (generated with
+the C# contracts by `pnpm codegen`). Both assemblies are marked AOT-compatible, so a JSON call that
+would fall back to reflection fails the build. `JsonContractTests` holds the contracts to the bytes
+the reflection-based serializer wrote and pins the definition fingerprint saves are checked against.
+Trimmed, the WebAssembly heap is 32 MiB after start and 55 MiB with one to four 26-turn matches held
+(46 MiB and 80 to 96 MiB untrimmed), against a 128 MB Cloudflare isolate.
+
+Speed is a separate lever, left alone while a turn costs about half a second: Mono AOT (which needs
+the `wasm-tools` workload in CI) or NativeAOT-LLVM once it leaves the experimental feed. Either is
+measured against the interpreter's 470 ms per turn under workerd before it is adopted.
 
 ## Two languages, one contract
 
@@ -634,9 +646,12 @@ be derived from the other rather than typed twice. `pnpm codegen` in `multiplaye
 derivation: [`@game-infra/valibot-to-csharp`](https://www.npmjs.com/package/@game-infra/valibot-to-csharp)
 walks the valibot schemas and emits `src/Rechaos.Multiplayer/Generated/WireContracts.cs`, whose
 records deserialize the same JSON; a second pass reads the endpoint contracts and emits
-`RouteTemplates.cs`, which `MultiplayerApiRouteTests` holds the C# client's paths to. Both files are
-committed, so building the game never needs Node, and CI runs `pnpm codegen:check` to fail if either
-has drifted from the schemas.
+`RouteTemplates.cs`, which `MultiplayerApiRouteTests` holds the C# client's paths to. A third
+file, `WireJsonContext.cs`, is the source-generated JSON contract of every record and enum in
+`WireContracts.cs`, which `WireJson` reads and writes through instead of reflection; the script also
+gives the string enums the generic `JsonStringEnumConverter<TEnum>` those contracts need. The files
+are committed, so building the game never needs Node, and CI runs `pnpm codegen:check` to fail if
+any has drifted from the schemas.
 
 Four things the schemas say exist for that crossing:
 
