@@ -82,8 +82,9 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   key reaches the drawing and nothing else. A DirectDraw wrapper cannot help, since the windowed
   original draws with GDI only (FND-GFX-004): DDrawCompat left the same 5089 white pixels (the
   next decision, which still holds for the wrapper). No compatibility layer changed the result.
-- Boundary: the write changes one argument of one `SetBkColor` call and only when it is the
-  16-bit key. A capture shows what the original draws on a 16-bit display only where the key is
+- Boundary: the write changes the immediate operand the compositor takes its 16-bit key from
+  (FND-PLATFORM-015), once, before the game runs; the 8-bit key and every other byte stay as
+  they are. A capture shows what the original draws on a 16-bit display only where the key is
   the difference; FND-PLATFORM-014 records the capture of the first planning entry only.
 
 ## 2026-10-05 — Take captures of the original without a DirectDraw wrapper

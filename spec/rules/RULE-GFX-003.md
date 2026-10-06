@@ -4,7 +4,7 @@ title: A keyed image copy leaves out the pixels of maximum white
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-PLATFORM-008, FND-GFX-001, FND-PLATFORM-014]
+evidence: [FND-PLATFORM-015, FND-GFX-001, FND-GFX-007, FND-PLATFORM-014, FND-AWARDS-004]
 conflicting: []
 split_with: []
 related: [FMT-GFX-001, RULE-GFX-002]
@@ -13,18 +13,21 @@ related: [FMT-GFX-001, RULE-GFX-002]
 ## Summary
 
 The copy wrapper has a keyed mode in which every source pixel of maximum white
-is left out and every other pixel is copied unchanged. Its constant callers
-draw the city renderer's site markers and one Last Turn illustration. Runs of
-the original show that the selected-sector frame and the grid's edge tabs go
-through the same compositor [FND-PLATFORM-014]; the code that draws them this
-way has not been read.
+is left out and every other pixel is copied unchanged. 72 of the wrapper's 77
+calls ask for it: the interface sheet's frames, markers, stamps and tabs, the
+city renderer's site markers, one Last Turn illustration and the setup screen's
+arrow overlay among them [FND-PLATFORM-015]. Runs of the original show the
+selected-sector frame and the grid's edge tabs drawn through it
+[FND-PLATFORM-014].
 
 ## When it runs
 
-Whenever wrapper `0x00427864` is called with mode 1 for an unscaled copy. Its
-constant mode 1 callers are the site marker copy at `0x00412AC4` inside
-`0x004123CC`, and the Last Turn illustration copy inside `0x0044FD6C`
-(FND-PLATFORM-008). A scaled copy ignores the mode and is opaque.
+Whenever wrapper `0x00427864` is called with mode 1 for an unscaled copy. A
+scaled copy ignores the mode and is opaque. The mode-1 calls are listed in
+FND-PLATFORM-015: 64 of them copy cells of the interface sheet `PX00129`
+(FND-UI-031), and 8 copy from surface 7, which holds `PX00150` for the site markers,
+`PX06004` for the Last Turn illustration, `PX00140` for the setup overlay and
+`PX00201` for the award icons when they are drawn.
 
 ## Parameters
 
@@ -47,7 +50,9 @@ for p in 0..count(source):
 ```
 
 At 8-bit depth the key is `RGB(255,255,255)` and the pixels whose colour is
-that white are left out in the same way.
+that white are left out in the same way. The compositor picks the key by the
+display depth and sets it with its first `SetBkColor` call; its second call
+restores the colour the device context had [FND-PLATFORM-015].
 
 ## Outputs
 
@@ -58,6 +63,9 @@ game state.
 
 - Black and every near-white colour are copied; only the one maximum white
   is the key.
+- Of the interface sheet's 85,137 white pixels, every one a copy reads lies in
+  a cell copied with the key, except one pixel of the fifth Overlord portrait,
+  which is copied opaquely and drawn white [FND-GFX-007].
 - No shipped `PX16` pixel has bit 15 set (FND-GFX-001), so every pixel the
   copy compares is a plain RGB555 colour.
 - The 16-bit key names `0x7FFF` only on a 16-bit surface. On a 32-bit desktop
@@ -76,8 +84,8 @@ None known.
 
 - How a display driver converts the 16-bit key at the boundary between 5-bit
   and 8-bit channels is decided at run time and has not been observed
-  (FND-PLATFORM-008).
-- The 8-bit key `RGB(255,255,255)` comes from FND-PLATFORM-008's reading of a
-  single `SetBkColor` call, but a 16-bit run reached two, at `0x00427C84` and
-  `0x00427CB8`, and the second always passes `RGB(255,255,255)`
-  (FND-PLATFORM-014). Which of them sets the 8-bit key has not been read.
+  (FND-PLATFORM-015).
+- Which images surface 7 holds for the mode-1 copies in `fn_004499A9`,
+  `fn_0040C4C5` and `fn_0046913D` has not been traced (FND-PLATFORM-015).
+- No run at 8-bit depth has been made, so the 8-bit key rests on the static
+  reading alone.
