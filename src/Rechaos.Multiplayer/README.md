@@ -67,4 +67,6 @@ whose `HotSeatRecorder` refuses to hand out a recorder in an online match, becau
 got one would apply a command locally and never record it as an order, and the two look identical at
 the point of the call.
 `tools/OnlineSmoke` plays a short match against a running server with two clients in one process,
-which is the end-to-end check the .NET test suite cannot make on its own.
+which is the end-to-end check the .NET test suite cannot make on its own. It then plays a second
+match with a spectator following it through `MultiplayerSpectatorWatch`, two turns behind, and checks
+the spectator's city against the players' hashes on every released turn.
