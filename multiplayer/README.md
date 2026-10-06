@@ -167,7 +167,8 @@ and defaults as the Node environment variables above. A deployment also wants th
 the sweeper and the retention sweeps are written for —
 and Cloudflare rate limiting rules on `/api/v1/matches`, `/api/v1/matches/join` and
 `/api/v1/bug-reports`: the in-Worker limiter counts per isolate, so it softens abuse on one edge node
-rather than globally.
+rather than globally. Replacing it with a global limiter is
+[#455](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/455).
 
 For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all four to throwaway local resources.
 It is a development and test fixture, not a deployment.
@@ -345,7 +346,8 @@ Rules that keep the two runtimes honest:
 - **Run one process.** Events fan out in memory, so a second instance behind a load balancer would
   wake only its own subscribers and a client could sit silent through everything the other instance
   wrote — with no error to show for it. Postgres is for durability and familiar operations, not for
-  scaling out; see "Limitations and next steps" in `docs/MULTIPLAYER.md`.
+  scaling out; see "Limitations and next steps" in `docs/MULTIPLAYER.md` and
+  [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
 - No transactions: D1 has none. Every race is a single conditional statement whose row count says
   who won (see the port comments in `packages/kernel/src/ports/storage.ts`).
 - A write a unique index can refuse returns `false` instead of throwing. Driver error shapes are
