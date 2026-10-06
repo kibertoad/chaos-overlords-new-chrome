@@ -459,6 +459,134 @@ public sealed class MultiplayerEventStreamTests
     }
 
     /// <summary>
+    /// A line that never ends is refused once it passes the frame ceiling, not read until memory
+    /// runs out.
+    /// </summary>
+    /// <remarks>
+    /// The body here never ends either, so a reader that grew its line buffer until it found a
+    /// newline would hang rather than fail; the timeout turns that into a failure.
+    /// </remarks>
+    [Fact(Timeout = 30_000)]
+    public async Task RefusesALineThatPassesTheFrameCeilingWithoutEnding()
+    {
+        using var body = new EndlessStream("data: ", 'x');
+
+        var refused = await Assert.ThrowsAsync<MultiplayerProtocolException>(async () =>
+        {
+            await foreach (var _ in EventStreamParser.ReadAsync(body, TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        Assert.Contains("line passed", refused.Message, StringComparison.Ordinal);
+        // Refused within a buffer of the ceiling, not after reading on regardless.
+        Assert.InRange(
+            body.CharactersRead,
+            EventStreamParser.MaximumFrameChars,
+            EventStreamParser.MaximumFrameChars + 16 * 1024);
+    }
+
+    /// <summary>
+    /// Short lines that never reach the blank line ending their frame are refused at the ceiling.
+    /// </summary>
+    [Fact]
+    public async Task RefusesAFrameWhoseLinesPassTheCeilingWithoutABlankLine()
+    {
+        var line = "data: " + new string('x', 1000) + "\n";
+        var body = new System.Text.StringBuilder();
+        while (body.Length <= EventStreamParser.MaximumFrameChars + line.Length) body.Append(line);
+
+        var refused = await Assert.ThrowsAsync<MultiplayerProtocolException>(
+            () => ReadAsync(body.ToString()));
+
+        Assert.Contains("frame passed", refused.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A long frame under the ceiling is still read whole.</summary>
+    [Fact]
+    public async Task ReadsALongFrameUnderTheCeiling()
+    {
+        var padding = new System.Text.StringBuilder();
+        var comment = ": " + new string('x', 1000) + "\n";
+        while (padding.Length + comment.Length < EventStreamParser.MaximumFrameChars / 2)
+            padding.Append(comment);
+
+        var events = await ReadAsync(
+            padding + Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}"));
+
+        Assert.IsType<LobbyHostChangedEvent>(Assert.Single(events));
+    }
+
+    /// <summary>
+    /// A body that ends inside a line delivers the frames before it and nothing of that line.
+    /// </summary>
+    [Fact]
+    public async Task DropsAnUnterminatedLastLine()
+    {
+        var events = await ReadAsync(
+            Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}") + "id: 4");
+
+        Assert.IsType<LobbyHostChangedEvent>(Assert.Single(events));
+    }
+
+    /// <summary>
+    /// Every fresh connection establishes the protocol again before it asks for the stream.
+    /// </summary>
+    /// <remarks>
+    /// A stream that reconnects through a redeploy may be talking to a different server build, and
+    /// every call after it would go out under a contract neither side agreed to.
+    /// </remarks>
+    [Fact]
+    public async Task HandshakesAgainBeforeEveryReconnect()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        var stream = new MatchEventStream(
+            Handle(http),
+            new RetryPolicy(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(5), MaxAttempts: 0,
+                MaxElapsed: TimeSpan.FromMinutes(1)));
+        await using var read = PendingRead.Start(stream);
+
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") == 1 && !server.Events.Ended);
+        Assert.Equal(1, server.CallsTo(HttpMethod.Post, "/handshake"));
+        server.DropStream();
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") == 2);
+
+        Assert.Equal(2, server.CallsTo(HttpMethod.Post, "/handshake"));
+        var paths = server.Requests.Select(request => request.Path).ToArray();
+        Assert.Equal(
+            ["/handshake", "/stream", "/handshake", "/stream"],
+            paths.Select(path => path[path.LastIndexOf('/')..]).ToArray());
+    }
+
+    /// <summary>
+    /// A server that came back speaking another protocol ends the stream with the version mismatch
+    /// rather than being read under the old contract.
+    /// </summary>
+    [Fact]
+    public async Task EndsTheStreamWhenTheServerCameBackOnAnotherProtocol()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        var stream = new MatchEventStream(
+            Handle(http),
+            new RetryPolicy(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(5), MaxAttempts: 0,
+                MaxElapsed: TimeSpan.FromMinutes(1)));
+        await using var read = PendingRead.Start(stream);
+
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") == 1 && !server.Events.Ended);
+        server.Answer(
+            HttpMethod.Post,
+            "/handshake",
+            new HandshakeResponse(MultiplayerProtocolVersion.Current + 1));
+        server.DropStream();
+
+        var failure = await Assert.ThrowsAsync<MultiplayerProtocolException>(() => read.Step);
+        Assert.Contains("protocol version mismatch", failure.Message, StringComparison.Ordinal);
+        Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/stream"));
+    }
+
+    /// <summary>
     /// An event read together with the <c>MoveNextAsync</c> that is in flight on it.
     /// </summary>
     /// <remarks>
@@ -522,6 +650,47 @@ public sealed class MultiplayerEventStreamTests
             await events.DisposeAsync();
             stop.Dispose();
         }
+    }
+
+    /// <summary>A body that starts with a prefix and then repeats one character forever.</summary>
+    private sealed class EndlessStream(string prefix, char fill) : Stream
+    {
+        private readonly byte[] _prefix = System.Text.Encoding.UTF8.GetBytes(prefix);
+        private readonly byte _fill = (byte)fill;
+        private long _read;
+
+        /// <summary>How many bytes the reader has taken, which is how many characters here.</summary>
+        public long CharactersRead => Interlocked.Read(ref _read);
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            var position = CharactersRead;
+            for (var i = 0; i < count; i++)
+            {
+                var at = position + i;
+                buffer[offset + i] = at < _prefix.Length ? _prefix[at] : _fill;
+            }
+            Interlocked.Add(ref _read, count);
+            return count;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 
     private static MatchHandle Handle(HttpClient http) =>
