@@ -28,13 +28,14 @@ internal static class OriginalAiActionTargetEncoding
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(command);
-        if (TargetBytesWritten(command.Action) == 0) return AiActionTarget.None;
         return command.Action switch
         {
             GangAction.Attack => AttackTarget(state, command),
             GangAction.Influence => new(
                 checked((byte)(command.Target.Id % MatchLimits.SitesPerSector)), 0),
-            _ => new(checked((byte)command.Target.Id), 0)
+            GangAction.Move or GangAction.Equip or GangAction.Research =>
+                new(checked((byte)command.Target.Id), 0),
+            _ => AiActionTarget.None
         };
     }
 
