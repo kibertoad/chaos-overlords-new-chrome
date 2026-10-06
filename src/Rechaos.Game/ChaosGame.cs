@@ -482,7 +482,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             EndUpdate(gameTime, keyboard, mouse);
             return;
         }
-        if (_replayPlayback is not null)
+        if (_replayViewer is not null)
         {
             UpdateReplayPlayback(gameTime, keyboard, mouse);
             EndUpdate(gameTime, keyboard, mouse);
@@ -785,7 +785,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         // F10 opened the replay viewer this frame. _state is now a historical frame, so the click
         // dispatch and the combat-presentation capture below must not run against it.
-        if (_replayPlayback is not null)
+        if (_replayViewer is not null)
         {
             EndUpdate(gameTime, keyboard, mouse);
             return;

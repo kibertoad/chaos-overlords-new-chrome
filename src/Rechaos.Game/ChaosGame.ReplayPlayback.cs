@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -6,67 +7,71 @@ using Rechaos.Core.Persistence;
 
 namespace Rechaos.Game;
 
+/// <summary>
+/// DEV-UI-026: F10 plays the journal F6 saved, read-only, over the city screen. The live match is
+/// set aside, not replaced: nothing advances it while the viewer is open, and closing the viewer
+/// puts it back as it was.
+/// </summary>
 public sealed partial class ChaosGame
 {
-    private static readonly double[] ReplaySpeeds = [0.25, 0.5, 1, 2, 4, 8];
-    private static readonly string[] ReplayControlLabels =
-        ["START", "PREV", "PLAY", "NEXT", "END", "SPEED", "EXIT"];
-    private const int ReplayControlLeft = 12;
-    private const int ReplayControlWidth = 90;
-    private MatchReplayPlayback? _replayPlayback;
+    private ReplayViewer? _replayViewer;
     private MatchState? _matchBeforeReplay;
     private int _cursorBeforeReplay;
     private int _gangBeforeReplay;
     private string _messageBeforeReplay = string.Empty;
-    private bool _replayPlaying;
-    private int _replaySpeed = 2;
-    private double _replayElapsed;
-    private string _replayStatus = string.Empty;
+
+    /// <summary>
+    /// The seat the replay's city is drawn for: the replay's active player, or while no one is
+    /// active (upkeep, execution, hiring) the last one that was, so the board does not jump to
+    /// seat 0 and back on every phase.
+    /// </summary>
+    private PlayerId? _replaySeat;
 
     private void OpenReplayPlayback()
     {
-        if (_state is null || _session is not null) return;
-        try
+        if (_state is null || _session is not null || _definitions is null) return;
+        MatchReplayPlaybackLoadResult opened;
+        // Opening replays and checks the whole journal, which takes a moment in a long match.
+        using (_pointer.Busy())
         {
-            var opened = MatchReplayStore.OpenPlaybackRecoveringBackup(
-                _replayPath, _state.Definitions);
-            // Playback swallows pointer releases, so a drag or press begun on the live board
-            // would otherwise complete against it after exit.
-            CancelCurrentInteraction();
-            _matchBeforeReplay = _state;
-            _cursorBeforeReplay = _cursor;
-            _gangBeforeReplay = _selectedGangIndex;
-            _messageBeforeReplay = _message;
-            _replayPlayback = opened.Playback;
-            _replayPlaying = false;
-            _replayElapsed = 0;
-            _replayStatus = opened.RecoveredFromBackup
-                ? opened.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
-                : "VERIFIED REPLAY";
-            _planningTimer.Pause(_inputTime);
-            ShowReplayFrame();
+            try
+            {
+                opened = MatchReplayStore.OpenPlaybackRecoveringBackup(_replayPath, _definitions);
+            }
+            catch (Exception exception) when (exception is IOException or InvalidDataException
+                                              or UnauthorizedAccessException)
+            {
+                var failure = ReplayFailure.Of(exception);
+                _diagnostics?.Write("replay.open.failed", new Dictionary<string, string?>
+                {
+                    ["kind"] = failure.Kind.ToString(),
+                    ["error"] = exception.ToString()
+                });
+                _message = ReplayViewer.DescribeFailure(failure);
+                return;
+            }
         }
-        catch (Exception exception) when (exception is IOException or InvalidDataException
-                                          or UnauthorizedAccessException)
-        {
-            _message = IncompatibleSave.IsIncompatible(exception)
-                ? "REPLAY INCOMPATIBLE"
-                : exception is FileNotFoundException or DirectoryNotFoundException ? "REPLAY NOT FOUND"
-                : exception is InvalidDataException ? ReplayVerificationMessage(exception)
-                : "REPLAY LOAD FAILED";
-        }
+        if (opened.PrimaryFailure is { } primaryFailure)
+            _diagnostics?.Write("replay.open.backup", new Dictionary<string, string?>
+            {
+                ["primaryFailure"] = primaryFailure.Kind.ToString()
+            });
+        // The viewer takes every pointer release, so a drag or press begun on the live board
+        // would otherwise complete against it after exit.
+        CancelCurrentInteraction();
+        _matchBeforeReplay = _state;
+        _cursorBeforeReplay = _cursor;
+        _gangBeforeReplay = _selectedGangIndex;
+        _messageBeforeReplay = _message;
+        _replayViewer = new ReplayViewer(opened.Playback, opened.PrimaryFailure);
+        _replaySeat = null;
+        _planningTimer.Pause(_inputTime);
+        ShowReplayFrame();
     }
-
-    private static string ReplayVerificationMessage(Exception exception) =>
-        exception.Message.Contains("diverg", StringComparison.OrdinalIgnoreCase)
-            ? "REPLAY DIVERGED"
-            : "REPLAY VERIFICATION FAILED";
 
     private void UpdateReplayPlayback(GameTime gameTime, KeyboardState keyboard, MouseState mouse)
     {
-        // A failed seek closes playback part way through this method, so the later handlers read
-        // this local and SeekReplay and CloseReplayPlayback ignore a viewer that is already shut.
-        if (_replayPlayback is not { } playback) return;
+        if (_replayViewer is null) return;
         if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)
             || PointerButtonEdges.Pressed(mouse.RightButton, _previousMouse.RightButton))
         {
@@ -74,95 +79,104 @@ public sealed partial class ChaosGame
             return;
         }
 
-        if (Pressed(keyboard, Keys.Space)) _replayPlaying = !_replayPlaying;
-        if (Pressed(keyboard, Keys.Up)) _replaySpeed = Math.Min(_replaySpeed + 1, ReplaySpeeds.Length - 1);
-        if (Pressed(keyboard, Keys.Down)) _replaySpeed = Math.Max(_replaySpeed - 1, 0);
-        if (Pressed(keyboard, Keys.Left)) SeekReplay(playback.Position - 1);
-        if (Pressed(keyboard, Keys.Right)) SeekReplay(playback.Position + 1);
-        if (Pressed(keyboard, Keys.Home)) SeekReplay(0);
-        if (Pressed(keyboard, Keys.End)) SeekReplay(playback.StepCount);
+        if (Pressed(keyboard, Keys.Space)) RunReplayCommand(ReplayViewerCommand.TogglePlay);
+        if (Pressed(keyboard, Keys.Left)) RunReplayCommand(ReplayViewerCommand.PreviousStep);
+        if (Pressed(keyboard, Keys.Right)) RunReplayCommand(ReplayViewerCommand.NextStep);
+        if (Pressed(keyboard, Keys.PageUp)) RunReplayCommand(ReplayViewerCommand.PreviousTurn);
+        if (Pressed(keyboard, Keys.PageDown)) RunReplayCommand(ReplayViewerCommand.NextTurn);
+        if (Pressed(keyboard, Keys.Home)) RunReplayCommand(ReplayViewerCommand.Start);
+        if (Pressed(keyboard, Keys.End)) RunReplayCommand(ReplayViewerCommand.End);
+        if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.OemPlus) || Pressed(keyboard, Keys.Add))
+            RunReplayCommand(ReplayViewerCommand.Faster);
+        if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.OemMinus) || Pressed(keyboard, Keys.Subtract))
+            RunReplayCommand(ReplayViewerCommand.Slower);
+        // The city's own keys for the selected sector, so any frame's sector values can be read.
+        if (Pressed(keyboard, Keys.W)) MoveCursor(0, -1);
+        if (Pressed(keyboard, Keys.S)) MoveCursor(0, 1);
+        if (Pressed(keyboard, Keys.A)) MoveCursor(-1, 0);
+        if (Pressed(keyboard, Keys.D)) MoveCursor(1, 0);
 
         if (PointerButtonEdges.Pressed(mouse.LeftButton, _previousMouse.LeftButton)
-            && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var point)
-            && point.Y >= 408 && point.Y < 432)
-        {
-            switch (Math.Clamp(point.X / ReplayControlWidth, 0, ReplayControlLabels.Length - 1))
-            {
-                case 0: SeekReplay(0); break;
-                case 1: SeekReplay(playback.Position - 1); break;
-                case 2: _replayPlaying = !_replayPlaying; break;
-                case 3: SeekReplay(playback.Position + 1); break;
-                case 4: SeekReplay(playback.StepCount); break;
-                case 5: _replaySpeed = (_replaySpeed + 1) % ReplaySpeeds.Length; break;
-                default: CloseReplayPlayback(); break;
-            }
-        }
+            && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var point))
+            HandleReplayClick(point);
 
-        if (!_replayPlaying || _replayPlayback is null) return;
-        _replayElapsed += gameTime.ElapsedGameTime.TotalSeconds;
-        var interval = 0.35 / ReplaySpeeds[_replaySpeed];
-        var stepsThisFrame = 0;
-        while (_replayElapsed >= interval && _replayPlaying && stepsThisFrame++ < 16)
-        {
-            _replayElapsed -= interval;
-            if (!TryMoveReplay(cursor => cursor.MoveNext()))
-            {
-                _replayPlaying = false;
-                break;
-            }
-        }
+        // A command above may have closed the viewer on a failed step.
+        if (_replayViewer is not { } viewer) return;
+        TryMoveReplay(() => viewer.Advance(gameTime.ElapsedGameTime));
     }
 
-    private void SeekReplay(int position)
+    private void HandleReplayClick(Point point)
     {
-        if (_replayPlayback is null) return;
-        _replayPlaying = false;
-        _replayElapsed = 0;
-        var target = Math.Clamp(position, 0, _replayPlayback.StepCount);
-        TryMoveReplay(cursor =>
+        if (_replayViewer is not { } viewer) return;
+        if (ReplayControlLayout.CommandAt(point) is { } command)
         {
-            cursor.Seek(target);
-            return true;
-        });
+            RunReplayCommand(command);
+            return;
+        }
+        if (ReplayControlLayout.TimelinePositionAt(point, viewer.Playback.StepCount) is { } position)
+        {
+            TryMoveReplay(() => viewer.SeekTo(position));
+            return;
+        }
+        if (!ReplayControlLayout.Panel.Contains(point) && CityMapLayout.TrySectorAt(point, out var sector))
+            _cursor = sector;
+    }
+
+    private void RunReplayCommand(ReplayViewerCommand command)
+    {
+        if (_replayViewer is not { } viewer) return;
+        if (command == ReplayViewerCommand.Exit)
+        {
+            CloseReplayPlayback();
+            return;
+        }
+        TryMoveReplay(() => viewer.Execute(command));
     }
 
     /// <summary>
-    /// Moves the cursor and shows the frame it lands on. The journal was verified when opened, so a
-    /// failure here is a defect rather than bad data; it ends playback instead of the process, which
-    /// would otherwise write the replayed frame as the crash-recovery save.
+    /// Runs a move of the viewer and shows the frame it lands on. The journal was verified when it
+    /// was opened and each step is checked again as it is applied, so a failure here means this
+    /// build stopped reproducing a step it reproduced a moment ago; the viewer closes with the
+    /// reason instead of letting the exception end the process.
     /// </summary>
-    private bool TryMoveReplay(Func<MatchReplayPlayback, bool> move)
+    private void TryMoveReplay(Func<bool> move)
     {
-        if (_replayPlayback is null) return false;
+        if (_replayViewer is null) return;
+        bool moved;
         try
         {
-            if (!move(_replayPlayback)) return false;
+            moved = move();
         }
         catch (InvalidDataException exception)
         {
+            _diagnostics?.Write("replay.step.failed", new Dictionary<string, string?>
+            {
+                ["error"] = exception.ToString()
+            });
             CloseReplayPlayback();
-            _message = ReplayVerificationMessage(exception);
-            return false;
+            _message = ReplayViewer.DescribeFailure(ReplayFailure.Of(exception));
+            return;
         }
-        ShowReplayFrame();
-        return true;
+        if (moved) ShowReplayFrame();
     }
 
     private void ShowReplayFrame()
     {
-        if (_replayPlayback is null) return;
-        _state = _replayPlayback.State;
+        if (_replayViewer is null) return;
+        _state = _replayViewer.Playback.State;
+        if (_state.Coordinator.ActivePlayer is { } active) _replaySeat = active;
         _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
         _selectedGangIndex = 0;
         _message = string.Empty;
     }
 
+    /// <summary>Puts the live match back. Does nothing when no viewer is open.</summary>
     private void CloseReplayPlayback()
     {
-        // A second close would restore the null left by the first and drop the live match.
-        if (_replayPlayback is null) return;
-        _replayPlayback = null;
-        _replayPlaying = false;
+        // A second close would restore the null the first one left and drop the live match.
+        if (_replayViewer is null) return;
+        _replayViewer = null;
+        _replaySeat = null;
         _state = _matchBeforeReplay;
         _matchBeforeReplay = null;
         _cursor = _cursorBeforeReplay;
@@ -173,21 +187,54 @@ public sealed partial class ChaosGame
 
     private void DrawReplayControls(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        if (_replayPlayback is null) return;
-        batch.Draw(pixel, new Rectangle(0, 390, 640, 70), new Color(5, 12, 14));
-        var position = _replayPlayback.Position;
-        var step = _replayPlayback.CurrentStep?.Kind.ToString().ToUpperInvariant() ?? "OPENING STATE";
-        font.Draw(batch, $"REPLAY {position}/{_replayPlayback.StepCount}  {step}",
-            new Vector2(ReplayControlLeft, 394), Color.Lime, 1);
-        // Each label sits at the left of the band UpdateReplayPlayback hit-tests for it.
-        for (var index = 0; index < ReplayControlLabels.Length; index++)
-            font.Draw(batch, ReplayControlLabels[index],
-                new Vector2(ReplayControlLeft + index * ReplayControlWidth, 413), Color.Gold, 1);
-        var status = position == _replayPlayback.StepCount && position > 0
-            ? "END OF REPLAY"
-            : _replayStatus;
-        font.Draw(batch,
-            $"{(_replayPlaying ? "PLAYING" : "PAUSED")}  {ReplaySpeeds[_replaySpeed]:0.##}X  {status}",
-            new Vector2(ReplayControlLeft, 437), Color.White, 1);
+        if (_replayViewer is not { } viewer || _state is not { } state) return;
+        var playback = viewer.Playback;
+        var panel = ReplayControlLayout.Panel;
+        batch.Draw(pixel, panel, new Color(5, 12, 14));
+        DrawBorder(batch, pixel, panel, Color.DarkCyan, 1);
+
+        var columns = ReplayControlLayout.TextColumns;
+        var line = panel.Top + 6;
+        void Text(string text, Color color)
+        {
+            font.Draw(batch, text.Length <= columns ? text : text[..columns],
+                new Vector2(ReplayControlLayout.TextLeft, line), color, 1);
+            line += 12;
+        }
+
+        Text("REPLAY", Color.Gold);
+        Text(string.Create(CultureInfo.InvariantCulture, $"TURN {playback.TurnAt(playback.Position)}"), Color.Lime);
+        Text(string.Create(CultureInfo.InvariantCulture,
+            $"STEP {playback.Position} OF {playback.StepCount}"), Color.Lime);
+        Text(ReplayViewer.DescribePhase(state), Color.Lime);
+        Text(ReplayViewer.DescribeStep(state, playback.CurrentStep, columns), Color.White);
+
+        var timeline = ReplayControlLayout.Timeline;
+        batch.Draw(pixel, timeline, new Color(24, 37, 39));
+        batch.Draw(pixel, timeline with
+        {
+            Width = ReplayControlLayout.TimelineFill(playback.Position, playback.StepCount)
+        }, Color.DarkCyan);
+        DrawBorder(batch, pixel, timeline, Color.Gray, 1);
+
+        foreach (var (bounds, command) in ReplayControlLayout.Buttons)
+        {
+            batch.Draw(pixel, bounds, new Color(24, 37, 39));
+            DrawBorder(batch, pixel, bounds, Color.Gray, 1);
+            var label = ReplayControlLayout.Label(command, viewer.Playing);
+            var width = label.Length * OriginalFontLayout.CellWidth;
+            font.Draw(batch, label,
+                new Vector2(bounds.Center.X - width / 2, bounds.Center.Y - OriginalFontLayout.GlyphHeight / 2),
+                Color.Gold, 1);
+        }
+
+        line = ReplayControlLayout.Buttons[^1].Bounds.Bottom + 10;
+        Text(viewer.DescribeTransport(), Color.White);
+        Text(viewer.DescribeStatus(), viewer.AtEnd ? Color.Gold : Color.Lime);
+        if (viewer.PrimaryFailure is { } primaryFailure)
+            Text(ReplayViewer.DescribePrimaryFailure(primaryFailure), Color.OrangeRed);
+
+        line = panel.Bottom - 4 * 12;
+        foreach (var help in ReplayControlLayout.KeyHelp) Text(help, Color.Gray);
     }
 }

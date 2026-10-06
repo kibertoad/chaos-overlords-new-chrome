@@ -32,6 +32,11 @@
     <!-- The deviations, for the check that a screen comparison masks only what a deviation of
          that screen draws (ScreenCaptureMasks). -->
     <None Include="../../DEVIATIONS.md" Link="DEVIATIONS.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The save and replay compatibility policy: saves from stable releases that every later
+         build must load, and the format document whose stated versions must be the current ones
+         (SaveCompatibilityPolicyTests). -->
+    <None Include="../fixtures/stable-saves/*.rchsave" LinkBase="stable-saves" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../docs/NATIVE-SAVE-FORMAT.md" Link="docs/NATIVE-SAVE-FORMAT.md" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="xunit.v3" Version="4.0.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />

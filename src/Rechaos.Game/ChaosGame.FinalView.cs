@@ -9,11 +9,16 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// The player the planning screens are drawn for and act as: the one in its final view once
-    /// the match has ended, otherwise the active player. The final view belongs to the live match,
-    /// so a replay frame, which may come from a match with fewer seats, uses its own active player.
+    /// the match has ended, otherwise the active player. While a replay is shown (DEV-UI-026) it is
+    /// the replay's seat instead: the final view belongs to the live match, and a replay frame may
+    /// come from a match with fewer seats.
     /// </summary>
-    private PlayerId? PlanningViewer =>
-        (_replayPlayback is null ? _finalViewPlayer : null) ?? _state?.Coordinator.ActivePlayer;
+    private PlayerId? PlanningViewer => _replayViewer is not null
+        ? _replaySeat ?? _state?.Coordinator.ActivePlayer
+        : _finalViewPlayer ?? _state?.Coordinator.ActivePlayer;
+
+    /// <summary>The live match's final view, which a replay frame never shows.</summary>
+    private PlayerId? ShownFinalViewPlayer => _replayViewer is null ? _finalViewPlayer : null;
 
     /// <summary>
     /// SCR-UI-003, FND-OBJECTIVE-004: a match the end evaluation finished gives every local human

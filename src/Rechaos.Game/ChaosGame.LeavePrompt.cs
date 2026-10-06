@@ -45,6 +45,9 @@ public sealed partial class ChaosGame
     /// </summary>
     protected override void OnExiting(object sender, ExitingEventArgs args)
     {
+        // DEV-UI-026: the question is about the live match, and the save-first prompt is drawn
+        // over it, so a replay shown at the time closes first.
+        CloseReplayPlayback();
         if (!_exitConfirmed && MatchUnsaved)
         {
             args.Cancel = true;

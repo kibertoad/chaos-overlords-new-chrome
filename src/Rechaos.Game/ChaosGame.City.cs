@@ -252,7 +252,7 @@ public sealed partial class ChaosGame
             new Vector2(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
         // FND-UI-040, FND-STATE-010: completion replaces the timed countdown in the final view.
         // FND-UI-019: string cells are copied opaquely, like the numeric cells.
-        if (_finalViewPlayer is not null)
+        if (ShownFinalViewPlayer is not null)
         {
             DrawOpaqueText(batch, pixel, font, ExecutableStrings.Get(StatusConsoleLayout.CompleteString),
                 StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY);
@@ -291,7 +291,7 @@ public sealed partial class ChaosGame
             && LampInLitPhase(_referenceFrame?.Lamps?.Comlink))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
-        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))
+        if (ShownFinalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)

@@ -2,6 +2,7 @@
 
 <!-- doc-index:begin toc depth=3 -->
 - [The version number](#the-version-number)
+- [Save and replay compatibility](#save-and-replay-compatibility)
 - [Local package builds](#local-package-builds)
 - [GitHub release workflow](#github-release-workflow)
   - [Windows: Authenticode through SSL.com eSigner](#windows-authenticode-through-sslcom-esigner)
@@ -57,6 +58,23 @@ so read its stamp instead:
 
 Both packaging scripts already make that check before wrapping a package in an
 installer, and the release workflow repeats it against the installed game.
+
+## Save and replay compatibility
+
+Before 1.0.0 a release may change any save or replay format. From 1.0.0 on, the
+policy in [NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md#compatibility-policy)
+applies, and a release checks it against the previous release's tag:
+
+- If `NativeSaveSerializer.CurrentFormatVersion` moved, the release loads the
+  previous release's saves through a migration, and `tests/fixtures/stable-saves/`
+  holds a save of the new format. `SaveCompatibilityPolicyTests` fails the
+  workflow's test run otherwise. A 1.x release may not drop a save format;
+  that takes a `major` release, and its notes say so.
+- If `MatchReplaySerializer.CurrentFormatVersion` moved, the release notes say
+  that replays saved by earlier releases no longer play and that the earlier
+  release still plays them.
+- The 1.0.0 release itself adds the first fixture before the workflow is run,
+  while `version.txt` still names the last 0.x release.
 
 ## Local package builds
 

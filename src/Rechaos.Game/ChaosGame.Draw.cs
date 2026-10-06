@@ -225,7 +225,7 @@ public sealed partial class ChaosGame
     /// <summary>What sits above every screen: combat playback, the timer, votes, menu, reconnect.</summary>
     private void DrawScreenOverlays(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        if (_replayPlayback is not null)
+        if (_replayViewer is not null)
         {
             DrawReplayControls(batch, pixel, font);
             return;
