@@ -123,11 +123,12 @@ public static class StatusConsoleTooltip
         }
         if (scenario is not { } mode) return lines;
         lines.Add("");
-        if (ScenarioCatalog.Get(mode).IsTimed)
+        if (StatusConsolePresentation.ShowsCountdown(mode))
         {
             lines.Add("THE NUMBER ON THE RIGHT COUNTS THE TURNS");
             lines.Add("LEFT AFTER THE ONE BEING PLANNED.");
-            lines.Add($"THE MATCH ENDS AFTER TURN {ScenarioCatalog.Turns(duration)}.");
+            lines.Add($"THE MATCH ENDS AFTER TURN {ScenarioCatalog.Turns(duration)},");
+            lines.Add("OR SOONER IF ONE OVERLORD IS LEFT.");
         }
         else
             lines.Add($"{ExecutableStrings.ScenarioTitle(mode)} HAS NO TIME LIMIT.");
@@ -266,9 +267,15 @@ public static class StatusConsolePresentation
 {
     /// <summary>FND-UI-040, FND-OBJECTIVE-003: the planning-entry countdown excludes this turn.</summary>
     public static int? RemainingTurns(ScenarioId scenario, GameDuration duration, int currentTurn) =>
-        ScenarioCatalog.Get(scenario).IsTimed
+        ShowsCountdown(scenario)
             ? ScenarioCatalog.TurnLimit(scenario, duration) - currentTurn
             : null;
+
+    /// <summary>
+    /// Whether the date row draws the countdown beside the calendar. The date-row tooltip asks the
+    /// same question, so it explains a countdown exactly when one is drawn.
+    /// </summary>
+    public static bool ShowsCountdown(ScenarioId scenario) => ScenarioCatalog.Get(scenario).IsTimed;
 
     /// <summary>
     /// The status-console SCORE row: the scenario score the last evaluation stored, when the match

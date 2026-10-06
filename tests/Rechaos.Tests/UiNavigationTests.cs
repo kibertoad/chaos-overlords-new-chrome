@@ -170,7 +170,8 @@ public sealed partial class UiNavigationTests
     public void EveryPlaceThatNamesAScenarioUsesTheTitleTheConsoleDraws()
     {
         // RULE-UI-009, FND-UI-040: the console draws string resource scenario + 1. The rebuild's
-        // own texts name the scenario with the same string.
+        // own texts name the scenario with the same string. The online session list draws the
+        // same ExecutableStrings.ScenarioTitle call inside ChaosGame and has no seam to test here.
         const string title = "THE BIG 40";
         Assert.Equal(title, ExecutableStrings.ScenarioTitle(ScenarioId.Big40));
         Assert.Equal(title, ScenarioSetupTooltip.Lines(ScenarioId.Big40, GameDuration.OneYear)[0]);
@@ -178,6 +179,15 @@ public sealed partial class UiNavigationTests
         Assert.Equal(title, DiscoveryFilters.Label(DiscoveryFilters.Scenario, (int)ScenarioId.Big40 + 1));
         Assert.Equal(("SCENARIO", title), OnlineLobbySummary.Rows(ScenarioId.Big40, GameDuration.OneYear,
             AiDifficulty.CrimeLord, PlanningTimeLimit.TwoMinutes)[0]);
+
+        var state = OriginalMatchFactory.Create(Rechaos.Core.Assets.BundledOriginalData.Load(),new MatchSetup(
+            ScenarioId.Big40, GameDuration.OneYear, 1996,
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+        var entries = PlayerRankingPresentation.Project(state);
+        Assert.StartsWith($"{title} RATES:", PlayerRankingTooltip.Lines(state, entries[0], entries)[2]);
+        Assert.StartsWith($"{title} - TURN ", SaveSlotCatalog.SuggestedName(state));
+        Assert.Contains($"  {title}  ", new SaveSlotSummary(0, "ANY", DateTimeOffset.UnixEpoch,
+            ScenarioId.Big40, 1, 3, "SINGLE", AiPolicyMode.Original).Details);
     }
 
     [Fact]
@@ -192,7 +202,8 @@ public sealed partial class UiNavigationTests
         Assert.Equal("DATE", timed[0]);
         Assert.Contains("2050", string.Join(' ', timed));
         Assert.Contains("LEFT AFTER THE ONE BEING PLANNED.", timed);
-        Assert.Contains("THE MATCH ENDS AFTER TURN 52.", timed);
+        Assert.Contains("THE MATCH ENDS AFTER TURN 52,", timed);
+        Assert.Equal("OR SOONER IF ONE OVERLORD IS LEFT.", timed[^1]);
 
         var untimed = StatusConsoleTooltip.At(point, ScenarioId.Big40, GameDuration.OneYear);
         Assert.Equal("THE BIG 40 HAS NO TIME LIMIT.", untimed[^1]);
