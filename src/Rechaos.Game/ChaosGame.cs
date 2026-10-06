@@ -195,6 +195,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private CityConsoleControl? _pressedCityConsoleControl;
     private CityConsoleAction? _pressedCityConsoleAction;
     private ClientScreen _pressedCityConsoleReturnScreen;
+    private bool _pressedCityConsoleByRightButton;
     private short? _draggedHireDefinitionId;
     private Point _hirePressPoint;
     private Point _setupPlayerPressPoint;
@@ -814,6 +815,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void HandleClick(Point point)
     {
+        // FND-UI-063: the console tile helper loops until the right button that pressed it comes up,
+        // and a left press meanwhile reaches nothing.
+        if (_pressedCityConsoleControl is not null && _pressedCityConsoleByRightButton) return;
         if (HandleOnlineErrorPopupClick(point) || HandleReconnectPopupClick(point)) return;
         if (_gameMenuOpen)
         {

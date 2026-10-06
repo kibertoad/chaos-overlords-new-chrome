@@ -951,7 +951,9 @@ const deviations = new Map();
       if (!/^DEV-[A-Z][A-Z0-9]*-\d{3,}$/.test(s.title)) { problem(path, `heading ${s.title} is not a deviation ID`); continue; }
       if (deviations.has(s.title)) problem(path, `${s.title} is used twice`);
       if (!areas.includes(areaOf(s.title))) problem(path, `${s.title}: area is not in the area list`);
-      const items = [...s.text.matchAll(/^- ([A-Za-z ]+): (.*)$/gm)].map((m) => [m[1], m[2]]);
+      // An item's value runs on over the indented lines that follow it.
+      const items = [...s.text.matchAll(/^- ([A-Za-z ]+): (.*(?:\n {2}\S.*)*)$/gm)]
+        .map((m) => [m[1], m[2].replace(/\n {2}/g, " ")]);
       const item = Object.fromEntries(items);
       const order = ["Departs from", ...("Replaces" in item ? ["Replaces"] : []), "Reason", "Setting", "Default", ...("Justification" in item ? ["Justification"] : []), ...("Tests" in item ? ["Tests"] : []), "Dropped"];
       if (items.slice(0, order.length).map((x) => x[0]).join("|") !== order.join("|")) problem(path, `${s.title}: items must be ${order.join(", ")} in that order`);

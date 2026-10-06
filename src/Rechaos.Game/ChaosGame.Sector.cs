@@ -152,27 +152,53 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// SCR-UI-004: a press of either button on the Sector workspace. The right button reaches only
-    /// the back control and the cards, the two regions the entry lets it press.
+    /// SCR-UI-004, FND-UI-063: the sector view takes a right press where it takes a left one. The
+    /// console tiles are held until the right button comes up. The back control and an offer's
+    /// reject cross act at the press, since their held-button helper waits only on the left
+    /// button, and an offer's or a card's portrait starts no drag. The neighbouring cells and the
+    /// sites take only a left double-click.
     /// </summary>
     private void HandleSectorRightPress(Point point)
     {
         if (_idleGangWarningOpen || PressSectorBack(point, rightButton: true) || _state is null) return;
         var playerId = ViewingPlayer(_state);
-        PressSectorCard(_state, playerId, SectorCardGangs(_state, playerId), point, rightButton: true);
+        if (SectorOpponentGangs.PortraitAt(_state, point) is { } portraitOwner)
+        {
+            SelectSectorGangCardOwner(_state, playerId, portraitOwner);
+            return;
+        }
+        if (BeginCityConsolePress(point, ClientScreen.Sector, rightButton: true)) return;
+        var rejectSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Reject, point);
+        if (rejectSlot >= 0)
+        {
+            BeginHireReject(rejectSlot, ClientScreen.Sector);
+            CompleteHireReject(point);
+            return;
+        }
+        var cards = SectorCardGangs(_state, playerId);
+        if (SectorDetailLayout.GroupOrderStrip.Contains(point))
+        {
+            if (ShowsGroupOrderStrip(_state, playerId, cards))
+                OpenGroupCommands(_state, playerId,
+                    SectorDetailLayout.GroupOrderIsRecurring(point));
+            return;
+        }
+        PressSectorCard(_state, playerId, cards, point, rightButton: true);
     }
 
     /// <summary>
-    /// FND-UI-015: the back control returns to the city when the press is released inside it. The
-    /// held-button helper plays slot 3 when the press starts (FND-AUDIO-011).
+    /// FND-UI-015: the back control returns to the city when a left press is released inside it.
+    /// The held-button helper plays slot 3 when the press starts (FND-AUDIO-011). It waits only on
+    /// the left button, so a right press returns at once (FND-UI-063).
     /// </summary>
     private bool PressSectorBack(Point point, bool rightButton)
     {
         if (!SectorDetailLayout.Back.Contains(point)) return false;
         AcceptInput();
-        _pressedPanelFace = (SectorDetailLayout.Back, ClientScreen.Sector,
-            () => _screens.Show(ClientScreen.City));
-        _pressedPanelFaceByRightButton = rightButton;
+        if (rightButton) _screens.Show(ClientScreen.City);
+        else
+            _pressedPanelFace = (SectorDetailLayout.Back, ClientScreen.Sector,
+                () => _screens.Show(ClientScreen.City));
         return true;
     }
 

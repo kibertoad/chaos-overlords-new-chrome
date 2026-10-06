@@ -411,8 +411,8 @@ public sealed partial class ChaosGame
     /// helper (FND-UI-032), the Last Turn Events page arrows (FND-EVENT-005) and the held-button
     /// helper behind the faces of the panels, the Comlink Send panel, the attack picker, the
     /// idle-gang warning, Detailed Combat's Exit face and the sector view's back control
-    /// (FND-UI-046, FND-UI-047). Each loop runs until the left button comes up, so the rebuild's
-    /// right-button hold of the back control does not count.
+    /// (FND-UI-046, FND-UI-047). Each loop runs until the button that pressed it comes up: the left
+    /// one, or the right one for a console tile pressed with it (FND-UI-063).
     /// </summary>
     private bool HoldsPointerOutsideEventPump() =>
         HoldsCityPointer()
@@ -421,7 +421,7 @@ public sealed partial class ChaosGame
         || _pressedComlinkSendButton is not null
         || _pressedAttackFace is not null
         || _combatExit.Tracking
-        || _pressedPanelFace is not null && !_pressedPanelFaceByRightButton;
+        || _pressedPanelFace is not null;
 
     /// <summary>
     /// Whether the original would be in a loop that does not call the event pump: a pointer hold

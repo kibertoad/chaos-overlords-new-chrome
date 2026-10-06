@@ -140,9 +140,14 @@ public sealed partial class ChaosGame
             case ClientScreen.Hire:
                 _screens.Show(_managementReturnScreen);
                 break;
+            case ClientScreen.City:
+                // FND-UI-063: on the city only the console tiles take the right button.
+                if (rightPress is { } cityPoint)
+                    BeginCityConsolePress(cityPoint, ClientScreen.City, rightButton: true);
+                break;
             case ClientScreen.Sector:
-                // SCR-UI-004: the right button presses the back control and the cards as the left
-                // does, and nothing else.
+                // SCR-UI-004, FND-UI-063: the right button presses what the left one presses,
+                // apart from the cells and sites, which take only a double-click.
                 if (rightPress is { } point) HandleSectorRightPress(point);
                 else _screens.Show(ClientScreen.City);
                 break;
