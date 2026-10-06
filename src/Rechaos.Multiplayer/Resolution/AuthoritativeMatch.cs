@@ -35,6 +35,12 @@ public sealed class AuthoritativeMatch
 
     private MatchReplayRecorder Replay => _history.Replay;
 
+    /// <summary>
+    /// The recorder the match is folded onto: the state, and the journal of every step since the
+    /// bootstrap or snapshot it started from.
+    /// </summary>
+    internal MatchReplayRecorder Recorder => Replay;
+
     /// <summary>The session version this build resolves: see <see cref="MultiplayerSessionVersion"/>.</summary>
     /// <remarks>
     /// A resolver can stand in for the clients only on a match stored under the session version it

@@ -67,10 +67,20 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private readonly ConnectionHealth.Lane _outboxLane;
     private readonly Lock _disposalGate = new();
 
-    /// <summary>The match as this client holds it, and the log it was folded from.</summary>
-    private readonly MatchHistory _history;
+    /// <summary>
+    /// The match as this client holds it, and the log it was folded from; null in a match played
+    /// from views, where this client holds no match of its own (see <see cref="PlaysFromViews"/>).
+    /// </summary>
+    private readonly MatchHistory? _history;
 
-    private MatchReplayRecorder Replay => _history.Replay;
+    /// <summary>The fold of a lockstep match. Nothing in a match played from views reaches it.</summary>
+    private MatchHistory History => _history
+        ?? throw new InvalidOperationException("A match played from views holds no state of its own.");
+
+    private MatchReplayRecorder Replay => History.Replay;
+
+    /// <summary>The slot of every player id the roster seats, late joins included.</summary>
+    private IReadOnlyDictionary<string, int> Seats => _history?.Seats ?? _viewSeats;
     private Task? _pump;
     private Task? _outbox;
     private Task? _reporter;
@@ -133,7 +143,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
 
     private MultiplayerMatchSession(
         MultiplayerSessionOptions options,
-        MatchReplayRecorder replay,
+        MatchReplayRecorder? replay,
         PlayerView self,
         Dictionary<string, int> slotsByPlayerId,
         bool isRestoring)
@@ -147,7 +157,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _backgroundRetryPolicy = options.BackgroundRetryPolicy ?? RetryPolicy.Background;
         _reportFlushGrace = options.ReportFlushGrace ?? DefaultReportFlushGrace;
         _stoppingToken = _stopping.Token;
-        _history = new MatchHistory(replay, slotsByPlayerId, logTurn: 1);
+        _history = replay is null ? null : new MatchHistory(replay, slotsByPlayerId, logTurn: 1);
+        _viewSeats = new Dictionary<string, int>(slotsByPlayerId, StringComparer.Ordinal);
+        _viewTurn = options.View.CurrentTurn;
         _awaitedSlots = [.. slotsByPlayerId.Values];
         _resumeAfterSeq = options.ResumeAfterSeq;
         PlayerId = self.Id;
@@ -163,9 +175,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _pumpLane = _health.Open("pump");
         _outboxLane = _health.Open("outbox");
         _reportLane = _health.Open("report");
-        Bootstrap = new MatchBootstrap(
-            MatchStateClone.Of(replay.State, options.Definitions),
-            ParseInstant(options.View.Turn?.DeadlineAt));
+        Bootstrap = replay is null
+            ? null
+            : new MatchBootstrap(
+                MatchStateClone.Of(replay.State, options.Definitions),
+                ParseInstant(options.View.Turn?.DeadlineAt));
         // A restoring session says it after `Resumed`, from the view it resumes on.
         if (SeedReadiness(options.View) && !isRestoring) PublishReadiness();
     }
@@ -194,14 +208,16 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     public TimeSpan ServerTimeOffset => _match.ServerTimeOffset;
 
     /// <summary>
-    /// The match as generated from the seed, for the interface to plan turn 1 on.
+    /// The match as generated from the seed, for the interface to plan turn 1 on; null in a match
+    /// played from views, which this client cannot generate.
     /// </summary>
     /// <remarks>
     /// Immutable. When <see cref="IsRestoring"/>, the state the interface should actually play on
     /// arrives later through <see cref="MultiplayerNotice.Resumed"/>; this is only where a match
-    /// begins, and it is never rewritten to be anything else.
+    /// begins, and it is never rewritten to be anything else. A match played from views always
+    /// starts by restoring, from the first view the server serves.
     /// </remarks>
-    public MatchBootstrap Bootstrap { get; }
+    public MatchBootstrap? Bootstrap { get; }
 
     /// <summary>
     /// Bootstraps the match from the server's seed and roster and starts the event pump.
@@ -217,8 +233,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         var view = options.View;
         RequireResumableSession(view.SessionVersion, "match");
         ValidateBootstrapView(view, options.OwnPlayerId);
-        var seed = view.Seed
-            ?? throw new MultiplayerProtocolException("the match has started without a seed");
         var self = view.Players.FirstOrDefault(player => player.Id == options.OwnPlayerId)
             ?? throw new MultiplayerProtocolException("this client is not on the match roster");
         if (!MatchBootstrapFactory.IsSeated(self))
@@ -227,6 +241,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 $"this client was given slot {self.Slot}, which is not a seat at this table");
         }
         var settings = MultiplayerGameSettings.FromWire(view.Settings.GameSettings);
+        if (view.SeatViews == true) return StartFromViews(options, self);
+        var seed = view.Seed
+            ?? throw new MultiplayerProtocolException("the match has started without a seed");
         var state = MatchBootstrapFactory.Create(options.Definitions, seed, settings, view.Players);
         var replay = new MatchReplayRecorder(state);
         CommandPhase.Enter(replay);
@@ -408,6 +425,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
 
     private async Task HandleAsync(MatchEvent @event, CancellationToken cancellationToken)
     {
+        if (PlaysFromViews && await HandleInViewMatchAsync(@event, cancellationToken).ConfigureAwait(false))
+            return;
         switch (@event)
         {
             case TurnSealedEvent sealedTurn:
@@ -570,7 +589,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         // otherwise; see `SealedSetAsync`.
         var sealedOrders = await SealedSetAsync(turn, cancellationToken).ConfigureAwait(false);
         var includedOwnOrders = sealedOrders.Players.Any(entry => entry.Slot == Slot);
-        return (_history.ApplySealedSet(sealedOrders, announcedOrderSetHash), includedOwnOrders);
+        return (History.ApplySealedSet(sealedOrders, announcedOrderSetHash), includedOwnOrders);
     }
 
     /// <summary>

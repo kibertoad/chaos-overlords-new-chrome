@@ -73,10 +73,12 @@ public sealed partial class MultiplayerMatchSession
     /// <returns>False when the match is over and there is nothing left to pump.</returns>
     private async Task<bool> RebuildFromHistoryAsync(int replayFromSeq, CancellationToken cancellationToken)
     {
+        if (PlaysFromViews)
+            return await ResumeFromViewAsync(replayFromSeq, cancellationToken).ConfigureAwait(false);
         // Where the log stands at the sequence the replay starts after, read BEFORE a snapshot can
         // move the state past it: a match starts on turn 1, and a resync starts where the live
         // state is. See `MatchHistory.LogTurn`.
-        _history.BeginWalk(replayFromSeq == 0 ? 1 : Replay.State.Coordinator.Turn);
+        History.BeginWalk(replayFromSeq == 0 ? 1 : Replay.State.Coordinator.Turn);
         var (view, snapshot) = await ReadViewAndLatestSnapshotAsync(cancellationToken).ConfigureAwait(false);
         if (view.Status == MatchStatus.Abandoned)
         {
@@ -227,7 +229,7 @@ public sealed partial class MultiplayerMatchSession
                 $"the snapshot for turn {snapshot.Turn} resumes at "
                 + $"{restored.Coordinator.Phase} turn {restored.Coordinator.Turn}");
         }
-        _history.Adopt(new MatchReplayRecorder(restored));
+        History.Adopt(new MatchReplayRecorder(restored));
         _canonicalThroughTurn = snapshot.Turn;
     }
 
@@ -340,6 +342,8 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private void PrefetchSealedSets(EventPage page, int throughSeq, CancellationToken cancellationToken)
     {
+        // A match played from views reads no sealed set while it runs; they are withheld.
+        if (PlaysFromViews) return;
         var started = 0;
         foreach (var @event in page.Events)
         {
@@ -371,6 +375,11 @@ public sealed partial class MultiplayerMatchSession
         MatchEvent @event,
         CancellationToken cancellationToken)
     {
+        if (PlaysFromViews)
+        {
+            ApplyHistoricalViewEvent(@event);
+            return;
+        }
         switch (@event)
         {
             case MatchTakeoverVoteRequestedEvent requested:
@@ -384,21 +393,21 @@ public sealed partial class MultiplayerMatchSession
                 return;
             case MatchPlayerTakenOverEvent takenOver:
                 _takeoverVotes.Remove(takenOver.Payload.PlayerId);
-                _history.Apply(takenOver);
+                History.Apply(takenOver);
                 return;
             case MatchPlayerReturnedEvent returned:
                 _takeoverVotes.Remove(returned.Payload.PlayerId);
-                _history.Apply(returned);
+                History.Apply(returned);
                 return;
             case MatchLatePlayerJoinedEvent joined:
             {
-                var seated = _history.Seats.ContainsKey(joined.Payload.PlayerId);
-                _history.Apply(joined);
+                var seated = Seats.ContainsKey(joined.Payload.PlayerId);
+                History.Apply(joined);
                 if (!seated) _awaitedSlots.Add(joined.Payload.Slot);
                 return;
             }
             case TurnOpenedEvent opened:
-                _history.Apply(opened);
+                History.Apply(opened);
                 return;
             // Kept, not announced: the replay says readiness once, after `Resumed`.
             case TurnReadinessEvent readiness:
@@ -407,7 +416,7 @@ public sealed partial class MultiplayerMatchSession
                 return;
             case TurnSealedEvent sealedTurn:
                 // Null when the state already holds the turn; see `MatchHistory.Apply`.
-                if (_history.Apply(sealedTurn) is null) return;
+                if (History.Apply(sealedTurn) is null) return;
                 var (stateHash, _) = await FetchAndApplySealedTurnAsync(
                     sealedTurn.Payload.Turn,
                     sealedTurn.Payload.OrderSetHash,

@@ -267,10 +267,10 @@ public sealed partial class MultiplayerSessionTests
         NativeSaveSerializer.CurrentFormatVersion,
         MultiplayerProtocolVersion.Current,
         MultiplayerSessionVersion.Current,
-        MatchStateHasher.ComputeFingerprint(session.Bootstrap.State),
+        MatchStateHasher.ComputeFingerprint(session.Bootstrap!.State),
         "p1",
         "2026-09-10T12:00:00.000Z",
-        MatchStateClone.ToBase64(session.Bootstrap.State));
+        MatchStateClone.ToBase64(session.Bootstrap!.State));
 
     /// <summary>
     /// A repair for turn 1 holding a state that is genuinely not this client's.

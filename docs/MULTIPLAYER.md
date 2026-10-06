@@ -742,7 +742,8 @@ measured against the interpreter's 470 ms per turn under workerd before it is ad
 Status: decided (`docs/DECISIONS.md`, 2026-10-06, "Send each seat only what the original shows
 it"). The view is implemented in `Rechaos.Core` (`SeatView`) and checked against every recorded
 run of the original. The server serves views where a deployment turns them on
-([Serving the views](#serving-the-views)); the game client does not plan on them yet.
+([Serving the views](#serving-the-views)), and the game client plays such a match from them
+([Planning on a view](#planning-on-a-view)).
 
 A seat's view is the match as that player may know it at their planning entry. The server resolves
 the whole match and projects each seat's view of the open turn when that seat asks for it. The
@@ -886,6 +887,25 @@ other seats' orders and the random state, and the desync machinery, since there 
 to diverge. The view arrives from the server over the same authenticated channel as everything
 else. Its save payload carries the fingerprint of the view, which catches damage in transit and
 nothing more.
+
+`MultiplayerMatchSession` plays a match whose view says `seatViews: true` this way. It has no
+bootstrap state: it starts by restoring, reads its view of the open turn, and replays its own held
+draft (`GET orders/mine`) on the planning copy. At each `turn.confirmed` it reads the next view and
+hands it to the game as the resolved turn, with the turn's events from the view. A
+`view_not_ready` answer is asked again with a growing pause of up to five seconds, and the match's
+status is read between attempts so a match that ended meanwhile stops the loop. Whether the seat's
+own orders were part of the sealed set is judged from its held document, since the set is withheld.
+Votes and takeovers come from the event history as in lockstep.
+
+The server does not know which seats the rules have eliminated, so it answers `seat_out` for an
+eliminated seat's view (`SeatView.Project` refuses one). The client then tells the game the seat is
+out of the match (`SeatOut`) and, for every turn that opens until the end, submits an empty ready
+document so the match does not wait on its clock for a seat that has nothing to order.
+
+When the match ends the client reads the latest snapshot, which the server releases then, and hands
+the game its final state for the awards screen. When that snapshot does not carry the outcome, it
+rebuilds the whole match from the released seed and sealed sets with `AuthoritativeMatch`, checking
+each turn against the hash the server confirmed.
 
 Some of the rebuild's own additions read values a view sets to neutral: the rankings tooltip
 (DEV-UI-005) shows every seat's exact score and holdings, and the Bribe and Snitch tooltips show the

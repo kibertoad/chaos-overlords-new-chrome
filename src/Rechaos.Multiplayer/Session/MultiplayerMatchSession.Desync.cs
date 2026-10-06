@@ -251,7 +251,7 @@ public sealed partial class MultiplayerMatchSession
                 captureReports: true,
                 cancellationToken)
             .ConfigureAwait(false);
-        _history.Adopt(rebuilt.Recorder);
+        History.Adopt(rebuilt.Recorder);
         _unreportedSeals.Clear();
         _selfChecked = (pending.Turn, rebuiltHash);
         var reports = Task.WhenAll(rebuilt.Reports.Select(QueueReportAsync).ToArray());
@@ -361,7 +361,7 @@ public sealed partial class MultiplayerMatchSession
                 captureReports: true,
                 cancellationToken)
             .ConfigureAwait(false);
-        _history.Adopt(rebuilt.Recorder);
+        History.Adopt(rebuilt.Recorder);
         _canonicalThroughTurn = snapshot.Turn;
         _pendingDesync = null;
         // Seals reconstructed before this repair are superseded by the turns just replayed.
@@ -491,13 +491,13 @@ public sealed partial class MultiplayerMatchSession
                 if (recorder.State.Outcome is not null) break;
                 while (fetches.Count < SealedSetPrefetchDepth && nextFetch <= throughTurn)
                     fetches.Enqueue(FetchSealedSetAsync(nextFetch++, cancellationToken));
-                _history.ApplyHandovers(recorder, afterTurn: turn - 1, throughTurn: turn);
+                History.ApplyHandovers(recorder, afterTurn: turn - 1, throughTurn: turn);
                 var sealedOrders = await fetches.Dequeue().ConfigureAwait(false);
                 MatchHistory.RequireSealedSet(sealedOrders, turn);
                 var stateHash = SealedTurnApplier.Apply(recorder, sealedOrders);
                 if (captureReports) reports.Add(CaptureReport(turn, stateHash, recorder.State));
             }
-            _history.ApplyHandovers(recorder, afterTurn: throughTurn, throughTurn: handoversThroughTurn);
+            History.ApplyHandovers(recorder, afterTurn: throughTurn, throughTurn: handoversThroughTurn);
         }
         finally
         {

@@ -79,7 +79,7 @@ public sealed partial class MultiplayerMatchSession
                 captureReports: true,
                 cancellationToken)
             .ConfigureAwait(false);
-        _history.Adopt(rebuilt.Recorder);
+        History.Adopt(rebuilt.Recorder);
         _canonicalThroughTurn = snapshot.Turn;
         var owed = _unreportedSeals.Select(seal => seal.Turn).ToHashSet();
         _unreportedSeals.RemoveAll(seal => seal.Turn >= snapshot.Turn);
