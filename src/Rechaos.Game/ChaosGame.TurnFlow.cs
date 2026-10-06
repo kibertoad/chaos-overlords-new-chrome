@@ -103,7 +103,7 @@ public sealed partial class ChaosGame
     private void WriteAutoSave()
     {
         if (_state is null) return;
-        _autoSave.Capture(_state);
+        _autoSave.Capture(_state, _planningSelections.Snapshot());
     }
 
     /// <summary>Autosaves the turn that has just begun, if one has.</summary>
