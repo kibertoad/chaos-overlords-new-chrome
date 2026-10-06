@@ -224,7 +224,7 @@
 
 ## findings
 
-390 entries.
+391 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -613,6 +613,7 @@
 | [FND-UI-059](../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation | recorded |
 | [FND-UI-060](../findings/FND-UI-060.md) | The planning entry draws the console's year, week, countdown, score and cash with the base-value number helper | recorded |
 | [FND-UI-061](../findings/FND-UI-061.md) | The Combat Results and Last Turn Events handlers slide their panel in only on the branch that shows it, once per call | recorded |
+| [FND-UI-063](../findings/FND-UI-063.md) | Only the About screen, the main console and the detailed sector screen take the right button, and the held-button helper acts at once on a right press | recorded |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
