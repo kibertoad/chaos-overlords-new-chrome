@@ -85,11 +85,20 @@ const RUNTIME_OPTIONS = [
 export async function bootResolver(modules: ResolverModules): Promise<BootedResolver> {
   const { manifest } = modules
   // workerd compiles WebAssembly only at upload. The loader compiles the runtime itself, so its one
-  // compile is answered with the module the host already has, for as long as the boot takes.
+  // compile is answered with the module the host already has, for as long as the boot takes. Only
+  // that compile: the loader's is of the empty response the resource loader below hands it, and
+  // anything else compiled meanwhile goes through untouched. Node 22's fetch, which the Response
+  // below wakes, compiles its own HTTP parser lazily, and once got the runtime's module instead.
   const original = { compile: WebAssembly.compile, compileStreaming: WebAssembly.compileStreaming }
-  const precompiled = async () => modules.wasm
-  WebAssembly.compile = precompiled
-  WebAssembly.compileStreaming = precompiled
+  const placeholders = new WeakSet<object>()
+  WebAssembly.compile = async (bytes) =>
+    bytes.byteLength === 0 ? modules.wasm : original.compile.call(WebAssembly, bytes)
+  WebAssembly.compileStreaming = async (source) => {
+    const response = await source
+    return placeholders.has(response)
+      ? modules.wasm
+      : original.compileStreaming.call(WebAssembly, response)
+  }
   let runtime: DotnetRuntime
   try {
     runtime = await (modules.dotnet as DotnetBuilder)
@@ -104,9 +113,11 @@ export async function bootResolver(modules: ResolverModules): Promise<BootedReso
       .withRuntimeOptions(RUNTIME_OPTIONS)
       .withResourceLoader((type, name) => {
         if (type === 'dotnetwasm') {
-          return Promise.resolve(
-            new Response(new Uint8Array(0), { headers: { 'content-type': 'application/wasm' } }),
-          )
+          const placeholder = new Response(new Uint8Array(0), {
+            headers: { 'content-type': 'application/wasm' },
+          })
+          placeholders.add(placeholder)
+          return Promise.resolve(placeholder)
         }
         const bytes = modules.assembly(name)
         return bytes ? Promise.resolve(new Response(bytes as BodyInit)) : undefined
