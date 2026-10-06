@@ -179,6 +179,9 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | builds |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | builds |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | builds |
+| [EXP-UI-038](../experiments/EXP-UI-038.md) | builds |
+| [EXP-UI-039](../experiments/EXP-UI-039.md) | builds |
+| [EXP-UI-040](../experiments/EXP-UI-040.md) | builds |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | builds |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | body, builds |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | body, builds |
@@ -2270,6 +2273,9 @@ None.
 | [EXP-UI-003](../experiments/EXP-UI-003.md) | body |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | body |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
+| [EXP-UI-038](../experiments/EXP-UI-038.md) | body |
+| [EXP-UI-039](../experiments/EXP-UI-039.md) | body |
+| [EXP-UI-040](../experiments/EXP-UI-040.md) | body |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
 
 ## EXP-UI-002
@@ -2278,6 +2284,9 @@ None.
 |---|---|
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | body |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
+| [EXP-UI-038](../experiments/EXP-UI-038.md) | body |
+| [EXP-UI-039](../experiments/EXP-UI-039.md) | body |
+| [EXP-UI-040](../experiments/EXP-UI-040.md) | body |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 
 ## EXP-UI-003
@@ -2494,9 +2503,33 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-UI-038](../experiments/EXP-UI-038.md) | body |
+| [EXP-UI-039](../experiments/EXP-UI-039.md) | body |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 
 ## EXP-UI-028
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-038](../experiments/EXP-UI-038.md) | body |
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
+
+## EXP-UI-038
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-039](../experiments/EXP-UI-039.md) | body |
+| [EXP-UI-040](../experiments/EXP-UI-040.md) | body |
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
+
+## EXP-UI-039
+
+| Cited by | In |
+|---|---|
+| [EXP-UI-040](../experiments/EXP-UI-040.md) | body |
+| [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
+
+## EXP-UI-040
 
 | Cited by | In |
 |---|---|
@@ -7702,6 +7735,9 @@ None.
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | body |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
+| [EXP-UI-038](../experiments/EXP-UI-038.md) | body |
+| [EXP-UI-039](../experiments/EXP-UI-039.md) | body |
+| [EXP-UI-040](../experiments/EXP-UI-040.md) | body |
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
 | [FND-UI-059](../findings/FND-UI-059.md) | body |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
@@ -7864,6 +7900,9 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
+| [EXP-UI-038](../experiments/EXP-UI-038.md) | body |
+| [EXP-UI-039](../experiments/EXP-UI-039.md) | body |
+| [EXP-UI-040](../experiments/EXP-UI-040.md) | body |
 | [FND-UI-045](../findings/FND-UI-045.md) | superseded_by |
 | [RULE-UI-004](../rules/RULE-UI-004.md) | body, evidence |
 
@@ -9629,6 +9668,9 @@ None.
 | [EXP-UI-002](../experiments/EXP-UI-002.md) | body |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | body |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
+| [EXP-UI-038](../experiments/EXP-UI-038.md) | body |
+| [EXP-UI-039](../experiments/EXP-UI-039.md) | body |
+| [EXP-UI-040](../experiments/EXP-UI-040.md) | body |
 | glossary: modifier_cells | glossary |
 | glossary: number_cells | glossary |
 | [RULE-UI-011](../rules/RULE-UI-011.md) | body |

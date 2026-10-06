@@ -911,6 +911,9 @@
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? | recorded |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? | recorded |
+| [EXP-UI-038](../experiments/EXP-UI-038.md) | What does the original draw over an earlier glyph for a number cell at the StretchBlt column 32766, and for a red cell at column -2? | recorded |
+| [EXP-UI-039](../experiments/EXP-UI-039.md) | What does the original draw over an earlier glyph for a number cell at column 508, and for a red cell at the StretchBlt column 32762? | recorded |
+| [EXP-UI-040](../experiments/EXP-UI-040.md) | What does the original draw over an earlier glyph for a number cell at column -2, and for a red cell at the StretchBlt column 32764? | recorded |
 | [FND-UI-001](../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |
