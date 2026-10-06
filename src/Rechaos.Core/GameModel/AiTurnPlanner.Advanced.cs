@@ -32,8 +32,10 @@ public static partial class AiTurnPlanner
             ApplyAdvancedExpansion(state, player, commands, targets);
         if (!features.HasFlag(AdvancedFeature.IdleRecovery)) return commands;
         var assigned = commands.Select(command => command.Gang).ToHashSet();
-        var cashBudget = Math.Max(0, player.Cash)
-            - commands.Sum(command => EstimatedCost(state, command));
+        // The original plan sets no cash aside and may cost more than the player holds
+        // (FND-AI-081); the fallback commands only spend what is left after it.
+        var cashBudget = Math.Max(0, Math.Max(0, player.Cash)
+            - commands.Sum(command => EstimatedCost(state, command)));
 
         foreach (var gang in player.Gangs.Where(gang => gang.IsActive))
         {

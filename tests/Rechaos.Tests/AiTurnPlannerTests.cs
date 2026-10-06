@@ -25,8 +25,11 @@ public sealed partial class AiTurnPlannerTests
         Assert.Equal(first.Count, first.Select(command => command.Gang).Distinct().Count());
     }
 
+    // RULE-AI-004, FND-AI-081: no cash is set aside at planning. Both gangs' Equips become
+    // commands, in roster-slot order whatever the gang ids, although the player can pay for one;
+    // the transaction pass refuses the one it can no longer pay for (RULE-EQUIP-001).
     [Fact]
-    public void SharedEquipmentBudgetFollowsRosterSlotsAfterGangIdOrderChanges()
+    public void EveryPlannedEquipBecomesACommandInRosterSlotOrder()
     {
         var data = BundledOriginalData.Load();
         var researched = data.Items
@@ -58,11 +61,14 @@ public sealed partial class AiTurnPlannerTests
         }
         match.MarkAiPlanningPrepared(playerId);
 
-        var command = Assert.Single(AiTurnPlanner.Plan(match, playerId));
+        var commands = AiTurnPlanner.Plan(match, playerId);
 
-        Assert.Equal(new GangId(30), command.Gang);
-        Assert.Equal(GangAction.Equip, command.Action);
-        Assert.Equal(CommandTarget.Item(itemId), command.Target);
+        Assert.Equal([new GangId(30), new GangId(11)], commands.Select(command => command.Gang));
+        Assert.All(commands, command =>
+        {
+            Assert.Equal(GangAction.Equip, command.Action);
+            Assert.Equal(CommandTarget.Item(itemId), command.Target);
+        });
     }
 
     [Fact]

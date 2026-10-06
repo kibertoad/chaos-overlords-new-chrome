@@ -286,6 +286,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AI-075](../findings/FND-AI-075.md) | builds, locations |
 | [FND-AI-076](../findings/FND-AI-076.md) | builds, locations |
 | [FND-AI-077](../findings/FND-AI-077.md) | builds, locations |
+| [FND-AI-081](../findings/FND-AI-081.md) | body, builds, locations |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | builds, locations |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | builds, locations |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | builds, locations |
@@ -2307,13 +2308,13 @@ None.
 
 | Cited by | In |
 |---|---|
-| [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | body |
+| [FND-AI-081](../findings/FND-AI-081.md) | body |
 
 ## EXP-TURN-113
 
 | Cited by | In |
 |---|---|
-| [RULE-AI-010](../rules/RULE-AI-010.md) | body |
+| [FND-AI-081](../findings/FND-AI-081.md) | body |
 
 ## EXP-UI-001
 
@@ -3857,6 +3858,7 @@ None.
 | [FMT-STATE-007](../formats/FMT-STATE-007.md) | evidence |
 | [FND-AI-075](../findings/FND-AI-075.md) | body |
 | [FND-AI-076](../findings/FND-AI-076.md) | body |
+| [FND-AI-081](../findings/FND-AI-081.md) | body |
 | [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | body, evidence |
 | [RULE-AI-024](../rules/RULE-AI-024.md) | evidence |
@@ -3885,6 +3887,15 @@ None.
 | [EXP-TURN-055](../experiments/EXP-TURN-055.md) | body |
 | [EXP-TURN-056](../experiments/EXP-TURN-056.md) | body |
 | [RULE-AI-021](../rules/RULE-AI-021.md) | evidence |
+
+## FND-AI-081
+
+| Cited by | In |
+|---|---|
+| [EXP-TURN-112](../experiments/EXP-TURN-112.md) | body |
+| [EXP-TURN-113](../experiments/EXP-TURN-113.md) | body |
+| [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
+| [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
 
 ## FND-ASSET-001
 
@@ -8080,6 +8091,7 @@ None.
 | [BUG-AI-002](../bugs/BUG-AI-002.md) | related |
 | [EXP-TURN-017](../experiments/EXP-TURN-017.md) | body |
 | [EXP-TURN-036](../experiments/EXP-TURN-036.md) | body |
+| [FND-AI-081](../findings/FND-AI-081.md) | body |
 | glossary: armor_stealth_upgrade | glossary |
 | glossary: armor_upgrade | glossary |
 | glossary: danger_near | glossary |
@@ -8343,6 +8355,7 @@ None.
 | [EXP-TURN-089](../experiments/EXP-TURN-089.md) | body |
 | [EXP-TURN-093](../experiments/EXP-TURN-093.md) | body |
 | [EXP-TURN-094](../experiments/EXP-TURN-094.md) | body |
+| [FND-AI-081](../findings/FND-AI-081.md) | body |
 | [RULE-AI-002](../rules/RULE-AI-002.md) | body, related |
 | [RULE-AI-022](../rules/RULE-AI-022.md) | body |
 
@@ -8437,7 +8450,6 @@ None.
 | [EXP-TURN-011](../experiments/EXP-TURN-011.md) | body |
 | [EXP-TURN-017](../experiments/EXP-TURN-017.md) | body |
 | [EXP-TURN-029](../experiments/EXP-TURN-029.md) | body |
-| [EXP-TURN-112](../experiments/EXP-TURN-112.md) | body |
 | [RULE-AI-016](../rules/RULE-AI-016.md) | body, related |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | body |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, related |
@@ -8795,6 +8807,7 @@ None.
 |---|---|
 | [EXP-TURN-016](../experiments/EXP-TURN-016.md) | body |
 | [EXP-TURN-031](../experiments/EXP-TURN-031.md) | body |
+| [FND-AI-081](../findings/FND-AI-081.md) | body |
 | glossary: EquipCashShort | glossary |
 | [RULE-EQUIP-002](../rules/RULE-EQUIP-002.md) | body, related |
 | [RULE-EQUIP-003](../rules/RULE-EQUIP-003.md) | body |
@@ -9119,6 +9132,8 @@ None.
 | [EXP-TURN-023](../experiments/EXP-TURN-023.md) | body |
 | [EXP-TURN-069](../experiments/EXP-TURN-069.md) | body |
 | [EXP-TURN-083](../experiments/EXP-TURN-083.md) | body |
+| [EXP-TURN-112](../experiments/EXP-TURN-112.md) | body |
+| [FND-AI-081](../findings/FND-AI-081.md) | body |
 | [RULE-TURN-003](../rules/RULE-TURN-003.md) | body, related |
 | [SCR-INFLUENCE-001](../screens/SCR-INFLUENCE-001.md) | body, related |
 

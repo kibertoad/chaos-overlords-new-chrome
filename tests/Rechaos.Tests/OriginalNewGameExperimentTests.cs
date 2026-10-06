@@ -134,7 +134,8 @@ namespace Rechaos.Tests;
 /// ends, a computer player's win and a tie for the lead included (RULE-OBJECTIVE-002,
 /// RULE-OBJECTIVE-004), and in EXP-TURN-107 a player gets more than 64 reports in one turn
 /// (RULE-EVENT-002). EXP-TURN-112 and EXP-TURN-113 play Siege for 96 turns and Kill 'Em All for
-/// 150 without either ending, and are held as known divergences late in each run.
+/// 150 without either ending; in both a computer player's planned Equips all resolve, the ones
+/// it can no longer pay for refused then, with no cash set aside at planning (FND-AI-081).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -154,12 +155,6 @@ public sealed partial class OriginalNewGameExperimentTests
     private static readonly Dictionary<(string Experiment, int Run), int> KnownDivergences = new()
     {
         [("EXP-TURN-083", 0)] = 1420,
-        // EXP-TURN-112: in the last combat phase the original rolls 9 dice before the first Hide
-        // test that RULE-ATTACK-001 does not give (#517).
-        [("EXP-TURN-112", 0)] = 52029,
-        // EXP-TURN-113: a computer player hires in the original's 116th turn, and in the rebuild
-        // every computer player rejects an offer (#518).
-        [("EXP-TURN-113", 0)] = 96038,
     };
 
     // Runs that stop at the final city view, before the awards controller builds the award table
@@ -427,12 +422,8 @@ public sealed partial class OriginalNewGameExperimentTests
                             ? eventsBySequence.GetValueOrDefault(sequence)
                             : null))
                     .ToArray();
-                // DEV-AI-002: a computer player's Equip it cannot pay for gives no command in the
-                // rebuild, so the cash report the original records when it fails has no counterpart.
                 var expected = Enumerable.Range(0, recorded.Term("last_turn_report_count", slot))
                     .Select(index => recorded.Report(slot, index))
-                    .Where(report => player.Setup.Controller == PlayerController.Human
-                        || report is not { Type: LastTurnReportRecord.CashShort, Arg1: LastTurnReportRecord.CashShortEquip })
                     .ToArray();
                 Assert.True(expected.Length == reports.Length,
                     $"player {slot}: the original holds {expected.Length} reports, the rebuild {reports.Length}: "

@@ -41,22 +41,16 @@ has not ended.
 
 The resolution after the 116th Done press ends with a draw at `0x00475AC6`,
 the Force of a hired gang (FND-RNG-006), before the next planning entry's
-offer draw at `0x0047172A`.
+offer draw at `0x0047172A`. The hire is player 2's; FND-AI-081 traces its cash
+in that turn to an Equip of the 114th turn.
 
 ## Results
 
 `tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results up to call
-96038, through 115 full turns and the planning and resolution of the 116th
-up to its hire phase. No computer player queues a hire in the rebuild in that
-turn: the planner of each one rejects an offer instead, player 2 with 0 cash.
-The rebuild therefore makes the next offer draw where the original rolls the
-hired gang's Force. The test holds the run as a known divergence at that
-call.
+rebuild makes the same 108911 calls with the same bounds and results, and its
+end state agrees with the original's.
 
 ## Conclusion
 
-The run agrees with the rebuild through 115 Kill 'Em All turns at Goon and
-shows no player eliminated in 150 turns. A computer player hires in the
-116th turn of the original where the rebuild's planner rejects every offer;
-which player hires, and why, is an open question.
+The run agrees with the rebuild through 150 Kill 'Em All turns at Goon and
+shows no player eliminated in that time.
