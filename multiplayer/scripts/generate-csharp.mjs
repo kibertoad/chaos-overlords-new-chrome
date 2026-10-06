@@ -171,14 +171,14 @@ function routeTemplates() {
  * `Protocol/WireShapesJsonContext.cs` holds the few shapes that are not contracts.
  */
 function wireJsonContext(contracts) {
-  const names = [...contracts.matchAll(/^public (?:sealed |abstract )?(?:record|enum) (\w+)/gm)].map(
-    (match) => match[1],
-  )
+  const names = [
+    ...contracts.matchAll(/^public (?:sealed |abstract )?(?:record|enum) (\w+)/gm),
+  ].map((match) => match[1])
   const discriminators = [
     ...new Set(
-      [...contracts.matchAll(/\[JsonPolymorphic\(TypeDiscriminatorPropertyName = ("\w+")\)\]/g)].map(
-        (match) => match[1],
-      ),
+      [
+        ...contracts.matchAll(/\[JsonPolymorphic\(TypeDiscriminatorPropertyName = ("\w+")\)\]/g),
+      ].map((match) => match[1]),
     ),
   ]
   return [
