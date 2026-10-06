@@ -488,7 +488,10 @@ export class LobbyService {
    *
    * The log is the message's only store, so it is the log that is bounded: a lobby whose log has
    * reached `LIMITS.lobbyChatLogEvents` takes no more chat. The per-player budget is in memory, like
-   * every other limiter here, and spares the log from one member's flood long before that. Refused
+   * every other limiter here, and spares the log from one member's flood long before that. The
+   * length check and the publish are separate steps, so posts that arrive together can each pass
+   * the check and carry the log a few events past the cap; it bounds the log without being exact.
+   * The budget is spent before the length check so a flood never reaches storage. Refused
    * once the match has started, because inside a match the original's Comlink is the channel
    * between players and its rules say who may write to whom.
    */

@@ -790,7 +790,8 @@ public sealed partial class ChaosGame
     {
         // A click anywhere but the chat line leaves it; what was typed stays for later.
         _online.Chat.IsFocused = false;
-        if (LobbyChatInput.Contains(point))
+        // The chat is drawn only once the server has answered with the lobby.
+        if (_online.Match is not null && LobbyChatInput.Contains(point))
         {
             CommitLobbySessionName();
             FinishLobbyNameEdit(cancel: false);

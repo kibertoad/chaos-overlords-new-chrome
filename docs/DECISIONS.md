@@ -109,7 +109,10 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   - Once a lobby's log holds 1,000 events, chat is refused with
     `lobby_log_full`. The log is the only store and lobby retention keeps it
     for days, so a cap on its length is what bounds what one lobby can cost
-    the server, whichever process counted the rate.
+    the server, whichever process counted the rate. The check and the append
+    are separate steps, so posts that arrive together can carry the log past
+    1,000 by at most one message each. The cap bounds the log; it does not
+    need to be exact, so no atomic check-and-append is added to storage.
 - The game draws chat in the original font, which has upper-case letters,
   digits and punctuation. A character it has no glyph for is drawn blank, and
   the game's own input accepts only characters it can draw. The server accepts
@@ -151,8 +154,13 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   candidates or the designee differ from the turn's latest announcement the
   server announces `turn.desynced` again, keyed by the announcement it follows,
   so a verdict that returns to an earlier one (a seat that leaves and rejoins)
-  is announced too. The sweep re-runs verdicts without announcing, so a paused
-  match costs no extra writes while nothing changes.
+  is announced too. While another turn is desynced as well, the latest
+  announcement is often that turn's, and the verdict is announced again
+  without the comparison. The sweep re-runs verdicts quietly: it announces
+  only a verdict that differs from the turn's own latest announcement, which
+  retries a re-announcement whose publish failed after the roster change it
+  follows was committed, and a paused match costs one indexed read per
+  desynced turn and no writes while nothing changes.
 - Unchanged: a snapshot may still only claim a hash the most players reported,
   and a sole most-reported hash may still be posted by anyone holding it. The
   self-check changes nothing but this client's own report: the server still
