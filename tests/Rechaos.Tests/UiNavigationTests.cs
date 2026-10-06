@@ -129,6 +129,7 @@ public sealed partial class UiNavigationTests
     {
         Rectangle[] entries =
         [
+            StatusConsoleLayout.Date,
             StatusConsoleLayout.Score,
             StatusConsoleLayout.Cash,
             .. Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorEntry)
@@ -163,6 +164,50 @@ public sealed partial class UiNavigationTests
         Assert.Equal("5 [-3] (0)", StatusConsolePresentation.CashSummary(5, -3, 0));
         Assert.Equal("120[95](-12)", StatusConsolePresentation.CashSummary(120, 95, -12));
         Assert.Empty(StatusConsoleTooltip.At(Point.Zero));
+    }
+
+    [Fact]
+    public void EveryPlaceThatNamesAScenarioUsesTheTitleTheConsoleDraws()
+    {
+        // RULE-UI-009, FND-UI-040: the console draws string resource scenario + 1. The rebuild's
+        // own texts name the scenario with the same string.
+        const string title = "THE BIG 40";
+        Assert.Equal(title, ExecutableStrings.ScenarioTitle(ScenarioId.Big40));
+        Assert.Equal(title, ScenarioSetupTooltip.Lines(ScenarioId.Big40, GameDuration.OneYear)[0]);
+        Assert.StartsWith($"{title} RATES:", StatusConsoleTooltip.ScoreLines(ScenarioId.Big40)[1]);
+        Assert.Equal(title, DiscoveryFilters.Label(DiscoveryFilters.Scenario, (int)ScenarioId.Big40 + 1));
+        Assert.Equal(("SCENARIO", title), OnlineLobbySummary.Rows(ScenarioId.Big40, GameDuration.OneYear,
+            AiDifficulty.CrimeLord, PlanningTimeLimit.TwoMinutes)[0]);
+    }
+
+    [Fact]
+    public void DateRowTooltipExplainsTheCalendarAndTheCountdownBesideIt()
+    {
+        // DEV-UI-005 over the FND-UI-040 calendar fields.
+        Assert.Equal(new Rectangle(476, 14, 108, 9), StatusConsoleLayout.Date);
+        var point = StatusConsoleLayout.Date.Center;
+        Assert.True(StatusConsoleTooltip.Contains(point));
+
+        var timed = StatusConsoleTooltip.At(point, ScenarioId.Greed, GameDuration.OneYear);
+        Assert.Equal("DATE", timed[0]);
+        Assert.Contains("2050", string.Join(' ', timed));
+        Assert.Contains("LEFT AFTER THE ONE BEING PLANNED.", timed);
+        Assert.Contains("THE MATCH ENDS AFTER TURN 52.", timed);
+
+        var untimed = StatusConsoleTooltip.At(point, ScenarioId.Big40, GameDuration.OneYear);
+        Assert.Equal("THE BIG 40 HAS NO TIME LIMIT.", untimed[^1]);
+        Assert.DoesNotContain(untimed, line => line.Contains("TURNS", StringComparison.Ordinal));
+
+        var final = StatusConsoleTooltip.At(point, ScenarioId.Greed, GameDuration.OneYear, complete: true);
+        Assert.Equal("COMPLETE: THE MATCH HAS ENDED.", final[^1]);
+        Assert.DoesNotContain(final, line => line.Contains("TURNS", StringComparison.Ordinal));
+
+        foreach (var lines in new[] { timed, untimed, final })
+        {
+            var bounds = StatusConsoleTooltip.Bounds(point, lines);
+            Assert.True(bounds.X >= 0 && bounds.Y >= 0
+                && bounds.Right <= VirtualInput.Width && bounds.Bottom <= VirtualInput.Height);
+        }
     }
 
     [Fact]

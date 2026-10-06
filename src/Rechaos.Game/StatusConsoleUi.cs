@@ -57,6 +57,7 @@ public static class StatusConsoleLayout
     }
 
     public static Rectangle Scenario => Entry(ScenarioY);
+    public static Rectangle Date => Entry(DateY);
     public static Rectangle Score => Entry(ScoreY);
     public static Rectangle Cash => Entry(CashY);
     public static Rectangle SectorEntry(int row) => Entry(SectorValueY(row));
@@ -76,6 +77,7 @@ public static class StatusConsoleTooltip
 
     public static bool Contains(Point point) =>
         StatusConsoleLayout.Scenario.Contains(point)
+        || StatusConsoleLayout.Date.Contains(point)
         || StatusConsoleLayout.Score.Contains(point)
         || StatusConsoleLayout.Cash.Contains(point)
         || Enumerable.Range(0, 5).Any(row => StatusConsoleLayout.SectorEntry(row).Contains(point));
@@ -92,11 +94,43 @@ public static class StatusConsoleTooltip
         var lines = new List<string>
         {
             "SCORE",
-            $"{ScenarioCatalog.Get(mode).Name} RATES: {PlayerRankingTooltip.Basis(mode)}",
+            $"{ExecutableStrings.ScenarioTitle(mode)} RATES: {PlayerRankingTooltip.Basis(mode)}",
             "USED FOR RANKING."
         };
         if (mode is ScenarioId.KillEmAll or ScenarioId.Eliminate)
             lines.Add("SHARED BY EVERY SURVIVING OVERLORD.");
+        return lines;
+    }
+
+    /// <summary>
+    /// The date row's explanation: the calendar (FND-UI-040) and, in a timed scenario, the
+    /// countdown beside it, or the completion caption that replaces it in the final view.
+    /// </summary>
+    public static IReadOnlyList<string> DateLines(
+        ScenarioId? scenario, GameDuration duration, bool complete = false)
+    {
+        var lines = new List<string>
+        {
+            "DATE",
+            "YEAR AND WEEK. EACH TURN IS ONE WEEK,",
+            $"{MatchCalendar.WeeksPerYear} WEEKS A YEAR FROM WEEK 1 OF {MatchCalendar.FirstYear}."
+        };
+        if (complete)
+        {
+            lines.Add("");
+            lines.Add($"{ExecutableStrings.Get(StatusConsoleLayout.CompleteString)}: THE MATCH HAS ENDED.");
+            return lines;
+        }
+        if (scenario is not { } mode) return lines;
+        lines.Add("");
+        if (ScenarioCatalog.Get(mode).IsTimed)
+        {
+            lines.Add("THE NUMBER ON THE RIGHT COUNTS THE TURNS");
+            lines.Add("LEFT AFTER THE ONE BEING PLANNED.");
+            lines.Add($"THE MATCH ENDS AFTER TURN {ScenarioCatalog.Turns(duration)}.");
+        }
+        else
+            lines.Add($"{ExecutableStrings.ScenarioTitle(mode)} HAS NO TIME LIMIT.");
         return lines;
     }
 
@@ -108,10 +142,13 @@ public static class StatusConsoleTooltip
         ChaosRangeEstimate? chaosEstimate = null,
         IReadOnlyList<string>? chaosBreakdown = null,
         bool enemyGangsPresent = false,
-        ToleranceParts? toleranceParts = null)
+        ToleranceParts? toleranceParts = null,
+        bool complete = false)
     {
         if (scenario is { } mode && StatusConsoleLayout.Scenario.Contains(point))
             return ScenarioSetupTooltip.Lines(mode, duration);
+        if (StatusConsoleLayout.Date.Contains(point))
+            return DateLines(scenario, duration, complete);
         if (StatusConsoleLayout.Score.Contains(point))
             return ScoreLines(scenario);
         if (StatusConsoleLayout.Cash.Contains(point))
