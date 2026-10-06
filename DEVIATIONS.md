@@ -716,10 +716,19 @@ it.
 
 - Departs from: SCR-UI-003, SCR-UI-004, SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008
 - Reason: Hover tooltips explain statistics, attributes, modifiers, modes, options and ranking
-  scores, and a two-second rest on a command explains the order.
+  scores, and a two-second rest on a command explains the order. A one-second rest on a sector of
+  the city map, or on the sector view's owner strip or a cell of its nine-sector display, names
+  the sector's owner and the owner's seat on the Overlord bar, and an arrow key that moves the
+  selected sector names its owner on the message line (DEV-UI-023). The original shows a sector's
+  owner only by the colour of its cell and of the owner strip.
 - Setting: None
 - Default: mandatory
-- Justification: It adds information on hover and changes nothing else.
+- Justification: It adds information on hover and changes nothing else. The owner's name says in
+  words what the colour already shows, for a player who cannot tell the overlord colours apart; a
+  setting that hid it would only take information away. The owner tooltip waits for the pointer to
+  rest and the line for a key, so a screen nobody points at or steers draws what the original
+  draws.
+- Tests: tests/Rechaos.Tests/SectorOwnerTextTests.cs
 - Dropped: no
 
 ## DEV-UI-006
@@ -1000,8 +1009,8 @@ Whether the original shows the count is not recorded.
 - Default: mandatory
 - Justification: Both lines add information and change nothing the player can do. The original
   answers a refused order with the reject sound alone, which the rebuild still plays; the line
-  says which rule refused it. The key line names keys DEV-UI-020 adds, which the original's
-  screens cannot show, and online it replaces them with the turn's state, which a player waiting
+  says which rule refused it. The key line names keys DEV-UI-020 and DEV-UI-028 add, which the
+  original's screens cannot show, and online it replaces them with the turn's state, which a player waiting
   on others needs. A setting that hid them would only take information away.
 - Dropped: no
 
@@ -1021,6 +1030,24 @@ Whether the original shows the count is not recorded.
   the order in which earlier values were drawn, which no rule or strategy uses. Where nothing was drawn before,
   as at a panel's first draw, the two agree pixel for pixel (EXP-UI-027, EXP-UI-028).
 - Tests: tests/Rechaos.Tests/ItemInformationLayoutTests.cs
+- Dropped: no
+
+## DEV-UI-028
+
+- Departs from: SCR-HIRE-002, SCR-UI-003, SCR-UI-004
+- Reason: The keys 1, 2 and 3 hire the offer in that slot of the Hire dock, counted from the
+  left, into the selected sector, on the city screen and on the sector view. A key takes the
+  offer as a press on its portrait does and places it as a drop on the selected sector does (on
+  the sector view, a drop on the workspace): the same refusals, the same queued hire and the same
+  flash of the cell. The original hires only by dragging an offer's portrait onto a sector, and
+  its dock takes no key.
+- Setting: None
+- Default: mandatory
+- Justification: The key queues the hire a drag queues, and the drag works as before, so it adds
+  a way to give an order the player can already give and changes no order or result. Without it
+  a player who cannot drag cannot hire at all. A setting that took the keys away would give the
+  player nothing, as with the city keys of DEV-UI-020.
+- Tests: tests/Rechaos.Tests/KeyboardHireTests.cs
 - Dropped: no
 
 ## DEV-GFX-001
