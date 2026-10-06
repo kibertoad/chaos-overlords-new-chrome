@@ -44,12 +44,11 @@ for slots whose gang has died.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results, ends the match
-after the same Done press, reaches the same state and endgame rows, gives the
-same awards, and holds the same planning records, sector weights,
-per-player values, combat records and, for each computer gang whose family
-is assigned, focus and coverage sector.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results, ends the match after the same Done press, reaches the
+same state and endgame rows, gives the same awards, and holds the same planning
+records, sector weights, per-player values, combat records and, for each
+computer gang whose family is assigned, focus and coverage sector.
 
 ## Conclusion
 

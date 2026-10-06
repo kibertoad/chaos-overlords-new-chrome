@@ -54,16 +54,16 @@ the write and did not examine.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` reaches the same state
-for both runs, compared as in EXP-UI-001.
+A test of the rebuild reaches the same state for both runs, compared as in
+EXP-UI-001.
 
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` replays each run, draws its
-endpoint at the capture's marker frame and compares every element with the
-capture. The fixture lists the setup input `key_colour`, so the test compares
-exact white like any other colour (docs/VALIDATION.md). No element differs:
-outside the masks of DEV-UI-006 (the cash row) and DEV-UI-023 (the key line)
-every pixel matches, the selected sector and the corners around the grid tabs
-included, and the rebuild draws the exact-white portrait pixel white as well.
+A test of the rebuild replays each run, draws its endpoint at the capture's
+marker frame and compares every element with the capture. The fixture lists the
+setup input `key_colour`, so the test compares exact white like any other colour
+(docs/VALIDATION.md). No element differs: outside the masks of DEV-UI-006 (the
+cash row) and DEV-UI-023 (the key line) every pixel matches, the selected sector
+and the corners around the grid tabs included, and the rebuild draws the
+exact-white portrait pixel white as well.
 
 ## Conclusion
 

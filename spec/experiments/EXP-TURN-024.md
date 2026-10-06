@@ -41,11 +41,10 @@ Done press.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state. In the replay, family-1 gangs plan Attack
-after Move and after Attack, and Snitch after Move, after Control and after
-Snitch.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same generator position and state. In
+the replay, family-1 gangs plan Attack after Move and after Attack, and Snitch
+after Move, after Control and after Snitch.
 
 ## Conclusion
 

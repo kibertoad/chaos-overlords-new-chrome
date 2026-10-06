@@ -68,20 +68,19 @@ the marker, which was at frame 5: the same 5089 pixels were exact white.
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed, and
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` reaches the same
-state, compared as in EXP-SETUP-001. No planning pass has run yet, so the
-original holds 0 in every auxiliary record and combat record and -1 in each
-player's `hire_role`; the replay leaves those out as it does for records no
-pass has written.
+Every result is the one RULE-RNG-002 computes from the recorded seed, and a test
+of the rebuild reaches the same state, compared as in EXP-SETUP-001. No planning
+pass has run yet, so the original holds 0 in every auxiliary record and combat
+record and -1 in each player's `hire_role`; the replay leaves those out as it
+does for records no pass has written.
 
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` replays each run, draws its
-endpoint at marker frame 6 and compares every element with the capture. No
-element differs. Outside the masks of DEV-UI-006 (the cash row) and DEV-UI-023
-(the key line), every pixel matches except 4816 pixels of the map that the
-original drew exact white and the rebuild does not: the whole selected sector,
-where the rebuild draws the tile in the owner's colour, and the corners around the grid tabs,
-where it draws the map. Those pixels are unverified.
+A test of the rebuild replays each run, draws its endpoint at marker frame 6 and
+compares every element with the capture. No element differs. Outside the masks
+of DEV-UI-006 (the cash row) and DEV-UI-023 (the key line), every pixel matches
+except 4816 pixels of the map that the original drew exact white and the rebuild
+does not: the whole selected sector, where the rebuild draws the tile in the
+owner's colour, and the corners around the grid tabs, where it draws the map.
+Those pixels are unverified.
 
 ## Conclusion
 
