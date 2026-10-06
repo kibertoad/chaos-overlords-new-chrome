@@ -292,6 +292,15 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
  * conformance suite compares a created player against its fixture field by field, so a dropped
  * column fails there rather than going unnoticed.
  */
+/**
+ * The rows that still hold a claim on their seat: every row but a computer-controlled one whose
+ * token is gone. The SQL twin of `isVacated`, negated.
+ */
+function holdsClaim() {
+  const { players } = schema
+  return or(ne(players.status, 'computer'), isNotNull(players.tokenHash))
+}
+
 function playerValues(player: Player) {
   return {
     id: sql`${player.id}`.as('id'),
@@ -331,7 +340,9 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
       const occupied = db
         .select({ id: players.id })
         .from(players)
-        .where(and(eq(players.matchId, player.matchId), eq(players.slot, player.slot)))
+        .where(
+          and(eq(players.matchId, player.matchId), eq(players.slot, player.slot), holdsClaim()),
+        )
       const rows = await db
         .insert(players)
         .select(
@@ -346,7 +357,7 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
                 // Capacity in the same statement as the insert. Two late joiners for two different
                 // free slots each passed a capacity check taken a moment before the other's insert,
                 // and the match ended up holding more players than `maxPlayers`.
-                sql`(select count(*) from ${players} where ${players.matchId} = ${player.matchId}) < ${matches.maxPlayers}`,
+                sql`(select count(*) from ${players} where ${players.matchId} = ${player.matchId} and ${holdsClaim()}) < ${matches.maxPlayers}`,
               ),
             ),
         )
@@ -372,19 +383,51 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
     },
     async listSeats(matchIds) {
       if (matchIds.length === 0) return []
-      return db
-        .select({ matchId: players.matchId, slot: players.slot })
+      const rows = await db
+        .select({
+          matchId: players.matchId,
+          slot: players.slot,
+          status: players.status,
+          tokenHash: players.tokenHash,
+        })
         .from(players)
         .where(inArray(players.matchId, [...matchIds]))
+      return rows.map((row) => ({
+        matchId: row.matchId,
+        slot: row.slot,
+        computer: row.status === 'computer',
+        vacated: row.status === 'computer' && row.tokenHash === null,
+      }))
+    },
+    async releaseComputerSeat(matchId, slot) {
+      const rows = await db
+        .update(players)
+        .set({ tokenHash: null })
+        .where(
+          and(
+            eq(players.matchId, matchId),
+            eq(players.slot, slot),
+            eq(players.status, 'computer'),
+            isNotNull(players.tokenHash),
+          ),
+        )
+        .returning({ id: players.id })
+      return rows.map((row) => row.id)
     },
     async setStatus(playerId, status) {
       await db.update(players).set({ status }).where(eq(players.id, playerId))
     },
-    async transitionStatus(playerId, from, status) {
+    async transitionStatus(playerId, from, status, options) {
       const rows = await db
         .update(players)
         .set({ status })
-        .where(and(eq(players.id, playerId), inArray(players.status, from)))
+        .where(
+          and(
+            eq(players.id, playerId),
+            inArray(players.status, from),
+            options?.holdingToken === true ? isNotNull(players.tokenHash) : undefined,
+          ),
+        )
         .returning({ id: players.id })
       return rows.length === 1
     },

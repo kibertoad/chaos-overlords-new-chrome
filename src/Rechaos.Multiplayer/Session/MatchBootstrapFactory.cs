@@ -87,6 +87,13 @@ public static class MatchBootstrapFactory
     /// Whether a seat is still <em>played</em> by its human is a separate question, answered per
     /// turn by the sealed set rather than by the setup: see <see cref="SealedTurnApplier"/>.
     /// </para>
+    /// <para>
+    /// A seat the vote handed to the computer can be claimed again by a late joiner, which adds a
+    /// row for the same slot. The server lists a slot's rows in the order they claimed it, so the
+    /// first is the one the match was generated with, and that is the one taken here. The rows
+    /// before the newest are computer controlled, and a roster with such a row makes the session
+    /// restore from a snapshot rather than play on from the generated city.
+    /// </para>
     /// </remarks>
     private static Dictionary<int, PlayerView> SeatedBySlot(IReadOnlyList<PlayerView> players)
     {
@@ -95,11 +102,7 @@ public static class MatchBootstrapFactory
         {
             // Seating a player still in the lobby would put two players in the same chair.
             if (!IsSeated(player)) continue;
-            if (!seated.TryAdd(player.Slot, player))
-            {
-                throw new MultiplayerProtocolException(
-                    $"the roster seats two players in slot {player.Slot}");
-            }
+            seated.TryAdd(player.Slot, player);
         }
         return seated;
     }

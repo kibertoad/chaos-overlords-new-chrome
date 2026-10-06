@@ -1,5 +1,5 @@
 import type { MatchStatus, TurnStatus } from '@chaos-overlords/contracts'
-import { ABSENT_HUMAN_STATUSES, humanParticipants } from '../domain/entities'
+import { ABSENT_HUMAN_STATUSES, humanParticipants, isVacated } from '../domain/entities'
 import type {
   Match,
   PersistedEvent,
@@ -197,14 +197,25 @@ export class InMemoryStorage implements MultiplayerStorage {
     createLate: async (player) => {
       const match = this.matchRows.get(player.matchId)
       if (match?.status !== 'running') return false
-      const seated = [...this.playerRows.values()].filter(
-        (candidate) => candidate.matchId === player.matchId,
+      if (this.playerRows.has(player.id)) return false
+      const claimants = [...this.playerRows.values()].filter(
+        (candidate) => candidate.matchId === player.matchId && !isVacated(candidate),
       )
-      if (seated.some((candidate) => candidate.slot === player.slot)) return false
+      if (claimants.some((candidate) => candidate.slot === player.slot)) return false
       // Capacity is part of the claim, not a check the caller made a moment earlier.
-      if (seated.length >= match.settings.maxPlayers) return false
+      if (claimants.length >= match.settings.maxPlayers) return false
       this.playerRows.set(player.id, { ...player })
       return true
+    },
+    releaseComputerSeat: async (matchId, slot) => {
+      const released: string[] = []
+      for (const player of this.playerRows.values()) {
+        if (player.matchId !== matchId || player.slot !== slot) continue
+        if (player.status !== 'computer' || player.tokenHash === null) continue
+        player.tokenHash = null
+        released.push(player.id)
+      }
+      return released
     },
     get: async (id) => clone(this.playerRows.get(id)),
     getByTokenHash: async (tokenHash) =>
@@ -221,14 +232,20 @@ export class InMemoryStorage implements MultiplayerStorage {
     listSeats: async (matchIds) =>
       [...this.playerRows.values()]
         .filter((player) => matchIds.includes(player.matchId))
-        .map((player) => ({ matchId: player.matchId, slot: player.slot })),
+        .map((player) => ({
+          matchId: player.matchId,
+          slot: player.slot,
+          computer: player.status === 'computer',
+          vacated: isVacated(player),
+        })),
     setStatus: async (playerId, status) => {
       const player = this.playerRows.get(playerId)
       if (player) player.status = status
     },
-    transitionStatus: async (playerId, from, status) => {
+    transitionStatus: async (playerId, from, status, options) => {
       const player = this.playerRows.get(playerId)
       if (!player || !from.includes(player.status)) return false
+      if (options?.holdingToken === true && player.tokenHash === null) return false
       player.status = status
       return true
     },

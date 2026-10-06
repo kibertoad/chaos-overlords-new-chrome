@@ -970,6 +970,84 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       ])
     })
 
+    it('late-seats a computer seat only once every claim on it has been released', async () => {
+      const match = matchFixture({
+        status: 'running',
+        settings: { ...matchFixture().settings, maxPlayers: 2 },
+      })
+      await storage.matches.create(match)
+      await storage.matches.transition(match.id, ['running'], {
+        status: 'lobby',
+        updatedAt: new Date(),
+      })
+      const host = playerFixture(match, { slot: 0 })
+      const former = playerFixture(match, { slot: 1 })
+      await storage.players.create(host)
+      await storage.players.create(former)
+      await storage.matches.transition(match.id, ['lobby'], {
+        status: 'running',
+        updatedAt: new Date(),
+      })
+      const claim = playerFixture(match, { slot: 1, joinOrder: 2 })
+
+      // Voted to the computer, but the former player's token still reaches `rejoin`: reserved.
+      await storage.players.setStatus(former.id, 'computer')
+      expect(await storage.players.createLate(claim)).toBe(false)
+      expect((await storage.players.listSeats([match.id])).find((seat) => seat.slot === 1)).toEqual(
+        {
+          matchId: match.id,
+          slot: 1,
+          computer: true,
+          vacated: false,
+        },
+      )
+
+      // Only computer rows with a live token are released, and only once.
+      expect(await storage.players.releaseComputerSeat(match.id, 0)).toEqual([])
+      expect(await storage.players.releaseComputerSeat(match.id, 1)).toEqual([former.id])
+      expect(await storage.players.releaseComputerSeat(match.id, 1)).toEqual([])
+      expect((await storage.players.get(former.id))?.tokenHash).toBeNull()
+      expect(
+        (await storage.players.listSeats([match.id])).find((seat) => seat.slot === 1)?.vacated,
+      ).toBe(true)
+
+      // A released seat no longer counts against the limit of two, so the claim fits.
+      expect(await storage.players.createLate(claim)).toBe(true)
+      expect(await storage.players.createLate({ ...claim, id: uid('player') })).toBe(false)
+      expect((await storage.players.listByMatch(match.id)).map((player) => player.id)).toEqual([
+        host.id,
+        former.id,
+        claim.id,
+      ])
+    })
+
+    it('reclaims a seat with `holdingToken` only while its token is live', async () => {
+      const match = matchFixture({ status: 'running' })
+      await storage.matches.create(match)
+      await storage.matches.transition(match.id, ['running'], {
+        status: 'lobby',
+        updatedAt: new Date(),
+      })
+      const kept = playerFixture(match, { slot: 0 })
+      const released = playerFixture(match, { slot: 1 })
+      await storage.players.create(kept)
+      await storage.players.create(released)
+      await storage.players.setStatus(kept.id, 'computer')
+      await storage.players.setStatus(released.id, 'computer')
+      await storage.players.revokeToken(released.id)
+
+      expect(
+        await storage.players.transitionStatus(released.id, ['computer'], 'active', {
+          holdingToken: true,
+        }),
+      ).toBe(false)
+      expect(
+        await storage.players.transitionStatus(kept.id, ['computer'], 'active', {
+          holdingToken: true,
+        }),
+      ).toBe(true)
+    })
+
     /** Exactly one of a return and a takeover racing for the same seat may win. */
     it('transitions a player status only from the expected ones', async () => {
       const match = matchFixture()
