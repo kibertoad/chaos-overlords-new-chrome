@@ -16,6 +16,40 @@ if (process.env.REQUIRE_POSTGRES === '1' && !url) {
 }
 
 /**
+ * A database of this file's own, created on the server `TEST_DATABASE_URL` names.
+ *
+ * The runtimes here run their background jobs on a real clock, and the turn sweep settles every
+ * confirmed turn it finds. Sharing the database with the storage suite, which turbo runs at the
+ * same time, let a sweep stamp the turns that suite had just written and was about to list. A
+ * separate database also keeps other suites' notifications off this file's channel.
+ */
+let databaseUrl = ''
+const isolatedName = `chaos_cluster_${crypto.randomUUID().replaceAll('-', '')}`
+
+async function admin<T>(run: (client: pg.Client) => Promise<T>): Promise<T> {
+  const client = new pg.Client({ connectionString: url })
+  await client.connect()
+  try {
+    return await run(client)
+  } finally {
+    await client.end()
+  }
+}
+
+beforeAll(async () => {
+  if (!url) return
+  await admin((client) => client.query(`create database ${isolatedName}`))
+  const isolated = new URL(url)
+  isolated.pathname = `/${isolatedName}`
+  databaseUrl = isolated.toString()
+})
+
+afterAll(async () => {
+  if (!url) return
+  await admin((client) => client.query(`drop database if exists ${isolatedName} with (force)`))
+})
+
+/**
  * Well inside the twenty-second heartbeat and far inside the periodic catch-up read (five
  * heartbeats), so anything that arrives within it was carried by the cluster bus.
  */
@@ -64,7 +98,7 @@ describe.skipIf(!url)('node runtime as two instances over postgres', () => {
     for (let i = 0; i < 2; i += 1) {
       const runtime = await buildNodeRuntime(
         loadConfig({
-          DATABASE_URL: url,
+          DATABASE_URL: databaseUrl,
           LOG_LEVEL: 'error',
           RATE_LIMIT_PER_MINUTE: '10000',
           MEMBER_RATE_LIMIT_PER_MINUTE: '10000',
@@ -163,12 +197,12 @@ describe.skipIf(!url)('postgres cluster bus', () => {
     const a = recordingHub()
     const b = recordingHub()
     const busA = await PostgresClusterBus.start({
-      connectionString: url as string,
+      connectionString: databaseUrl,
       hub: a.hub,
       logger: noopLogger,
     })
     const busB = await PostgresClusterBus.start({
-      connectionString: url as string,
+      connectionString: databaseUrl,
       hub: b.hub,
       logger: noopLogger,
     })
@@ -176,7 +210,7 @@ describe.skipIf(!url)('postgres cluster bus', () => {
       const matchId = crypto.randomUUID()
       await busA.appended(event(matchId, 7))
       await busA.revoked({ matchId, playerId: 'p1' })
-      // Filtered by match: other suites in this run share the database and the channel.
+      // Filtered by match: the other tests of this file announce on the same channel.
       const ofMatch = <T extends { matchId: string }>(list: T[]) =>
         list.filter((entry) => entry.matchId === matchId)
       await waitFor(() => ofMatch(b.announced).length === 1 && ofMatch(b.closed).length === 1)
@@ -195,12 +229,12 @@ describe.skipIf(!url)('postgres cluster bus', () => {
 
   it('runs a job on one instance at a time', async () => {
     const busA = await PostgresClusterBus.start({
-      connectionString: url as string,
+      connectionString: databaseUrl,
       hub: recordingHub().hub,
       logger: noopLogger,
     })
     const busB = await PostgresClusterBus.start({
-      connectionString: url as string,
+      connectionString: databaseUrl,
       hub: recordingHub().hub,
       logger: noopLogger,
     })
@@ -232,20 +266,20 @@ describe.skipIf(!url)('postgres cluster bus', () => {
   it('listens again after its connection is cut and has the hub re-read the log', async () => {
     const a = recordingHub()
     const busA = await PostgresClusterBus.start({
-      connectionString: url as string,
+      connectionString: databaseUrl,
       hub: a.hub,
       logger: noopLogger,
       reconnectMinMs: 50,
     })
     const busB = await PostgresClusterBus.start({
-      connectionString: url as string,
+      connectionString: databaseUrl,
       hub: recordingHub().hub,
       logger: noopLogger,
     })
-    const admin = new pg.Client({ connectionString: url })
-    await admin.connect()
+    const killer = new pg.Client({ connectionString: databaseUrl })
+    await killer.connect()
     try {
-      await admin.query(
+      await killer.query(
         'select pg_terminate_backend(pid) from pg_stat_activity where application_name = $1',
         [busA.listenerName],
       )
@@ -255,7 +289,7 @@ describe.skipIf(!url)('postgres cluster bus', () => {
       await waitFor(() => a.announced.some((entry) => entry.matchId === matchId))
       expect(a.announced.find((entry) => entry.matchId === matchId)).toMatchObject({ seq: 3 })
     } finally {
-      await admin.end()
+      await killer.end()
       await busA.close()
       await busB.close()
     }
