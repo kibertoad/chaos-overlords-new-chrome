@@ -5,8 +5,8 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// The shipped files a format entry lists, resolved through <see cref="OriginalGameFiles"/>. The
-/// entry's <c>files:</c> patterns are matched against the paths of the build entry, so the tests
-/// check exactly the files the spec names, each against the xxh3 the build entry gives.
+/// entry's <c>files:</c> patterns are matched against the paths of the build's manifest, so the tests
+/// check exactly the files the spec names, each against the xxh3 the manifest gives.
 /// </summary>
 public static partial class OriginalFormatFiles
 {
@@ -28,6 +28,9 @@ public static partial class OriginalFormatFiles
 
     [GeneratedRegex(@"^\s*xxh3:\s*(?<hash>[0-9a-f]{32})\s*$")]
     private static partial Regex HashLine();
+
+    [GeneratedRegex(@"^manifest:\s*(?<file>.+?)\s*$")]
+    private static partial Regex ManifestLine();
 
     [GeneratedRegex(@"^files:\s*\[(?<list>.*)\]\s*$")]
     private static partial Regex FilesLine();
@@ -78,10 +81,20 @@ public static partial class OriginalFormatFiles
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
     }
 
+    /// <summary>
+    /// The files of <see cref="Build"/>, read from the manifest its entry names in
+    /// <c>manifest:</c>.
+    /// </summary>
     private static IEnumerable<ListedFile> BuildFiles()
     {
+        var manifest = FrontMatter(SpecPath("builds", Build + ".md"))
+            .Select(line => ManifestLine().Match(line))
+            .Where(match => match.Success)
+            .Select(match => match.Groups["file"].Value.Trim('"', '\''))
+            .SingleOrDefault();
+        Assert.NotNull(manifest);
         string? path = null;
-        foreach (var line in FrontMatter(SpecPath("builds", Build + ".md")))
+        foreach (var line in File.ReadAllLines(SpecPath("builds", manifest)))
         {
             var pathMatch = PathLine().Match(line);
             if (pathMatch.Success)
