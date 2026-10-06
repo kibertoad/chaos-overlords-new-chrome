@@ -326,7 +326,8 @@ public sealed class MatchReplayRecorder
             MatchReplaySerializer.CurrentFormatVersion,
             _initialStateFingerprint,
             _initialSnapshot,
-            _steps.ToArray());
+            _steps.ToArray(),
+            State.ViewedBy?.Value);
     }
 
     private TurnTransition RecordTransition(
@@ -363,8 +364,10 @@ public static class MatchReplaySerializer
     // 32 moves with the state-fingerprint encoding, whose events now record the gangs that fought
     // (MatchStateHasher.FormatVersion 3), and drops every older format: a journal is verified step
     // by step against the fingerprint of its day, so a journal from format 31 would diverge on its
-    // first step and be reported as damage rather than as an older format.
-    public const int CurrentFormatVersion = 53;
+    // first step and be reported as damage rather than as an older format. 55 adds `viewedBy`, the
+    // seat whose view a journal was recorded on (docs/MULTIPLAYER.md, "Saves, journals and
+    // spectators").
+    public const int CurrentFormatVersion = 55;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -386,6 +389,7 @@ public static class MatchReplaySerializer
         if (!source.CanRead) throw new ArgumentException("Source stream is not readable.", nameof(source));
         var document = ReadCurrentFormat(source, out var declared)
             ?? throw UnsupportedFormat(declared);
+        if (document.ViewedBy is { } seat) throw SeatViewJournal.Refusal(seat);
         return ApplyGuarded(document, definitions);
     }
 
@@ -400,6 +404,11 @@ public static class MatchReplaySerializer
     /// two halves disagree and which therefore replays from neither. An older journal is still
     /// perfectly replayable — that is what <see cref="LoadAndReplay"/> is for — it just cannot be
     /// grown, so the caller starts a fresh one and says the history before this point is not in it.
+    /// </para>
+    /// <para>
+    /// A journal recorded on a seat's view (<see cref="SeatViewJournal"/>) is resumable: it
+    /// is restored as that seat's view and its planning steps are replayed on it, which is all it
+    /// holds.
     /// </para>
     /// <para>
     /// Answering null rather than throwing is the point: a save from last week loading into a new
@@ -545,7 +554,9 @@ public static class MatchReplaySerializer
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
         using var snapshot = new MemoryStream(document.InitialSnapshot, writable: false);
-        var state = NativeSaveSerializer.Load(snapshot, definitions);
+        var state = document.ViewedBy is { } seat
+            ? NativeSaveSerializer.LoadView(snapshot, definitions, new PlayerId(seat))
+            : NativeSaveSerializer.Load(snapshot, definitions);
         VerifyFingerprint(document.InitialStateFingerprint, state, -1);
         for (var index = 0; index < document.Steps.Count; index++)
         {
@@ -757,11 +768,16 @@ public static class MatchReplaySerializer
     }
 }
 
+/// <param name="ViewedBy">
+/// The seat whose view the journal was recorded on (<see cref="MatchState.ViewedBy"/>), or null
+/// for a journal of the whole match.
+/// </param>
 internal sealed record ReplayDocument(
     int FormatVersion,
     string InitialStateFingerprint,
     byte[] InitialSnapshot,
-    IReadOnlyList<ReplayStep> Steps);
+    IReadOnlyList<ReplayStep> Steps,
+    int? ViewedBy = null);
 
 public sealed record MatchReplayLoadResult(
     MatchState State,

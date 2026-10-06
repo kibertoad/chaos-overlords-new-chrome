@@ -213,8 +213,11 @@ public sealed partial class ChaosGame
         CapturedJournal? captured;
         try
         {
+            // Once a match played from views has ended, the session holds the whole match rebuilt
+            // from what the server released, which replays where the view's planning cannot.
             captured = BugReportComposer.Capture(
-                _actions?.Journal, BugReportComposer.MatchTypeOf(_state, _session is not null));
+                _actions?.Journal ?? _session?.ReleasedJournal,
+                BugReportComposer.MatchTypeOf(_state, _session is not null));
         }
         catch (Exception exception) when (exception is InvalidOperationException
                                           or InvalidDataException or IOException)

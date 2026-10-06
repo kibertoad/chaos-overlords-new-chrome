@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
+using Rechaos.Game;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Protocol;
 using Rechaos.Multiplayer.Resolution;
@@ -221,5 +222,117 @@ public sealed partial class MultiplayerSessionTests
         Assert.Contains("\"ready\":true", server.BodiesSentTo(HttpMethod.Put, "/turns/3/orders")[0]);
         Assert.Equal("[]", Regex.Match(
             server.BodiesSentTo(HttpMethod.Put, "/turns/3/orders")[0], "\"ops\":(\\[[^\\]]*\\])").Groups[1].Value);
+    }
+
+    /// <summary>
+    /// A report filed during a match played from views carries what the client has: its view and
+    /// the turn being planned on it. That replays as the view, and refuses to replay as a match.
+    /// </summary>
+    [Fact]
+    public void AReportFromAViewMatchCarriesTheViewAndRefusesReplayAsAMatch()
+    {
+        var match = ServerMatch();
+        var view = MatchStateClone.ViewFromBase64(
+            ServedView(match, slot: 0).Body, ViewDefinitions, new PlayerId(0));
+        var offer = view.Players[0].HireOfferSlots
+            .Select(slot => slot.GangDefinitionId)
+            .First(id => id is not null)!.Value;
+        var planning = SpeculativeTurn.For(view, ViewDefinitions, 0);
+        Assert.True(planning.SnubHireOffer(offer).Accepted);
+
+        var composed = BugReportComposer.Compose(
+            "The hire dock is wrong.",
+            BugReportComposer.Capture(planning.Replay, BugReportMatchType.Online),
+            includeState: true);
+
+        Assert.Equal(BugReportStateOutcome.Attached, composed.StateOutcome);
+        var archive = Convert.FromBase64String(composed.Request.State!.Body);
+        var refused = Assert.Throws<InvalidDataException>(
+            () => ReplayArchive.LoadAndReplay(archive, ViewDefinitions));
+        Assert.Equal(0, SeatViewJournal.SeatOf(refused));
+        Assert.Contains("cannot be replayed as a match", refused.Message, StringComparison.Ordinal);
+
+        using var json = new MemoryStream(ReplayArchive.Unpack(archive), writable: false);
+        var replayed = MatchReplaySerializer.TryLoadResumable(json, ViewDefinitions)!.State;
+        Assert.Equal(new PlayerId(0), replayed.ViewedBy);
+        Assert.Equal(offer, replayed.Players[0].SnubbedHireOffer);
+        Assert.Equal(ReplayAnonymizer.SeatName(0), replayed.Setup.Players[0].Name);
+        Assert.Throws<InvalidOperationException>(() => replayed.FinishCommand(new PlayerId(0)));
+    }
+
+    /// <summary>
+    /// Once a match played from views has ended, the session rebuilds the whole match from the seed
+    /// and the sealed sets the server releases, and a report filed then replays as a match.
+    /// </summary>
+    [Fact]
+    public async Task AReportFiledAfterAViewMatchEndsReplaysTheWholeMatch()
+    {
+        var match = ServerMatch();
+        var seq = 1;
+        var history = new List<MatchEvent>
+        {
+            new MatchStartedEvent(seq, MatchId, At, new MatchStartedEventPayload(null, Roster)),
+        };
+        var sealedSets = new Dictionary<int, SealedOrdersView>();
+        while (!match.IsFinished)
+        {
+            var turn = match.Turn;
+            var sealedOrders = SealedOrders(turn);
+            sealedSets[turn] = sealedOrders;
+            var sealedTurn = new TurnSealedEvent(++seq, MatchId, At, new(turn, sealedOrders.OrderSetHash));
+            history.Add(sealedTurn);
+            match.Apply(sealedTurn, sealedOrders);
+            if (!match.IsFinished)
+                history.Add(new TurnOpenedEvent(++seq, MatchId, At, new(turn + 1, null)));
+            history.Add(new TurnConfirmedEvent(++seq, MatchId, At, new(turn, match.StateHash)));
+        }
+        var finished = ViewMatch() with
+        {
+            Status = MatchStatus.Finished,
+            Seed = Seed,
+            CurrentTurn = match.Turn - 1,
+            LastEventSeq = seq,
+        };
+        // The session starts from the running match and finds it finished when it restores.
+        var (session, server, http) = Running(
+            matchView: ViewMatch(),
+            configure: fake =>
+            {
+                fake.Answer(HttpMethod.Get, $"/matches/{MatchId}", new MatchDetail(finished, "CODE1234", "p1"));
+                // The resume reads the log from where the session left it, the rebuild from the start.
+                fake.AnswerOnce(
+                    HttpMethod.Get, "/events", new EventPage(history.Where(@event => @event.Seq > 7).ToArray()));
+                fake.Answer(HttpMethod.Get, "/events", new EventPage(history));
+                fake.Answer(HttpMethod.Get, "/snapshots/latest", Envelope("no_snapshot"), HttpStatusCode.NotFound);
+                foreach (var (turn, sealedOrders) in sealedSets)
+                    fake.Answer(HttpMethod.Get, $"/turns/{turn}/orders", sealedOrders);
+            });
+        using var _ = http;
+        await using var __ = session;
+
+        var resumed = await WaitFor<MultiplayerNotice.Resumed>(session);
+        Assert.NotNull(resumed.State.Outcome);
+        Assert.Equal(match.StateHash, MatchStateHasher.ComputeFingerprint(resumed.State));
+        await Until(() => session.ReleasedJournal is not null, "the whole match's journal was rebuilt");
+
+        var journal = session.ReleasedJournal!;
+        using (var whole = new MemoryStream())
+        {
+            MatchReplaySerializer.Save(whole, journal);
+            whole.Position = 0;
+            var replayed = MatchReplaySerializer.LoadAndReplay(whole, ViewDefinitions);
+            Assert.Null(replayed.ViewedBy);
+            Assert.Equal(match.StateHash, MatchStateHasher.ComputeFingerprint(replayed));
+        }
+
+        var composed = BugReportComposer.Compose(
+            "The awards are wrong.",
+            BugReportComposer.Capture(journal, BugReportMatchType.Online),
+            includeState: true);
+        Assert.Equal(BugReportStateOutcome.Attached, composed.StateOutcome);
+        var report = ReplayArchive.LoadAndReplay(
+            Convert.FromBase64String(composed.Request.State!.Body), ViewDefinitions);
+        Assert.NotNull(report.Outcome);
+        Assert.Equal(resumed.State.Coordinator.Turn, report.Coordinator.Turn);
     }
 }

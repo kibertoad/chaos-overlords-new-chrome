@@ -928,6 +928,15 @@ planning entry.
   is enough for an interface fault and cannot be replayed as a match. Once the match has ended
   nothing is hidden: the server releases the seed and every seat's sealed sets to the match's
   members, and the client rebuilds the whole journal from them.
+
+  The journal a client records while it plans on a view is the view at the planning entry and the
+  seat's planning on it, and it names the seat (`viewedBy`, replay format 55). The report replays
+  as that view with the planning on it, and `LoadAndReplay` refuses it as a match with the reason
+  (`SeatViewJournal`). Once the match has ended, `MultiplayerMatchSession.ReleasedJournal` holds the
+  whole match, folded from the released seed and sealed sets through `AuthoritativeMatch` with every
+  confirmed hash checked, and a report filed then attaches it and replays to the server's final
+  state. The session builds it after handing the game the final state; if the rebuild fails, a
+  report goes out without a journal.
 - When the match ends the server sends the whole state, since the awards screen shows every seat's
   statistics (SCR-AWARDS-001) and nothing is left to protect.
 - Spectators (#496) read the whole match a fixed number of turns behind. A player can open a
@@ -944,7 +953,9 @@ seats' documents in a sealed set (a seat reads its own and the set's digest), an
 whole match. Those changes, the view route and the refusals of reports and uploads moved the
 protocol version to 34. The session version stays: the sealed sets, order documents and snapshots a
 match stores are the same, and the mode is a new column on the match (`seat_views`, migration
-`0008_seat_views`), false for every match created before it.
+`0008_seat_views`), false for every match created before it. Journals record the seat they were
+recorded on, which moved the replay format to 55; the state fingerprint encoding, the native save
+format and the session version stay.
 
 ### Cost
 

@@ -72,8 +72,9 @@ public static class NativeSaveSerializer
     /// fingerprint back. Nothing that reads a file somebody else wrote may use this.
     /// </para>
     /// </remarks>
-    internal static MatchState LoadRewritten(Stream source, OriginalData definitions) =>
-        Load(source, definitions, verifyStateFingerprint: false);
+    internal static MatchState LoadRewritten(
+        Stream source, OriginalData definitions, PlayerId? viewedBy = null) =>
+        Load(source, definitions, verifyStateFingerprint: false, viewedBy);
 
     /// <summary>Restores a seat's view that <see cref="SeatView.Save"/> wrote.</summary>
     internal static MatchState LoadView(Stream source, OriginalData definitions, PlayerId seat) =>

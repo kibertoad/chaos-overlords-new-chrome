@@ -47,6 +47,22 @@ public sealed partial class MultiplayerMatchSession
     /// <summary>Set once the final state has gone to the interface, which needs it once.</summary>
     private bool _finalStateDelivered;
 
+    private MatchReplayRecorder? _releasedJournal;
+
+    /// <summary>
+    /// The journal of the whole match, rebuilt from what the server releases once a match played
+    /// from views ends, or null before then, in a lockstep match, or when the rebuild failed.
+    /// </summary>
+    /// <remarks>
+    /// While a match played from views runs, the client holds its seat's view and nothing more, so
+    /// a bug report can carry only that and the turn being planned, and such a journal does not
+    /// replay as a match (<see cref="SeatViewJournal"/>). Once the match has ended the
+    /// server releases the seed and every sealed set, and the session folds them into this journal
+    /// after it has handed the game the final state. It is set once and never changes after, so the
+    /// game may read it from its own thread.
+    /// </remarks>
+    public MatchReplayRecorder? ReleasedJournal => Volatile.Read(ref _releasedJournal);
+
     /// <summary>
     /// Whether this match is played from per-seat views, as the server stamped it at creation.
     /// </summary>
@@ -215,10 +231,11 @@ public sealed partial class MultiplayerMatchSession
                     await ResumePlanningAsync(view, served.View, cancellationToken).ConfigureAwait(false);
                     return true;
                 case ViewFetch.Ended:
-                    var (_, final, _) = await ReadFinalStateAsync(cancellationToken).ConfigureAwait(false);
+                    var (_, final, _, rebuilt) = await ReadFinalStateAsync(cancellationToken).ConfigureAwait(false);
                     _finalStateDelivered = true;
                     _notices.Enqueue(new MultiplayerNotice.Resumed(
                         view, final, new OwnSubmissionView(view.CurrentTurn, null, Ready: false, null), null));
+                    await ReleaseJournalAsync(rebuilt, cancellationToken).ConfigureAwait(false);
                     return true;
                 case ViewFetch.Out:
                     _viewTurn = view.CurrentTurn;
@@ -379,10 +396,35 @@ public sealed partial class MultiplayerMatchSession
     private async Task DeliverFinalStateAsync(bool includedOwnOrders, CancellationToken cancellationToken)
     {
         if (_finalStateDelivered) return;
-        var (turn, final, stateHash) = await ReadFinalStateAsync(cancellationToken).ConfigureAwait(false);
+        var (turn, final, stateHash, rebuilt) =
+            await ReadFinalStateAsync(cancellationToken).ConfigureAwait(false);
         _finalStateDelivered = true;
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
             turn, final, stateHash, includedOwnOrders, Planning: null));
+        await ReleaseJournalAsync(rebuilt, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Keeps the whole match's journal for bug reports, rebuilding the match when the final state
+    /// came from a snapshot.
+    /// </summary>
+    /// <remarks>
+    /// The final state is on the screen by now, so a rebuild that fails costs only the journal: a
+    /// report filed afterwards goes out without one, as a report from a match with nothing to
+    /// attach does.
+    /// </remarks>
+    private async Task ReleaseJournalAsync(AuthoritativeMatch? rebuilt, CancellationToken cancellationToken)
+    {
+        try
+        {
+            rebuilt ??= await RebuildReleasedMatchAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is MultiplayerApiException
+            or MultiplayerProtocolException or InvalidDataException)
+        {
+            return;
+        }
+        Volatile.Write(ref _releasedJournal, rebuilt.Recorder);
     }
 
     /// <summary>
@@ -393,17 +435,17 @@ public sealed partial class MultiplayerMatchSession
     /// is stored under, and otherwise the match rebuilt from the seed and the sealed sets, which
     /// are released at the same moment.
     /// </remarks>
-    private async Task<(int Turn, MatchState State, string StateHash)> ReadFinalStateAsync(
-        CancellationToken cancellationToken)
+    private async Task<(int Turn, MatchState State, string StateHash, AuthoritativeMatch? Rebuilt)>
+        ReadFinalStateAsync(CancellationToken cancellationToken)
     {
         if (await LatestSnapshotOrNullAsync(cancellationToken).ConfigureAwait(false) is { } snapshot)
         {
             var state = ReadVerifiedSnapshot(snapshot);
-            if (state.Outcome is not null) return (snapshot.Turn, state, snapshot.StateHash);
+            if (state.Outcome is not null) return (snapshot.Turn, state, snapshot.StateHash, null);
         }
         var rebuilt = await RebuildReleasedMatchAsync(cancellationToken).ConfigureAwait(false);
         var final = MatchStateClone.Of(rebuilt.Recorder.State, _definitions);
-        return (final.Coordinator.Turn - 1, final, rebuilt.StateHash);
+        return (final.Coordinator.Turn - 1, final, rebuilt.StateHash, rebuilt);
     }
 
     /// <summary>

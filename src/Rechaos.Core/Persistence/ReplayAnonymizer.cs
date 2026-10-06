@@ -70,7 +70,9 @@ public static class ReplayAnonymizer
         {
             using var snapshot = new MemoryStream(
                 RewriteSnapshot(document.InitialSnapshot), writable: false);
-            state = NativeSaveSerializer.LoadRewritten(snapshot, source.State.Definitions);
+            // A journal recorded on a seat's view stays one, so it keeps refusing what a view cannot do.
+            state = NativeSaveSerializer.LoadRewritten(
+                snapshot, source.State.Definitions, source.State.ViewedBy);
         }
         // `RewriteSnapshot` reaches into the JSON with `AsObject`, `AsArray` and `GetValue<T>`,
         // which answer a shape mismatch with InvalidOperationException or FormatException. The

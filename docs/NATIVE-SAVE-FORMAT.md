@@ -164,6 +164,14 @@ last-valid-generation backup policy to replay files. The game client
 records all of its mutations and exposes atomic save plus verified primary or
 backup playback through F6 and F10.
 
+Version 55 adds `viewedBy`, the seat whose view of an online match a journal was
+recorded on (docs/MULTIPLAYER.md, "Per-seat views"), or null for a journal of the
+whole match. The initial snapshot of such a journal is restored as that seat's
+view. `MatchReplaySerializer.TryLoadResumable` replays its steps on the view, and
+`LoadAndReplay` refuses it before running anything, with an
+`InvalidDataException` that `SeatViewJournal.SeatOf` names the seat for, because
+a view holds no random state and cannot resolve a turn.
+
 Replay version 3 embeds a native-save version 4 initial snapshot and records
 planning-time hire-offer preparation so opening the persistent Hire dock does
 not become an out-of-band RNG mutation. Replay version 4 embeds the version 5
