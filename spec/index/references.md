@@ -587,6 +587,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-UI-057](../findings/FND-UI-057.md) | builds, locations |
 | [FND-UI-058](../findings/FND-UI-058.md) | builds, locations |
 | [FND-UI-059](../findings/FND-UI-059.md) | body, builds, locations |
+| [FND-UI-069](../findings/FND-UI-069.md) | builds, locations |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | builds, locations |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | builds, locations |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | builds, locations |
@@ -6949,6 +6950,7 @@ None.
 | [FND-UI-039](../findings/FND-UI-039.md) | body |
 | [FND-UI-040](../findings/FND-UI-040.md) | body |
 | [FND-UI-041](../findings/FND-UI-041.md) | body |
+| [FND-UI-069](../findings/FND-UI-069.md) | body |
 | glossary: no_match_in_play | glossary |
 | [RULE-OPTIONS-003](../rules/RULE-OPTIONS-003.md) | body, evidence |
 | [RULE-TIMER-002](../rules/RULE-TIMER-002.md) | body, evidence |
@@ -7340,6 +7342,7 @@ None.
 | [FND-UI-018](../findings/FND-UI-018.md) | body |
 | [FND-UI-019](../findings/FND-UI-019.md) | body |
 | [FND-UI-044](../findings/FND-UI-044.md) | body |
+| [FND-UI-069](../findings/FND-UI-069.md) | body |
 | glossary: viewed_player | glossary |
 | [RULE-UI-006](../rules/RULE-UI-006.md) | body, evidence |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body, evidence |
@@ -7388,6 +7391,7 @@ None.
 | [FND-UI-048](../findings/FND-UI-048.md) | body |
 | [FND-UI-049](../findings/FND-UI-049.md) | body |
 | [FND-UI-050](../findings/FND-UI-050.md) | body |
+| [FND-UI-069](../findings/FND-UI-069.md) | body |
 | glossary: viewed_player | glossary |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body, evidence |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
@@ -7660,6 +7664,7 @@ None.
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-UI-010](../findings/FND-UI-010.md) | body |
 | [FND-UI-018](../findings/FND-UI-018.md) | body |
+| [FND-UI-069](../findings/FND-UI-069.md) | body |
 | glossary: active_player | glossary |
 | glossary: gang | glossary |
 | glossary: gangs | glossary |
@@ -7858,6 +7863,13 @@ None.
 | Cited by | In |
 |---|---|
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
+
+## FND-UI-069
+
+| Cited by | In |
+|---|---|
+| [RULE-UI-010](../rules/RULE-UI-010.md) | body, evidence |
+| [SCR-UI-004](../screens/SCR-UI-004.md) | body, evidence |
 
 ## FND-UPKEEP-001
 
@@ -10046,6 +10058,7 @@ None.
 | [EXP-UI-009](../experiments/EXP-UI-009.md) | body |
 | [EXP-UI-010](../experiments/EXP-UI-010.md) | body |
 | [EXP-UI-011](../experiments/EXP-UI-011.md) | body |
+| [FND-UI-069](../findings/FND-UI-069.md) | body |
 | [RULE-UI-010](../rules/RULE-UI-010.md) | body |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | body, related |
 | [SCR-UI-005](../screens/SCR-UI-005.md) | body |

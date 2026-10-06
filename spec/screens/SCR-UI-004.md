@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-036, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-025, FND-UI-031, FND-UI-032, FND-UI-035, SRC-MANUAL-GOG, FND-UI-021, FND-EXE-004, FND-HIRE-008, FND-UI-038, EXP-TURN-095, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007]
+evidence: [FND-UI-036, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-025, FND-UI-031, FND-UI-032, FND-UI-035, SRC-MANUAL-GOG, FND-UI-021, FND-EXE-004, FND-HIRE-008, FND-UI-038, EXP-TURN-095, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-069]
 conflicting: []
 split_with: []
 related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-UI-003, SCR-UI-007, SCR-HIRE-002, SCR-GANG-002]
@@ -25,10 +25,10 @@ related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-U
 | Site portraits | `DATA/PX16/PX02000`, the 120-by-64 row of the site's definition | The sector's three sites, under the frame `DATA/PX16/PX00129` `(0,171,120,64)` keyed on exact white | `(86, 228 + 66*k, 120, 64)` for site slot `k` | Always | FND-UI-018 |
 | Site progress meter | `DATA/PX16/PX00129` green strip `(354,0,100,3)` over the red track of the site frame | `site_meter_length(progress, resistance)` pixels (RULE-UI-005) | Portrait offset `(10,59)`, 100 by 3 | For each site, when the sector's owner is the active player | FND-UI-018, FND-UI-036 |
 | Gang card frame | `DATA/PX16/PX00129` `(162,15,74,110)` | None | `(254 + 76*(n % 2), 80 + 112*(n / 2), 74, 110)` for card `n` | For each gang RULE-UI-010 lists | FND-UI-036 |
-| Action strip | `DATA/PX16/PX00129` `(162, 125 + 9*action, 64, 9)` | The gang's `action` | On the card; offset not recorded | For each card | FND-UI-036 |
+| Action strip | `DATA/PX16/PX00129` `(162, 125 + 9*action, 64, 9)` | The gang's `action` | Card offset `(5,8)` | For each card of the active player's gang while a match is in play; another player's card, and every card of the final view after the match has ended, keeps the frame's blank band there | FND-UI-036, FND-UI-069 |
 | Gang portrait | `DATA/PX16/PX03000` 64-by-64 cell of the gang's definition | None | Card offset `(5,20)` | For each card | FND-UI-036 |
 | Equipment icons | `DATA/PX16/PX04999` 20-by-20 cells | The gang's `weapon`, `armor` and `misc` | Card offsets `(5,86)`, `(27,86)`, `(49,86)` | For each item that is not -1 | FND-UI-036 |
-| Force meter | `DATA/PX16/PX00129` green strip `(354,0)` over the card's 60-by-3 red track | `force_meter_length(force)` pixels (RULE-UI-005) | On the card; offset not recorded | For each card | FND-UI-036 |
+| Force meter | `DATA/PX16/PX00129` green strip `(354,0)` over the card's 60-by-3 red track | `force_meter_length(force)` pixels (RULE-UI-005) | Card offset `(7,3)` | For each card | FND-UI-036, FND-UI-069 |
 | Player outline | A line in the viewed player's colour | None | One pixel outside each card | For each card | FND-UI-018, FND-UI-036 |
 | Group order strip | `DATA/PX16/PX00129` `(190,425,152,16)` | None | `(253,61,152,16)` | At least two cards, the viewed player is the active player, and planning is not over | FND-UI-018 |
 | Sector values | The font strip of `DATA/PX16/PX00129` | Income, Tolerance, Support and Cash (RULE-UI-011) | As on SCR-UI-003 | Always | FND-UI-017, FND-UI-035 |
@@ -40,7 +40,7 @@ related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-U
 | Console tiles | As on SCR-UI-003 | Planning | RULE-UI-002 | FND-UI-032 |
 | Neighbouring sector | `(64,60,162,156)`; column `(x - 64 > 53) + (x - 64 > 107)`, row `(y - 60 > 51) + (y - 60 > 103)` | A double-click, on a cell that is on the map and whose owner byte is not -2 | Makes that sector the selected one and redraws the screen for the active player | FND-UI-015 |
 | Site portrait | `(86,228,120,196)`; slot `(y > 294) + (y > 360)` | A double-click | Opens SCR-UI-007 for the site | FND-UI-015 |
-| Gang card | `(254,80,150,336)`; card `(x > 329) + 2*(y > 192) + 2*(y > 304)` | A press (left or right) or a double-click, on a card that holds a gang | For the active player's own cards, the individual command handler with mode 1 for a press and 2 for a double-click; for another player's card, a double-click on the portrait opens the gang panel and on an equipment icon opens Item Information. On the active player's card, a press inside the card's strip from `(5,8)` to `(69,17)` opens a Windows popup menu at the card's corner moved 1 left and 8 down: menu 2 (recurring orders: Chaos, Control, Heal, Hide, Influence, Research, None) right of card x 37, menu 1 (the thirteen orders, None and Terminate) otherwise, with items that cannot apply greyed | FND-UI-015, FND-UI-021 |
+| Gang card | `(254,80,150,336)`; card `(x > 329) + 2*(y > 192) + 2*(y > 304)` | A press (left or right) or a double-click, on a card that holds a gang | For the active player's own cards, the individual command handler with mode 1 for a press and 2 for a double-click; for another player's card, a double-click on the portrait opens the gang panel and on an equipment icon opens Item Information. On the active player's card, while a match is in play, a press inside the card's strip from `(5,8)` to `(69,17)` opens a Windows popup menu at the card's corner moved 1 left and 8 down: menu 2 (recurring orders: Chaos, Control, Heal, Hide, Influence, Research, None) right of card x 37, menu 1 (the thirteen orders, None and Terminate) otherwise, with items that cannot apply greyed | FND-UI-015, FND-UI-021 |
 | Group order strip | `(253,61,152,16)`; left half to x 367, right half beyond | A press, while the strip is drawn | Opens a Windows popup menu at `(290,65)`: menu 3 (Attack, Bribe, Chaos, Control, Heal, Hide, Influence, Move, Snitch, None, Terminate) on the left half, menu 5 (recurring Chaos, Control, Heal, Hide, Influence, None) on the right. The choice becomes the order of all the active player's gangs in the sector, for this turn (left) or recurring (right); Heal changes only gangs below Force 10 | FND-UI-015, FND-UI-021 |
 | Overlord bar portrait | `(12 + 70*n, 5, 62, 32)` for player `n` | A press, when that player's `gangs_seen` byte for the sector is set | Redraws the view with player `n` as the compositor's player argument, so the cards show player `n`'s gangs in the sector that the active player can see (RULE-UI-010). FND-UI-036 read every caller as passing the active player; this call passes `n` | FND-UI-015 |
 | Hire dock | `(440,373,196,77)` | A press or double-click | The Hire handler (SCR-HIRE-002): a press drags an offer to a sector or toggles its Reject, a double-click opens the live-gang panel (SCR-GANG-002) | FND-UI-015, FND-HIRE-008 |
@@ -81,7 +81,5 @@ None known.
 
 ## Open questions
 
-- The offsets of the action strip and the Force meter on a card were measured
-  from the art, not from the code (the card compositor is FND-UI-036's).
 - Whether the site progress meter is drawn for a player who does not own the
   sector (the reading is that it is not).

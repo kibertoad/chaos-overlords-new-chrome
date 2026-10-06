@@ -4,7 +4,7 @@ title: Which gangs the detailed sector cards and Gangs in Sector list
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-036, EXP-TURN-096, FND-UI-015, FND-UI-018, FND-UI-002, FND-UI-024, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-036, EXP-TURN-096, FND-UI-015, FND-UI-018, FND-UI-002, FND-UI-024, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-069]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -74,6 +74,8 @@ x `258 + 32*n`.
 - The `visible_to` test of the cards is always true for the owner's own gangs.
 - Only the active player's own cards take orders; another player's cards open
   the gang and item information panels [FND-UI-015].
+- Another player's cards draw no action strip, so the screen shows none of
+  that player's orders [FND-UI-069].
 
 ## What the sources say
 

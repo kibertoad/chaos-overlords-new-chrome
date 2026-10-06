@@ -44,4 +44,17 @@ public sealed class SectorGangCardLayoutTests
         Assert.Null(SectorGangCardLayout.ActionRepeatAt(
             0, SectorGangCardLayout.Portrait(0).Center));
     }
+
+    // SCR-UI-004, FND-UI-069: the card compositor copies the action strip to card offset (5,8),
+    // and only for a gang of the active player while the match is in play.
+    [Fact]
+    public void ActionStripIsDrawnOnlyOnTheActivePlayersCardsDuringTheMatch()
+    {
+        Assert.Equal(new Rectangle(259, 88, 64, 9), SectorGangCardLayout.ActionStrip(0));
+        var active = new PlayerId(0);
+        Assert.True(ChaosGame.ShowsActionStrip(active, active, matchOver: false));
+        Assert.False(ChaosGame.ShowsActionStrip(active, active, matchOver: true));
+        Assert.False(ChaosGame.ShowsActionStrip(active, new PlayerId(2), matchOver: false));
+        Assert.False(ChaosGame.ShowsActionStrip(active, new PlayerId(2), matchOver: true));
+    }
 }

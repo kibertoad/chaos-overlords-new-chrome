@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-06 | [Show other players' gang cards as the original does](#2026-10-06--show-other-players-gang-cards-as-the-original-does) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
 | 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
@@ -44,6 +45,25 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-06 — Show other players' gang cards as the original does
+
+- Decision: this supersedes the 2026-09-18 decision on the Sector workspace's
+  opponent gang view. A press on an overlord's portrait lists that overlord's
+  gangs the viewer detects, as the original does (RULE-UI-010). Their cards
+  draw no action strip, and the card of every gang, the viewer's own
+  included, draws none in the final view after the match has ended
+  (FND-UI-069). DEV-UI-008's target highlight follows the viewer's own
+  orders only, so nothing on the screen shows another player's order.
+- Reason: the 2026-09-18 entry gave as evidence that the original listed only
+  the viewing overlord's gangs and had no way to read another's. FND-UI-015
+  and EXP-TURN-096 show the portrait press, and DEV-UI-013 was dropped for
+  that reason. FND-UI-069 shows that the original's card compositor copies
+  the action strip only when the card's player is the active player and a
+  match is in play, so the strip stays off another player's cards because the
+  original leaves it off, not to keep orders private.
+- Online play: to draw these cards a seat needs each detected opponent gang's
+  definition, Force and equipment. It needs no other player's orders.
 
 ## 2026-10-06 — Count a row its mandatory deviations replace as deviated
 
@@ -486,6 +506,8 @@ reason, as [AGENTS.md](../AGENTS.md) requires when a state hash changes.
 
 ## 2026-09-18 — Scope the Sector workspace's opponent gang view to detection
 
+- Superseded by the 2026-10-06 decision "Show other players' gang cards as the
+  original does". Its evidence is wrong: the original has the portrait press.
 - Decision: the detailed-sector portrait strip marks an opponent with a red
   `GANGS` banner and lends the gang cards to that opponent's roster only for
   gangs the viewer already detects. The borrowed roster is per-visit state: the
