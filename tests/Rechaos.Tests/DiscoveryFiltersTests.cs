@@ -44,7 +44,7 @@ public sealed class DiscoveryFiltersTests
             DiscoveryFilters.ValueOf(
                 DiscoveryFilters.Scenario, (int)ScenarioId.KillEmAll + 1));
         Assert.Equal(
-            ScenarioCatalog.Get(ScenarioId.KillEmAll).Name,
+            ExecutableStrings.ScenarioTitle(ScenarioId.KillEmAll),
             DiscoveryFilters.Label(DiscoveryFilters.Scenario, (int)ScenarioId.KillEmAll + 1));
         Assert.Equal(
             DifficultyPresentation.Label(AiDifficulty.CrimeLord),
