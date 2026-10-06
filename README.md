@@ -245,11 +245,6 @@ Tim Jordan, Adam K. Rixey, and George Ruof, for the remarkably thorough
 It has been invaluable for clarifying game mechanics whose presentation in the
 original game and manual can otherwise be delightfully cryptic.
 
-This project copies no source code and redistributes no copyrighted resources
-from the original game. Players are expected to buy and own a legal copy, such
-as the [GOG release](https://www.gog.com/en/game/chaos_overlords), and import
-its assets locally during installation.
-
 ## License
 
 The code, documentation and other material written for this project, including
@@ -271,8 +266,11 @@ game are now held by Evolution Interactive. All rights to the original game,
 including its name, executable, artwork, music, sounds, video, text and other
 assets, belong to their respective owners.
 
-This repository and its releases contain none of the original game's files.
-Each player imports the assets from their own legal copy. The name
+This project copies no source code from the original game, and this repository
+and its releases contain none of its files. Players are expected to buy and own
+a legal copy, such as the
+[GOG release](https://www.gog.com/en/game/chaos_overlords), and import its
+assets locally during installation. The name
 *Chaos Overlords* is used here only to identify the game this project is
 compatible with. This project is an independent fan recreation, not affiliated
 with or endorsed by Stick Man Games, New World Computing, Evolution Interactive
