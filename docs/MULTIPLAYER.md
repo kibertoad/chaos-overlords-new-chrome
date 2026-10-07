@@ -597,7 +597,10 @@ client replays them:
 - `match.playerTakenOver`: the seat goes to the computer. `match.playerReturned` that replaced the
   computer, and `match.latePlayerJoined`: the seat goes to a human. A handover on a finished match is
   ignored, as on every client.
-- `turn.sealed`: the frozen set, checked against its own digest, then resolved.
+- `turn.sealed`: the frozen set, checked against its own digest, then resolved. A set sealed after
+  the match has finished is ignored, as on every client. A set for a turn already resolved is
+  refused rather than ignored, because the hash it would return belongs to a later turn: the host
+  feeds each set once, and after a restore reads the resolver's turn to know where to resume.
 
 It keeps the state in memory and checkpoints it, every ten turns as the host does today and at
 every desync it settles. A checkpoint is the snapshot archive clients already read, so the server's
