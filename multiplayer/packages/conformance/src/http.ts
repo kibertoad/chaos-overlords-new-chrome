@@ -456,7 +456,7 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
           .map((event) => (event.payload as { turn: number }).turn),
       ).toEqual([1])
       expect(await spectator.events(page.cursor)).toEqual({ events: [], cursor: page.cursor })
-      // The roster is the one the match started with.
+      // The roster is the one the match started with (checked again below after a seat changes).
       expect(view.players.map((player) => player.status)).toEqual(['active', 'active'])
 
       // Only the host removes a spectator, and a removed token reads nothing more.
@@ -464,6 +464,15 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
         status: 403,
         reason: 'host_only',
       })
+
+      // A player who leaves now does so after the released turn: the view keeps the seat active
+      // and the log does not move.
+      await guestApi.leave()
+      const afterLeave = await spectator.get()
+      expect(afterLeave.status).toBe('running')
+      expect(afterLeave.players.map((player) => player.status)).toEqual(['active', 'active'])
+      expect(await spectator.events(page.cursor)).toEqual({ events: [], cursor: page.cursor })
+
       await hostApi.removeSpectator(watcher.spectator.id)
       await expect(spectator.get()).rejects.toMatchObject({ status: 401, reason: 'invalid_token' })
       expect((await hostApi.spectators()).spectators).toEqual([])

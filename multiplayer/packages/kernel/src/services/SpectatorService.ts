@@ -163,10 +163,11 @@ export class SpectatorService {
     let cursor = after
     let scanned = 0
     while (events.length < limit && scanned < SPECTATOR_EVENT_SCAN && cursor < lastReleasedSeq) {
+      // The sequence is gapless, so a page never needs to reach past the cut.
       const page = await this.deps.storage.events.listAfter(
         match.id,
         cursor,
-        Math.min(LIMITS.eventsPageSize, SPECTATOR_EVENT_SCAN - scanned),
+        Math.min(LIMITS.eventsPageSize, SPECTATOR_EVENT_SCAN - scanned, lastReleasedSeq - cursor),
       )
       if (page.length === 0) break
       for (const event of page) {
