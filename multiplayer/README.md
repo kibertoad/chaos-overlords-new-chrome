@@ -175,9 +175,10 @@ one for an authenticated call, three for a match creation (the address budget, t
 spend of the creation budget), and a window longer than a minute also costs a storage write and an
 alarm. Cloudflare's own rate limiting binding is not used: it counts per Cloudflare location, only
 over ten or sixty seconds, and answers only yes or no, so it cannot give `Retry-After`, peek at the
-match-creation budget, refund a journal reservation or count a day. A counter that fails or takes longer than two seconds lets the request through and
-logs `rate limit store failed` at most once a minute. Cloudflare WAF rate limiting rules in front of
-the Worker remain a sensible extra layer against volumetric floods, but nothing here depends on them.
+match-creation budget, refund a journal reservation or count a day. A counter that fails or takes
+longer than two seconds lets the request through and logs `rate limit store failed` at most once a
+minute. Cloudflare WAF rate limiting rules in front of the Worker remain a sensible extra layer
+against volumetric floods, but nothing here depends on them.
 
 For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all of these to throwaway local resources.
 It is a development and test fixture, not a deployment.
@@ -320,6 +321,32 @@ deadline route — expired turn, sweep, seal, next turn — runs over real HTTP 
 Postgres; in workerd time cannot be moved, so there the deadline is covered by the alarm-arming test
 and by `listExpiredOpen` in the D1 storage lane instead.
 
+The pool brings its own exact wrangler and miniflare (0.22.0 pins wrangler 4.124.0), so the
+Cloudflare suite runs on an older workerd build than the workspace's `wrangler`, which is the one
+`pnpm dev:worker` and a deploy use. The suite tests the code; the multiplayer workflow tests the
+runtime a deployment gets. After the unit tests it plays a real match with the headless game
+(`tools/OnlineSmoke`) twice: against the Node server, and against the Worker served by the
+workspace's `wrangler dev` in local mode (local D1, R2 and Durable Objects, no Cloudflare account).
+The Worker run also fails when the Worker logs an error, a call to the match's Durable Object that
+failed or that the object answered with an error status, an event stream the server dropped, or an
+uncaught exception, since the lobby requests succeed even when the object behind them is broken. To
+run it by
+hand, with the .NET SDK installed:
+
+```sh
+pnpm build
+cd runtimes/cloudflare
+pnpm db:migrate:local && pnpm db:migrate:bugs:local
+pnpm dev                  # serves on http://localhost:8787
+dotnet run --project ../../../tools/OnlineSmoke/OnlineSmoke.csproj -- http://localhost:8787 3
+```
+
+The pool's wrangler and miniflare are not overridden to the workspace's. A pnpm override of both
+does pass the suite today, but the pool is built and released against the miniflare it pins, and
+Dependabot updates `wrangler` in `package.json` without touching an override, so every bump would
+either leave the override behind or put the pool on a pairing nobody released. A pool release that
+pins a newer wrangler narrows the gap, and the next `wrangler` bump in `package.json` opens it again.
+
 Rules that keep the two runtimes honest:
 
 - A storage method is added to the kernel port, both repository files, and the storage
@@ -331,7 +358,8 @@ Rules that keep the two runtimes honest:
   wrote — with no error to show for it. Postgres is for durability and familiar operations, not for
   scaling out; see "Limitations and next steps" in `docs/MULTIPLAYER.md`. Rate limits are already
   shared: on Postgres every instance counts in the `rate_limit_windows` table, and the cleanup job
-  deletes the windows that have rolled.
+  deletes the windows that have rolled. The shared fan-out is tracked in
+  [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
 - No transactions: D1 has none. Every race is a single conditional statement whose row count says
   who won (see the port comments in `packages/kernel/src/ports/storage.ts`).
 - A write a unique index can refuse returns `false` instead of throwing. Driver error shapes are

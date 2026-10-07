@@ -35,7 +35,7 @@ export interface Env {
   MEMBER_RATE_LIMIT_PER_MINUTE?: string
   UPLOAD_RATE_LIMIT_PER_MINUTE?: string
   BUG_REPORT_RATE_LIMIT_PER_MINUTE?: string
-  /** Matches created per minute across every caller, per isolate. */
+  /** Matches created per minute across every caller, counted for the whole deployment when `RATE_LIMITS` is bound. */
   MATCH_CREATION_RATE_LIMIT_PER_MINUTE?: string
   /** Days before a finished or abandoned match is deleted. 0 keeps them forever. */
   RETENTION_DAYS?: string

@@ -59,6 +59,11 @@ export interface NodeRuntimeOptions {
    * facade with it; nothing else has a reason to.
    */
   clock?: Clock
+  /**
+   * Overrides the interval between event stream keepalive frames. Tests shorten it so the frame can
+   * be seen over the real listener without waiting out the production interval.
+   */
+  sseHeartbeatMs?: number
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -88,7 +93,7 @@ export async function buildNodeRuntime(
     : memoryRateLimiters(clock)
   const hub = new LocalEventHub(
     opened.storage.events,
-    DEFAULT_SERVER_CONFIG.sseHeartbeatMs,
+    options.sseHeartbeatMs ?? DEFAULT_SERVER_CONFIG.sseHeartbeatMs,
     { ...DEFAULT_EVENT_HUB_LIMITS, perProcess: config.maxEventStreams },
     {
       unreadable: (matchId, seq) =>
