@@ -32,8 +32,9 @@ runs:
         zip="$tmp/kaitai-struct-compiler.zip"
         curl -fsSL --retry 3 -o "$zip" \
           "https://github.com/kaitai-io/kaitai_struct_compiler/releases/download/$KSC_VERSION/kaitai-struct-compiler-$KSC_VERSION.zip"
-        # macOS runners ship shasum rather than GNU sha256sum.
-        if command -v sha256sum >/dev/null; then sum=(sha256sum); else sum=(shasum -a 256); fi
+        # The sha256sum that newer macOS images ship is the BSD one, which rejects --strict, so
+        # macOS uses shasum.
+        if [ "$RUNNER_OS" = macOS ]; then sum=(shasum -a 256); else sum=(sha256sum); fi
         echo "$KSC_SHA256  $zip" | "${sum[@]}" --check --strict
         unzip -q -o "$zip" -d "$tmp"
         bin="$tmp/kaitai-struct-compiler-$KSC_VERSION/bin/kaitai-struct-compiler"
