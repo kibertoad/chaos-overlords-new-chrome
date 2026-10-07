@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-COMLINK-002, FND-COMLINK-004, FND-COMLINK-007, FND-COMLINK-009, FND-EVENT-005, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-021]
+evidence: [FND-COMLINK-002, FND-COMLINK-004, FND-COMLINK-007, FND-COMLINK-009, FND-EVENT-007, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-021, FND-UI-062]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-001, RULE-COMLINK-004, RULE-COMLINK-005]
@@ -18,10 +18,10 @@ related: [RULE-COMLINK-001, RULE-COMLINK-004, RULE-COMLINK-005]
 | Panel | `DATA/PX16/PX05017` | None | (104, 124, 344, 209) | While the panel is open | FND-COMLINK-002 |
 | Message number | Digits of `DATA/PX16/PX00129` | `comlink_cursor + 1`, two digits with a leading zero | (138, 137) | While the panel is open | FND-COMLINK-007 |
 | Message count | Digits of `DATA/PX16/PX00129` | `comlink_count`, two digits with a leading zero | (174, 137) | While the panel is open | FND-COMLINK-007 |
-| Previous | `DATA/PX16/PX00129` rectangle (118, 363, 26, 23), or (170, 363, 26, 23) at the first message | None | (135, 157, 26, 23) | While the panel is open | FND-COMLINK-007, FND-EVENT-005 |
-| Next | `DATA/PX16/PX00129` rectangle (144, 363, 26, 23), or (196, 363, 26, 23) at the last message | None | (163, 157, 26, 23) | While the panel is open | FND-COMLINK-007, FND-EVENT-005 |
-| Previous pressed, Next pressed | `DATA/PX16/PX00129` rectangles (66, 363, 26, 23) and (92, 363, 26, 23) | None | Over Previous and Next | While the arrow is held with the pointer inside it, or briefly after Left or Right | FND-COMLINK-007, FND-EVENT-005 |
-| Dismiss pressed | `DATA/PX16/PX00129` rectangle (50, 386, 50, 23) | None | (137, 293, 50, 23) | While Dismiss is held with the pointer inside it | FND-COMLINK-007 |
+| Previous | `DATA/PX16/PX00129` rectangle (118, 363, 26, 23), or (170, 363, 26, 23) at the first message | None | (135, 157, 26, 23) | While the panel is open | FND-COMLINK-007, FND-EVENT-007 |
+| Next | `DATA/PX16/PX00129` rectangle (144, 363, 26, 23), or (196, 363, 26, 23) at the last message | None | (163, 157, 26, 23) | While the panel is open | FND-COMLINK-007, FND-EVENT-007 |
+| Previous pressed, Next pressed | `DATA/PX16/PX00129` rectangles (66, 363, 26, 23) and (92, 363, 26, 23) | None | Over Previous and Next | While the arrow is held with the pointer inside it, or briefly after Left or Right | FND-COMLINK-007, FND-EVENT-007 |
+| Dismiss pressed | `DATA/PX16/PX00129` rectangle (0, 386, 50, 23); plain face (50, 386, 50, 23) while the pointer is outside and after the release | None | (137, 293, 50, 23) | While Dismiss is held with the pointer inside it | FND-COMLINK-007, FND-UI-062 |
 | Year | Digits of `DATA/PX16/PX00129` | `2050 + turn / 52` of the message, four digits | (199, 144) | While the panel is open | FND-COMLINK-004, FND-COMLINK-007 |
 | Week | Digits of `DATA/PX16/PX00129` | `turn % 52 + 1`, two digits with a leading zero | (229, 144) | While the panel is open | FND-COMLINK-004, FND-COMLINK-007 |
 | Name backing | Black fill | None | (199, 162, 60, 7) | While the panel is open | FND-COMLINK-007 |

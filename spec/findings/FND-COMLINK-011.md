@@ -1,9 +1,9 @@
 ---
-id: FND-COMLINK-003
+id: FND-COMLINK-011
 title: Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send
-status: superseded
+status: recorded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: [FND-COMLINK-011]
+superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
 method: static
@@ -38,12 +38,15 @@ environment: null
   an eligible recipient flips a selection byte of its own at once; a click on
   an ineligible one is rejected.
 - Cancel is `(33,137)-(82,159)` and Send is `(33,169)-(82,191)`. Both go
-  through the shared held-button helper `fn_00418821`: while the button is held
-  inside, it copies the pressed face from `PX00129`, `(50,409,50,23)` for
-  Cancel and `(50,386,50,23)` for Send, to a 50-by-23 destination one pixel
-  larger than the control; it puts the plain face back when the pointer
-  leaves, plays slot 3 on the press, and acts only on a release inside. Send
-  with no recipient selected is rejected before the helper is entered.
+  through the shared held-button helper `fn_00418821` (FND-UI-062), Cancel as
+  kind 1 (`0x0045F5AA`) and Send as kind 0 (`0x0045F66F`), with a 50-by-23
+  destination one pixel larger than the control. While the button is held
+  inside, the helper shows the lit face from `PX00129`, `(0,409,50,23)` for
+  Cancel and `(0,386,50,23)` for Send; while the pointer is outside, and after
+  the button comes up wherever it is released, it shows the plain face,
+  `(50,409,50,23)` and `(50,386,50,23)`. It plays slot 3 on the press, and
+  the panel acts only on a release inside. Send with no recipient selected is
+  rejected before the helper is entered.
 - Only the Execute key (`0x2B`) sends, and it is rejected when no recipient is
   selected.
 - The renderer `fn_0045FDF1` draws all six player cards, including the active
@@ -66,5 +69,6 @@ inside a 105-by-34 card. Enter does not send a message (FND-COMLINK-010).
 
 From the lower-half branch of the Comlink tile in `fn_004718EE`, open
 `fn_0045EAB1`. Read the loop over six players that fills the eligibility
-bytes, the rectangle constants, the calls to `fn_00418821` with the two
-`PX00129` source rectangles, and the virtual-key switch.
+bytes, the rectangle constants, the calls to `fn_00418821` with kinds 1 and
+0, and the virtual-key switch; read the two rectangles of each kind in
+`fn_00418821` (FND-UI-062).

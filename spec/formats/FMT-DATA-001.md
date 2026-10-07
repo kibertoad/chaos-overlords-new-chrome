@@ -9,7 +9,7 @@ byte_order: little
 size: 62
 text: false
 definition: fmt_data_001.ksy
-evidence: [FND-DATA-001, FND-DATA-006, FND-DATA-007, FND-STATE-001, FND-ASSET-001, FND-GANG-001, FND-CITY-002, FND-EXE-004, SRC-RECHAOS-3561D41, FND-EVENT-005, FND-RESEARCH-003, FND-EQUIP-007, FND-EQUIP-001]
+evidence: [FND-DATA-001, FND-DATA-006, FND-DATA-007, FND-STATE-001, FND-ASSET-001, FND-GANG-001, FND-CITY-002, FND-EXE-004, SRC-RECHAOS-3561D41, FND-EVENT-007, FND-RESEARCH-003, FND-EQUIP-007, FND-EQUIP-001]
 conflicting: []
 split_with: []
 related: []
@@ -24,7 +24,7 @@ opens the file as `data\Sites` (FND-ASSET-001). Every number is a signed
 
 | Offset | Size | Type | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|---|---|
-| `0x00` | 20 | `char[20]` | `name` | The site's name. ASCII text, then one NUL byte, then spaces to the end of the field. Read it as a C string. | supported | FND-EVENT-005, FND-DATA-001, SRC-RECHAOS-3561D41 |
+| `0x00` | 20 | `char[20]` | `name` | The site's name. ASCII text, then one NUL byte, then spaces to the end of the field. Read it as a C string. | supported | FND-EVENT-007, FND-DATA-001, SRC-RECHAOS-3561D41 |
 | `0x14` | 2 | `INT16LE` | `id` | The site's number, equal to the record's index, 0 to 21. The site information panel uses it as the row, 64 pixels each, of the site's picture. | supported | FND-DATA-001, FND-DATA-007 |
 | `0x16` | 2 | `INT16LE` | `resistance` | Resistance: the Influence progress needed before the site counts as influenced. | supported | FND-DATA-007, FND-STATE-001, FND-GANG-001, SRC-RECHAOS-3561D41 |
 | `0x18` | 2 | `INT16LE` | `support` | Support the site adds to its sector once influenced. | supported | FND-DATA-007, FND-STATE-001, SRC-RECHAOS-3561D41 |

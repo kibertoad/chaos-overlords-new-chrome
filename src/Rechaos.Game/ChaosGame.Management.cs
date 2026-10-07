@@ -90,6 +90,7 @@ public sealed partial class ChaosGame
                 new Point(icon.X + 24, icon.Y + 3),
                 selected ? OriginalFontLayout.PlainStrip : OriginalFontLayout.DimStrip);
         }
+        DrawHeldSiteSearchFace(batch);
     }
 
     // DEV-SEARCH-001: whether a key has moved or flipped the Search panel's keyboard row since it
@@ -171,16 +172,39 @@ public sealed partial class ChaosGame
         {
             case SiteSearchControl.All:
             case SiteSearchControl.None:
-                AcceptInput();
-                break;
             case SiteSearchControl.Done:
-                ApplySiteSearch();
+                // FND-UI-062: the face is held until the button comes up and acts only on a
+                // release inside it.
+                var held = click.Press.Control;
+                PressPanelFace(point, SiteSearchLayout.Panel, SiteSearchLayout.Target(held),
+                    () => ReleaseSiteSearchControl(held));
                 break;
             case SiteSearchControl.Row:
                 _siteSearchCursor = click.Press.Row;
                 if (click.OpensDetails) OpenSiteDefinitionDetails(rows[click.Press.Row], ClientScreen.Search);
                 break;
         }
+    }
+
+    /// <summary>A release inside the held ALL, NONE or Done, the only release the panel face hold acts on.</summary>
+    private void ReleaseSiteSearchControl(SiteSearchControl held)
+    {
+        if (!SiteSearchPanel.Release(_siteSearchSelections, SiteSearchPlayer(), held, SiteSearchRows())) return;
+        _message = string.Empty;
+        CloseSiteSearch();
+    }
+
+    /// <summary>SCR-SEARCH-001, FND-UI-062: the lit face of a held ALL, NONE or Done while the pointer is over it.</summary>
+    private void DrawHeldSiteSearchFace(SpriteBatch batch)
+    {
+        if (UiSprites is null || _pressedPanelFace is not { Screen: ClientScreen.Search } held
+            || _hoverPoint is not { } hover || !held.Face.Contains(hover))
+            return;
+        foreach (var control in (ReadOnlySpan<SiteSearchControl>)
+                 [SiteSearchControl.All, SiteSearchControl.None, SiteSearchControl.Done])
+            if (SiteSearchLayout.Target(control) == held.Face)
+                batch.Draw(UiSprites, SiteSearchLayout.HeldFace(control),
+                    HeldButtonFaces.Lit(SiteSearchLayout.HeldKind(control)), Color.White);
     }
 
     private PlayerId SiteSearchPlayer() =>
