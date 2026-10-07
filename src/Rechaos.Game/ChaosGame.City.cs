@@ -198,8 +198,8 @@ public sealed partial class ChaosGame
     private void DrawBoard(
         SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state, SectorViewFrame? sectorView = null)
     {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        if (CityBackground is not null)
+            batch.Draw(CityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         var playerIndex = PlanningViewer?.Value ?? 0;
         var player = state.Players[playerIndex];
         // FND-UI-017, FND-UI-018: the marker follows the viewed player, which on the sector view is
@@ -219,8 +219,8 @@ public sealed partial class ChaosGame
         {
             DrawPreparedCityMap(batch, pixel, state, player.Id,
                 CityMapLayout.Bounds with { X = 0, Y = 0 }, CityMapLayout.Bounds.Location);
-            if (_uiKeyedSprites is not null)
-                batch.Draw(_uiKeyedSprites, CityMapLayout.Destination(_cursor),
+            if (UiKeyedSprites is not null)
+                batch.Draw(UiKeyedSprites, CityMapLayout.Destination(_cursor),
                     CityMapLayout.SelectionFrameSource(SelectionFrameShown()), Color.White);
             else
                 DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
@@ -302,10 +302,10 @@ public sealed partial class ChaosGame
         if (_finalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
-        if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
+        if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && GangPortraits is not null)
         {
             var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 18, 36, 36);
-            batch.Draw(_gangPortraits, token,
+            batch.Draw(GangPortraits, token,
                 OriginalSpriteLayout.GangPortrait(draggedDefinition), Color.White);
             DrawBorder(batch, pixel, token, Color.White, 1);
         }
@@ -337,19 +337,19 @@ public sealed partial class ChaosGame
     /// <summary>A lit console light; a dark one is the console art under it (FND-EVENT-006).</summary>
     private void DrawCityLight(SpriteBatch batch, Texture2D pixel, Rectangle light)
     {
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites, light, OriginalSelectionLightLayout.CityLightSource, Color.White);
+        if (UiSprites is not null)
+            batch.Draw(UiSprites, light, OriginalSelectionLightLayout.CityLightSource, Color.White);
         else
             DrawSelectionLight(batch, pixel, light);
     }
 
     private void DrawPressedCityConsole(SpriteBatch batch)
     {
-        if (_uiSprites is not null
+        if (UiSprites is not null
             && _pressedCityConsoleControl is { } pressed
             && _hoverPoint is { } hover
             && CityConsoleLayout.HitTest(hover) == pressed)
-            batch.Draw(_uiSprites, CityConsoleLayout.Destination(pressed),
+            batch.Draw(UiSprites, CityConsoleLayout.Destination(pressed),
                 CityConsoleLayout.PressedSource(pressed), Color.White);
     }
 
@@ -423,8 +423,8 @@ public sealed partial class ChaosGame
 
     private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)
     {
-        if (_uiKeyedSprites is not null)
-            batch.Draw(_uiKeyedSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
+        if (UiKeyedSprites is not null)
+            batch.Draw(UiKeyedSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
     }
 
     /// <summary>
