@@ -31,6 +31,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [EXP-ATTACK-002](../experiments/EXP-ATTACK-002.md) | builds |
 | [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | builds |
 | [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | builds |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | builds |
 | [EXP-COMBAT-001](../experiments/EXP-COMBAT-001.md) | builds |
 | [EXP-COMBAT-002](../experiments/EXP-COMBAT-002.md) | builds |
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | builds |
@@ -304,6 +305,7 @@ For each entry, the entries that cite or relate to it, and the field they do it 
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | body, builds, locations |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | body, builds, locations |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | builds, locations |
+| [FND-AUDIO-019](../findings/FND-AUDIO-019.md) | builds, locations |
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | builds, locations |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | builds, locations |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | builds, locations |
@@ -970,6 +972,16 @@ None.
 
 | Cited by | In |
 |---|---|
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | body |
+| [RULE-AUDIO-005](../rules/RULE-AUDIO-005.md) | body, evidence |
+| [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | body, evidence |
+
+## EXP-AUDIO-002
+
+| Cited by | In |
+|---|---|
+| [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
+| [RULE-AUDIO-005](../rules/RULE-AUDIO-005.md) | body, evidence |
 | [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | body, evidence |
 
 ## EXP-COMBAT-001
@@ -1185,6 +1197,7 @@ None.
 | [EXP-ATTACK-002](../experiments/EXP-ATTACK-002.md) | body |
 | [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | body |
 | [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | body |
 | [EXP-COMBAT-001](../experiments/EXP-COMBAT-001.md) | body |
 | [EXP-COMBAT-002](../experiments/EXP-COMBAT-002.md) | body |
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | body |
@@ -3934,8 +3947,10 @@ None.
 |---|---|
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | evidence |
 | [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | body |
 | [FMT-DATA-003](../formats/FMT-DATA-003.md) | evidence |
 | [FND-AUDIO-013](../findings/FND-AUDIO-013.md) | body |
+| [FND-AUDIO-019](../findings/FND-AUDIO-019.md) | body |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | body |
 | [FND-DATA-003](../findings/FND-DATA-003.md) | body |
 | [FND-PLATFORM-006](../findings/FND-PLATFORM-006.md) | body |
@@ -3994,7 +4009,7 @@ None.
 | glossary: effects_suppressed | glossary |
 | glossary: local_game | glossary |
 | glossary: network_game | glossary |
-| [RULE-AUDIO-005](../rules/RULE-AUDIO-005.md) | evidence |
+| [RULE-AUDIO-005](../rules/RULE-AUDIO-005.md) | body, evidence |
 | [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | evidence |
 
 ## FND-AUDIO-004
@@ -4015,6 +4030,7 @@ None.
 |---|---|
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | evidence |
 | [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | body |
 | [EXP-COMBAT-001](../experiments/EXP-COMBAT-001.md) | body |
 | [EXP-COMBAT-002](../experiments/EXP-COMBAT-002.md) | body |
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | body |
@@ -4025,6 +4041,7 @@ None.
 | [EXP-COMBAT-008](../experiments/EXP-COMBAT-008.md) | body |
 | [EXP-COMBAT-009](../experiments/EXP-COMBAT-009.md) | body |
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | body |
+| [FND-AUDIO-019](../findings/FND-AUDIO-019.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
 | [FND-STATE-011](../findings/FND-STATE-011.md) | body |
 | [FND-TIMER-003](../findings/FND-TIMER-003.md) | body |
@@ -4046,6 +4063,7 @@ None.
 | [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | body |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | body |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | body |
+| [FND-AUDIO-019](../findings/FND-AUDIO-019.md) | body |
 | [FND-OPTIONS-003](../findings/FND-OPTIONS-003.md) | body |
 | [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | body |
 | [FND-STATE-008](../findings/FND-STATE-008.md) | body |
@@ -4164,6 +4182,15 @@ None.
 | Cited by | In |
 |---|---|
 | [RULE-UI-008](../rules/RULE-UI-008.md) | body, evidence |
+
+## FND-AUDIO-019
+
+| Cited by | In |
+|---|---|
+| [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | body |
+| [RULE-AUDIO-005](../rules/RULE-AUDIO-005.md) | evidence |
+| [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | evidence |
 
 ## FND-AWARDS-001
 
@@ -5089,6 +5116,7 @@ None.
 | [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | body |
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | body |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | body |
+| [FND-AUDIO-019](../findings/FND-AUDIO-019.md) | body |
 | [FND-CHAOS-002](../findings/FND-CHAOS-002.md) | body |
 | [FND-COMBAT-007](../findings/FND-COMBAT-007.md) | body |
 | [FND-COMBAT-008](../findings/FND-COMBAT-008.md) | body |
@@ -8465,6 +8493,8 @@ None.
 | Cited by | In |
 |---|---|
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | related |
+| [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | body |
 | glossary: play_effect | glossary |
 | glossary: play_sound | glossary |
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | body |
@@ -8484,6 +8514,7 @@ None.
 |---|---|
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | body, related |
 | [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | body |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | body |
 | [RULE-AUDIO-004](../rules/RULE-AUDIO-004.md) | body |
 | [RULE-TURN-001](../rules/RULE-TURN-001.md) | body, related |
 

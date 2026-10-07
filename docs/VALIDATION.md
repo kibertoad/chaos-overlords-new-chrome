@@ -523,14 +523,22 @@ every roll from the setup's hourglass on is made under the hourglass and
 compares the rebuild's pointer at each planning entry and after each Done press
 (RULE-UI-007, EXP-UI-022).
 `--sound-calls` logs every call of the play helper `fn_0045851A`
-(FND-AUDIO-006) with the rolls and Done presses before it, its slot and the
-address of the call; with `--sound` the effects wrapper's calls are logged too.
-It also reads `effects_enabled` (FND-AUDIO-002) at each call, at each Done press
-and at the end of the run. The fixture holds the calls as `sound_calls` with
-`effects_enabled` beside them, and `extract` refuses a run whose value is
-unknown or differed between those reads. The replay expects the push cue of Begin and of each Done press
-when effects were enabled, and no push cue when they were not
-(RULE-AUDIO-006, EXP-AUDIO-001).
+(FND-AUDIO-006) and of the effects wrapper `fn_00464290` (FND-AUDIO-002) with
+the rolls and Done presses before it, its slot and the address of the call, and
+every call of the level setup `fn_004652A0` with the address of the call and
+`effects_enabled` as it returned. The level setup is the only code that writes
+`effects_enabled`, and its first call, in the title initialization, comes after
+the probe has written the levels (FND-AUDIO-019). The probe also reads
+`effects_enabled` at each helper call, at each Done press and at the end of the
+run. The fixture holds the calls as `sound_calls`, `effect_calls` and
+`level_setups`, with `effects_enabled` beside them, and `extract` refuses a run
+whose value is unknown or differed between those reads, that lacks the wrapper
+calls or level setups, or that ended inside a level setup. The replay requires
+the push cue at Begin and at each Done press among the wrapper's calls, every
+level setup to leave the run's setting, the first from the title
+initialization, and the wrapper to have passed every request on to the helper
+when effects were enabled and none when they were not (RULE-AUDIO-006,
+EXP-AUDIO-001, EXP-AUDIO-002).
 `--watch-intro` lets both intro movies play out before the button is held and
 logs each frame the frame helper shows, with the movie's name, its header's
 frame count, the slot's frame counter and the time from the first movie's first

@@ -90,6 +90,8 @@ internal static class OriginalAddresses
     public const uint CursorHelper = 0x00465BC8;
     // RULE-AUDIO-006, FND-AUDIO-006: the play helper fn_0045851A(slot, priority).
     public const uint PlayHelper = 0x0045851A;
+    // FND-AUDIO-019: the level setup fn_004652A0, the only code that writes effects_enabled.
+    public const uint LevelSetup = 0x004652A0;
     // RULE-TIMER-004, FND-TIMER-002: the timer callback and the presentation wait.
     public const uint TimerCallback = 0x004327C0;
     public const uint PresentationWait = 0x00464CD9;

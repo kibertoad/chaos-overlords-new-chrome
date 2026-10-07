@@ -248,7 +248,9 @@ internal sealed record ProbeTrace(
     List<SlideRecord>? Slides = null,
     List<CloseRecord>? Closes = null,
     List<SavedWriteRecord>? SavedWrites = null,
-    bool? EffectsEnabled = null);
+    bool? EffectsEnabled = null,
+    List<SoundCallRecord>? EffectCalls = null,
+    List<LevelSetupRecord>? LevelSetups = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -933,7 +935,8 @@ internal sealed partial class NewGameSession(
             settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
             settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
-            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null);
+            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null,
+            settings.Sounds ? _effectCalls : null, settings.Sounds ? _levelSetups : null);
     }
 
     private static void Click(IntPtr window, int x, int y)

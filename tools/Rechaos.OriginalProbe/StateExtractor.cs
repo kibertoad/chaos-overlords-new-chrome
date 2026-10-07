@@ -126,16 +126,32 @@ internal sealed class StateExtractor
         // address (FND-AUDIO-006), with effects_enabled as the run read it at each call, each Done
         // press and its end: the effects wrapper calls the helper only while it is set
         // (FND-AUDIO-002), so the calls cannot be read without it, and a run that does not record
-        // it is refused.
+        // it is refused. Beside them, each call of the effects wrapper in the same form
+        // (FND-AUDIO-002), and each call of the level setup as after_roll, done, the call's address
+        // and effects_enabled as it returned (FND-AUDIO-019): the wrapper's calls show the
+        // recording ran when effects are off, and the level setups are every write of the setting.
+        // A run made before the probe kept them, or whose level setup had not returned when it
+        // ended, is refused as well.
         if (trace["SoundCalls"] is JsonArray soundCalls)
         {
             if (trace["EffectsEnabled"] is not JsonValue effectsEnabled)
                 throw new InvalidDataException(
                     $"{runDirectory} records sound calls but not whether effects were enabled, or read different values during the run.");
+            if (trace["EffectCalls"] is not JsonArray effectCalls || trace["LevelSetups"] is not JsonArray levelSetups)
+                throw new InvalidDataException(
+                    $"{runDirectory} records sound calls without the effects wrapper's calls or the level setups; run it again.");
+            if (levelSetups.Any(setup => setup!["EffectsEnabled"] is not JsonValue))
+                throw new InvalidDataException($"{runDirectory} ended inside a call of the level setup.");
             run["effects_enabled"] = effectsEnabled.GetValue<bool>();
             run["sound_calls"] = new JsonArray(soundCalls.Select(call => (JsonNode)new JsonArray(
                 call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Slot"]!.GetValue<int>(),
                 (int)call["Call"]!.GetValue<uint>())).ToArray());
+            run["effect_calls"] = new JsonArray(effectCalls.Select(call => (JsonNode)new JsonArray(
+                call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Slot"]!.GetValue<int>(),
+                (int)call["Call"]!.GetValue<uint>())).ToArray());
+            run["level_setups"] = new JsonArray(levelSetups.Select(setup => (JsonNode)new JsonArray(
+                setup!["AfterRoll"]!.GetValue<int>(), setup["Done"]!.GetValue<int>(), (int)setup["Call"]!.GetValue<uint>(),
+                (int)setup["EffectsEnabled"]!.GetValue<byte>())).ToArray());
         }
         // RULE-VIDEO-001: each intro movie with its header's frame count, the frame counter at each
         // frame shown, the milliseconds from the first movie's first frame to each, and the counter at

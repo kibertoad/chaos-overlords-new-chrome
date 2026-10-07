@@ -295,7 +295,7 @@
 
 ## recorded
 
-532 entries.
+534 entries.
 
 | ID | Title |
 |---|---|
@@ -303,6 +303,7 @@
 | [EXP-ATTACK-002](../experiments/EXP-ATTACK-002.md) | Which of an opponent's gangs in the sector does the Attack picker list when the player sees only some of them? |
 | [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | Which gangs does the Attack picker list when several opponents share the acting gang's sector? |
 | [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | Does a game started with New Game play the turn-start sound? |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | With sound effects off, does a game started with New Game play the turn-start sound, and does the effects wrapper pass any request on? |
 | [EXP-COMBAT-001](../experiments/EXP-COMBAT-001.md) | Does Detailed Combat present an attack by the viewer's gang as the original does? |
 | [EXP-COMBAT-002](../experiments/EXP-COMBAT-002.md) | Does Detailed Combat present attacks that the viewer's hiding gang evades as the original does? |
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | Does Detailed Combat present several armed and unarmed attackers on one gang as the original does? |
@@ -542,6 +543,7 @@
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | Title music is requested after successful game entry and return, not after cancelled preparation or loading |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | The CD fade uses zero-based wait deadlines and dispatches window messages without handling game events |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | The CD fade runs inside the event pump's music poll and mute command, and never touches timer slot 0 |
+| [FND-AUDIO-019](../findings/FND-AUDIO-019.md) | Only the level setup writes effects_enabled, and the wrapper's one call of the play helper is at 0x004642AB |
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | The award builder takes five categories in a fixed order with fixed starting thresholds and keeps every tied player, but only three awards per row are drawn |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions |
@@ -1014,6 +1016,7 @@ Entries whose Open questions section says more than None known.
 | [RULE-ATTACK-001](../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | established |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | established |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | Applying the music and effects levels | supported |
+| [RULE-AUDIO-005](../rules/RULE-AUDIO-005.md) | Playing a sound effect, which cuts off the one playing | supported |
 | [RULE-AUDIO-006](../rules/RULE-AUDIO-006.md) | The turn-start sound | supported |
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | The Comlink alert plays slot 6 through the effects gate | supported |
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks | supported |

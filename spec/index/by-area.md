@@ -81,6 +81,7 @@
 |---|---|---|
 | [BUG-AUDIO-001](../bugs/BUG-AUDIO-001.md) | The turn-start sound plays even with sound effects turned off | supported |
 | [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | Does a game started with New Game play the turn-start sound? | recorded |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | With sound effects off, does a game started with New Game play the turn-start sound, and does the effects wrapper pass any request on? | recorded |
 | [FMT-AUDIO-001](../formats/FMT-AUDIO-001.md) | Sound effect files DATA/SNDnnnnn | supported |
 | [FMT-AUDIO-002](../formats/FMT-AUDIO-002.md) | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported |
 | [FND-AUDIO-001](../findings/FND-AUDIO-001.md) | Music plays one of three CD track programs, restarts each when it ends, and pauses while the window is inactive | recorded |
@@ -98,6 +99,7 @@
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | Title music is requested after successful game entry and return, not after cancelled preparation or loading | recorded |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | The CD fade uses zero-based wait deadlines and dispatches window messages without handling game events | recorded |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | The CD fade runs inside the event pump's music poll and mute command, and never touches timer slot 0 | recorded |
+| [FND-AUDIO-019](../findings/FND-AUDIO-019.md) | Only the level setup writes effects_enabled, and the wrapper's one call of the play helper is at 0x004642AB | recorded |
 | [RULE-AUDIO-001](../rules/RULE-AUDIO-001.md) | Starting a music program | supported |
 | [RULE-AUDIO-002](../rules/RULE-AUDIO-002.md) | Music repeats its program when it ends and pauses while the window is inactive | supported |
 | [RULE-AUDIO-003](../rules/RULE-AUDIO-003.md) | Applying the music and effects levels | supported |

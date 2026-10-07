@@ -106,9 +106,13 @@ public sealed partial class OriginalNewGameExperimentTests
     // shape and force it was passed, and the address of the call.
     private sealed record RecordedPointerCall(int AfterRoll, int Done, int Shape, int Force, int Call);
 
-    // A call of the play helper (FND-AUDIO-006): the roll count and the Done presses before it, the
-    // effect slot and the address of the call.
+    // A call of the play helper (FND-AUDIO-006) or of the effects wrapper (FND-AUDIO-002): the roll
+    // count and the Done presses before it, the effect slot and the address of the call.
     private sealed record RecordedSoundCall(int AfterRoll, int Done, int Slot, int Call);
+
+    // A call of the level setup (FND-AUDIO-019): the roll count and the Done presses before it, the
+    // address of the call, and whether effects_enabled was set when it returned.
+    private sealed record RecordedLevelSetup(int AfterRoll, int Done, int Call, bool EffectsEnabled);
 
     // A call of the presentation wait (FND-TIMER-002): its argument, the call's address, and the
     // milliseconds of its start and return on the clock the run's ticks are timed with.
@@ -318,6 +322,14 @@ public sealed partial class OriginalNewGameExperimentTests
                     call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
                 : null;
             EffectsEnabled = run.TryGetProperty("effects_enabled", out var effectsEnabled) ? effectsEnabled.GetBoolean() : null;
+            EffectCalls = run.TryGetProperty("effect_calls", out var effectCalls)
+                ? effectCalls.EnumerateArray().Select(call => new RecordedSoundCall(
+                    call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
+                : null;
+            LevelSetups = run.TryGetProperty("level_setups", out var levelSetups)
+                ? levelSetups.EnumerateArray().Select(setup => new RecordedLevelSetup(
+                    setup[0].GetInt32(), setup[1].GetInt32(), setup[2].GetInt32(), setup[3].GetInt32() != 0)).ToArray()
+                : null;
             IntroMovies = run.TryGetProperty("intro_movies", out var introMovies)
                 ? introMovies.EnumerateArray().Select(movie => new RecordedIntroMovie(
                     movie.GetProperty("name").GetString()!, movie.GetProperty("frames").GetInt32(),
@@ -393,6 +405,10 @@ public sealed partial class OriginalNewGameExperimentTests
         // whether the effects wrapper's calls reach the play helper. Null when the run did not
         // record it.
         public bool? EffectsEnabled { get; }
+        // Null when the run did not record the effects wrapper.
+        public IReadOnlyList<RecordedSoundCall>? EffectCalls { get; }
+        // Null when the run did not record the level setup.
+        public IReadOnlyList<RecordedLevelSetup>? LevelSetups { get; }
         // Null when the run did not record the presentation clock: the milliseconds of each tick of
         // timer slot 0 from the dump on, and each call of the wait.
         public IReadOnlyList<long>? Ticks { get; }

@@ -1,5 +1,5 @@
 {
-  "experiment": "EXP-AUDIO-001",
+  "experiment": "EXP-AUDIO-002",
   "build": "BLD-GOG-EN-1.1",
   "starting_state": null,
   "recording_xxh3": null,
@@ -5164,14 +5164,8 @@
         {"term":"aux_records.focus","index":408,"value":-1},
         {"term":"aux_records.coverage_sector","index":408,"value":-1}
       ],
-      "effects_enabled": true,
-      "sound_calls": [
-        [0,0,2,4604587],
-        [328,1,2,4604587],
-        [427,2,2,4604587],
-        [535,3,2,4604587],
-        [649,4,2,4604587]
-      ],
+      "effects_enabled": false,
+      "sound_calls": [],
       "effect_calls": [
         [0,0,2,4255033],
         [328,1,2,4297664],
@@ -5180,7 +5174,7 @@
         [649,4,2,4297664]
       ],
       "level_setups": [
-        [0,0,4591752,1]
+        [0,0,4591752,0]
       ],
       "panels": [
         {"panel":"Combat Results","after_roll":328,"shown":false},

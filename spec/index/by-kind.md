@@ -224,7 +224,7 @@
 
 ## findings
 
-390 entries.
+391 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -328,6 +328,7 @@
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | Title music is requested after successful game entry and return, not after cancelled preparation or loading | recorded |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | The CD fade uses zero-based wait deadlines and dispatches window messages without handling game events | recorded |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | The CD fade runs inside the event pump's music poll and mute command, and never touches timer slot 0 | recorded |
+| [FND-AUDIO-019](../findings/FND-AUDIO-019.md) | Only the level setup writes effects_enabled, and the wrapper's one call of the play helper is at 0x004642AB | recorded |
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | The award builder takes five categories in a fixed order with fixed starting thresholds and keeps every tied player, but only three awards per row are drawn | recorded |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not | recorded |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions | recorded |
@@ -621,7 +622,7 @@
 
 ## experiments
 
-153 entries.
+154 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -629,6 +630,7 @@
 | [EXP-ATTACK-002](../experiments/EXP-ATTACK-002.md) | Which of an opponent's gangs in the sector does the Attack picker list when the player sees only some of them? | recorded |
 | [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | Which gangs does the Attack picker list when several opponents share the acting gang's sector? | recorded |
 | [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | Does a game started with New Game play the turn-start sound? | recorded |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | With sound effects off, does a game started with New Game play the turn-start sound, and does the effects wrapper pass any request on? | recorded |
 | [EXP-COMBAT-001](../experiments/EXP-COMBAT-001.md) | Does Detailed Combat present an attack by the viewer's gang as the original does? | recorded |
 | [EXP-COMBAT-002](../experiments/EXP-COMBAT-002.md) | Does Detailed Combat present attacks that the viewer's hiding gang evades as the original does? | recorded |
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | Does Detailed Combat present several armed and unarmed attackers on one gang as the original does? | recorded |
