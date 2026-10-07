@@ -82,11 +82,10 @@ items.
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays both runs. The
-rebuild makes both runs' calls with the same bounds and results and reaches the
-same generator position and state after the twenty-five turns, and builds the
-same Last Turn reports for every player.
+Every result is the one RULE-RNG-002 computes from the recorded seed. A test of
+the rebuild replays both runs. The rebuild makes both runs' calls with the same
+bounds and results and reaches the same generator position and state after the
+twenty-five turns, and builds the same Last Turn reports for every player.
 
 At call 11610 of the first run the original's call for player 4's gang 8, in
 sector 20, returned 11 with no draw. Sector 12, next to it, is the human's and

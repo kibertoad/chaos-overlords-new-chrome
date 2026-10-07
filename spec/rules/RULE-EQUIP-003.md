@@ -4,7 +4,7 @@ title: An item's price is its Cost, less a third of it rounded down when the buy
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-FINANCE-002, FND-STATE-001, SRC-MANUAL-GOG, EXP-TURN-062, EXP-TURN-053, EXP-TURN-072]
+evidence: [FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-FINANCE-002, FND-STATE-001, SRC-MANUAL-GOG, EXP-TURN-062, EXP-TURN-053, EXP-TURN-072, FND-CONTROL-001, FND-PLATFORM-003, FND-UI-035]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, FMT-DATA-003]

@@ -46,7 +46,7 @@ in the fixture. At the 14th planning entry sector 54 had base Tolerance 40.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run, with
+A test of the rebuild replays the run, with
 the same cash written before each Done press. The rebuild makes the same calls
 with the same bounds and results and reaches the same state. In its replay the
 base Tolerance of sector 54 before each Bribe of turns 1 to 13 is 14, 16, 18

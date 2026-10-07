@@ -48,10 +48,10 @@ The copies held 4 in `scenario`, 3 in `mentality` and 10 in `elapsed_turns`.
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the ten turns
-of each run, and the rebuild makes the same calls with the same bounds and
-results and reaches the same generator position and state.
+Every result is the one RULE-RNG-002 computes from the recorded seed. A test of
+the rebuild replays the ten turns of each run, and the rebuild makes the same
+calls with the same bounds and results and reaches the same generator position
+and state.
 
 ## Conclusion
 

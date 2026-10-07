@@ -4,7 +4,7 @@ title: A computer player ranks its three hire offers by the mode of its hire rol
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-064, FND-EXE-004, EXP-TURN-003]
+evidence: [FND-AI-064, FND-EXE-004, EXP-TURN-003, FND-EQUIP-006, FND-HIRE-001, FND-HIRE-002, FND-HIRE-006, FND-PLATFORM-003, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: []

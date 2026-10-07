@@ -44,7 +44,7 @@ in the fixture.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
+A test of the rebuild replays the run with
 the same family writes. The rebuild makes the same calls with the same bounds
 and results and reaches the same state, and every byte of every planning
 record matches the original's. In its replay the planning pass of turn 24

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-032, FND-TIMER-003, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038, FND-UI-039, FND-OBJECTIVE-004, FND-STATE-010, FND-UI-040, FND-UI-041, FND-UI-042, EXP-TURN-042, FND-UI-043, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-051, FND-SAVE-003, EXP-UI-008, EXP-UI-013, EXP-UI-014, FND-UI-059]
+evidence: [FND-UI-032, FND-TIMER-003, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038, FND-UI-039, FND-OBJECTIVE-004, FND-STATE-010, FND-UI-040, FND-UI-041, FND-UI-042, EXP-TURN-042, FND-UI-043, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-051, FND-SAVE-003, EXP-UI-008, EXP-UI-013, EXP-UI-014, FND-UI-059, FND-UI-060, FND-UI-063]
 conflicting: []
 split_with: []
 related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-UI-012, RULE-TIMER-002, RULE-TIMER-003, RULE-OPTIONS-003, RULE-AUDIO-001, RULE-AUDIO-007, RULE-AUDIO-008, SCR-UI-004, SCR-UI-005, SCR-UI-008, SCR-OPTIONS-001, SCR-HIRE-001, SCR-HIRE-002, SCR-GANG-002]
@@ -29,7 +29,7 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 | Planning lights | `DATA/PX16/PX00129` `(66,347,20,6)`, or black | Whether a human seat has yet to complete its orders | `(51 + 70*n, 30, 20, 6)` | For each seat in play; completed local human visits turn it black until the next round reset, including final visits | FND-UI-017, FND-UI-043 |
 | Control lights | `DATA/PX16/PX00129` `(488,512,8,16)`, opaque; the control from the back buffer when dark | Events: `events_unviewed`; Comlink: `comlink_pending`; Done: the end-of-match planning visit | Events `(540,126,8,16)`, Comlink `(592,126,8,16)`, Done `(592,282,8,16)` | While the flag is set, lit on alternate even values of `comlink_blink_step` (see Timing) | FND-EVENT-006 |
 | Scenario and calendar | The font strip | Scenario resource; year and week | Scenario `(481,6)`; year `(481,15)` in four cells, week `(511,15)` in two zero-filled cells | Planning entry; the year and week only there, before its combat and events presentations (FND-UI-059) | FND-UI-040 |
-| Player totals | The numeric font strip | Score and cash | Five cells at `(550,24)` and `(550,42)` | Planning entry only, before its combat and events presentations (FND-UI-059) | FND-UI-040 |
+| Player totals | The numeric font strip | Score and cash | Five cells at `(550,24)` and `(550,42)`, base values, so 0 is the bright 0 (RULE-UI-004) | Planning entry only, before its combat and events presentations (FND-UI-059) | FND-UI-040, FND-UI-060 |
 | Calendar companion field | The font strip | Remaining turns, or resource 19 | Three cells at `(562,15)` when the flag is zero and the scenario index is below 4; resource at `(532,15)` when the flag is nonzero | Planning entry; the remaining turns only there, before its combat and events presentations (FND-UI-059) | FND-UI-040, FND-UI-041 |
 | Sector values | The font strip of `DATA/PX16/PX00129` | Income, Tolerance, Support and Cash of the selected sector (RULE-UI-011) | Sector name, Income word, Tolerance, Support and Cash at x 568, y 60, 69, 78, 87 and 96; Support and Cash show 0 unless the active player owns the sector | When a sector is selected | FND-UI-017, FND-UI-035 |
 | Pressed console tiles | `DATA/PX16/PX00129` 48-by-48 cells at `(0,512)`, `(48,512)`, `(96,512)`, `(144,512)`, `(192,512)` and `(240,512)`; Done `(288,512,100,48)`; Game Info `(190,386,26,34)`; all opaque | None | Over the tile pressed | While a tile is held and the pointer is over it (RULE-UI-001) | FND-UI-032 |
@@ -56,6 +56,8 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 | City sector, press | `(2,42,432,416)`, cell `(x - 2) / 54 + ((y - 42) / 52) * 8` | Planning | Selects the sector, unless its owner byte is -2 | FND-UI-015 |
 | City sector, double-click | The same | Planning | Makes the sector the selected one and opens SCR-UI-004 for the active player's gangs | FND-UI-015 |
 | Hire dock | `(440,373,196,77)` | Planning | The Hire handler (SCR-HIRE-002): a press drags an offer to a sector or toggles its Reject, a double-click opens the live-gang panel (SCR-GANG-002) | FND-UI-015, FND-UI-032, FND-HIRE-008 |
+
+Every row above is a press or double-click of the left button. The console tiles also take a press or double-click of the right button, which holds the tile until the right button comes up and acts on a release inside as the left button does; the city map and the Hire dock ignore the right button (FND-UI-063).
 
 ## Keyboard input
 
