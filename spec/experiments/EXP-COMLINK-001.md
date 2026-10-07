@@ -110,19 +110,17 @@ In turn 3 every inbox was empty and View played slot 4 and did not open.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs` plays the same steps in
-a rebuild match with humans in slots 0 to 2, through the functions the game
-client calls: `MatchState.HasComlinkRecipient` and `IsComlinkRecipient` for the
-panel and the cards, `ComlinkTextEditor` with the client's key map for the
-keys, `SendComlinkMessage`, `ChaosGame.InitialComlinkViewCursor` and
-`BoundedPageNavigation` for View, `MarkComlinkRead`, and `FinishCommand`. After
-every step the rebuild refuses and accepts what the original did, holds the
-same messages with the same read flags, turns, senders and texts in the same
-order, the same counts and View pages, the same draft, the same selection, and
-the same pending flag, and drops the same number of messages at each Done.
-Wherever the original played slot 6 the rebuild's planning player has an
-unread message before or after the step, and at each planning entry the
-client's alert timing sounds slot 6 exactly where the original did.
+A test of the rebuild plays the same steps in a rebuild match with humans in
+slots 0 to 2, through the code the game client calls for the panel's recipient
+checks, the text editor with the client's key map, Send, the View cursor and
+its paging, marking a message read, and finishing a command. After
+every step the rebuild refuses and accepts what the original did, holds the same
+messages with the same read flags, turns, senders and texts in the same order,
+the same counts and View pages, the same draft, the same selection, and the same
+pending flag, and drops the same number of messages at each Done. Wherever the
+original played slot 6 the rebuild's planning player has an unread message
+before or after the step, and at each planning entry the client's alert timing
+sounds slot 6 exactly where the original did.
 
 ## Conclusion
 

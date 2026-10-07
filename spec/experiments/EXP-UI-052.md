@@ -67,10 +67,9 @@ key posted. The characters:
 
 ## Results
 
-`KeyEventsCarryTheOriginalsCharacter` in
-`tests/Rechaos.Tests/OriginalTextInputExperimentTests.cs` compares the
-rebuild's character for each key and Shift state with the stored one, and
-expects no character where the original stored 0 or a control character. A
+A test of the rebuild compares the rebuild's character for each key and
+Shift state with the stored one, and expects no character where the original
+stored 0 or a control character. A
 first comparison found the rebuild typing the number-pad digit with Shift held
 and nothing for the five number-pad operators.
 

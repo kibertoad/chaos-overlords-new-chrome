@@ -62,9 +62,7 @@ name. That text belongs to the machine, not to the game, and is not used.
 
 ## Results
 
-`TheNameEditorKeepsTheOriginalsName` in
-`tests/Rechaos.Tests/OriginalTextInputExperimentTests.cs` types each step's
-keys into the rebuild's name editor and compares the name with the record,
+A test of the rebuild types each step's keys into the rebuild's name editor and compares the name with the record,
 for every step but Shift with Insert: the rebuild's editor has no clipboard. A
 first comparison found the rebuild typing Shift with a number-pad digit as the
 digit, nothing for the number-pad operators, and nothing for a key whose

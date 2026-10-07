@@ -47,10 +47,9 @@ lists are empty.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Presentation.cs`
-(`TheAttackPickerOffersTheOriginalsTargets`) replays the run and, for each
-opponent, compares the gangs the rebuild's Attack picker shows, as roster
-slots, with the recorded targets. The rebuild shows none for each opponent.
+A test of the rebuild replays the run and, for each opponent, compares the gangs
+the rebuild's Attack picker shows, as roster slots, with the recorded targets.
+The rebuild shows none for each opponent.
 
 ## Conclusion
 
