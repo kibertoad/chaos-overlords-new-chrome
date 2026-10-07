@@ -290,8 +290,9 @@ public sealed partial class ChaosGame
             && state.ComlinkFor(activePlayer).HasUnread
             && LampInLitPhase(_referenceFrame?.Lamps?.Comlink))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
-        // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
-        if (_finalViewPlayer is not null && (_steadyLights || PresentationClock.BlinkLit(PresentationDrawTime)))
+        // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view, or stays lit
+        // under Steady Lights (DEV-UI-027). No capture records its phase.
+        if (_finalViewPlayer is not null && LampInLitPhase(recorded: null))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)

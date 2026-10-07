@@ -389,6 +389,7 @@ public sealed partial class ChaosGame
 
     // FND-COMLINK-010: the reference frame draws the caret in the phase the original's capture
     // recorded, 0 to 2 timer events since a flip to plain and 3 to 5 since a flip to inverse.
+    // DEV-UI-027: Steady Lights holds the inverse glyph.
     private bool ComlinkCaretInverse => _referenceFrame?.ItemFrame is { } frame
         ? frame % 6 >= 3
         : _steadyLights || _comlinkCaretCadence.UsesInverseGlyph;

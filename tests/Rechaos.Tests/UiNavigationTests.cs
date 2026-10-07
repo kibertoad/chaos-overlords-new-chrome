@@ -461,6 +461,29 @@ public sealed partial class UiNavigationTests
             row => Assert.True(OptionsLayout.ArrowsToggle(row)));
     }
 
+    /// <summary>Each named cursor row is the row its toggle is drawn and hit-tested on.</summary>
+    [Fact]
+    public void OptionsCursorRowsMatchTheirToggles()
+    {
+        (int Row, Rectangle Toggle)[] rows =
+        [
+            (OptionsLayout.BaseStatisticsRow, OptionsLayout.BaseStatistics),
+            (OptionsLayout.DetailedCombatRow, OptionsLayout.DetailedCombat),
+            (OptionsLayout.SlidePanelsRow, OptionsLayout.SlidePanels),
+            (OptionsLayout.SteadyLightsRow, OptionsLayout.SteadyLights),
+            (OptionsLayout.WarnIfIdleGangsRow, OptionsLayout.WarnIfIdleGangs),
+            (OptionsLayout.EventSiteImagesRow, OptionsLayout.EventSiteImages),
+            (OptionsLayout.AdvancedAiRow, OptionsLayout.AdvancedAi),
+            (OptionsLayout.IntroOnlyOnceRow, OptionsLayout.IntroOnlyOnce),
+            (OptionsLayout.ExportDiagnosticsRow, OptionsLayout.ExportDiagnostics),
+            (OptionsLayout.OnlineLobbyPresentationRow, OptionsLayout.OnlineLobbyPresentation),
+        ];
+
+        Assert.Equal(OptionsLayout.ToggleRows.Count, rows.Length);
+        Assert.All(rows, row => Assert.Equal(
+            row.Toggle, OptionsLayout.ToggleRows[row.Row - OptionsLayout.FirstToggleRow]));
+    }
+
     [Fact]
     public void OptionsExposeBothOriginalAudioScalesAsDistinctHitTargets()
     {

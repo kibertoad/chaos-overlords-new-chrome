@@ -183,6 +183,7 @@ public sealed partial class ChaosGame
         }
         // FND-UI-054: a reference frame draws the recorded ticks since the open, kept modulo 8.
         // FND-UI-047: the presentation clock stops while a face is held, and the line with it.
+        // DEV-UI-027: Steady Lights keeps the line drawn.
         var shown = _referenceFrame?.ItemFrame is { } ticks
             ? IdleGangWarningLayout.LineShown(ticks)
             : _steadyLights || IdleGangWarningLayout.LineShown(_idleGangWarningOpenedAt, PresentationDrawTime);

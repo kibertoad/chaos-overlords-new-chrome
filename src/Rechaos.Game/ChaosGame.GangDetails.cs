@@ -306,8 +306,7 @@ public sealed partial class ChaosGame
     {
         // FND-UI-047: the panel's counter steps on the ticks the event pump takes, so a held face
         // stops it and the release takes one tick.
-        var frame = ItemRotationPresentation.FrameAfter(
-            _steadyLights ? 0 : _eventPump.Ticks - _gangDetailsAnimationStart);
+        var frame = ItemRotationFrameAfter(_eventPump.Ticks - _gangDetailsAnimationStart);
         for (var slot = 0; slot < 3; slot++)
         {
             if (EquippedItem(gang, slot) is not { } itemId) continue;

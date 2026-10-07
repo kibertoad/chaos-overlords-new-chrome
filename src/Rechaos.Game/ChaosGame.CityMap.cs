@@ -129,20 +129,14 @@ public sealed partial class ChaosGame
         SpriteBatch batch, Texture2D pixel, MatchState state, PlayerId? viewed, IReadOnlyList<bool>? seatsSeen)
     {
         if (_uiSprites is null) return;
-        // FND-UI-038: the reference frame draws the marker frame its capture recorded, or the
-        // first one, whatever its clicks advanced the clock to.
-        // DEV-UI-027: Steady Lights holds the marker at its first frame.
-        var markerFrame = _referenceFrame is null
-            ? _steadyLights ? ActivePlayerMarkerPresentation.Frame(TimeSpan.Zero) : _overlordMarkerClock.Frame(_inputTime)
-            : _referenceFrame.MarkerFrame ?? ActivePlayerMarkerPresentation.Frame(TimeSpan.Zero);
+        var markerFrame = MarkerFrameShown();
+        var emptySeatSource = OverlordBarLayout.EmptySeatSource(EmptySeatFrameShown());
         for (var seat = 0; seat < MatchLimits.PlayerCount; seat++)
         {
             var player = state.Players.FirstOrDefault(candidate => candidate.Id.Value == seat);
             if (player is null || player.Status == PlayerStatus.Eliminated)
             {
-                batch.Draw(_uiSprites, OverlordBarLayout.EmptySeat(seat),
-                    OverlordBarLayout.EmptySeatSource(ActivePlayerMarkerPresentation.EmptySeatFrame(PresentationInputTime)),
-                    Color.White);
+                batch.Draw(_uiSprites, OverlordBarLayout.EmptySeat(seat), emptySeatSource, Color.White);
                 continue;
             }
             batch.Draw(_uiSprites, OverlordBarLayout.Portrait(seat),

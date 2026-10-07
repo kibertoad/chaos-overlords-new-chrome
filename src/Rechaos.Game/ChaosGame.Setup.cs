@@ -727,12 +727,12 @@ public sealed partial class ChaosGame
                 ? _setupNameEditor.Text
                 : _playerNames[index];
             var label = _editingPlayerName == index && !_configuringOnlineLobby
-                && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0
+                && (_steadyLights || (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
                 ? text + "_"
                 : text;
             // FND-SETUP-014: the name in the screen's green, centred on the card. The blinking
             // cursor of the rebuild's name editor is left out of the centring, so the name holds
-            // still while it blinks.
+            // still while it blinks. Steady Lights (DEV-UI-027) keeps the cursor drawn.
             var name = SetupPlayerCardArtLayout.NameStart(index, text.Length);
             font.Draw(batch, label, new Vector2(name.X, name.Y), Color.Lime, 1);
         }

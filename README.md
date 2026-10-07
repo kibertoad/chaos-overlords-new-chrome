@@ -135,8 +135,9 @@ presentation-only conveniences that make the original systems easier to read:
 - Research lists accumulated progress beside its required total, and report
   panels retain unread/page progress so information is not silently consumed.
 - Steady Lights in Options, off by default, holds the blinking console lights,
-  the cycling sector frame, the Overlord marker, the idle-gang warning line,
-  the Comlink caret and the rotating item pictures on one frame.
+  the cycling sector frame, the Overlord bar's marker and empty seats, the
+  idle-gang warning line, the text carets and the rotating item pictures on
+  one frame.
 - Automatic Detailed Combat remains a bounded, skippable presentation over the
   already-resolved result. This intentionally fixes the original's known
   freeze while leaving combat rolls, state, and replay data unchanged.

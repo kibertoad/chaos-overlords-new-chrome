@@ -55,8 +55,8 @@ order, and every capture comparison runs with the settings off.
 
 1. Blinking and cycling can be stopped. With Steady Lights on (DEV-UI-027),
    the console lights, the Done light, the selected sector's frame, the
-   Overlord marker, the idle-gang warning line, the Comlink caret and the
-   rotating item pictures hold one frame. The original's rates stay under three
+   Overlord bar's marker and empty seats, the idle-gang warning line, the text
+   carets and the rotating item pictures hold one frame. The original's rates stay under three
    flashes a second, so the setting starts off.
 2. Motion can be removed. Slide Panels starts off (DEV-OPTIONS-002), so panels
    are drawn in place, and Detailed Combat can be switched off in Options or
@@ -70,7 +70,7 @@ order, and every capture comparison runs with the settings off.
 6. Keys can be remapped: #158.
 
 Reason: these are the criteria from WCAG 2.2 (2.2.2, 2.3.3, 1.3.3, 2.1.1,
-1.4.1) that a mouse-driven 1996 strategy game can meet without changing what
+1.4.1, 2.1.4) that a mouse-driven 1996 strategy game can meet without changing what
 the player can do. Criteria that would need new content, such as spoken text
 or larger fonts with a new layout, are out of scope while screens match the
 original pixel for pixel.

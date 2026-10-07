@@ -1,13 +1,14 @@
-using Rechaos.Core.GameModel;
+using Microsoft.Xna.Framework;
 using Rechaos.Game;
 using Xunit;
 
 namespace Rechaos.Tests;
 
 /// <summary>
-/// DEV-UI-027: with Steady Lights on, the console lights stay lit and the selected sector's frame
-/// holds its first frame at every tick; off, they blink and cycle on the presentation clock as
-/// SCR-UI-003 records. The setting starts off and survives a preferences round trip.
+/// DEV-UI-027: with Steady Lights on, the console lights stay lit, and the selected sector's
+/// frame, the Overlord bar's marker and empty-seat art, the Comlink Send caret and the rotating
+/// item pictures hold one frame at every tick; off, they blink and cycle on the presentation clock
+/// as SCR-UI-003, SCR-COMLINK-002 and SCR-UI-006 record. The setting starts off.
 /// </summary>
 public sealed class SteadyLightsTests
 {
@@ -37,6 +38,39 @@ public sealed class SteadyLightsTests
         Assert.All(Times, time => Assert.Equal(0, SelectionFrame(game, time)));
     }
 
+    [Theory]
+    [InlineData("MarkerFrameShown")]
+    [InlineData("EmptySeatFrameShown")]
+    public void TheOverlordBarTurnsOffAndHoldsItsFirstFrameOn(string method)
+    {
+        var off = GameAt(steady: false);
+        var on = GameAt(steady: true);
+
+        Assert.True(Times.Select(time => OverlordBarFrame(off, method, time)).Distinct().Count() > 1);
+        Assert.All(Times, time => Assert.Equal(0, OverlordBarFrame(on, method, time)));
+    }
+
+    [Fact]
+    public void TheComlinkCaretFlipsOffAndStaysInverseOn()
+    {
+        var off = GameAt(steady: false);
+        var on = GameAt(steady: true);
+
+        Assert.Equal(new[] { false, true }, Times.Select(time => CaretInverse(off, time)).Distinct().Order());
+        Assert.All(Times, time => Assert.True(CaretInverse(on, time)));
+    }
+
+    [Fact]
+    public void TheItemPicturesTurnOffAndHoldTheirFirstFrameOn()
+    {
+        var off = GameAt(steady: false);
+        var on = GameAt(steady: true);
+        var first = ItemRotationPresentation.FrameAfter(0);
+
+        Assert.True(Enumerable.Range(0, 16).Select(ticks => ItemFrame(off, ticks)).Distinct().Count() > 1);
+        Assert.All(Enumerable.Range(0, 16), ticks => Assert.Equal(first, ItemFrame(on, ticks)));
+    }
+
     [Fact]
     public void ARecordedLampPhaseStillWins()
     {
@@ -48,55 +82,10 @@ public sealed class SteadyLightsTests
     }
 
     [Fact]
-    public void TheSettingStartsOffAndRoundTrips()
+    public void TheSettingStartsOff()
     {
         Assert.False(OriginalOptionsPolicy.SteadyLightsByDefault);
         Assert.False(GamePreferences.Default.SteadyLights);
-
-        var directory = Directory.CreateTempSubdirectory("rechaos-steady-lights-");
-        try
-        {
-            var path = Path.Combine(directory.FullName, "preferences.json");
-            var expected = GamePreferences.Default with { SteadyLights = true };
-            Assert.True(GamePreferencesStore.TrySave(path, expected));
-            Assert.Equal(expected, GamePreferencesStore.LoadOrDefault(path));
-        }
-        finally
-        {
-            directory.Delete(recursive: true);
-        }
-    }
-
-    [Fact]
-    public void VersionTwelvePreferencesKeepTheirChoicesAndStartTheSettingOff()
-    {
-        var directory = Directory.CreateTempSubdirectory("rechaos-steady-lights-");
-        try
-        {
-            var path = Path.Combine(directory.FullName, "preferences.json");
-            File.WriteAllText(path, """
-                {"FormatVersion":12,"MusicVolumeLevel":8,"SoundEffectVolumeLevel":3,
-                 "WarnIfIdleGangs":false,"PlanningTimeLimit":2,
-                 "ShowBaseStatistics":true,"DetailedCombat":false,"SlidePanels":true,
-                 "Fullscreen":true,"SmoothEventSiteImages":true,"IntroMoviesSeen":true,
-                 "DefaultAiPolicy":1,"OnlineService":1,
-                 "CustomMultiplayerServer":"https://games.example.test","LobbyPresentation":1,
-                 "IntroOnlyOnce":false,"PreferredScenario":3}
-                """);
-
-            var preferences = GamePreferencesStore.LoadOrDefault(path);
-
-            Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
-            Assert.False(preferences.IntroOnlyOnce);
-            Assert.Equal((ScenarioId)3, preferences.PreferredScenario);
-            Assert.Equal(OnlineLobbyPresentation.Classic, preferences.LobbyPresentation);
-            Assert.True(preferences.SlidePanels);
-            Assert.False(preferences.SteadyLights);
-        }
-        finally
-        {
-            directory.Delete(recursive: true);
-        }
     }
 
     private static ChaosGame GameAt(bool steady)
@@ -120,4 +109,19 @@ public sealed class SteadyLightsTests
         Advance(game, time);
         return (int)DeviationBehaviourTests.Call(game, "SelectionFrameShown")!;
     }
+
+    private static int OverlordBarFrame(ChaosGame game, string method, TimeSpan time)
+    {
+        DeviationBehaviourTests.Field("_inputTime").SetValue(game, time);
+        return (int)DeviationBehaviourTests.Call(game, method)!;
+    }
+
+    private static bool CaretInverse(ChaosGame game, TimeSpan time)
+    {
+        ((ComlinkCaretCadence)DeviationBehaviourTests.Field("_comlinkCaretCadence").GetValue(game)!).Advance(time);
+        return (bool)DeviationBehaviourTests.Call(game, "get_ComlinkCaretInverse")!;
+    }
+
+    private static Rectangle ItemFrame(ChaosGame game, long ticks) =>
+        (Rectangle)DeviationBehaviourTests.Call(game, "ItemRotationFrameAfter", ticks)!;
 }
