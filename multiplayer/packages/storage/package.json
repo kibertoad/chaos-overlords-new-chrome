@@ -1,6 +1,6 @@
 {
   "name": "@chaos-overlords/storage",
-  "version": "0.9.9",
+  "version": "0.9.10",
   "description": "Drizzle schemas and repository implementations of the kernel storage ports: one SQLite dialect shared by better-sqlite3 and Cloudflare D1, and a Postgres dialect.",
   "keywords": [
     "chaos-overlords",
@@ -69,13 +69,13 @@
     "drizzle-orm": "^0.45.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260927.1",
+    "@cloudflare/workers-types": "^5.20260930.2",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.3",
     "@types/pg": "^8.23.1",
     "better-sqlite3": "^13.0.3",
     "drizzle-kit": "^0.31.11",
-    "pg": "^8.23.0",
+    "pg": "^8.23.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11",
     "@chaos-overlords/conformance": "workspace:*"

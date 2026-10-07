@@ -10,7 +10,9 @@
 - Justification: The write is an index past the end of a 64-entry table, and it rewrites another
   player's planning state with bytes that are no family, action or target any handler assigns: a
   corruption no player can rely on. While a human holds slot 0 the records are zero bytes and the
-  multiply leaves them zero, so the usual match plays the same. A setting would choose between
+  multiply leaves them zero, so a match with a human in slot 0 plays the same. With a computer in
+  slot 0 the records are not zero: in 120 matches of six computer players the multiply reached
+  them 600 times. A setting would choose between
   leaving the records alone and reproducing a corruption the rebuild's planning state refuses to
   hold.
 - Dropped: no

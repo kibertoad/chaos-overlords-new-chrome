@@ -12,12 +12,11 @@ Entries by area.
 | [FND-EVENT-002](../../findings/FND-EVENT-002.md) | The Last Turn Events handler tests only Previous, Next and one exit control, and has no Delete branch | recorded |
 | [FND-EVENT-003](../../findings/FND-EVENT-003.md) | Last Turn reports other than Influence and Research load the illustration numbered 6000 plus the report type | recorded |
 | [FND-EVENT-004](../../findings/FND-EVENT-004.md) | A Last Turn report record holds an occupied byte at +0, a padding byte at +1 and four 16-bit fields from +2, and the resolver's twelve recorder calls pass fixed arguments | recorded |
-| [FND-EVENT-005](../../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item | superseded |
+| [FND-EVENT-005](../../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item | recorded |
 | [FND-EVENT-006](../../findings/FND-EVENT-006.md) | The event pump blinks the Events, Comlink and Done lights together, lit for two timer-0 ticks and dark for two | recorded |
-| [FND-EVENT-007](../../findings/FND-EVENT-007.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item | recorded |
-| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | established |
+| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | supported |
 | [RULE-EVENT-002](../../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution | supported |
-| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | established |
+| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | supported |
 | [RULE-EVENT-004](../../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector | established |
 | [RULE-EVENT-005](../../rules/RULE-EVENT-005.md) | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded | supported |
 | [RULE-EVENT-006](../../rules/RULE-EVENT-006.md) | A completed site is reported to the player whose Influence completed it | established |

@@ -74,3 +74,10 @@ None known.
 - While open, the panel keeps the left 24 columns of the order panel it was
   opened from on screen at `(104, 124)` and redraws them on repaint
   (FND-GANG-010).
+- No recorded run of the original reaches Force 0 drawn as question marks; the
+  base values through bitmap 143; opening from Attack, Research, Sell and
+  Give; an Exit double-click, a refused press outside, Enter, Execute and the
+  other keys; the slide and rejected sounds and the slide's timing
+  (FND-GANG-002, FND-GANG-009, FND-GANG-010, FND-GANG-011, FND-GFX-006,
+  FND-OPTIONS-001). These rest on the static findings named, so the entry
+  stays `supported`.

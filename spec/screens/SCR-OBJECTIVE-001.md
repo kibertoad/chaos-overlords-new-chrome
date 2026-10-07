@@ -69,3 +69,8 @@ None known.
   portrait is at the top of its rail.
 - The panel image is used through the `DATA/PX08` file of the same name in
   256-colour mode.
+- No recorded run of the original reaches equal highest and lowest scores,
+  where the offset is 70; a player whose standing is 0xFF; tied scores; a
+  press outside the panel and its sound; Enter and Execute; the slide's timing
+  (FND-OBJECTIVE-005, FND-UI-011). These rest on the static findings named, so
+  the entry stays `supported`.

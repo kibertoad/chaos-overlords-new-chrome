@@ -27,7 +27,7 @@ In the Item Information handler `fn_0044B699` (FND-UI-013):
 
 - `0x0044B6AC` sets the local `[ebp-0x134]` to 0 before anything is drawn.
 - `0x0044C34B` calls `fn_004328F8(0)`, which takes and clears a timer flag
-  (FND-COMLINK-005). When it returns nonzero, `0x0044C355` to `0x0044C36E`
+  (FND-COMLINK-010). When it returns nonzero, `0x0044C355` to `0x0044C36E`
   subtract 14 from the local when it is 14 or more and add 1 otherwise.
 - `0x0044C3B4` to `0x0044C3DB` take the source rectangle with left
   `48 * frame`, top `0x161`, right `48 * frame + 48` and bottom `0x191` of

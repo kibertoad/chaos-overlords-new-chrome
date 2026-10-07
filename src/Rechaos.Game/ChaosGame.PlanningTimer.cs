@@ -414,8 +414,8 @@ public sealed partial class ChaosGame
     /// helper (FND-UI-032), the Last Turn Events page arrows (FND-EVENT-007) and the held-button
     /// helper behind the faces of the panels, the Comlink Send panel, the attack picker, the
     /// idle-gang warning, the Search panel's ALL, NONE and Done, Detailed Combat's Exit face and
-    /// the sector view's back control (FND-UI-046, FND-UI-047). Each loop runs until the button that
-    /// pressed it comes up: the left one, or the right one for a console tile pressed with it
+    /// the sector view's back control (FND-UI-046, FND-UI-047). Each loop runs until the button
+    /// that pressed it comes up: the left one, or the right one for a console tile pressed with it
     /// (FND-UI-063).
     /// </summary>
     private bool HoldsPointerOutsideEventPump() =>

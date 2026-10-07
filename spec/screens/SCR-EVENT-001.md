@@ -120,3 +120,11 @@ None known.
   the file of the same name from `DATA/PX08/`.
 - How long the pressed arrow stays drawn after Left or Right depends on
   `fn_00464CD9(1)`, which was not read.
+- No recorded run of the original reaches pages other than one of one and the
+  arrows' normal and pressed faces; the illustrations and captions of every
+  report type but 1; the omitted date at `elapsed_turns` 0; the arrow presses,
+  a press outside the panel, Left, Right, Enter and Execute; the Events
+  control with no report; sounds SND00203 and SND00204; the type 5 animation
+  and its counter (FND-EVENT-002, FND-EVENT-003, FND-EVENT-007, FND-UI-012,
+  FND-UI-016, FND-UI-047, FND-AUDIO-011). These rest on the static findings
+  named, so the entry stays `supported`.

@@ -9,7 +9,7 @@ byte_order: little
 size: 166
 text: false
 definition: fmt_data_003.ksy
-evidence: [FND-DATA-006, FND-DATA-007, FND-COMBAT-010, FND-GANG-007, FND-DATA-003, FND-ASSET-001, FND-RESEARCH-002, FND-GANG-001, FND-EQUIP-001, FND-EQUIP-002, FND-AUDIO-002, FND-AUDIO-013, SRC-RECHAOS-3561D41, FND-EVENT-007, FND-UI-013, FND-UI-004, FND-EQUIP-007, FND-EQUIP-008, FND-SELL-001, FND-RESEARCH-003, FND-EXE-004]
+evidence: [FND-DATA-006, FND-DATA-007, FND-COMBAT-010, FND-GANG-007, FND-DATA-003, FND-ASSET-001, FND-RESEARCH-002, FND-GANG-001, FND-EQUIP-001, FND-EQUIP-002, FND-AUDIO-002, FND-AUDIO-013, SRC-RECHAOS-3561D41, FND-EVENT-007, FND-UI-013, FND-UI-004, FND-EQUIP-007, FND-EQUIP-012, FND-SELL-001, FND-RESEARCH-003, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -30,8 +30,8 @@ table (FND-RESEARCH-002). Every number is a signed 16-bit little-endian integer.
 | `0x20` | 90 | `char[90]` | `description` | The item's description, drawn as three rows of 30 characters on the item panel. ASCII text padded with spaces to the end of the field, with no NUL byte. | supported | FND-UI-013, FND-UI-004, FND-DATA-003, SRC-RECHAOS-3561D41 |
 | `0x7A` | 2 | `INT16LE` | `type` | The item's category, one of the values below. The statistics rebuild reads it for the weapon to choose the skills added to Combat. | supported | FND-DATA-003, FND-GANG-007, SRC-RECHAOS-3561D41 |
 | `0x7C` | 2 | `INT16LE` | `research_difficulty` | Research needed to complete the item. A new game copies its low byte into each player's research progress for the item; 0 means researched from the start. | supported | FND-DATA-003, FND-RESEARCH-002 |
-| `0x7E` | 2 | `INT16LE` | `cost` | Purchase price in dollars, 0 to 45. Equip charges it (less a third in a discount sector); the Sell panel shows half of it, rounded toward zero. | supported | FND-EQUIP-007, FND-EQUIP-008, FND-SELL-001, FND-EQUIP-001, FND-EQUIP-002, SRC-RECHAOS-3561D41 |
-| `0x80` | 2 | `INT16LE` | `tech_level` | Tech Level of the item, 0 to 10. The Equip and Research lists show an item only when this is at most the limit they are given. | supported | FND-EQUIP-008, FND-RESEARCH-003, FND-DATA-003, SRC-RECHAOS-3561D41 |
+| `0x7E` | 2 | `INT16LE` | `cost` | Purchase price in dollars, 0 to 45. Equip charges it (less a third in a discount sector); the Sell panel shows half of it, rounded toward zero. | supported | FND-EQUIP-007, FND-EQUIP-012, FND-SELL-001, FND-EQUIP-001, FND-EQUIP-002, SRC-RECHAOS-3561D41 |
+| `0x80` | 2 | `INT16LE` | `tech_level` | Tech Level of the item, 0 to 10. The Equip and Research lists show an item only when this is at most the limit they are given. | supported | FND-EQUIP-012, FND-RESEARCH-003, FND-DATA-003, SRC-RECHAOS-3561D41 |
 | `0x82` | 2 | `INT16LE` | `combat` | Modifier to the Combat of the gang that carries the item. | supported | FND-GANG-001, FND-GANG-007, SRC-RECHAOS-3561D41 |
 | `0x84` | 2 | `INT16LE` | `defense` | Modifier to Defense, applied the same way as `combat`. | supported | FND-GANG-001, FND-GANG-007, SRC-RECHAOS-3561D41 |
 | `0x86` | 2 | `INT16LE` | `stealth` | Modifier to Stealth, applied the same way as `combat`. | supported | FND-GANG-001, FND-GANG-007, SRC-RECHAOS-3561D41 |

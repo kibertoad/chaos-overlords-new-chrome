@@ -20,10 +20,10 @@ public sealed partial class OriginalNewGameExperimentTests
     // original's times are compared within this margin.
     private const int DebuggerSlackMs = 30;
 
-    // FND-UI-017: the city-cell flash fn_0041ACE6 spans 0x0041ACE6..0x0041B4E9, so a wait called
+    // FND-UI-017: the city-cell flash fn_0041ACE6 spans 0x0041ACE6..0x0041B4EA, so a wait called
     // from inside that range is one of a flash's.
     private static bool CalledByCityCellFlash(RecordedWait wait) =>
-        wait.Call is >= 0x0041ACE6 and < 0x0041B4E9;
+        wait.Call is >= 0x0041ACE6 and < 0x0041B4EA;
 
     // RULE-TIMER-004, FND-TIMER-002, FND-UI-017: the probe recorded the ticks of the original's
     // presentation clock and every call of its wait (EXP-UI-024). The clock ticks about every

@@ -60,7 +60,7 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawHeldPanelFace(SpriteBatch batch)
     {
-        if (_uiSprites is null) return;
+        if (UiSprites is null) return;
         (Rectangle Destination, Rectangle Source)? drawn = null;
         if (_pressedPanelFace is { } held && _pressedPanelFaceKind is { } kind
             && held.Screen == _screens.Current)
@@ -68,7 +68,7 @@ public sealed partial class ChaosGame
                 pointerInside: _hoverPoint is { } hover && held.Face.Contains(hover));
         else if (_releasedPanelFace is { } released && released.Screen == _screens.Current)
             drawn = HeldButtonFaces.Drawn(released.Kind, released.Face, pointerInside: false);
-        if (drawn is { } face) batch.Draw(_uiSprites, face.Destination, face.Source, Color.White);
+        if (drawn is { } face) batch.Draw(UiSprites, face.Destination, face.Source, Color.White);
     }
 
     /// <summary>Enter, or the Execute key (virtual key 0x2B), which the original's panels also take.</summary>

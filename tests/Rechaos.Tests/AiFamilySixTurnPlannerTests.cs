@@ -199,7 +199,7 @@ public sealed class AiFamilySixTurnPlannerTests
             ], owner: id == 0 && targetSector == 0 ? setups[1].Id : null))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            scenario, GameDuration.SixMonths, seed, setups,
+            scenario, GameDuration.SixMonths, seed, setups, MatchDeviations.Original,
             AiDifficulty.HomicidalManiac), players, sectors);
     }
 }
