@@ -6,21 +6,21 @@ Entries by status.
 
 ## supported
 
-3 entries.
+4 entries.
 
 | ID | Title |
 |---|---|
+| [RULE-HIRE-001](../../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot |
 | [RULE-HIRE-003](../../rules/RULE-HIRE-003.md) | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject |
 | [SCR-HIRE-001](../../screens/SCR-HIRE-001.md) | Hire comparison panel showing the three offers side by side |
 | [SCR-HIRE-002](../../screens/SCR-HIRE-002.md) | Hire offers on the main console, with drag-to-hire and Reject |
 
 ## established
 
-3 entries.
+2 entries.
 
 | ID | Title |
 |---|---|
-| [RULE-HIRE-001](../../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot |
 | [RULE-HIRE-002](../../rules/RULE-HIRE-002.md) | Vacant hire offers are refilled in place at the player's planning entry |
 | [RULE-HIRE-004](../../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order |
 
@@ -48,7 +48,6 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [RULE-HIRE-001](../../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot |
 | [RULE-HIRE-002](../../rules/RULE-HIRE-002.md) | Vacant hire offers are refilled in place at the player's planning entry |
 | [RULE-HIRE-004](../../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order |
 
@@ -58,7 +57,7 @@ Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-HIRE-001](../../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | established |
+| [RULE-HIRE-001](../../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | supported |
 | [RULE-HIRE-002](../../rules/RULE-HIRE-002.md) | Vacant hire offers are refilled in place at the player's planning entry | established |
 | [RULE-HIRE-003](../../rules/RULE-HIRE-003.md) | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported |
 | [RULE-HIRE-004](../../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order | established |

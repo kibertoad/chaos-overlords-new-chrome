@@ -60,7 +60,7 @@ turn resolver reads. Division by 81 decodes a combined
 
 The byte could have been a one-turn choice rather than a persistent family. It
 is kept across turns: the outer planning pass reads it again, and some handlers
-rewrite it to another family (FND-AI-030, FND-AI-033). Value 8 may be unused or
+rewrite it to another family (FND-AI-048, FND-AI-033). Value 8 may be unused or
 reached through a default path; the default branch has not been recorded.
 
 ## How to reproduce

@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004353A0..0x00435BC0
+    address: 0x004353A0..0x00435BC1
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -19,7 +19,7 @@ environment: null
 
 The family-12 handler `0x004353A0` (FND-AI-001) stores a 16-bit value into
 the auxiliary record of the gang it plans for (`0x0048C0B0 + player * 0x46E +
-slot * 14`, FND-AI-044) after each action:
+slot * 14`, FND-AI-081) after each action:
 
 | Action | Store | Value |
 |---|---|---|

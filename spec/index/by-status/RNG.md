@@ -4,13 +4,20 @@
 
 Entries by status.
 
-## established
+## supported
 
-2 entries.
+1 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-RNG-001](../../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start |
+
+## established
+
+1 entries.
+
+| ID | Title |
+|---|---|
 | [RULE-RNG-002](../../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws |
 
 ## recorded
@@ -32,7 +39,6 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [RULE-RNG-001](../../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start |
 | [RULE-RNG-002](../../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws |
 
 ## Open questions
@@ -41,5 +47,5 @@ Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-RNG-001](../../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start | established |
+| [RULE-RNG-001](../../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start | supported |
 | [RULE-RNG-002](../../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws | established |

@@ -16,6 +16,7 @@ internal sealed class OriginalProcess : IDisposable
     private readonly Dictionary<uint, Breakpoint> _breakpoints = [];
     private readonly Dictionary<int, IntPtr> _threads = [];
     private readonly Dictionary<int, uint> _rearm = [];
+    private readonly List<CodePatch> _patches = [];
     private readonly IntPtr _event = Marshal.AllocHGlobal(Native.DebugEventSize);
     private IntPtr _process;
     private bool _started;
@@ -38,7 +39,7 @@ internal sealed class OriginalProcess : IDisposable
                 IntPtr.Zero, workingDirectory, ref startup, out var information))
             throw new Win32Exception(
                 Marshal.GetLastWin32Error(),
-                $"Cannot start {executable}. The installed path asks for administrator rights; run a staged copy with --executable (docs/VALIDATION.md).");
+                $"Cannot start {executable}. The installed path asks for administrator rights; run a staged copy with --executable (docs/validation/experiments.md).");
         process._process = information.Process;
         process.ProcessId = information.ProcessId;
         Native.CloseHandle(information.Thread);
@@ -60,6 +61,20 @@ internal sealed class OriginalProcess : IDisposable
         breakpoint.Handlers.Add(new BreakpointHandler(handler, oneShot, quiet));
         _breakpoints[address] = breakpoint;
         if (_started) Arm(breakpoint);
+    }
+
+    /// <summary>
+    /// Writes <paramref name="replacement"/> over the code bytes at <paramref name="address"/>
+    /// once the image is mapped, when they still hold <paramref name="expected"/>. A patch that
+    /// finds other bytes leaves them alone and adds a line to <see cref="Log"/>.
+    /// </summary>
+    public void Patch(uint address, byte[] expected, byte[] replacement)
+    {
+        if (expected.Length != replacement.Length)
+            throw new ArgumentException("A patch replaces as many bytes as it expects.", nameof(replacement));
+        var patch = new CodePatch(address, expected, replacement);
+        _patches.Add(patch);
+        if (_started) Apply(patch);
     }
 
     /// <summary>Handles debug events until <paramref name="until"/> holds, the process exits or the time runs out.</summary>
@@ -138,6 +153,7 @@ internal sealed class OriginalProcess : IDisposable
                 // when the exit events are continued; only the image file handle is the debugger's.
                 _threads[threadId] = Marshal.ReadIntPtr(_event, 32);
                 _started = true;
+                foreach (var patch in _patches) Apply(patch);
                 foreach (var breakpoint in _breakpoints.Values) Arm(breakpoint);
                 break;
             case Native.CreateThreadDebugEvent:
@@ -208,6 +224,18 @@ internal sealed class OriginalProcess : IDisposable
         return Native.DbgContinue;
     }
 
+    private void Apply(CodePatch patch)
+    {
+        var found = Read(patch.Address, patch.Expected.Length);
+        if (!found.AsSpan().SequenceEqual(patch.Expected))
+        {
+            Log.Add($"Patch at 0x{patch.Address:X8} skipped: expected {Convert.ToHexString(patch.Expected)}, found {Convert.ToHexString(found)}.");
+            return;
+        }
+        Write(patch.Address, patch.Replacement);
+        Native.FlushInstructionCache(_process, (IntPtr)patch.Address, patch.Replacement.Length);
+    }
+
     private void Arm(Breakpoint breakpoint)
     {
         if (breakpoint.Armed) return;
@@ -229,6 +257,8 @@ internal sealed class OriginalProcess : IDisposable
     {
         if (handle != IntPtr.Zero) Native.CloseHandle(handle);
     }
+
+    private sealed record CodePatch(uint Address, byte[] Expected, byte[] Replacement);
 
     private sealed record BreakpointHandler(Action<BreakContext> Action, bool OneShot, bool Quiet);
 

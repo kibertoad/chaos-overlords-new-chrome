@@ -76,3 +76,9 @@ None known.
   not been checked against a capture.
 - Whether callers other than the Hire input handler can pass a record whose
   `force` is 0 has not been checked (FND-GANG-008).
+- No recorded run of the original reaches a hired gang's panel; equipment
+  pictures and their animation; the base values; the result of the close
+  press, a close double-click, an equipment double-click, a refused press
+  outside, Enter and Execute; the sounds and the slide's timing (FND-GANG-006,
+  FND-GANG-008, FND-UI-047, FND-OPTIONS-001). These rest on the static
+  findings named, so the entry stays `supported`.

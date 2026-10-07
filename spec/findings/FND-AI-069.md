@@ -19,10 +19,10 @@ locations:
     address: 0x00408B31..0x00409894
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00408DF2..0x0040902F
+    address: 0x00408DF2..0x00409034
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00409894..0x004098D3
+    address: 0x00409894..0x004098D4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004098D4..0x004099BE
@@ -76,7 +76,7 @@ Every case that tests an owner reads it with selector `0x21`, the owner byte or
 - mode 11 adds 1 to the sector of selector `0x5A` and mode 16 to the sector of
   selector `0x77`.
 
-Mode 6 (`0x00408DF2..0x0040902F`) first tests selector `0x32` above 0, the
+Mode 6 (`0x00408DF2..0x00409034`) first tests selector `0x32` above 0, the
 attitude toward the owner below 0 and selector `0x35` for the sector. When all
 three pass it adds 2, sets `ebp-0x24` and jumps to `0x00409894`
 (`0x00408E80`), past the leader tests. Otherwise it reads selector `0x2E`:

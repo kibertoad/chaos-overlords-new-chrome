@@ -202,7 +202,7 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // RULE-EQUIP-004: at the endpoint the probe called the original's Equip list builder for every
-    // category of every living gang of the human (FND-EQUIP-008). The rebuild offers the same items,
+    // category of every living gang of the human (FND-EQUIP-012). The rebuild offers the same items,
     // in item record order, as its legal Equip commands of the gang in that category, and gives the
     // gang the Tech Level the builder was passed.
     [Theory]
