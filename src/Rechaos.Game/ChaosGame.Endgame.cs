@@ -28,10 +28,10 @@ public sealed partial class ChaosGame
     }
 
     private static readonly Rectangle EndgameDone = EndgameLayout.Done;
-    private Texture2D? EndgameBackground => Texture("PX00200.bmp");
-    private Texture2D? EndgameSprites => Texture("PX00201.bmp");
-    private Texture2D? VictoryBackground => Texture("PX00202.bmp");
-    private Texture2D? EliminationBackground => Texture("PX00203.bmp");
+    private Texture2D? EndgameBackground => Texture(OriginalBitmap.EndgameBackground);
+    private Texture2D? EndgameSprites => Texture(OriginalBitmap.EndgameSprites);
+    private Texture2D? VictoryBackground => Texture(OriginalBitmap.VictoryBackground);
+    private Texture2D? EliminationBackground => Texture(OriginalBitmap.EliminationBackground);
     private bool _showEndgameStats;
 
     /// <summary>
@@ -57,7 +57,7 @@ public sealed partial class ChaosGame
     }
 
     // FND-AWARDS-004: resource 201 with its white keyed out, for the award icons.
-    private Texture2D? EndgameKeyedSprites => Texture("PX00201.bmp", transparentWhite: true);
+    private Texture2D? EndgameKeyedSprites => Texture(OriginalBitmap.EndgameKeyedSprites);
 
     private void DrawEndgame(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {

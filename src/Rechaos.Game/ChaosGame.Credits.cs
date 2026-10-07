@@ -20,7 +20,7 @@ public static class CreditsLayout
 
 public sealed partial class ChaosGame
 {
-    private Texture2D? CreditsBackground => Texture("PX00100.bmp");
+    private Texture2D? CreditsBackground => Texture(OriginalBitmap.CreditsBackground);
     private bool _creditsOpen;
 
     /// <summary>
