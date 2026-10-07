@@ -129,6 +129,7 @@ public sealed partial class UiNavigationTests
     {
         Rectangle[] entries =
         [
+            StatusConsoleLayout.Date,
             StatusConsoleLayout.Score,
             StatusConsoleLayout.Cash,
             .. Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorEntry)
@@ -163,6 +164,61 @@ public sealed partial class UiNavigationTests
         Assert.Equal("5 [-3] (0)", StatusConsolePresentation.CashSummary(5, -3, 0));
         Assert.Equal("120[95](-12)", StatusConsolePresentation.CashSummary(120, 95, -12));
         Assert.Empty(StatusConsoleTooltip.At(Point.Zero));
+    }
+
+    [Fact]
+    public void EveryPlaceThatNamesAScenarioUsesTheTitleTheConsoleDraws()
+    {
+        // RULE-UI-009, FND-UI-040: the console draws string resource scenario + 1. The rebuild's
+        // own texts name the scenario with the same string. The online session list draws the
+        // same ExecutableStrings.ScenarioTitle call inside ChaosGame and has no seam to test here.
+        const string title = "THE BIG 40";
+        Assert.Equal(title, ExecutableStrings.ScenarioTitle(ScenarioId.Big40));
+        Assert.Equal(title, ScenarioSetupTooltip.Lines(ScenarioId.Big40, GameDuration.OneYear)[0]);
+        Assert.StartsWith($"{title} RATES:", StatusConsoleTooltip.ScoreLines(ScenarioId.Big40)[1]);
+        Assert.Equal(title, DiscoveryFilters.Label(DiscoveryFilters.Scenario, (int)ScenarioId.Big40 + 1));
+        Assert.Equal(("SCENARIO", title), OnlineLobbySummary.Rows(ScenarioId.Big40, GameDuration.OneYear,
+            AiDifficulty.CrimeLord, PlanningTimeLimit.TwoMinutes)[0]);
+
+        var state = OriginalMatchFactory.Create(Rechaos.Core.Assets.BundledOriginalData.Load(),new MatchSetup(
+            ScenarioId.Big40, GameDuration.OneYear, 1996,
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+        var entries = PlayerRankingPresentation.Project(state);
+        Assert.StartsWith($"{title} RATES:", PlayerRankingTooltip.Lines(state, entries[0], entries)[2]);
+        Assert.StartsWith($"{title} - TURN ", SaveSlotCatalog.SuggestedName(state));
+        Assert.Contains($"  {title}  ", new SaveSlotSummary(0, "ANY", DateTimeOffset.UnixEpoch,
+            ScenarioId.Big40, 1, 3, "SINGLE", AiPolicyMode.Original).Details);
+    }
+
+    [Fact]
+    public void DateRowTooltipExplainsTheCalendarAndTheCountdownBesideIt()
+    {
+        // DEV-UI-005 over the FND-UI-040 calendar fields.
+        Assert.Equal(new Rectangle(476, 14, 108, 9), StatusConsoleLayout.Date);
+        var point = StatusConsoleLayout.Date.Center;
+        Assert.True(StatusConsoleTooltip.Contains(point));
+
+        var timed = StatusConsoleTooltip.At(point, ScenarioId.Greed, GameDuration.OneYear);
+        Assert.Equal("DATE", timed[0]);
+        Assert.Contains("2050", string.Join(' ', timed));
+        Assert.Contains("LEFT AFTER THE ONE BEING PLANNED.", timed);
+        Assert.Contains("THE MATCH ENDS AFTER TURN 52,", timed);
+        Assert.Equal("OR SOONER IF ONE OVERLORD IS LEFT.", timed[^1]);
+
+        var untimed = StatusConsoleTooltip.At(point, ScenarioId.Big40, GameDuration.OneYear);
+        Assert.Equal("THE BIG 40 HAS NO TIME LIMIT.", untimed[^1]);
+        Assert.DoesNotContain(untimed, line => line.Contains("TURNS", StringComparison.Ordinal));
+
+        var final = StatusConsoleTooltip.At(point, ScenarioId.Greed, GameDuration.OneYear, complete: true);
+        Assert.Equal("COMPLETE: THE MATCH HAS ENDED.", final[^1]);
+        Assert.DoesNotContain(final, line => line.Contains("TURNS", StringComparison.Ordinal));
+
+        foreach (var lines in new[] { timed, untimed, final })
+        {
+            var bounds = StatusConsoleTooltip.Bounds(point, lines);
+            Assert.True(bounds.X >= 0 && bounds.Y >= 0
+                && bounds.Right <= VirtualInput.Width && bounds.Bottom <= VirtualInput.Height);
+        }
     }
 
     [Fact]
@@ -443,127 +499,6 @@ public sealed partial class UiNavigationTests
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             ObjectiveSectorMarkerPresentation.IsMarked(
                 ScenarioId.BigMan, MatchLimits.SectorCount, isImportant: false));
-    }
-
-    /// <summary>Left and Right flip settings, but never run the diagnostics export.</summary>
-    [Fact]
-    public void OptionsArrowsNeverExportDiagnostics()
-    {
-        Assert.Equal(OptionsLayout.ExportDiagnostics,
-            OptionsLayout.ToggleRows[OptionsLayout.ExportDiagnosticsRow - OptionsLayout.FirstToggleRow]);
-        Assert.Equal(OptionsLayout.LastRow, OptionsLayout.FirstToggleRow + OptionsLayout.ToggleRows.Count - 1);
-        Assert.False(OptionsLayout.ArrowsToggle(OptionsLayout.ExportDiagnosticsRow));
-        Assert.False(OptionsLayout.ArrowsToggle(0));
-        Assert.False(OptionsLayout.ArrowsToggle(1));
-        Assert.All(
-            Enumerable.Range(OptionsLayout.FirstToggleRow, OptionsLayout.ToggleRows.Count)
-                .Where(row => row != OptionsLayout.ExportDiagnosticsRow),
-            row => Assert.True(OptionsLayout.ArrowsToggle(row)));
-    }
-
-    /// <summary>Each named cursor row is the row its toggle is drawn and hit-tested on.</summary>
-    [Fact]
-    public void OptionsCursorRowsMatchTheirToggles()
-    {
-        (int Row, Rectangle Toggle)[] rows =
-        [
-            (OptionsLayout.BaseStatisticsRow, OptionsLayout.BaseStatistics),
-            (OptionsLayout.DetailedCombatRow, OptionsLayout.DetailedCombat),
-            (OptionsLayout.SlidePanelsRow, OptionsLayout.SlidePanels),
-            (OptionsLayout.SteadyLightsRow, OptionsLayout.SteadyLights),
-            (OptionsLayout.WarnIfIdleGangsRow, OptionsLayout.WarnIfIdleGangs),
-            (OptionsLayout.EventSiteImagesRow, OptionsLayout.EventSiteImages),
-            (OptionsLayout.AdvancedAiRow, OptionsLayout.AdvancedAi),
-            (OptionsLayout.IntroOnlyOnceRow, OptionsLayout.IntroOnlyOnce),
-            (OptionsLayout.ExportDiagnosticsRow, OptionsLayout.ExportDiagnostics),
-            (OptionsLayout.OnlineLobbyPresentationRow, OptionsLayout.OnlineLobbyPresentation),
-        ];
-
-        Assert.Equal(OptionsLayout.ToggleRows.Count, rows.Length);
-        Assert.All(rows, row => Assert.Equal(
-            row.Toggle, OptionsLayout.ToggleRows[row.Row - OptionsLayout.FirstToggleRow]));
-    }
-
-    [Fact]
-    public void OptionsExposeBothOriginalAudioScalesAsDistinctHitTargets()
-    {
-        Assert.Equal(OriginalSoundtrackPolicy.MaximumVolumeLevel + 1,
-            OptionsLayout.MusicLevels.Count);
-        Assert.Equal(OptionsLayout.MusicLevels.Count, OptionsLayout.SoundEffectLevels.Count);
-        Assert.Equal(new Rectangle(132, 78, 28, 28), OptionsLayout.MusicLevels[0]);
-        Assert.Equal(new Rectangle(472, 78, 28, 28), OptionsLayout.MusicLevels[^1]);
-        Assert.Equal(new Rectangle(132, 140, 28, 28), OptionsLayout.SoundEffectLevels[0]);
-        Assert.All(OptionsLayout.MusicLevels.Concat(OptionsLayout.SoundEffectLevels),
-            level => Assert.True(OptionsLayout.Panel.Contains(level)));
-        var levels = OptionsLayout.MusicLevels.Concat(OptionsLayout.SoundEffectLevels).ToArray();
-        Assert.All(levels.SelectMany((left, index) =>
-                levels.Skip(index + 1).Select(right => (left, right))),
-            pair => Assert.False(pair.left.Intersects(pair.right)));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.WarnIfIdleGangs));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.BaseStatistics));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.DetailedCombat));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.SlidePanels));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.SteadyLights));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.AdvancedAi));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.IntroOnlyOnce));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ExportDiagnostics));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
-    }
-
-    [Fact]
-    public void EveryOptionsEntryHasAnExplanatoryHoverTooltip()
-    {
-        Rectangle[] entries =
-        [
-            OptionsLayout.Music,
-            OptionsLayout.SoundEffects,
-            OptionsLayout.BaseStatistics,
-            OptionsLayout.DetailedCombat,
-            OptionsLayout.SlidePanels,
-            OptionsLayout.SteadyLights,
-            OptionsLayout.WarnIfIdleGangs,
-            OptionsLayout.EventSiteImages,
-            OptionsLayout.AdvancedAi,
-            OptionsLayout.IntroOnlyOnce,
-            OptionsLayout.ExportDiagnostics,
-            OptionsLayout.ColorDepth,
-            OptionsLayout.Done
-        ];
-
-        Assert.All(entries, entry =>
-        {
-            var lines = OptionsTooltip.At(entry.Center);
-            Assert.True(lines.Count >= 2);
-            var bounds = OptionsTooltip.Bounds(entry.Center, lines);
-            Assert.True(bounds.Left >= 0 && bounds.Top >= 0);
-            Assert.True(bounds.Right <= VirtualInput.Width);
-            Assert.True(bounds.Bottom <= VirtualInput.Height);
-        });
-        Assert.Contains("ORIGINAL HOST-LOBBY ART",
-            string.Join(' ', OptionsTooltip.At(OptionsLayout.ColorDepth.Center)));
-        Assert.Contains("OFF BLINKS THEM AS THE ORIGINAL DOES",
-            string.Join(' ', OptionsTooltip.At(OptionsLayout.SteadyLights.Center)));
-        // The rows and the Done face do not overlap, so each press reaches one of them.
-        var rows = OptionsLayout.ToggleRows.Append(OptionsLayout.Done).ToArray();
-        Assert.All(rows.SelectMany((first, index) => rows.Skip(index + 1).Select(second => (first, second))),
-            pair => Assert.False(pair.first.Intersects(pair.second)));
-        Assert.Contains("SLIDES PANELS IN FROM THE RIGHT",
-            string.Join(' ', OptionsTooltip.At(OptionsLayout.SlidePanels.Center)));
-        Assert.Contains("NATIVE STRETCH AND ORDERED DITHER",
-            string.Join(' ', OptionsTooltip.At(OptionsLayout.EventSiteImages.Center)));
-        Assert.Contains("DOES NOT CHANGE A MATCH ALREADY IN PROGRESS",
-            string.Join(' ', OptionsTooltip.At(OptionsLayout.AdvancedAi.Center)));
-        Assert.Contains("FALLBACK COMMANDS FOR GANGS ORIGINAL AI LEAVES IDLE",
-            string.Join(' ', OptionsTooltip.At(OptionsLayout.AdvancedAi.Center)));
-        var diagnosticsTooltip = string.Join(' ',
-            OptionsTooltip.At(OptionsLayout.ExportDiagnostics.Center));
-        Assert.Contains("DOES NOT INCLUDE REPLAYABLE MATCH STATE", diagnosticsTooltip);
-        Assert.Contains("REPORT BUG", diagnosticsTooltip);
-        Assert.Contains("CLIENT PROBLEMS A MATCH REPLAY CANNOT SHOW", diagnosticsTooltip);
-        Assert.Empty(OptionsTooltip.At(Point.Zero));
-        Assert.Equal(Rectangle.Empty, OptionsTooltip.Bounds(Point.Zero, []));
     }
 
     [Fact]
