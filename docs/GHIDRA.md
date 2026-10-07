@@ -185,10 +185,8 @@ WinSock or TAPI or call a KERNEL32 serial-port function, or only such functions
 call them), lists the large
 functions only one or two entries cite, and lists the most used `.data`
 addresses no entry cites. Without `--inventory`, `tools/spec-coverage.mjs`
-only rewrites the function index `docs/FUNCTION-INDEX.md`; `--check` fails
-when that index is stale. Do not commit the rewritten index on a branch: the
-nightly job regenerates it on main, and `--scheduled-generation`, which the
-fast gate and the pre-commit hook run, fails a branch that changes it.
+only writes the function index `docs/FUNCTION-INDEX.md`, a local report that
+is not committed; `--check` computes the index without writing it.
 
 ## Evidence discipline
 

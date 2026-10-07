@@ -164,19 +164,14 @@ requires the compiler, and the workflows install a pinned release.
 the rebuild, a path into `src/`, `tests/` or `multiplayer/` or a source file
 found there; until the shared checker's release carries that check, this
 script runs it.
-`node tools/spec-coverage.mjs` writes `docs/FUNCTION-INDEX.md`, which lists
-every game function of FND-EXE-004 with the entries that cite it (`--check`
-fails on a stale index); with `--inventory <file>` it also reports what the
+`node tools/spec-coverage.mjs` writes `docs/FUNCTION-INDEX.md`, a local report
+that lists every game function of FND-EXE-004 with the entries that cite it.
+The report is not committed (`.gitignore` lists it); generate it when you want
+it. `--check` computes the index and prints the coverage line without writing
+anything, and fails when FND-EXE-004's function table is missing; the fast gate
+and the pre-commit hook run that mode. With `--inventory <file>` it also reports what the
 spec leaves uncovered, from an inventory written by
-`tools/ghidra/ReportFunctionInventory.java` (see `docs/GHIDRA.md`). Only main
-carries changes to `docs/FUNCTION-INDEX.md`: the nightly job
-`.github/workflows/nightly-generated.yml` regenerates and commits it there
-on days when `spec/` changed, so it is at most a day behind. Branches never
-regenerate or commit it. The fast gate and the pre-commit hook run the script
-with `--scheduled-generation`, which computes the index without writing it
-and fails when the change since the fork point with the base branch
-(`git merge-base HEAD origin/main`) edits the file; drop such an edit with
-`git checkout <fork point> -- docs/FUNCTION-INDEX.md`.
+`tools/ghidra/ReportFunctionInventory.java` (see `docs/GHIDRA.md`).
 
 `docs/README.md` catalogs the other documents. Their tables of contents and the
 decision index are generated blocks between `<!-- doc-index:begin ... -->` and

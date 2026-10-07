@@ -161,10 +161,9 @@ try {
         # No spec line names a file of the rebuild (until the shared checker's --rebuild is released).
         & node (Join-Path $PSScriptRoot 'check-rebuild-paths.mjs')
         $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
-        # The function index docs/FUNCTION-INDEX.md, generated from FND-EXE-004 and the entries' citations.
-        # The nightly job regenerates it on main, so a branch must not change it; this computes the
-        # index and fails when the change since the fork point with the base branch edits the file.
-        & node (Join-Path $PSScriptRoot 'spec-coverage.mjs') --scheduled-generation
+        # The function index, computed from FND-EXE-004 and the entries' citations without writing
+        # the local report docs/FUNCTION-INDEX.md, so a broken function table fails here.
+        & node (Join-Path $PSScriptRoot 'spec-coverage.mjs') --check
         $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
     }
     elseif ($env:CI) {
@@ -256,7 +255,7 @@ try {
     }
 
     if ($documentationCheckFailed) {
-        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs, node tools/check-documentation.mjs, node tools/check-rebuild-paths.mjs and node tools/spec-coverage.mjs --scheduled-generation, and fix what they report. Do not commit a regenerated docs/FUNCTION-INDEX.md: the nightly job regenerates it on main.'
+        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs, node tools/check-documentation.mjs, node tools/check-rebuild-paths.mjs and node tools/spec-coverage.mjs --check, and fix what they report.'
     }
 }
 finally {
