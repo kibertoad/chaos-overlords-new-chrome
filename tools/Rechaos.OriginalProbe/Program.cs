@@ -29,9 +29,9 @@ static int Usage()
           Rechaos.OriginalProbe new-game --out <directory> [--game <install directory>] [--timeout <seconds>]
               [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...]
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
-              [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer_slot:sector>,...] [--sound]
+              [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer_slot:sector>,...] [--sound]
               [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...]
-              [--search <turn:definition+definition...>,...]
+              [--search <turn[:player]:definition+definition...>,...]
               [--finance <turn:sector>,...]
               [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture] [--white-key]
               [--comlink <script file>]
@@ -42,6 +42,7 @@ static int Usage()
               [--title-capture] [--credits-capture] [--setup-capture] [--setup-steps <strip:x:y|drag:x:y:x2:y2|shot>,...]
               [--detailed-combat] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
+              An order, hire or Search write without a player acts for the first --humans slot.
           Rechaos.OriginalProbe extract --experiment <EXP-ID> --out <fixture.json> <run directory>... [--screens <SCR-ID>,...]
           Rechaos.OriginalProbe extract-comlink --experiment <EXP-ID> --out <fixture.json> <run directory>...
           Rechaos.OriginalProbe digest --fixture <fixture.json> --run <n> --screens <SCR-ID>,...
@@ -105,7 +106,20 @@ static int NewGame(string[] args)
         args.Contains("--waits"),
         args.Contains("--slides"),
         Option(args, "--saved") is { } saved ? ParseSavedWrites(saved) : null,
-        Option(args, "--closes") is { } closes ? ParseCloses(closes) : null);
+        Option(args, "--closes") is { } closes ? ParseCloses(closes) : null).WithActingPlayers();
+    // An order, hire or Search write acts for a human of the run: the probe writes it into that
+    // player's records, and the fixture names the player in the input.
+    foreach (var write in settings.Search ?? [])
+        if (!settings.HumanSlots.Contains(write.Player))
+            throw new ArgumentException($"Player {write.Player} of a Search write is not a --humans slot.");
+    // RULE-SETUP-008: the probe presses Done only in the first --humans slot's planning. Another
+    // human plans behind a Ready card the probe does not press, and that press refills the human's
+    // offers, so an order or hire written for that human before then may not be what it plans with.
+    foreach (var player in (settings.Orders ?? []).Select(order => order.Player)
+                 .Concat((settings.Hires ?? []).Select(hire => hire.Player)))
+        if (player != settings.FirstHuman)
+            throw new ArgumentException(
+                $"Player {player} of an order or hire is not the first --humans slot, the only human whose planning the probe plays.");
     // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
     // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
     // A first slot that is not the lowest would compare one player's lists with another player's
@@ -166,7 +180,10 @@ static int Extract(string[] args)
         var runTurns = StateExtractor.Turns(run);
         if (turns is not null && !turns.SequenceEqual(runTurns))
         {
-            Console.Error.WriteLine($"{run} was recorded with other orders or turns.");
+            // The inputs list only the turns a run played, and a fixture holds one list for all
+            // its runs, so runs whose matches end on different turns cannot share a fixture.
+            Console.Error.WriteLine(
+                $"{run} was recorded with other orders or turns, or its match ended on another turn than the runs before it.");
             return 1;
         }
 
@@ -204,35 +221,47 @@ static int Digest(string[] args)
 static int? IntOption(string[] args, string name) =>
     Option(args, name) is { } value ? int.Parse(value, System.Globalization.CultureInfo.InvariantCulture) : null;
 
-// --orders turn:slot:action:target:target_2:repeat,... with repeat 0 or 1.
+// The player after the turn of an --orders, --hires or --search entry when the entry gives one,
+// with the numbers after it; -1, the first --humans slot, when it does not.
+static (int Player, int[] Numbers) ActingPlayer(int[] afterTurn, int withoutPlayer, string entry)
+{
+    if (afterTurn.Length == withoutPlayer) return (-1, afterTurn);
+    if (afterTurn.Length == withoutPlayer + 1 && afterTurn[0] is >= 0 and <= 5) return (afterTurn[0], afterTurn[1..]);
+    throw new FormatException($"Expected a turn, an optional player 0 to 5 and {withoutPlayer} more number(s): {entry}");
+}
+
+// --orders turn[:player]:slot:action:target:target_2:repeat,... with repeat 0 or 1.
 static IReadOnlyList<ProbeOrder> ParseOrders(string value) =>
     value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(order =>
     {
         var parts = order.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-        if (parts.Length != 6) throw new FormatException($"An order needs six numbers: {order}");
-        return new ProbeOrder(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5] != 0);
+        var (player, rest) = ActingPlayer(parts[1..], 5, order);
+        return new ProbeOrder(parts[0], rest[0], rest[1], rest[2], rest[3], rest[4] != 0, player);
     }).ToArray();
 
-// --hires turn:offer_slot:sector,... places the human's hires (ProbeHire).
+// --hires turn[:player]:offer_slot:sector,... places a human's hires (ProbeHire).
 static IReadOnlyList<ProbeHire> ParseHires(string value) =>
     value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(hire =>
     {
         var parts = hire.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-        if (parts.Length != 3 || parts[1] is < 0 or > 2 || parts[2] is < 0 or > 63)
-            throw new FormatException($"A hire needs a turn, an offer slot 0 to 2 and a sector 0 to 63: {hire}");
-        return new ProbeHire(parts[0], parts[1], parts[2]);
+        var (player, rest) = ActingPlayer(parts[1..], 2, hire);
+        if (rest[0] is < 0 or > 2 || rest[1] is < 0 or > 63)
+            throw new FormatException($"A hire needs a turn, an optional player, an offer slot 0 to 2 and a sector 0 to 63: {hire}");
+        return new ProbeHire(parts[0], rest[0], rest[1], player);
     }).ToArray();
 
-// --search turn:definition+definition+...,... sets the human's Search filter entries (ProbeSearch).
+// --search turn[:player]:definition+definition+...,... sets a human's Search filter entries (ProbeSearch).
 static IReadOnlyList<ProbeSearch> ParseSearch(string value) =>
     value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
     {
         var parts = entry.Split(':');
-        if (parts.Length != 2) throw new FormatException($"A Search write needs a turn and definitions: {entry}");
-        var definitions = parts[1].Split('+').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        if (parts.Length is not (2 or 3)) throw new FormatException($"A Search write needs a turn, an optional player and definitions: {entry}");
+        var definitions = parts[^1].Split('+').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
         if (definitions.Any(definition => definition is < 0 or >= OriginalAddresses.SiteDefinitionCount))
             throw new FormatException($"A site definition is 0 to 21: {entry}");
-        return new ProbeSearch(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), definitions);
+        var player = parts.Length == 3 ? int.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) : -1;
+        if (parts.Length == 3 && player is < 0 or > 5) throw new FormatException($"A player is 0 to 5: {entry}");
+        return new ProbeSearch(int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture), definitions, player);
     }).ToArray();
 
 // --search-clicks x:y,... posts a click at each client point after the dump (SearchClickRecord).

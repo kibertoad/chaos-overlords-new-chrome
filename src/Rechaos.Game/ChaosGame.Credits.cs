@@ -35,13 +35,15 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// SCR-UI-002: a click, a press of either button, or any key closes the credits and leaves the
-    /// screen they covered as it was. The screen plays no sound.
+    /// SCR-UI-002, FND-UI-063: a press or a release of either button, or any key, closes the
+    /// credits and leaves the screen they covered as it was. The screen plays no sound.
     /// </summary>
     private void UpdateCredits(KeyboardState keyboard, MouseState mouse)
     {
         var clicked = PointerButtonEdges.Pressed(mouse.LeftButton, _previousMouse.LeftButton)
-            || PointerButtonEdges.Pressed(mouse.RightButton, _previousMouse.RightButton);
+            || PointerButtonEdges.Pressed(mouse.RightButton, _previousMouse.RightButton)
+            || PointerButtonEdges.Released(mouse.LeftButton, _previousMouse.LeftButton)
+            || PointerButtonEdges.Released(mouse.RightButton, _previousMouse.RightButton);
         if (clicked || CreditsLayout.AnyKeyPressed(keyboard, _previousKeyboard))
             _creditsOpen = false;
     }

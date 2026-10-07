@@ -45,10 +45,10 @@ three awards.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results, ends the match
-with the resolution of turn 26, reaches the same state, stored scores and Last
-Turn reports, and gives the same awards to the same players.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results, ends the match with the resolution of turn 26, reaches
+the same state, stored scores and Last Turn reports, and gives the same awards
+to the same players.
 
 ## Conclusion
 

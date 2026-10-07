@@ -46,11 +46,10 @@ snubbed an offer in turn 1 (RULE-AI-009). The copy held 3 in `elapsed_turns`.
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the three
-turns as EXP-TURN-001 replays one, and the rebuild makes the same 623 calls
-with the same bounds and results and reaches the same generator position and
-state.
+Every result is the one RULE-RNG-002 computes from the recorded seed. A test of
+the rebuild replays the three turns as EXP-TURN-001 replays one, and the rebuild
+makes the same 623 calls with the same bounds and results and reaches the same
+generator position and state.
 
 ## Conclusion
 

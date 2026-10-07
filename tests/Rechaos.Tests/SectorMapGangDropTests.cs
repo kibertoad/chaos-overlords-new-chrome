@@ -102,7 +102,8 @@ public sealed class SectorMapGangDropTests
     {
         var data = BundledOriginalData.Load();
         var setupPlayer = new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human);
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer]);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer],
+            MatchDeviations.Original);
         var definition = data.Gangs.OrderByDescending(gang => gang.TechLevel).First();
         var gang = new MatchGangState(new GangId(10), setupPlayer.Id, definition.Id, GangSector, 10);
         var neighbors = Enumerable.Range(0, gangsInNeighbor)

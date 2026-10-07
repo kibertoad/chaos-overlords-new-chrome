@@ -509,12 +509,16 @@ guarantee sets `synchronous = FULL` or runs Postgres.
 - **Rate limits** come in three tiers: the unauthenticated doors per client address, every
   authenticated call per player, and snapshot uploads per player on a tighter budget, because a
   member is a cost too — order documents are a quarter of a megabyte and snapshots four times that.
-  Match creation also has one process-wide budget shared by every caller, because a per-address
+  Match creation also has one deployment-wide budget shared by every caller, because a per-address
   budget does nothing against many addresses and every create is a stored lobby; only a create whose
   body validates spends it. The Node runtime also caps connections and sets header and request
-  deadlines, so a client that never finishes sending a request cannot hold a socket for long. The
-  windows are per process, which is what a self-hosted server needs; a public deployment puts its
-  platform's rate limiting in front as the real gate.
+  deadlines, so a client that never finishes sending a request cannot hold a socket for long. A
+  budget holds across the whole deployment: the Node runtime counts in memory on SQLite, where one
+  process is the deployment, and in a `rate_limit_windows` table every instance shares on Postgres;
+  the Worker counts in a `RateLimitCounter` Durable Object per budget and caller (the `RATE_LIMITS`
+  binding), because Cloudflare's rate limiting binding counts per location and cannot express the
+  day-long journal budget or `Retry-After`. A counter that fails lets the request through and logs,
+  so an outage of the counter does not refuse every player.
 - **A refused request is described, not echoed.** A validation failure names the field and the
   rule; the value the client sent (a mistyped password, an order document) is never written back
   into the response or, through it, into a proxy log.
@@ -541,14 +545,15 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   social — `turn.desynced` names every player's hash and the candidates, so the host can see who is
   the odd one out and kick them. Moving resolution server-side (a WebAssembly build of
   `Rechaos.Core` behind a `TurnResolver` port) would close both gaps and is the one design change
-  this layout leaves room for; the wire protocol would not change.
+  this layout leaves room for; the wire protocol would not change. Tracked in
+  [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
 - **Corroboration assumes one human per seat.** There are no accounts, so nothing stops one person
   holding several seats in a public lobby. A host with two of three seats can report a doctored
   hash twice and then upload a snapshot claiming it, and the honest third player is told to
   converge. Counting reports is a defence against one client, not against one person wearing three
   hats, and the server has no way to tell the two apart. It is sound among people who found each
   other elsewhere and it is not a guarantee to strangers; the real fix is the `TurnResolver` port
-  above.
+  above ([#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453)).
 - **Which join codes exist is observable to somebody already scanning the code space.** An unknown
   code and a match that has already started answer the same 404, but a code-gated lobby answers 401
   rather than 404, so a caller who guesses a live code learns that it is live. The space is about
@@ -833,11 +838,43 @@ this one neither offers it nor prefills its join code. Terminal online
 errors are shown on the title screen and name that recovery path when the saved membership may
 still be valid. A completed match or an explicit Leave retires
 the recovery record, and a retired record is dropped rather than written back: the token is a full
-capability for that seat, so keeping a spent one on disk buys nothing. On Windows the token is
-sealed with DPAPI to the current user account, so another account on the same machine cannot read
-it out of the file; macOS and Linux keep it in clear under the user's own data root, because their
-keystores want a native dependency the game does not otherwise carry. Neither defends against
-something already running as the player.
+capability for that seat, so keeping a spent one on disk buys nothing.
+
+The token is kept out of the record's clear text wherever the platform offers a per-user store, so
+another account on the same machine, or a copy of the file, does not carry the seat:
+
+- On Windows it is sealed with DPAPI to the current user account, and the sealed bytes stay in the
+  record.
+- On macOS it is a generic password item in the login Keychain, and on Linux a password in the
+  Secret Service keyring (GNOME Keyring, KWallet or KeePassXC), reached through libsecret. The
+  record names the store and the account the token is filed under. Both are libraries the operating
+  system provides (Security.framework, `libsecret-1.so.0`), loaded when first needed, so the build
+  carries no native package for them. Every item is filed under one service of the game's own,
+  "Chaos Overlords New Chrome online seats", and the account name starts with a digest of the
+  record's path, so two data roots on one account keep apart. A record that names an account under
+  another root's digest (a copied or moved data root) is read, and its next save files the token
+  under the root's own account; the other root's item is never deleted from here, so a copy cannot
+  remove the original's seats and a move leaves its old items in the store. The game is not signed
+  with a Keychain entitlement, so after an update replaces the executable macOS asks, once for each
+  saved seat, whether the new build may read the item.
+- Where no store answers (a Linux system without libsecret or without a running keyring, a store
+  that refuses the write, or any other platform), the token stays in clear in the record, which is
+  created readable and writable by its owner only, and the Unfinished Sessions screen says so in
+  one line under the list.
+
+A record written by an older build that still holds a clear token is rewritten by the first load
+that can protect it, and its `.bak` generation is replaced with the rewritten file, so the clear
+token does not wait for the next turn to leave the disk. A save that drops a seat (Leave, a finished
+match, a seat the server has retired) also removes that seat's token from the store. A seat whose
+store does not answer when the record is loaded (the keyring is locked, its unlock prompt was
+dismissed, no keyring runs this session) is not offered, because there is no token to offer it
+with, and is not dropped either: every save writes it back unchanged until a load finds the store
+answering. A store that answers and holds no such token is the one case that drops the seat. A
+record that uses an operating-system store is stamped with a format version the previous build
+leaves alone, since that build would read such a seat as one without a token and drop it; a record
+that does not use one, which is every record on Windows, keeps the version that build reads.
+
+None of this defends against something already running as the player, which nothing local can.
 
 The session password is kept in clear on every platform. It opens one session's door to whoever the
 player was going to read it out to anyway, where the token is that seat itself, and the player who
@@ -874,11 +911,13 @@ dock a player plans against the dock the sealed turn grants.
 
 - **One server process.** The Node runtime fans events out in memory, so two instances behind a
   load balancer would each wake only their own subscribers: a client on instance A would sit silent
-  through everything written on instance B, with no error to show for it. Rate-limit windows
-  fragment the same way. Postgres is offered for durability and operational familiarity, not as a
-  way to scale out; running more than one instance needs a shared fan-out (the Cloudflare runtime's
+  through everything written on instance B, with no error to show for it. Rate limits do not
+  fragment: on Postgres every instance counts in one shared table. Postgres is offered for
+  durability and operational familiarity, not as a way to scale out; running more than one
+  instance needs a shared fan-out (the Cloudflare runtime's
   Durable Object is the worked example) before it is safe. The `GET /events?after=` fallback is the
-  one path that does work under it, because it reads the log directly.
+  one path that does work under it, because it reads the log directly. Tracked in
+  [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
 - **Late joining is offered, and narrowly.** A host may set `allowLateJoin`, and once the match
   has its bootstrap snapshot a newcomer can take a slot that never belonged to a human. A public match
   can be named by its id or its join code; a `private` one only by its code, because the id rides
@@ -894,6 +933,8 @@ dock a player plans against the dock the sealed turn grants.
 - **The lobby is polled, not streamed.** The game reads the match about once a second while the
   lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
   facts too; opening it earlier would mean unwinding a session for every player who backs out.
+  Cutting the cost of an unchanged poll is
+  [#458](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/458).
 - **Chat is a lobby feature.** Seated players chat until the match starts, through
   `lobby.chatMessage` events the lobby poll reads when the log has grown; a player who arrives later
   reads what was said before them. Inside a match the Comlink is the channel, under its own rules.
@@ -920,21 +961,27 @@ dock a player plans against the dock the sealed turn grants.
   it, host or not, which is what makes a desync the host is itself the outlier of repairable at
   all. A genuine tie leaves nothing to count, and the player `turn.desynced` names breaks it: the
   host when the host holds one of the tied hashes, which covers every tie of four players or fewer,
-  and otherwise the lowest seat that does. A departure, kick, takeover or rejoin during the pause re-runs
-  the verdict, and the server announces `turn.desynced` again when the candidates or the
-  tie-breaker differ from the turn's latest announcement, even when they return to an earlier one. A match where nobody ever uploads stays paused indefinitely, and the escape
-  is the ordinary one: players leave. The match is not abandoned when the last active player goes
-  (it stays `running` so anybody can rejoin, with its turn clock stopped), and retention collects
-  it once it has been silent for long enough. The counting assumes one human per seat; see the
-  security model.
+  and otherwise the lowest seat that does. A departure, kick, takeover or rejoin during the pause
+  re-runs the verdict, and the server announces `turn.desynced` again when the candidates or the
+  tie-breaker differ from the turn's latest announcement, even when they return to an earlier one.
+  With another turn desynced as well, it announces again without comparing. The sweep re-runs the
+  verdict too and announces only a difference it can see, which retries a re-announcement that
+  failed. A match where nobody ever uploads stays paused indefinitely, and the escape is the
+  ordinary one: players leave. The match is not abandoned when the last active player goes (it
+  stays `running` so anybody can rejoin, with its turn clock stopped), and retention collects it
+  once it has been silent for long enough. The counting assumes one human per seat; see the
+  security model and
+  [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
 - **A host who never presses ready stalls an untimed match.** Only the host can kick, and without a
   turn timer nothing seals on its own, so the other players' only remedy is to leave. A unanimous
-  vote of the remaining active players, reusing the takeover machinery, is the obvious next step.
+  vote of the remaining active players, reusing the takeover machinery, is the obvious next step
+  ([#457](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/457)).
 - **The host role moves only to fill an empty seat.** `rejoin` promotes the caller when the current
   host has `left`, been `kicked` or been voted to `computer`. A host who is merely
   `takeoverPending` (one missed timed deadline, still connected) keeps the role, or any former
   member could take it at that moment and then kick the real host, whose token a kick revokes for
-  good.
+  good. A vote that moves the role away from a present host is part of
+  [#457](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/457).
 - An event is published after it is durable, so a process dying mid-publish can lose the
   notification but never the event. The stream heartbeat rechecks the durable log even while its
   connection remains healthy. A process dying between persisting an event and its successor simply

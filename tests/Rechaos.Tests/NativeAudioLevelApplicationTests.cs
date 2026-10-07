@@ -25,17 +25,16 @@ public sealed class NativeAudioLevelApplicationTests
         using var song = Song.FromUri("level-test", new Uri(
             Path.Combine(AppContext.BaseDirectory, "Fixtures", "silence.ogg")));
         using var sound = new SoundEffect(new byte[16000], 8000, AudioChannels.Mono);
-        using var voice = sound.CreateInstance();
+        using var effects = new NativeSoundEffects();
+        effects.Play(sound, AudioRouting.EffectVolumeForLevel(1));
+        var voice = effects.Voice ?? throw new InvalidOperationException("The effect player did not retain a voice.");
         voice.IsLooped = true;
-        voice.Volume = AudioRouting.EffectVolumeForLevel(1);
         voice.Play();
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
         Set(game, "_musicVolumeLevel", 5);
         Set(game, "_soundEffectVolumeLevel", 6);
-        Set(game, "_activeEffectVoice", voice);
+        Set(game, "_soundEffects", effects);
         Set(game, "_soundtrack", new Dictionary<string, Song> { ["track"] = song });
-        Set(game, "_generalSounds", new Dictionary<int, SoundEffect>());
         Set(game, "_preferencesPath", preferencePath);
         var onlineField = Field("_online");
         onlineField.SetValue(game, Activator.CreateInstance(onlineField.FieldType, nonPublic: true));
@@ -50,7 +49,7 @@ public sealed class NativeAudioLevelApplicationTests
             var effectsLevel = musicChoice ? 6 : level;
             Assert.Equal(effectsLevel, Field("_soundEffectVolumeLevel").GetValue(game));
             Assert.Equal(musicLevel, Field("_musicVolumeLevel").GetValue(game));
-            Assert.Same(voice, Field("_activeEffectVoice").GetValue(game));
+            Assert.Same(voice, effects.Voice);
             Assert.False(voice.IsDisposed);
             Assert.Equal(SoundState.Playing, voice.State);
             Assert.Equal(AudioRouting.EffectVolumeForLevel(effectsLevel), voice.Volume);
