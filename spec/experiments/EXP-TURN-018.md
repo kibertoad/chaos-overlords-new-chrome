@@ -43,10 +43,9 @@ Done press, and copied the state after the twenty-third turn. In it player 0's
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run up to
-the planning phase that follows the human's elimination. The rebuild makes the
-same calls with the same bounds and results and reaches the same generator
-position and state.
+A test of the rebuild replays the run up to the planning phase that follows the
+human's elimination. The rebuild makes the same calls with the same bounds and
+results and reaches the same generator position and state.
 
 ## Conclusion
 

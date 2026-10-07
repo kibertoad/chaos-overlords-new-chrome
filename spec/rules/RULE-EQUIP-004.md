@@ -4,7 +4,7 @@ title: The Equip list offers researched items of the chosen category within the 
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-008, EXP-EQUIP-001, EXP-EQUIP-002, EXP-EQUIP-003, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-008, EXP-EQUIP-001, EXP-EQUIP-002, EXP-EQUIP-003, SRC-MANUAL-GOG, FND-HIRE-006, FND-PLATFORM-003, FND-RESEARCH-001, FND-RESEARCH-002, FND-STATE-004]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-003, FMT-STATE-001, FMT-DATA-002, FMT-DATA-003]

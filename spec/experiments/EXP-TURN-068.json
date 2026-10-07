@@ -9,9 +9,9 @@
     {"tick":0,"name":"setup","value":"scenario 0"},
     {"tick":0,"name":"setup","value":"mentality 0"},
     {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
-    {"tick":null,"name":"hire","value":"turn 1: offer slot 0 sector 51"},
+    {"tick":null,"name":"hire","value":"turn 1: player 0 offer slot 0 sector 51"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 1"},
-    {"tick":null,"name":"order","value":"turn 2: gang slot 1 action 7 target 0 target_2 0 repeat 0"},
+    {"tick":null,"name":"order","value":"turn 2: player 0 gang slot 1 action 7 target 0 target_2 0 repeat 0"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 2"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 3"}
   ],

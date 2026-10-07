@@ -242,7 +242,7 @@ public sealed partial class ChaosGame
         // so rather than naming a scenario and a mentality that were never read.
         font.Draw(batch,
             settings is { } known
-                ? $"{ScenarioCatalog.Get(known.Scenario).Name}  " +
+                ? $"{ExecutableStrings.ScenarioTitle(known.Scenario)}  " +
                     $"{DifficultyPresentation.Label(known.AiMentality)}"
                 : "SETTINGS THIS VERSION OF THE GAME CANNOT READ",
             new Vector2(bounds.X + 7, bounds.Y + 21), OnlineSecondaryText, 1);
@@ -303,6 +303,11 @@ public sealed partial class ChaosGame
         }
         DrawCentered(font, batch, OnlineHistoryPresentation.Hint,
             OnlineConnectLayout.HistoryNoteY, OnlineSecondaryText, 1);
+        if (_onlineTokensInClear && sessions.Count > 0)
+        {
+            DrawCentered(font, batch, OnlineHistoryPresentation.TokensInClearNote,
+                OnlineConnectLayout.HistoryStorageNoteY, OnlineMutedText, 1);
+        }
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN",
             selected is not null ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK",

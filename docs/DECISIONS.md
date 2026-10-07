@@ -7,7 +7,7 @@ implementation plan.
 
 Entries are ordered newest first. Each records the decision, the evidence or
 reasoning behind it, and what it rules in or out. A decision that departs from
-the original is also recorded as an entry of [DEVIATIONS.md](../DEVIATIONS.md),
+the original is also recorded as an entry in `deviations/`,
 which names the spec entries it departs from.
 
 ## Decision index
@@ -175,7 +175,10 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   - Once a lobby's log holds 1,000 events, chat is refused with
     `lobby_log_full`. The log is the only store and lobby retention keeps it
     for days, so a cap on its length is what bounds what one lobby can cost
-    the server, whichever process counted the rate.
+    the server, whichever process counted the rate. The check and the append
+    are separate steps, so posts that arrive together can carry the log past
+    1,000 by at most one message each. The cap bounds the log; it does not
+    need to be exact, so no atomic check-and-append is added to storage.
 - The game draws chat in the original font, which has upper-case letters,
   digits and punctuation. A character it has no glyph for is drawn blank, and
   the game's own input accepts only characters it can draw. The server accepts
@@ -217,8 +220,13 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   candidates or the designee differ from the turn's latest announcement the
   server announces `turn.desynced` again, keyed by the announcement it follows,
   so a verdict that returns to an earlier one (a seat that leaves and rejoins)
-  is announced too. The sweep re-runs verdicts without announcing, so a paused
-  match costs no extra writes while nothing changes.
+  is announced too. While another turn is desynced as well, the latest
+  announcement is often that turn's, and the verdict is announced again
+  without the comparison. The sweep re-runs verdicts quietly: it announces
+  only a verdict that differs from the turn's own latest announcement, which
+  retries a re-announcement whose publish failed after the roster change it
+  follows was committed, and a paused match costs one indexed read per
+  desynced turn and no writes while nothing changes.
 - Unchanged: a snapshot may still only claim a hash the most players reported,
   and a sole most-reported hash may still be posted by anyone holding it. The
   self-check changes nothing but this client's own report: the server still
@@ -248,8 +256,8 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   Tests item makes sure the replacement does what the deviation log claims.
 - The rule is the documentation standard's, a minor version of version 1
   (kibertoad/refurbished-dinosaurs#58, with the checker in
-  kibertoad/refurbished-dinosaurs-toolkit#291). `tools/check-spec.mjs` applies
-  it the same way, and `docs/upstream/` holds the standard's text.
+  kibertoad/refurbished-dinosaurs-toolkit#291). The toolkit's checker, which
+  `tools/check-documentation.mjs` runs, applies it, and `docs/upstream/` holds the standard's text.
 
 ## 2026-10-05 — Capture the original with the 32-bit white key
 

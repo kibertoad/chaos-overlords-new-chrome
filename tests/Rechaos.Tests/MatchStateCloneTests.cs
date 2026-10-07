@@ -92,7 +92,7 @@ public sealed class MatchStateCloneTests
             new HeadlessMatchOptions(
                 ScenarioId.Power,
                 GameDuration.FourYears,
-                4093,
+                4093, MatchDeviations.Original,
                 ThroughTurn: 100),
             cancellationToken: TestContext.Current.CancellationToken);
 

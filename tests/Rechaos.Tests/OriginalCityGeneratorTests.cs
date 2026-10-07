@@ -98,7 +98,7 @@ public sealed class OriginalCityGeneratorTests
             ScenarioId.Siege,
             GameDuration.SixMonths,
             1996,
-            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]);
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original);
 
         var match = OriginalMatchFactory.Create(data, setup);
         var important = match.Sectors.Where(sector => sector.IsImportant).ToArray();
@@ -124,7 +124,7 @@ public sealed class OriginalCityGeneratorTests
                 scenario,
                 GameDuration.SixMonths,
                 1996,
-                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
 
         Assert.DoesNotContain(match.Sectors, sector => sector.IsImportant);
     }
@@ -138,7 +138,7 @@ public sealed class OriginalCityGeneratorTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original);
 
         var first = OriginalMatchFactory.Create(data, setup);
         var second = OriginalMatchFactory.Create(data, setup);
@@ -148,7 +148,7 @@ public sealed class OriginalCityGeneratorTests
         // so a deliberate move of MatchStateHasher.FormatVersion re-pins it; the random state and
         // the consumption count either side of it are what say the factory itself is unchanged.
         Assert.Equal(
-            "030684b69dc54b04b1dafe367333e43a:160916660:936",
+            "3931499089c7e3f24dc1ec179ca79dcc:160916660:936",
             $"{MatchStateHasher.ComputeFingerprint(first)}:{first.Random.State}:{first.Random.ConsumptionCount}");
         Assert.Equal(MatchLimits.PlayerCount, first.Players.Count);
         Assert.Equal(
@@ -183,7 +183,7 @@ public sealed class OriginalCityGeneratorTests
             ScenarioId.Greed,
             GameDuration.SixMonths,
             1996,
-            [new MatchPlayerSetup(new PlayerId(4), "FIVE", PlayerController.Human, 4)],
+            [new MatchPlayerSetup(new PlayerId(4), "FIVE", PlayerController.Human, 4)], MatchDeviations.Original,
             allowSparsePlayerIds: true);
 
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);
@@ -206,9 +206,9 @@ public sealed class OriginalCityGeneratorTests
             [new(new PlayerId(2), "THREE", PlayerController.Human, 2)];
 
         Assert.Throws<ArgumentException>(() => new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 1, player));
+            ScenarioId.Greed, GameDuration.SixMonths, 1, player, MatchDeviations.Original));
         var sparse = new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 1, player,
+            ScenarioId.Greed, GameDuration.SixMonths, 1, player, MatchDeviations.Original,
             allowSparsePlayerIds: true);
         Assert.True(sparse.AllowsSparsePlayerIds);
         Assert.Throws<ArgumentException>(() => new MatchState(
@@ -221,7 +221,7 @@ public sealed class OriginalCityGeneratorTests
         var data = BundledOriginalData.Load();
         var player = new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human);
         var match = OriginalMatchFactory.Create(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [player]));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [player], MatchDeviations.Original));
         var before = match.Random.ConsumptionCount;
 
         match.FinishUpkeep();
@@ -243,10 +243,12 @@ public sealed class OriginalCityGeneratorTests
         var data = BundledOriginalData.Load();
         var enabled = OriginalMatchFactory.Create(data,
             new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996,
-                [new MatchPlayerSetup(new PlayerId(0), "SMGISLANDS", PlayerController.Human)]));
+                [new MatchPlayerSetup(new PlayerId(0), "SMGISLANDS", PlayerController.Human)],
+                MatchDeviations.Original));
         var wrongCase = OriginalMatchFactory.Create(data,
             new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996,
-                [new MatchPlayerSetup(new PlayerId(0), "smgislands", PlayerController.Human)]));
+                [new MatchPlayerSetup(new PlayerId(0), "smgislands", PlayerController.Human)],
+                MatchDeviations.Original));
 
         Assert.Equal(MatchLimits.PlayerCount, enabled.Sectors.Count(sector => sector.Owner is not null));
         Assert.All(enabled.Sectors.Where(sector => sector.Owner is not null),
@@ -359,7 +361,8 @@ public sealed class OriginalCityGeneratorTests
         ScenarioId.Greed,
         GameDuration.SixMonths,
         1996,
-        [new MatchPlayerSetup(new PlayerId(0), name, PlayerController.Human)]);
+        [new MatchPlayerSetup(new PlayerId(0), name, PlayerController.Human)],
+        MatchDeviations.Original);
 
     private static string Snapshot(MatchSectorState sector) =>
         $"{sector.Id}:{sector.Income}:{sector.Tolerance}:{string.Join(',', sector.Sites.Select(site => site.DefinitionId))}";

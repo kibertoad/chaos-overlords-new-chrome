@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -10,7 +11,10 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
-/** The Postgres dialect. Column-for-column the SQLite schema; see that file for the layout notes. */
+/**
+ * The Postgres dialect. Column-for-column the SQLite schema, see that file for the layout notes,
+ * except for `rate_limit_windows`, which only a deployment of several instances needs.
+ */
 const stamp = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' })
 
 export const matches = pgTable(
@@ -212,4 +216,25 @@ export const takeoverVotes = pgTable(
     castAt: stamp('cast_at').notNull(),
   },
   (table) => [primaryKey({ columns: [table.matchId, table.targetPlayerId, table.voterPlayerId] })],
+)
+
+/**
+ * The rate limit windows every Node instance on this database shares; see `PostgresRateLimitStore`.
+ *
+ * One row per budget and caller, holding the window that caller is spending. Postgres only: a SQLite
+ * file is opened by one process, which counts in memory. Times are epoch milliseconds from the
+ * instances' clocks, the same clock the in-process limiter reads.
+ */
+export const rateLimitWindows = pgTable(
+  'rate_limit_windows',
+  {
+    key: text('key').primaryKey(),
+    windowStart: bigint('window_start', { mode: 'number' }).notNull(),
+    resetAt: bigint('reset_at', { mode: 'number' }).notNull(),
+    count: integer('count').notNull(),
+    /** Whether the last call against this window was counted; read back by the same statement. */
+    allowed: boolean('allowed').notNull(),
+  },
+  // The sweep deletes rolled windows in `reset_at` order.
+  (table) => [index('rate_limit_windows_reset_idx').on(table.resetAt)],
 )
