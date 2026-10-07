@@ -45,11 +45,10 @@ the human, has not planned; players 1 to 5 have.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the runs. The
-rebuild makes the same calls with the same bounds and results, reaches the
-same state, and holds the same planning record bytes, sector weights and
-per-player values. For each computer gang whose family is assigned, it holds
-the same focus and coverage sector.
+A test of the rebuild replays the runs. The rebuild makes the same calls with
+the same bounds and results, reaches the same state, and holds the same planning
+record bytes, sector weights and per-player values. For each computer gang whose
+family is assigned, it holds the same focus and coverage sector.
 
 ## Conclusion
 

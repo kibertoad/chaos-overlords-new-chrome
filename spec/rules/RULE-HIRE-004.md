@@ -4,7 +4,7 @@ title: A new match starts with every hire offer vacant and no hire order
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-001, EXP-SETUP-001]
+evidence: [FND-HIRE-001, EXP-SETUP-001, FND-AI-064, FND-HIRE-002]
 conflicting: []
 split_with: []
 related: []

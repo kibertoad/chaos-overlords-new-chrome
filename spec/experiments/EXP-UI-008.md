@@ -77,11 +77,10 @@ The captures show:
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the captures as for
-EXP-UI-006, drawing the selection frame of the recorded frame counter with the
-recorded sector selected. Leaving out the cash row (DEV-UI-006) and the city's
-key line (DEV-UI-023), every element of the six captures matches.
+A test of the rebuild compares the captures as for EXP-UI-006, drawing the
+selection frame of the recorded frame counter with the recorded sector selected.
+Leaving out the cash row (DEV-UI-006) and the city's key line (DEV-UI-023),
+every element of the six captures matches.
 
 ## Conclusion
 

@@ -40,10 +40,9 @@ end the human held one Last Turn report: type 6 (cash short) with `arg1` 2
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results, reaches the
-same generator position and state, and builds the same Last Turn reports for
-every player.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results, reaches the same generator position and state, and
+builds the same Last Turn reports for every player.
 
 ## Conclusion
 
