@@ -36,6 +36,7 @@ import {
   takeoverVoteContract,
   type UploadSnapshotRequest,
   updateMatchSettingsContract,
+  postChatMessageContract,
   updatePlayerProfileContract,
   type UpdatePlayerProfileRequest,
   uploadSnapshotContract,
@@ -317,6 +318,15 @@ export class MatchHandle {
       updatePlayerProfileContract,
       updatePlayerProfileContract.pathResolver({ matchId: this.matchId }),
       profile,
+    )
+  }
+
+  /** Post a lobby chat message; refused with `match_not_in_lobby` once the match has started. */
+  postChat(text: string): Promise<void> {
+    return this.client.call(
+      postChatMessageContract,
+      postChatMessageContract.pathResolver({ matchId: this.matchId }),
+      { text },
     )
   }
 
