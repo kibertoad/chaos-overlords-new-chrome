@@ -4,7 +4,7 @@ title: Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-c
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-010, FND-COMLINK-007, FND-UI-020, SRC-MANUAL-GOG, EXP-COMLINK-001]
+evidence: [FND-COMLINK-010, FND-COMLINK-007, FND-UI-020, SRC-MANUAL-GOG, EXP-COMLINK-001, FND-COMLINK-001, FND-COMLINK-006]
 conflicting: []
 split_with: []
 related: [FMT-STATE-005]

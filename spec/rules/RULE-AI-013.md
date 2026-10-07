@@ -4,7 +4,7 @@ title: A computer player keeps one hire placement sector and replaces it by fixe
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-010, FND-AI-051, FND-AI-045, FND-AI-019, FND-AI-040, FND-EXE-004]
+evidence: [FND-AI-010, FND-AI-051, FND-AI-045, FND-AI-019, FND-AI-040, FND-EXE-004, FND-AI-018, FND-COMBAT-004, FND-CONTROL-001, FND-HIRE-002, FND-PLATFORM-003, FND-UI-035, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, FMT-STATE-001, FMT-STATE-002, FMT-STATE-003]

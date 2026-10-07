@@ -64,12 +64,10 @@ step changed the human's orders. The back control showed the city again.
 
 ## Results
 
-`TheOrderMenusGiveTheOriginalsOrders` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Orders.cs` replays the
-run to the dump and takes each portrait press through the rebuild's portrait
-hit test and portrait handling. The listed player and the card slots, as roster
-slots of that player, are the same after every step, and the card of player
-2's gang opens no menu in the rebuild either.
+A test of the rebuild replays the run to the dump and takes each portrait press
+through the rebuild's portrait hit test and portrait handling. The listed player
+and the card slots, as roster slots of that player, are the same after every
+step, and the card of player 2's gang opens no menu in the rebuild either.
 
 ## Conclusion
 

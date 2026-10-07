@@ -1,0 +1,7 @@
+# The repository root's own packages: only the documentation standard check. The multiplayer server
+# is a separate workspace with its own pnpm-workspace.yaml in multiplayer/.
+#
+# pnpm holds back releases younger than its minimum release age. The checker's releases are taken
+# as soon as they are tagged, so the version package.json pins is excluded here; move both together.
+minimumReleaseAgeExclude:
+  - '@scientific-method/standard-checker@2.2.0'
