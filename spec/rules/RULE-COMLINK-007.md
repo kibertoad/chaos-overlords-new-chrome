@@ -4,7 +4,7 @@ title: When a player finishes planning, the read messages at the front of the in
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-006, EXP-COMLINK-001]
+evidence: [FND-COMLINK-006, EXP-COMLINK-001, FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-004]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-001, RULE-COMLINK-004, FMT-STATE-005]

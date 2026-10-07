@@ -18,10 +18,11 @@
          and never compares it to its own. -->
     <None Include="../../multiplayer/packages/contracts/src/protocol.ts"
           Link="contracts-protocol.ts" CopyToOutputDirectory="PreserveNewest" />
-    <!-- The build and format entries, for the tests that decode every file a format entry lists
-         (OriginalFormatFiles). They name the files and their hashes; the files themselves come
-         from GAME_DIR. -->
+    <!-- The build and format entries and the build's file manifest, for the tests that decode
+         every file a format entry lists (OriginalFormatFiles). They name the files and their
+         hashes; the files themselves come from GAME_DIR. -->
     <None Include="../../spec/builds/BLD-*.md" LinkBase="spec/builds" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../spec/builds/BLD-*.files.yaml" LinkBase="spec/builds" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../spec/formats/FMT-*.md" LinkBase="spec/formats" CopyToOutputDirectory="PreserveNewest" />
     <!-- The game's sources, for the check that the screens read no shortcut key the key binding
          map leaves out (KeyBindingTests). The validation gate builds outside the checkout, so the
@@ -35,7 +36,7 @@
     <None Include="../../tools/Rechaos.OriginalProbe/Screens/SCR-*.json" LinkBase="Screens" CopyToOutputDirectory="PreserveNewest" />
     <!-- The deviations, for the check that a screen comparison masks only what a deviation of
          that screen draws (ScreenCaptureMasks). -->
-    <None Include="../../DEVIATIONS.md" Link="DEVIATIONS.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../deviations/DEV-*.md" LinkBase="deviations" CopyToOutputDirectory="PreserveNewest" />
     <!-- The capture coverage table, for the check that it names every compared capture. -->
     <None Include="../../docs/VALIDATION.md" Link="docs/VALIDATION.md" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />

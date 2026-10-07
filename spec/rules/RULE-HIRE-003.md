@@ -4,7 +4,7 @@ title: A human player holds at most one hire or snub order, set by dragging an o
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-004, FND-HIRE-001, FND-HIRE-008, FND-EXE-004, EXP-HIRE-001, EXP-HIRE-002, SRC-MANUAL-GOG]
+evidence: [FND-HIRE-004, FND-HIRE-001, FND-HIRE-008, FND-EXE-004, EXP-HIRE-001, EXP-HIRE-002, SRC-MANUAL-GOG, FND-HIRE-002]
 conflicting: []
 split_with: []
 related: []

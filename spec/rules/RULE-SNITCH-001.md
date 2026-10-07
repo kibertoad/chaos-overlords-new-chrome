@@ -4,7 +4,7 @@ title: Snitch lowers the gang's sector base Tolerance by 3, free and whatever th
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SNITCH-001, FND-TOLERANCE-001, FND-TURN-007, FND-TURN-001, FND-STATE-001, FND-EXE-004, EXP-TURN-032, SRC-MANUAL-GOG]
+evidence: [FND-SNITCH-001, FND-TOLERANCE-001, FND-TURN-007, FND-TURN-001, FND-STATE-001, FND-EXE-004, EXP-TURN-032, SRC-MANUAL-GOG, FND-CONTROL-001, FND-PLATFORM-003, FND-UI-035]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, RULE-TOLERANCE-001, RULE-TOLERANCE-002]
