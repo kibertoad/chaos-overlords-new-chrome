@@ -278,6 +278,6 @@ public sealed class PlayerControlTransferTests
         ];
         return OriginalMatchFactory.Create(
             definitions,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
     }
 }

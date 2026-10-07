@@ -13,6 +13,45 @@ public enum AiPolicyMode : byte
     Advanced
 }
 
+/// <summary>
+/// The value of every deviation setting a match carries. Every <see cref="MatchSetup"/> states
+/// them: a match started by the game takes them from <see cref="Defaults"/>, the command line and
+/// the Advanced AI option, and a test compared with the original takes <see cref="Original"/>.
+/// It is a class, so <c>default</c> cannot stand in for a missing value: under nullable
+/// reference types a <see cref="MatchSetup"/> without one does not compile.
+/// </summary>
+/// <param name="ComputerMovesToNeighboursOnly">
+/// DEV-AI-007: whether a Move the computer planner plans must go to a neighbouring sector, as a
+/// human's does. Off, the planner's Move goes to any sector, as in the original (RULE-MOVE-001).
+/// </param>
+/// <param name="ComputerHiresWhereHumansCan">
+/// DEV-AI-008: whether a computer player's hire must go to a sector it controls or holds a gang
+/// in, as a human's does. Off, a computer seat's hire goes to the sector the planner chose, as in
+/// the original (RULE-AI-012, RULE-HIRE-001).
+/// </param>
+/// <param name="AiPolicy">
+/// DEV-AI-003: the computer command policy. <see cref="AiPolicyMode.Original"/> is the original
+/// planner.
+/// </param>
+public sealed record MatchDeviations(
+    bool ComputerMovesToNeighboursOnly,
+    bool ComputerHiresWhereHumansCan,
+    AiPolicyMode AiPolicy)
+{
+    /// <summary>Every setting switched off: the original's behaviour, which the validation suite runs with.</summary>
+    public static MatchDeviations Original { get; } = new(
+        ComputerMovesToNeighboursOnly: false, ComputerHiresWhereHumansCan: false,
+        AiPolicy: AiPolicyMode.Original);
+
+    /// <summary>
+    /// Every setting at the Default that DEVIATIONS.md gives it (DEV-AI-003 off, DEV-AI-007 on,
+    /// DEV-AI-008 on).
+    /// </summary>
+    public static MatchDeviations Defaults { get; } = new(
+        ComputerMovesToNeighboursOnly: true, ComputerHiresWhereHumansCan: true,
+        AiPolicy: AiPolicyMode.Original);
+}
+
 public sealed class MatchSetup
 {
     public MatchSetup(
@@ -20,13 +59,12 @@ public sealed class MatchSetup
         GameDuration duration,
         int initialSeed,
         IReadOnlyList<MatchPlayerSetup> players,
+        MatchDeviations deviations,
         AiDifficulty aiMentality = AiDifficulty.Criminal,
-        bool allowSparsePlayerIds = false,
-        AiPolicyMode aiPolicy = AiPolicyMode.Original,
-        bool computerMovesToNeighboursOnly = true,
-        bool computerHiresWhereHumansCan = true)
+        bool allowSparsePlayerIds = false)
     {
         ArgumentNullException.ThrowIfNull(players);
+        ArgumentNullException.ThrowIfNull(deviations);
         if (players.Count is < 1 or > MatchLimits.PlayerCount)
             throw new ArgumentOutOfRangeException(nameof(players));
         var playerIds = players.Select(player => player.Id.Value).ToArray();
@@ -47,16 +85,14 @@ public sealed class MatchSetup
             throw new ArgumentException(
                 "Player portrait is outside the original 16-entry atlas.", nameof(players));
         if (!Enum.IsDefined(aiMentality)) throw new ArgumentOutOfRangeException(nameof(aiMentality));
-        if (!Enum.IsDefined(aiPolicy)) throw new ArgumentOutOfRangeException(nameof(aiPolicy));
+        if (!Enum.IsDefined(deviations.AiPolicy)) throw new ArgumentOutOfRangeException(nameof(deviations));
 
         Scenario = scenario;
         Duration = duration;
         InitialSeed = initialSeed;
         Players = players.ToArray();
         AiMentality = aiMentality;
-        AiPolicy = aiPolicy;
-        ComputerMovesToNeighboursOnly = computerMovesToNeighboursOnly;
-        ComputerHiresWhereHumansCan = computerHiresWhereHumansCan;
+        Deviations = deviations;
         AllowsSparsePlayerIds = allowSparsePlayerIds;
     }
 
@@ -65,22 +101,21 @@ public sealed class MatchSetup
     public int InitialSeed { get; }
     public IReadOnlyList<MatchPlayerSetup> Players { get; }
     public AiDifficulty AiMentality { get; }
-    public AiPolicyMode AiPolicy { get; }
+
+    /// <summary>The deviation settings this match was started with.</summary>
+    public MatchDeviations Deviations { get; }
+
+    /// <summary>DEV-AI-003, from <see cref="Deviations"/>.</summary>
+    public AiPolicyMode AiPolicy => Deviations.AiPolicy;
+
+    /// <summary>DEV-AI-007, from <see cref="Deviations"/>. No screen offers it.</summary>
+    public bool ComputerMovesToNeighboursOnly => Deviations.ComputerMovesToNeighboursOnly;
 
     /// <summary>
-    /// DEV-AI-007: whether a Move the computer planner plans must go to a neighbouring sector, as a
-    /// human's does. Off, the planner's Move goes to any sector, as in the original (RULE-MOVE-001).
-    /// No screen offers it; the game's command line and the tests switch it off.
+    /// DEV-AI-008, from <see cref="Deviations"/>. A human seat the planner plays for a simulation
+    /// keeps the human test either way.
     /// </summary>
-    public bool ComputerMovesToNeighboursOnly { get; }
-
-    /// <summary>
-    /// DEV-AI-008: whether a computer player's hire must go to a sector it controls or holds a gang
-    /// in, as a human's does. Off, a computer seat's hire goes to the sector the planner chose, as
-    /// in the original (RULE-AI-012, RULE-HIRE-001); a human seat the planner plays for a
-    /// simulation keeps the human test either way.
-    /// </summary>
-    public bool ComputerHiresWhereHumansCan { get; }
+    public bool ComputerHiresWhereHumansCan => Deviations.ComputerHiresWhereHumansCan;
     public bool AllowsSparsePlayerIds { get; }
 
     internal MatchSetup WithController(PlayerId playerId, PlayerController controller)
@@ -95,10 +130,8 @@ public sealed class MatchSetup
             Players.Select(player => player.Id == playerId
                 ? player with { Controller = controller }
                 : player).ToArray(),
+            Deviations,
             AiMentality,
-            AllowsSparsePlayerIds,
-            AiPolicy,
-            ComputerMovesToNeighboursOnly,
-            ComputerHiresWhereHumansCan);
+            AllowsSparsePlayerIds);
     }
 }

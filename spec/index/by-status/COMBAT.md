@@ -34,7 +34,7 @@ Entries by status.
 
 ## recorded
 
-26 entries.
+27 entries.
 
 | ID | Title |
 |---|---|
@@ -64,6 +64,7 @@ Entries by status.
 | [FND-COMBAT-015](../../findings/FND-COMBAT-015.md) | Detailed Combat draws each gang portrait and its two Force tracks into the same surface, 68 and 75 rows below the portrait's top |
 | [FND-COMBAT-016](../../findings/FND-COMBAT-016.md) | The Detailed Combat clip player keeps its tick in a stack local, and paints the Force tracks again only on tick 16 |
 | [FND-COMBAT-017](../../findings/FND-COMBAT-017.md) | Detailed Combat copies each clip's sector tile from the unowned city map art and frames it in black |
+| [FND-COMBAT-032](../../findings/FND-COMBAT-032.md) | The Detailed Combat clip player puts the strips' first frames on the screen only, and definition 63 changes only the attack strip |
 
 ## Established on unreproduced evidence
 
