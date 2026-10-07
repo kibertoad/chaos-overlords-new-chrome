@@ -74,7 +74,7 @@ pass has run yet, so the original holds 0 in every auxiliary record and combat
 record and -1 in each player's `hire_role`; the replay leaves those out as it
 does for records no pass has written.
 
-A test of the rebuild replays each run, draws its endpoint at marker frame 6 and
+Another test replays each run, draws its endpoint at marker frame 6 and
 compares every element with the capture. No element differs. Outside the masks
 of DEV-UI-006 (the cash row) and DEV-UI-023 (the key line), every pixel matches
 except 4816 pixels of the map that the original drew exact white and the rebuild

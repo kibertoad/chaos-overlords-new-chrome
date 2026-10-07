@@ -159,8 +159,9 @@ fails on a stale one instead of writing it. It compiles the Kaitai definitions
 when `kaitai-struct-compiler` (or the path in `KSC`) is available; in CI it
 requires the compiler, and the workflows install a pinned release.
 `node tools/check-rebuild-paths.mjs` fails a spec line that names a file of
-the rebuild, a path into `src/` or `tests/` or a source file found there; until
-the shared checker's release carries that check, this script runs it.
+the rebuild, a path into `src/`, `tests/` or `multiplayer/` or a source file
+found there; until the shared checker's release carries that check, this
+script runs it.
 `node tools/spec-coverage.mjs` writes `docs/FUNCTION-INDEX.md`, which lists
 every game function of FND-EXE-004 with the entries that cite it (`--check`
 fails on a stale index); with `--inventory <file>` it also reports what the

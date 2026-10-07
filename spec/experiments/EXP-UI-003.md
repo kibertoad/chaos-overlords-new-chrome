@@ -57,7 +57,7 @@ the write and did not examine.
 A test of the rebuild reaches the same state for both runs, compared as in
 EXP-UI-001.
 
-A test of the rebuild replays each run, draws its endpoint at the capture's
+Another test replays each run, draws its endpoint at the capture's
 marker frame and compares every element with the capture. The fixture lists the
 setup input `key_colour`, so the test compares exact white like any other colour
 (docs/VALIDATION.md). No element differs: outside the masks of DEV-UI-006 (the
