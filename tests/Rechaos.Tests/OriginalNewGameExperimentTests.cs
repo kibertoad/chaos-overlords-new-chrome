@@ -747,13 +747,19 @@ public sealed partial class OriginalNewGameExperimentTests
             atPlanningEntry?.Invoke(match, human, turn + 1);
             // DEV-EQUIP-001: the rebuild resolves Equip and Sell in the order they are submitted.
             // Every recording lists a turn's orders in roster order, the original's scan order.
+            // The replay plays the lowest human's planning only, as the probe presses Done only in
+            // the first human's; an order or hire for another human has no planning to go into.
             foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))
+            {
+                Assert.Equal(human, new PlayerId(order.Player));
                 Submit(recorder, match, new PlayerId(order.Player), order);
+            }
             // RULE-HIRE-003: the probe writes the offer slot's hire order as the hire screen does;
             // the rebuild queues the gang that slot offers.
             foreach (var hire in recorded.Hires.Where(hire => hire.Turn == turn + 1))
             {
                 var hiring = new PlayerId(hire.Player);
+                Assert.Equal(human, hiring);
                 var offered = match.Players[hiring.Value].HireOfferSlots[hire.OfferSlot].GangDefinitionId;
                 Assert.NotNull(offered);
                 var result = recorder.QueueHire(hiring, offered.Value, hire.Sector);

@@ -109,12 +109,17 @@ static int NewGame(string[] args)
         Option(args, "--closes") is { } closes ? ParseCloses(closes) : null).WithActingPlayers();
     // An order, hire or Search write acts for a human of the run: the probe writes it into that
     // player's records, and the fixture names the player in the input.
-    var humanSlots = settings.Humans?.Select(human => human.Slot).ToArray() ?? [0];
+    foreach (var write in settings.Search ?? [])
+        if (!settings.HumanSlots.Contains(write.Player))
+            throw new ArgumentException($"Player {write.Player} of a Search write is not a --humans slot.");
+    // RULE-SETUP-008: the probe presses Done only in the first --humans slot's planning. Another
+    // human plans behind a Ready card the probe does not press, and that press refills the human's
+    // offers, so an order or hire written for that human before then may not be what it plans with.
     foreach (var player in (settings.Orders ?? []).Select(order => order.Player)
-                 .Concat((settings.Hires ?? []).Select(hire => hire.Player))
-                 .Concat((settings.Search ?? []).Select(write => write.Player)))
-        if (!humanSlots.Contains(player))
-            throw new ArgumentException($"Player {player} of an order, hire or Search write is not a --humans slot.");
+                 .Concat((settings.Hires ?? []).Select(hire => hire.Player)))
+        if (player != settings.FirstHuman)
+            throw new ArgumentException(
+                $"Player {player} of an order or hire is not the first --humans slot, the only human whose planning the probe plays.");
     // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
     // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
     // A first slot that is not the lowest would compare one player's lists with another player's
@@ -175,7 +180,10 @@ static int Extract(string[] args)
         var runTurns = StateExtractor.Turns(run);
         if (turns is not null && !turns.SequenceEqual(runTurns))
         {
-            Console.Error.WriteLine($"{run} was recorded with other orders or turns.");
+            // The inputs list only the turns a run played, and a fixture holds one list for all
+            // its runs, so runs whose matches end on different turns cannot share a fixture.
+            Console.Error.WriteLine(
+                $"{run} was recorded with other orders or turns, or its match ended on another turn than the runs before it.");
             return 1;
         }
 

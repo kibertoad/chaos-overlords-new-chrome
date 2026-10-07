@@ -44,7 +44,7 @@ public sealed partial class OriginalNewGameExperimentTests
         var viewer = new PlayerId(drawn.Viewer);
         Assert.Contains(viewer, recorded.Humans);
         var filter = recorded.SearchFilter(viewer).Select(definition => (short)definition).ToHashSet();
-        var markers = CitySiteMarkerProjection.Project(match, new PlayerId(drawn.Viewer), filter)
+        var markers = CitySiteMarkerProjection.Project(match, viewer, filter)
             .Select(marker => $"{marker.SiteDefinitionId},{marker.SectorId},{marker.VisibleSlot},{(marker.Controlled ? 1 : 0)}")
             .ToArray();
         Assert.Equal(drawn.Markers.Select(marker => string.Join(",", marker)), markers);

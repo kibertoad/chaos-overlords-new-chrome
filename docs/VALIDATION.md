@@ -423,8 +423,11 @@ given turn, counted from 1: the `action`, `target` and `target_2` bytes of
 FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
 as the order screens write them (RULE-TURN-005). The player after the turn
 names the human; an entry without one writes for the first `--humans` slot, or
-slot 0 when the option is left out, and the probe refuses a player that is not
-a human of the run. The fixture lists each order as an `order` input before
+slot 0 when the option is left out. The probe presses Done only in that human's
+planning, and another human's begins behind a Ready card that refills its offers
+(RULE-SETUP-008), so the probe refuses an order or hire for any other player, and
+the replay requires each one to name the lowest human, whose planning it plays.
+A Search write may name any human of the run. The fixture lists each order as an `order` input before
 its Done press, with the player it was written for (`turn 3: player 0 gang
 slot 0 action 13 target 0 target_2 0 repeat 0`), and the replay submits the
 same order as that player's command. `--hires` writes the sector byte of a

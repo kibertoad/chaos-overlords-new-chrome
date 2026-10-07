@@ -138,8 +138,13 @@ internal sealed record NewGameSettings(
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
-    /// <summary>The first <c>--humans</c> slot, or slot 0, the setup screen's human, when the option is left out.</summary>
-    public int FirstHuman => Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+    /// <summary>The <c>--humans</c> slots in the order given, or slot 0, the setup screen's human, when the option is left out.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public IReadOnlyList<int> HumanSlots => Humans is { Count: > 0 } humans ? humans.Select(human => human.Slot).ToArray() : [0];
+
+    /// <summary>The first of <see cref="HumanSlots"/>.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public int FirstHuman => HumanSlots[0];
 
     /// <summary>
     /// These settings with every order, hire and Search write naming its player: one that names
@@ -691,11 +696,17 @@ internal sealed partial class NewGameSession(
     // slot 0 when the option is left out. Orders, hires and Search writes name their own player.
     private int FirstHuman => settings.FirstHuman;
 
+    // An order, hire or Search write's player, which NewGameSettings.WithActingPlayers fills in
+    // when the entry leaves it out; -1 here would write outside the player's records.
+    private static int Acting(int player) => player >= 0
+        ? player
+        : throw new InvalidOperationException("A write names no player: build the settings with WithActingPlayers.");
+
     private void WriteSearch(ProbeSearch write)
     {
         foreach (var definition in write.Definitions)
             _process.Write(OriginalAddresses.SearchFilters
-                + (uint)(write.Player * OriginalAddresses.SiteDefinitionCount + definition), [1]);
+                + (uint)(Acting(write.Player) * OriginalAddresses.SiteDefinitionCount + definition), [1]);
         _notes.Add($"search after roll {_rolls.Count}: {write}");
     }
 
@@ -763,7 +774,7 @@ internal sealed partial class NewGameSession(
     private void WriteOrder(ProbeOrder order)
     {
         var record = OriginalAddresses.GangRecords
-            + (uint)(order.Player * OriginalAddresses.PlayerGangStride + order.Slot * OriginalAddresses.GangRecordSize);
+            + (uint)(Acting(order.Player) * OriginalAddresses.PlayerGangStride + order.Slot * OriginalAddresses.GangRecordSize);
         _process.Write(record + 7, [
             (byte)order.Action, (byte)order.Target, (byte)order.Target2,
             (byte)(order.Repeat ? order.Action : 0), (byte)(order.Repeat ? order.Target : 0)]);
@@ -772,7 +783,7 @@ internal sealed partial class NewGameSession(
 
     private void WriteHire(ProbeHire hire)
     {
-        _process.Write(OriginalAddresses.HireOrders + (uint)(hire.Player * 3 + hire.OfferSlot), [(byte)hire.Sector]);
+        _process.Write(OriginalAddresses.HireOrders + (uint)(Acting(hire.Player) * 3 + hire.OfferSlot), [(byte)hire.Sector]);
         _notes.Add($"hire after roll {_rolls.Count}: {hire}");
     }
 
