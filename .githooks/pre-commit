@@ -13,8 +13,15 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 git_dir=$(git rev-parse --absolute-git-dir)
 # The checker is installed in the working tree's node_modules (pnpm install at the root), which the
-# staged copy does not hold.
+# staged copy does not hold. A linked worktree without its own install uses the main checkout's;
+# check-documentation.mjs refuses an install of another version than package.json pins.
 STANDARD_CHECKER_ROOT=$(git rev-parse --show-toplevel)
+if [ ! -d "$STANDARD_CHECKER_ROOT/node_modules/@scientific-method/standard-checker" ]; then
+  main_checkout=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
+  if [ -d "$main_checkout/node_modules/@scientific-method/standard-checker" ]; then
+    STANDARD_CHECKER_ROOT=$main_checkout
+  fi
+fi
 export STANDARD_CHECKER_ROOT
 # A separate step, so a failed mktemp stops the hook instead of leaving $staged empty.
 staged=$(mktemp -d)

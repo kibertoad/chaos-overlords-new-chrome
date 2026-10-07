@@ -151,20 +151,12 @@ jobs:
 
       # Invoke-Validation.ps1 runs the documentation standard's checker (tools/check-documentation.mjs),
       # which the root package.json pins and `pnpm install` at the root installs.
-      - name: Set up pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-        with:
-          version: 12.5.1
-
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
       - name: Install the documentation checker
-        run: pnpm install --frozen-lockfile
+        uses: $/.github/actions/install-documentation-checker
+        # No dependency cache, as in the other release jobs: a poisoned cache entry would be
+        # restored into the checker that gates the release (zizmor's cache-poisoning audit).
+        with:
+          cache: "false"
 
       # The checker compiles the `.ksy` definitions with it, and fails when CI is set and no
       # compiler is found.

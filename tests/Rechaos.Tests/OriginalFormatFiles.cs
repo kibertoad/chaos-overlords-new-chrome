@@ -14,7 +14,7 @@ public static partial class OriginalFormatFiles
 
     public sealed record ListedFile(string Path, string Xxh3)
     {
-        /// <summary>The last part of the path, as the build entry spells it.</summary>
+        /// <summary>The last part of the path, as the build's manifest spells it.</summary>
         public string Name => Path[(Path.LastIndexOf('/') + 1)..];
     }
 

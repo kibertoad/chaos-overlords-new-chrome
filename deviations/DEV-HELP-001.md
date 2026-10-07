@@ -14,6 +14,5 @@
   original would have started is no longer part of Windows, so a viewer of the rebuild's own is
   the only way to show the file, and a setting that brings back an inert menu item gives the
   player nothing.
-- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs,
-  tests/Rechaos.Tests/ExtractedHelpStoreTests.cs
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/ExtractedHelpStoreTests.cs
 - Dropped: no

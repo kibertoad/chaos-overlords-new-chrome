@@ -13,6 +13,5 @@
 - Default: mandatory
 - Justification: The Options menu was written to keep the player's choices, and the original loses
   them only because of the two bugs. Nobody gains from choosing the options again at every launch.
-- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs,
-  tests/Rechaos.Tests/GamePreferencesStoreTests.cs
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs, tests/Rechaos.Tests/GamePreferencesStoreTests.cs
 - Dropped: no

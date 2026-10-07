@@ -18,6 +18,5 @@
   title buttons are the only way to Online and Options before a match, and the clicks that skip
   the intro movies land on the title; if a press anywhere started a new game, those clicks would
   carry a player past the menu into setup. New Game stays one button or one key away.
-- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs,
-  tests/Rechaos.Tests/ProgramShellParityTests.cs
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs, tests/Rechaos.Tests/ProgramShellParityTests.cs
 - Dropped: no
