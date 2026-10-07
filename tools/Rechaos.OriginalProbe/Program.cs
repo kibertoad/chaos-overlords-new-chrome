@@ -307,7 +307,7 @@ static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
             return new ProbeOrderStep("shot", -1, 0, 0, 0, screens.Replace('+', ','));
         // keys:TOKENS presses virtual keys with the Shift test's result given (NewGameSession.Keys).
         if (parts is ["keys", var keys] && keys.Length > 0)
-            return new ProbeOrderStep("keys", -1, 0, 0, 0, Text: keys);
+            return new ProbeOrderStep("keys", -1, 0, 0, 0, Text: NewGameSession.CheckedKeyTokens(keys, characters: false));
         // type:TEXT presses a key for each character: upper-case letters, digits and spaces.
         if (parts is ["type", var text] && text.Length > 0
             && text.All(character => character is ' ' or (>= '0' and <= '9') or (>= 'A' and <= 'Z')))
@@ -324,7 +324,7 @@ static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
                 new ProbeOrderStep("dbl", -1, numbers[0], numbers[1], 0),
             "back" or "exit" or "warn" when numbers is [] => new ProbeOrderStep(parts[0], -1, 0, 0, 0),
             "wait" when numbers is [> 0] => new ProbeOrderStep("wait", -1, 0, 0, numbers[0]),
-            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn, wait:ms, type:TEXT or shot:SCR-ID+...: {entry}"),
+            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn, wait:ms, type:TEXT, keys:TOKENS or shot:SCR-ID+...: {entry}"),
         };
     }).ToArray();
 
@@ -336,7 +336,8 @@ static IReadOnlyList<ProbeOrderStep> ParseSetupSteps(string value) =>
         var parts = entry.Split(':');
         if (parts is ["shot"]) return new ProbeOrderStep("shot", -1, 0, 0, 0, "SCR-SETUP-001");
         // name:TOKENS types into the name editor of card 0 (NewGameSession.Keys).
-        if (parts is ["name", var keys] && keys.Length > 0) return new ProbeOrderStep("name", -1, 0, 0, 0, Text: keys);
+        if (parts is ["name", var keys] && keys.Length > 0)
+            return new ProbeOrderStep("name", -1, 0, 0, 0, Text: NewGameSession.CheckedKeyTokens(keys, characters: true));
         var numbers = parts.Skip(1).Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
         const int width = CaptureFixture.Width, height = CaptureFixture.Height;
         return (parts[0], numbers) switch

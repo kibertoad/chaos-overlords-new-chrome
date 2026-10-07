@@ -39,8 +39,10 @@ public sealed class MatchSetup
             && !playerIds.SequenceEqual(Enumerable.Range(0, players.Count)))
             throw new ArgumentException(
                 "Player identifiers must be contiguous from zero.", nameof(players));
-        if (players.Any(player => string.IsNullOrWhiteSpace(player.Name)))
-            throw new ArgumentException("Player names cannot be blank.", nameof(players));
+        // A name of spaces is a name: the original's name editor keeps one (EXP-UI-053), and the
+        // setup screen stores it (RULE-SETUP-009). Only a missing name is refused.
+        if (players.Any(player => string.IsNullOrEmpty(player.Name)))
+            throw new ArgumentException("Player names cannot be empty.", nameof(players));
         if (players.Any(player => !Enum.IsDefined(player.Controller)))
             throw new ArgumentException("Player controller is invalid.", nameof(players));
         if (players.Any(player => player.PortraitId is < 0 or >= 16))

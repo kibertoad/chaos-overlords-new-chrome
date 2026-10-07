@@ -9,6 +9,9 @@ namespace Rechaos.Game;
 /// </summary>
 public static class OriginalTextInput
 {
+    // The United States layout's characters for Shift with the main digits 0 to 9.
+    private const string ShiftedDigits = ")!@#$%^&*(";
+
     /// <summary>
     /// The character of the key event the window procedure stores (FND-UI-020, EXP-UI-052):
     /// <c>MapVirtualKeyA(key, 2)</c>, with Shift replacing the sixteen characters of the shift
@@ -29,7 +32,7 @@ public static class OriginalTextInput
                 '/' => '?',
                 ';' => ':',
                 '=' => '+',
-                >= '0' and <= '9' => ")!@#$%^&*("[character - '0'],
+                >= '0' and <= '9' => ShiftedDigits[character - '0'],
                 _ => character,
             };
         return character != '\0';
@@ -48,7 +51,7 @@ public static class OriginalTextInput
         if (shift)
         {
             if (key is >= Keys.NumPad0 and <= Keys.NumPad9) character = '\0';
-            else if (key is >= Keys.D0 and <= Keys.D9) character = ")!@#$%^&*("[key - Keys.D0];
+            else if (key is >= Keys.D0 and <= Keys.D9) character = ShiftedDigits[key - Keys.D0];
             else
                 character = key switch
                 {
