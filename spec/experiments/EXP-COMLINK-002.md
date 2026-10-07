@@ -40,12 +40,14 @@ stamped a draft. The count, cursor and records of the human stayed empty, and
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs` replays the steps as in
-EXP-COMLINK-001: the rebuild finds no recipient for the human, so Send does not
-open, and an empty inbox, so View does not open.
+A test of the rebuild replays the steps as in EXP-COMLINK-001: the rebuild finds
+no recipient for the human, so Send does not open, and an empty inbox, so View
+does not open. The original never played slot 6, and the human's planning entry,
+with no unread message, does not sound the alert in the rebuild either.
 
 ## Conclusion
 
 The run agrees with RULE-COMLINK-002 and RULE-COMLINK-004: with one human,
 Send and View are both refused with the rejected-input sound, and the refused
-Send leaves its draft untouched.
+Send leaves its draft untouched. It agrees with RULE-AUDIO-007 that a planning
+entry with no unread message plays no alert.

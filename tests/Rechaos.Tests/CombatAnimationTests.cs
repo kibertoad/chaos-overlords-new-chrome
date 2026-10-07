@@ -84,6 +84,8 @@ public sealed class CombatAnimationTests
     [Theory]
     [InlineData((short)0, (short)0, (short)2)]
     [InlineData((short)54, (short)1, (short)18)]
+    // FND-COMBAT-010: definition 63 takes attack strip 2, its hit strip chosen by Martial Arts (EXP-UI-046).
+    [InlineData((short)63, (short)2, (short)2)]
     public void UnarmedStyleSelectsOrdinaryOrMartialArtsPair(
         short gangDefinition,
         short expectedAttack,
@@ -302,8 +304,12 @@ public sealed class CombatAnimationTests
         Assert.True(player.ShowsDamageFlash);
         player.Advance(TimeSpan.FromMilliseconds(CombatAnimationRouting.FrameMilliseconds));
         Assert.False(player.ShowsDamageFlash);
+        // FND-COMBAT-016: tick 14 shows the Force before the clip again, and tick 16 the lowered one.
+        Assert.True(player.ShowsPreDamageForce);
         player.Advance(TimeSpan.FromMilliseconds(CombatAnimationRouting.FrameMilliseconds));
         Assert.True(player.ShowsDamageFlash);
+        player.Advance(TimeSpan.FromMilliseconds(CombatAnimationRouting.FrameMilliseconds));
+        Assert.False(player.ShowsPreDamageForce);
         player.Advance(TimeSpan.FromMilliseconds(
             (CombatAnimationRouting.CompletionTick - player.TimelineTick)
             * CombatAnimationRouting.FrameMilliseconds));
@@ -460,6 +466,55 @@ public sealed class CombatAnimationTests
         Assert.Equal(CombatAnimationRouting.CompletionTick, reply.CompletionTick);
     }
 
+    // FND-COMBAT-011, FND-COMBAT-016: a reference frame names a clip by its index within the
+    // presentation and a tick, and the player passes over the clips before it without playing them.
+    [Fact]
+    public void ShowPutsThePresentationAtTheNamedClipAndTick()
+    {
+        var player = new CombatAnimationPlayer();
+        var forces = new CombatClipForces(10, 9, 10, 8);
+        var clips = Enumerable.Range(1, 3).Select(sequence =>
+            new CombatAnimationClip(sequence, new GangId(10), new GangId(20), 3, 2, false, forces)).ToArray();
+        foreach (var clip in clips) player.Enqueue(clip);
+        Assert.Equal(0, player.ClipIndex);
+
+        player.Show(0, 5);
+        Assert.Equal(clips[0], player.Active);
+        Assert.Equal(5, player.TimelineTick);
+
+        player.Show(2, 7);
+        Assert.Equal(clips[2], player.Active);
+        Assert.Equal(2, player.ClipIndex);
+        Assert.Equal(7, player.TimelineTick);
+        // Showing the same clip again changes only the tick; an earlier or a missing clip is refused.
+        player.Show(2, 8);
+        Assert.Equal(clips[2], player.Active);
+        Assert.Throws<ArgumentOutOfRangeException>(() => player.Show(1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => player.Show(3, 0));
+    }
+
+    // The index counts the clips of the presentation as they play, and a new presentation counts
+    // from 0 again.
+    [Fact]
+    public void TheClipIndexFollowsThePlayedClips()
+    {
+        var player = new CombatAnimationPlayer();
+        var forces = new CombatClipForces(10, 9, 10, 8);
+        var first = new CombatAnimationClip(1, new GangId(10), new GangId(20), 3, 2, false, forces);
+        var second = new CombatAnimationClip(2, new GangId(20), new GangId(10), 3, 2, true, forces);
+        player.Enqueue(first);
+        player.Enqueue(second);
+        var clip = TimeSpan.FromMilliseconds(CombatAnimationRouting.CompletionTick * CombatAnimationRouting.FrameMilliseconds);
+
+        player.Advance(clip);
+        Assert.Equal(second, player.Active);
+        Assert.Equal(1, player.ClipIndex);
+        player.Advance(clip);
+        Assert.False(player.IsPlaying);
+        player.Enqueue(first);
+        Assert.Equal(0, player.ClipIndex);
+    }
+
     private static readonly PlayerId Attacker = new(0);
     private static readonly PlayerId Defender = new(1);
 
@@ -501,7 +556,7 @@ public sealed class CombatAnimationTests
             ]))
             .ToArray();
         return new MatchState(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1, setups),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1, setups, MatchDeviations.Original),
             players, sectors);
     }
 }

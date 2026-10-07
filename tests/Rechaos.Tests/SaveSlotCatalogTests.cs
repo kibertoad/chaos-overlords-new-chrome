@@ -11,6 +11,7 @@ public sealed class SaveSlotCatalogTests
     [Fact]
     public void NineSlotsPersistEditableNamesAndMatchDetails()
     {
+        // DEV-UI-011: saving and loading use nine named slots.
         var directory = Path.Combine(Path.GetTempPath(), $"rechaos-slots-{Guid.NewGuid():N}");
         try
         {
@@ -20,7 +21,7 @@ public sealed class SaveSlotCatalogTests
                 [
                     new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human),
                     new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Human)
-                ], aiPolicy: AiPolicyMode.Advanced);
+                ], MatchDeviations.Original with { AiPolicy = AiPolicyMode.Advanced });
             var state = OriginalMatchFactory.Create(definitions, setup);
 
             var saved = SaveSlotCatalog.Save(directory, 8, "Friday campaign", state, online: false);
@@ -50,9 +51,24 @@ public sealed class SaveSlotCatalogTests
         var definitions = BundledOriginalData.Load();
         var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
             ScenarioId.Greed, GameDuration.SixMonths, 1996,
-            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
 
         Assert.Equal("GREED - TURN 1", SaveSlotCatalog.SuggestedName(state));
+    }
+
+    [Fact]
+    public void SaveRowsNameTheScenarioByItsTitle()
+    {
+        // RULE-UI-009: the save name and the row details use string resource scenario + 1.
+        var definitions = BundledOriginalData.Load();
+        var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
+            ScenarioId.Big40, GameDuration.SixMonths, 1996,
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
+        var summary = new SaveSlotSummary(0, "ANY", DateTimeOffset.UnixEpoch, ScenarioId.KillEmAll,
+            1, 3, "SINGLE", AiPolicyMode.Original);
+
+        Assert.Equal("THE BIG 40 - TURN 1", SaveSlotCatalog.SuggestedName(state));
+        Assert.Contains("  KILL 'EM ALL  ", summary.Details);
     }
 
     /// <summary>
@@ -71,7 +87,7 @@ public sealed class SaveSlotCatalogTests
             var definitions = BundledOriginalData.Load();
             var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
                 ScenarioId.BigMan, GameDuration.SixMonths, 1996,
-                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
             var path = SaveSlotCatalog.SavePath(directory, 4);
             SaveSlotCatalog.Save(directory, 4, "Recovery test", state, online: false);
             state.FinishUpkeep();
@@ -113,7 +129,7 @@ public sealed class SaveSlotCatalogTests
             var definitions = BundledOriginalData.Load();
             var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
                 ScenarioId.Greed, GameDuration.SixMonths, 1996,
-                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
             var path = SaveSlotCatalog.SavePath(directory, 2);
             SaveSlotCatalog.Save(directory, 2, "Older build", state, online: false);
             state.FinishUpkeep();
@@ -158,7 +174,7 @@ public sealed class SaveSlotCatalogTests
             var definitions = BundledOriginalData.Load();
             var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
                 ScenarioId.Greed, GameDuration.SixMonths, 1996,
-                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
             var path = SaveSlotCatalog.SavePath(directory, 5);
             var sidecar = path + ".json";
             SaveSlotCatalog.Save(directory, 5, "Newer build", state, online: false);
@@ -209,7 +225,7 @@ public sealed class SaveSlotCatalogTests
                 [
                     new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human),
                     new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Human)
-                ], aiPolicy: AiPolicyMode.Advanced));
+                ], MatchDeviations.Original with { AiPolicy = AiPolicyMode.Advanced }));
             var sidecar = SaveSlotCatalog.SavePath(directory, 6) + ".json";
             SaveSlotCatalog.Save(directory, 6, "Other definitions", state, online: false);
             // The match type is the sidecar's alone: on the fallback path it is derived from the
@@ -252,7 +268,7 @@ public sealed class SaveSlotCatalogTests
             var definitions = BundledOriginalData.Load();
             var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
                 ScenarioId.Greed, GameDuration.SixMonths, 1996,
-                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
             var path = SaveSlotCatalog.SavePath(directory, 7);
             Directory.CreateDirectory(path + ".json");
 
@@ -281,7 +297,7 @@ public sealed class SaveSlotCatalogTests
             var definitions = BundledOriginalData.Load();
             var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
                 ScenarioId.Greed, GameDuration.SixMonths, 1996,
-                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
             SaveSlotCatalog.Save(directory, 3, "Named", state, online: false);
             File.WriteAllText(SaveSlotCatalog.SavePath(directory, 3) + ".json", string.Empty);
 
@@ -310,7 +326,7 @@ public sealed class SaveSlotCatalogTests
             var definitions = BundledOriginalData.Load();
             var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
                 ScenarioId.Greed, GameDuration.SixMonths, 1996,
-                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
             var autoSave = Path.Combine(directory, "autosave.rchsave");
             var recovery = SaveSlotCatalog.CrashRecoveryPath(directory);
 
@@ -358,7 +374,7 @@ public sealed class SaveSlotCatalogTests
             var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
                 ScenarioId.Power, GameDuration.SixMonths, 1996,
                 [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)],
-                aiPolicy: AiPolicyMode.Advanced));
+                MatchDeviations.Original with { AiPolicy = AiPolicyMode.Advanced }));
             var sidecar = SaveSlotCatalog.SavePath(directory, 2) + ".json";
             SaveSlotCatalog.Save(directory, 2, "Tampered", state, online: false);
             var text = File.ReadAllText(sidecar);

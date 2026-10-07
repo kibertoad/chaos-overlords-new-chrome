@@ -4,7 +4,7 @@ title: Comlink View opens at the oldest unread message and refuses an empty inbo
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-002, FND-COMLINK-006, SRC-MANUAL-GOG, EXP-COMLINK-001, EXP-COMLINK-002]
+evidence: [FND-COMLINK-002, FND-COMLINK-006, SRC-MANUAL-GOG, EXP-COMLINK-001, EXP-COMLINK-002, FND-COMLINK-001, FND-COMLINK-004]
 conflicting: []
 split_with: []
 related: [SCR-COMLINK-001, FMT-STATE-005]

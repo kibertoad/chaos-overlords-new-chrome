@@ -45,12 +45,11 @@ The run made 1777 calls of `roll` over eleven Done presses. At the end
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. The rebuild makes the same calls with the same bounds and results and
-reaches the same state, the planning records included. The rebuild reaches a
-weight-10 sector that a family-6 gang already covers, which the guard target
-selection skips.
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. The rebuild makes the same calls
+with the same bounds and results and reaches the same state, the planning
+records included. The rebuild reaches a weight-10 sector that a family-6 gang
+already covers, which the guard target selection skips.
 
 ## Conclusion
 

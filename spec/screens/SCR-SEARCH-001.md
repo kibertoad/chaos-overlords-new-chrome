@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, FND-EXE-004, EXP-UI-008]
+evidence: [FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-GFX-009, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, FND-EXE-004, EXP-UI-008]
 conflicting: []
 split_with: []
 related: [RULE-SEARCH-001, RULE-SEARCH-002]
@@ -16,7 +16,7 @@ related: [RULE-SEARCH-001, RULE-SEARCH-002]
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Panel | `DATA/PX16/PX05024` | None | (104, 124, 344, 209) | While the panel is open | FND-SEARCH-001, FND-SEARCH-002 |
-| Row `n`, for site definitions 0 to 21 | The 20-by-14 cell `(20 * (n % 11), 14 * (n / 11))` of `DATA/PX16/PX00150`, keyed on exact white, then the first 15 characters of the site definition's name in the plain font of `DATA/PX16/PX00129` (row y 0) when the row is selected and in the font row at `(152,274)` when it is not | Whether `search_filters` selects definition `n` for the active player (RULE-SEARCH-001) | Icon at `(206 + 116 * (n / 11), 146 + 15 * (n % 11))`, name 24 pixels right and 3 down | While the panel is open; drawn again after ALL, NONE or a click on the row | FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004 |
+| Row `n`, for site definitions 0 to 21 | The 20-by-14 cell `(20 * (n % 11), 14 * (n / 11))` of `DATA/PX16/PX00150`, keyed on exact white, then the first 15 characters of the site definition's name in the plain font of `DATA/PX16/PX00129` (row y 0) when the row is selected and in the font row at `(152,274)` when it is not | Whether `search_filters` selects definition `n` for the active player (RULE-SEARCH-001) | Icon at `(206 + 116 * (n / 11), 146 + 15 * (n % 11))`, name 24 pixels right and 3 down | While the panel is open; drawn again after ALL, NONE or a click on the row | FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-GFX-009 |
 | ALL pressed | `DATA/PX16/PX00129` rectangle (147, 560, 50, 23); plain face (97, 560, 50, 23) | None | (137, 140, 50, 23) | While ALL is held with the pointer inside it | FND-SEARCH-002, FND-SEARCH-004 |
 | NONE pressed | `DATA/PX16/PX00129` rectangle (247, 560, 50, 23); plain face (197, 560, 50, 23) | None | (137, 172, 50, 23) | While NONE is held with the pointer inside it | FND-SEARCH-002, FND-SEARCH-004 |
 | Done pressed | `DATA/PX16/PX00129` rectangle (50, 386, 50, 23); plain face (0, 386, 50, 23) | None | (137, 293, 50, 23) | While Done is held with the pointer inside it | FND-SEARCH-004, FND-COMLINK-007 |
@@ -71,3 +71,10 @@ None known.
   been checked against `PX00129` (FND-SEARCH-004).
 - The Site Information panel belongs to the interface area; its screen entry
   is not yet cross-referenced here.
+- No recorded run of the original reaches the selected-row font; the pressed
+  ALL, NONE and Done images; the ALL and NONE presses, a row press and a row
+  double-click with Site Information over the panel; presses and double-clicks
+  outside it; Enter and Execute; the accepted and rejected sounds
+  (FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-COMLINK-007,
+  FND-AUDIO-011). These rest on the static findings named, so the entry stays
+  `supported`.

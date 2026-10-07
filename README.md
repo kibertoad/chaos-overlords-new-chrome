@@ -107,33 +107,40 @@ rounding, ordering and quirks, including bugs that players may rely on. It fixes
 only crashes, freezes, corrupted saves and logic that plainly does not do what it
 was written to do; when a bug cannot be told from a design decision, the original
 behaviour stays. Its 63 deliberate departures
-are listed in [DEVIATIONS.md](DEVIATIONS.md); many are interface changes, and
+are listed in [deviations/](deviations), one file each; many are interface changes, and
 seven have a setting that restores the original behaviour. Two of them, the
 computer players' Moves to distant sectors (DEV-AI-007) and their hires outside
 their own sectors (DEV-AI-008), are switched by `--original-computer-moves` and
 `--original-computer-hires` on the game's command line instead of a screen.
 
 Recorded runs of the original now check it in play. A debugger records every
-random draw of new games from launch and up to twenty-five turns of play, some
-with orders for the human's gang, and the rebuild has to make the same draws and
-reach the same state (EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to
-EXP-TURN-016 in the [spec](spec/README.md)). That covers setup, the computer
-players' planning and hiring, including Siege, Eliminate and Big Man, the
-resolution of most orders, one Attack, one Sell and the police. Deaths in
-combat, the Terminate and Give orders, events and the later game have not been
-recorded yet, and a static reading can still be wrong there. The
+random draw of a new game from launch through up to eighty-two turns of play,
+with the state where the run stops (and, in most runs from EXP-TURN-048 on,
+the computer players' planning records), and the rebuild has to make the same
+draws and reach the same state (the `EXP-` entries of the
+[spec](spec/README.md)). The runs cover setup, every
+scenario and Mentality, the computer players' planning and hiring, every order,
+combat, the police, events, and the end of Greed, Acceptance, Dominance and Big
+Man matches. A static reading can still be wrong where no run reaches: some
+branches of the computer players' planning, the end of Power, Big 40, Siege,
+Armageddon and Eliminate matches, and a Kill 'Em All match played down to one
+player without the probe retiring the others
+([docs/AI-SPEC.md](docs/AI-SPEC.md#how-far-the-planner-is-proved)). The
 [parity matrix](PARITY.md) shows the state of every rule, format and screen;
-75 of its 222 rows are compared with evidence from the original. The
+207 of its 224 rows are compared with evidence from the original. The
 [parity achievement plan](parity-achievement-plan.md) and the
 [static](static_validation_plan.md) and [manual](manual_validation_plan.md)
 validation plans list the open questions.
 
 ### Key omissions
 
-- Recorded runs of the original do not reach combat or the late game yet, and
-  no screen has been compared with a capture of the original
-  ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136),
-  [#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
+- Recorded runs of the original do not reach every branch of the computer
+  players' planning or the end of every scenario
+  ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136)).
+- Every screen the rebuild draws has been compared with at least one capture
+  of the original, but some states of most, such as pressed faces, selections
+  and drags, have not been captured yet; [VALIDATION.md](docs/VALIDATION.md#screen-capture-coverage)
+  lists them ([#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
 - Help is drawn by a cross-platform viewer, so its typography and paragraph
   layout approximate WinHelp's
   ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
@@ -304,18 +311,33 @@ Tim Jordan, Adam K. Rixey, and George Ruof, for the remarkably thorough
 It has been invaluable for clarifying game mechanics whose presentation in the
 original game and manual can otherwise be delightfully cryptic.
 
-This project copies no source code and redistributes no copyrighted resources
-from the original game. Players are expected to buy and own a legal copy, such
-as the [GOG release](https://www.gog.com/en/game/chaos_overlords), and import
-its assets locally during installation.
-
 ## License
 
-Copyright (C) 2026 kibertoad.
+The code, documentation and other material written for this project, including
+the rebuild, its tools and the spec in `spec/`, are copyright (C) 2026
+kibertoad. This copyright covers only that new work.
 
-The original code in this repository is licensed under the [MIT License](LICENSE).
-The documentation of the original game in `spec/` is licensed under
+The code in this repository is licensed under the [MIT License](LICENSE).
+The spec in `spec/`, this project's own description of how the original game
+works, is licensed under
 [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/),
 and its machine-readable files under the MIT License; `spec/LICENSE` says which
-files each covers. Neither license covers or grants rights to the original
-*Chaos Overlords* assets, which are not distributed by this project.
+files each covers. The MIT and CC BY 4.0 licenses apply only to this project's
+own work. They grant no rights to the original game or its assets.
+
+*Chaos Overlords* was created by Stick Man Games and first published in 1996 by
+New World Computing. According to the
+[GOG store page](https://www.gog.com/en/game/chaos_overlords), the rights to the
+game are now held by Evolution Interactive. All rights to the original game,
+including its name, executable, artwork, music, sounds, video, text and other
+assets, belong to their respective owners.
+
+This project copies no source code from the original game, and this repository
+and its releases contain none of its files. Players are expected to buy and own
+a legal copy, such as the
+[GOG release](https://www.gog.com/en/game/chaos_overlords), and import its
+assets locally during installation. The name
+*Chaos Overlords* is used here only to identify the game this project is
+compatible with. This project is an independent fan recreation, not affiliated
+with or endorsed by Stick Man Games, New World Computing, Evolution Interactive
+or GOG.

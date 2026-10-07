@@ -245,14 +245,43 @@ public sealed class CitySectorClickTracker
     public void Cancel() => _lastSector = null;
 }
 
+/// <summary>
+/// Tells a second press of a button within the double-click window, close to the first, from a new
+/// press, as Windows tells a double-click event from a press. A double-click ends the pair, so a
+/// third press starts a new one.
+/// </summary>
+public sealed class PointDoubleClickTracker
+{
+    private Point? _lastPoint;
+    private TimeSpan _lastClick;
+
+    public bool Register(Point point, TimeSpan timestamp)
+    {
+        if (timestamp < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timestamp));
+        var doubleClick = _lastPoint is { } last
+            && Math.Abs(point.X - last.X) < 4 && Math.Abs(point.Y - last.Y) < 4
+            && timestamp >= _lastClick
+            && timestamp - _lastClick <= CitySectorClickTracker.DoubleClickWindow;
+        _lastPoint = doubleClick ? null : point;
+        _lastClick = timestamp;
+        return doubleClick;
+    }
+
+    public void Cancel() => _lastPoint = null;
+}
+
 public static partial class CityConsoleLayout;
 
+/// <summary>SCR-SETUP-002, FND-SETUP-016: the hand-off card and what is drawn on it.</summary>
 public static class HandoffLayout
 {
-    public static Rectangle Panel => new(266, 148, 108, 164);
-    public static Rectangle Portrait => new(280, 170, 80, 77);
-    public static Rectangle Ready => new(266, 246, 108, 66);
-    public const int NameY = 194;
+    public static Rectangle Panel => new(266, 130, 108, 164);
+    public static Rectangle ColourBar => new(283, 155, 8, 72);
+    public static Rectangle NameBacking => new(293, 155, 60, 7);
+    public static Point Name => new(293, 155);
+    public static Rectangle Portrait => new(293, 163, 64, 64);
+    public static Rectangle Ready => new(270, 241, 100, 48);
+    public static Rectangle ReadyPressedSource => new(388, 512, 100, 48);
 }
 
 public sealed class IndexedDoubleClickTracker
@@ -658,16 +687,27 @@ public static class SiteInformationLayout
 public static class ComlinkViewLayout
 {
     public static Rectangle Panel => SharedPanelLayout.Panel;
+    // DEV-UI-005: the inbox tooltip's hover area, the panel art's frame around the number and
+    // count, which holds both digit cells.
     public static Rectangle Page => SharedPanelLayout.At(29, 9, 59, 13);
+    // FND-COMLINK-007: the View fields of fn_0045E04D, panel-local.
+    public static Rectangle PageNumber => DigitCells(34, 13, 2);
+    public static Rectangle PageCount => DigitCells(70, 13, 2);
     // Native view handler 0x0045D61A (FND-COMLINK-002) uses half-open panel-local rectangles
     // (31,33)-(57,56), (59,33)-(85,56), and (33,169)-(82,191).
     public static Rectangle Previous => SharedPanelLayout.At(31, 33, 26, 23);
     public static Rectangle Next => SharedPanelLayout.At(59, 33, 26, 23);
-    public static Rectangle Date => SharedPanelLayout.At(94, 20, 238, 7);
-    public static Rectangle SenderPortrait => SharedPanelLayout.At(111, 46, 64, 64);
-    public static Rectangle SenderName => SharedPanelLayout.At(181, 46, 151, 7);
-    public static Rectangle Message => SharedPanelLayout.At(94, 123, 238, 34);
+    public static Rectangle Year => DigitCells(95, 20, 4);
+    public static Rectangle Week => DigitCells(125, 20, 2);
+    public const int SenderNameColumns = 10;
+    public static Rectangle SenderName => SharedPanelLayout.At(95, 38, 60, 7);
+    public static Rectangle SenderColour => SharedPanelLayout.At(95, 46, 8, 64);
+    public static Rectangle SenderPortrait => SharedPanelLayout.At(103, 46, 64, 64);
+    public static Point MessageOrigin => new(SharedPanelLayout.X(95), SharedPanelLayout.Y(121));
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
+
+    private static Rectangle DigitCells(int x, int y, int count) =>
+        SharedPanelLayout.At(x, y, count * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
 }
 
 public static class ComlinkSendLayout
@@ -748,10 +788,21 @@ public static class ComlinkSendLayout
         return new Rectangle(cell.X + 2, cell.Y + 2, 7, 30);
     }
 
+    /// <summary>FND-COMLINK-007: the name at (+42, +2) from the card point, one inside the frame.</summary>
     public static Point RecipientNameOrigin(int slot)
     {
         var cell = Recipient(slot);
-        return new Point(cell.X + 42, cell.Y + 2);
+        return new Point(cell.X + 43, cell.Y + 3);
+    }
+
+    /// <summary>
+    /// FND-COMLINK-007: the portrait of a slot that cannot be sent to comes from the row at y 594
+    /// of PX00129, where the others come from y 480.
+    /// </summary>
+    public static Rectangle RecipientPortraitSource(int portraitId, bool eligible)
+    {
+        var source = OriginalSpriteLayout.OverlordPortrait(portraitId);
+        return eligible ? source : new Rectangle(source.X, 594, source.Width, source.Height);
     }
 
     private static void ValidateEditorCell(int column, int row)
@@ -846,7 +897,6 @@ public static partial class PlayerPortraitLayout
     public static Rectangle SetupLarge(int player) => Player(player, 397, 89, 83, 64, 64, rowStride: 74);
     public static Rectangle Previous(int player) => Player(player, 399, 109, 83, 12, 18, rowStride: 74);
     public static Rectangle Next(int player) => Player(player, 447, 109, 83, 12, 18, rowStride: 74);
-    public static Rectangle Name(int player) => Player(player, 397, 153, 83, 64, 8, rowStride: 74);
 
     private static Rectangle Player(
         int player,

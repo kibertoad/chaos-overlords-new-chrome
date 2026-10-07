@@ -106,6 +106,62 @@ public sealed class ProgramShellParityTests
         }
     }
 
+    [Fact]
+    public void TheHourglassStaysUpWhileAComputersPlanningWaits()
+    {
+        // RULE-UI-007, EXP-UI-022: between updates the pointer shows the idle shape, and a busy
+        // scope that ends while a computer's planning waits leaves the hourglass up.
+        var shown = new List<PointerShape>();
+        var idle = PointerShape.Hourglass;
+        var pointer = new PresentationPointer(shown.Add, () => idle);
+
+        using (pointer.Busy())
+        {
+        }
+        pointer.Refresh();
+        Assert.Equal([PointerShape.Hourglass], shown);
+
+        idle = PointerShape.Arrow;
+        using (pointer.Busy())
+            pointer.Refresh();
+        Assert.Equal([PointerShape.Hourglass, PointerShape.Arrow], shown);
+        pointer.Refresh();
+        Assert.Equal([PointerShape.Hourglass, PointerShape.Arrow], shown);
+    }
+
+    [Fact]
+    public void APointerMovedWhileTheHourglassWaitsShowsTheArrowUntilTheNextWork()
+    {
+        // RULE-UI-007, FND-AUDIO-016: a music fade dispatches messages while a computer's planning
+        // waits, and each pointer message selects the arrow until the planning selects the
+        // hourglass again.
+        var shown = new List<PointerShape>();
+        var idle = PointerShape.Hourglass;
+        var pointer = new PresentationPointer(shown.Add, () => idle);
+
+        pointer.Refresh();
+        pointer.PointerMoved();
+        pointer.Refresh();
+        Assert.Equal([PointerShape.Hourglass, PointerShape.Arrow], shown);
+
+        using (pointer.Busy())
+        {
+        }
+        pointer.Refresh();
+        Assert.Equal([PointerShape.Hourglass, PointerShape.Arrow, PointerShape.Hourglass], shown);
+
+        // A move while the idle shape is the arrow is spent once the hourglass waits again.
+        idle = PointerShape.Arrow;
+        pointer.Refresh();
+        pointer.PointerMoved();
+        pointer.Refresh();
+        idle = PointerShape.Hourglass;
+        pointer.Refresh();
+        Assert.Equal(
+            [PointerShape.Hourglass, PointerShape.Arrow, PointerShape.Hourglass, PointerShape.Arrow, PointerShape.Hourglass],
+            shown);
+    }
+
     [Theory]
     [InlineData(0, 0)]
     [InlineData(639, 459)]
@@ -143,17 +199,44 @@ public sealed class ProgramShellParityTests
     }
 
     [Fact]
-    public void ShiftChangesOnlyTheThirteenKeysOfTheOriginalsTable()
+    public void ShiftChangesTheSixteenCharactersOfTheOriginalsTable()
     {
-        // RULE-UI-014: Shift gives the United States shifted character for the digits and
-        // ' , . / ; =, and letters always come out in upper case.
-        Assert.True(OriginalTextInput.TryCharacter(Keys.OemMinus, shift: true, out var minus));
-        Assert.Equal('-', minus);
-        Assert.True(OriginalTextInput.TryCharacter(Keys.OemPlus, shift: true, out var plus));
-        Assert.Equal('+', plus);
-        Assert.True(OriginalTextInput.TryCharacter(Keys.D2, shift: true, out var at));
-        Assert.Equal('@', at);
-        Assert.True(OriginalTextInput.TryCharacter(Keys.Q, shift: false, out var letter));
-        Assert.Equal('Q', letter);
+        // RULE-UI-014, FND-UI-020: with Shift held the sixteen keys of the original's table give
+        // the United States shifted character, minus (inside the switch's range) and space
+        // (outside it) keep their own, and letters always come out in upper case.
+        (Keys Key, char Plain, char Shifted)[] table =
+        [
+            (Keys.OemQuotes, '\'', '"'), (Keys.OemComma, ',', '<'), (Keys.OemPeriod, '.', '>'),
+            (Keys.OemQuestion, '/', '?'), (Keys.OemSemicolon, ';', ':'), (Keys.OemPlus, '=', '+'),
+            (Keys.D0, '0', ')'), (Keys.D1, '1', '!'), (Keys.D2, '2', '@'), (Keys.D3, '3', '#'),
+            (Keys.D4, '4', '$'), (Keys.D5, '5', '%'), (Keys.D6, '6', '^'), (Keys.D7, '7', '&'),
+            (Keys.D8, '8', '*'), (Keys.D9, '9', '('),
+            (Keys.OemMinus, '-', '-'), (Keys.Space, ' ', ' ')
+        ];
+        foreach (var (key, plain, shifted) in table)
+        {
+            Assert.True(OriginalTextInput.TryCharacter(key, shift: false, out var unshifted));
+            Assert.Equal(plain, unshifted);
+            Assert.True(OriginalTextInput.TryCharacter(key, shift: true, out var withShift));
+            Assert.Equal(shifted, withShift);
+        }
+        for (var key = Keys.A; key <= Keys.Z; key++)
+        {
+            Assert.True(OriginalTextInput.TryCharacter(key, shift: false, out var letter));
+            Assert.Equal((char)('A' + (key - Keys.A)), letter);
+            Assert.True(OriginalTextInput.TryCharacter(key, shift: true, out var shiftedLetter));
+            Assert.Equal(letter, shiftedLetter);
+        }
+    }
+
+    [Fact]
+    public void ClosingTheWindowOnTheTitleQuitsAtOnce()
+    {
+        // RULE-UI-013, RULE-UI-014: a closed window is File, Exit, which on the title, with no
+        // match loaded, sets quit_requested without asking.
+        var game = DeviationBehaviourTests.HeadlessGame();
+        Assert.Null(DeviationBehaviourTests.Field("_state").GetValue(game));
+        Assert.False(LeavePromptTests.ClosingIsCancelled(game));
+        Assert.Equal(LeaveKind.None, (LeaveKind)DeviationBehaviourTests.Field("_leavePrompt").GetValue(game)!);
     }
 }

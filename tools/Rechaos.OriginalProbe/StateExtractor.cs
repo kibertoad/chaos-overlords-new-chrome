@@ -34,6 +34,12 @@ internal sealed class StateExtractor
             ["events"] = new JsonArray(),
             ["end_state"] = extractor.EndState(),
         };
+        // The rolls the state dump follows, when steps after it made more.
+        if (trace["Notes"]?.AsArray().Select(note => note!.GetValue<string>())
+                .FirstOrDefault(note => note.StartsWith("rolls_at_dump ", StringComparison.Ordinal)) is { } atDump
+            && int.Parse(atDump["rolls_at_dump ".Length..], System.Globalization.CultureInfo.InvariantCulture) is var dumpRolls
+            && dumpRolls < rolls.Count)
+            run["rolls_at_dump"] = dumpRolls;
         // FND-AWARDS-005: the players of the endgame's rows in drawing order, and each row's kind.
         if (trace["Endgame"] is JsonObject endgame)
             run["endgame_rows"] = new JsonObject
@@ -84,6 +90,106 @@ internal sealed class StateExtractor
                 ["opponent"] = list["Opponent"]!.GetValue<int>(),
                 ["targets"] = new JsonArray(list["Targets"]!.AsArray().Select(target => (JsonNode)target!.GetValue<int>()).ToArray()),
             }).ToArray());
+        // RULE-COMBAT-004, RULE-AUDIO-009: each clip Detailed Combat played, as the probe read it
+        // when the clip player was entered (FND-COMBAT-011, FND-AUDIO-013).
+        if (trace["CombatClips"] is JsonArray combatClips)
+            run["combat_clips"] = new JsonArray(combatClips.Select(clip => (JsonNode)new JsonObject
+            {
+                ["after_roll"] = clip!["AfterRoll"]!.GetValue<int>(),
+                ["focal"] = clip["Focal"]!.GetValue<int>(),
+                ["other"] = clip["Other"]!.GetValue<int>(),
+                ["hold"] = clip["Hold"]!.GetValue<int>(),
+                ["focal_bar"] = clip["FocalBar"]!.GetValue<int>(),
+                ["other_bar"] = clip["OtherBar"]!.GetValue<int>(),
+                ["sounds"] = new JsonArray(clip["Sounds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+                ["played"] = clip["Played"]!.GetValue<bool>(),
+            }).ToArray());
+        // RULE-COMBAT-004: each call of the presentation, with its flag, its clips and the effect
+        // slots it played itself (FND-COMBAT-010).
+        if (trace["CombatPresentations"] is JsonArray combatPresentations)
+            run["combat_presentations"] = new JsonArray(combatPresentations.Select(presentation => (JsonNode)new JsonObject
+            {
+                ["after_roll"] = presentation!["AfterRoll"]!.GetValue<int>(),
+                ["automatic"] = presentation["Automatic"]!.GetValue<int>(),
+                ["first_clip"] = presentation["FirstClip"]!.GetValue<int>(),
+                ["clips"] = presentation["Clips"]!.GetValue<int>(),
+                ["returned"] = presentation["Returned"]!.GetValue<bool>(),
+                ["sounds"] = new JsonArray(presentation["Sounds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+            }).ToArray());
+        // RULE-UI-007: each call of the cursor helper as after_roll, done, shape, force and the
+        // call's address (FND-UI-034).
+        if (trace["PointerCalls"] is JsonArray pointerCalls)
+            run["pointer_calls"] = new JsonArray(pointerCalls.Select(call => (JsonNode)new JsonArray(
+                call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Shape"]!.GetValue<int>(),
+                call["Force"]!.GetValue<int>(), (int)call["Call"]!.GetValue<uint>())).ToArray());
+        // RULE-AUDIO-006: each call of the play helper as after_roll, done, slot and the call's
+        // address (FND-AUDIO-006), with effects_enabled as the run read it at each call, each Done
+        // press and its end: the effects wrapper calls the helper only while it is set
+        // (FND-AUDIO-002), so the calls cannot be read without it, and a run that does not record
+        // it is refused.
+        if (trace["SoundCalls"] is JsonArray soundCalls)
+        {
+            if (trace["EffectsEnabled"] is not JsonValue effectsEnabled)
+                throw new InvalidDataException(
+                    $"{runDirectory} records sound calls but not whether effects were enabled, or read different values during the run.");
+            run["effects_enabled"] = effectsEnabled.GetValue<bool>();
+            run["sound_calls"] = new JsonArray(soundCalls.Select(call => (JsonNode)new JsonArray(
+                call!["AfterRoll"]!.GetValue<int>(), call["Done"]!.GetValue<int>(), call["Slot"]!.GetValue<int>(),
+                (int)call["Call"]!.GetValue<uint>())).ToArray());
+        }
+        // RULE-VIDEO-001: each intro movie with its header's frame count, the frame counter at each
+        // frame shown, the milliseconds from the first movie's first frame to each, and the counter at
+        // its close.
+        if (trace["IntroMovies"] is JsonArray introMovies)
+            run["intro_movies"] = new JsonArray(introMovies.Select(movie => (JsonNode)new JsonObject
+            {
+                ["name"] = movie!["Name"]!.GetValue<string>(),
+                ["frames"] = movie["Frames"]!.GetValue<int>(),
+                ["shown"] = new JsonArray(movie["Shown"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+                ["milliseconds"] = new JsonArray(movie["Milliseconds"]!.AsArray().Select(value => (JsonNode)value!.GetValue<long>()).ToArray()),
+                ["closed_at"] = movie["ClosedAt"]!.GetValue<int>(),
+            }).ToArray());
+        // RULE-TIMER-004: from the dump on, each tick of the presentation clock and each call of the
+        // wait as ticks, the call's address and the milliseconds of its start and return, both
+        // counted from the same clock as the ticks (FND-TIMER-002).
+        if (trace["Ticks"] is JsonArray ticks)
+            run["ticks"] = new JsonArray(ticks.Select(tick => (JsonNode)tick!.GetValue<long>()).ToArray());
+        if (trace["Waits"] is JsonArray waits)
+            run["waits"] = new JsonArray(waits.Select(wait => (JsonNode)new JsonArray(
+                wait!["Ticks"]!.GetValue<int>(), (int)wait["Call"]!.GetValue<uint>(),
+                wait["Started"]!.GetValue<long>(), wait["Returned"]!.GetValue<long>())).ToArray());
+        // RULE-UI-003: from the dump on, each slide-in as the return address of the helper's call
+        // (FND-UI-066), the benchmark count, the travel and the offset of each copy (FND-UI-011).
+        if (trace["Slides"] is JsonArray slides)
+            run["slides"] = new JsonArray(slides.Select(slide => (JsonNode)new JsonObject
+            {
+                ["caller"] = (int)slide!["Caller"]!.GetValue<uint>(),
+                ["benchmark"] = slide["Benchmark"]!.GetValue<int>(),
+                ["travel"] = slide["Travel"]!.GetValue<int>(),
+                ["offsets"] = new JsonArray(slide["Offsets"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+            }).ToArray());
+        // RULE-UI-015: each write of match_saved, with the value the game held before it.
+        if (trace["SavedWrites"] is JsonArray savedWrites)
+            run["saved_writes"] = new JsonArray(savedWrites.Select(write => (JsonNode)new JsonObject
+            {
+                ["turn"] = write!["Turn"]!.GetValue<int>(),
+                ["before"] = write["Before"]!.GetValue<int>(),
+                ["value"] = write["Value"]!.GetValue<int>(),
+            }).ToArray());
+        // RULE-UI-015: each close of the window after the dump, with match_saved and the no-match byte
+        // as it was posted, the answer and save result given, the dialogs opened, the saves called
+        // and the store of quit_requested reached, or 0x00000000.
+        if (trace["Closes"] is JsonArray closes)
+            run["closes"] = new JsonArray(closes.Select(close => (JsonNode)new JsonObject
+            {
+                ["saved"] = close!["Saved"]!.GetValue<int>(),
+                ["no_match"] = close["NoMatch"]!.GetValue<int>(),
+                ["answer"] = close["Answer"]!.GetValue<int>(),
+                ["save_result"] = close["SaveResult"]!.GetValue<int>(),
+                ["dialogs"] = new JsonArray(close["Dialogs"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
+                ["saves"] = close["Saves"]!.GetValue<int>(),
+                ["left_at"] = $"0x{close["LeftAt"]!.GetValue<uint>():X8}",
+            }).ToArray());
         // RULE-HIRE-003, FND-HIRE-008: each drag or Reject press after the dump and hire_orders after it.
         if (trace["HireSteps"] is JsonArray hireSteps)
             run["hire_steps"] = new JsonArray(hireSteps.Select(step => (JsonNode)new JsonObject
@@ -98,6 +204,22 @@ internal sealed class StateExtractor
             run["gang_markers"] = new JsonArray(gangMarkers.Select(draw => (JsonNode)new JsonArray(
                 draw!["Step"]!.GetValue<int>(), draw["Kind"]!.GetValue<int>(), draw["Player"]!.GetValue<int>(),
                 draw["Sector"]!.GetValue<int>(), draw["Frame"]!.GetValue<int>())).ToArray());
+        // RULE-UI-014, FND-UI-020: each key event the window procedure stored for a posted key, as
+        // the virtual key, whether the Shift test reported Shift held, and the event's type,
+        // character and key.
+        if (trace["KeyEvents"] is JsonArray keyEvents)
+            run["key_events"] = new JsonArray(keyEvents.Select(entry => (JsonNode)new JsonArray(
+                entry!["VirtualKey"]!.GetValue<int>(), entry["Shift"]!.GetValue<bool>() ? 1 : 0,
+                entry["Type"]!.GetValue<int>(), entry["Character"]!.GetValue<int>(), entry["Key"]!.GetValue<int>())).ToArray());
+        // RULE-SETUP-009, FND-UI-022: each name typed into the setup name editor, with the name
+        // record of its slot after OK.
+        if (trace["NameEntries"] is JsonArray nameEntries)
+            run["name_entries"] = new JsonArray(nameEntries.Select(entry => (JsonNode)new JsonObject
+            {
+                ["keys"] = entry!["Keys"]!.GetValue<string>(),
+                ["slot"] = entry["Slot"]!.GetValue<int>(),
+                ["name"] = Integers(entry["Name"]),
+            }).ToArray());
         // RULE-TURN-005, SCR-UI-004: each order step after the dump, the popup it opened with its
         // items' commands and greyed states, the view, the card slots and the active player's orders.
         if (trace["OrderSteps"] is JsonArray orderSteps)
@@ -113,6 +235,7 @@ internal sealed class StateExtractor
                     ["choice"] = probeStep["Choice"]!.GetValue<int>(),
                     ["menu"] = step["Menu"]!.GetValue<int>(),
                 };
+                if (probeStep["Text"] is JsonNode text) record["text"] = text.GetValue<string>();
                 if (step["Items"] is JsonArray items)
                     record["items"] = new JsonArray(items.Select(Integers).ToArray());
                 record["city_view"] = step["CityView"]!.GetValue<bool>();
@@ -180,6 +303,12 @@ internal sealed class StateExtractor
         // (CaptureFixture).
         if (CaptureFixture.Extract(runDirectory, trace, screens) is { } capture)
             run["capture"] = capture;
+        // --title-capture, --credits-capture, --setup-capture: the screens before the match.
+        foreach (var (key, before) in CaptureFixture.ExtractBeforeMatch(runDirectory, trace))
+            run[key] = before;
+        // --setup-steps: the presses on the setup screen and the copies taken after them.
+        if (CaptureFixture.ExtractSetupSteps(runDirectory, trace) is { } setupSteps)
+            run["setup_steps"] = setupSteps;
         return run;
     }
 
@@ -238,11 +367,16 @@ internal sealed class StateExtractor
         return (trace.Settings ?? NewGameSettings.Defaults).Describe().ToArray();
     }
 
-    /// <summary>The orders and Done presses a run was recorded with, one input each.</summary>
+    /// <summary>
+    /// The orders and Done presses the run made, one input each, each order, hire and Search write
+    /// with the player it acted for. A run that stopped before <c>--end-turns</c> ran out lists only
+    /// the turns it played, one per entry of <c>done_at_roll</c>.
+    /// </summary>
     public static (string Name, string Value)[] Turns(string runDirectory)
     {
         var trace = JsonSerializer.Deserialize<ProbeTrace>(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
-        return (trace.Settings ?? NewGameSettings.Defaults).DescribeTurns().ToArray();
+        return (trace.Settings ?? NewGameSettings.Defaults).WithActingPlayers()
+            .DescribeTurns(trace.RollsAtDone?.Count ?? 0).ToArray();
     }
 
     private JsonArray EndState()

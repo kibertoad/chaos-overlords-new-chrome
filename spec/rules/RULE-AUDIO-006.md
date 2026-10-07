@@ -4,7 +4,7 @@ title: The turn-start sound
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-003, FND-AUDIO-006, FND-NET-004, FND-EXE-004]
+evidence: [FND-AUDIO-003, FND-AUDIO-006, FND-NET-004, FND-EXE-004, EXP-AUDIO-001]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005]
@@ -64,3 +64,6 @@ None known.
   save, and so whether the first turn after a load is silent.
 - Whether every saved network game is resumed through the path that sets
   `network_game` has not been followed past the load dispatcher.
+- EXP-AUDIO-001 runs only a game started with New Game, where both flags are
+  clear. No run of the original has reached a Join or Host game, the only ones
+  that play the sound, so the status stays `supported` until one does.

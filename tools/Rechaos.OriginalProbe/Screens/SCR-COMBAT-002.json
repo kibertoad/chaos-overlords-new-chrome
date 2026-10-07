@@ -1,0 +1,21 @@
+{
+  "screen": "SCR-COMBAT-002",
+  "state": "The console's Detailed Combat control pressed at a planning entry, during a clip of the presentation",
+  "elements": [
+    {"element": "Panel", "rect": [104, 124, 344, 209]},
+    {"element": "Sector tile", "rect": [135, 135, 54, 52]},
+    {"element": "Sector code", "rect": [156, 190, 12, 7]},
+    {"element": "Colour strip, side 0", "rect": [205, 137, 18, 32]},
+    {"element": "Overlord portrait, side 0", "rect": [223, 137, 32, 32]},
+    {"element": "Owner name, side 0", "rect": [257, 138, 60, 8]},
+    {"element": "Header clearing, side 1", "rect": [326, 135, 116, 36]},
+    {"element": "Gang portraits, side 0", "rect": [254, 172, 64, 64]},
+    {"element": "Gang portraits, side 1", "rect": [327, 172, 64, 64]},
+    {"element": "Force tracks, side 0", "rect": [256, 240, 60, 10]},
+    {"element": "Force tracks, side 1", "rect": [329, 240, 60, 10]},
+    {"element": "Equipment, left", "rect": [204, 172, 48, 146]},
+    {"element": "Equipment, right", "rect": [393, 172, 48, 146]},
+    {"element": "Attack strip, aperture 0", "rect": [254, 254, 64, 64]},
+    {"element": "Attack strip, aperture 1", "rect": [327, 254, 64, 64]}
+  ]
+}

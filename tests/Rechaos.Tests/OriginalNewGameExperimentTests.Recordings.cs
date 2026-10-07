@@ -7,26 +7,49 @@ namespace Rechaos.Tests;
 
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private sealed record RecordedOrder(int Turn, int Slot, int Action, int Target, int Target2, bool Repeat)
+    // An order the probe wrote into a gang record of human Player before the Done press of Turn.
+    private sealed record RecordedOrder(int Turn, int Player, int Slot, int Action, int Target, int Target2, bool Repeat)
     {
-        // "turn 3: gang slot 0 action 13 target 0 target_2 0 repeat 0", as the probe writes it.
+        // "turn 3: player 0 gang slot 0 action 13 target 0 target_2 0 repeat 0", as the probe writes it.
         public static RecordedOrder Parse(string value)
         {
             var match = System.Text.RegularExpressions.Regex.Match(value,
-                @"^turn (-?\d+): gang slot (-?\d+) action (-?\d+) target (-?\d+) target_2 (-?\d+) repeat ([01])$");
+                @"^turn (\d+): player ([0-5]) gang slot (\d+) action (\d+) target (-?\d+) target_2 (-?\d+) repeat ([01])$");
             Assert.True(match.Success, value);
             var numbers = match.Groups.Values.Skip(1)
                 .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-            return new(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5] != 0);
+            return new(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5], numbers[6] != 0);
         }
     }
 
-    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider)
+    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider, bool Retired = false,
+        int? Cash = null, int? Force = null, int? Tolerance = null)
     {
-        // "turn 2: player 1 gang slot 0 family 4" or "turn 1: player 3 raider_mode 1", as the
-        // probe writes them.
+        // "turn 2: player 1 gang slot 0 family 4", "turn 1: player 3 raider_mode 1", "turn 1:
+        // player 3 player_active 0", "turn 1: player 0 cash 30000", "turn 2: player 0 gang slot 0
+        // force 10" or "turn 1: sector 54 base_tolerance 127", as the probe writes them.
         public static RecordedPlanning Parse(string value)
         {
+            var force = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) gang slot (\d+) force (-?\d+)$");
+            if (force.Success)
+                return new(int.Parse(force.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(force.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(force.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture), 0, false,
+                    Force: int.Parse(force.Groups[4].Value, System.Globalization.CultureInfo.InvariantCulture));
+            var tolerance = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): sector (\d+) base_tolerance (-?\d+)$");
+            if (tolerance.Success)
+                return new(int.Parse(tolerance.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture), 0,
+                    int.Parse(tolerance.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), 0, false,
+                    Tolerance: int.Parse(tolerance.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture));
+            var cash = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) cash (-?\d+)$");
+            if (cash.Success)
+                return new(int.Parse(cash.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(cash.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), 0, 0, false,
+                    Cash: int.Parse(cash.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture));
+            var retired = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) player_active 0$");
+            if (retired.Success)
+                return new(int.Parse(retired.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(retired.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), 0, 0, false, true);
             var raider = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([1-5]) raider_mode 1$");
             if (raider.Success)
                 return new(int.Parse(raider.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
@@ -40,24 +63,31 @@ public sealed partial class OriginalNewGameExperimentTests
         }
     }
 
-    // The players of the names the endgame's first drawing listed, in drawing order, and each row's
-    // kind: splash, ranked or eliminated (FND-AWARDS-005).
-    private sealed record RecordedEndgame(IReadOnlyList<int> Players, IReadOnlyList<string> Kinds);
+    // The three arguments the endgame renderer was called with, the players of the names its first
+    // drawing listed, in drawing order, and each row's kind: splash, ranked or eliminated
+    // (FND-AWARDS-005).
+    private sealed record RecordedEndgame(IReadOnlyList<int> Arguments, IReadOnlyList<int> Players, IReadOnlyList<string> Kinds)
+    {
+        // FND-AWARDS-005: the renderer draws the victory splash of the player in its third argument
+        // when its first argument is not 0 and its second is 0, and the table otherwise.
+        public bool DrawsSplash => Arguments[0] != 0 && Arguments[1] == 0;
+    }
     // The viewer of the last city redraw and its site markers as definition, sector, ordinal and
     // controlled flag (FND-SEARCH-006).
     private sealed record RecordedMarkers(int Viewer, IReadOnlyList<int[]> Markers);
 
-    // The site definitions whose search_filters entries the probe set for the first human before
-    // the Done press of the turn (RULE-SEARCH-001).
-    private sealed record RecordedSearch(int Turn, IReadOnlyList<int> Definitions)
+    // The site definitions whose search_filters entries the probe set for human Player before the
+    // Done press of the turn (RULE-SEARCH-001).
+    private sealed record RecordedSearch(int Turn, int Player, IReadOnlyList<int> Definitions)
     {
-        // "turn 1: search filter 0 2 4", as the probe writes it.
+        // "turn 1: player 0 search filter 0 2 4", as the probe writes it.
         public static RecordedSearch Parse(string value)
         {
-            var match = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): search filter (\d+(?: \d+)*)$");
+            var match = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) search filter (\d+(?: \d+)*)$");
             Assert.True(match.Success, value);
             return new(int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
-                match.Groups[2].Value.Split(' ')
+                int.Parse(match.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture),
+                match.Groups[3].Value.Split(' ')
                     .Select(definition => int.Parse(definition, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
         }
     }
@@ -74,10 +104,49 @@ public sealed partial class OriginalNewGameExperimentTests
     // human's gangs at the recording's endpoint, with the sector it was passed (FND-ATTACK-006).
     private sealed record RecordedAttackList(int Slot, int Sector, int Opponent, IReadOnlyList<int> Targets);
 
+    // A clip Detailed Combat played (FND-COMBAT-011): the roll count before it, the focal and other
+    // element numbers (-2 the police), the clip player's argument, the two bars' right ends, the
+    // sound numbers loaded into slot 5 since the clip before, and whether it played slot 5.
+    private sealed record RecordedCombatClip(
+        int AfterRoll, int Focal, int Other, int Hold, int FocalBar, int OtherBar, IReadOnlyList<int> Sounds, bool Played);
+
+    // A call of the Detailed Combat presentation (FND-COMBAT-010): the roll count before it, 1 when
+    // planning opened it and 0 when the console's control did, its first clip in the clip list, the
+    // clips it started, the effect slots it played itself and whether it returned before the run
+    // ended; a fixture recorded before the probe kept that has only presentations that returned.
+    private sealed record RecordedCombatPresentation(
+        int AfterRoll, bool Automatic, int FirstClip, int Clips, IReadOnlyList<int> Sounds, bool Returned);
+
+    // A call of the cursor helper (FND-UI-034): the roll count and the Done presses before it, the
+    // shape and force it was passed, and the address of the call.
+    private sealed record RecordedPointerCall(int AfterRoll, int Done, int Shape, int Force, int Call);
+
+    // A call of the play helper (FND-AUDIO-006): the roll count and the Done presses before it, the
+    // effect slot and the address of the call.
+    private sealed record RecordedSoundCall(int AfterRoll, int Done, int Slot, int Call);
+
+    // A call of the presentation wait (FND-TIMER-002): its argument, the call's address, and the
+    // milliseconds of its start and return on the clock the run's ticks are timed with.
+    private sealed record RecordedWait(int Ticks, int Call, long Started, long Returned);
+
+    // A slide-in of the panel-open helper (FND-UI-011): the return address of the helper's call,
+    // which names the panel's handler (FND-UI-066), the benchmark count it read, its travel and the
+    // offset of each copy.
+    private sealed record RecordedSlide(int Caller, int Benchmark, int Travel, IReadOnlyList<int> Offsets);
+
+    // A movie the intro played (FND-VIDEO-002): its name, its header's frame count, the movie
+    // slot's frame counter at each frame shown, the milliseconds from the first movie's first frame
+    // to each, and the counter when the slot was closed.
+    private sealed record RecordedIntroMovie(
+        string Name, int Frames, IReadOnlyList<int> Shown, IReadOnlyList<long> Milliseconds, int ClosedAt);
+
     // A hire step the probe took after the dump, an offer dragged onto a sector, its Reject pressed
     // (sector -2) or a result panel's Exit pressed (slot -1), with hire_orders after it
     // (FND-HIRE-001, FND-HIRE-008).
     private sealed record RecordedHireStep(int Slot, int Sector, IReadOnlyList<int> Orders);
+    private sealed record RecordedSavedWrite(int Turn, int Before, int Value);
+    private sealed record RecordedClose(
+        int Saved, int NoMatch, int Answer, int SaveResult, IReadOnlyList<int> Dialogs, int Saves, bool Left);
 
     // A click the probe posted after the dump, whether the Search panel was open after it, the
     // active player and the whole search_filters table (FND-SEARCH-001, FND-SEARCH-002).
@@ -105,17 +174,18 @@ public sealed partial class OriginalNewGameExperimentTests
     private sealed record RecordedTimer(
         int Turn, int LimitMs, IReadOnlyList<(int Elapsed, int Width, int Slot)> Bars, int LastUnexpiredMs, int ExpiredMs);
 
-    private sealed record RecordedHire(int Turn, int OfferSlot, int Sector)
+    // A hire the probe wrote into human Player's hire_orders before the Done press of Turn.
+    private sealed record RecordedHire(int Turn, int Player, int OfferSlot, int Sector)
     {
-        // "turn 1: offer slot 0 sector 12", as the probe writes it.
+        // "turn 1: player 0 offer slot 0 sector 12", as the probe writes it.
         public static RecordedHire Parse(string value)
         {
             var match = System.Text.RegularExpressions.Regex.Match(value,
-                @"^turn (\d+): offer slot ([0-2]) sector (\d+)$");
+                @"^turn (\d+): player ([0-5]) offer slot ([0-2]) sector (\d+)$");
             Assert.True(match.Success, value);
             var numbers = match.Groups.Values.Skip(1)
                 .Select(group => int.Parse(group.Value, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
-            return new(numbers[0], numbers[1], numbers[2]);
+            return new(numbers[0], numbers[1], numbers[2], numbers[3]);
         }
     }
 
@@ -146,6 +216,14 @@ public sealed partial class OriginalNewGameExperimentTests
                 .Where(value => value.StartsWith("planning_limit_choice ", StringComparison.Ordinal))
                 .Select(value => int.Parse(value["planning_limit_choice ".Length..], System.Globalization.CultureInfo.InvariantCulture))
                 .FirstOrDefault();
+            // "no Done press, turn 2: the planning time runs out", as the probe writes a turn it
+            // left to the planning time limit.
+            ExpiredTurns = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "wait")
+                .Select(input => input.GetProperty("value").GetString()!)
+                .Where(value => value.StartsWith("no Done press, turn ", StringComparison.Ordinal))
+                .Select(value => int.Parse(value["no Done press, turn ".Length..value.IndexOf(':')], System.Globalization.CultureInfo.InvariantCulture))
+                .ToHashSet();
             Timers = run.TryGetProperty("timers", out var timers)
                 ? timers.EnumerateArray().Select(timer => new RecordedTimer(
                     timer.GetProperty("turn").GetInt32(), timer.GetProperty("limit_ms").GetInt32(),
@@ -163,6 +241,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 : null;
             EndgameRows = run.TryGetProperty("endgame_rows", out var endgame)
                 ? new RecordedEndgame(
+                    endgame.GetProperty("arguments").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
                     endgame.GetProperty("players").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
                     endgame.GetProperty("kinds").EnumerateArray().Select(value => value.GetString()!).ToArray())
                 : null;
@@ -175,6 +254,19 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? hireSteps.EnumerateArray().Select(step => new RecordedHireStep(
                     step.GetProperty("slot").GetInt32(), step.GetProperty("sector").GetInt32(),
                     step.GetProperty("orders").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : [];
+            SavedWrites = run.TryGetProperty("saved_writes", out var savedWrites)
+                ? savedWrites.EnumerateArray().Select(write => new RecordedSavedWrite(
+                    write.GetProperty("turn").GetInt32(), write.GetProperty("before").GetInt32(),
+                    write.GetProperty("value").GetInt32())).ToArray()
+                : [];
+            Closes = run.TryGetProperty("closes", out var closes)
+                ? closes.EnumerateArray().Select(close => new RecordedClose(
+                    close.GetProperty("saved").GetInt32(), close.GetProperty("no_match").GetInt32(),
+                    close.GetProperty("answer").GetInt32(), close.GetProperty("save_result").GetInt32(),
+                    close.GetProperty("dialogs").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+                    close.GetProperty("saves").GetInt32(),
+                    close.GetProperty("left_at").GetString() != "0x00000000")).ToArray()
                 : [];
             GangMarkers = run.TryGetProperty("gang_markers", out var gangMarkers)
                 ? gangMarkers.EnumerateArray()
@@ -219,17 +311,65 @@ public sealed partial class OriginalNewGameExperimentTests
                     list.GetProperty("opponent").GetInt32(),
                     list.GetProperty("targets").EnumerateArray().Select(target => target.GetInt32()).ToArray())).ToArray()
                 : [];
-            // The inputs list every turn up to --end-turns, but a match that ends early presses
-            // Done fewer times, and the probe writes a turn's filter entries only before its press.
-            SearchFilter = inputs.EnumerateArray()
+            CombatClips = run.TryGetProperty("combat_clips", out var combatClips)
+                ? combatClips.EnumerateArray().Select(clip => new RecordedCombatClip(
+                    clip.GetProperty("after_roll").GetInt32(), clip.GetProperty("focal").GetInt32(),
+                    clip.GetProperty("other").GetInt32(), clip.GetProperty("hold").GetInt32(),
+                    clip.GetProperty("focal_bar").GetInt32(), clip.GetProperty("other_bar").GetInt32(),
+                    clip.GetProperty("sounds").EnumerateArray().Select(sound => sound.GetInt32()).ToArray(),
+                    clip.GetProperty("played").GetBoolean())).ToArray()
+                : null;
+            CombatPresentations = run.TryGetProperty("combat_presentations", out var combatPresentations)
+                ? combatPresentations.EnumerateArray().Select(presentation => new RecordedCombatPresentation(
+                    presentation.GetProperty("after_roll").GetInt32(), presentation.GetProperty("automatic").GetInt32() != 0,
+                    presentation.GetProperty("first_clip").GetInt32(), presentation.GetProperty("clips").GetInt32(),
+                    presentation.GetProperty("sounds").EnumerateArray().Select(sound => sound.GetInt32()).ToArray(),
+                    !presentation.TryGetProperty("returned", out var returned) || returned.GetBoolean())).ToArray()
+                : null;
+            PointerCalls = run.TryGetProperty("pointer_calls", out var pointerCalls)
+                ? pointerCalls.EnumerateArray().Select(call => new RecordedPointerCall(
+                    call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32(), call[4].GetInt32())).ToArray()
+                : null;
+            SoundCalls = run.TryGetProperty("sound_calls", out var soundCalls)
+                ? soundCalls.EnumerateArray().Select(call => new RecordedSoundCall(
+                    call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
+                : null;
+            EffectsEnabled = run.TryGetProperty("effects_enabled", out var effectsEnabled) ? effectsEnabled.GetBoolean() : null;
+            IntroMovies = run.TryGetProperty("intro_movies", out var introMovies)
+                ? introMovies.EnumerateArray().Select(movie => new RecordedIntroMovie(
+                    movie.GetProperty("name").GetString()!, movie.GetProperty("frames").GetInt32(),
+                    movie.GetProperty("shown").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
+                    movie.GetProperty("milliseconds").EnumerateArray().Select(value => value.GetInt64()).ToArray(),
+                    movie.GetProperty("closed_at").GetInt32())).ToArray()
+                : null;
+            Ticks = run.TryGetProperty("ticks", out var ticks)
+                ? ticks.EnumerateArray().Select(tick => tick.GetInt64()).ToArray()
+                : null;
+            Waits = run.TryGetProperty("waits", out var waits)
+                ? waits.EnumerateArray().Select(wait => new RecordedWait(
+                    wait[0].GetInt32(), wait[1].GetInt32(), wait[2].GetInt64(), wait[3].GetInt64())).ToArray()
+                : null;
+            Slides = run.TryGetProperty("slides", out var slides)
+                ? slides.EnumerateArray().Select(slide => new RecordedSlide(
+                    slide.GetProperty("caller").GetInt32(), slide.GetProperty("benchmark").GetInt32(), slide.GetProperty("travel").GetInt32(),
+                    slide.GetProperty("offsets").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : null;
+            Search = inputs.EnumerateArray()
                 .Where(input => input.GetProperty("name").GetString() == "search")
                 .Select(input => RecordedSearch.Parse(input.GetProperty("value").GetString()!))
-                .Where(write => write.Turn <= DoneCount)
-                .SelectMany(write => write.Definitions)
-                .Distinct().ToArray();
+                .ToArray();
+            // A Done press each, and a turn the planning time ended, as the probe lists the turns
+            // it played before the dump.
+            TurnInputs = inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() is "left_click" or "wait")
+                .Select(input => input.GetProperty("value").GetString()!)
+                .Count(value => !value.EndsWith(" after the dump", StringComparison.Ordinal)
+                    && (value.StartsWith("Done (", StringComparison.Ordinal)
+                        || value.StartsWith("no Done press, turn ", StringComparison.Ordinal)));
             Rolls = run.GetProperty("rolls").EnumerateArray()
                 .Select(roll => (roll[0].GetString()!, roll[1].GetInt32(), roll[2].GetInt32()))
                 .ToArray();
+            RollsAtDump = run.TryGetProperty("rolls_at_dump", out var atDump) ? atDump.GetInt32() : Rolls.Count;
             foreach (var row in run.GetProperty("end_state").EnumerateArray())
             {
                 var value = row.GetProperty("value").GetInt32();
@@ -244,17 +384,55 @@ public sealed partial class OriginalNewGameExperimentTests
         public int Seed { get; }
         public int DoneCount => DoneAtRoll.Count;
         public IReadOnlyList<int> DoneAtRoll { get; }
+        // The turns whose planning time ran out with no Done press; DoneAtRoll still has an entry
+        // for each.
+        public IReadOnlySet<int> ExpiredTurns { get; }
+
+        /// <summary>
+        /// The rolls the state dump follows; steps after the dump, such as a Ready press that refills
+        /// the offers (RULE-SETUP-008), can make more.
+        /// </summary>
+        public int RollsAtDump { get; }
         public int PlanningLimitChoice { get; }
         public IReadOnlyList<RecordedTimer> Timers { get; }
         public IReadOnlyList<RecordedPanel>? Panels { get; }
         public RecordedEndgame? EndgameRows { get; }
-        public IReadOnlyList<int> SearchFilter { get; }
+        public IReadOnlyList<RecordedSearch> Search { get; }
+
+        /// <summary>The Done presses and expired turns the inputs list before the dump.</summary>
+        public int TurnInputs { get; }
+
+        /// <summary>The site definitions the probe set in <paramref name="player"/>'s Search filter.</summary>
+        public IReadOnlyList<int> SearchFilter(PlayerId player) => Search
+            .Where(write => write.Player == player.Value).SelectMany(write => write.Definitions).Distinct().ToArray();
         public RecordedMarkers? CityMarkers { get; }
         public IReadOnlyList<RecordedFinance> Finance { get; }
         public IReadOnlyList<RecordedEquipList> EquipLists { get; }
         public IReadOnlyList<RecordedAttackList> AttackLists { get; }
+        // Null when the run left Detailed Combat switched off.
+        public IReadOnlyList<RecordedCombatClip>? CombatClips { get; }
+        // Null for a run recorded before the probe kept the presentation calls.
+        public IReadOnlyList<RecordedCombatPresentation>? CombatPresentations { get; }
+        // Null when the run did not record the pointer.
+        public IReadOnlyList<RecordedPointerCall>? PointerCalls { get; }
+        // Null when the run did not record the play helper.
+        public IReadOnlyList<RecordedSoundCall>? SoundCalls { get; }
+        // Whether effects_enabled was set at each read the probe made (FND-AUDIO-002), which decides
+        // whether the effects wrapper's calls reach the play helper. Null when the run did not
+        // record it.
+        public bool? EffectsEnabled { get; }
+        // Null when the run did not record the presentation clock: the milliseconds of each tick of
+        // timer slot 0 from the dump on, and each call of the wait.
+        public IReadOnlyList<long>? Ticks { get; }
+        public IReadOnlyList<RecordedWait>? Waits { get; }
+        // Null when the run did not record the slides.
+        public IReadOnlyList<RecordedSlide>? Slides { get; }
+        // Null when the run held the button through the intro.
+        public IReadOnlyList<RecordedIntroMovie>? IntroMovies { get; }
         public IReadOnlyList<RecordedSearchClick> SearchClicks { get; }
         public IReadOnlyList<RecordedHireStep> HireSteps { get; }
+        public IReadOnlyList<RecordedSavedWrite> SavedWrites { get; }
+        public IReadOnlyList<RecordedClose> Closes { get; }
         public IReadOnlyList<RecordedOrderStep> OrderSteps { get; }
 
         // Each gang-status marker drawing from the last full city redraw before the dump on, as

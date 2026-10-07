@@ -1,10 +1,10 @@
 ---
 id: RULE-HIRE-001
 title: Hires and snubs are carried out player by player and offer slot by offer slot
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-001, FND-HIRE-002, FND-HIRE-005, FND-HIRE-006, FND-EQUIP-006, FND-EVENT-001, FND-TURN-005, FND-EXE-004, EXP-TURN-027, EXP-TURN-035, SRC-MANUAL-GOG, EXP-TURN-090]
+evidence: [FND-HIRE-001, FND-HIRE-002, FND-HIRE-005, FND-HIRE-006, FND-EQUIP-006, FND-EVENT-001, FND-TURN-005, FND-EXE-004, EXP-TURN-027, EXP-TURN-035, SRC-MANUAL-GOG, EXP-TURN-090, EXP-TURN-097, EXP-TURN-098, EXP-TURN-099, FND-AI-064, FND-AWARDS-001, FND-PLATFORM-003, FND-UI-036, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-DATA-002]
@@ -129,7 +129,8 @@ set; a hire that then finds no free slot has still made them.
   by a player in debt. The shipped `DATA/Gangs` has one such definition
   among the offered numbers 1 to 89 (FND-HIRE-006).
 - The search stops at roster slot 79, so slot 80 is never filled by a hire
-  and a player holds at most 80 hired gangs.
+  and a player holds at most 80 hired gangs. EXP-TURN-097, EXP-TURN-098 and
+  EXP-TURN-099 hire with 80 gangs: the hire makes its `roll(5)` and fails.
 - The new gang starts with its definition's statistics, without items or
   site bonuses; its effective statistics are rebuilt at the next
   `turn_start` (RULE-GANG-001).
@@ -160,3 +161,7 @@ None known.
 - The failure reports are RULE-EVENT-009, RULE-EVENT-010 and RULE-EVENT-011.
   FND-EVENT-001 lists no report for a snub or a successful hire.
 - `hire_phase` coming after `control_phase` is not shown.
+- No recorded run hires with `hire_force_modifier` set, which gives Force 10
+  without the `roll(5)`, or hires a gang of cost 0 while in debt. These rest
+  on FND-HIRE-005 and FND-HIRE-006. Until a run reaches them, the entry stays
+  `supported`.

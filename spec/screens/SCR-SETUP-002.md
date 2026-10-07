@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-SETUP-016, FND-OBJECTIVE-004, FND-SETUP-010, FND-OBJECTIVE-002, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-SETUP-016, FND-OBJECTIVE-004, FND-SETUP-010, FND-OBJECTIVE-002, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-016]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-008, RULE-OBJECTIVE-005]
@@ -65,3 +65,7 @@ None known.
 ## Open questions
 
 - Which menu items commands `0x81`/3 and `0x81`/4 are is not recorded.
+- No recorded run of the original reaches the pressed Ready face while held
+  and a release outside; the card entered before an elimination card; menu
+  commands 3, 4 and 9; a card after turn 1 as pixels (FND-SETUP-016). These
+  rest on the static findings named, so the entry stays `supported`.

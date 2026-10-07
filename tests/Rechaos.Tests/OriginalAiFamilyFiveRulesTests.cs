@@ -127,6 +127,6 @@ public sealed class OriginalAiFamilyFiveRulesTests
             ], owner: id == 0 ? setups[0].Id : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Acceptance, GameDuration.SixMonths, 41, setups), players, sectors);
+            ScenarioId.Acceptance, GameDuration.SixMonths, 41, setups, MatchDeviations.Original), players, sectors);
     }
 }

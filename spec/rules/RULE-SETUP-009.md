@@ -4,7 +4,7 @@ title: A press on a setup player card selects it first, then works its portrait 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-015, FND-AI-004, FND-OBJECTIVE-004, FND-PLATFORM-003, FND-SETUP-002, FND-SETUP-017, FND-STATE-004, FND-STATE-008, FND-TURN-005, FND-UI-003, FND-UI-022, FND-UI-064, EXP-UI-053]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001]
@@ -84,8 +84,10 @@ if offset_y < 58:
         # fn_00468CFC: one step up, skipping portraits any slot holds
         step_portrait(card, 1)
 else:
-    # the name editor: dialog Chaos Overlords.exe#DIALOG/139, at most ten
-    # characters; accepting an empty editor keeps the old name
+    # the name editor: dialog Chaos Overlords.exe#DIALOG/139, whose edit
+    # control types the keyboard layout's character and upper-cases letters
+    # (FND-UI-064); OK copies at most ten characters, each outside space to
+    # Z as a space (FND-UI-022); accepting an empty editor keeps the old name
     fn_0040F63D(card)
 ```
 
@@ -96,7 +98,9 @@ slots, or changes one slot's `portrait` or name. Makes no draws.
 
 ## Edge cases
 
-A release outside every card after a drag changes nothing. A drag onto an
+A name typed with Shift and a number-pad digit gets nothing from that key,
+and `_`, `^`, `` ` ``, `~` and the bracket characters become spaces
+(EXP-UI-053). A release outside every card after a drag changes nothing. A drag onto an
 empty card moves the player there and leaves its old slot empty. A press in
 the middle of a selected card, between the two portrait bands and above the
 name band, does nothing. With six humans on six different portraits the

@@ -1,0 +1,11 @@
+{
+  "screen": "SCR-COMLINK-002",
+  "state": "The city screen of player 0 with the Comlink Send panel just opened from the console",
+  "elements": [
+    {"element": "Comlink Send panel", "rect": [0, 0, 640, 460]},
+    {"element": "Panel", "rect": [104, 124, 344, 209]},
+    {"element": "Player card, one per player slot", "rect": [201, 143, 226, 102]},
+    {"element": "Message characters", "rect": [199, 256, 240, 31]},
+    {"element": "Caret", "rect": [199, 256, 6, 7]}
+  ]
+}

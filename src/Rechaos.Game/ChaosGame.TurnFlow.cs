@@ -103,7 +103,7 @@ public sealed partial class ChaosGame
     private void WriteAutoSave()
     {
         if (_state is null) return;
-        _autoSave.Capture(_state);
+        _autoSave.Capture(_state, _planningSelections.Snapshot());
     }
 
     /// <summary>Autosaves the turn that has just begun, if one has.</summary>
@@ -171,6 +171,16 @@ public sealed partial class ChaosGame
         }
     }
 
+    // The computers plan in a local match on its own screens, while no menu, elimination card or
+    // elimination hand-off card waits for the human.
+    [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(_state), nameof(_actions))]
+    private bool ComputerTurnsCanRun() =>
+        _session is null && !_gameMenuOpen && _state is not null && _actions is not null
+        && _screens.Current is not (ClientScreen.Title or ClientScreen.Options or ClientScreen.Help
+            or ClientScreen.Setup or ClientScreen.Online or ClientScreen.Lobby
+            or ClientScreen.Endgame or ClientScreen.Elimination)
+        && _eliminationHandoffPlayer is null;
+
     /// <summary>
     /// Plays out the computer players of a hot-seat match.
     /// </summary>
@@ -181,21 +191,12 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void RunComputerTurns()
     {
-        if (_session is not null || _gameMenuOpen) return;
-        if (_state is null || _actions is null
-            || _screens.Current is ClientScreen.Title or ClientScreen.Options or ClientScreen.Help
-                or ClientScreen.Setup or ClientScreen.Online or ClientScreen.Lobby
-                or ClientScreen.Endgame or ClientScreen.Elimination
-            || _eliminationHandoffPlayer is not null) return;
+        if (!ComputerTurnsCanRun()) return;
         var acted = false;
         var startingTurn = _state.Coordinator.Turn;
         // A computer's planning and the resolution it ends in run below in this one update, under
         // the hourglass the original shows while it resolves a turn (RULE-UI-007).
-        using var busy = _state.Coordinator.Phase == TurnPhase.Command
-            && _state.Coordinator.ActivePlayer is { } firstPlayer
-            && _state.FindPlayer(firstPlayer)!.Setup.Controller == PlayerController.Computer
-                ? _pointer.Busy()
-                : null;
+        using var busy = PresentationPointer.Idle(_state) == PointerShape.Hourglass ? _pointer.Busy() : null;
         while (_state.Coordinator.ActivePlayer is { } playerId)
         {
             var player = _state.FindPlayer(playerId)!;
@@ -277,11 +278,22 @@ public sealed partial class ChaosGame
         else batch.Draw(pixel, panel, new Color(24, 37, 39));
         var playerId = _eliminationHandoffPlayer ?? ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
+        // SCR-SETUP-002, FND-SETUP-016: the slot's colour bar, its name over a black backing and
+        // its portrait doubled to 64 by 64. The name's cells are copied from the plain strip, as
+        // the Send panel's cards copy theirs (FND-UI-019). The backing holds the ten characters a
+        // local name can have; a longer online name is cut there.
+        batch.Draw(pixel, HandoffLayout.ColourBar, SetupPlayerCardArtLayout.Colours[playerId.Value]);
+        batch.Draw(pixel, HandoffLayout.NameBacking, Color.Black);
+        var name = player.Setup.Name;
+        font.Copy(batch, name[..Math.Min(name.Length, LocalSetupPolicy.MaximumPlayerNameCharacters)],
+            HandoffLayout.Name, OriginalFontLayout.PlainStrip);
         if (_uiSprites is not null)
+        {
             batch.Draw(_uiSprites, HandoffLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
-        DrawCentered(font, batch, player.Setup.Name, HandoffLayout.NameY,
-            PlayerColors[playerId.Value], 1);
+            if (_handoffReadyHeld && _hoverPoint is { } hover && HandoffLayout.Ready.Contains(hover))
+                batch.Draw(_uiSprites, HandoffLayout.Ready, HandoffLayout.ReadyPressedSource, Color.White);
+        }
         if (_session is null) return;
         // Online the card is the break between turns rather than a privacy gate, and the server's
         // clock keeps running behind it. It says how the last turn sealed in full, which the city's

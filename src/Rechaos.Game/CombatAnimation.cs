@@ -38,7 +38,6 @@ public static class CombatAnimationRouting
     public const int FrameMilliseconds = PresentationClock.PeriodMilliseconds;
     public const int FirstAnimationTick = 3;
     public const int LastAnimationTick = 10;
-    public const int PreDamageTick = 12;
 
     /// <summary>
     /// FND-COMBAT-014: on tick 12 the clip player draws black through bitmap 143 over the last
@@ -53,6 +52,12 @@ public static class CombatAnimationRouting
     public const short EvadedAnimation = 27;
     public const short PoliceAttackAnimation = 28;
     public const short PoliceHitAnimation = 20;
+
+    /// <summary>
+    /// FND-COMBAT-010: the gang definition whose unarmed attack plays attack strip 2
+    /// (<c>PX07002</c>, mirrored <c>PX07202</c>).
+    /// </summary>
+    public const short OwnAttackStripDefinition = 63;
 
     /// <summary>The detailed-combat clips of one event, as <paramref name="viewer"/> sees them.</summary>
     /// <remarks>
@@ -204,9 +209,11 @@ public static class CombatAnimationRouting
         }
         var definition = state.Definitions.Gang(gang.DefinitionId);
         var martialArts = definition.Stats.MartialArts > 0;
-        return (
-            martialArts ? (short)1 : (short)0,
-            HitAnimation(martialArts ? (short)18 : (short)2, damage));
+        // FND-COMBAT-010: unarmed, definition 63 takes attack strip 2 in place of the one Martial
+        // Arts picks, and its hit strip still follows Martial Arts (EXP-UI-046).
+        var attack = gang.DefinitionId == OwnAttackStripDefinition ? (short)2
+            : martialArts ? (short)1 : (short)0;
+        return (attack, HitAnimation(martialArts ? (short)18 : (short)2, damage));
     }
 
     private static short HitAnimation(short animation, int damage) =>
@@ -239,12 +246,17 @@ public sealed class CombatAnimationPlayer
         TimelineTick - CombatAnimationRouting.FirstAnimationTick,
         0,
         CombatAnimationRouting.FrameCount - 1);
-    public bool ShowsPreDamageForce => TimelineTick <= CombatAnimationRouting.PreDamageTick;
+    // FND-COMBAT-016: the tracks are painted again only on tick 16; tick 14 copies back the
+    // ones painted before the clip's ticks.
+    public bool ShowsPreDamageForce => TimelineTick < CombatAnimationRouting.FinalResultTick;
     public bool ShowsDimmedFrames => TimelineTick >= CombatAnimationRouting.DimmedFramesTick;
     public bool ShowsDamageFlash => TimelineTick is
         CombatAnimationRouting.FirstDamageFlashTick or
         CombatAnimationRouting.SecondDamageFlashTick;
     public bool IsPlaying => Active is not null;
+
+    /// <summary>The index of <see cref="Active"/> among the clips queued since the player was last idle.</summary>
+    public int ClipIndex { get; private set; }
 
     public void Enqueue(CombatAnimationClip clip)
     {
@@ -252,6 +264,7 @@ public sealed class CombatAnimationPlayer
         if (Active is null)
         {
             Active = clip;
+            ClipIndex = 0;
             TimelineTick = 0;
             _elapsedMilliseconds = 0;
         }
@@ -296,15 +309,51 @@ public sealed class CombatAnimationPlayer
                 (started ??= []).Add(Active);
             if (TimelineTick < Active.CompletionTick) continue;
             Active = _queue.Count > 0 ? _queue.Dequeue() : null;
+            ClipIndex = Active is null ? 0 : ClipIndex + 1;
             TimelineTick = 0;
             if (Active is null) _elapsedMilliseconds = 0;
         }
         return started ?? [];
     }
 
+    /// <summary>
+    /// Puts the playing clip at <paramref name="tick"/> without advancing through the ticks before
+    /// it, for a frame drawn at a captured tick of the original's clip (FND-COMBAT-016). A clip whose
+    /// hold flag is cleared ends on tick 16, so it shows only ticks 0 to 15.
+    /// </summary>
+    public void ShowTick(int tick)
+    {
+        if (Active is not { } clip) return;
+        if (tick < 0 || tick >= clip.CompletionTick) throw new ArgumentOutOfRangeException(nameof(tick));
+        TimelineTick = tick;
+    }
+
+    /// <summary>
+    /// Puts the presentation at clip <paramref name="clipIndex"/>, counted from 0, and that clip at
+    /// <paramref name="tick"/> (<see cref="ShowTick"/>), passing over the clips before it without
+    /// playing them, for a frame drawn at a captured clip of the original's presentation
+    /// (FND-COMBAT-011). Each clip draws from its own forces, so a clip passed over leaves nothing
+    /// on the screen.
+    /// </summary>
+    public void Show(int clipIndex, int tick)
+    {
+        if (clipIndex < 0) throw new ArgumentOutOfRangeException(nameof(clipIndex));
+        if (Active is null) return;
+        if (clipIndex < ClipIndex || clipIndex - ClipIndex > _queue.Count)
+            throw new ArgumentOutOfRangeException(nameof(clipIndex),
+                $"The presentation has clips {ClipIndex} to {ClipIndex + _queue.Count}, not {clipIndex}.");
+        while (ClipIndex < clipIndex)
+        {
+            Active = _queue.Dequeue();
+            ClipIndex++;
+        }
+        ShowTick(tick);
+    }
+
     public void Clear()
     {
         _queue.Clear();
+        ClipIndex = 0;
         Active = null;
         TimelineTick = 0;
         _elapsedMilliseconds = 0;

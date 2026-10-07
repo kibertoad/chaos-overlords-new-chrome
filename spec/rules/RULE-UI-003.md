@@ -4,7 +4,7 @@ title: Panels slide in from the right and out to the right
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-011, FND-UI-023, FND-AUDIO-002, FND-OPTIONS-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-011, FND-UI-023, FND-UI-056, FND-UI-066, FND-AUDIO-002, FND-OPTIONS-001, FND-EXE-004, SRC-MANUAL-GOG, EXP-UI-025]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005]

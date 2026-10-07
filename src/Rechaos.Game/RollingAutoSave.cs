@@ -87,7 +87,8 @@ internal sealed class RollingAutoSave
     }
 
     /// <summary>Captures the state on this thread and hands the bytes to the worker.</summary>
-    public void Capture(MatchState state)
+    /// <param name="selectedSectors">Each player slot's selected sector, kept in the sidecar.</param>
+    public void Capture(MatchState state, IReadOnlyList<int>? selectedSectors = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         var turn = state.Coordinator.Turn;
@@ -96,7 +97,7 @@ internal sealed class RollingAutoSave
         {
             snapshot = new Snapshot(
                 NativeSaveStore.Serialize(state), state.Definitions,
-                SaveSlotCatalog.DescribeAutoSave(state), turn);
+                SaveSlotCatalog.DescribeAutoSave(state, selectedSectors), turn);
         }
         catch (Exception exception) when (IsSaveFailure(exception))
         {

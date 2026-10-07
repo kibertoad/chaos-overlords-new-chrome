@@ -271,6 +271,13 @@ public sealed partial class ChaosGame
             _choosingCommandTarget = true;
             _commandPanelFace = CommandPanelFaceState.NotDrawn;
             _pressedCommandPanelButton = null;
+            // RULE-UI-003, FND-UI-057: the order panel slides in with slot 0, the first sound since
+            // the order list opened.
+            if (_slidePanels)
+            {
+                _panelSlideTransition.BeginOrderPanel(_commandReturnScreen, _inputTime);
+                PlayGeneralSound(GeneralSoundSlot.PanelOpen);
+            }
             if (action == GangAction.Equip) OpenEquipmentPurchasePanel();
             else if (action == GangAction.Research) OpenResearchPanel();
             else if (action == GangAction.Move) OpenMovementPanel();
@@ -350,6 +357,11 @@ public sealed partial class ChaosGame
             _choosingCommandTarget = false;
             _commandTargetOptions = [];
             _commandTargetAction = GangAction.None;
+            // RULE-UI-003: the order list the screen goes back to never slides, so a slide-in of
+            // the order panel still running stops here instead of carrying over to the list. The
+            // order panel closes with slot 1.
+            _panelSlideTransition.Clear();
+            if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelClose);
             return;
         }
         _screens.Show(_commandReturnScreen);

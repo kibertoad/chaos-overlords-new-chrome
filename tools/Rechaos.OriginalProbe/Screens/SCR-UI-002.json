@@ -1,0 +1,7 @@
+{
+  "screen": "SCR-UI-002",
+  "state": "The credits opened from Help, About over the title screen",
+  "elements": [
+    {"element": "Credits screen", "rect": [0, 0, 640, 460]}
+  ]
+}

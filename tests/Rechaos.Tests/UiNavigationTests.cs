@@ -129,6 +129,7 @@ public sealed partial class UiNavigationTests
     {
         Rectangle[] entries =
         [
+            StatusConsoleLayout.Date,
             StatusConsoleLayout.Score,
             StatusConsoleLayout.Cash,
             .. Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorEntry)
@@ -163,6 +164,61 @@ public sealed partial class UiNavigationTests
         Assert.Equal("5 [-3] (0)", StatusConsolePresentation.CashSummary(5, -3, 0));
         Assert.Equal("120[95](-12)", StatusConsolePresentation.CashSummary(120, 95, -12));
         Assert.Empty(StatusConsoleTooltip.At(Point.Zero));
+    }
+
+    [Fact]
+    public void EveryPlaceThatNamesAScenarioUsesTheTitleTheConsoleDraws()
+    {
+        // RULE-UI-009, FND-UI-040: the console draws string resource scenario + 1. The rebuild's
+        // own texts name the scenario with the same string. The online session list draws the
+        // same ExecutableStrings.ScenarioTitle call inside ChaosGame and has no seam to test here.
+        const string title = "THE BIG 40";
+        Assert.Equal(title, ExecutableStrings.ScenarioTitle(ScenarioId.Big40));
+        Assert.Equal(title, ScenarioSetupTooltip.Lines(ScenarioId.Big40, GameDuration.OneYear)[0]);
+        Assert.StartsWith($"{title} RATES:", StatusConsoleTooltip.ScoreLines(ScenarioId.Big40)[1]);
+        Assert.Equal(title, DiscoveryFilters.Label(DiscoveryFilters.Scenario, (int)ScenarioId.Big40 + 1));
+        Assert.Equal(("SCENARIO", title), OnlineLobbySummary.Rows(ScenarioId.Big40, GameDuration.OneYear,
+            AiDifficulty.CrimeLord, PlanningTimeLimit.TwoMinutes)[0]);
+
+        var state = OriginalMatchFactory.Create(Rechaos.Core.Assets.BundledOriginalData.Load(),new MatchSetup(
+            ScenarioId.Big40, GameDuration.OneYear, 1996,
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
+        var entries = PlayerRankingPresentation.Project(state);
+        Assert.StartsWith($"{title} RATES:", PlayerRankingTooltip.Lines(state, entries[0], entries)[2]);
+        Assert.StartsWith($"{title} - TURN ", SaveSlotCatalog.SuggestedName(state));
+        Assert.Contains($"  {title}  ", new SaveSlotSummary(0, "ANY", DateTimeOffset.UnixEpoch,
+            ScenarioId.Big40, 1, 3, "SINGLE", AiPolicyMode.Original).Details);
+    }
+
+    [Fact]
+    public void DateRowTooltipExplainsTheCalendarAndTheCountdownBesideIt()
+    {
+        // DEV-UI-005 over the FND-UI-040 calendar fields.
+        Assert.Equal(new Rectangle(476, 14, 108, 9), StatusConsoleLayout.Date);
+        var point = StatusConsoleLayout.Date.Center;
+        Assert.True(StatusConsoleTooltip.Contains(point));
+
+        var timed = StatusConsoleTooltip.At(point, ScenarioId.Greed, GameDuration.OneYear);
+        Assert.Equal("DATE", timed[0]);
+        Assert.Contains("2050", string.Join(' ', timed));
+        Assert.Contains("LEFT AFTER THE ONE BEING PLANNED.", timed);
+        Assert.Contains("THE MATCH ENDS AFTER TURN 52,", timed);
+        Assert.Equal("OR SOONER IF ONE OVERLORD IS LEFT.", timed[^1]);
+
+        var untimed = StatusConsoleTooltip.At(point, ScenarioId.Big40, GameDuration.OneYear);
+        Assert.Equal("THE BIG 40 HAS NO TIME LIMIT.", untimed[^1]);
+        Assert.DoesNotContain(untimed, line => line.Contains("TURNS", StringComparison.Ordinal));
+
+        var final = StatusConsoleTooltip.At(point, ScenarioId.Greed, GameDuration.OneYear, complete: true);
+        Assert.Equal("COMPLETE: THE MATCH HAS ENDED.", final[^1]);
+        Assert.DoesNotContain(final, line => line.Contains("TURNS", StringComparison.Ordinal));
+
+        foreach (var lines in new[] { timed, untimed, final })
+        {
+            var bounds = StatusConsoleTooltip.Bounds(point, lines);
+            Assert.True(bounds.X >= 0 && bounds.Y >= 0
+                && bounds.Right <= VirtualInput.Width && bounds.Bottom <= VirtualInput.Height);
+        }
     }
 
     [Fact]
@@ -242,8 +298,6 @@ public sealed partial class UiNavigationTests
             OriginalSelectionLightLayout.AiMentality(3));
         Assert.Equal(new Rectangle(297, 340, 3, 11),
             OriginalSelectionLightLayout.PlanningTime(0));
-        Assert.Equal(new Rectangle(523, 38, 3, 11),
-            OriginalSelectionLightLayout.EndgameTab(EndgameLayout.Stats));
         Assert.Equal(new Rectangle(540, 126, 8, 16), OriginalSelectionLightLayout.CityEvents);
         Assert.Equal(new Rectangle(592, 126, 8, 16), OriginalSelectionLightLayout.CityComlinkView);
         Assert.Throws<ArgumentOutOfRangeException>(() => SetupSelectionLayout.Scenario(10));
@@ -370,12 +424,18 @@ public sealed partial class UiNavigationTests
     }
 
     [Fact]
-    public void NextPlayerPortraitFillsTheNativeHandoffAperture()
+    public void TheHandoffCardTakesTheOriginalsRectangles()
     {
-        Assert.Equal(new Rectangle(266, 148, 108, 164), HandoffLayout.Panel);
-        Assert.Equal(new Rectangle(280, 170, 80, 77), HandoffLayout.Portrait);
-        Assert.Equal(new Rectangle(266, 246, 108, 66), HandoffLayout.Ready);
+        // SCR-SETUP-002, FND-SETUP-016.
+        Assert.Equal(new Rectangle(266, 130, 108, 164), HandoffLayout.Panel);
+        Assert.Equal(new Rectangle(283, 155, 8, 72), HandoffLayout.ColourBar);
+        Assert.Equal(new Rectangle(293, 155, 60, 7), HandoffLayout.NameBacking);
+        Assert.Equal(new Point(293, 155), HandoffLayout.Name);
+        Assert.Equal(new Rectangle(293, 163, 64, 64), HandoffLayout.Portrait);
+        Assert.Equal(new Rectangle(270, 241, 100, 48), HandoffLayout.Ready);
+        Assert.Equal(new Rectangle(388, 512, 100, 48), HandoffLayout.ReadyPressedSource);
         Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Portrait));
+        Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Ready));
     }
 
     [Fact]
@@ -693,7 +753,6 @@ public sealed partial class UiNavigationTests
             SetupPlayerCardArtLayout.PortraitDestination(3));
         Assert.Equal(new Rectangle(399, 257, 12, 18), PlayerPortraitLayout.Previous(4));
         Assert.Equal(new Rectangle(530, 257, 12, 18), PlayerPortraitLayout.Next(5));
-        Assert.Equal(new Rectangle(480, 301, 64, 8), PlayerPortraitLayout.Name(5));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.SetupTop(6));
     }
 

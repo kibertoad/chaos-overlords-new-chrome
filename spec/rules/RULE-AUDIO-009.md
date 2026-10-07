@@ -4,7 +4,7 @@ title: The sound of an attack in Detailed Combat
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-013, FND-AUDIO-002, FND-AUDIO-006, FND-EXE-004]
+evidence: [FND-AUDIO-013, FND-AUDIO-002, FND-AUDIO-006, FND-EXE-004, EXP-COMBAT-001, EXP-COMBAT-002, EXP-COMBAT-003, EXP-COMBAT-004, EXP-COMBAT-005, EXP-COMBAT-009]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005, FMT-AUDIO-001]
@@ -76,3 +76,7 @@ None known.
 
 - Whether an armed attack whose item's sound number is out of the range of the
   files can occur.
+- Every run set the sound levels to 0, so the runs record the sound loaded for
+  each clip and no playback. No recorded run has a police pass that finds no
+  gang. That rests on FND-AUDIO-013. Until a run reaches them, the entry stays
+  `supported`.

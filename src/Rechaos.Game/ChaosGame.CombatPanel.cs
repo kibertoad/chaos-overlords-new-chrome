@@ -19,7 +19,7 @@ public sealed partial class ChaosGame
         // Police fought where the crackdown is, which a gang that moved on afterwards has left.
         var sectorId = gameEvent?.PoliceAttack?.SectorId
             ?? attacker?.SectorId ?? defender?.SectorId ?? 0;
-        DrawCombatSector(batch, font, state, sectorId);
+        DrawCombatSector(batch, pixel, font, sectorId);
 
         var attackerOnRight = clip.Reversed;
         if (clip.Police)
@@ -49,12 +49,10 @@ public sealed partial class ChaosGame
         batch.Draw(_uiSprites, CombatPanelLayout.Exit, CombatPanelLayout.ExitPressedSource, Color.White);
     }
 
-    private void DrawCombatSector(SpriteBatch batch, PixelFont font, MatchState state, int sectorId)
+    // SCR-COMBAT-002, FND-COMBAT-017: the map cell without the owner's colour, framed in black.
+    private void DrawCombatSector(SpriteBatch batch, Texture2D pixel, PixelFont font, int sectorId)
     {
-        var sector = state.Sectors[sectorId];
-        var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
-        if (layer is not null)
-            batch.Draw(layer, CombatPanelLayout.Sector, CityMapLayout.Source(sectorId), Color.White);
+        DrawUnmarkedSectorCell(batch, pixel, sectorId, CombatPanelLayout.Sector);
         font.Draw(batch, SectorCode(sectorId),
             CombatPanelLayout.SectorCodeText.ToVector2(), Color.Lime, 1);
     }
@@ -140,9 +138,9 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// The lower track of SCR-COMBAT-002, <c>force_shown</c>: the Force before the clip until its
-    /// hits land, the part lost in white on ticks 13 and 15, and the new Force after
-    /// (FND-COMBAT-010).
+    /// The lower track of SCR-COMBAT-002, <c>force_shown</c>: the Force before the clip until tick
+    /// 16 paints the new Force, with the part lost in white on ticks 13 and 15 (FND-COMBAT-010,
+    /// FND-COMBAT-016).
     /// </summary>
     private void DrawShownCombatForce(
         SpriteBatch batch,
@@ -154,12 +152,7 @@ public sealed partial class ChaosGame
         var width = CombatPanelLayout.TrackFill(force);
         var previousWidth = Math.Max(width,
             CombatPanelLayout.TrackFill(Math.Min(force + damage, ManualRules.MaximumForce)));
-        if (previousWidth > width && _combatAnimationPlayer.ShowsPreDamageForce)
-        {
-            DrawForceTrack(batch, pixel, bar, previousWidth);
-            return;
-        }
-        DrawForceTrack(batch, pixel, bar, width);
+        DrawForceTrack(batch, pixel, bar, _combatAnimationPlayer.ShowsPreDamageForce ? previousWidth : width);
         if (previousWidth > width && _combatAnimationPlayer.ShowsDamageFlash)
             batch.Draw(pixel, new Rectangle(bar.X + width, bar.Y, previousWidth - width, bar.Height), Color.White);
     }

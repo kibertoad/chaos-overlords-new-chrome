@@ -7,6 +7,12 @@ internal static class OriginalAddresses
     public const uint GangRecords = 0x00498DA8;
     public const int PlayerGangStride = 0xA20;
     public const int GangRecordSize = 0x20;
+    public const int GangForceOffset = 3;
+
+    // FMT-STATE-002: 64 sector records of 0x24 bytes, base_tolerance at +2.
+    public const uint SectorRecords = 0x004A08E8;
+    public const int SectorRecordSize = 0x24;
+    public const int SectorBaseToleranceOffset = 2;
 
     public const string ExecutableSha256 = "a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89";
 
@@ -27,9 +33,10 @@ internal static class OriginalAddresses
     // FND-PLATFORM-009: the depth returned by display setup, used to choose the image set.
     public const uint DisplayDepth = 0x0048787C;
 
-    // FND-PLATFORM-014: the SetBkColor call of the keyed mask compositor that passes the 16-bit
-    // key RGB(255,252,255), which a 32-bit surface never holds.
-    public const uint KeyColourCall = 0x00427C84;
+    // FND-PLATFORM-015: the immediate operand of the instruction at 0x00427A23, which stores the
+    // 16-bit key RGB(255,252,255) for the keyed mask compositor. A 32-bit surface never holds
+    // that colour (FND-PLATFORM-014).
+    public const uint SixteenBitKeyImmediate = 0x00427A26;
     public const int SixteenBitWhiteKey = 0x00FFFCFF;
     public const int ThirtyTwoBitWhite = 0x00FFFFFF;
 
@@ -86,12 +93,55 @@ internal static class OriginalAddresses
     public const uint PlanningTimeCompare = 0x0041BDFD;
     public const uint PlanningTimeExpired = 0x0041BE09;
     public const uint PlaySound = 0x00464290;
+    // RULE-UI-007, FND-UI-034: the cursor helper fn_00465BC8(shape, force).
+    public const uint CursorHelper = 0x00465BC8;
+    // RULE-AUDIO-006, FND-AUDIO-006: the play helper fn_0045851A(slot, priority).
+    public const uint PlayHelper = 0x0045851A;
+    // RULE-TIMER-004, FND-TIMER-002: the timer callback and the presentation wait.
+    public const uint TimerCallback = 0x004327C0;
+    public const uint PresentationWait = 0x00464CD9;
+    // RULE-UI-003, FND-UI-011, FND-UI-056, EXP-UI-025: the panel-open helper, the copy in its
+    // slide loop and its last copy, and the startup benchmark count it divides.
+    public const uint PanelOpenHelper = 0x0041953E;
+    public const uint SlideCopy = 0x0041965D;
+    public const uint SlideFinalCopy = 0x004196DC;
+    public const uint BlitBenchmarkCount = 0x004981F8;
+    // RULE-VIDEO-001, FND-VIDEO-002, EXP-VIDEO-001: the frame helper's call of SmackDoFrame, the
+    // close helper fn_0040DD7B, movie slot 0's frame counter and Smack handle, and the movie name
+    // the intro copies.
+    public const uint IntroFrameCall = 0x0040DEF0;
+    public const uint IntroMovieClose = 0x0040DD7B;
+    public const uint IntroFrameCounter = 0x004905CC;
+    public const uint IntroSmackHandle = 0x004905D0;
+    public const uint IntroMovieName = 0x00498762;
+
+    // RULE-COMBAT-004, FND-COMBAT-011: the Detailed Combat presentation fn_0042E040 (to 0x0042EE45,
+    // FND-COMBAT-010), its clip player
+    // fn_00430C23 (to 0x00431C53, FND-EXE-004), the INT16 element numbers of the focal gang and the
+    // other gang of the clip, and the right ends of the focal and other bars it sets before each
+    // clip. FND-AUDIO-006, FND-AUDIO-013: the sound loader fn_0045867C(slot, number).
+    public const uint DetailedCombat = 0x0042E040;
+    public const uint DetailedCombatEnd = 0x0042EE45;
+    public const uint CombatClip = 0x00430C23;
+    public const uint CombatClipEnd = 0x00431C53;
+    // FND-COMBAT-016: the clip player's tick, the local at ebp - CombatClipTick, which the clip sets
+    // to 0 at CombatClipTickSet; the screen shows the passes up to tick local - 1.
+    public const uint CombatClipTickSet = 0x00430C2F;
+    public const uint CombatClipTick = 0x20;
+    public const uint CombatFocal = 0x004945A0;
+    public const uint CombatOther = 0x00494584;
+    public const uint CombatFocalBarRight = 0x0049476E;
+    public const uint CombatOtherBarRight = 0x004947FE;
+    public const uint SoundLoader = 0x0045867C;
 
     // elapsed_turns: 0 through the first turn, up by one after each resolution.
     public const uint ElapsedTurns = 0x0049CA68;
 
     // FND-AWARDS-001: the endgame's row painter, which reads the awards the builder has given.
     public const uint AwardsRows = 0x0042CE61;
+
+    // FND-OBJECTIVE-002: the elimination card of a local human, which blocks until its Done.
+    public const uint EliminationCard = 0x0042C3F5;
 
     // FND-AWARDS-005: the renderer draws each listed player's name with fn_00413FD5, whose third
     // argument is the name at 0x004A2589 + 12 * player: the splash's at 0x0042D1A4, the ranked rows'
@@ -223,6 +273,13 @@ internal static class OriginalAddresses
     public const uint EventsLampDrawn = 0x00487818;
     public const uint ComlinkLampDrawn = 0x00487820;
 
+    // FND-UI-055: the instruction after the title loop's first load of PX00130.
+    public const uint TitleArtLoaded = 0x004615D0;
+
+    // FND-UI-007, FND-UI-055: About's command, and the instruction after its load of PX00100.
+    public const int AboutCommand = 0x8003;
+    public const uint CreditsArtLoaded = 0x00464DFB;
+
     // FND-UI-051: a panel's slide-in sets 0x004854C8 at 0x004196E4, and while it is set the pump
     // leaves the selection frame as it was.
     public const uint SelectionFrameHeld = 0x004854C8;
@@ -247,6 +304,8 @@ internal static class OriginalAddresses
     // FND-SETUP-016: the handoff card's presenter, which takes the next player's slot and returns
     // once Ready, (270, 241, 100, 48) on the screen, is released inside.
     public const uint HandoffCard = 0x004396C0;
+    // FND-RNG-006: the call of roll that draws a hire offer at each player's planning entry.
+    public const uint HireOfferDraw = 0x0047172A;
     public const int ReadyX = 270 + 50;
     public const int ReadyY = 241 + 24;
 
@@ -263,7 +322,26 @@ internal static class OriginalAddresses
     public const uint ComlinkPending = 0x0048781C;
     public const uint ComlinkDraft = 0x00498120;
     public const uint ComlinkSelected = 0x00498114;
+    // FND-COMLINK-010: set while the Send panel's caret cell is drawn plain.
+    public const uint ComlinkCaretPlain = 0x00498110;
     public const uint ActivePlayer = 0x004ABC84;
+    // FND-STATE-004: player_active, one byte per player slot.
+    public const uint PlayerActive = 0x004ABBE0;
+
+    // RULE-UI-015, FND-UI-058: match_saved, set by a save or a load and cleared by an order or a
+    // resolved turn; the byte that marks no match in play (FND-STATE-010); quit_requested; and the
+    // modal dialog opener fn_00465CEC(id, style) (FND-UI-022).
+    public const uint MatchSaved = 0x00498350;
+    public const uint NoMatchInPlay = 0x004ABC9C;
+    public const uint QuitRequested = 0x00487828;
+    public const uint DialogOpen = 0x00465CEC;
+
+    // RULE-UI-015, FND-UI-058: the save fn_00463CC5, which takes no arguments, and File, Exit's three
+    // stores of 1 to quit_requested, each a 7-byte mov: after a written save, for the third answer,
+    // and when the match is saved.
+    public const uint SaveGame = 0x00463CC5;
+    public static readonly uint[] ExitQuitStores = [0x00470586, 0x004705A8, 0x004705FB];
+    public const uint ExitQuitStoreLength = 7;
 
     // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler
     // fn_0045EAB1; FND-COMLINK-004: the helper fn_0045E04D(player, count) that marks and draws one
@@ -315,6 +393,19 @@ internal static class OriginalAddresses
     public const uint RosterTypes = 0x004AB638;
     public const uint RosterPortraits = 0x004A5F00;
     public const uint RosterNames = 0x004A2588;
+
+    // FND-SETUP-005, FND-UI-022: the name band of card 0, whose origin is (397, 94), opens dialog
+    // 139, whose edit control is item 1007.
+    public const int NameBandX = 397 + 32;
+    public const int NameBandY = 94 + 62;
+    public const int NameEditControl = 1007;
+
+    // FND-UI-064: in the window procedure's WM_KEYDOWN branch, the instruction after the call of
+    // GetAsyncKeyState(VK_SHIFT), and the jump both translations take once the event is stored.
+    // FND-STATE-008: the input event record, type then the character and the key.
+    public const uint ShiftTested = 0x0045CA62;
+    public const uint KeyEventStored = 0x0045CC35;
+    public const uint InputEvent = 0x00498360;
     public const int RosterNameLength = 12;
     public const byte EmptyPortrait = 15;
 

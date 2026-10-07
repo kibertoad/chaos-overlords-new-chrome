@@ -1,4 +1,5 @@
 using Rechaos.Core;
+using Rechaos.Core.GameModel;
 using Rechaos.Game;
 
 // Answers the question a support thread always opens with, without starting a window.
@@ -19,9 +20,10 @@ GameCulture.Apply();
 
 string? assetRoot = null;
 var platformSmokeTest = args.Contains("--platform-smoke-test", StringComparer.OrdinalIgnoreCase);
-// --reference-frame <save> <bitmap> [--marker-frame <n>] [--pump-counter <n>] [--selected-sector <n>]
-// [--lamps <e>,<c>] [--reference-clicks <x:y[:2]>,...]: show the save at the planning entry it stands at, make the
-// clicks, write the drawing area and exit (ReferenceFrameRequest).
+// --reference-frame <save|title|credits|setup> <bitmap> [--marker-frame <n>] [--pump-counter <n>]
+// [--selected-sector <n>] [--lamps <e>,<c>] [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]: show the
+// save at the planning entry it stands at, or the screen named in its place, make the clicks,
+// write the drawing area and exit (ReferenceFrameRequest).
 ReferenceFrameRequest? referenceFrame;
 try
 {
@@ -70,22 +72,30 @@ try
         }
     }
 
-    using var game = new ChaosGame(
+    var game = new ChaosGame(
         assetRoot,
+        new MatchDeviations(
+            // DEV-AI-007: --original-computer-moves lets the computer planner's Moves in the local
+            // matches started in this session go to any sector, as the original's do.
+            ComputerMovesToNeighboursOnly: MatchDeviations.Defaults.ComputerMovesToNeighboursOnly
+                && !args.Contains("--original-computer-moves", StringComparer.OrdinalIgnoreCase),
+            // DEV-AI-008: --original-computer-hires lets the computer planner's hires in the local
+            // matches started in this session go to any sector, as the original's do.
+            ComputerHiresWhereHumansCan: MatchDeviations.Defaults.ComputerHiresWhereHumansCan
+                && !args.Contains("--original-computer-hires", StringComparer.OrdinalIgnoreCase),
+            // DEV-AI-003: the game replaces this with the Advanced AI option when a match starts.
+            AiPolicy: MatchDeviations.Defaults.AiPolicy),
         args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
         diagnostics,
-        // DEV-AI-007: local matches started in this session let the computer planner's Moves go
-        // to any sector, as the original's do.
-        originalComputerMoves: args.Contains("--original-computer-moves", StringComparer.OrdinalIgnoreCase),
-        // DEV-AI-008: local matches started in this session let the computer planner's hires go
-        // to any sector, as the original's do.
-        originalComputerHires: args.Contains("--original-computer-hires", StringComparer.OrdinalIgnoreCase),
-        referenceFrame: referenceFrame);
+        referenceFrame: referenceFrame,
+        // RULE-UI-013: a save named on the command line is opened at start.
+        startupSavePath: StartupSave.PathFrom(args));
+    using var window = new ChaosGameWindow(game);
     if (platformSmokeTest)
         return 0;
     try
     {
-        game.Run();
+        window.Run();
     }
     catch (Exception exception) when (referenceFrame is not null)
     {

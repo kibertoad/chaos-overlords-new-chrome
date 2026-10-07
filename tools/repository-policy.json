@@ -62,6 +62,8 @@
   "approvedLargeFiles": [
     "spec/experiments/EXP-ATTACK-002.json",
     "spec/experiments/EXP-ATTACK-003.json",
+    "spec/experiments/EXP-COMBAT-003.json",
+    "spec/experiments/EXP-COMBAT-006.json",
     "spec/experiments/EXP-EQUIP-003.json",
     "spec/experiments/EXP-TURN-010.json",
     "spec/experiments/EXP-TURN-017.json",
@@ -73,10 +75,15 @@
     "spec/experiments/EXP-TURN-091.json",
     "spec/experiments/EXP-TURN-093.json",
     "spec/experiments/EXP-TURN-096.json",
+    "spec/experiments/EXP-TURN-097.json",
+    "spec/experiments/EXP-TURN-098.json",
+    "spec/experiments/EXP-TURN-099.json",
     "spec/experiments/EXP-UI-001.json",
     "spec/experiments/EXP-UI-003.json",
     "spec/experiments/EXP-UI-006.json",
     "spec/experiments/EXP-UI-011.json",
-    "spec/experiments/EXP-UI-012.json"
+    "spec/experiments/EXP-UI-012.json",
+    "spec/experiments/EXP-UI-018.json",
+    "spec/experiments/EXP-UI-046.json"
   ]
 }

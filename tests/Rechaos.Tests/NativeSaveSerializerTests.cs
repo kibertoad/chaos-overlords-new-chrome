@@ -598,7 +598,7 @@ public sealed partial class NativeSaveSerializerTests
         while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
     }
 
-    private static MatchState CreateMatch(
+    internal static MatchState CreateMatch(
         string firstPlayerName = "ONE",
         bool secondPlayerHuman = false)
     {
@@ -611,7 +611,8 @@ public sealed partial class NativeSaveSerializerTests
                 PortraitId: 7)
         ];
         var setup = new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, AiDifficulty.CrimeLord);
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups,
+            MatchDeviations.Original, AiDifficulty.CrimeLord);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [

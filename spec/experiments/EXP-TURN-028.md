@@ -41,11 +41,11 @@ The run made 10081 calls of `roll`, and the human was still in play after the
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state. In the rebuild's replay the hire gate is
-tested 125 times: 72 pass, 45 fail on the gang limit, and 8 fail in the
-closing turns, where 26 / 8 = 3 turns or fewer remain.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same generator position and state. In
+the rebuild's replay the hire gate is tested 125 times: 72 pass, 45 fail on the
+gang limit, and 8 fail in the closing turns, where 26 / 8 = 3 turns or fewer
+remain.
 
 ## Conclusion
 

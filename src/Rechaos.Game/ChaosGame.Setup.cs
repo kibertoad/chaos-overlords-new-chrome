@@ -12,13 +12,12 @@ public sealed partial class ChaosGame
 {
     private AiDifficulty _selectedAiMentality = OriginalOptionsPolicy.MentalityByDefault;
     private AiPolicyMode _defaultAiPolicy = OriginalOptionsPolicy.AiPolicyByDefault;
-    // DEV-AI-007: set by --original-computer-moves, for the local matches this session starts.
-    private readonly bool _originalComputerMoves;
-    // DEV-AI-008: set by --original-computer-hires, for the local matches this session starts.
-    private readonly bool _originalComputerHires;
+    // DEV-AI-007 and DEV-AI-008, for the local matches this session starts. A new match takes
+    // DEV-AI-003 from _defaultAiPolicy, the Advanced AI option, in place of this AiPolicy.
+    private readonly MatchDeviations _localDeviations;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
-    private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
+    internal static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
     private static readonly Rectangle TitleOptions = new(154, 376, 80, 34);
     private static readonly Rectangle TitleHelp = new(238, 376, 80, 34);
     private static readonly Rectangle TitleIntro = new(322, 376, 80, 34);
@@ -396,7 +395,9 @@ public sealed partial class ChaosGame
         foreach (var key in keyboard.GetPressedKeys())
         {
             if (_previousKeyboard.IsKeyDown(key)) continue;
-            if (OriginalTextInput.TryCharacter(key, shift, out var character))
+            // FND-UI-064: the name is typed into an edit control, which translates the key as
+            // Windows does instead of the window procedure's shift switch.
+            if (OriginalTextInput.TryNameCharacter(key, shift, out var character))
                 _setupNameEditor.TryAppend(character);
         }
     }
@@ -521,10 +522,8 @@ public sealed partial class ChaosGame
         KeepRunRandomState();
         var setup = new MatchSetup(
             _selectedScenario, _selectedDuration, unchecked((int)_runRandomState), players,
-            _selectedAiMentality, allowSparsePlayerIds: true,
-            aiPolicy: _defaultAiPolicy,
-            computerMovesToNeighboursOnly: !_originalComputerMoves,
-            computerHiresWhereHumansCan: !_originalComputerHires);
+            _localDeviations with { AiPolicy = _defaultAiPolicy }, _selectedAiMentality,
+            allowSparsePlayerIds: true);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
         {
             ["scenario"] = _selectedScenario.ToString(),
@@ -540,6 +539,14 @@ public sealed partial class ChaosGame
         var created = OriginalMatchFactory.Create(_definitions, setup);
         EnterNewMatch(created, advanceToPlanning: !_debugPhaseStepping);
     }
+
+    /// <summary>
+    /// Puts <paramref name="match"/>, which stands at a local human's planning entry, on screen the
+    /// way a hot-seat match enters that player's planning (RULE-SETUP-008): the Ready card when two
+    /// humans remain, then the completed turn's Combat Results and Last Turn Events, then the city.
+    /// For a test that reaches the entry another way, such as a replay of a run of the original.
+    /// </summary>
+    internal void EnterPlanningEntry(MatchState match) => EnterNewMatch(match, advanceToPlanning: false);
 
     /// <summary>
     /// Puts a newly created match on screen at its first planning entry. A match that already
@@ -638,6 +645,23 @@ public sealed partial class ChaosGame
         else DrawSelectionLight(batch, pixel, lit);
     }
 
+    /// <summary>
+    /// FND-SETUP-013: the scenario's title and description over a black box at the top of the
+    /// left panel.
+    /// </summary>
+    private void DrawSetupScenarioText(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        batch.Draw(pixel, SetupScenarioTextLayout.Box, Color.Black);
+        var title = SetupScenarioTextLayout.Title;
+        font.Draw(batch, ExecutableStrings.ScenarioTitle(_selectedScenario), new Vector2(title.X, title.Y), Color.Lime, 1);
+        var lines = SetupScenarioTextLayout.DescriptionLines(ExecutableStrings.ScenarioDescription(_selectedScenario));
+        for (var line = 0; line < lines.Count; line++)
+        {
+            var at = SetupScenarioTextLayout.Line(line);
+            font.Draw(batch, lines[line], new Vector2(at.X, at.Y), Color.Lime, 1);
+        }
+    }
+
     private void DrawSetup(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         if (_setupBackground is not null)
@@ -650,6 +674,7 @@ public sealed partial class ChaosGame
             && SetupButtonLayout.HitTest(buttonHover) == pressed)
             batch.Draw(_setupControls, SetupButtonLayout.Destination(pressed),
                 SetupButtonLayout.PressedSource(pressed), Color.White);
+        DrawSetupScenarioText(batch, pixel, font);
         DrawSetupLight(batch, pixel, OriginalSelectionLightLayout.Scenario(
             SetupScenarioButtons.ButtonForScenario(_selectedScenario)));
         if (ScenarioCatalog.Get(_selectedScenario).IsTimed)
@@ -682,6 +707,8 @@ public sealed partial class ChaosGame
             : _localSetupRoster.HumanSlots;
         foreach (var index in shownHumans)
         {
+            // FND-SETUP-014: the bar in the slot's colour at the card's left edge.
+            batch.Draw(pixel, SetupPlayerCardArtLayout.ColourBar(index), SetupPlayerCardArtLayout.Colours[index]);
             var portrait = SetupPlayerCardArtLayout.PortraitDestination(index);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, portrait,
@@ -700,11 +727,21 @@ public sealed partial class ChaosGame
                         PlayerPortraitLayout.Next(index), left: false, Color.Lime);
                 }
             }
-            var label = _configuringOnlineLobby ? onlinePlayers[index].DisplayName : _editingPlayerName == index
-                ? _setupNameEditor.Text + ((int)(_inputTime.TotalMilliseconds / 350) % 2 == 0 ? "_" : "")
+            // An online seat shows the ten-character projection its overlord plays under, which
+            // fits the card as a local name does; the lobby's display name can run to 32 characters.
+            var text = _configuringOnlineLobby ? OriginalPlayerName.Project(onlinePlayers[index].DisplayName)
+                : _editingPlayerName == index
+                ? _setupNameEditor.Text
                 : _playerNames[index];
-            var name = PlayerPortraitLayout.Name(index);
-            font.Draw(batch, label, new Vector2(name.X, name.Y), PlayerColors[index], 1);
+            var label = _editingPlayerName == index && !_configuringOnlineLobby
+                && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0
+                ? text + "_"
+                : text;
+            // FND-SETUP-014: the name in the screen's green, centred on the card. The blinking
+            // cursor of the rebuild's name editor is left out of the centring, so the name holds
+            // still while it blinks.
+            var name = SetupPlayerCardArtLayout.NameStart(index, text.Length);
+            font.Draw(batch, label, new Vector2(name.X, name.Y), Color.Lime, 1);
         }
         if (_setupPlayerDragStarted && _draggedSetupPlayerSlot is { } dragged
             && _uiSprites is not null)

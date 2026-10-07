@@ -62,6 +62,11 @@ public sealed partial class ChaosGame
         return Math.Clamp(currentCursor, 0, inbox.Count - 1);
     }
 
+    // FND-COMLINK-007, FND-UI-019: once an eligible card is pressed the Send face is drawn
+    // enabled while a recipient is selected and unavailable while none is; until then the panel's
+    // own face shows.
+    private CommandPanelFaceState _comlinkSendFace;
+
     private void OpenComlinkSend(ClientScreen returnScreen)
     {
         if (_state is null || PlanningViewer is not { } sender) return;
@@ -74,6 +79,7 @@ public sealed partial class ChaosGame
         }
         _managementReturnScreen = returnScreen;
         Array.Fill(_comlinkRecipients, false);
+        _comlinkSendFace = CommandPanelFaceState.NotDrawn;
         _comlinkEditor.Clear();
         _comlinkCaretCadence.Reset(_eventPump.Time);
         _comlinkStatus = string.Empty;
@@ -157,11 +163,16 @@ public sealed partial class ChaosGame
         {
             if (_previousKeyboard.IsKeyDown(key)) continue;
             if (OriginalTextInput.TryCharacter(key, shift, out var character))
-            {
-                _comlinkEditor.TryAppend(character);
-                _comlinkStatus = string.Empty;
-            }
+                TypeComlinkCharacter(character);
         }
+    }
+
+    // RULE-COMLINK-006: a character typed in the Send panel, from the keyboard or a reference
+    // frame's typed text.
+    private void TypeComlinkCharacter(char character)
+    {
+        _comlinkEditor.TryAppend(character);
+        _comlinkStatus = string.Empty;
     }
 
     private void HandleComlinkViewClick(Point point)
@@ -180,6 +191,9 @@ public sealed partial class ChaosGame
             if (EligibleComlinkRecipient(recipient))
             {
                 _comlinkRecipients[recipient] = !_comlinkRecipients[recipient];
+                _comlinkSendFace = _comlinkRecipients.Contains(true)
+                    ? CommandPanelFaceState.Enabled
+                    : CommandPanelFaceState.Disabled;
                 _comlinkStatus = string.Empty;
             }
             // SCR-COMLINK-002, EXP-COMLINK-001: the card of a player who cannot take a message,
@@ -280,30 +294,41 @@ public sealed partial class ChaosGame
         DrawPanelArtwork(batch, pixel, _comlinkViewBackground, ComlinkViewLayout.Panel);
         var playerId = ViewingPlayer(state);
         var messages = state.ComlinkFor(playerId).Messages;
-        batch.Draw(pixel, ComlinkViewLayout.Page, Color.Black);
-        batch.Draw(pixel, ComlinkViewLayout.Date, Color.Black);
-        batch.Draw(pixel, ComlinkViewLayout.SenderPortrait, Color.Black);
-        batch.Draw(pixel, ComlinkViewLayout.SenderName, Color.Black);
-        batch.Draw(pixel, ComlinkViewLayout.Message, Color.Black);
         if (messages.Count == 0)
         {
-            font.Draw(batch, "NO INCOMING MESSAGES", ComlinkViewLayout.Message.Location.ToVector2(), Color.Lime, 1);
+            font.Draw(batch, "NO INCOMING MESSAGES", ComlinkViewLayout.MessageOrigin.ToVector2(), Color.Lime, 1);
             return;
         }
 
         _comlinkCursor = Math.Clamp(_comlinkCursor, 0, messages.Count - 1);
         var message = messages[_comlinkCursor];
         var sender = state.FindPlayer(message.Sender);
-        font.Draw(batch, $"{_comlinkCursor + 1:00} OF {messages.Count:00}",
-            ComlinkViewLayout.Page.Location.ToVector2(), Color.Lime, 1);
-        font.Draw(batch, MatchDate(message.Turn), ComlinkViewLayout.Date.Location.ToVector2(), Color.Lime, 1);
-        font.Draw(batch, sender?.Setup.Name ?? $"PLAYER {message.Sender.Value + 1}",
-            ComlinkViewLayout.SenderName.Location.ToVector2(), Color.White, 1);
+        // SCR-COMLINK-001, FND-COMLINK-007: the number and count over the panel art's frame and
+        // OF, the date over its point, the name's black backing, the sender's colour strip and
+        // portrait stretched to 64 by 64, and the four rows of the message.
+        DrawDigitCells(batch, pixel, font, $"{Math.Min(_comlinkCursor + 1, 99):00}", ComlinkViewLayout.PageNumber);
+        DrawDigitCells(batch, pixel, font, $"{Math.Min(messages.Count, 99):00}", ComlinkViewLayout.PageCount);
+        if (_uiSprites is not null)
+        {
+            batch.Draw(_uiSprites, ComlinkViewLayout.Previous,
+                LastTurnEventsLayout.PreviousSource(firstPage: _comlinkCursor == 0), Color.White);
+            batch.Draw(_uiSprites, ComlinkViewLayout.Next,
+                LastTurnEventsLayout.NextSource(lastPage: _comlinkCursor == messages.Count - 1), Color.White);
+        }
+        var (year, week) = MatchCalendar.Of(Math.Max(0, message.Turn - 1));
+        DrawDigitCells(batch, pixel, font, $"{year:0000}", ComlinkViewLayout.Year);
+        DrawDigitCells(batch, pixel, font, $"{week:00}", ComlinkViewLayout.Week);
+        batch.Draw(pixel, ComlinkViewLayout.SenderName, Color.Black);
+        var name = sender?.Setup.Name ?? $"PLAYER {message.Sender.Value + 1}";
+        font.Copy(batch, name.Length <= ComlinkViewLayout.SenderNameColumns ? name : name[..ComlinkViewLayout.SenderNameColumns],
+            ComlinkViewLayout.SenderName.Location, OriginalFontLayout.PlainStrip);
+        if (message.Sender.Value is >= 0 and < MatchLimits.PlayerCount)
+            batch.Draw(pixel, ComlinkViewLayout.SenderColour, SetupPlayerCardArtLayout.Colours[message.Sender.Value]);
         if (sender is not null && _uiSprites is not null)
             batch.Draw(_uiSprites, ComlinkViewLayout.SenderPortrait,
                 OriginalSpriteLayout.OverlordPortrait(sender.Setup.PortraitId), Color.White);
         DrawComlinkLines(batch, font, ComlinkTextEditor.DisplayLines(message.Text),
-            ComlinkViewLayout.Message.Location, Color.Lime);
+            ComlinkViewLayout.MessageOrigin, Color.Lime, ComlinkSendLayout.TextRowStride);
         if (_hoverPoint is { } hover && ComlinkViewLayout.Page.Contains(hover))
             DrawHoverTooltip(batch, pixel, font, hover, ComlinkInboxTooltip);
     }
@@ -327,36 +352,46 @@ public sealed partial class ChaosGame
         DrawPanelArtwork(batch, pixel, _comlinkSendBackground, ComlinkSendLayout.Panel);
         for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
+            // FND-COMLINK-007: a one-pixel frame, green while the slot is selected and black
+            // otherwise, around the slot's colour bar, portrait and name; a slot that cannot be
+            // sent to has each colour component divided by 4, the portrait of the row at y 594
+            // and the name from the dim strip.
             var cell = ComlinkSendLayout.Recipient(slot);
             var player = state.Players.FirstOrDefault(value => value.Id.Value == slot);
             var eligible = EligibleComlinkRecipient(slot);
-            batch.Draw(pixel, cell, _comlinkRecipients[slot] ? Color.Lime : Color.Black);
+            batch.Draw(pixel, cell, Color.Black);
+            DrawBorder(batch, pixel, cell, _comlinkRecipients[slot] ? Color.Lime : Color.Black, 1);
             if (player is null) continue;
-            var foreground = _comlinkRecipients[slot] ? Color.Black
-                : eligible ? Color.Lime : Color.DarkGray;
-            var accent = eligible ? PlayerColors[slot] : Color.DarkGray;
-            batch.Draw(pixel, ComlinkSendLayout.RecipientAccent(slot), accent);
+            var colour = SetupPlayerCardArtLayout.Colours[slot];
+            batch.Draw(pixel, ComlinkSendLayout.RecipientAccent(slot),
+                eligible ? colour : new Color(colour.R / 4, colour.G / 4, colour.B / 4));
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, ComlinkSendLayout.RecipientPortrait(slot),
-                    OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId),
-                    eligible ? Color.White : Color.DarkGray);
+                    ComlinkSendLayout.RecipientPortraitSource(player.Setup.PortraitId, eligible), Color.White);
             var name = player.Setup.Name.Length <= 10 ? player.Setup.Name : player.Setup.Name[..10];
-            font.Draw(batch, name,
-                ComlinkSendLayout.RecipientNameOrigin(slot).ToVector2(), foreground, 1);
+            font.Copy(batch, name, ComlinkSendLayout.RecipientNameOrigin(slot),
+                eligible ? OriginalFontLayout.PlainStrip : OriginalFontLayout.DimStrip);
         }
         batch.Draw(pixel, ComlinkSendLayout.Message, Color.Black);
         DrawComlinkLines(batch, font, _comlinkEditor.DisplayLines(),
             ComlinkSendLayout.TextOrigin, Color.Lime, ComlinkSendLayout.TextRowStride);
+        if (_uiSprites is not null && CommandPanelFaces.Source(_comlinkSendFace) is { } face)
+            batch.Draw(_uiSprites, ComlinkSendLayout.OkPressed, face, Color.White);
         DrawPressedComlinkSendButton(batch);
         if (_uiSprites is not null)
             batch.Draw(_uiSprites,
                 ComlinkSendLayout.CaretDestination(_comlinkEditor.Column, _comlinkEditor.Row),
-                ComlinkSendLayout.CaretSource(_comlinkEditor.CharacterAtCursor,
-                    _comlinkCaretCadence.UsesInverseGlyph), Color.White);
+                ComlinkSendLayout.CaretSource(_comlinkEditor.CharacterAtCursor, ComlinkCaretInverse), Color.White);
         if (_comlinkStatus.Length > 0)
             font.Draw(batch, _comlinkStatus.Length <= 40 ? _comlinkStatus : _comlinkStatus[..40],
                 new Vector2(SharedPanelLayout.X(92), SharedPanelLayout.Y(181)), Color.OrangeRed, 1);
     }
+
+    // FND-COMLINK-010: the reference frame draws the caret in the phase the original's capture
+    // recorded, 0 to 2 timer events since a flip to plain and 3 to 5 since a flip to inverse.
+    private bool ComlinkCaretInverse => _referenceFrame?.CaretPhase is { } phase
+        ? phase >= ComlinkCaretCadence.EventsPerGlyphRow
+        : _comlinkCaretCadence.UsesInverseGlyph;
 
     private void DrawPressedComlinkSendButton(SpriteBatch batch)
     {

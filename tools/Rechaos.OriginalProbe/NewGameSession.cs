@@ -7,49 +7,69 @@ internal sealed record RollRecord(string Call, int Bound, int Result);
 internal sealed record HumanSlot(int Slot, string? Modifier);
 
 /// <summary>
-/// An order the probe writes into a gang record of the first human before the Done press of
-/// <paramref name="Turn"/>, counted from 1: the FMT-STATE-001 bytes <c>action</c>, <c>target</c>
-/// and <c>target_2</c>, and for a recurring order <c>repeat_action</c> and <c>repeat_target</c>, as
-/// RULE-TURN-005 has the order screens write them.
+/// An order the probe writes into a gang record of human <paramref name="Player"/> before the Done
+/// press of <paramref name="Turn"/>, counted from 1: the FMT-STATE-001 bytes <c>action</c>,
+/// <c>target</c> and <c>target_2</c>, and for a recurring order <c>repeat_action</c> and
+/// <c>repeat_target</c>, as RULE-TURN-005 has the order screens write them. A player of -1, which
+/// only a trace written before the probe kept the player holds, is the first <c>--humans</c> slot
+/// (<see cref="NewGameSettings.WithActingPlayers"/>).
 /// </summary>
-internal sealed record ProbeOrder(int Turn, int Slot, int Action, int Target, int Target2, bool Repeat)
+internal sealed record ProbeOrder(int Turn, int Slot, int Action, int Target, int Target2, bool Repeat, int Player = -1)
 {
     public override string ToString() =>
-        $"turn {Turn}: gang slot {Slot} action {Action} target {Target} target_2 {Target2} repeat {(Repeat ? 1 : 0)}";
+        $"turn {Turn}: player {Player} gang slot {Slot} action {Action} target {Target} target_2 {Target2} repeat {(Repeat ? 1 : 0)}";
 }
 
 /// <summary>
-/// A hire the human places before a Done press: the hire offer slot 0 to 2 and the sector it is
-/// dropped on, written into <c>hire_orders</c> as the hire screen does (RULE-HIRE-003).
+/// A hire human <paramref name="Player"/> places before a Done press: the hire offer slot 0 to 2
+/// and the sector it is dropped on, written into <c>hire_orders</c> as the hire screen does
+/// (RULE-HIRE-003). A player of -1 is the first <c>--humans</c> slot, as for <see cref="ProbeOrder"/>.
 /// </summary>
-internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector)
+internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector, int Player = -1)
 {
-    public override string ToString() => $"turn {Turn}: offer slot {OfferSlot} sector {Sector}";
+    public override string ToString() => $"turn {Turn}: player {Player} offer slot {OfferSlot} sector {Sector}";
 }
 
 /// <summary>
-/// A computer player's planning state written before a Done press, for branches no local match
-/// reaches: family 99 or less writes the <c>family</c> of the player's planning record in the slot
-/// (FMT-STATE-007), and <see cref="Raider"/> sets the player's byte of <c>raider_mode</c>, which a
-/// takeover of a network seat sets (RULE-AI-027).
+/// A player's state written before a Done press, for branches no local match reaches: family 99
+/// or less writes the <c>family</c> of a computer player's planning record in the slot
+/// (FMT-STATE-007), <see cref="Raider"/> sets a computer player's byte of <c>raider_mode</c>, which
+/// a takeover of a network seat sets (RULE-AI-027), <see cref="Retired"/> clears the player's
+/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006),
+/// <see cref="Cash"/> sets the player's <c>cash</c> to <paramref name="Value"/>, so a human can pay
+/// for a hire every turn, <see cref="Force"/> sets the <c>force</c> of the player's gang in the slot
+/// (FMT-STATE-001), so a gang ordered to Heal can be at Force 10 when it acts (RULE-HEAL-001), and
+/// <see cref="Tolerance"/> sets the <c>base_tolerance</c> of sector <paramref name="Slot"/>
+/// (FMT-STATE-002), so one Bribe can wrap the signed byte (RULE-BRIBE-001).
 /// </summary>
-internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family)
+internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family, int Value = 0)
 {
     public const int Raider = -1;
+    public const int Retired = -2;
+    public const int Cash = -3;
+    public const int Force = -4;
+    public const int Tolerance = -5;
 
-    public override string ToString() => Family == Raider
-        ? $"turn {Turn}: player {Player} raider_mode 1"
-        : $"turn {Turn}: player {Player} gang slot {Slot} family {Family}";
+    public override string ToString() => Family switch
+    {
+        Raider => $"turn {Turn}: player {Player} raider_mode 1",
+        Retired => $"turn {Turn}: player {Player} player_active 0",
+        Cash => $"turn {Turn}: player {Player} cash {Value}",
+        Force => $"turn {Turn}: player {Player} gang slot {Slot} force {Value}",
+        Tolerance => $"turn {Turn}: sector {Slot} base_tolerance {Value}",
+        _ => $"turn {Turn}: player {Player} gang slot {Slot} family {Family}",
+    };
 }
 
 /// <summary>
-/// Search filter entries the probe sets for the first human before the Done press of
-/// <paramref name="Turn"/>: a byte of <c>search_filters</c> per site definition, as the Search panel
-/// writes them (RULE-SEARCH-001).
+/// Search filter entries the probe sets for human <paramref name="Player"/> before the Done press
+/// of <paramref name="Turn"/>: a byte of <c>search_filters</c> per site definition, as the Search
+/// panel writes them (RULE-SEARCH-001). A player of -1 is the first <c>--humans</c> slot, as for
+/// <see cref="ProbeOrder"/>.
 /// </summary>
-internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions)
+internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions, int Player = -1)
 {
-    public override string ToString() => $"turn {Turn}: search filter {string.Join(" ", Definitions)}";
+    public override string ToString() => $"turn {Turn}: player {Player} search filter {string.Join(" ", Definitions)}";
 }
 
 /// <summary>
@@ -118,9 +138,32 @@ internal sealed record NewGameSettings(
     IReadOnlyList<string>? Comlink = null, bool Capture = false, bool WhiteKey = false,
     IReadOnlyList<ProbeDrawValue>? DrawValues = null, bool EquipLists = false, bool AttackLists = false,
     IReadOnlyList<ProbeClick>? SearchClicks = null, IReadOnlyList<ProbeHireStep>? HireSteps = null,
-    IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false)
+    IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false,
+    bool CreditsCapture = false, bool SetupCapture = false, IReadOnlyList<ProbeOrderStep>? SetupSteps = null,
+    bool DetailedCombat = false, bool Pointer = false, bool Sounds = false, bool WatchIntro = false, bool Waits = false, bool Slides = false,
+    IReadOnlyList<ProbeSavedWrite>? SavedWrites = null, IReadOnlyList<ProbeClose>? Closes = null)
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
+
+    /// <summary>The <c>--humans</c> slots in the order given, or slot 0, the setup screen's human, when the option is left out.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public IReadOnlyList<int> HumanSlots => Humans is { Count: > 0 } humans ? humans.Select(human => human.Slot).ToArray() : [0];
+
+    /// <summary>The first of <see cref="HumanSlots"/>.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public int FirstHuman => HumanSlots[0];
+
+    /// <summary>
+    /// These settings with every order, hire and Search write naming its player: one that names
+    /// none, as in a trace written before the probe kept the player, acts for
+    /// <see cref="FirstHuman"/>, the player the probe wrote for then.
+    /// </summary>
+    public NewGameSettings WithActingPlayers() => this with
+    {
+        Orders = Orders?.Select(order => order.Player < 0 ? order with { Player = FirstHuman } : order).ToArray(),
+        Hires = Hires?.Select(hire => hire.Player < 0 ? hire with { Player = FirstHuman } : hire).ToArray(),
+        Search = Search?.Select(write => write.Player < 0 ? write with { Player = FirstHuman } : write).ToArray(),
+    };
 
     public IEnumerable<string> Describe()
     {
@@ -131,21 +174,36 @@ internal sealed record NewGameSettings(
         if (Comlink is not null) yield return "pref_slide_panels 0";
         if (WhiteKey) yield return "key_colour RGB(255,255,255)";
         foreach (var value in DrawValues ?? []) yield return value.ToString();
-        if (Humans is null) yield break;
-        foreach (var human in Humans)
+        foreach (var human in Humans ?? [])
             yield return human.Modifier is null
                 ? $"slot {human.Slot}: human"
                 : $"slot {human.Slot}: human named modifier_name_{human.Modifier}";
+        // The presses on the setup screen come before the settings are written, but they are kept
+        // with them so that runs with other presses are told apart and the fixture lists them.
+        for (var index = 0; index < (SetupSteps?.Count ?? 0); index++)
+            yield return $"setup step {index}: {DescribeSetupStep(SetupSteps![index])}";
     }
+
+    private static string DescribeSetupStep(ProbeOrderStep step) => step.Kind switch
+    {
+        "strip" => $"press ({step.X}, {step.Y})",
+        "drag" => $"drag ({step.X}, {step.Y}) to ({step.Target}, {step.Choice})",
+        "name" => $"name {step.Text}",
+        _ => $"capture for {step.Screens}",
+    };
 
     /// <summary>
     /// The orders and Done presses after the first planning phase, then the presses after the dump,
-    /// one input each: an order is named <c>order</c>, a press <c>left_click</c> and a hire step's
-    /// drag <c>drag</c>.
+    /// one input each: an order is named <c>order</c>, a press <c>left_click</c>, a hire step's
+    /// drag <c>drag</c>, a wait <c>wait</c>, a write of <c>match_saved</c> <c>saved</c> and a
+    /// close of the window <c>close</c>. Only the first <paramref name="turnsPlayed"/> turns are
+    /// listed, the turns whose writes and Done press the run made, one entry of
+    /// <see cref="ProbeTrace.RollsAtDone"/> each: a match that ends, or a human eliminated, before
+    /// <c>--end-turns</c> runs out stops the presses there.
     /// </summary>
-    public IEnumerable<(string Name, string Value)> DescribeTurns()
+    public IEnumerable<(string Name, string Value)> DescribeTurns(int turnsPlayed)
     {
-        for (var turn = 1; turn <= EndTurns; turn++)
+        for (var turn = 1; turn <= Math.Min(EndTurns, turnsPlayed); turn++)
         {
             var orders = (Orders ?? []).Where(order => order.Turn == turn).ToArray();
             var hires = (Hires ?? []).Where(hire => hire.Turn == turn).ToArray();
@@ -155,6 +213,8 @@ internal sealed record NewGameSettings(
             foreach (var write in planning) yield return ("planning", write.ToString());
             var search = (Search ?? []).Where(write => write.Turn == turn).ToArray();
             foreach (var write in search) yield return ("search", write.ToString());
+            foreach (var write in (SavedWrites ?? []).Where(write => write.Turn == turn))
+                yield return ("saved", write.ToString());
             foreach (var panel in (Finance ?? []).Where(panel => panel.Turn == turn))
                 yield return ("left_click", panel.ToString());
             if (ExpireTurns?.Contains(turn) == true)
@@ -167,10 +227,14 @@ internal sealed record NewGameSettings(
                 : $"Done (550, 306), turn {turn}");
         }
         foreach (var click in SearchClicks ?? []) yield return ("left_click", click.ToString());
+        foreach (var write in (SavedWrites ?? []).Where(write => write.Turn == EndTurns + 1))
+            yield return ("saved", $"{write} at the dump");
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
         foreach (var step in OrderSteps ?? [])
-            yield return (step.Kind == "open" ? "double_click" : "left_click", $"{step} after the dump");
+            yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", "type" or "keys" => "key", _ => "left_click" },
+                $"{step} after the dump");
+        foreach (var close in Closes ?? []) yield return ("close", $"{close} after the dump");
     }
 }
 
@@ -208,7 +272,20 @@ internal sealed record ProbeTrace(
     List<SearchClickRecord>? SearchClicks = null,
     List<HireStepRecord>? HireSteps = null,
     List<OrderStepRecord>? OrderSteps = null,
-    List<GangMarkerDraw>? GangMarkers = null);
+    List<GangMarkerDraw>? GangMarkers = null,
+    List<CombatClipRecord>? CombatClips = null,
+    List<CombatPresentationRecord>? CombatPresentations = null,
+    List<PointerCallRecord>? PointerCalls = null,
+    List<SoundCallRecord>? SoundCalls = null,
+    List<IntroMovieRecord>? IntroMovies = null,
+    List<WaitRecord>? Waits = null,
+    List<long>? Ticks = null,
+    List<SlideRecord>? Slides = null,
+    List<CloseRecord>? Closes = null,
+    List<SavedWriteRecord>? SavedWrites = null,
+    bool? EffectsEnabled = null,
+    List<KeyEventRecord>? KeyEvents = null,
+    List<NameEntryRecord>? NameEntries = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -233,6 +310,7 @@ internal sealed partial class NewGameSession(
     private List<PanelRecord>? _panelsAtDump;
     private bool _planningLoopReached;
     private bool _awardsReached;
+    private bool _eliminationCardReached;
     private EndgameDrawing? _endgame;
     private bool _endgameDrawn;
     private CityMarkers? _redraw;
@@ -256,9 +334,13 @@ internal sealed partial class NewGameSession(
         if (settings.TraceHires) _process.SetBreakpoint(OriginalAddresses.HireOrderCheck, TraceHire);
         if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
         // FND-PLATFORM-014: on a 32-bit desktop the keyed copies key nothing, so the white the
-        // key should drop is drawn. --white-key passes the white a 32-bit surface holds instead.
-        // Quiet, because the keyed copies run on every animation tick of a waiting planning phase.
-        if (settings.WhiteKey) _process.SetBreakpoint(OriginalAddresses.KeyColourCall, UseThirtyTwoBitKey, quiet: true);
+        // key should drop is drawn. --white-key makes the white a 32-bit surface holds the 16-bit
+        // key. The key is an immediate operand (FND-PLATFORM-015), so one write before the game
+        // runs changes every keyed copy, and the run never stops for it.
+        if (settings.WhiteKey)
+            _process.Patch(OriginalAddresses.SixteenBitKeyImmediate,
+                BitConverter.GetBytes(OriginalAddresses.SixteenBitWhiteKey),
+                BitConverter.GetBytes(OriginalAddresses.ThirtyTwoBitWhite));
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
         if (settings.Finance is { Count: > 0 })
@@ -274,6 +356,9 @@ internal sealed partial class NewGameSession(
         if (settings.GangMarkers) ArmGangMarkers();
         if (settings.ExpireTurns is { Count: > 0 }) ArmTimer();
         if (settings.Comlink is not null) ArmComlink();
+        if (settings.DetailedCombat) ArmDetailedCombat();
+        if (settings.Pointer) ArmPointer();
+        if (settings.Sounds) ArmSounds();
         if (settings.DrawValues is { Count: > 0 } drawValues)
         {
             var call = 0;
@@ -286,14 +371,47 @@ internal sealed partial class NewGameSession(
             });
         }
 
+        if (settings.WatchIntro) ArmIntro();
         var window = IntPtr.Zero;
         if (!_process.RunUntil(() => (window = _process.FindMainWindow()) != IntPtr.Zero, timeout))
             return Finish(false, "The game window never appeared.");
+        // --watch-intro: both movies play to their end before the button is held.
+        if (settings.WatchIntro && !_process.RunUntil(IntroPlayedOut, timeout))
+            return Finish(false, "The intro movies did not play out.");
 
         // RULE-VIDEO-001: a movie ends when left_button_down is set at one of its 10 Hz ticks, so a
         // posted press and release is missed. The probe holds the button in memory until the setup
         // screen opens; the title then takes File, New Game.
+        // --title-capture, --credits-capture and --setup-capture: New Game waits until the title has
+        // drawn its art (FND-UI-055) and the drawing area has been copied, and for the credits until
+        // About has shown them (FND-UI-007) and they have been copied and closed.
         var nextPoke = DateTime.MinValue;
+        if (settings.TitleCapture || settings.CreditsCapture || settings.SetupCapture)
+        {
+            var titleShown = false;
+            _process.SetBreakpoint(OriginalAddresses.TitleArtLoaded, _ => titleShown = true, oneShot: true);
+            var titleReached = _process.RunUntil(() =>
+            {
+                if (titleShown) return true;
+                if (DateTime.UtcNow < nextPoke) return false;
+                nextPoke = DateTime.UtcNow.AddSeconds(0.5);
+                _process.Write(OriginalAddresses.LeftButtonDown, [1]);
+                return false;
+            }, timeout);
+            _process.Write(OriginalAddresses.LeftButtonDown, [0]);
+            if (!titleReached) return Finish(false, "The title art was never loaded.");
+            _process.Pump(TimeSpan.FromSeconds(2));
+            if (settings.TitleCapture) CaptureBeforeMatch(window, "title");
+            if (settings.CreditsCapture) CaptureCredits(window);
+            if (settings.SetupCapture)
+            {
+                // FND-OPTIONS-001: the objective, Mentality and planning limit take their
+                // initialized values, as when the registry key holds none, so setup opens with them.
+                _process.Write(OriginalAddresses.PreferredScenario, BitConverter.GetBytes(0));
+                _process.Write(OriginalAddresses.Mentality, BitConverter.GetBytes(1));
+                _process.Write(OriginalAddresses.PlanningLimitChoice, BitConverter.GetBytes(0));
+            }
+        }
         var reached = _process.RunUntil(() =>
         {
             if (_setupReached) return true;
@@ -307,6 +425,11 @@ internal sealed partial class NewGameSession(
         if (!reached) return Finish(false, "The setup screen never opened.");
 
         _process.Pump(TimeSpan.FromSeconds(2));
+        // --setup-capture: the setup screen as New Game opened it, before the settings are written.
+        if (settings.SetupCapture) CaptureBeforeMatch(window, "setup");
+        var choicesBeforeSteps = SetupChoicesLeftToPresses();
+        RecordSetupSteps(window, settings.SetupSteps);
+        if (SetupStepsNote(choicesBeforeSteps) is { } setupStepsNote) _notes.Add(setupStepsNote);
         var rollsBeforeBegin = _rolls.Count;
         ApplySettings();
         Click(window, OriginalAddresses.BeginX, OriginalAddresses.BeginY);
@@ -317,6 +440,8 @@ internal sealed partial class NewGameSession(
         // A match that ends reaches the endgame instead of another planning phase; the run stops
         // there, once the awards are given (RULE-AWARDS-001).
         _process.SetBreakpoint(OriginalAddresses.AwardsRows, OnAwardsRows, oneShot: true);
+        // RULE-OBJECTIVE-005: the human's elimination reaches its card instead; the run stops there.
+        _process.SetBreakpoint(OriginalAddresses.EliminationCard, _ => _eliminationCardReached = true, oneShot: true);
         var begun = DateTime.UtcNow;
         var settled = _process.RunUntil(
             () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
@@ -345,10 +470,13 @@ internal sealed partial class NewGameSession(
                 WritePlanning(write);
             foreach (var write in (settings.Search ?? []).Where(write => write.Turn == turn))
                 WriteSearch(write);
+            foreach (var write in (settings.SavedWrites ?? []).Where(write => write.Turn == turn))
+                WriteSaved(write);
             foreach (var panel in (settings.Finance ?? []).Where(panel => panel.Turn == turn))
                 if (!CaptureFinance(window, panel))
                     return Finish(false, $"The Financial panel of turn {turn} for sector {panel.Sector} was not captured.", rollsBeforeBegin);
             _rollsAtDone.Add(_rolls.Count);
+            if (settings.Sounds) SampleEffectsEnabled();
             _turn = turn;
             var waits = settings.ExpireTurns?.Contains(turn) == true;
             // A turn left to run out takes its planning limit before the resolution even starts, so
@@ -366,7 +494,7 @@ internal sealed partial class NewGameSession(
             // again after a quiet while.
             var next = _process.RunUntil(() =>
             {
-                if (_awardsReached) return true;
+                if (_awardsReached || _eliminationCardReached) return true;
                 // FND-OBJECTIVE-004: a match that ends gives each active human one last look at the
                 // city, with the turn's Combat Results open, before the awards controller runs and
                 // before elapsed_turns moves on. Close the panels and press Done there.
@@ -413,11 +541,20 @@ internal sealed partial class NewGameSession(
                 _notes.Add($"The match ended with turn {turn}; the endgame drew the awards after roll {_rolls.Count}.");
                 break;
             }
+            if (_eliminationCardReached)
+            {
+                // The card draws once and then waits for its Done.
+                _process.Pump(TimeSpan.FromSeconds(1.5));
+                _notes.Add($"The human was eliminated with turn {turn}; its card opened after roll {_rolls.Count}.");
+                break;
+            }
         }
 
         DumpWritableSections();
         _gangMarkersDumped = true;
         _panelsAtDump = [.. _panels];
+        // RULE-SETUP-008: steps after the dump can call roll, as a Ready press refills the offers.
+        _notes.Add($"rolls_at_dump {_rolls.Count}");
         if (settings.Capture && CaptureDrawingArea(window, "capture-blt") is var (marker, pump, lamps, selected))
         {
             _notes.Add($"marker_frame {marker}");
@@ -429,10 +566,16 @@ internal sealed partial class NewGameSession(
         if (settings.AttackLists && !RecordAttackLists()) return Finish(false, "The Attack lists were not built.", rollsBeforeBegin);
         if (settings.SearchClicks is { Count: > 0 } && !RecordSearchClicks(window))
             return Finish(false, "The original exited during the Search clicks.", rollsBeforeBegin);
+        foreach (var write in (settings.SavedWrites ?? []).Where(write => write.Turn == settings.EndTurns + 1))
+            WriteSaved(write);
+        if (settings.Waits) ArmWaits();
+        if (settings.Slides) ArmSlides();
         if (settings.HireSteps is { Count: > 0 } && RecordHireSteps(window) is { } stopped)
             return Finish(false, stopped, rollsBeforeBegin);
         if (settings.OrderSteps is { Count: > 0 } && RecordOrderSteps(window) is { } orderStepsStopped)
             return Finish(false, orderStepsStopped, rollsBeforeBegin);
+        if (settings.Closes is { Count: > 0 } && RecordCloses(window) is { } closesStopped)
+            return Finish(false, closesStopped, rollsBeforeBegin);
         return Finish(true, null, rollsBeforeBegin);
     }
 
@@ -490,6 +633,7 @@ internal sealed partial class NewGameSession(
     private bool PlanningWaits(DateTime since)
     {
         var quiet = DateTime.UtcNow - _process.LastBreakpointUtc;
+        if (_detailedCombatOpen) return false;
         if (_planningLoopReached) return quiet > TimeSpan.FromSeconds(0.5);
         return (settings.Humans is { Count: > 1 } || DateTime.UtcNow - since > TimeSpan.FromSeconds(30))
                && quiet > TimeSpan.FromSeconds(8);
@@ -564,21 +708,26 @@ internal sealed partial class NewGameSession(
         endgame.Kinds.Add(kind);
     }
 
-    // The player whose orders, hires, Search filter, Equip lists and Attack lists the probe writes and reads:
-    // the first --humans entry, or slot 0 when the option is left out.
-    private int FirstHuman => settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+    // The player whose Equip lists and Attack lists the probe reads: the first --humans entry, or
+    // slot 0 when the option is left out. Orders, hires and Search writes name their own player.
+    private int FirstHuman => settings.FirstHuman;
+
+    // An order, hire or Search write's player, which NewGameSettings.WithActingPlayers fills in
+    // when the entry leaves it out; -1 here would write outside the player's records.
+    private static int Acting(int player) => player >= 0
+        ? player
+        : throw new InvalidOperationException("A write names no player: build the settings with WithActingPlayers.");
 
     private void WriteSearch(ProbeSearch write)
     {
-        var human = FirstHuman;
         foreach (var definition in write.Definitions)
             _process.Write(OriginalAddresses.SearchFilters
-                + (uint)(human * OriginalAddresses.SiteDefinitionCount + definition), [1]);
+                + (uint)(Acting(write.Player) * OriginalAddresses.SiteDefinitionCount + definition), [1]);
         _notes.Add($"search after roll {_rolls.Count}: {write}");
     }
 
     // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
-    // last complete redraw.
+    // last complete redraw, whichever human it was drawn for, with that viewer.
     private void OnCityRedraw(BreakContext context)
     {
         var redraw = new CityMarkers(context.Argument(0), []);
@@ -640,9 +789,8 @@ internal sealed partial class NewGameSession(
 
     private void WriteOrder(ProbeOrder order)
     {
-        var human = FirstHuman;
         var record = OriginalAddresses.GangRecords
-            + (uint)(human * OriginalAddresses.PlayerGangStride + order.Slot * OriginalAddresses.GangRecordSize);
+            + (uint)(Acting(order.Player) * OriginalAddresses.PlayerGangStride + order.Slot * OriginalAddresses.GangRecordSize);
         _process.Write(record + 7, [
             (byte)order.Action, (byte)order.Target, (byte)order.Target2,
             (byte)(order.Repeat ? order.Action : 0), (byte)(order.Repeat ? order.Target : 0)]);
@@ -651,8 +799,7 @@ internal sealed partial class NewGameSession(
 
     private void WriteHire(ProbeHire hire)
     {
-        var human = FirstHuman;
-        _process.Write(OriginalAddresses.HireOrders + (uint)(human * 3 + hire.OfferSlot), [(byte)hire.Sector]);
+        _process.Write(OriginalAddresses.HireOrders + (uint)(Acting(hire.Player) * 3 + hire.OfferSlot), [(byte)hire.Sector]);
         _notes.Add($"hire after roll {_rolls.Count}: {hire}");
     }
 
@@ -660,18 +807,23 @@ internal sealed partial class NewGameSession(
     {
         if (write.Family == ProbePlanning.Raider)
             _process.Write(OriginalAddresses.RaiderMode + (uint)write.Player, [1]);
+        else if (write.Family == ProbePlanning.Retired)
+            _process.Write(OriginalAddresses.PlayerActive + (uint)write.Player, [0]);
+        else if (write.Family == ProbePlanning.Cash)
+            _process.Write(OriginalAddresses.Cash + (uint)(write.Player * 4), BitConverter.GetBytes(write.Value));
+        else if (write.Family == ProbePlanning.Force)
+            _process.Write(OriginalAddresses.GangRecords
+                + (uint)(write.Player * OriginalAddresses.PlayerGangStride + write.Slot * OriginalAddresses.GangRecordSize
+                    + OriginalAddresses.GangForceOffset), [(byte)(sbyte)write.Value]);
+        else if (write.Family == ProbePlanning.Tolerance)
+            _process.Write(OriginalAddresses.SectorRecords
+                + (uint)(write.Slot * OriginalAddresses.SectorRecordSize + OriginalAddresses.SectorBaseToleranceOffset),
+                [(byte)(sbyte)write.Value]);
         else
             _process.Write(OriginalAddresses.PlanningRecords
                 + (uint)(write.Player * OriginalAddresses.PlanningPlayerStride
                     + write.Slot * OriginalAddresses.PlanningRecordSize), [(byte)write.Family]);
         _notes.Add($"planning after roll {_rolls.Count}: {write}");
-    }
-
-    private void UseThirtyTwoBitKey(BreakContext context)
-    {
-        // At the call instruction the device context is at [esp] and the colour at [esp + 4].
-        if (_process.ReadInt32(context.Esp + 4) == OriginalAddresses.SixteenBitWhiteKey)
-            _process.Write(context.Esp + 4, BitConverter.GetBytes(OriginalAddresses.ThirtyTwoBitWhite));
     }
 
     // --seed replaces the clock value the process start passes to srand, so a run can be repeated.
@@ -739,11 +891,13 @@ internal sealed partial class NewGameSession(
         if (call != 0xE8) _notes.Add($"The preference loader call starts with 0x{call:X2}, not a call.");
         _process.Write(OriginalAddresses.PrefFullScreen, [0]);
         _process.Write(OriginalAddresses.PrefFullScreenCopy, [0]);
-        if (!settings.Sound) Mute();
+        if (settings.Sound) Unmute();
+        else Mute();
+        _preferencesSet = true;
         if (settings.Comlink is not null) _process.Write(OriginalAddresses.PrefSlidePanels, BitConverter.GetBytes(0));
         if (settings.EndTurns == 0 && settings.Comlink is null) return;
         _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(0));
-        _process.Write(OriginalAddresses.PrefDetailedCombat, BitConverter.GetBytes(0));
+        _process.Write(OriginalAddresses.PrefDetailedCombat, BitConverter.GetBytes(settings.DetailedCombat ? 1 : 0));
     }
 
     // Without --sound the run is silent, as if both volumes of the Options dialog were set to 0
@@ -809,126 +963,6 @@ internal sealed partial class NewGameSession(
         }
     }
 
-    // RULE-GFX-002: the 640-by-460 drawing area starts at the client area's top-left corner. The
-    // capture is written twice from the window's device context. PrintWindow is unsuitable here:
-    // it can repaint over animation drawn directly to the window rather than its backing surface.
-    // The copies are <file>.bmp and <file>-repeat.bmp; the result is the marker frame and the
-    // pump's counter they show, with the control lights' bytes and the selected sector, null when
-    // no two agreeing copies were taken.
-    private (int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector)? CaptureDrawingArea(
-        IntPtr window, string file)
-    {
-        const int width = 640, height = 460;
-        // A smaller client area leaves part of the copy outside the window, and that part is not
-        // the original's drawing.
-        if (!Native.GetClientRect(window, out var client)
-            || client.Right - client.Left < width || client.Bottom - client.Top < height)
-        {
-            _notes.Add($"Capture rejected: the client area is {client.Right - client.Left} by "
-                + $"{client.Bottom - client.Top}, smaller than the {width}-by-{height} drawing area.");
-            return null;
-        }
-        _notes.Add($"Client area {client.Right - client.Left} by {client.Bottom - client.Top}.");
-        // FND-UI-038: the counter increments after drawing. Require two agreeing window copies
-        // and a stable counter; a repainting capture cannot use this frame relationship. The
-        // pump's counter, which picks the selected-sector frame and the lights' blink phase
-        // (FND-UI-017, FND-EVENT-006), is kept as read: the frame on screen is the one drawn
-        // for the counter less one (FND-UI-048).
-        for (var attempt = 0; attempt < 10; attempt++)
-        {
-            var before = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
-            var pumpBefore = _process.ReadInt32(OriginalAddresses.PumpCounter);
-            var copiesAgree = CaptureDrawingArea(window, file, width, height);
-            var after = BitConverter.ToInt16(_process.Read(OriginalAddresses.MarkerCounter, 2));
-            var pumpAfter = _process.ReadInt32(OriginalAddresses.PumpCounter);
-            if (before != after || pumpBefore != pumpAfter || !copiesAgree) continue;
-            // FND-EVENT-006: whether each light is wanted and whether the pump last drew it lit.
-            int[] lamps =
-            [
-                _process.Read(OriginalAddresses.EventsPending, 1)[0],
-                _process.Read(OriginalAddresses.EventsLampDrawn, 1)[0],
-                _process.Read(OriginalAddresses.ComlinkPending, 1)[0],
-                _process.Read(OriginalAddresses.ComlinkLampDrawn, 1)[0],
-            ];
-            // FND-SAVE-003: the sector the city frames and the console's sector values show.
-            return ((before + 11) % 12, pumpBefore, lamps, _process.ReadInt32(OriginalAddresses.SelectedSector));
-        }
-        _notes.Add($"Capture {file} rejected: a counter moved or the synchronized copies disagreed.");
-        return null;
-    }
-
-    private bool CaptureDrawingArea(IntPtr window, string file, int width, int height)
-    {
-        byte[]? firstCopy = null;
-        var copiesAgree = false;
-        foreach (var name in new[] { file + ".bmp", file + "-repeat.bmp" })
-        {
-            var info = new byte[40];
-            BitConverter.GetBytes(40).CopyTo(info, 0);
-            BitConverter.GetBytes(width).CopyTo(info, 4);
-            BitConverter.GetBytes(-height).CopyTo(info, 8);
-            BitConverter.GetBytes((short)1).CopyTo(info, 12);
-            BitConverter.GetBytes((short)32).CopyTo(info, 14);
-            var screen = Native.GetDC(window);
-            var memory = IntPtr.Zero;
-            var bitmap = IntPtr.Zero;
-            var old = IntPtr.Zero;
-            try
-            {
-                if (screen == IntPtr.Zero) throw new InvalidOperationException("Cannot acquire the capture window DC.");
-                if (firstCopy is null)
-                {
-                    const int bitsPixel = 12, planes = 14;
-                    var hostDepth = Native.GetDeviceCaps(screen, bitsPixel) * Native.GetDeviceCaps(screen, planes);
-                    var gameDepth = _process.ReadInt32(OriginalAddresses.DisplayDepth);
-                    _notes.Add($"Capture depths: original records {gameDepth}; probe window DC reports {hostDepth}.");
-                    if (gameDepth != hostDepth)
-                        _notes.Add(settings.WhiteKey
-                            ? "Capture depth mismatch: --white-key passed RGB(255,255,255) for the 16-bit key (FND-PLATFORM-014)."
-                            : "Capture depth mismatch: evaluate colour-key conversion before accepting presentation evidence.");
-                }
-                memory = Native.CreateCompatibleDC(screen);
-                if (memory == IntPtr.Zero) throw new InvalidOperationException("Cannot create the capture memory DC.");
-                bitmap = Native.CreateDIBSection(screen, info, 0, out var bits, IntPtr.Zero, 0);
-                if (bitmap == IntPtr.Zero || bits == IntPtr.Zero)
-                    throw new InvalidOperationException("Cannot allocate the capture bitmap.");
-                old = Native.SelectObject(memory, bitmap);
-                if (old == IntPtr.Zero || old == new IntPtr(-1))
-                    throw new InvalidOperationException("Cannot select the capture bitmap.");
-                var ok = Native.BitBlt(memory, 0, 0, width, height, screen, 0, 0, 0x00CC0020);
-                if (!ok) throw new InvalidOperationException($"{name}: the copy failed.");
-                // CreateDIBSection requires GDI drawing to finish before its bits are read directly.
-                // https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-createdibsection
-                if (!Native.GdiFlush()) throw new InvalidOperationException($"{name}: flushing the copy failed.");
-                var pixels = new byte[width * height * 4];
-                System.Runtime.InteropServices.Marshal.Copy(bits, pixels, 0, pixels.Length);
-                if (firstCopy is null) firstCopy = pixels;
-                else copiesAgree = firstCopy.AsSpan().SequenceEqual(pixels);
-                WriteBitmap(Path.Combine(outputDirectory, name), width, height, pixels);
-            }
-            finally
-            {
-                if (old != IntPtr.Zero && old != new IntPtr(-1)) Native.SelectObject(memory, old);
-                if (bitmap != IntPtr.Zero) Native.DeleteObject(bitmap);
-                if (memory != IntPtr.Zero) Native.DeleteDC(memory);
-                if (screen != IntPtr.Zero) Native.ReleaseDC(window, screen);
-            }
-        }
-        return copiesAgree;
-    }
-
-    private static void WriteBitmap(string path, int width, int height, byte[] topDownBgra)
-    {
-        using var stream = File.Create(path);
-        using var writer = new BinaryWriter(stream);
-        writer.Write((byte)'B'); writer.Write((byte)'M');
-        writer.Write(54 + topDownBgra.Length); writer.Write(0); writer.Write(54);
-        writer.Write(40); writer.Write(width); writer.Write(-height);
-        writer.Write((short)1); writer.Write((short)32); writer.Write(0);
-        writer.Write(topDownBgra.Length); writer.Write(0); writer.Write(0); writer.Write(0); writer.Write(0);
-        writer.Write(topDownBgra);
-    }
-
     private ProbeTrace Finish(bool dumped, string? note, int rollsBeforeBegin = 0)
     {
         if (note is not null) _notes.Add(note);
@@ -939,7 +973,13 @@ internal sealed partial class NewGameSession(
             _timers.Count == 0 ? null : _timers, _comlink.Count == 0 ? null : _comlink,
             _equipLists.Count == 0 ? null : _equipLists, _attackLists.Count == 0 ? null : _attackLists,
             _searchClicks.Count == 0 ? null : _searchClicks, _hireSteps.Count == 0 ? null : _hireSteps,
-            _orderSteps.Count == 0 ? null : _orderSteps, settings.GangMarkers ? _gangMarkers : null);
+            _orderSteps.Count == 0 ? null : _orderSteps, settings.GangMarkers ? _gangMarkers : null,
+            settings.DetailedCombat ? _combatClips : null, settings.DetailedCombat ? _combatPresentations : null,
+            settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
+            settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
+            settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
+            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null,
+            _keyEvents.Count == 0 ? null : _keyEvents, _nameEntries.Count == 0 ? null : _nameEntries);
     }
 
     private static void Click(IntPtr window, int x, int y)

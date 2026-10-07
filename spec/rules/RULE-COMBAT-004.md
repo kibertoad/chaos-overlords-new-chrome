@@ -4,7 +4,7 @@ title: Detailed Combat plays the viewer's fights sector by sector, one clip per 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-004, FND-COMBAT-005, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-EXE-004, FND-UI-001]
+evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-004, FND-COMBAT-005, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-EXE-004, FND-UI-001, EXP-COMBAT-001, EXP-COMBAT-002, EXP-COMBAT-003, EXP-COMBAT-005, EXP-COMBAT-006, EXP-COMBAT-007, EXP-COMBAT-008, EXP-COMBAT-009, FND-AI-010, FND-PLATFORM-003, EXP-UI-029, EXP-UI-046, EXP-UI-047, EXP-UI-048, EXP-UI-049, EXP-UI-054]
 conflicting: []
 split_with: []
 related: [SCR-COMBAT-002, RULE-COMBAT-002, RULE-AUDIO-005, FMT-STATE-001, FMT-STATE-003, FMT-STATE-008]
@@ -26,6 +26,12 @@ viewer's planning, `fn_0046FD80` calls it with `flag` 1 when the Detailed
 Combat option byte `0x0048785C` is nonzero, and calls the Combat Results
 handler (SCR-COMBAT-001) otherwise; the main console's combat control calls
 one or the other with `flag` 0 [FND-COMBAT-010, FND-AUDIO-002].
+
+With `flag` 0 it plays the last turn's clips again from the first, in the
+order and with the bars the planning call gave them [EXP-UI-029, EXP-UI-046,
+EXP-UI-047, EXP-UI-048, EXP-UI-049, EXP-UI-054]; the captured replays of two
+clips each start the second clip with its own gangs and bars [EXP-UI-029,
+EXP-UI-046, EXP-UI-049, EXP-UI-054].
 
 ## Parameters
 
@@ -167,3 +173,9 @@ None known.
 
 - Whether a computer player can order an Attack on one of its own gangs,
   which could make a list longer than 36, was not checked [FND-COMBAT-013].
+- No recorded run reaches an opponent's gang in two focal lists, a fight
+  between two other players in the viewer's sector being left out, a stale
+  lookup of the target's own target in another row, Escape ending the
+  presentation, or a list over 36 entries. These rest on FND-COMBAT-004,
+  FND-COMBAT-010, FND-COMBAT-011 and FND-COMBAT-013. Until a run reaches them,
+  the entry stays `supported`.

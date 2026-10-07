@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AWARDS-004, FND-AWARDS-003, FND-AWARDS-001, FND-GFX-003, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004]
+evidence: [FND-AWARDS-004, FND-AWARDS-003, FND-AWARDS-001, FND-GFX-003, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-017]
 conflicting: []
 split_with: []
 related: [RULE-AWARDS-001, RULE-AWARDS-002, SCR-AWARDS-002]
@@ -19,19 +19,19 @@ whose standing is 0xFF.
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| City screen, left as it was | None | None | Whole screen | Always | FND-AWARDS-003 |
+| City screen, left as it was | None | None | Whole screen | Always; black when the endgame follows the last turn's resolution | FND-AWARDS-003, EXP-UI-017 |
 | Endgame frame with the Awards, Stats and Done controls | `DATA/PX16/PX00200` | None | `(106, 25, 428, 410)` | Always | FND-AWARDS-003, FND-AWARDS-004, FND-GFX-003 |
 | Tab mark | Interface sheet, source `(488, 512, 8, 16)` | The selected tab | `(468, 33, 8, 16)` for Awards, `(520, 33, 8, 16)` for Stats | Always | FND-AWARDS-004 |
 | Colour fill, per row | None | The row player's colour | `(111, 31 + 66 * row, 20, 62)` | Always | FND-AWARDS-004 |
 | Place marker, per row | `DATA/PX16/PX00201`, source `(16 * standing, 48 + 32 * player, 16, 32)` | The row player's place, `scenario_standing + 1` | `(113, 31 + 66 * row, 16, 32)` | Ranked rows | FND-AWARDS-003, FND-AWARDS-004 |
 | Portrait, per row | Interface sheet, source `(32 * portrait, 480, 32, 32)` | `portrait` of the row's player | `(132, 30 + 66 * row, 64, 64)`, scaled | Always | FND-AWARDS-004 |
-| Player name, per row | Font not recorded | `player_names` of the row's player, unchanged and with no place prefix | From `(197, 38 + 66 * row)` | Always | FND-AWARDS-003, FND-AWARDS-004 |
+| Player name, per row | The plain font of `DATA/PX16/PX00129` | `player_names` of the row's player, unchanged and with no place prefix | From `(197, 38 + 66 * row)` | Always | FND-AWARDS-003, FND-AWARDS-004, EXP-UI-017 |
 | Score caption, per row | String at `0x00487704` | None | `(227, 62 + 66 * row)` | Ranked rows | FND-AWARDS-004 |
-| Score, per row | Font not recorded | `scenario_score` of the row's player, 5 digits | `(227, 70 + 66 * row)` | Ranked rows | FND-AWARDS-004 |
+| Score, per row | The plain font of `DATA/PX16/PX00129` | `scenario_score` of the row's player, 5 digits with leading blanks | `(227, 70 + 66 * row)` | Ranked rows | FND-AWARDS-004, EXP-UI-017 |
 | Awards strip, per row | `DATA/PX16/PX00201`, source `(96, 48, 160, 64)` | None | `(262, 30 + 66 * row, 160, 64)` | The Awards tab is selected | FND-AWARDS-004 |
 | Award icons, per row | `DATA/PX16/PX00201`, source `(48 * code, 0, 48, 48)`, keyed | Entry `i` of `player_awards` of the row's player, for each of the first three entries that is not -1 | `(268 + 50 * i, 38 + 66 * row, 48, 48)` | The Awards tab is selected | FND-AWARDS-001, FND-AWARDS-004 |
 | Statistics strip, per row | `DATA/PX16/PX00201`, source `(96, 112, 160, 64)`, opaque | None | `(262, 30 + 66 * row, 160, 64)` | The Stats tab is selected | FND-AWARDS-003, FND-AWARDS-004 |
-| Five statistic values, per row | Font not recorded | The row player's `cash_earned`, `cash_spent`, `damage_inflicted`, `casualties` and `overthrow_count` | Ranked rows: 8 digits at `(371, 37 + 66 * row)`, 8 at `(371, 46 + 66 * row)`, 7 at `(377, 58 + 66 * row)`, 6 at `(383, 67 + 66 * row)`, 6 at `(383, 79 + 66 * row)`. Eliminated rows: all five in 6 digits at x 383, same y | The Stats tab is selected | FND-AWARDS-003, FND-AWARDS-004, SRC-MANUAL-GOG |
+| Five statistic values, per row | The plain font of `DATA/PX16/PX00129`, with leading blanks | The row player's `cash_earned`, `cash_spent`, `damage_inflicted`, `casualties` and `overthrow_count` | Ranked rows: 8 digits at `(371, 37 + 66 * row)`, 8 at `(371, 46 + 66 * row)`, 7 at `(377, 58 + 66 * row)`, 6 at `(383, 67 + 66 * row)`, 6 at `(383, 79 + 66 * row)`. Eliminated rows: all five in 6 digits at x 383, same y | The Stats tab is selected | FND-AWARDS-003, FND-AWARDS-004, SRC-MANUAL-GOG, EXP-UI-017 |
 
 ## Mouse input
 
@@ -79,4 +79,11 @@ None known.
   an eliminated player's cash or damage of a million or more does not fit its
   six-digit field.
 - The text of the score caption at `0x00487704` is not recorded here.
+- What the screen around the frame shows when the endgame follows an
+  elimination card or another screen was not captured.
 - In 256-colour mode the game uses the `DATA/PX08` files of the same names.
+- No recorded run of the original reaches eliminated rows; award icons at the
+  second and third positions; Done and the Left state; menu command 9; an
+  Awards press with one player left; the push cue (FND-AWARDS-001,
+  FND-AWARDS-003, FND-AWARDS-004, FND-AUDIO-010). These rest on the static
+  findings named, so the entry stays `supported`.

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
+using Rechaos.Core;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Game;
@@ -103,7 +104,38 @@ public sealed record ScreenCaptureRecord(
     /// <summary>FND-UI-052, FND-UI-053: the frame of the rotating item pictures a shot shows.</summary>
     public int? ItemFrame { get; init; }
 
-    public override string ToString() => Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
+    /// <summary>FND-UI-054: the idle gang warning's ticks since its open, modulo 8, a shot shows.</summary>
+    public int? IdlePhase { get; init; }
+
+    /// <summary>FND-COMLINK-010: the Comlink Send caret's phase a shot shows, 3 inverse and 0 plain.</summary>
+    public int? CaretPhase { get; init; }
+
+    /// <summary>FND-COMBAT-016: the tick of the Detailed Combat clip a shot shows.</summary>
+    public int? ClipTick { get; init; }
+
+    /// <summary>
+    /// FND-COMBAT-011: the index within its presentation of the Detailed Combat clip a shot shows.
+    /// A shot recorded before the probe kept it has none; those shots all show a first clip.
+    /// </summary>
+    public int? ClipIndex { get; init; }
+
+    /// <summary>
+    /// The screens a run copies before its match (FND-UI-055): the fixture holds each as
+    /// <c>&lt;screen&gt;_capture</c>, and the rebuild draws it with that name in place of a save.
+    /// Each has a <see cref="Step"/> of its own below -1.
+    /// </summary>
+    public static readonly IReadOnlyList<(string Screen, int Step)> BeforeMatchScreens =
+        [("title", -2), ("credits", -3), ("setup", -4)];
+
+    /// <summary>The screen shown before a match the capture shows, or null.</summary>
+    public string? BeforeMatch { get; init; }
+
+    /// <summary>The setup step after which <c>--setup-steps</c> took the copy, or null.</summary>
+    public int? SetupStep => BeforeMatch is not null && Step <= SetupStepBase ? SetupStepBase - Step : null;
+
+    public override string ToString() => BeforeMatch is { } screen
+        ? $"{Experiment} run {Run} {screen}" + (SetupStep is { } setupStep ? $" step {setupStep}" : "")
+        : Step < 0 ? $"{Experiment} run {Run}" : $"{Experiment} run {Run} step {Step}";
 
     // The fixtures run to tens of megabytes, and every theory case looks its capture up here.
     private static readonly Lazy<IReadOnlyList<ScreenCaptureRecord>> All = new(Load);
@@ -125,12 +157,46 @@ public sealed record ScreenCaptureRecord(
             {
                 if (recorded.TryGetProperty("capture", out var capture))
                     records.Add(Parse(experiment, run, capture, whiteKeyed));
+                // --white-key sets its breakpoint before the title, so the screens copied before
+                // the match are keyed as the match's are.
+                foreach (var (screen, step) in BeforeMatchScreens)
+                    if (recorded.TryGetProperty(screen + "_capture", out var before))
+                        records.Add(Parse(experiment, run, before, whiteKeyed) with { Step = step, BeforeMatch = screen });
+                if (recorded.TryGetProperty("setup_steps", out var setupSteps))
+                    records.AddRange(SetupStepCaptures(experiment, run, setupSteps.EnumerateArray().ToArray(), whiteKeyed));
                 if (recorded.TryGetProperty("order_steps", out var steps))
                     records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray(), whiteKeyed));
                 run++;
             }
         }
         return records;
+    }
+
+    /// <summary>
+    /// The first step number of the copies <c>--setup-steps</c> took on the setup screen; the copy
+    /// after setup step <c>n</c> is step <c>SetupStepBase - n</c>.
+    /// </summary>
+    public const int SetupStepBase = -100;
+
+    // Each setup step's copy is drawn by the rebuild's setup screen after the presses before it.
+    private static IEnumerable<ScreenCaptureRecord> SetupStepCaptures(string experiment, int run, JsonElement[] steps, bool whiteKeyed)
+    {
+        var clicks = new List<ReferenceClick>();
+        for (var index = 0; index < steps.Length; index++)
+        {
+            var step = steps[index];
+            var point = new Point(step.GetProperty("x").GetInt32(), step.GetProperty("y").GetInt32());
+            if (step.GetProperty("kind").GetString() == "strip")
+                clicks.Add(new ReferenceClick(point));
+            else if (step.GetProperty("kind").GetString() == "drag")
+                clicks.Add(new ReferenceClick(point,
+                    Release: new Point(step.GetProperty("to_x").GetInt32(), step.GetProperty("to_y").GetInt32())));
+            else if (step.TryGetProperty("capture", out var capture))
+                yield return Parse(experiment, run, capture, whiteKeyed) with
+                {
+                    Step = SetupStepBase - index, BeforeMatch = "setup", Clicks = clicks.ToArray(),
+                };
+        }
     }
 
     /// <summary>Whether a fixture's inputs hold the <c>key_colour</c> setup input of <c>--white-key</c>.</summary>
@@ -176,6 +242,18 @@ public sealed record ScreenCaptureRecord(
         {
             ItemFrame = capture.TryGetProperty("item_frame", out var item) && item.ValueKind == JsonValueKind.Number
                 ? item.GetInt32()
+                : null,
+            IdlePhase = capture.TryGetProperty("idle_phase", out var idle) && idle.ValueKind == JsonValueKind.Number
+                ? idle.GetInt32()
+                : null,
+            CaretPhase = capture.TryGetProperty("caret_phase", out var caret) && caret.ValueKind == JsonValueKind.Number
+                ? caret.GetInt32()
+                : null,
+            ClipTick = capture.TryGetProperty("clip_tick", out var tick) && tick.ValueKind == JsonValueKind.Number
+                ? tick.GetInt32()
+                : null,
+            ClipIndex = capture.TryGetProperty("clip_index", out var clip) && clip.ValueKind == JsonValueKind.Number
+                ? clip.GetInt32()
                 : null,
         };
         // Without frame_counter the record keeps the pump's counter as its frame counter.
@@ -245,6 +323,13 @@ public sealed record ScreenCaptureRecord(
                 case "back":
                     clicks.Add(new ReferenceClick(SectorDetailLayout.Back.Center));
                     break;
+                case "type":
+                    clicks.Add(new ReferenceClick(Point.Zero)
+                    {
+                        Text = step.GetProperty("text").GetString()
+                               ?? throw new InvalidDataException($"{experiment} step {index} types no text."),
+                    });
+                    break;
                 case "shot" when step.TryGetProperty("capture", out var capture):
                     yield return Parse(experiment, run, capture, whiteKeyed) with
                     {
@@ -294,6 +379,7 @@ public static class ScreenCaptureMasks
             ["SCR-UI-008"] = [],
             ["SCR-EVENT-001"] = [],
             ["SCR-COMBAT-001"] = [],
+            ["SCR-COMBAT-002"] = [],
             ["SCR-OBJECTIVE-001"] = [],
             ["SCR-SEARCH-001"] = [],
             ["SCR-HIRE-001"] = [],
@@ -307,8 +393,33 @@ public static class ScreenCaptureMasks
             ["SCR-SELL-001"] = [],
             ["SCR-ATTACK-001"] = [],
             ["SCR-OPTIONS-001"] = [],
+            ["SCR-SETUP-002"] = [],
+            ["SCR-COMLINK-001"] = [],
+            ["SCR-COMLINK-002"] = [],
+            ["SCR-AWARDS-001"] = [],
+            ["SCR-AWARDS-002"] = [],
+            ["SCR-OBJECTIVE-002"] = [],
             ["SCR-INFLUENCE-001"] = [],
             ["SCR-GANG-002"] = [],
+            ["SCR-UI-001"] =
+            [
+                // DEV-UI-019: the rebuild's line under the logo, its buttons, which stand in for the
+                // menu bar, and its credit line. The notice box is drawn only with a message.
+                new("DEV-UI-019", new Rectangle(290, 282, 60, 9)),
+                new("DEV-UI-019", new Rectangle(220, 292, 200, 76)),
+                new("DEV-UI-019", new Rectangle(154, 376, 164, 34)),
+                new("DEV-UI-019", new Rectangle(406, 376, 80, 34)),
+                new("DEV-UI-019", new Rectangle(257, 430, 126, 9)),
+                // DEV-VIDEO-003: the Intro button.
+                new("DEV-VIDEO-003", new Rectangle(322, 376, 80, 34)),
+                // DEV-UI-012: the version, right-aligned 6 pixels from the edge, as wide as the
+                // build's version string.
+                new("DEV-UI-012", new Rectangle(
+                    VirtualInput.Width - 6 - GameVersion.Display.Length * OriginalFontLayout.CellWidth, 430,
+                    GameVersion.Display.Length * OriginalFontLayout.CellWidth, 9)),
+            ],
+            ["SCR-UI-002"] = [],
+            ["SCR-SETUP-001"] = [],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
@@ -426,9 +537,18 @@ public static class RebuildFrame
     /// </summary>
     public const string KeepFramesVariable = "RECHAOS_KEEP_FRAMES";
 
+    /// <summary>
+    /// Draws a screen the rebuild shows before a match, one of
+    /// <see cref="ReferenceFrameRequest.ScreenOperands"/>.
+    /// </summary>
+    public static ScreenFrame RenderBeforeMatch(
+        string screen, string? name = null, IReadOnlyList<ReferenceClick>? clicks = null) =>
+        Render(null, null, clicks, name, screen: screen);
+
     public static ScreenFrame Render(
-        MatchState state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
-        int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null)
+        MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
+        int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null,
+        string? screen = null, int? clipTick = null, int? idlePhase = null, int? caretPhase = null, int? clipIndex = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -441,7 +561,8 @@ public static class RebuildFrame
         {
             var save = Path.Combine(directory, "state.rchsave");
             var frame = Path.Combine(directory, "frame.bmp");
-            NativeSaveStore.SaveAtomic(save, state);
+            if (state is null) save = screen ?? throw new ArgumentNullException(nameof(state));
+            else NativeSaveStore.SaveAtomic(save, state);
             var start = GameStartInfo();
             foreach (var argument in new[] { "--assets", assets, "--reference-frame", save, frame })
                 start.ArgumentList.Add(argument);
@@ -459,6 +580,26 @@ public static class RebuildFrame
             {
                 start.ArgumentList.Add("--item-frame");
                 start.ArgumentList.Add(item.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (idlePhase is { } idle)
+            {
+                start.ArgumentList.Add("--idle-phase");
+                start.ArgumentList.Add(idle.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (caretPhase is { } caret)
+            {
+                start.ArgumentList.Add("--caret-phase");
+                start.ArgumentList.Add(caret.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (clipTick is { } tick)
+            {
+                start.ArgumentList.Add("--clip-tick");
+                start.ArgumentList.Add(tick.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (clipIndex is { } clip)
+            {
+                start.ArgumentList.Add("--clip-index");
+                start.ArgumentList.Add(clip.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
             if (pumpCounter is { } counter)
             {

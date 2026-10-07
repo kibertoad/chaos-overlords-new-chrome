@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-007, FND-UI-008, FND-EXE-004]
+evidence: [FND-UI-007, FND-UI-008, FND-EXE-004, FND-UI-055, EXP-UI-015, FND-UI-063]
 conflicting: []
 split_with: []
 related: [SCR-UI-009]
@@ -15,13 +15,13 @@ related: [SCR-UI-009]
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| Publisher and developer credits | `DATA/PX16/Px00100` | None | `(0,0,640,460)`, copied opaquely | Always; redrawn on each paint message | FND-UI-007 |
+| Publisher and developer credits | `DATA/PX16/Px00100` | None | `(0,0,640,460)`, copied opaquely | Always; redrawn on each paint message | FND-UI-007, EXP-UI-015 |
 
 ## Mouse input
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Whole screen | `(0,0,640,460)` | Always | A click closes the screen and returns to the screen it was opened from | FND-UI-007 |
+| Whole screen | `(0,0,640,460)` | Always | A press or a release of either button closes the screen and returns to the screen it was opened from | FND-UI-007, FND-UI-063 |
 
 ## Keyboard input
 
@@ -61,3 +61,8 @@ None known.
   the table reads 2 to 4 as mouse and key presses.
 - Whether the music goes on playing unchanged, as no music call is recorded on
   this path.
+- No recorded run of the original reaches a click and window messages 17 and
+  18 closing the screen; its redraw on a paint message; opening from another
+  screen than the title; the restored screen after it closes; whether the
+  music keeps playing (FND-UI-007, FND-UI-008). These rest on the static
+  findings named, so the entry stays `supported`.

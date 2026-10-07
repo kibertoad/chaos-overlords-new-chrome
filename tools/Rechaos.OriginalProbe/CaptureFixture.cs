@@ -69,6 +69,64 @@ internal static class CaptureFixture
     }
 
     /// <summary>
+    /// The screens <c>new-game</c> copies before the match, with the option that asks for each and
+    /// the screen entry it is compared at (FND-UI-055): the title screen, the credits from Help,
+    /// About, and the setup screen as New Game opens it.
+    /// </summary>
+    public static readonly IReadOnlyList<(string Name, string Screen)> BeforeMatch =
+        [("title", "SCR-UI-001"), ("credits", "SCR-UI-002"), ("setup", "SCR-SETUP-001")];
+
+    /// <summary>The note a run records when it has copied the setup screen at setup step <paramref name="index"/>.</summary>
+    public static string SetupStepNote(int index) => $"setup_step_capture {index}";
+
+    /// <summary>
+    /// The setup steps of <c>--setup-steps</c>, each with the copy a <c>shot</c> took, compared at
+    /// SCR-SETUP-001.
+    /// </summary>
+    public static JsonArray? ExtractSetupSteps(string runDirectory, JsonNode trace)
+    {
+        if (trace["Settings"]?["SetupSteps"] is not JsonArray steps) return null;
+        var notes = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>()).ToHashSet();
+        var screen = CaptureScreen.Load("SCR-SETUP-001");
+        return new JsonArray(steps.Select((step, index) =>
+        {
+            var record = new JsonObject
+            {
+                ["kind"] = step!["Kind"]!.GetValue<string>(),
+                ["x"] = step["X"]!.GetValue<int>(),
+                ["y"] = step["Y"]!.GetValue<int>(),
+            };
+            if (record["kind"]!.GetValue<string>() == "drag")
+            {
+                record["to_x"] = step["Target"]!.GetValue<int>();
+                record["to_y"] = step["Choice"]!.GetValue<int>();
+            }
+            if (notes.Contains(SetupStepNote(index))
+                && Extract(Path.Combine(runDirectory, $"setup-step-{index}.bmp"), 0, null, null, null, screen)
+                    is { } capture)
+                record["capture"] = capture;
+            return (JsonNode)record;
+        }).ToArray());
+    }
+
+    /// <summary>The note a run records when it has copied the screen <paramref name="name"/>.</summary>
+    public static string BeforeMatchNote(string name) => $"{name}_capture {name}-capture";
+
+    /// <summary>
+    /// The record of each screen of <see cref="BeforeMatch"/> the run copied, keyed
+    /// <c>&lt;name&gt;_capture</c>. These screens have no marker, so the marker frame is 0.
+    /// </summary>
+    public static IEnumerable<(string Key, JsonObject Capture)> ExtractBeforeMatch(string runDirectory, JsonNode trace)
+    {
+        var notes = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>()).ToHashSet();
+        foreach (var (name, screen) in BeforeMatch)
+            if (notes.Contains(BeforeMatchNote(name))
+                && Extract(Path.Combine(runDirectory, $"{name}-capture.bmp"), 0, null, null, null,
+                    CaptureScreen.Load(screen)) is { } capture)
+                yield return ($"{name}_capture", capture);
+    }
+
+    /// <summary>
     /// The record of a capture <c>shot</c> step of <c>--order-steps</c> took after the dump, compared
     /// at the screens the step names.
     /// </summary>
@@ -82,11 +140,30 @@ internal static class CaptureFixture
         // or the one at the slide-in of the panel open over the city. A panel the probe did not
         // see slide in leaves it unknown. A shot recorded before the probe read it has no such
         // field, and its record leaves frame_counter out so the comparison takes the pump's.
-        if (record is not null && shot.AsObject().TryGetPropertyValue("FrameCounter", out var frame))
+        if (record is null) return null;
+        if (shot.AsObject().TryGetPropertyValue("FrameCounter", out var frame))
             record["frame_counter"] = frame is null ? null : frame.GetValue<int>();
         // FND-UI-052, FND-UI-053: the frame of the rotating item pictures of Item Information,
-        // Sell or Give, when one is open.
-        if (record is not null && shot["ItemFrame"] is JsonNode item) record["item_frame"] = item.GetValue<int>();
+        // Sell or Give, when one is open. A trace written before the probe kept the idle warning's
+        // and the caret's phases in fields of their own has no IdlePhase field, and kept either
+        // phase in ItemFrame; the screens the shot is compared at tell which reader filled it.
+        var itemKey = "item_frame";
+        if (!shot.AsObject().ContainsKey("IdlePhase"))
+        {
+            var ids = screens.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            itemKey = ids.Contains("SCR-OPTIONS-001") ? "idle_phase"
+                : ids.Contains("SCR-COMLINK-002") ? "caret_phase"
+                : itemKey;
+        }
+        if (shot["ItemFrame"] is JsonNode item) record[itemKey] = item.GetValue<int>();
+        // FND-UI-054: the idle gang warning's ticks since its open, modulo 8.
+        if (shot["IdlePhase"] is JsonNode idle) record["idle_phase"] = idle.GetValue<int>();
+        // FND-COMLINK-010: the Send caret's phase, 3 inverse and 0 plain.
+        if (shot["CaretPhase"] is JsonNode caret) record["caret_phase"] = caret.GetValue<int>();
+        // FND-COMBAT-016: the tick of the Detailed Combat clip the capture shows, and FND-COMBAT-011
+        // the clip's index within its presentation.
+        if (shot["ClipTick"] is JsonNode tick) record["clip_tick"] = tick.GetValue<int>();
+        if (shot["ClipIndex"] is JsonNode clip) record["clip_index"] = clip.GetValue<int>();
         return record;
     }
 

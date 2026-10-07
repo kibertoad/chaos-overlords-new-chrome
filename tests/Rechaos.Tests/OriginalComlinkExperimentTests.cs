@@ -22,13 +22,11 @@ namespace Rechaos.Tests;
 /// has been read, refuses an empty inbox and stops at both ends (RULE-COMLINK-004); a shown message
 /// is marked read and dated from its turn (RULE-COMLINK-005); and the end of a player's planning
 /// drops the read messages at the front (RULE-COMLINK-007). In EXP-COMLINK-002 the only human's
-/// Send and View are both refused (RULE-COMLINK-002, RULE-COMLINK-004).
+/// Send and View are both refused (RULE-COMLINK-002, RULE-COMLINK-004). In both the Comlink alert
+/// of RULE-AUDIO-007 sounds where the rebuild's planning player has an unread message.
 /// </summary>
 public sealed class OriginalComlinkExperimentTests
 {
-    private const int ButtonPress = 2;
-    private const int Alert = 6;
-
     [Theory]
     [InlineData("EXP-COMLINK-001")]
     [InlineData("EXP-COMLINK-002")]
@@ -48,6 +46,8 @@ public sealed class OriginalComlinkExperimentTests
         private readonly MatchReplayRecorder _recorder;
         private readonly ComlinkTextEditor _editor = new();
         private readonly bool[] _selected = new bool[MatchLimits.PlayerCount];
+        // The client's alert timing, which decides whether a planning entry sounds the alert.
+        private readonly ComlinkAlertCadence _alertCadence = new();
         // The game client keeps one View page for whoever plans, as ChaosGame does.
         private int _cursor;
         private bool _sendOpen;
@@ -67,7 +67,8 @@ public sealed class OriginalComlinkExperimentTests
                     : new MatchPlayerSetup(new PlayerId(slot), $"CPU{slot}", PlayerController.Computer))
                 .ToArray();
             _match = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
-                ScenarioId.Greed, GameDuration.SixMonths, run.GetProperty("rng_state").GetInt32(), players));
+                ScenarioId.Greed, GameDuration.SixMonths, run.GetProperty("rng_state").GetInt32(), players,
+                MatchDeviations.Original));
             _match.FinishUpkeep();
             _recorder = new MatchReplayRecorder(_match);
         }
@@ -80,9 +81,12 @@ public sealed class OriginalComlinkExperimentTests
                 var space = line.IndexOf(' ');
                 var verb = space < 0 ? line : line[..space];
                 var argument = space < 0 ? "" : line[(space + 1)..];
-                var sounds = step.GetProperty("sounds").EnumerateArray().Select(value => value.GetInt32())
-                    .Where(slot => slot is not (ButtonPress or Alert)).ToArray();
+                var played = step.GetProperty("sounds").EnumerateArray().Select(value => value.GetInt32()).ToArray();
+                var sounds = played.Where(slot => slot is not (GeneralSoundSlot.ButtonPress
+                    or GeneralSoundSlot.IncomingMessageAlert)).ToArray();
                 var refused = sounds.Contains(GeneralSoundSlot.RejectedInput);
+                var alerted = played.Contains(GeneralSoundSlot.IncomingMessageAlert);
+                var unreadBefore = _match.ComlinkFor(_active).HasUnread;
                 switch (verb)
                 {
                     case "visit":
@@ -138,6 +142,22 @@ public sealed class OriginalComlinkExperimentTests
                     _lastDraft = draft.GetRawText();
                 }
                 if (step.TryGetProperty("comlink", out var comlink)) AssertComlink(line, verb, step, comlink);
+
+                // RULE-AUDIO-007: the planning entry of a player with an unread message sounds the
+                // alert, through the client's cadence, and the alert sounds only while the planning
+                // player has one; between those the repeat of RULE-AUDIO-008 depends on the time a
+                // step took. A visit changes the planning player, so the inbox before it is another's.
+                var inbox = _match.ComlinkFor(_active);
+                if (verb == "visit")
+                {
+                    var entrySound = _alertCadence.Advance(inbox.HasUnread, presentationActive: true, TimeSpan.Zero,
+                        enteringPlanning: true, inbox.NextSequence) ? AudioRouting.IncomingMessageSound(inbox.HasUnread) : null;
+                    Assert.True(alerted == (entrySound == GeneralSoundSlot.IncomingMessageAlert),
+                        $"{line}: the original {(alerted ? "sounded" : "did not sound")} the alert at the planning entry");
+                }
+                else
+                    Assert.True(!alerted || unreadBefore || inbox.HasUnread,
+                        $"{line}: the original sounded the Comlink alert with no unread message in the rebuild");
             }
         }
 

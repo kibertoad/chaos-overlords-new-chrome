@@ -71,24 +71,23 @@ used by the shared template. What the original does now lives only in
   evidence exists for nearly everything, so every rule, format and screen is
   `supported` and none is `established`; BUG-COMBAT-001, a reported freeze, is
   `unknown`.
-- [PARITY.md](../PARITY.md) and [DEVIATIONS.md](../DEVIATIONS.md) at the root.
+- [PARITY.md](../PARITY.md) at the root, generated from `parity/`, and `deviations/`.
   All 222 parity rows have `complete` code. Eleven are `validated` by tests
   against the shipped files (the data tables, image formats and palette,
   DATA.Z, the movies, the Help files and the Game Information texts); the
   other 211 are `implemented` and wait for experiments from the original.
-  DEVIATIONS.md holds 65 entries: 60 mandatory, 3 on and 2 off by default.
+  deviations/ holds 65 entries: 60 mandatory, 3 on and 2 off by default.
 - [static_validation_plan.md](../static_validation_plan.md) and
   [manual_validation_plan.md](../manual_validation_plan.md) at the root: every
   open question found during the conversion, grouped by part of the game.
   Manual work waits for the maintainer to schedule a session with the original.
-- `tools/check-spec.mjs` runs the standard's checks and writes `spec/index/`.
-  The fast gate runs it with `--check`. It compiles the `.ksy` files when
-  `kaitai-struct-compiler` (0.11) is on the path or named by `KSC`; it is
-  installed for this user under
-  `%LOCALAPPDATA%/Programs/kaitai-struct-compiler-0.11/bin`, and the CI fast
-  gate installs the pinned release (kibertoad/refurbished-dinosaurs-toolkit#1
-  moves that into a shared action). The script is meant to move into the
-  shared template.
+- `tools/check-documentation.mjs` runs the toolkit's standard checker (pinned
+  in the root `package.json`) with this game's settings, and writes
+  `PARITY.md` and `spec/index/`. The fast gate runs it with `--check`. It
+  compiles the `.ksy` files when `kaitai-struct-compiler` (0.11) is on the
+  path or named by `KSC`; it is installed for this user under
+  `%LOCALAPPDATA%/Programs/kaitai-struct-compiler-0.11/bin`, and the CI
+  workflows install the pinned release.
 - `tests/Rechaos.Tests/OriginalGameFiles.cs` resolves `GAME_DIR` as the standard
   lays it out and checks every file against its xxh3 hash, and `SpecHash.cs`
   computes the hash. `GAME_DIR` is not set on the maintainer's machine yet; tests
@@ -129,7 +128,7 @@ used by the shared template. What the original does now lives only in
 Read [AGENTS.md](../AGENTS.md#documentation) first. A static reading of the
 executable is a new `FND-*` entry; cite it from the rules, formats and screens
 it supports and raise their status. A change to the rebuild that departs from
-the spec is a `DEV-*` entry before it is code. Run `node tools/check-spec.mjs`
+the spec is a `DEV-*` entry before it is code. Run `node tools/check-documentation.mjs`
 until it reports nothing but the two option defaults above, then
 `node tools/update-doc-indexes.mjs`. Close items in the two plan files as the
 work lands.
@@ -898,8 +897,7 @@ original silent unless `--sound` is given.
   run with the same seed gives.
 - EXP-UI-001 captures the first planning entry of two seeds, and
   `ScreenCaptureTests` finds no differing element of SCR-UI-003 or
-  SCR-HIRE-002 in either; SCR-HIRE-002 is `validated`, and SCR-UI-003 lists the
-  test but stays `supported` while its code is `partial`. The harness:
+  SCR-HIRE-002 in either; both rows are `validated`. The harness:
   `new-game --capture` takes the drawing area at the dump, `extract --screens`
   or `digest` records each element's digest in the fixture, and
   `ScreenCaptureTests` renders the replayed endpoint with `--reference-frame`
