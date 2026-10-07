@@ -178,7 +178,6 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         string joinCode,
         string? comlinkPrivateKey = null)
     {
-        if (ComlinkKeyPair.FromPrivateKey(comlinkPrivateKey) is { } kept) ComlinkKey = kept;
         ArgumentException.ThrowIfNullOrWhiteSpace(matchId);
         ArgumentException.ThrowIfNullOrWhiteSpace(playerId);
         ArgumentException.ThrowIfNullOrWhiteSpace(token);
@@ -188,6 +187,9 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         // asked for while this is in flight has to see its answer to give the seat back.
         Run(async _ =>
         {
+            // Taken here rather than before Run, so a resume dropped because another call is in
+            // flight leaves the key that call's seat publishes and records alone.
+            if (ComlinkKeyPair.FromPrivateKey(comlinkPrivateKey) is { } kept) ComlinkKey = kept;
             var cancellationToken = CancellationToken.None;
             var detail = await handle.GetAsync(cancellationToken).ConfigureAwait(false);
             if (!string.Equals(detail.You, playerId, StringComparison.Ordinal))
@@ -463,7 +465,10 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         }
         if (seated)
         {
-            await PublishComlinkKeyAsync(handle, membership.Player).ConfigureAwait(false);
+            // Outside the one-call-at-a-time rule, like SendChat: held under it, a Start or a
+            // profile change asked for as soon as the seat shows was dropped while the key was in
+            // flight. Disposal waits for it with the chat.
+            lock (_chatGate) _chatTail = PublishComlinkKeyAfterAsync(_chatTail, handle, membership.Player);
             return;
         }
         // The server committed the request after the player left, or after a stop that means nobody
@@ -476,6 +481,23 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         {
             // The server's turn timer handles a seat we could not release.
         }
+    }
+
+    /// <summary>
+    /// Publishes the seat's Comlink key once the chat sent before it has gone.
+    /// </summary>
+    private async Task PublishComlinkKeyAfterAsync(Task previous, MatchHandle handle, PlayerView self)
+    {
+        try
+        {
+            await previous.ConfigureAwait(false);
+        }
+        catch (Exception exception) when (IsServerOrNetworkFailure(exception)
+            || exception is OperationCanceledException)
+        {
+            // Reported when it happened; the key is still worth publishing.
+        }
+        await PublishComlinkKeyAsync(handle, self).ConfigureAwait(false);
     }
 
     /// <summary>

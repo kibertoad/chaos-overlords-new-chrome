@@ -15,6 +15,11 @@ public sealed record ComlinkMessage(
     string? Envelope = null)
 {
     /// <summary>Whether the text is sealed for the recipient rather than carried in the clear.</summary>
+    /// <remarks>
+    /// Left out of saves and snapshots: it follows from <see cref="Envelope"/>, and a stored copy
+    /// would be read back and ignored.
+    /// </remarks>
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsSealed => Envelope is not null;
 }
 

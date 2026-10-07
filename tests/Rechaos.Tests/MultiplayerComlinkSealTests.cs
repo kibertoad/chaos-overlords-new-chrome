@@ -123,10 +123,15 @@ public sealed class MultiplayerComlinkSealTests
             Player("p2", 1, WirePlayerStatus.Left, departed.PublicKey),
             Player("p3", 1, WirePlayerStatus.Active, current.PublicKey),
             Player("p4", 2, WirePlayerStatus.Active, null),
+            Player("p5", 3, WirePlayerStatus.Computer, departed.PublicKey),
+            Player("p6", 3, WirePlayerStatus.Active, null),
         ]);
 
         Assert.Equal(current.PublicKey, keyring.KeyFor(new PlayerId(1)));
         Assert.Null(keyring.KeyFor(new PlayerId(2)));
+        // A late player who has not published yet is not written to under the key of the player
+        // whose seat they took.
+        Assert.Null(keyring.KeyFor(new PlayerId(3)));
         Assert.Null(keyring.Seal(1, new PlayerId(0), [new PlayerId(1), new PlayerId(2)], "HI"));
 
         keyring.Learn("p3", renewed.PublicKey);

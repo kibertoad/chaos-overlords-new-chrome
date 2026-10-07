@@ -34,6 +34,10 @@ public sealed partial class MatchState
         IReadOnlyList<SealedComlinkLetter> letters)
     {
         ArgumentNullException.ThrowIfNull(letters);
+        // A journal or an order read from a damaged file can hold a null letter; the load paths
+        // report an ArgumentException as a damaged file.
+        if (letters.Any(letter => letter is null))
+            throw new ArgumentException("A sealed Comlink message cannot have a null letter.", nameof(letters));
         var recipients = letters.Select(letter => letter.Recipient).ToArray();
         var validation = ValidateComlinkSend(
             sender,

@@ -57,10 +57,12 @@ public sealed class ComlinkKeyring
             foreach (var player in players)
             {
                 _seats.TryGetValue(player.Id, out var known);
-                _seats[player.Id] = new Seat(
-                    player.Slot,
-                    player.Status,
-                    ComlinkKeyPair.IsPublicKey(player.ComlinkKey) ? player.ComlinkKey : known?.Key);
+                // A key already held was checked when it was learned; only a new one is imported.
+                var key = string.Equals(player.ComlinkKey, known?.Key, StringComparison.Ordinal)
+                    || ComlinkKeyPair.IsPublicKey(player.ComlinkKey)
+                    ? player.ComlinkKey
+                    : known?.Key;
+                _seats[player.Id] = new Seat(player.Slot, player.Status, key);
             }
         }
     }
@@ -83,16 +85,18 @@ public sealed class ComlinkKeyring
     {
         lock (_gate)
         {
-            string? key = null;
+            string? departed = null;
             foreach (var candidate in _seats.Values)
             {
-                if (candidate.Slot != seat.Value || candidate.Key is null) continue;
-                // The row a human holds the seat under now wins over one that left it.
+                if (candidate.Slot != seat.Value) continue;
+                // The row a human holds the seat under now decides, even before it has published a
+                // key: sealing to a row that left the seat would hand the message to its former
+                // holder and leave the current one a message it cannot open.
                 if (candidate.Status is PlayerStatus.Active or PlayerStatus.TakeoverPending)
                     return candidate.Key;
-                key ??= candidate.Key;
+                departed ??= candidate.Key;
             }
-            return key;
+            return departed;
         }
     }
 

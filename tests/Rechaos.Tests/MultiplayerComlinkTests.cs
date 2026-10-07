@@ -214,6 +214,20 @@ public sealed class MultiplayerComlinkTests
         Assert.All(inbox, message => Assert.Null(Keyring(Grace).Read(message)));
     }
 
+    /// <summary>
+    /// A null letter, which only a damaged journal or snapshot can hold, is refused with the
+    /// ArgumentException the load paths report as a damaged file, and nothing is stored.
+    /// </summary>
+    [Fact]
+    public void ASealedSendWithANullLetterIsRefusedAsInvalid()
+    {
+        var (replay, _) = NewClient();
+
+        Assert.Throws<ArgumentException>(() =>
+            replay.State.SendSealedComlinkMessage(Ada, [null!]));
+        Assert.Empty(replay.State.ComlinkFor(Grace).Messages);
+    }
+
     [Fact]
     public void ARestoredDraftRebuildsTheReadMarksAndTheSentMessages()
     {
