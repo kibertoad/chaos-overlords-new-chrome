@@ -226,7 +226,7 @@ Entries by kind.
 
 ## findings
 
-396 entries.
+399 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -428,6 +428,8 @@ Entries by kind.
 | [FND-GFX-004](../findings/FND-GFX-004.md) | The display layer draws with GDI into twelve surface slots, copies the 640-by-460 backing surface to the window's client origin, and uses DirectDraw only to take the screen in full screen | recorded |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 | recorded |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | A pattern fill takes its bitmap from the high byte of a 16-bit grey, starts the pattern at the filled rectangle's corner, and outlines the fill with the scratch surface's own pen | recorded |
+| [FND-GFX-007](../findings/FND-GFX-007.md) | Every exact-white pixel of PX00129 that a copy reads lies in a cell copied with the key, except one pixel of an Overlord portrait | recorded |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | Surface 7 holds PX00150 for the Search rows' keyed copy and PX00140 for the network lobbies' keyed seat overlay, and every copied cell holds exact white | recorded |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | The Give panel handler lists the giver's sector mates, accepts a recipient only when its Tech Level covers every selected item, and stores the order in the target bytes | recorded |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art | recorded |
 | [FND-GIVE-003](../findings/FND-GIVE-003.md) | The Give recipient list fills no background, and dims an ineligible card with black through bitmap 146 from the card's corner | recorded |
@@ -482,13 +484,14 @@ Entries by kind.
 | [FND-PLATFORM-005](../findings/FND-PLATFORM-005.md) | Preferences live under the Stick Man Games registry key, and an App Paths key locates the installation | recorded |
 | [FND-PLATFORM-006](../findings/FND-PLATFORM-006.md) | Sound, CD music, timers and Smacker video come from WINMM and smackw32.dll | recorded |
 | [FND-PLATFORM-007](../findings/FND-PLATFORM-007.md) | The palette loader fills entries 10 to 245 of a 256-entry palette from a CLT file | recorded |
-| [FND-PLATFORM-008](../findings/FND-PLATFORM-008.md) | Image copies are opaque except for a pattern mask and an exact-white colour key used by two images | recorded |
+| [FND-PLATFORM-008](../findings/FND-PLATFORM-008.md) | Image copies are opaque except for a pattern mask and an exact-white colour key used by two images | superseded |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | The program entry allows one instance, picks the image set, sets up the display, sound and menus, runs the title loop, and undoes it all on the way out | recorded |
 | [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | Data files are named by the App Paths install directory and length-prefixed names, and four file slots open them with no message on failure | recorded |
 | [FND-PLATFORM-011](../findings/FND-PLATFORM-011.md) | At 8 bits the palette comes from data/CLT00002, read as red, green, blue, and PX08 pictures are mapped to it through their own colour tables | recorded |
 | [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | The startup disc check looks for a fixed drive from the string ".\" and always passes, and the CD track search has no callers | recorded |
 | [FND-PLATFORM-013](../findings/FND-PLATFORM-013.md) | The ordinal imports of WSOCK32 and smackw32 by name, and the functions that call the WinSock, Telephony and serial port imports | recorded |
 | [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | On a 32-bit desktop the keyed copies key nothing, and the white they should drop is drawn | recorded |
+| [FND-PLATFORM-015](../findings/FND-PLATFORM-015.md) | The keyed compositor sets its depth's key with one SetBkColor call and restores the colour with a second, and 72 of the 77 calls of the copy wrapper ask for it | recorded |
 | [FND-POLICE-001](../findings/FND-POLICE-001.md) | Each sector keeps its last two Crackdown turns; a third within five turns neutralizes the sector, and each Crackdown adds 3 to 5 police turns | recorded |
 | [FND-POLICE-002](../findings/FND-POLICE-002.md) | A Crackdown report goes to every player who had a gang in the sector when resolution began, and a control-loss report to the displaced owner | recorded |
 | [FND-POLICE-003](../findings/FND-POLICE-003.md) | The police detect a gang on a roll of 1 to 100 against 115 minus 5 Stealth, less 20 for Hide, and attack with 25 minus Defense dice at 5 or better | recorded |
