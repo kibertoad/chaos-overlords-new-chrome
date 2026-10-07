@@ -70,7 +70,7 @@ public sealed partial class DeviationBehaviourTests
     public void TheWindowResizesSwitchesNoDisplayModeAndKeepsTickingWithoutFocus()
     {
         // DEV-GFX-001: the window can be resized, full screen keeps the desktop's mode, and losing
-        // focus leaves the window open and ticking. The constructor hands these to MonoGame.
+        // focus leaves the window open and ticking. The window's constructor hands these to MonoGame.
         Assert.True(ShellWindow.AllowsResizing);
         Assert.False(ShellWindow.SwitchesDisplayMode);
         Assert.Equal(TimeSpan.FromMilliseconds(20), ShellWindow.InactiveSleepTime);
@@ -197,8 +197,16 @@ public sealed partial class DeviationBehaviourTests
         Assert.Equal(TimeSpan.FromTicks(166_667), ShellWindow.FrameTime);
         Assert.Contains(typeof(ShellWindow).GetField(nameof(ShellWindow.FrameTime))!, ReadFields(Constructor()));
         var update = Calls(typeof(ChaosGame).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic)!);
-        Assert.Contains(typeof(Keyboard).GetMethod(nameof(Keyboard.GetState), Type.EmptyTypes)!, update);
-        Assert.Contains(typeof(Mouse).GetMethod(nameof(Mouse.GetState), Type.EmptyTypes)!, update);
+        Assert.Contains(typeof(IGameShell).GetMethod(nameof(IGameShell.ReadKeyboard))!, update);
+        Assert.Contains(typeof(IGameShell).GetMethod(nameof(IGameShell.ReadMouse))!, update);
+        // The window reads the devices themselves.
+        var window = typeof(ChaosGameWindow).GetInterfaceMap(typeof(IGameShell));
+        MethodBase Implementation(string name) =>
+            window.TargetMethods[Array.FindIndex(window.InterfaceMethods, method => method.Name == name)];
+        Assert.Contains(typeof(Keyboard).GetMethod(nameof(Keyboard.GetState), Type.EmptyTypes)!,
+            Calls(Implementation(nameof(IGameShell.ReadKeyboard))));
+        Assert.Contains(typeof(Mouse).GetMethod(nameof(Mouse.GetState), Type.EmptyTypes)!,
+            Calls(Implementation(nameof(IGameShell.ReadMouse))));
     }
 
     [Fact]
@@ -227,8 +235,9 @@ public sealed partial class DeviationBehaviourTests
         Assert.Equal("Zoë Ä", field.Value);
     }
 
+    /// <summary>The constructor of the window that hosts the game, which hands MonoGame its settings.</summary>
     private static ConstructorInfo Constructor() =>
-        typeof(ChaosGame).GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+        typeof(ChaosGameWindow).GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .OrderByDescending(constructor => constructor.GetParameters().Length).First();
 
     private static IEnumerable<Assembly> RebuildAssemblies() =>
@@ -310,11 +319,16 @@ public sealed partial class DeviationBehaviourTests
         return strings;
     }
 
-    /// <summary>A game with no window, its collections and helper objects made and nothing loaded.</summary>
+    /// <summary>
+    /// A game with no window, its collections and helper objects made and nothing loaded. It runs in
+    /// the detached shell, whose Exit does nothing, and its effects go to a recorder.
+    /// </summary>
     internal static ChaosGame HeadlessGame()
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
+        // No constructor or field initializer has run, so the interface-typed services are set here.
+        Field("_shell").SetValue(game, DetachedShell.Instance);
+        Field("_soundEffects").SetValue(game, new RecordingSoundEffects());
         foreach (var field in typeof(ChaosGame).GetFields(BindingFlags.Instance | BindingFlags.NonPublic))
         {
             var type = field.FieldType;

@@ -226,7 +226,7 @@ public sealed class AiFamilyTwelveTurnPlannerTests
             ], owner: id == 0 ? setups[1].Id : null, income: 3))
             .ToArray();
         var match = new MatchState(data, new MatchSetup(
-            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups,
+            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups, MatchDeviations.Original,
             AiDifficulty.HomicidalManiac), players, sectors);
         var player = new PlayerId(0);
         BeginFamilyTwelveTurn(match, player);
@@ -282,7 +282,7 @@ public sealed class AiFamilyTwelveTurnPlannerTests
             ], owner: id == 0 ? setups[1].Id : null, income: 3))
             .ToArray();
         var match = new MatchState(data, new MatchSetup(
-            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups,
+            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups, MatchDeviations.Original,
             AiDifficulty.HomicidalManiac), players, sectors);
         var player = new PlayerId(0);
         BeginFamilyTwelveTurn(match, player);
@@ -406,7 +406,7 @@ public sealed class AiFamilyTwelveTurnPlannerTests
                 income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            scenario, GameDuration.SixMonths, seed, setups, mentality),
+            scenario, GameDuration.SixMonths, seed, setups, MatchDeviations.Original, mentality),
             players, sectors);
     }
 }

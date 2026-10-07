@@ -182,7 +182,7 @@ public sealed partial class UiNavigationTests
 
         var state = OriginalMatchFactory.Create(Rechaos.Core.Assets.BundledOriginalData.Load(),new MatchSetup(
             ScenarioId.Big40, GameDuration.OneYear, 1996,
-            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
         var entries = PlayerRankingPresentation.Project(state);
         Assert.StartsWith($"{title} RATES:", PlayerRankingTooltip.Lines(state, entries[0], entries)[2]);
         Assert.StartsWith($"{title} - TURN ", SaveSlotCatalog.SuggestedName(state));
