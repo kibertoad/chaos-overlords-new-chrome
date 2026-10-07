@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -8,15 +9,13 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private Texture2D? LoadTexture(
-        string fileName,
-        bool transparentWhite = false)
+    private Texture2D? LoadTexture(OriginalBitmap bitmap)
     {
-        var path = Path.Combine(_assetRoot, "images", fileName);
+        var path = ImagePath(bitmap.FileName);
         if (!File.Exists(path)) return null;
         using var stream = File.OpenRead(path);
         var texture = Texture2D.FromStream(GraphicsDevice, stream);
-        if (!transparentWhite) return texture;
+        if (!bitmap.TransparentWhite) return texture;
         var colors = new Color[texture.Width * texture.Height];
         texture.GetData(colors);
         OriginalWhiteKey.Apply(colors);
@@ -24,22 +23,70 @@ public sealed partial class ChaosGame
         return texture;
     }
 
-    private void LoadCombatAnimationTextures()
+    private string ImagePath(string fileName) => Path.Combine(_assetRoot, "images", fileName);
+
+    // The player's game decodes every bitmap of OriginalBitmap.All in LoadContent, so a bitmap that
+    // cannot be read or decoded fails at start-up rather than in the middle of a match, and the
+    // first frame of a screen does not stall on decoding. A reference frame draws one screen, which
+    // uses a few of the bitmaps, and decoding all of them took about a fifth of its run: it decodes
+    // each the first time something draws it. A missing file is remembered as missing.
+    private readonly Dictionary<OriginalBitmap, Texture2D?> _textures = [];
+
+    private bool DecodesTexturesOnFirstDraw => _referenceFrame is not null;
+
+    private void DecodeAllTextures()
     {
-        for (short animation = 0; animation <= 27; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, false));
-        for (short animation = 0; animation <= 28; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, true));
-        for (short animation = 0; animation <= 19; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, false));
-        for (short animation = 0; animation <= 20; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, true));
+        foreach (var bitmap in OriginalBitmap.All) Texture(bitmap);
     }
 
-    private void LoadCombatAnimationTexture(string fileName)
+    private Texture2D? Texture(OriginalBitmap bitmap)
     {
-        var texture = LoadTexture(fileName);
-        if (texture is not null) _combatAnimationTextures[fileName] = texture;
+        // Before LoadContent there is no device to decode into, and a shell that never has one
+        // calls LoadGameData alone: every texture is missing to it, as when LoadContent filled them.
+        if (_batch is null) return null;
+        if (!_textures.TryGetValue(bitmap, out var texture))
+            _textures[bitmap] = texture = LoadTexture(bitmap);
+        return texture;
+    }
+
+    /// <summary>A row of the original's bitmaps read by index.</summary>
+    private readonly struct TextureRow(ChaosGame game, IReadOnlyList<OriginalBitmap?> bitmaps)
+    {
+        public int Length => bitmaps.Count;
+
+        public Texture2D? this[int index] => bitmaps[index] is { } bitmap ? game.Texture(bitmap) : null;
+    }
+
+    private TextureRow CityOwnershipLayers => new(this, OriginalBitmap.CityOwnershipLayers);
+    private TextureRow LastTurnEventArtwork => new(this, OriginalBitmap.LastTurnEventArtwork);
+    private TextureRow ItemRotationTextures => new(this, OriginalBitmap.ItemRotations);
+
+    /// <summary>
+    /// The combat animation strips found when the content loaded. Whether any were found decides
+    /// whether Detailed Combat plays.
+    /// </summary>
+    private readonly struct CombatAnimationTextures(ChaosGame game)
+    {
+        public int Count => game._combatAnimationFiles.Count;
+
+        public bool TryGetValue(string fileName, [NotNullWhen(true)] out Texture2D? texture)
+        {
+            texture = OriginalBitmap.CombatStrips.TryGetValue(fileName, out var bitmap)
+                && game._combatAnimationFiles.Contains(bitmap)
+                    ? game.Texture(bitmap)
+                    : null;
+            return texture is not null;
+        }
+    }
+
+    private readonly HashSet<OriginalBitmap> _combatAnimationFiles = [];
+
+    private CombatAnimationTextures CombatAnimations => new(this);
+
+    private void FindCombatAnimationFiles()
+    {
+        foreach (var strip in OriginalBitmap.CombatStrips.Values)
+            if (File.Exists(ImagePath(strip.FileName))) _combatAnimationFiles.Add(strip);
     }
 
     private void PlayCombatSound(short soundIndex) => PlaySound(SoundEffectCue.Combat(soundIndex));
@@ -118,7 +165,7 @@ public sealed partial class ChaosGame
         var first = events.Count;
         while (first > 0 && events[first - 1].Sequence > lastSeen) first--;
         if (first == events.Count) return;
-        if (_detailedCombat && _combatAnimationTextures.Count > 0)
+        if (_detailedCombat && CombatAnimations.Count > 0)
         {
             var presented = CombatResultProjection.AutomaticPresentationEvents(_state, viewer, events.Skip(first));
             foreach (var clip in CombatAnimationRouting.ForPresentation(_state, presented, viewer))
@@ -127,13 +174,5 @@ public sealed partial class ChaosGame
         _combatPresentationProgress.MarkSeen(viewer, events[^1].Sequence);
     }
 
-    private void ValidateAssetPack()
-    {
-        var manifestPath = Path.Combine(_assetRoot, "manifest.json");
-        if (!File.Exists(manifestPath))
-            throw new FileNotFoundException("Original assets are not installed. Run Rechaos.Extractor with --source pointing at a legal Chaos Overlords installation.", manifestPath);
-        var manifest = JsonSerializer.Deserialize<AssetManifest>(File.ReadAllText(manifestPath));
-        if (manifest?.FormatVersion != AssetManifest.CurrentFormatVersion)
-            throw new InvalidDataException("The asset pack is incompatible. Run the current extractor again.");
-    }
+    private void ValidateAssetPack() => AssetPackInspection.Of(_assetRoot).ThrowIfNotReady();
 }

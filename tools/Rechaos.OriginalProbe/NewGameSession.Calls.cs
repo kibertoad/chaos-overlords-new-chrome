@@ -12,7 +12,7 @@ internal sealed partial class NewGameSession
     // InjectedCallReturn, where a one-shot breakpoint reads what the call left and starts the
     // next one; after the last, every register is put back. The Equip list builder and the Attack
     // picker's roster builder read active_player rather than a player they are passed
-    // (FND-EQUIP-008, FND-ATTACK-006), and their panels open only for the active player's gangs,
+    // (FND-EQUIP-012, FND-ATTACK-006), and their panels open only for the active player's gangs,
     // so active_player holds the given player during the calls and is put back after the last.
     private bool RunInjectedCalls(Queue<InjectedCall> calls, int player)
     {

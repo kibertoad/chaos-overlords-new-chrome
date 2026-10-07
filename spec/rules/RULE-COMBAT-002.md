@@ -1,7 +1,7 @@
 ---
 id: RULE-COMBAT-002
 title: The combat phase runs every attack, then the police, then applies the damage and fills the combat records
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [EXP-TURN-010, EXP-TURN-011, EXP-TURN-017, FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-001, FND-COMBAT-003, FND-COMBAT-004, FND-COMBAT-008, FND-COMBAT-011, FND-EXE-004, FND-GANG-003, FND-GANG-005, FND-STATE-005, SRC-MANUAL-GOG, EXP-TURN-051, EXP-TURN-049, FND-AI-010, FND-COMBAT-006, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
@@ -155,5 +155,10 @@ None known.
 
 ## Open questions
 
-None known. `phase_damage`, `fight_marks`, `opening_damage` and
-`retaliation_damage` are locals of `fn_00472775` [FND-COMBAT-008].
+- `phase_damage`, `fight_marks`, `opening_damage` and
+  `retaliation_damage` are locals of `fn_00472775` [FND-COMBAT-008].
+- No recorded run reaches a seventh fighter spilling into the next row or an
+  Attack on an inactive target, and the replays compare only the records of
+  gangs that fought, so the stale bytes of the others are not compared. These
+  rest on FND-COMBAT-008 and FND-STATE-005. Until a run reaches them, the
+  entry stays `supported`.

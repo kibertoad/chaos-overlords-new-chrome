@@ -167,8 +167,8 @@ public sealed partial class ChaosGame
 
     private void DrawIdleGangWarning(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        if (_idleGangWarningBackground is not null)
-            batch.Draw(_idleGangWarningBackground, IdleGangWarningLayout.Panel, Color.White);
+        if (IdleGangWarningBackground is not null)
+            batch.Draw(IdleGangWarningBackground, IdleGangWarningLayout.Panel, Color.White);
         else
         {
             batch.Draw(pixel, IdleGangWarningLayout.Panel, new Color(10, 23, 25, 252));

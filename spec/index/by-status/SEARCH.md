@@ -6,19 +6,19 @@ Entries by status.
 
 ## supported
 
-1 entries.
-
-| ID | Title |
-|---|---|
-| [SCR-SEARCH-001](../../screens/SCR-SEARCH-001.md) | Search panel |
-
-## established
-
 2 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-SEARCH-001](../../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows |
+| [SCR-SEARCH-001](../../screens/SCR-SEARCH-001.md) | Search panel |
+
+## established
+
+1 entries.
+
+| ID | Title |
+|---|---|
 | [RULE-SEARCH-002](../../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects |
 
 ## recorded
@@ -42,7 +42,6 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [RULE-SEARCH-001](../../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows |
 | [RULE-SEARCH-002](../../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects |
 
 ## Open questions
@@ -51,6 +50,6 @@ Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-SEARCH-001](../../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | established |
+| [RULE-SEARCH-001](../../rules/RULE-SEARCH-001.md) | Each player's Search filter starts empty and is changed by ALL, NONE and its rows | supported |
 | [RULE-SEARCH-002](../../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | established |
 | [SCR-SEARCH-001](../../screens/SCR-SEARCH-001.md) | Search panel | supported |

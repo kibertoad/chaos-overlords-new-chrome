@@ -60,7 +60,7 @@ EXP-UI-001.
 Another test replays each run, draws its endpoint at the capture's
 marker frame and compares every element with the capture. The fixture lists the
 setup input `key_colour`, so the test compares exact white like any other colour
-(docs/VALIDATION.md). No element differs: outside the masks of DEV-UI-006 (the
+(docs/validation/screen-comparison.md). No element differs: outside the masks of DEV-UI-006 (the
 cash row) and DEV-UI-023 (the key line) every pixel matches, the selected sector
 and the corners around the grid tabs included, and the rebuild draws the
 exact-white portrait pixel white as well.

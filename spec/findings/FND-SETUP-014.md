@@ -10,14 +10,14 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040EE8A..0x0040F63C
+    address: 0x0040EE8A..0x0040F63D
 tool: Ghidra 12.1.3
 environment: null
 ---
 
 ## Observation
 
-`fn_0040EE8A` occupies `0x0040EE8A..0x0040F63C` (1,942 bytes, FND-EXE-004). It
+`fn_0040EE8A` occupies `0x0040EE8A..0x0040F63D` (1,942 bytes, FND-EXE-004). It
 takes no arguments. Nine of its ten call sites are in the local setup handler
 `fn_0040E0A0`; the tenth is in the drag helper `fn_0040F72E` at `0x00410004`.
 

@@ -10,14 +10,14 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0044B699..0x0044C475
+    address: 0x0044B699..0x0044C476
 tool: Ghidra 12.1.3
 environment: null
 ---
 
 ## Observation
 
-`fn_0044B699` occupies `0x0044B699..0x0044C475` (3,507 bytes, FND-EXE-004). It
+`fn_0044B699` occupies `0x0044B699..0x0044C476` (3,507 bytes, FND-EXE-004). It
 has 29 call sites in eight functions: the gang command handler `fn_00414D8C`,
 `fn_004169B3`, the gang information panel `fn_00449E80`, the Attack handler
 `fn_0043B290`, the Equip handler `fn_0043DAD9`, the Research handler `fn_004427FA`, the Sell handler
