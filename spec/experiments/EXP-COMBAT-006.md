@@ -35,7 +35,7 @@ FND-AUDIO-013). The turn loop waits while the presentation runs.
 For each call of the presentation the probe also keeps its second argument,
 1 when planning opened it and 0 when the console's control did, the clips it
 played, and the effect slots it played itself through `0x00464290` from
-within `0x0042E040`..`0x0042EE45` (FND-COMBAT-010).
+within `0x0042E040`..`0x0042EE46` (FND-COMBAT-010).
 
 ## Observations
 

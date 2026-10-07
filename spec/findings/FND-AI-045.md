@@ -10,13 +10,13 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00409F47..0x0040A1A6
+    address: 0x00409F47..0x0040A1A7
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040AA65..0x0040AAE2
+    address: 0x0040AA65..0x0040AAE3
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040AAE3..0x0040AB1F
+    address: 0x0040AAE3..0x0040AB20
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0046EB4E..0x0046EC9D

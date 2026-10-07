@@ -25,7 +25,7 @@ Entries by status.
 
 ## recorded
 
-14 entries.
+13 entries.
 
 | ID | Title |
 |---|---|
@@ -42,7 +42,6 @@ Entries by status.
 | [FND-EQUIP-008](../../findings/FND-EQUIP-008.md) | The Equip, Give and Sell panels store the item, the item mask and the recipient in target and target_2, and the Equip list and the Give recipients are filtered by the gang definition's Tech Level |
 | [FND-EQUIP-009](../../findings/FND-EQUIP-009.md) | The Equip and Research panels frame the chosen category cell with a 34-by-34 keyed cell of PX00129 and open on category 0 or the category of the pending order |
 | [FND-EQUIP-010](../../findings/FND-EQUIP-010.md) | The Equip panel handler's faces, keys and double-clicks, and the chosen row redrawn in the second font of PX00129 inside a green frame |
-| [FND-EQUIP-011](../../findings/FND-EQUIP-011.md) | The Equip list builder ends each row's text with the price, so the chosen row's strip shows it |
 
 ## Established on unreproduced evidence
 

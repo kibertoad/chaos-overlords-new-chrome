@@ -33,14 +33,6 @@ Entries by status.
 | [RULE-EVENT-013](../../rules/RULE-EVENT-013.md) | Losing control of a sector is reported to the previous owner |
 | [RULE-EVENT-014](../../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player |
 
-## superseded
-
-1 entries.
-
-| ID | Title |
-|---|---|
-| [FND-EVENT-005](../../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item |
-
 ## recorded
 
 6 entries.
@@ -51,8 +43,8 @@ Entries by status.
 | [FND-EVENT-002](../../findings/FND-EVENT-002.md) | The Last Turn Events handler tests only Previous, Next and one exit control, and has no Delete branch |
 | [FND-EVENT-003](../../findings/FND-EVENT-003.md) | Last Turn reports other than Influence and Research load the illustration numbered 6000 plus the report type |
 | [FND-EVENT-004](../../findings/FND-EVENT-004.md) | A Last Turn report record holds an occupied byte at +0, a padding byte at +1 and four 16-bit fields from +2, and the resolver's twelve recorder calls pass fixed arguments |
+| [FND-EVENT-005](../../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item |
 | [FND-EVENT-006](../../findings/FND-EVENT-006.md) | The event pump blinks the Events, Comlink and Done lights together, lit for two timer-0 ticks and dark for two |
-| [FND-EVENT-007](../../findings/FND-EVENT-007.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item |
 
 ## Established on unreproduced evidence
 

@@ -10,19 +10,19 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00458290..0x004584B9
+    address: 0x00458290..0x004584BA
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00458ACC..0x00458F94
+    address: 0x00458ACC..0x00458F95
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004642BD..0x00464399
+    address: 0x004642BD..0x0046439A
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004652A0..0x004653AD
+    address: 0x004652A0..0x004653AE
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00462579..0x004637B7
+    address: 0x00462579..0x004637B8
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0045C67D..0x0045C695
@@ -181,7 +181,7 @@ tick, with the pointer switched to the hourglass and back each time.
 ## How to reproduce
 
 Follow the references to `mciSendCommandA` and the `aux*` imports in
-`0x00458290..0x00458F94` and read the command, flag and item constants pushed
+`0x00458290..0x00458F95` and read the command, flag and item constants pushed
 before each call. In `0x00462579`, find the call to `0x004328BE` with 0 before
 the test of `0x00487838`, the call to `0x00458CEF` and the call to
 `0x004642BD` at `0x00462AE8`. In `0x0045C33B`, find the compare with `0x3B9`.

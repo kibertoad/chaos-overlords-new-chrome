@@ -26,7 +26,7 @@ Entries by status.
 
 ## recorded
 
-12 entries.
+11 entries.
 
 | ID | Title |
 |---|---|
@@ -41,7 +41,6 @@ Entries by status.
 | [FND-HIRE-007](../../findings/FND-HIRE-007.md) | The offer refill rejects a draw only when it equals a slot's current value or the gang just removed, and the same function draws the three offers on the console |
 | [FND-HIRE-008](../../findings/FND-HIRE-008.md) | The console hire handler takes a drop only on a sector the player owns or has a gang in, opens the live-gang panel on a double-click, and 0x004078B8 is the computer players' snub |
 | [FND-HIRE-009](../../findings/FND-HIRE-009.md) | The Hire comparison panel loads resource 5016, draws three 32-by-32 portraits and sixteen value rows per offer, and closes on its one control or Enter |
-| [FND-HIRE-010](../../findings/FND-HIRE-010.md) | The dragged hire offer is its 64-by-64 portrait shrunk to 40 by 40 under the setup drag frame, copied opaquely centred on the clamped pointer |
 
 ## Established on unreproduced evidence
 

@@ -37,10 +37,6 @@ Entries by area.
 | [EXP-UI-027](../../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-028](../../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-029](../../experiments/EXP-UI-029.md) | Does the Detailed Combat panel look the same in the rebuild through the second clip of a presentation? | recorded |
-| [EXP-UI-041](../../experiments/EXP-UI-041.md) | Do the held faces, a dragged hire offer and the chosen rows of the order panels look the same in the rebuild, and do the panels stop their ticks while a face is held? | recorded |
-| [EXP-UI-042](../../experiments/EXP-UI-042.md) | Do the Give, Sell and Influence panels look the same in the rebuild with a choice made and a face held, and does Sell stop its ticks while the face is held? | recorded |
-| [EXP-UI-043](../../experiments/EXP-UI-043.md) | What do the city console's tiles and the sector view's back control show while the right button is held on them? | recorded |
-| [EXP-UI-044](../../experiments/EXP-UI-044.md) | Does the Comlink Send panel look the same in the rebuild while Send is held, and does its caret stop for the hold? | recorded |
 | [EXP-UI-046](../../experiments/EXP-UI-046.md) | Does the Detailed Combat panel look the same in the rebuild through an armed and an unarmed attack on the viewer's gang? | recorded |
 | [EXP-UI-047](../../experiments/EXP-UI-047.md) | Does the Detailed Combat panel look the same in the rebuild through a bare-handed Martial Arts attack? | recorded |
 | [EXP-UI-048](../../experiments/EXP-UI-048.md) | Does the Detailed Combat panel look the same in the rebuild through an attack of the viewer's that its target evades? | recorded |
@@ -106,11 +102,9 @@ Entries by area.
 | [FND-UI-058](../../findings/FND-UI-058.md) | A byte marks the match as saved; a save or a load sets it, a resolved turn and each accepted order clear it, and File, End and File, Exit offer dialog 129 while it is clear | recorded |
 | [FND-UI-059](../../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation | recorded |
 | [FND-UI-060](../../findings/FND-UI-060.md) | The planning entry draws the console's year, week, countdown, score and cash with the base-value number helper | recorded |
-| [FND-UI-062](../../findings/FND-UI-062.md) | The held-button helper draws the lit face of its kind while the pointer is inside and the plain face when it leaves and when the button comes up | recorded |
 | [FND-UI-063](../../findings/FND-UI-063.md) | Only the About screen, the main console and the detailed sector screen take the right button, and the held-button helper acts at once on a right press | recorded |
 | [FND-UI-064](../../findings/FND-UI-064.md) | The key handler tests Shift once and stores its event at one join, and the name editor's edit control upper-cases what is typed | recorded |
 | [FND-UI-066](../../findings/FND-UI-066.md) | Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the handler that opened the panel | recorded |
-| [FND-UI-067](../../findings/FND-UI-067.md) | Every information panel holds its close face through the held-button helper, closes only on a release inside it and refuses a press outside its test rectangle | recorded |
 | [RULE-UI-001](../../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |

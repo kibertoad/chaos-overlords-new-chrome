@@ -226,7 +226,7 @@ Entries by kind.
 
 ## findings
 
-406 entries.
+400 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -364,7 +364,7 @@ Entries by kind.
 | [FND-COMBAT-032](../findings/FND-COMBAT-032.md) | The Detailed Combat clip player puts the strips' first frames on the screen only, and definition 63 changes only the attack strip | recorded |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | Each player keeps at most 16 Comlink messages, and a 17th drops the oldest | recorded |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls | recorded |
-| [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | superseded |
+| [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
 | [FND-COMLINK-004](../findings/FND-COMLINK-004.md) | Comlink View marks the shown message read and draws it from a self-contained 166-byte record | recorded |
 | [FND-COMLINK-005](../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer | superseded |
 | [FND-COMLINK-006](../findings/FND-COMLINK-006.md) | Comlink messages are stored only on the recipient's computer, cleared when the match loop starts, and read messages at the front of an inbox are dropped when its player finishes planning | recorded |
@@ -372,7 +372,6 @@ Entries by kind.
 | [FND-COMLINK-008](../findings/FND-COMLINK-008.md) | The Send panel builds a message in a 166-byte buffer, with 160 characters from space to Z filled with spaces and no terminator, a signed turn, and a last byte nothing writes | recorded |
 | [FND-COMLINK-009](../findings/FND-COMLINK-009.md) | A message recorded for the active player while the View panel is open makes the panel redraw the shown message with the new count | recorded |
 | [FND-COMLINK-010](../findings/FND-COMLINK-010.md) | Comlink Send edits a fixed grid of four rows of 40 characters from space to Z, wraps the cursor between rows, and switches the caret every third tick of a 6 Hz timer | recorded |
-| [FND-COMLINK-011](../findings/FND-COMLINK-011.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
 | [FND-CONTROL-001](../findings/FND-CONTROL-001.md) | The Control pass pools strength per player, settles sectors in ascending order and keeps a neutral candidate ahead of zero-margin ties | recorded |
 | [FND-CONTROL-002](../findings/FND-CONTROL-002.md) | Inside the whole-turn resolver only Crackdown neutralization and a Control win write a sector's owner | recorded |
 | [FND-CONTROL-003](../findings/FND-CONTROL-003.md) | Control settles only sectors with a Control order and no police, adds the defenders, Income and Support to the owner's pool, and subtracts Income and Support from every pool | recorded |
@@ -399,14 +398,12 @@ Entries by kind.
 | [FND-EQUIP-008](../findings/FND-EQUIP-008.md) | The Equip, Give and Sell panels store the item, the item mask and the recipient in target and target_2, and the Equip list and the Give recipients are filtered by the gang definition's Tech Level | recorded |
 | [FND-EQUIP-009](../findings/FND-EQUIP-009.md) | The Equip and Research panels frame the chosen category cell with a 34-by-34 keyed cell of PX00129 and open on category 0 or the category of the pending order | recorded |
 | [FND-EQUIP-010](../findings/FND-EQUIP-010.md) | The Equip panel handler's faces, keys and double-clicks, and the chosen row redrawn in the second font of PX00129 inside a green frame | recorded |
-| [FND-EQUIP-011](../findings/FND-EQUIP-011.md) | The Equip list builder ends each row's text with the price, so the chosen row's strip shows it | recorded |
 | [FND-EVENT-001](../findings/FND-EVENT-001.md) | The Last Turn reports are a keep-first table of 32 ten-byte records per player, cleared before each resolution and filled only by the resolver | recorded |
 | [FND-EVENT-002](../findings/FND-EVENT-002.md) | The Last Turn Events handler tests only Previous, Next and one exit control, and has no Delete branch | recorded |
 | [FND-EVENT-003](../findings/FND-EVENT-003.md) | Last Turn reports other than Influence and Research load the illustration numbered 6000 plus the report type | recorded |
 | [FND-EVENT-004](../findings/FND-EVENT-004.md) | A Last Turn report record holds an occupied byte at +0, a padding byte at +1 and four 16-bit fields from +2, and the resolver's twelve recorder calls pass fixed arguments | recorded |
-| [FND-EVENT-005](../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item | superseded |
+| [FND-EVENT-005](../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item | recorded |
 | [FND-EVENT-006](../findings/FND-EVENT-006.md) | The event pump blinks the Events, Comlink and Done lights together, lit for two timer-0 ticks and dark for two | recorded |
-| [FND-EVENT-007](../findings/FND-EVENT-007.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item | recorded |
 | [FND-EXE-001](../findings/FND-EXE-001.md) | The executable is a stripped 32-bit PE for the Windows GUI subsystem with image base 0x00400000 | recorded |
 | [FND-EXE-002](../findings/FND-EXE-002.md) | The executable has six sections, and .data has a large zero-initialized tail | recorded |
 | [FND-EXE-003](../findings/FND-EXE-003.md) | The executable was linked by Microsoft's linker 3.10 with a statically linked C runtime | recorded |
@@ -456,7 +453,6 @@ Entries by kind.
 | [FND-HIRE-007](../findings/FND-HIRE-007.md) | The offer refill rejects a draw only when it equals a slot's current value or the gang just removed, and the same function draws the three offers on the console | recorded |
 | [FND-HIRE-008](../findings/FND-HIRE-008.md) | The console hire handler takes a drop only on a sector the player owns or has a gang in, opens the live-gang panel on a double-click, and 0x004078B8 is the computer players' snub | recorded |
 | [FND-HIRE-009](../findings/FND-HIRE-009.md) | The Hire comparison panel loads resource 5016, draws three 32-by-32 portraits and sixteen value rows per offer, and closes on its one control or Enter | recorded |
-| [FND-HIRE-010](../findings/FND-HIRE-010.md) | The dragged hire offer is its 64-by-64 portrait shrunk to 40 by 40 under the setup drag frame, copied opaquely centred on the clamped pointer | recorded |
 | [FND-INFLUENCE-001](../findings/FND-INFLUENCE-001.md) | The Influence picker selects an unfinished site through three fixed rectangles and opens its details on double-click | recorded |
 | [FND-INFLUENCE-002](../findings/FND-INFLUENCE-002.md) | The Influence picker draws each site slot as a PX02000 picture with a keyed PX00129 frame, dims completed sites, and shows the chosen slot from a prepared highlighted copy | recorded |
 | [FND-INFLUENCE-003](../findings/FND-INFLUENCE-003.md) | The Influence picker sits at screen (104,124), confirms with a control or Enter only when a site is chosen, cancels with a control or Escape, and preselects a pending Influence order | recorded |
@@ -626,11 +622,9 @@ Entries by kind.
 | [FND-UI-058](../findings/FND-UI-058.md) | A byte marks the match as saved; a save or a load sets it, a resolved turn and each accepted order clear it, and File, End and File, Exit offer dialog 129 while it is clear | recorded |
 | [FND-UI-059](../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation | recorded |
 | [FND-UI-060](../findings/FND-UI-060.md) | The planning entry draws the console's year, week, countdown, score and cash with the base-value number helper | recorded |
-| [FND-UI-062](../findings/FND-UI-062.md) | The held-button helper draws the lit face of its kind while the pointer is inside and the plain face when it leaves and when the button comes up | recorded |
 | [FND-UI-063](../findings/FND-UI-063.md) | Only the About screen, the main console and the detailed sector screen take the right button, and the held-button helper acts at once on a right press | recorded |
 | [FND-UI-064](../findings/FND-UI-064.md) | The key handler tests Shift once and stores its event at one join, and the name editor's edit control upper-cases what is typed | recorded |
 | [FND-UI-066](../findings/FND-UI-066.md) | Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the handler that opened the panel | recorded |
-| [FND-UI-067](../findings/FND-UI-067.md) | Every information panel holds its close face through the held-button helper, closes only on a release inside it and refuses a press outside its test rectangle | recorded |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
@@ -639,7 +633,7 @@ Entries by kind.
 
 ## experiments
 
-176 entries.
+172 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -807,10 +801,6 @@ Entries by kind.
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-029](../experiments/EXP-UI-029.md) | Does the Detailed Combat panel look the same in the rebuild through the second clip of a presentation? | recorded |
-| [EXP-UI-041](../experiments/EXP-UI-041.md) | Do the held faces, a dragged hire offer and the chosen rows of the order panels look the same in the rebuild, and do the panels stop their ticks while a face is held? | recorded |
-| [EXP-UI-042](../experiments/EXP-UI-042.md) | Do the Give, Sell and Influence panels look the same in the rebuild with a choice made and a face held, and does Sell stop its ticks while the face is held? | recorded |
-| [EXP-UI-043](../experiments/EXP-UI-043.md) | What do the city console's tiles and the sector view's back control show while the right button is held on them? | recorded |
-| [EXP-UI-044](../experiments/EXP-UI-044.md) | Does the Comlink Send panel look the same in the rebuild while Send is held, and does its caret stop for the hold? | recorded |
 | [EXP-UI-046](../experiments/EXP-UI-046.md) | Does the Detailed Combat panel look the same in the rebuild through an armed and an unarmed attack on the viewer's gang? | recorded |
 | [EXP-UI-047](../experiments/EXP-UI-047.md) | Does the Detailed Combat panel look the same in the rebuild through a bare-handed Martial Arts attack? | recorded |
 | [EXP-UI-048](../experiments/EXP-UI-048.md) | Does the Detailed Combat panel look the same in the rebuild through an attack of the viewer's that its target evades? | recorded |
