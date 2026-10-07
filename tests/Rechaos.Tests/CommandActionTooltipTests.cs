@@ -119,6 +119,7 @@ public sealed class CommandActionTooltipTests
                 new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human),
                 new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Human)
             ],
+            MatchDeviations.Original,
             allowSparsePlayerIds: true));
         whole.Coordinator.FinishUpkeep();
         var gang = whole.Players[0].Gangs[0];

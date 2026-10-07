@@ -56,6 +56,6 @@ searched for.
 ## How to reproduce
 
 Open `fn_00402D70` and follow its switch to the four short cases that load a
-byte from `0x004A08EB..0x004A08EE` with a stride of `0x24`. List the callers of
+byte from `0x004A08EB..0x004A08EF` with a stride of `0x24`. List the callers of
 `fn_00402D70` and search each for a first argument of 6 or 7; only
 `fn_00409F47` passes 7.

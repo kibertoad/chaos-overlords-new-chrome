@@ -35,7 +35,7 @@ import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
 import { requireInProgress } from './guards'
 import { MatchQueryService, matchStartedEvent, toPlayerView } from './MatchQueryService'
-import { RateLimiter } from './RateLimiter'
+import { memoryRateLimiters, type RateLimiter } from './RateLimiter'
 import { FIRST_TURN, type TurnService } from './TurnService'
 
 const JOIN_CODE_LENGTH = LIMITS.joinCodeLength
@@ -98,15 +98,16 @@ export class LobbyService {
   ) {
     this.query = new MatchQueryService(deps.storage)
     this.newId = options.newId ?? (() => crypto.randomUUID())
-    this.passwordAttempts = new RateLimiter(deps.clock, {
+    const limiters = deps.rateLimits ?? memoryRateLimiters(deps.clock)
+    this.passwordAttempts = limiters('passwordAttempts', {
       limit: PASSWORD_ATTEMPTS_PER_CALLER,
       windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
     })
-    this.passwordFailures = new RateLimiter(deps.clock, {
+    this.passwordFailures = limiters('passwordFailures', {
       limit: PASSWORD_FAILURES_PER_MATCH,
       windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
     })
-    this.chatMessages = new RateLimiter(deps.clock, {
+    this.chatMessages = limiters('chatMessages', {
       limit: LIMITS.chatMessagesPerMinute,
       windowMs: CHAT_WINDOW_MS,
     })
@@ -137,14 +138,14 @@ export class LobbyService {
       throw new UnauthorizedError('This match needs a password', { reason: 'password_required' })
     }
     const callerKey = `${match.id}:${caller ?? 'unattributed'}`
-    const retry = this.passwordAttempts.take(callerKey)
+    const retry = await this.passwordAttempts.take(callerKey)
     if (retry !== null) throw this.tooManyPasswordAttempts(retry)
-    if (this.passwordAttempts.spent(callerKey) > 1) {
-      const underAttack = this.passwordFailures.peek(match.id)
+    if ((await this.passwordAttempts.spent(callerKey)) > 1) {
+      const underAttack = await this.passwordFailures.peek(match.id)
       if (underAttack !== null) throw this.tooManyPasswordAttempts(underAttack)
     }
     if (!(await verifyPassword(password, match.passwordHash))) {
-      this.passwordFailures.take(match.id)
+      await this.passwordFailures.take(match.id)
       throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
     }
   }
@@ -466,7 +467,7 @@ export class LobbyService {
     if (match.status !== 'lobby') {
       throw new ConflictError('Chat is open only in the lobby', { reason: 'match_not_in_lobby' })
     }
-    const retryAfterSeconds = this.chatMessages.take(`${match.id}:${player.id}`)
+    const retryAfterSeconds = await this.chatMessages.take(`${match.id}:${player.id}`)
     if (retryAfterSeconds !== null) {
       throw new RateLimitedError('Too many chat messages', {
         reason: 'rate_limited',

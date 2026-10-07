@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-003, FND-UI-011, FND-UI-032, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, EXP-UI-006]
+evidence: [FND-UI-003, FND-UI-011, FND-UI-032, FND-UI-024, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, EXP-UI-006, FND-UI-062, FND-UI-067]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-009, SCR-UI-003]
@@ -21,12 +21,13 @@ related: [RULE-UI-003, RULE-UI-009, SCR-UI-003]
 | Time limit | The font strip of `DATA/PX16/PX00129` | `game_info_limit_text` (RULE-UI-009) | From `(228,187)` | Always | FND-UI-003 |
 | Player names | The font strip of `DATA/PX16/PX00129` | `player_names` of slot `n` | From `(240, 214 + 9*n)` | For each of the six slots | FND-UI-003 |
 | Player status | The font strip of `DATA/PX16/PX00129` | `player_status_text(n)` (RULE-UI-009) | Right-aligned to x 408 on row `214 + 9*n` | For each of the six slots | FND-UI-003 |
+| OK pressed | `DATA/PX16/PX00129` rectangle (0, 386, 50, 23); plain face (50, 386, 50, 23) while the pointer is outside and after a release that leaves the panel open | None | (161, 293, 50, 23) | While the face is held with the pointer inside it | FND-UI-062, FND-UI-067 |
 
 ## Mouse input
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| OK face | `(161,293,49,22)` | While open | Closes the panel (RULE-UI-003) | FND-UI-003 |
+| OK face | `(161,293,49,22)` | While open | Held through the held-button helper; closes the panel (RULE-UI-003) only when the button is released inside it | FND-UI-003, FND-UI-067 |
 | Outside the panel | Outside `(104,124,344,209)` | While open | Refused; plays slot 4 | FND-UI-024 |
 
 ## Keyboard input
@@ -68,3 +69,8 @@ None known.
   executable opens it for a computer that joined and not for the host
   (FND-UI-024).
 - The player names' colours, which the manual says match the players.
+- No recorded run of the original reaches other scenario, Mentality and
+  time-limit strings; the eliminated status; the automatic opening after a
+  load or for a joining computer; a press outside the panel; Enter and
+  Execute; the slide sounds and timing (FND-UI-024). These rest on the static
+  findings named, so the entry stays `supported`.
