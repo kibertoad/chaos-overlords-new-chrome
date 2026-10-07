@@ -79,9 +79,11 @@ validation plans list the open questions.
 
 - Recorded runs of the original do not reach every branch of the computer
   players' planning or the end of every scenario
-  ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136)),
-  and no screen has been compared with a capture of the original
-  ([#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
+  ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136)).
+- Every screen the rebuild draws has been compared with at least one capture
+  of the original, but some states of most, such as pressed faces, selections
+  and drags, have not been captured yet; [VALIDATION.md](docs/VALIDATION.md#screen-capture-coverage)
+  lists them ([#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
 - Help is drawn by a cross-platform viewer, so its typography and paragraph
   layout approximate WinHelp's
   ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
