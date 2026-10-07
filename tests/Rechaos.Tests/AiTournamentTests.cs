@@ -258,8 +258,8 @@ public sealed class AiTournamentTests
     {
         var elapsed = Stopwatch.StartNew();
         Trace(
-            "AI tournament start: scenario={0}, seed={1}, duration={2}, horizon={3}.",
-            scenario, seed, duration, throughTurn?.ToString() ?? "completion");
+            "AI tournament start: scenario={0}, seed={1}, mentality={2}, duration={3}, horizon={4}.",
+            scenario, seed, mentality, duration, throughTurn?.ToString() ?? "completion");
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
         [
@@ -284,7 +284,8 @@ public sealed class AiTournamentTests
         OriginalAiSectorSelectionRules.DeviationObserver = deviation =>
         {
             if (deviation == "DEV-AI-005") offBoardSteps++;
-            else multipliesPastTable++;
+            else if (deviation == "DEV-AI-006") multipliesPastTable++;
+            else throw new InvalidOperationException($"Unexpected selector deviation {deviation}.");
         };
         try
         {
@@ -356,12 +357,16 @@ public sealed class AiTournamentTests
     [
         (GangAction.Equip, "Budget"),
         (GangAction.Move, nameof(CommandValidationCode.DestinationNotAdjacent)),
-        (GangAction.Move, nameof(CommandValidationCode.DestinationAtCapacity)),
         (GangAction.Influence, nameof(CommandValidationCode.SectorNotControlled)),
         (GangAction.Research, nameof(CommandValidationCode.ResearchTechLevelUnavailable)),
         (GangAction.Control, nameof(CommandValidationCode.SectorAlreadyControlled)),
         (GangAction.Control, nameof(CommandValidationCode.SectorInCrackdown)),
     ];
+
+    // DEV-AI-002 lists the dropped Control for families 2 and 13 only.
+    private static bool IsDocumentedDrop(GangAction action, string reason, int family) =>
+        DocumentedDrops.Contains((action, reason))
+        && (action != GangAction.Control || family is 2 or 13);
 
     private static void AssertOnlyDocumentedActionsDropped(
         MatchState state,
@@ -376,39 +381,23 @@ public sealed class AiTournamentTests
             if (!gang.IsActive || action == GangAction.None
                 || commands.Any(command => command.Gang == gang.Id))
                 continue;
-            var reason = DropReason(state, playerId, slot, action);
-            Assert.True(DocumentedDrops.Contains((action, reason)),
+            var reason = DropReason(state, playerId, gang, slot);
+            var family = state.AiPlanning.Family(playerId, slot);
+            Assert.True(IsDocumentedDrop(action, reason, family),
                 $"turn {state.Coordinator.Turn}: player {playerId.Value}'s gang in roster slot {slot} "
-                + $"(family {state.AiPlanning.Family(playerId, slot)}) planned {action} and got no "
+                + $"(family {family}) planned {action} and got no "
                 + $"command ({reason}), which neither DEV-AI-002 nor DEV-AI-007 lists.");
         }
     }
 
     // The planned action as the command it describes (RULE-AI-002), and why validation or the
     // planner's running cash total refuses it.
-    private static string DropReason(MatchState state, PlayerId playerId, int slot, GangAction action)
+    private static string DropReason(MatchState state, PlayerId playerId, MatchGangState gang, int slot)
     {
-        var gang = state.FindPlayer(playerId)!.Gangs[slot];
-        var planned = state.AiPlanning.PlannedTarget(playerId, slot);
-        var (kind, id) = action switch
-        {
-            GangAction.Move => (CommandTargetKind.Sector, (int)planned.First),
-            GangAction.Equip or GangAction.Research => (CommandTargetKind.Item, planned.First),
-            GangAction.Influence => (CommandTargetKind.Site,
-                gang.SectorId * MatchLimits.SitesPerSector + planned.First),
-            GangAction.Attack => (CommandTargetKind.Gang,
-                state.FindPlayer(new PlayerId(planned.First)) is { } target
-                && planned.Second < target.Gangs.Count
-                    ? target.Gangs[planned.Second].Id.Value
-                    : -1),
-            GangAction.Give or GangAction.Sell => (CommandTargetKind.Gang, -1),
-            _ => (CommandTargetKind.None, -1),
-        };
-        if (!CommandTarget.TryCreate(kind, id, out var commandTarget)) return "NoTarget";
-        var validation = CommandValidator.Validate(
-            state, new GameCommand(playerId, gang.Id, action, commandTarget));
+        if (AiTurnPlanner.PlannedCommand(state, playerId, gang, slot) is not { } command) return "NoTarget";
+        var validation = CommandValidator.Validate(state, command);
         if (!validation.IsValid) return validation.Code.ToString();
-        return action == GangAction.Attack ? "Undetected" : "Budget";
+        return command.Action == GangAction.Attack ? "Undetected" : "Budget";
     }
 
     private void Trace(string format, params object[] values)

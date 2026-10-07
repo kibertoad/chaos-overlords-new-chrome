@@ -556,8 +556,8 @@ started with.
   player's planning state with bytes that are no family, action or target any handler assigns: a
   corruption no player can rely on. While a human holds slot 0 the records are zero bytes and the
   multiply leaves them zero, so a match with a human in slot 0 plays the same. With a computer in
-  slot 0 the records are not zero: in 120 matches of six computer players the multiply would have
-  rewritten them 600 times. A setting would choose between
+  slot 0 the records are not zero: in 120 matches of six computer players the multiply reached
+  them 600 times. A setting would choose between
   leaving the records alone and reproducing a corruption the rebuild's planning state refuses to
   hold.
 - Dropped: no
