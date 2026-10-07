@@ -128,7 +128,7 @@ public static class EquipmentGiveSelection
 
     /// <summary>
     /// The highest Tech Level among the selected items, starting from 0; a recipient whose gang
-    /// type's Tech Level is lower is dimmed and cannot be chosen (FND-GIVE-001, FND-EQUIP-008).
+    /// type's Tech Level is lower is dimmed and cannot be chosen (FND-GIVE-001, FND-EQUIP-012).
     /// </summary>
     public static int RequiredTechLevel(IEnumerable<ItemDefinition> selectedItems)
     {

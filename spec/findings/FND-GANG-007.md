@@ -90,7 +90,7 @@ sites or the combat term.
   (from `0x7E`, skipping `0x82`), the item record (from `0x82`), the sector
   record's site sums (from `0x16`) and the gang record (from `0x12`), so the
   field names of one record carry over to the others. The definition field
-  at `0x82`, left out here, is the gang's Tech Level (FND-EQUIP-008).
+  at `0x82`, left out here, is the gang's Tech Level (FND-EQUIP-012).
 - The byte at `0x12` holds the gang's whole combat rating, its Combat
   statistic plus the skills of its weapon: bare handed it includes Strength, Fighting and Martial Arts, with
   a weapon of type 0 Strength, type 1 Strength and Blade, type 2 Ranged. The

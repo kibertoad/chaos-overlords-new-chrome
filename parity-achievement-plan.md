@@ -77,7 +77,7 @@ needs static reads or captures of the original:
 ## Step 13: From complete to validated
 
 A row is `validated` only when its Tests column lists a test that compares the rebuild with
-evidence from the original (see [docs/VALIDATION.md](docs/VALIDATION.md#tests-against-the-original)).
+evidence from the original (see [docs/validation/tests-against-the-original.md](docs/validation/tests-against-the-original.md)).
 
 - Formats: FMT-DATA-001 to 003, FMT-GFX-001 to 003, FMT-VIDEO-001 and FMT-HELP-001 to 002 are
   validated against every shipped file. FMT-AUDIO-001 and 002 have file tests too, but the

@@ -6,7 +6,7 @@ builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
-environment: Windows 11 Pro 10.0.26200 with the United States keyboard layout (04090409) on the game's thread, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, staged as docs/VALIDATION.md describes, windowed, the sound levels set to 0 in memory, under the Windows debugging interface of tools/Rechaos.OriginalProbe
+environment: Windows 11 Pro 10.0.26200 with the United States keyboard layout (04090409) on the game's thread, an unelevated copy of the executable and SMACKW32.DLL beside junctions to the install's DATA, MUSIC and HELP directories, staged as docs/validation/experiments.md describes, windowed, the sound levels set to 0 in memory, under the Windows debugging interface of tools/Rechaos.OriginalProbe
 starting_state: new-game
 recording: null
 repetitions: 1

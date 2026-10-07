@@ -139,7 +139,7 @@ validation plans list the open questions.
   ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136)).
 - Every screen the rebuild draws has been compared with at least one capture
   of the original, but some states of most, such as pressed faces, selections
-  and drags, have not been captured yet; [VALIDATION.md](docs/VALIDATION.md#screen-capture-coverage)
+  and drags, have not been captured yet; [the capture coverage table](docs/validation/screen-capture-coverage.md)
   lists them ([#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
 - Help is drawn by a cross-platform viewer, so its typography and paragraph
   layout approximate WinHelp's
