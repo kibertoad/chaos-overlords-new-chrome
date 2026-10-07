@@ -25,6 +25,15 @@ export const LIMITS = {
   snapshotBase64Bytes: 1024 * 1024,
   /** Event log page size for the REST fallback. */
   eventsPageSize: 200,
+  /** A lobby chat message, in characters after normalisation: the length of a Comlink message. */
+  chatMessageLength: 160,
+  /** Chat messages one player may post per minute. */
+  chatMessagesPerMinute: 10,
+  /**
+   * Events a lobby's log may hold before chat is refused. The log is chat's only store and lobby
+   * retention keeps it for days, so this is what bounds one lobby's cost to the server.
+   */
+  lobbyChatLogEvents: 1000,
 } as const
 
 /**

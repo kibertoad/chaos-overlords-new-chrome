@@ -389,8 +389,8 @@ public sealed partial class ChaosGame
 
     // FND-COMLINK-010: the reference frame draws the caret in the phase the original's capture
     // recorded, 0 to 2 timer events since a flip to plain and 3 to 5 since a flip to inverse.
-    private bool ComlinkCaretInverse => _referenceFrame?.ItemFrame is { } frame
-        ? frame % 6 >= 3
+    private bool ComlinkCaretInverse => _referenceFrame?.CaretPhase is { } phase
+        ? phase >= ComlinkCaretCadence.EventsPerGlyphRow
         : _comlinkCaretCadence.UsesInverseGlyph;
 
     private void DrawPressedComlinkSendButton(SpriteBatch batch)

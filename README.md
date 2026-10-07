@@ -57,23 +57,28 @@ their own sectors (DEV-AI-008), are switched by `--original-computer-moves` and
 `--original-computer-hires` on the game's command line instead of a screen.
 
 Recorded runs of the original now check it in play. A debugger records every
-random draw of new games from launch and up to twenty-five turns of play, some
-with orders for the human's gang, and the rebuild has to make the same draws and
-reach the same state (EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to
-EXP-TURN-016 in the [spec](spec/README.md)). That covers setup, the computer
-players' planning and hiring, including Siege, Eliminate and Big Man, the
-resolution of most orders, one Attack, one Sell and the police. Deaths in
-combat, the Terminate and Give orders, events and the later game have not been
-recorded yet, and a static reading can still be wrong there. The
+random draw of a new game from launch through up to eighty-two turns of play,
+with the state where the run stops (and, in most runs from EXP-TURN-048 on,
+the computer players' planning records), and the rebuild has to make the same
+draws and reach the same state (the `EXP-` entries of the
+[spec](spec/README.md)). The runs cover setup, every
+scenario and Mentality, the computer players' planning and hiring, every order,
+combat, the police, events, and the end of Greed, Acceptance, Dominance and Big
+Man matches. A static reading can still be wrong where no run reaches: some
+branches of the computer players' planning, the end of Power, Big 40, Siege,
+Armageddon and Eliminate matches, and a Kill 'Em All match played down to one
+player without the probe retiring the others
+([docs/AI-SPEC.md](docs/AI-SPEC.md#how-far-the-planner-is-proved)). The
 [parity matrix](PARITY.md) shows the state of every rule, format and screen;
-75 of its 222 rows are compared with evidence from the original. The
+207 of its 224 rows are compared with evidence from the original. The
 [parity achievement plan](parity-achievement-plan.md) and the
 [static](static_validation_plan.md) and [manual](manual_validation_plan.md)
 validation plans list the open questions.
 
 ### Key omissions
 
-- Recorded runs of the original do not reach every part of the late game yet
+- Recorded runs of the original do not reach every branch of the computer
+  players' planning or the end of every scenario
   ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136)).
 - Every screen the rebuild draws has been compared with at least one capture
   of the original, but some states of most, such as pressed faces, selections

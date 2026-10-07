@@ -31,6 +31,12 @@ public sealed partial class ChaosGame
     private readonly List<MultiplayerRecovery> _multiplayerRecoveries = [];
 
     /// <summary>
+    /// Whether the recovery file holds a seat's token in clear, because no keyring took it; the
+    /// Unfinished Sessions screen says so. Read after each load and save rather than per frame.
+    /// </summary>
+    private bool _onlineTokensInClear;
+
+    /// <summary>
     /// Bumped whenever <see cref="_multiplayerRecoveries"/> changes, so the filtered view over it
     /// can tell whether it is stale without comparing the lists.
     /// </summary>
@@ -141,6 +147,8 @@ public sealed partial class ChaosGame
         {
             if (_online.IsHost && _online.SessionName.IsFocused) _online.SessionName.Type(character);
             else if (EditingLobbyName) _online.DisplayName.Type(character);
+            else if (_online.Chat.IsFocused && LobbyChatPresentation.Accepts(character))
+                _online.Chat.Type(character);
             return;
         }
         if (_screens.Current != ClientScreen.Online) return;
@@ -764,6 +772,16 @@ public sealed partial class ChaosGame
 
     private void HandleLobbyClick(Point point)
     {
+        // A click anywhere but the chat line leaves it; what was typed stays for later.
+        _online.Chat.IsFocused = false;
+        // The chat is drawn only once the server has answered with the lobby.
+        if (_online.Match is not null && LobbyChatInput.Contains(point))
+        {
+            CommitLobbySessionName();
+            FinishLobbyNameEdit(cancel: false);
+            _online.Chat.IsFocused = true;
+            return;
+        }
         if (CanConfigureOnlineLobby() && LobbySessionName.Contains(point))
         {
             FinishLobbyNameEdit(cancel: false);
@@ -823,6 +841,12 @@ public sealed partial class ChaosGame
             return;
         }
         SendPendingLobbyProfile();
+        if (_online.Chat.IsFocused)
+        {
+            if (Pressed(keyboard, Keys.Enter)) SendLobbyChat();
+            PollLobby(gameTime);
+            return;
+        }
         if (_online.SessionName.IsFocused)
         {
             if (Pressed(keyboard, Keys.Enter)) CommitLobbySessionName();
@@ -935,6 +959,7 @@ public sealed partial class ChaosGame
     {
         _multiplayerRecoveryVersion++;
         MultiplayerRecoveryStore.TrySaveAll(_multiplayerRecoveryPath, _multiplayerRecoveries, durable);
+        _onlineTokensInClear = MultiplayerRecoveryStore.KeepsTokensInClear(_multiplayerRecoveryPath);
     }
 
     private static bool SameMembership(MultiplayerRecovery left, MultiplayerRecovery right) =>
