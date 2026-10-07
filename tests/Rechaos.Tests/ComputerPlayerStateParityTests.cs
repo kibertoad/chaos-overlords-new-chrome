@@ -267,7 +267,7 @@ public sealed class ComputerPlayerStateParityTests
             ], owner: id == 0 ? sectorOwner : null))
             .ToArray();
         return new MatchState(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original),
             players, sectors);
     }
 
@@ -306,7 +306,7 @@ public sealed class ComputerPlayerStateParityTests
             ]))
             .ToArray();
         return new MatchState(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original),
             players, sectors);
     }
 
@@ -363,7 +363,7 @@ public sealed class ComputerPlayerStateParityTests
             ], owner: owned.Contains(id) ? setups[0].Id : rivalOwnsRest ? setups[1].Id : null))
             .ToArray();
         return new MatchState(data,
-            new MatchSetup(scenario, GameDuration.SixMonths, 1996, setups),
+            new MatchSetup(scenario, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original),
             players, sectors);
     }
 }

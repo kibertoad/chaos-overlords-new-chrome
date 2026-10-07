@@ -583,7 +583,7 @@ public sealed class TransactionResolutionTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         var gangDefinition = useLowTechGangs
             ? data.Gangs.OrderBy(gang => gang.TechLevel).First()
             : data.Gangs.OrderByDescending(gang => gang.TechLevel).First();
