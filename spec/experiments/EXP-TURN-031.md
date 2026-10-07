@@ -65,12 +65,12 @@ turns 7 and 8, and was not called at the others. The fixture holds this run.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state. In its replay the cash at each planning
-turn from 6 to 10 is 4, 0, 0, 1 and 0: the Equip of turn 6 spends the 4, the
-Equips of turns 7 and 8 fail for lack of cash, the Sell of turn 8 pays 1, and
-in turn 9 the Sell raises the 1 to 2, which the Equip spends.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same generator position and state. In
+its replay the cash at each planning turn from 6 to 10 is 4, 0, 0, 1 and 0: the
+Equip of turn 6 spends the 4, the Equips of turns 7 and 8 fail for lack of cash,
+the Sell of turn 8 pays 1, and in turn 9 the Sell raises the 1 to 2, which the
+Equip spends.
 
 Slot 1 ends with item 40 and item 24 and slot 0 with no weapon, which only
 this outcome gives: the Equip at the exact price succeeded, both Equips one
