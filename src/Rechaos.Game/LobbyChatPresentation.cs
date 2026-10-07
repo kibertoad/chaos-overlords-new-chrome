@@ -47,12 +47,17 @@ internal static class LobbyChatPresentation
         ArgumentNullException.ThrowIfNull(messages);
         ArgumentNullException.ThrowIfNull(authorName);
         if (columns <= 0 || rows <= 0) return [];
+        // Newest first, stopping once the panel is full: this runs every frame, and the lobby keeps
+        // far more messages than a panel shows.
         var wrapped = new List<string>();
-        foreach (var message in messages)
+        var message = new List<string>();
+        for (var index = messages.Count - 1; index >= 0 && wrapped.Count < rows; index--)
         {
-            var name = authorName(message.PlayerId).Trim();
+            var name = authorName(messages[index].PlayerId).Trim();
             if (name.Length > NameColumns) name = name[..NameColumns];
-            Wrap($"{name}: {message.Text}", columns, wrapped);
+            message.Clear();
+            Wrap($"{name}: {messages[index].Text}", columns, message);
+            wrapped.InsertRange(0, message);
         }
         return wrapped.Count <= rows ? wrapped : wrapped.GetRange(wrapped.Count - rows, rows);
     }

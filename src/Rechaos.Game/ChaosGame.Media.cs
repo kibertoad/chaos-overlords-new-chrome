@@ -196,7 +196,8 @@ public sealed partial class ChaosGame
         _soundtrackProgramPlayer?.FinishFade(fade.RestoredVolume, release: _soundtrackEnabled);
     }
 
-    protected override void OnDeactivated(object sender, EventArgs args)
+    /// <summary>The window has lost the focus.</summary>
+    internal void Deactivated()
     {
         try
         {
@@ -220,12 +221,11 @@ public sealed partial class ChaosGame
                 DisableSoundtrack();
             }
         }
-        base.OnDeactivated(sender, args);
     }
 
-    protected override void OnActivated(object sender, EventArgs args)
+    /// <summary>The window has the focus again.</summary>
+    internal void Activated()
     {
-        base.OnActivated(sender, args);
         try
         {
             if (_introMovieAudio?.State == SoundState.Paused) _introMovieAudio.Resume();
@@ -257,8 +257,7 @@ public sealed partial class ChaosGame
         // first and then music, including when the chosen level is unchanged.
         try
         {
-            if (_activeEffectVoice is not null)
-                _activeEffectVoice.Volume = AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel);
+            _soundEffects.SetVolume(AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel));
         }
         catch
         {
@@ -323,7 +322,8 @@ public sealed partial class ChaosGame
         _soundtrackMode = null;
     }
 
-    protected override void UnloadContent()
+    /// <summary>Lets go of everything the game holds, on the way out.</summary>
+    internal void UnloadContent()
     {
         // Do not let the process exit between a completed turn and its rolling snapshot reaching
         // disk. This runs only during shutdown; frame-time work remains on the background worker.
@@ -332,13 +332,9 @@ public sealed partial class ChaosGame
         DisposeIntroMovie();
         DisposeSoundtrack();
         StopEffectVoice();
-        foreach (var sound in _combatSounds.Values) sound.Dispose();
-        foreach (var sound in _generalSounds.Values) sound.Dispose();
-        _combatSounds.Clear();
-        _generalSounds.Clear();
+        _nativeSoundEffects?.Dispose();
         // Closing the window while an online match is running should tell the server so, and let go
         // of the sockets either way.
         ReleaseOnlineResources();
-        base.UnloadContent();
     }
 }

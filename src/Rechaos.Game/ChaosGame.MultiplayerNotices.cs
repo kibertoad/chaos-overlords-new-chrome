@@ -144,6 +144,14 @@ public sealed partial class ChaosGame
                     RejectLobbyProfile(failed);
                     return;
                 }
+                // A refused chat message (the rate limit, a match that has just started) leaves the
+                // seat as it was too. The connection error is drawn only on the connect form, so
+                // taking that path here told the player nothing.
+                if (failed.Operation == nameof(MultiplayerLobbySession.SendChat))
+                {
+                    _online.Status = failed.Reason;
+                    return;
+                }
                 RememberOnlineFailure(failed.Error, failed.Operation, lastEventSequence: null);
                 if (_online.Stage == MultiplayerStage.Busy)
                 {

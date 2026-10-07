@@ -53,8 +53,8 @@ The other fifteen bytes stay -1.
 
 ## Results
 
-`TheHireDockSetsTheOriginalsOrders` compares the run as in EXP-HIRE-001, and
-the orders are the same after every step.
+A test of the rebuild compares the run as in EXP-HIRE-001, and the orders are
+the same after every step.
 
 ## Conclusion
 

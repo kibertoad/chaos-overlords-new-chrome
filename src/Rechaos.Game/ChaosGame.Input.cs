@@ -64,7 +64,8 @@ public sealed partial class ChaosGame
         }
         if (_pressedCityConsoleControl is not null)
         {
-            KeepLeftHoldUntilRelease();
+            if (_pressedCityConsoleByRightButton) KeepRightHoldUntilRelease();
+            else KeepLeftHoldUntilRelease();
             CancelCityConsolePress();
             _message = string.Empty;
             return;
@@ -146,10 +147,20 @@ public sealed partial class ChaosGame
             case ClientScreen.Hire:
                 _screens.Show(_managementReturnScreen);
                 break;
+            case ClientScreen.City:
+                // FND-UI-063: on the city only the console tiles take the right button. A tile
+                // press ends a pending sector double-click, as the left button's does.
+                if (rightPress is { } cityPoint && !PointerPopupOpen()
+                    && BeginCityConsolePress(cityPoint, ClientScreen.City, rightButton: true))
+                    _citySectorClicks.Cancel();
+                break;
             case ClientScreen.Sector:
-                // SCR-UI-004: the right button presses the back control and the cards as the left
-                // does, and nothing else.
-                if (rightPress is { } point) HandleSectorRightPress(point);
+                // SCR-UI-004, FND-UI-063: the right button presses what the left one presses,
+                // apart from the cells and sites, which take only a double-click.
+                if (rightPress is { } point)
+                {
+                    if (!PointerPopupOpen()) HandleSectorRightPress(point);
+                }
                 else _screens.Show(ClientScreen.City);
                 break;
             case ClientScreen.SectorGangs:
@@ -189,6 +200,13 @@ public sealed partial class ChaosGame
                 break;
         }
     }
+
+    /// <summary>
+    /// The takeover vote and the reconnect popup take every left press before the screen does
+    /// (<see cref="HandleClick"/>), so a right press reaches nothing behind them either.
+    /// </summary>
+    private bool PointerPopupOpen() =>
+        TakeoverVoteBlocksInput || _session is not null && _online.ReconnectPopupShown;
 
     private static bool DragMoved(Point press, Point current) =>
         Math.Abs(current.X - press.X) >= 4 || Math.Abs(current.Y - press.Y) >= 4;
