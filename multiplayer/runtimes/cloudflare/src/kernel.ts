@@ -14,6 +14,7 @@ import {
   type EventNotifier,
   type Kernel,
   type Logger,
+  type RateLimiterFactory,
   type RetentionPolicy,
   retentionPolicyFromDays,
   type StreamCloser,
@@ -138,6 +139,8 @@ export function buildKernel(
     notifier: EventNotifier
     scheduler: DeadlineScheduler
     streams: StreamCloser
+    /** Where the kernel's password budgets count; the isolate when absent. */
+    rateLimits: RateLimiterFactory
   }> = {},
 ): Kernel {
   const storage = createSqliteStorage(drizzle(env.DB, { schema: sqliteSchema }))
@@ -170,6 +173,7 @@ export function buildKernel(
       streams,
       clock: { now: () => new Date() },
       logger: workerLogger,
+      ...(overrides.rateLimits ? { rateLimits: overrides.rateLimits } : {}),
     },
     { retention: retentionPolicyFor(env) },
   )

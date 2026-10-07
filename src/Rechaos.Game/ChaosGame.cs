@@ -5,10 +5,11 @@ using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
+using Rechaos.Multiplayer.Http;
 
 namespace Rechaos.Game;
 
-public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
+public sealed partial class ChaosGame
 {
     private static readonly Color[] PlayerColors =
         [Color.Red, Color.LimeGreen, Color.Blue, Color.Yellow, Color.Magenta, Color.Cyan];
@@ -31,7 +32,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         Color.FromNonPremultiplied(150, 255, 165, 210);
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
-    private readonly GraphicsDeviceManager _graphics;
+    /// <summary>The program the game runs in; see <see cref="IGameShell"/>.</summary>
+    private IGameShell _shell = DetachedShell.Instance;
     private readonly string _assetRoot;
     private readonly string _saveDirectory;
     private readonly string _autoSavePath;
@@ -84,9 +86,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _uiSprites;
     private Texture2D? _uiKeyedSprites;
     private PixelFont? _font;
-    private readonly Dictionary<short, SoundEffect> _combatSounds = [];
-    private readonly Dictionary<int, SoundEffect> _generalSounds = [];
-    private SoundEffectInstance? _activeEffectVoice;
+    /// <summary>The effects the asset pack loads into, unless a test plays them elsewhere.</summary>
+    private readonly NativeSoundEffects? _nativeSoundEffects;
+    private readonly ISoundEffectOutput _soundEffects;
     private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
     private readonly DetailedCombatExit _combatExit = new();
@@ -236,20 +238,39 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     public ChaosGame(
         string assetRoot,
+        MatchDeviations localDeviations,
         bool debugPhaseStepping = false,
         RuntimeDiagnostics? diagnostics = null,
         string? screenshotFolder = null,
-        bool originalComputerMoves = false,
-        bool originalComputerHires = false,
+        ReferenceFrameRequest? referenceFrame = null,
+        string? startupSavePath = null)
+        : this(assetRoot, ChaosGameServices.Desktop, localDeviations, debugPhaseStepping, diagnostics,
+            screenshotFolder, referenceFrame, startupSavePath)
+    {
+    }
+
+    internal ChaosGame(
+        string assetRoot,
+        ChaosGameServices services,
+        MatchDeviations localDeviations,
+        bool debugPhaseStepping = false,
+        RuntimeDiagnostics? diagnostics = null,
+        string? screenshotFolder = null,
         ReferenceFrameRequest? referenceFrame = null,
         string? startupSavePath = null)
     {
+        ArgumentNullException.ThrowIfNull(services);
         _assetRoot = assetRoot;
+        if (services.SoundEffects is { } soundEffects) _soundEffects = soundEffects;
+        else _soundEffects = _nativeSoundEffects = new NativeSoundEffects(diagnostics);
+        _http = services.MultiplayerTransport is { } transport
+            ? MultiplayerClientOptions.CreateHttpClient(transport)
+            : MultiplayerClientOptions.CreateHttpClient();
+        if (services.RunRandomState is { } runRandomState) _runRandomState = runRandomState;
         _startupSavePath = startupSavePath;
-        _originalComputerMoves = originalComputerMoves;
-        _originalComputerHires = originalComputerHires;
+        _localDeviations = localDeviations;
         _referenceFrame = referenceFrame;
-        _pointer = new(shape => Mouse.SetCursor(shape == PointerShape.Hourglass ? MouseCursor.Wait : MouseCursor.Arrow),
+        _pointer = new(shape => _shell.ShowPointer(shape),
             () => ComputerTurnsCanRun() ? PresentationPointer.Idle(_state) : PointerShape.Arrow);
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;
@@ -284,7 +305,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
                 _showEndgameStats = false;
         };
-        var userDataRoot = _referenceFrame?.UserDataDirectory ?? Path.Combine(
+        var userDataRoot = services.UserDataDirectory ?? _referenceFrame?.UserDataDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords");
         _saveDirectory = userDataRoot;
@@ -313,6 +334,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _online.Server.Set(preferences.CustomMultiplayerServer);
         _onlineLobbyPresentation = preferences.LobbyPresentation;
         _multiplayerRecoveries.AddRange(MultiplayerRecoveryStore.LoadAll(_multiplayerRecoveryPath));
+        _onlineTokensInClear = MultiplayerRecoveryStore.KeepsTokensInClear(_multiplayerRecoveryPath);
         // The player's own name carries over from any saved seat, including one from another
         // session version; only the join code is limited to a match this build can play.
         if (_multiplayerRecoveries.FirstOrDefault(saved => saved.CanReconnect) is { } latest)
@@ -323,41 +345,30 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (recovery.ShouldSuggestReconnect)
                 _message = "ONLINE MATCH INTERRUPTED  OPEN ONLINE TO RECONNECT";
         }
-        // Two virtual pixels per device pixel is the size the interface was drawn for, but a
-        // 1366x768 laptop or a 1080p panel at 150% scaling cannot show a 920-pixel-tall window, and
-        // the DONE button ends up below the screen edge. Draw and input already letterbox from the
-        // viewport, so any size works; the window just has to fit on the display it opens on.
-        var (backBufferWidth, backBufferHeight) = _referenceFrame is null
-            ? ShellWindow.OpeningSize(
-                GraphicsAdapter.DefaultAdapter?.CurrentDisplayMode?.Width,
-                GraphicsAdapter.DefaultAdapter?.CurrentDisplayMode?.Height)
-            : (VirtualInput.Width, VirtualInput.Height);
-        _graphics = new GraphicsDeviceManager(this)
-        {
-            PreferredBackBufferWidth = backBufferWidth,
-            PreferredBackBufferHeight = backBufferHeight,
-            SynchronizeWithVerticalRetrace = true,
-            HardwareModeSwitch = ShellWindow.SwitchesDisplayMode,
-            IsFullScreen = _fullscreen && _referenceFrame is null
-        };
-        // Ticking on without focus is what keeps background online notices, the planning timer and
-        // the autosave serviced; the redraw is the expensive part, and BeginDraw spaces that out
-        // instead. The sleep between inactive ticks doubles as the input poll gap, because every
-        // edge comes from comparing consecutive polled snapshots, so it stays far shorter than a
-        // click: a press and release that both landed inside one sleep would never be seen, and
-        // the click that raises the window would be swallowed.
-        InactiveSleepTime = ShellWindow.InactiveSleepTime;
-        IsFixedTimeStep = true;
-        TargetElapsedTime = ShellWindow.FrameTime;
-        IsMouseVisible = true;
-        Window.AllowUserResizing = ShellWindow.AllowsResizing;
-        Window.Title = "Chaos Overlords: New Chrome";
-        // The only text the game takes: a server address, a name and a join code. The platform has
-        // already decoded the keystroke, so a non-US layout types what it should.
-        Window.TextInput += (_, args) => HandleTextInput(args.Character);
     }
 
-    protected override void LoadContent()
+    private GraphicsDevice GraphicsDevice => _shell.GraphicsDevice;
+
+    /// <summary>Whether the window has the focus.</summary>
+    private bool IsActive => _shell.IsActive;
+
+    /// <summary>Closes the program; the shell asks <see cref="ConfirmExit"/> first.</summary>
+    private void Exit() => _shell.Exit();
+
+    /// <summary>Lets <paramref name="shell"/> run the game, before anything is loaded.</summary>
+    internal void Attach(IGameShell shell) => _shell = shell ?? throw new ArgumentNullException(nameof(shell));
+
+    /// <summary>Whether the window opens on the full screen, as the player last left it.</summary>
+    internal bool StartsFullScreen => _fullscreen && _referenceFrame is null;
+
+    /// <summary>Whether the window is a reference frame's, drawn at the virtual screen's size.</summary>
+    internal bool DrawsReferenceFrame => _referenceFrame is not null;
+
+    /// <summary>
+    /// Loads the asset pack onto the graphics device and the audio device, then
+    /// <see cref="LoadGameData"/>. The window calls this once its device exists.
+    /// </summary>
+    internal void LoadContent()
     {
         ValidateAssetPack();
         _batch = new SpriteBatch(GraphicsDevice);
@@ -365,10 +376,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _pixel.SetData([Color.White]);
         _eventSiteDitherOverlay = LastTurnEventPresentation.CreateEventSiteDitherOverlay(
             GraphicsDevice);
-        _definitions = BundledOriginalData.Load();
-        _helpDocument = ExtractedHelpStore.LoadOrNull(_assetRoot) is { } help
-            ? HelpContentAugmentation.AddExecutableNotes(help)
-            : null;
 
         _titleBackground = LoadTexture("PX00130.bmp");
         _setupBackground = LoadTexture("PX00143.bmp");
@@ -423,42 +430,44 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             ? throw new InvalidDataException("PX00129 is required for the original UI font.")
             : new PixelFont(GraphicsDevice, _uiSprites);
         LoadCombatAnimationTextures();
-        for (short index = 0; index <= 18; index++)
+        _nativeSoundEffects?.LoadAll(_assetRoot);
+        LoadGameData();
+        _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
         {
-            var sound = LoadSound(AudioRouting.SoundFile(index));
-            if (sound is not null) _combatSounds.Add(index, sound);
-        }
-        foreach (var slot in AudioRouting.GeneralSoundSlots)
-        {
-            var sound = LoadSound(AudioRouting.GeneralSoundFile(slot));
-            if (sound is not null) _generalSounds.Add(slot, sound);
-        }
+            ["helpAvailable"] = (_helpDocument is not null).ToString(),
+            ["combatSounds"] = (_nativeSoundEffects?.Count(SoundEffectBank.Combat) ?? 0).ToString(),
+            ["generalSounds"] = (_nativeSoundEffects?.Count(SoundEffectBank.General) ?? 0).ToString(),
+            ["combatAnimations"] = _combatAnimationTextures.Count.ToString()
+        });
+    }
+
+    /// <summary>
+    /// Loads the original's data and the help, opens the save named on the command line and starts
+    /// the intro. Everything the game plays with, and nothing it draws or sounds: a shell with no
+    /// graphics device calls this alone.
+    /// </summary>
+    internal void LoadGameData()
+    {
+        _definitions = BundledOriginalData.Load();
+        _helpDocument = ExtractedHelpStore.LoadOrNull(_assetRoot) is { } help
+            ? HelpContentAugmentation.AddExecutableNotes(help)
+            : null;
         // RULE-UI-013: the command-line file is opened before the intro test, which a loaded
         // match skips.
         OpenStartupSave();
         InitializeIntroMovies();
         LoadSoundtrack();
-        _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
-        {
-            ["helpAvailable"] = (_helpDocument is not null).ToString(),
-            ["combatSounds"] = _combatSounds.Count.ToString(),
-            ["generalSounds"] = _generalSounds.Count.ToString(),
-            ["combatAnimations"] = _combatAnimationTextures.Count.ToString()
-        });
     }
 
-    protected override void Update(GameTime gameTime)
+    /// <summary>One tick of the game: the input since the last tick, the clocks and the screens.</summary>
+    internal void Update(GameTime gameTime)
     {
         _autoSave.Pump();
         _inputTime = _referenceFrame is null ? gameTime.TotalGameTime : _referenceClock;
         _eventPump.Update(_inputTime, OutsideEventPump());
-        if (UpdateReferenceFrame())
-        {
-            base.Update(gameTime);
-            return;
-        }
-        var keyboard = Keyboard.GetState();
-        var mouse = Mouse.GetState();
+        if (UpdateReferenceFrame()) return;
+        var keyboard = _shell.ReadKeyboard();
+        var mouse = _shell.ReadMouse();
         // The rebuild's window shortcuts are not game events, so a fade does not swallow them.
         if (Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
         // Alt+Enter goes no further, so the Enter does not also act on the screen.
@@ -472,7 +481,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (_soundtrackFade is not null)
             {
                 UpdatePointerDuringFade(mouse);
-                EndUpdate(gameTime, keyboard, mouse);
+                EndUpdate(keyboard, mouse);
                 return;
             }
         }
@@ -480,20 +489,20 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             || keyboard.IsKeyDown(Keys.RightControl);
         if (altEnter || UpdateIntroMovies(gameTime, keyboard, mouse))
         {
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         if (!soundtrackUpdated) UpdateSoundtrack(gameTime);
         if (_soundtrackFade is not null)
         {
             UpdatePointerDuringFade(mouse);
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         if (_replayViewer is not null)
         {
             UpdateReplayPlayback(gameTime, keyboard, mouse);
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         UpdateComlinkAlert(_eventPump.Time);
@@ -506,14 +515,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_creditsOpen)
         {
             UpdateCredits(keyboard, mouse);
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         var rightClicked = PointerButtonEdges.Pressed(
             mouse.RightButton, _previousMouse.RightButton);
         if (!_gameMenuOpen && UpdatePlanningTimer(gameTime.TotalGameTime))
         {
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         RunComputerTurns();
@@ -523,7 +532,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_combatAnimationPlayer.IsPlaying)
         {
             var exitPointMapped = VirtualInput.TryMap(
-                GraphicsDevice.Viewport, mouse.Position, out var exitPoint);
+                _shell.Viewport, mouse.Position, out var exitPoint);
             var pointer = _combatExit.Update(exitPointMapped ? exitPoint : null,
                 mouse.LeftButton == ButtonState.Pressed,
                 _previousMouse.LeftButton == ButtonState.Pressed);
@@ -543,7 +552,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             }
             // The key or button that ended the presentation does nothing else this frame, so
             // Escape does not also open the game menu.
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         _combatExit.Reset();
@@ -553,12 +562,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // on the presentation clock, so this frame's keys and clicks are dropped.
         if (UpdateTickedPresentation())
         {
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         if (rightClicked && !_gameMenuOpen)
             CancelCurrentInteraction(
-                VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var rightPoint) ? rightPoint : null);
+                VirtualInput.TryMap(_shell.Viewport, mouse.Position, out var rightPoint) ? rightPoint : null);
         if (_gameMenuOpen)
         {
             UpdateGameMenu(keyboard);
@@ -795,13 +804,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // dispatch and the combat-presentation capture below must not run against it.
         if (_replayViewer is not null)
         {
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         // RULE-UI-003: the original handles no message while a panel slides in, and takes a click
         // made during the slide from the queue once the panel is in place. The pointer is
         // therefore read against the panel's final place, whatever the drawn offset.
-        var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
+        var pointerMapped = VirtualInput.TryMap(_shell.Viewport, mouse.Position, out var virtualPoint);
         UpdateHoverPoint(pointerMapped ? virtualPoint : null);
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)
@@ -823,17 +832,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: true);
         }
         CaptureNewCombatAnimations();
-        EndUpdate(gameTime, keyboard, mouse);
+        EndUpdate(keyboard, mouse);
     }
 
     /// <summary>Records this frame's input as the previous frame's, which every edge test reads.</summary>
-    private void EndUpdate(GameTime gameTime, KeyboardState keyboard, MouseState mouse)
+    private void EndUpdate(KeyboardState keyboard, MouseState mouse)
     {
         FlushScenarioPreference();
         _pointer.Refresh();
         _previousKeyboard = keyboard;
         _previousMouse = mouse;
-        base.Update(gameTime);
     }
 
     private void HandleClick(Point point)

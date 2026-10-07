@@ -37,9 +37,9 @@
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 26"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 27"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 28"},
-    {"tick":null,"name":"order","value":"turn 29: gang slot 0 action 10 target 61 target_2 0 repeat 0"},
+    {"tick":null,"name":"order","value":"turn 29: player 0 gang slot 0 action 10 target 61 target_2 0 repeat 0"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 29"},
-    {"tick":null,"name":"order","value":"turn 30: gang slot 0 action 5 target 40 target_2 0 repeat 0"},
+    {"tick":null,"name":"order","value":"turn 30: player 0 gang slot 0 action 5 target 40 target_2 0 repeat 0"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 30"}
   ],
   "seeds": [2],

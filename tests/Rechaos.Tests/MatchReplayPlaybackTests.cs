@@ -294,7 +294,7 @@ public sealed class MatchReplayPlaybackTests
         [
             new MatchPlayerSetup(new PlayerId(0), "CPU 1", PlayerController.Computer),
             new MatchPlayerSetup(new PlayerId(1), "CPU 2", PlayerController.Computer)
-        ]));
+        ], MatchDeviations.Original));
 
     private static void AdvanceTurns(MatchReplayRecorder recorder, int turns)
     {
