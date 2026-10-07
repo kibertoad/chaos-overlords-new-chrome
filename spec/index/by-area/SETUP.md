@@ -12,6 +12,7 @@ Entries by area.
 | [EXP-SETUP-002](../../experiments/EXP-SETUP-002.md) | Does a new local Armageddon game with two humans draw and start as the spec gives? | recorded |
 | [EXP-SETUP-003](../../experiments/EXP-SETUP-003.md) | Does a new local Greed game at Homicidal Maniac with a four-year limit draw and start as the spec gives? | recorded |
 | [EXP-SETUP-004](../../experiments/EXP-SETUP-004.md) | Do the six name modifiers change a new local game as the spec gives? | recorded |
+| [EXP-SETUP-005](../../experiments/EXP-SETUP-005.md) | Do two players named with the island modifier give the same new game as one? | recorded |
 | [FND-SETUP-001](../../findings/FND-SETUP-001.md) | Starting cash is $500 in Armageddon and $20 otherwise, and one exact player name overrides it with $1,500 after setup | recorded |
 | [FND-SETUP-002](../../findings/FND-SETUP-002.md) | On Begin, local setup turns every empty slot into a computer player with a random unused portrait and that portrait's name | recorded |
 | [FND-SETUP-003](../../findings/FND-SETUP-003.md) | One exact player name puts every neutral sector under a permanent Crackdown at the start of the match | recorded |
@@ -31,16 +32,15 @@ Entries by area.
 | [FND-SETUP-017](../../findings/FND-SETUP-017.md) | The setup reset gives every slot the name string 61 plus its number, one human in slot 0 with portrait 0, and portrait 15 to the empty slots | recorded |
 | [FND-SETUP-018](../../findings/FND-SETUP-018.md) | Every match entry sets the turn limit to 65535 when the scenario number is above 3 | recorded |
 | [FND-SETUP-019](../../findings/FND-SETUP-019.md) | The setup screen breaks the scenario description at the last space at or before the 37th character and starts the next line after it | recorded |
-| [RULE-SETUP-001](../../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | established |
+| [RULE-SETUP-001](../../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported |
 | [RULE-SETUP-002](../../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported |
 | [RULE-SETUP-003](../../rules/RULE-SETUP-003.md) | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | established |
-| [RULE-SETUP-004](../../rules/RULE-SETUP-004.md) | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | established |
+| [RULE-SETUP-004](../../rules/RULE-SETUP-004.md) | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported |
 | [RULE-SETUP-005](../../rules/RULE-SETUP-005.md) | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | established |
 | [RULE-SETUP-006](../../rules/RULE-SETUP-006.md) | A player named with either extra-gang modifier starts with five more Force-10 gangs in its headquarters | established |
-| [RULE-SETUP-007](../../rules/RULE-SETUP-007.md) | A player named with the visibility modifier sees every opposing gang for the whole match | established |
+| [RULE-SETUP-007](../../rules/RULE-SETUP-007.md) | A player named with the visibility modifier sees every opposing gang for the whole match | supported |
 | [RULE-SETUP-008](../../rules/RULE-SETUP-008.md) | A local human's planning opens with the Ready card when several humans share the computer, then Game Information, combat results and Last Turn Events | supported |
 | [RULE-SETUP-009](../../rules/RULE-SETUP-009.md) | A press on a setup player card selects it first, then works its portrait arrows or name, and a drag moves or swaps whole players | supported |
 | [RULE-SETUP-010](../../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported |
 | [SCR-SETUP-001](../../screens/SCR-SETUP-001.md) | Full local game setup screen with scenario, settings and six player cards | supported |
 | [SCR-SETUP-002](../../screens/SCR-SETUP-002.md) | Hot-seat handoff card that waits for the next local player to press Ready | supported |
-| [SCR-SETUP-003](../../screens/SCR-SETUP-003.md) | Player name dialog with one edit control, OK and Cancel, opened from a setup player card | supported |

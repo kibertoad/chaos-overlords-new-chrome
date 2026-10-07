@@ -41,7 +41,8 @@ Entries by area.
 | [EXP-UI-047](../../experiments/EXP-UI-047.md) | Does the Detailed Combat panel look the same in the rebuild through a bare-handed Martial Arts attack? | recorded |
 | [EXP-UI-048](../../experiments/EXP-UI-048.md) | Does the Detailed Combat panel look the same in the rebuild through an attack of the viewer's that its target evades? | recorded |
 | [EXP-UI-049](../../experiments/EXP-UI-049.md) | Does the Detailed Combat panel look the same in the rebuild through two evaded attacks on the viewer's gang? | recorded |
-| [EXP-UI-051](../../experiments/EXP-UI-051.md) | What do the keys, presses, OK and Cancel of the player name dialog do to the edit control's text, selection and the name kept, and what does the game draw under the dialog? | recorded |
+| [EXP-UI-052](../../experiments/EXP-UI-052.md) | Which character does the window procedure store for each number-pad key and each main-keyboard key, with Shift held and not? | recorded |
+| [EXP-UI-053](../../experiments/EXP-UI-053.md) | Which name does the setup name editor give for each number-pad key and each main-keyboard key, with Shift held and not? | recorded |
 | [EXP-UI-054](../../experiments/EXP-UI-054.md) | What do the Detailed Combat apertures show before the second clip's first strip frame? | recorded |
 | [FND-UI-001](../../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
@@ -104,12 +105,11 @@ Entries by area.
 | [FND-UI-063](../../findings/FND-UI-063.md) | Only the About screen, the main console and the detailed sector screen take the right button, and the held-button helper acts at once on a right press | recorded |
 | [FND-UI-064](../../findings/FND-UI-064.md) | The key handler tests Shift once and stores its event at one join, and the name editor's edit control upper-cases what is typed | recorded |
 | [FND-UI-066](../../findings/FND-UI-066.md) | Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the handler that opened the panel | recorded |
-| [FND-UI-068](../../findings/FND-UI-068.md) | The player name dialog holds an edit control with no text limit, and the game reads its text at every notification and keeps ten characters | recorded |
 | [RULE-UI-001](../../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |
 | [RULE-UI-004](../../rules/RULE-UI-004.md) | Drawing numbers in fixed glyph cells | supported |
-| [RULE-UI-005](../../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | established |
+| [RULE-UI-005](../../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | supported |
 | [RULE-UI-006](../../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker | supported |
 | [RULE-UI-007](../../rules/RULE-UI-007.md) | The pointer shape | supported |
 | [RULE-UI-008](../../rules/RULE-UI-008.md) | The presentation timer | supported |
@@ -119,7 +119,7 @@ Entries by area.
 | [RULE-UI-012](../../rules/RULE-UI-012.md) | Objective sectors marked on the city map | established |
 | [RULE-UI-013](../../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
-| [RULE-UI-015](../../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | established |
+| [RULE-UI-015](../../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | supported |
 | [SCR-UI-001](../../screens/SCR-UI-001.md) | Title screen | supported |
 | [SCR-UI-002](../../screens/SCR-UI-002.md) | Credits screen | supported |
 | [SCR-UI-003](../../screens/SCR-UI-003.md) | City screen and main console | supported |

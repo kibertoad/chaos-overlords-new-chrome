@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-SETUP-013, FND-OBJECTIVE-003, FND-SETUP-005, FND-SETUP-014, FND-SETUP-002, FND-SETUP-009, FND-SETUP-012, FND-AUDIO-002, FND-AUDIO-010, FND-RNG-005, SRC-MANUAL-GOG, SRC-HELP-GOG, FND-EXE-004, FND-UI-026, FND-SETUP-019, FND-UI-055, EXP-UI-015]
+evidence: [FND-SETUP-013, FND-OBJECTIVE-003, FND-SETUP-005, FND-SETUP-014, FND-SETUP-002, FND-SETUP-009, FND-SETUP-012, FND-AUDIO-002, FND-AUDIO-010, FND-RNG-005, SRC-MANUAL-GOG, SRC-HELP-GOG, FND-EXE-004, FND-UI-026, FND-SETUP-019, FND-UI-055, EXP-UI-015, FND-PLATFORM-015]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-002, RULE-SETUP-003, RULE-SETUP-009, RULE-SETUP-010, SCR-SETUP-003]
@@ -20,7 +20,7 @@ related: [RULE-SETUP-002, RULE-SETUP-003, RULE-SETUP-009, RULE-SETUP-010, SCR-SE
 | Player card, per human slot | Composed from the background, a colour bar, the portrait and the name, then copied opaquely | The slot's colour, `portrait` and name | `(cardX, cardY - 3, 76, 68)`, with card origins `(385,95)`, `(468,95)`, `(385,169)`, `(468,169)`, `(385,243)` and `(468,243)` for slots 0 to 5 | The slot's `controller` is 0 or 3; for -1 and 1 the background is restored there instead | FND-SETUP-014 |
 | Colour bar | Fill in the slot's colour, the record at `0x004ABC18 + 6 * slot`, which a run found to hold (255,0,0), (0,255,0), (0,0,255), (255,255,0), (255,0,255) and (0,255,255) for slots 0 to 5 | The slot's colour | `(cardX, cardY, 9, 41)` | On each card | FND-SETUP-014, EXP-UI-015 |
 | Player card face, per card | `DATA/PX16/PX00129`, source `(32 * portrait, 480, 32, 30)`, scaled opaquely | The slot's `portrait` | `(cardX + 12, cardY - 3, 64, 60)` | On each card; the only scaled copy of the build's copy wrapper, so the pattern mode asked for unselected cards is not applied | FND-SETUP-005, FND-SETUP-014, FND-UI-026 |
-| Portrait arrows | `DATA/PX16/PX00140`, source `(220, 138, 64, 62)`, exact white transparent | None | Over the card face, `(cardX + 12, cardY - 3, 64, 62)` | On the card of `selected_card` only | FND-SETUP-005, FND-SETUP-014 |
+| Portrait arrows | `DATA/PX16/PX00140`, source `(220, 138, 64, 62)`, exact white transparent | None | Over the card face, `(cardX + 12, cardY - 3, 64, 62)` | On the card of `selected_card` only | FND-SETUP-005, FND-SETUP-014, FND-PLATFORM-015 |
 | Player name, per card | The font of `fn_00413FD5` | The slot's entry of `player_names` | Centred on x `cardX + 45`, starting at `cardX + 45 - 3 * length`, on row `cardY + 58` | On each card | FND-SETUP-005, FND-SETUP-014, SRC-MANUAL-GOG |
 | Scenario title | String resource `scenario + 1` of `Chaos Overlords.exe`, over a black `(84, 40, 216, 52)` | The scenario's name | `(84, 40)` | Always | FND-SETUP-013 |
 | Scenario description | String resource `scenario + 95`, in five lines of 36 characters, each broken at the last space at or before its 37th character and padded with spaces; the next line starts after that space | The scenario's objective | `(84, 52 + 8 * line)` | Always | FND-SETUP-013, FND-SETUP-019, EXP-UI-015 |
@@ -97,3 +97,12 @@ None known.
   `DATA/PX16/PX00140`; their source rectangles are not recorded.
 - The keyboard handling of the screen is not recorded.
 - In 256-colour mode the game uses the `DATA/PX08` files of the same names.
+- No recorded run of the original reaches scenarios other than 0 and 4 with
+  their titles, descriptions and light positions; time limits 26 and 208,
+  Mentality 0 and 2 and planning times 1 and 3, as lights and presses; the
+  time-limit refusal from scenario 4 on; the pressed and held images of the
+  left-panel buttons; Cancel; the name band and the name editor; a card drag
+  and swap; cards of computer and network slots; the roster kept from an
+  earlier Begin; the sounds (FND-SETUP-005, FND-SETUP-013, FND-SETUP-014,
+  FND-SETUP-019, FND-RNG-005, FND-AUDIO-010). These rest on the static
+  findings named, so the entry stays `supported`.

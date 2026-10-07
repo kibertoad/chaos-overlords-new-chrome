@@ -51,6 +51,16 @@ internal sealed partial class NewGameSession
         }
     }
 
+    // The tokens of a step, read once when the command line is parsed so that a mistake stops the
+    // run before the original starts. keys: posts to the game window and takes no {CHARhh}.
+    internal static string CheckedKeyTokens(string text, bool characters)
+    {
+        foreach (var (kind, _) in KeyTokens(text))
+            if (kind == "char" && !characters)
+                throw new FormatException($"keys: takes {{VKhh}}, {{SHIFT}} and {{PLAIN}} only: {text}");
+        return text;
+    }
+
     // FND-UI-064: the window procedure tests Shift with GetAsyncKeyState, which a posted message
     // cannot set, so the probe gives the call's result itself, and records the event the
     // procedure stores once its switch has run.
@@ -62,11 +72,17 @@ internal sealed partial class NewGameSession
         {
             if (_forcedShift is { } held) context.Eax = held ? 0xFFFF8000u : 0u;
         }, quiet: true);
-        _process.SetBreakpoint(OriginalAddresses.KeyEventStored, _ => _keyEvents.Add(new KeyEventRecord(
-            _postedKey, _forcedShift == true,
-            _process.ReadInt32(OriginalAddresses.InputEvent),
-            _process.ReadInt32(OriginalAddresses.InputEvent + 4),
-            _process.ReadInt32(OriginalAddresses.InputEvent + 8))), quiet: true);
+        // The breakpoints stay set for the rest of the run, so only the keys a keys: step posts are
+        // recorded, not those of a later type: step.
+        _process.SetBreakpoint(OriginalAddresses.KeyEventStored, _ =>
+        {
+            if (_postedKey < 0) return;
+            _keyEvents.Add(new KeyEventRecord(
+                _postedKey, _forcedShift == true,
+                _process.ReadInt32(OriginalAddresses.InputEvent),
+                _process.ReadInt32(OriginalAddresses.InputEvent + 4),
+                _process.ReadInt32(OriginalAddresses.InputEvent + 8)));
+        }, quiet: true);
     }
 
     // --order-steps keys:TOKENS: a key press of the game window for each virtual key, with the
@@ -74,23 +90,33 @@ internal sealed partial class NewGameSession
     private void PressKeys(IntPtr window, string tokens)
     {
         ArmKeyEvents();
-        foreach (var (kind, value) in KeyTokens(tokens))
+        NoteLayout(window);
+        // Until a {SHIFT} the test reports Shift released, as the record says, whatever the
+        // machine's own Shift key does.
+        _forcedShift = false;
+        try
         {
-            if (kind == "shift")
+            foreach (var (kind, value) in KeyTokens(tokens))
             {
-                _forcedShift = value != 0;
-                continue;
+                if (kind == "shift")
+                {
+                    _forcedShift = value != 0;
+                    continue;
+                }
+                if (kind != "vk") throw new FormatException("keys: takes {VKhh}, {SHIFT} and {PLAIN} only.");
+                _postedKey = value;
+                Native.PostMessageW(window, Native.WmKeyDown, value, KeyParameter(value, up: false));
+                _process.Pump(TimeSpan.FromSeconds(0.12));
+                Native.PostMessageW(window, Native.WmKeyUp, value, KeyParameter(value, up: true));
+                _process.Pump(TimeSpan.FromSeconds(0.05));
             }
-            if (kind != "vk") throw new FormatException("keys: takes {VKhh}, {SHIFT} and {PLAIN} only.");
-            _postedKey = value;
-            Native.PostMessageW(window, Native.WmKeyDown, value, KeyParameter(value, up: false));
-            _process.Pump(TimeSpan.FromSeconds(0.12));
-            Native.PostMessageW(window, Native.WmKeyUp, value, KeyParameter(value, up: true));
-            _process.Pump(TimeSpan.FromSeconds(0.05));
+            _process.Pump(TimeSpan.FromSeconds(0.3));
         }
-        _forcedShift = null;
-        _postedKey = -1;
-        _process.Pump(TimeSpan.FromSeconds(0.3));
+        finally
+        {
+            _forcedShift = null;
+            _postedKey = -1;
+        }
     }
 
     // The lParam of a key message: repeat count 1 and the key's scan code, with the previous-state
@@ -116,6 +142,7 @@ internal sealed partial class NewGameSession
         _process.Pump(TimeSpan.FromSeconds(0.5));
         var edit = Native.GetDlgItem(dialog, OriginalAddresses.NameEditControl);
         var thread = Native.GetWindowThreadProcessId(dialog, out _);
+        NoteLayout(dialog);
         var attached = false;
         var shots = 0;
         try
@@ -130,7 +157,12 @@ internal sealed partial class NewGameSession
                             // AttachThreadInput needs a message queue on this thread too.
                             Native.PeekMessageW(out _, IntPtr.Zero, 0, 0, 0);
                             attached = Native.AttachThreadInput(Native.GetCurrentThreadId(), thread, true);
-                            if (!attached) _notes.Add($"AttachThreadInput failed with {Marshal.GetLastWin32Error()}.");
+                            // Without the attach, SetSharedShift would change only the probe's
+                            // own keyboard state and the entry would be recorded under a Shift
+                            // the edit control never saw, so the run stops instead.
+                            if (!attached)
+                                throw new InvalidOperationException(
+                                    $"AttachThreadInput failed with {Marshal.GetLastWin32Error()}, so Shift cannot be given to name:{tokens}.");
                         }
                         SetSharedShift(value != 0);
                         break;
@@ -175,6 +207,18 @@ internal sealed partial class NewGameSession
         _process.Pump(TimeSpan.FromSeconds(0.5));
         _nameEntries.Add(new NameEntryRecord(tokens, 0, _process.Read(OriginalAddresses.RosterNames, OriginalAddresses.RosterNameLength)
             .Select(value => (int)value).ToList()));
+    }
+
+    // MapVirtualKeyA and the edit control's translation both follow the keyboard layout of the
+    // game's thread, so the run notes it once.
+    private bool _layoutNoted;
+
+    private void NoteLayout(IntPtr window)
+    {
+        if (_layoutNoted) return;
+        _layoutNoted = true;
+        var layout = Native.GetKeyboardLayout(Native.GetWindowThreadProcessId(window, out _));
+        _notes.Add($"Keyboard layout of the game's thread: {(long)layout & 0xFFFFFFFF:X8}.");
     }
 
     private static void SetSharedShift(bool held)

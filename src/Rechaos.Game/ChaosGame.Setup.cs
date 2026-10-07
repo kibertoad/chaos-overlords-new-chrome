@@ -627,8 +627,8 @@ public sealed partial class ChaosGame
 
     private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        if (_titleBackground is not null)
-            batch.Draw(_titleBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        if (TitleBackground is not null)
+            batch.Draw(TitleBackground, new Rectangle(0, 0, 640, 460), Color.White);
         else
         {
             batch.Draw(pixel, new Rectangle(92, 72, 456, 112), new Color(0, 0, 0, 210));
@@ -686,8 +686,8 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawSetupLight(SpriteBatch batch, Texture2D pixel, Rectangle lit)
     {
-        if (_setupControls is not null)
-            batch.Draw(_setupControls, new Rectangle(lit.X - 1, lit.Y - 3,
+        if (SetupControls is not null)
+            batch.Draw(SetupControls, new Rectangle(lit.X - 1, lit.Y - 3,
                 SetupPanelLayout.LightSource.Width, SetupPanelLayout.LightSource.Height),
                 SetupPanelLayout.LightSource, Color.White);
         else DrawSelectionLight(batch, pixel, lit);
@@ -712,15 +712,15 @@ public sealed partial class ChaosGame
 
     private void DrawSetup(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        if (_setupBackground is not null)
-            batch.Draw(_setupBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        if (SetupBackground is not null)
+            batch.Draw(SetupBackground, new Rectangle(0, 0, 640, 460), Color.White);
         else
             batch.Draw(pixel, new Rectangle(70, 52, 500, 384), new Color(0, 0, 0, 220));
-        if (_setupControls is not null
+        if (SetupControls is not null
             && _pressedSetupButton is { } pressed
             && _hoverPoint is { } buttonHover
             && SetupButtonLayout.HitTest(buttonHover) == pressed)
-            batch.Draw(_setupControls, SetupButtonLayout.Destination(pressed),
+            batch.Draw(SetupControls, SetupButtonLayout.Destination(pressed),
                 SetupButtonLayout.PressedSource(pressed), Color.White);
         DrawSetupScenarioText(batch, pixel, font);
         DrawSetupLight(batch, pixel, OriginalSelectionLightLayout.Scenario(
@@ -744,8 +744,8 @@ public sealed partial class ChaosGame
             var active = _configuringOnlineLobby
                 ? index < onlinePlayers.Length
                 : _localSetupRoster.IsHuman(index);
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
+            if (UiSprites is not null)
+                batch.Draw(UiSprites, PlayerPortraitLayout.SetupTop(index),
                     OriginalSpriteLayout.OverlordPortrait(
                         active ? portraits[index] : PlayerPortraitLayout.Count - 1),
                     Color.White);
@@ -758,13 +758,13 @@ public sealed partial class ChaosGame
             // FND-SETUP-014: the bar in the slot's colour at the card's left edge.
             batch.Draw(pixel, SetupPlayerCardArtLayout.ColourBar(index), SetupPlayerCardArtLayout.Colours[index]);
             var portrait = SetupPlayerCardArtLayout.PortraitDestination(index);
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, portrait,
+            if (UiSprites is not null)
+                batch.Draw(UiSprites, portrait,
                     SetupPlayerCardArtLayout.PortraitSource(portraits[index]), Color.White);
             if (!_configuringOnlineLobby && index == _selectedSetupPlayerSlot)
             {
-                if (_setupKeyedControls is not null)
-                    batch.Draw(_setupKeyedControls,
+                if (SetupKeyedControls is not null)
+                    batch.Draw(SetupKeyedControls,
                         new Rectangle(portrait.X, portrait.Y, 64, 62),
                         SetupPlayerCardArtLayout.ArrowOverlaySource, Color.White);
                 else
@@ -790,13 +790,13 @@ public sealed partial class ChaosGame
             font.Draw(batch, text, new Vector2(name.X, name.Y), Color.Lime, 1);
         }
         if (_setupPlayerDragStarted && _draggedSetupPlayerSlot is { } dragged
-            && _uiSprites is not null)
+            && UiSprites is not null)
         {
             var token = PlayerPortraitLayout.SetupDragToken(_dragPoint);
-            batch.Draw(_uiSprites, token,
+            batch.Draw(UiSprites, token,
                 OriginalSpriteLayout.OverlordPortrait(_playerPortraits[dragged]), Color.White);
-            if (_uiKeyedSprites is not null)
-                batch.Draw(_uiKeyedSprites, token,
+            if (UiKeyedSprites is not null)
+                batch.Draw(UiKeyedSprites, token,
                     OriginalSpriteLayout.SetupDragFrame, Color.White);
             if (HitTest.IndexAt(
                 MatchLimits.PlayerCount, PlayerPortraitLayout.SetupHit, _dragPoint) is { } target
@@ -808,11 +808,11 @@ public sealed partial class ChaosGame
         DrawSetupLight(batch, pixel,
             OriginalSelectionLightLayout.PlanningTime((int)_selectedPlanningTimeLimit));
         // FND-SETUP-013: while held, the pressed image covers the control, its light included.
-        if (_setupControls is not null
+        if (SetupControls is not null
             && _pressedSetupPanelControl is { } pressedControl
             && _hoverPoint is { } controlHover
             && SetupPanelLayout.Destination(pressedControl).Contains(controlHover))
-            batch.Draw(_setupControls, SetupPanelLayout.Destination(pressedControl),
+            batch.Draw(SetupControls, SetupPanelLayout.Destination(pressedControl),
                 SetupPanelLayout.PressedSource(pressedControl), Color.White);
         if (_configuringOnlineLobby)
         {

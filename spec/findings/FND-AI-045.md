@@ -10,16 +10,16 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00409F47..0x0040A1A6
+    address: 0x00409F47..0x0040A1A7
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040AA65..0x0040AAE2
+    address: 0x0040AA65..0x0040AAE3
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040AAE3..0x0040AB1F
+    address: 0x0040AAE3..0x0040AB20
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0046EB4E..0x0046EC9D
+    address: 0x0046EB4E..0x0046ECA2
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -44,7 +44,7 @@ player's roster slot 0 (that gang's sector) plus `0x40` to the 32-bit value at
 
 `0x00409F47` takes a player. For each sector 0 to 63 it clears the four 16-bit
 values at +6, +8, +10 and +12 of the 14-byte per-sector record
-`0x0048E310 + player * 0x380 + sector * 14` (FND-AI-044), stores selector 7
+`0x0048E310 + player * 0x380 + sector * 14` (FND-AI-081), stores selector 7
 (the sector's byte +4, Income) into +6, and then for site slot `k` from 0 to 2
 adds selector `0x0D` to +6, selector `0x16` to +8, selector `0x12` to +10 and
 selector `0x0C` to +12. Each of these selectors reads a signed 16-bit field of
@@ -55,7 +55,7 @@ reads +0x30 (Research). No test of the slot's progress byte or of an empty slot
 is made. At the end it calls `0x0040A1A7` for the player (`0x0040A195`).
 
 None of the selectors takes the player, so all six players' records hold the
-same sums. Of the four sums only +8 has a reader, selector `0x30` (FND-AI-044),
+same sums. Of the four sums only +8 has a reader, selector `0x30` (FND-AI-081),
 which family 7 calls (FND-AI-035).
 
 ## Interpretation
