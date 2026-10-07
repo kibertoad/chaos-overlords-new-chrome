@@ -170,14 +170,14 @@ public sealed partial class ChaosGame
         var compact = _gangDetailsCompact;
         if (compact)
         {
-            if (_gangDefinitionInfoBackground is not null)
-                batch.Draw(_gangDefinitionInfoBackground, GangDefinitionInformationLayout.Panel,
+            if (GangDefinitionInfoBackground is not null)
+                batch.Draw(GangDefinitionInfoBackground, GangDefinitionInformationLayout.Panel,
                     GangDefinitionInformationLayout.BackgroundSource, Color.White);
             else
                 batch.Draw(pixel, GangDefinitionInformationLayout.Panel, new Color(0, 0, 0, 245));
         }
         else
-            DrawPanelArtwork(batch, pixel, _gangInfoBackground, GangInformationLayout.Panel);
+            DrawPanelArtwork(batch, pixel, GangInfoBackground, GangInformationLayout.Panel);
 
         var nameLeft = compact ? GangDefinitionInformationLayout.NameLeft : GangInformationLayout.NameLeft;
         var nameY = compact ? GangDefinitionInformationLayout.NameY : GangInformationLayout.NameY;
@@ -200,8 +200,8 @@ public sealed partial class ChaosGame
             }
             : EffectiveStatisticsCalculator.ForGang(state, gang);
         ClearGangInformationFields(batch, pixel, compact);
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, compact
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, compact
                     ? GangDefinitionInformationLayout.Portrait
                     : GangInformationLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
@@ -310,11 +310,11 @@ public sealed partial class ChaosGame
         for (var slot = 0; slot < 3; slot++)
         {
             if (EquippedItem(gang, slot) is not { } itemId) continue;
-            if (itemId >= 0 && itemId < _itemRotationTextures.Length
-                && _itemRotationTextures[itemId] is { } rotation)
+            if (itemId >= 0 && itemId < ItemRotationTextures.Length
+                && ItemRotationTextures[itemId] is { } rotation)
                 batch.Draw(rotation, GangInformationLayout.Equipment(slot), frame, Color.White);
-            else if (_itemPortraits is not null)
-                batch.Draw(_itemPortraits, GangInformationLayout.Equipment(slot),
+            else if (ItemPortraits is not null)
+                batch.Draw(ItemPortraits, GangInformationLayout.Equipment(slot),
                     OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
         }
     }
