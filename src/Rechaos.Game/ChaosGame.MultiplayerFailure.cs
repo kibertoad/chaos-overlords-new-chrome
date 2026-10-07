@@ -4,18 +4,8 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private void UpdateOnlineResolutionExpectation()
-    {
-        var expectsResolution = _online.IsConnected
-            && _online.Stage == MultiplayerStage.WaitingForSeal
-            && _online.ReadySubmissionAcknowledged
-            && _online.SeatedSeats > 0
-            && _online.ReadySeats >= _online.SeatedSeats;
-        if (expectsResolution)
-            _online.ResolutionExpectedSince ??= MonotonicClock.Now;
-        else
-            _online.ResolutionExpectedSince = null;
-    }
+    private void UpdateOnlineResolutionExpectation() =>
+        OnlineResolutionWatchdog.Track(_online, MonotonicClock.Now);
 
     /// <summary>
     /// A successful final submission is returned only after the server has attempted to seal the
@@ -39,8 +29,7 @@ public sealed partial class ChaosGame
     private void CheckOnlineResolutionWatchdog(bool resyncRequested)
     {
         if (_session is not { } session
-            || _online.ResolutionExpectedSince is not { } since
-            || MonotonicClock.Now - since < OnlineResolutionGrace)
+            || !OnlineResolutionWatchdog.Expire(_online, MonotonicClock.Now))
             return;
         var turn = _online.PlanningTurn;
         _diagnostics?.Write("multiplayer.turn-resolution.timeout",
@@ -50,7 +39,6 @@ public sealed partial class ChaosGame
                 ["ready"] = _online.ReadySeats.ToString(CultureInfo.InvariantCulture),
                 ["seated"] = _online.SeatedSeats.ToString(CultureInfo.InvariantCulture),
             });
-        _online.ResolutionExpectedSince = MonotonicClock.Now;
         if (resyncRequested) return;
         _online.Status = "NO SEALED TURN YET  RESYNCHRONISING WITH THE SERVER";
         session.RequestResync();

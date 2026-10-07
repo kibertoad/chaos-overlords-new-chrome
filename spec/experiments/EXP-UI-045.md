@@ -67,8 +67,7 @@ bar's redraw for a sector where no seat has a gang the active player sees.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares both captures, with the
+A test of the rebuild compares both captures, with the
 three site progress meter areas as elements of their own. Leaving out the
 cash row (DEV-UI-006) and the Tolerance value (DEV-UI-007), every element
 matches, the meters included.

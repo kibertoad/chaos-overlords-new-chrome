@@ -47,12 +47,11 @@ Move panel slid in the primary form over 344 pixels in 22 copies, at offsets
 
 ## Results
 
-`PanelsSlideInWithTheOriginalsCopies` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Slides.cs` compares the
-rebuild's step and copy sequence for the recorded benchmark with each slide,
-and the offsets the rebuild's Hire screen and order panel show at its fixed pace
-of 84 copies a second (DEV-TIMER-001). A first comparison found the rebuild's
-order panels, which open on its Commands screen, not sliding at all.
+A test of the rebuild compares the rebuild's step and copy sequence for the
+recorded benchmark with each slide, and the offsets the rebuild's Hire screen
+and order panel show at its fixed pace of 84 copies a second (DEV-TIMER-001). A
+first comparison found the rebuild's order panels, which open on its Commands
+screen, not sliding at all.
 
 ## Conclusion
 

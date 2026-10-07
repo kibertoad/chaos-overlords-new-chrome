@@ -62,8 +62,7 @@ ones `(255,148,148)`, `(247,0,0)` and `(148,0,0)`, as FND-UI-036 reads them.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the capture, with the
+A test of the rebuild compares the capture, with the
 three site progress meter areas as elements of their own. Leaving out the cash
 row (DEV-UI-006) and the Tolerance value (DEV-UI-007), every element matches.
 
