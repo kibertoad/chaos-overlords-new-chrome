@@ -751,14 +751,15 @@ window, and a repainting copy loses it.
 Add `--white-key` as well (docs/DECISIONS.md, 2026-10-05). On a 32-bit desktop
 the original's keyed copies key nothing and draw the white they should leave
 out, which is where the solid white areas of Windows 11 come from
-(FND-PLATFORM-014). The option puts a breakpoint on the `SetBkColor` call of the
-keyed mask compositor and, whenever that call passes the 16-bit key
-`RGB(255,252,255)`, writes `RGB(255,255,255)`, the white a 32-bit surface holds,
-over the argument. The fixture lists it as the setup input `key_colour
-RGB(255,255,255)`. The rolls and the state of a run do not depend on it.
-The breakpoint stops the original on every keyed copy, and the runs that
-checked the option had no planning time limit; whether it moves the timer
-records of a run with `--time-limit` has not been checked.
+(FND-PLATFORM-014). The keyed mask compositor takes its 16-bit key
+`RGB(255,252,255)` from an immediate operand (FND-PLATFORM-015), and the option
+writes `RGB(255,255,255)`, the white a 32-bit surface holds, over that operand
+once, before the game runs. A run with the option stops no more often than one
+without it, so the timer records of a run with `--time-limit` are not moved.
+When the operand does not hold the expected bytes, the write is skipped and the
+run's notes say so. The fixture lists the option as the setup input
+`key_colour RGB(255,255,255)`. The rolls and the state of a run do not depend
+on it.
 
 `extract --screens SCR-UI-003,SCR-HIRE-002` adds a `capture` object to each
 run whose two copies agree:
