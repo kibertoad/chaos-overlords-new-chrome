@@ -217,12 +217,12 @@ public enum LastTurnEventsButton
 
 /// <summary>
 /// SCR-EVENT-001 in screen coordinates: the compositor's panel-local positions plus the panel
-/// origin (104, 124) (FND-EVENT-005).
+/// origin (104, 124) (FND-EVENT-007).
 /// </summary>
 public static class LastTurnEventsLayout
 {
     /// <summary>
-    /// The caption is loaded cut or padded to 35 characters (FND-EVENT-005, FND-EXE-005), the
+    /// The caption is loaded cut or padded to 35 characters (FND-EVENT-007, FND-EXE-005), the
     /// width of its black backing.
     /// </summary>
     public const int CaptionColumns = 35;
@@ -323,14 +323,14 @@ public static class LastTurnEventsLayout
 
     /// <summary>
     /// The pressed faces in <c>PX00129</c>: Previous (66, 363) and Next (92, 363) from
-    /// <c>fn_00451602</c>, Exit (50, 386) from the held-button helper <c>fn_00418821</c>
-    /// (SCR-EVENT-001, FND-EVENT-005).
+    /// <c>fn_00451602</c>, and the lit Exit face (0, 386) from the held-button helper
+    /// <c>fn_00418821</c> (SCR-EVENT-001, FND-EVENT-007, FND-UI-062).
     /// </summary>
     public static Rectangle PressedSource(LastTurnEventsButton button) => button switch
     {
         LastTurnEventsButton.Previous => new Rectangle(66, 363, 26, 23),
         LastTurnEventsButton.Next => new Rectangle(92, 363, 26, 23),
-        LastTurnEventsButton.Exit => new Rectangle(50, 386, 50, 23),
+        LastTurnEventsButton.Exit => HeldButtonFaces.Lit(HeldButtonKind.Confirm),
         _ => throw new ArgumentOutOfRangeException(nameof(button))
     };
 

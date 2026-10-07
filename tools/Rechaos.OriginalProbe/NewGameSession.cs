@@ -72,12 +72,6 @@ internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions, int
     public override string ToString() => $"turn {Turn}: player {Player} search filter {string.Join(" ", Definitions)}";
 }
 
-/// <summary>
-/// One city redraw (FND-SEARCH-006): the viewing player and each site marker it drew as
-/// definition, sector, ordinal and controlled flag.
-/// </summary>
-internal sealed record CityMarkers(int Viewer, List<int[]> Markers);
-
 /// A Financial panel the probe opens before the Done press of <paramref name="Turn"/>, after that
 /// turn's orders and hires are written: the City variant for sector -1, otherwise the Sector variant
 /// of that sector, which the probe selects on the map first (FND-FINANCE-002).
@@ -232,8 +226,12 @@ internal sealed record NewGameSettings(
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
         foreach (var step in OrderSteps ?? [])
-            yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", "type" or "keys" => "key", _ => "left_click" },
-                $"{step} after the dump");
+            yield return (step.Kind switch
+                {
+                    "open" => "double_click", "wait" => "wait", "type" or "keys" => "key", "down" => "left_press",
+                    "move" => "pointer_move", "up" => "left_release", "rdown" => "right_press",
+                    "rup" => "right_release", _ => "left_click",
+                }, $"{step} after the dump");
         foreach (var close in Closes ?? []) yield return ("close", $"{close} after the dump");
     }
 }
@@ -313,8 +311,6 @@ internal sealed partial class NewGameSession(
     private bool _eliminationCardReached;
     private EndgameDrawing? _endgame;
     private bool _endgameDrawn;
-    private CityMarkers? _redraw;
-    private CityMarkers? _lastRedraw;
     private readonly List<FinanceRecord> _finance = [];
     private FinanceRecord? _financeCapture;
     private int _financePanelSector = -2;
@@ -725,26 +721,6 @@ internal sealed partial class NewGameSession(
                 + (uint)(Acting(write.Player) * OriginalAddresses.SiteDefinitionCount + definition), [1]);
         _notes.Add($"search after roll {_rolls.Count}: {write}");
     }
-
-    // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
-    // last complete redraw, whichever human it was drawn for, with that viewer. FND-SEARCH-007: both
-    // callers push the viewer as a full dword, so it is read unmasked.
-    private void OnCityRedraw(BreakContext context)
-    {
-        var redraw = new CityMarkers(context.Argument(0), []);
-        _redraw = redraw;
-        _process.SetBreakpoint(context.ReturnAddress, _ =>
-        {
-            if (_redraw == redraw) _lastRedraw = redraw;
-            _redraw = null;
-        }, oneShot: true);
-    }
-
-    // FND-SEARCH-007: both calls push the definition sign-extended from its byte, the sector and the
-    // ordinal from dword locals, and the controlled flag as an immediate 1 or 0, so all four are full
-    // dwords with no leftover high bits and are read unmasked.
-    private void OnSiteMarker(BreakContext context) =>
-        _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3)]);
 
     // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
     // of the Financial control that opens the variant, keeps the nine numbers the panel draws, and
