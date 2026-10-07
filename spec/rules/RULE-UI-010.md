@@ -4,7 +4,7 @@ title: Which gangs the detailed sector cards and Gangs in Sector list
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-036, EXP-TURN-096, FND-UI-015, FND-UI-018, FND-UI-002, FND-UI-024, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-069]
+evidence: [FND-UI-036, EXP-TURN-096, FND-UI-015, FND-UI-018, FND-UI-002, FND-UI-024, FND-EXE-004, SRC-MANUAL-GOG, FND-HIRE-002, FND-PLATFORM-003, FND-UI-069]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]

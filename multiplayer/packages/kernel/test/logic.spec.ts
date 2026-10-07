@@ -2,7 +2,12 @@ import { type OrderDocument, orderDocumentSchema } from '@chaos-overlords/contra
 import { safeParse } from 'valibot'
 import { describe, expect, it } from 'vitest'
 import type { Player, TurnReport } from '../src'
-import { allAwaitedReady, awaitedSeats, sealedByDeadline } from '../src/logic/turn-logic'
+import {
+  allAwaitedReady,
+  awaitedSeats,
+  sealedByDeadline,
+  tieBreaker,
+} from '../src/logic/turn-logic'
 import {
   assignSlots,
   authoritativeCandidates,
@@ -309,6 +314,54 @@ describe('authoritativeCandidates', () => {
 
   it('has nothing to say before anyone has reported', () => {
     expect(authoritativeCandidates([player('a', 0)], [])).toEqual([])
+  })
+})
+
+describe('tieBreaker', () => {
+  const seat = (id: string, slot: number, status: Player['status'] = 'active'): Player => ({
+    ...player(id, slot, status),
+    slot,
+  })
+  const HASH_C = 'c'.repeat(32)
+
+  it('names nobody when a single hash has the most reports', () => {
+    const roster = [seat('h', 0), seat('b', 1), seat('c', 2)]
+    const reports = [report('h', HASH_A), report('b', HASH_A), report('c', HASH_B)]
+    expect(tieBreaker(roster, reports, [HASH_A], 'h')).toBeNull()
+  })
+
+  it('names the host when the host holds one of the tied hashes', () => {
+    const roster = [seat('b', 1), seat('h', 0)]
+    const reports = [report('h', HASH_B), report('b', HASH_A)]
+    expect(tieBreaker(roster, reports, [HASH_A, HASH_B], 'h')).toBe('h')
+  })
+
+  /**
+   * Two reports each for two hashes and the host's alone on a third: the host cannot claim a hash
+   * it never computed, so the tie went unbroken and the match stayed paused for good.
+   */
+  it('names the lowest seat holding a tied hash when the host holds none', () => {
+    const roster = [seat('h', 0), seat('e', 4), seat('b', 1), seat('d', 3), seat('c', 2)]
+    const reports = [
+      report('h', HASH_C),
+      report('b', HASH_B),
+      report('c', HASH_A),
+      report('d', HASH_A),
+      report('e', HASH_B),
+    ]
+    expect(tieBreaker(roster, reports, [HASH_A, HASH_B], 'h')).toBe('b')
+  })
+
+  it('passes over a seat that is no longer a human participant', () => {
+    const roster = [seat('h', 0), seat('b', 1, 'left'), seat('c', 2), seat('d', 3), seat('e', 4)]
+    const reports = [
+      report('h', HASH_C),
+      report('b', HASH_B),
+      report('c', HASH_A),
+      report('d', HASH_A),
+      report('e', HASH_B),
+    ]
+    expect(tieBreaker(roster, reports, [HASH_A, HASH_B], 'h')).toBe('c')
   })
 })
 

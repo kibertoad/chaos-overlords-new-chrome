@@ -395,7 +395,7 @@ public sealed partial class MultiplayerSessionTests
                 3,
                 MatchId,
                 "2026-09-10T12:02:00.000Z",
-                new(1, [new("p1", afterOne), new("p2", new string('7', 64))], [afterOne])),
+                new(1, [new("p1", afterOne), new("p2", new string('7', 64))], [afterOne], null)),
         ];
         var window = new RetryPolicy(
             TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1), MaxAttempts: 1);

@@ -74,14 +74,11 @@ The captures show:
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` replays the run, saves the
-endpoint, and has the rebuild's reference frame repeat the presses from the
-endpoint before it draws, with the recorded marker frame, frame counter and
-selected sector. It
-compares every element of every screen with the original, leaving out the
-cash row (DEV-UI-006) and the city's key line (DEV-UI-023). Every element of
-the six captures matches.
+A test of the rebuild replays the run, saves the endpoint, and has the rebuild's
+reference frame repeat the presses from the endpoint before it draws, with the
+recorded marker frame, frame counter and selected sector. It compares every
+element of every screen with the original, leaving out the cash row (DEV-UI-006)
+and the city's key line (DEV-UI-023). Every element of the six captures matches.
 
 ## Conclusion
 

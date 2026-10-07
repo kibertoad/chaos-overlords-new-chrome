@@ -59,12 +59,10 @@ The captures show:
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the captures as for
-EXP-UI-009. Leaving out the cash row (DEV-UI-006) and the Tolerance value
-(DEV-UI-007), every element of the three captures matches.
-`TheOrderMenusGiveTheOriginalsOrders` checks the menu against the rebuild's
-order panel, which leaves Research available with nothing to research, as the
+A test of the rebuild compares the captures as for EXP-UI-009. Leaving out the
+cash row (DEV-UI-006) and the Tolerance value (DEV-UI-007), every element of the
+three captures matches. Another test checks the menu against the rebuild's order
+panel, which leaves Research available with nothing to research, as the
 original's menu does (FND-UI-021).
 
 ## Conclusion

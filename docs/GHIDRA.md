@@ -185,7 +185,7 @@ WinSock or TAPI or call a KERNEL32 serial-port function, or only such functions
 call them), lists the large
 functions only one or two entries cite, and lists the most used `.data`
 addresses no entry cites. Without `--inventory`, `tools/spec-coverage.mjs`
-only rewrites the function index `spec/index/functions.md`; `--check` fails
+only rewrites the function index `docs/FUNCTION-INDEX.md`; `--check` fails
 when that index is stale.
 
 ## Evidence discipline

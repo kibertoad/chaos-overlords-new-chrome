@@ -40,10 +40,9 @@ scores of players 0 to 5 are 163, 353, 182, 566, 238 and 328.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state, planning records, sector weights and
-per-player values.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state, planning records, sector weights and per-player values.
 
 ## Conclusion
 
