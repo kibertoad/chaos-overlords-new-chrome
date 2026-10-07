@@ -75,7 +75,7 @@ public sealed partial class MultiplayerSessionTests
                 3,
                 MatchId,
                 "2026-09-10T12:02:00.000Z",
-                new(1, [new("p1", afterOne), new("p2", new string('7', 64))], [afterOne])),
+                new(1, [new("p1", afterOne), new("p2", new string('7', 64))], [afterOne], null)),
         ];
         var (session, server, http) = Running(
             matchView: view,
@@ -128,7 +128,7 @@ public sealed partial class MultiplayerSessionTests
                 3,
                 MatchId,
                 "2026-09-10T12:02:00.000Z",
-                new(1, [new("p1", theirs), new("p2", new string('7', 64))], [theirs])),
+                new(1, [new("p1", theirs), new("p2", new string('7', 64))], [theirs], null)),
             new SnapshotAvailableEvent(
                 4,
                 MatchId,

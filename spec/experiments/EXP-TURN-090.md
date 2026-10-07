@@ -50,12 +50,12 @@ new gang in sector 36 and its hire offer is marked taken (FMT-STATE-001).
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. With DEV-AI-008 switched off the rebuild makes the same calls with the
-same bounds and results and reaches the same state, the planning records
-included. With it on, the rebuild drops that hire, makes no Force roll and
-goes out of step at call 3335, which the replay test checks.
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. With DEV-AI-008 switched off the
+rebuild makes the same calls with the same bounds and results and reaches the
+same state, the planning records included. With it on, the rebuild drops that
+hire, makes no Force roll and goes out of step at call 3335, which the replay
+test checks.
 
 ## Conclusion
 

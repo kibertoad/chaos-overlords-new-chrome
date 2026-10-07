@@ -45,13 +45,9 @@ place 5.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the three captures, with
-the rebuild entering the endgame from the replayed save of the decided match
-and the tab presses replayed as reference clicks. Every element matches.
-`TheRebuildStartsTheSameMatch` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the 4662
-rolls.
+A test of the rebuild compares the three captures, with the rebuild entering the
+endgame from the replayed save of the decided match and the tab presses replayed
+as reference clicks. Every element matches. Another test replays the 4662 rolls.
 
 A first comparison found the rebuild drawing the endgame translucent over an
 empty console, narrower fills, the names in the players' colours, no score

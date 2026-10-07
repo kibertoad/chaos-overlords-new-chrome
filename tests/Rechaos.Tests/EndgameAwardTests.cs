@@ -154,7 +154,7 @@ public sealed class EndgameAwardTests
         var data = BundledOriginalData.Load();
         var setups = statistics.Select((_, id) =>
             new MatchPlayerSetup(new PlayerId(id), $"PLAYER {id + 1}", PlayerController.Human)).ToArray();
-        var setup = new MatchSetup(ScenarioId.Big40, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Big40, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         var players = setups.Select((player, id) =>
         {
             var eliminated = eliminatedPlayers?.Contains(id) == true;

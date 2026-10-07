@@ -44,13 +44,10 @@ kept with every light byte 0.
 
 ## Results
 
-`TheRebuildStartsTheSameMatch` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the 316
-rolls, and the endgame rows of the fixture name player 0 as the splash.
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the frame, the tab mark,
-the splash, the three colour fills, the name and the portrait of SCR-AWARDS-002
-with the rebuild's endgame entered from the replayed match. No element differs.
+A test of the rebuild replays the 316 rolls, and the endgame rows of the fixture
+name player 0 as the splash. Another test compares the frame, the tab mark, the
+splash, the three colour fills, the name and the portrait of SCR-AWARDS-002 with
+the rebuild's endgame entered from the replayed match. No element differs.
 
 ## Conclusion
 

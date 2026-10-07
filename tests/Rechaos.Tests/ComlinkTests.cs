@@ -38,7 +38,7 @@ public sealed class ComlinkTests
             new(new PlayerId(1), "TWO", PlayerController.Human)
         ];
         var match = OriginalMatchFactory.Create(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         match.FinishUpkeep();
         var before = MatchStateHasher.ComputeFingerprint(match);
 
@@ -69,7 +69,7 @@ public sealed class ComlinkTests
             new(new PlayerId(1), "TWO", PlayerController.Human)
         ];
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(),
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         match.FinishUpkeep();
         Assert.True(match.HasComlinkRecipient(new PlayerId(0)));
         Assert.False(match.IsComlinkRecipient(new PlayerId(0), new PlayerId(0)));
@@ -93,7 +93,7 @@ public sealed class ComlinkTests
             new(new PlayerId(1), "TWO", PlayerController.Human)
         ];
         var match = OriginalMatchFactory.Create(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         match.FinishUpkeep();
         foreach (var text in new[] { "FIRST", "SECOND", "THIRD", "FOURTH" })
             Assert.True(match.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], text).Accepted);
@@ -128,7 +128,7 @@ public sealed class ComlinkTests
             new(new PlayerId(2), "THREE", PlayerController.Human)
         ];
         var match = OriginalMatchFactory.Create(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         match.FinishUpkeep();
         Assert.True(match.SendComlinkMessage(
             new PlayerId(0), [new PlayerId(1), new PlayerId(2)], "TRUCE?").Accepted);
@@ -183,7 +183,7 @@ public sealed class ComlinkTests
             new(new PlayerId(2), "CPU", PlayerController.Computer)
         ];
         var match = OriginalMatchFactory.Create(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         match.FinishUpkeep();
         var before = MatchStateHasher.ComputeFingerprint(match);
 

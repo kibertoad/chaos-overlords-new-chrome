@@ -109,6 +109,7 @@ function apiRoutes(): Hono<AppEnv> {
   // sealing every other match's turns.
   api.use('/matches/:matchId/settings', bodyCap(LIMITS.gameSettingsBytes + SMALL_BODY))
   api.use('/matches/:matchId/profile', bodyCap(SMALL_BODY))
+  api.use('/matches/:matchId/chat', bodyCap(SMALL_BODY))
   api.use('/matches/:matchId/players/:playerId/takeover-vote', bodyCap(SMALL_BODY))
   api.use('/matches/:matchId/turns/:turn/orders', bodyCap(LIMITS.ordersBytes))
   api.use('/matches/:matchId/turns/:turn/report', bodyCap(SMALL_BODY))
