@@ -1,6 +1,6 @@
 ---
 id: SRC-HELPDECO
-title: helpdeco, the WinHelp decompiler, src/helpdeco.c
+title: helpdeco, the WinHelp decompiler, its source file helpdeco.c
 superseded_by: []
 author: Manfred Winterhoff, Ben Collver and Paul Chapman
 date: "2026-06-24"

@@ -43,9 +43,8 @@ those slots in that order, and the lists for players 1 and 3 are empty.
 
 ## Results
 
-`TheAttackPickerOffersTheOriginalsTargets` compares the lists as in
-EXP-ATTACK-001, and they are the same. `TheEquipListOffersTheOriginalsItems`
-compares the Equip lists as in EXP-EQUIP-003.
+A test of the rebuild compares the lists as in EXP-ATTACK-001, and they are the
+same. Another test compares the Equip lists as in EXP-EQUIP-003.
 
 ## Conclusion
 

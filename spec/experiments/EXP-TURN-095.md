@@ -100,14 +100,12 @@ choices that followed. The back control showed the city again.
 
 ## Results
 
-`TheOrderMenusGiveTheOriginalsOrders` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Orders.cs` replays the
-run to the dump and takes each step through the rebuild: the card and group
-strip hit tests, the panel's lists of orders numbered as the original's
-menus number them, the orders the panel offers for the gang or the sector's
-gangs, and the chosen order given to the gang, or to the sector's gangs
-through the group order path. The menus, the offered orders and each gang's
-action and repeat_action are the same after every step.
+A test of the rebuild replays the run to the dump and takes each step through
+the rebuild: the card and group strip hit tests, the panel's lists of orders
+numbered as the original's menus number them, the orders the panel offers for
+the gang or the sector's gangs, and the chosen order given to the gang, or to
+the sector's gangs through the group order path. The menus, the offered orders
+and each gang's action and repeat_action are the same after every step.
 
 ## Conclusion
 

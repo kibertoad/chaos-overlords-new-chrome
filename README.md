@@ -50,7 +50,7 @@ rounding, ordering and quirks, including bugs that players may rely on. It fixes
 only crashes, freezes, corrupted saves and logic that plainly does not do what it
 was written to do; when a bug cannot be told from a design decision, the original
 behaviour stays. Its 63 deliberate departures
-are listed in [DEVIATIONS.md](DEVIATIONS.md); many are interface changes, and
+are listed in [deviations/](deviations), one file each; many are interface changes, and
 seven have a setting that restores the original behaviour. Two of them, the
 computer players' Moves to distant sectors (DEV-AI-007) and their hires outside
 their own sectors (DEV-AI-008), are switched by `--original-computer-moves` and
@@ -81,7 +81,7 @@ validation plans list the open questions.
   lists them ([#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
 - Help is drawn by a cross-platform viewer in one pixel font, with the help
   file's indents, centering and paragraph spacing converted to its grid
-  (DEV-HELP-003 in [DEVIATIONS.md](DEVIATIONS.md)). The original never shows its
+  ([DEV-HELP-003](deviations/DEV-HELP-003.md)). The original never shows its
   help, and its layout has not been compared with the Windows help program,
   which current Windows lacks.
 - Online play has no spectating, lobby chat or Comlink messages between

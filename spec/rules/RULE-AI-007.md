@@ -4,7 +4,7 @@ title: Sector selector mode 0 picks a random neighbouring sector
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-AI-028, FND-MOVE-003, FND-EXE-004, EXP-TURN-097, EXP-TURN-098, EXP-TURN-099]
+evidence: [FND-AI-005, FND-AI-028, FND-MOVE-003, FND-EXE-004, EXP-TURN-097, EXP-TURN-098, EXP-TURN-099, FND-CONTROL-001, FND-HIRE-002, FND-PLATFORM-003, FND-UI-035, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
