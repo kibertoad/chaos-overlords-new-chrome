@@ -33,7 +33,7 @@ environment: null
 `0x00458FA0` at `0x0045936F` and from `0x00409F47` at `0x0040A195`. Its body
 runs four parts in this order.
 
-1. `0x0040A1B0..0x0040A288`: for every observer 0 to 5 and every other player
+1. `0x0040A1B0..0x0040A293`: for every observer 0 to 5 and every other player
    0 to 5, it clears the 24-byte record at
    `0x0048F810 + observer * 0x90 + other * 0x18`: the 16-bit values at +0 and
    +2, the 32-bit values at +4, +8, +12 and +16, and the byte at +20. All 36
@@ -119,7 +119,11 @@ nothing in between moves a gang.
 This entry replaces FND-AI-044, which gave the end of the pair records as
 `0x0048FB4F`. Six records of 0x90 bytes from `0x0048F810` take 0x360 bytes,
 so their last byte is `0x0048FB6F`; the error was found when the spec's
-ranges were checked against the sizes their entries give.
+ranges were checked against the sizes their entries give. FND-AI-044 also gave
+the clearing loop of part 1 as `0x0040A1B0..0x0040A288`, which stops inside
+the address arithmetic for the byte at +20 and leaves out its store at
+`0x0040A28B`; like parts 2 to 4, the range here runs to the jump back at
+`0x0040A293`.
 
 ## How to reproduce
 
