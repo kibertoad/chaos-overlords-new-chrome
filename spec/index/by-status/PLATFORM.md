@@ -4,14 +4,6 @@
 
 Entries by status.
 
-## superseded
-
-1 entries.
-
-| ID | Title |
-|---|---|
-| [FND-PLATFORM-008](../../findings/FND-PLATFORM-008.md) | Image copies are opaque except for a pattern mask and an exact-white colour key used by two images |
-
 ## recorded
 
 14 entries.
