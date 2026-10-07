@@ -124,17 +124,15 @@ internal static class OriginalAddresses
     public const uint DetailedCombatEnd = 0x0042EE45;
     public const uint CombatClip = 0x00430C23;
     public const uint CombatClipEnd = 0x00431C53;
-    // FND-COMBAT-016: the clip player's tick, the local at ebp - CombatClipTick, which the clip sets
-    // to 0 at CombatClipTickSet; the screen shows the passes up to tick local - 1.
-    public const uint CombatClipTickSet = 0x00430C2F;
-    public const uint CombatClipTick = 0x20;
-    // FND-COMBAT-011: the two blocks of globals the clip reads, described above.
     public const uint CombatFocal = 0x004945A0;
     public const uint CombatOther = 0x00494584;
     public const uint CombatFocalBarRight = 0x0049476E;
     public const uint CombatOtherBarRight = 0x004947FE;
-    // FND-AUDIO-006, FND-AUDIO-013: the sound loader.
     public const uint SoundLoader = 0x0045867C;
+    // FND-COMBAT-016: the clip player's tick, the local at ebp - CombatClipTick, which the clip sets
+    // to 0 at CombatClipTickSet; the screen shows the passes up to tick local - 1.
+    public const uint CombatClipTickSet = 0x00430C2F;
+    public const uint CombatClipTick = 0x20;
 
     // elapsed_turns (FND-STATE-007): 0 through the first turn, up by one after each resolution.
     public const uint ElapsedTurns = 0x0049CA68;
@@ -173,6 +171,8 @@ internal static class OriginalAddresses
     // and site definition, element player * 22 + definition, at 0x004A24E8 (FND-SEARCH-001).
     public const uint CityRedraw = 0x004123CC;
     public const uint SiteMarker = 0x00412AC4;
+    public const uint SearchFilters = 0x004A24E8;
+    public const int SiteDefinitionCount = 22;
 
     // FND-UI-024, EXP-UI-004: the three copies of the gang-status marker function fn_00412BF7, and
     // the sector whose cell it saved under the last incoming mark.
@@ -180,9 +180,6 @@ internal static class OriginalAddresses
     public const uint GangMarkerRestore = 0x00412EB5;
     public const uint GangMarkerIncoming = 0x00412FF8;
     public const uint GangMarkerSavedSector = 0x004906A4;
-    // search_filters (FND-STATE-007).
-    public const uint SearchFilters = 0x004A24E8;
-    public const int SiteDefinitionCount = 22;
 
     // FND-SEARCH-002: fn_00448E32, the Search panel's handler, which runs while the panel is open.
     public const uint SearchPanel = 0x00448E32;
