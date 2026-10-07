@@ -63,15 +63,15 @@
     "@chaos-overlords/server": "workspace:*",
     "@chaos-overlords/storage": "workspace:*",
     "drizzle-orm": "^0.45.3",
-    "hono": "^4.13.9"
+    "hono": "^4.13.12"
   },
   "devDependencies": {
     "@chaos-overlords/client": "workspace:*",
     "@chaos-overlords/conformance": "workspace:*",
     "@cloudflare/vitest-pool-workers": "^0.22.0",
-    "@cloudflare/workers-types": "^5.20260927.1",
+    "@cloudflare/workers-types": "^5.20260930.2",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11",
-    "wrangler": "^4.141.0"
+    "wrangler": "^4.144.0"
   }
 }
