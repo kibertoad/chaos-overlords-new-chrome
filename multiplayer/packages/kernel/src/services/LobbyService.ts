@@ -107,7 +107,7 @@ export class LobbyService {
       limit: PASSWORD_FAILURES_PER_MATCH,
       windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
     })
-    this.chatMessages = new RateLimiter(deps.clock, {
+    this.chatMessages = limiters('chatMessages', {
       limit: LIMITS.chatMessagesPerMinute,
       windowMs: CHAT_WINDOW_MS,
     })
@@ -454,7 +454,7 @@ export class LobbyService {
    * Post a chat message to the lobby, announced to every member as `lobby.chatMessage`.
    *
    * The log is the message's only store, so it is the log that is bounded: a lobby whose log has
-   * reached `LIMITS.lobbyChatLogEvents` takes no more chat. The per-player budget is in memory, like
+   * reached `LIMITS.lobbyChatLogEvents` takes no more chat. The per-player budget is counted like
    * every other limiter here, and spares the log from one member's flood long before that. The
    * length check and the publish are separate steps, so posts that arrive together can each pass
    * the check and carry the log a few events past the cap; it bounds the log without being exact.
@@ -467,7 +467,7 @@ export class LobbyService {
     if (match.status !== 'lobby') {
       throw new ConflictError('Chat is open only in the lobby', { reason: 'match_not_in_lobby' })
     }
-    const retryAfterSeconds = this.chatMessages.take(`${match.id}:${player.id}`)
+    const retryAfterSeconds = await this.chatMessages.take(`${match.id}:${player.id}`)
     if (retryAfterSeconds !== null) {
       throw new RateLimitedError('Too many chat messages', {
         reason: 'rate_limited',
