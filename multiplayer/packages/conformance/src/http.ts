@@ -17,7 +17,8 @@ export interface HttpConformanceHarness {
   expireDeadlines?: () => Promise<void>
   /**
    * The interval between event stream keepalive frames, when the harness has shortened it enough
-   * for a test to wait one out. Left out, the keepalive case is skipped.
+   * for a test to wait one out. Left out, the keepalive case is skipped, and the stream-cap case
+   * leaves its streams unread.
    */
   keepaliveMs?: number
 }
@@ -589,8 +590,13 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
             expect(response.status).toBe(200)
             // Read and thrown away, so the hub does not drop the stream as stalled: unread, an
             // in-process stream fills its queue within a couple of seconds of 50 ms keepalives, and
-            // one dropped stream leaves room for the stream this case expects refused.
-            void response.body?.pipeTo(new WritableStream()).catch(() => undefined)
+            // one dropped stream leaves room for the stream this case expects refused. A harness
+            // on the default keepalive takes minutes to fill the queue, and is left unread: on
+            // workerd, aborting a stream that is being read leaves rejections unhandled inside the
+            // runtime, which Vitest counts as errors of the run.
+            if (harness.keepaliveMs !== undefined) {
+              void response.body?.pipeTo(new WritableStream()).catch(() => undefined)
+            }
           }
         }
         const leaver = members.at(-1)
