@@ -1,9 +1,9 @@
 ---
-id: FND-STATE-008
+id: FND-STATE-012
 title: Map of the interface, platform and network globals in .data, with each region's element, writers, readers and identity
-status: superseded
+status: recorded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: [FND-STATE-012]
+superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
 method: static
@@ -66,7 +66,8 @@ region's fields, the row names the finding and does not repeat them.
 | `0x00493868..0x004938E0` | dwords | `fn_00425850`, `fn_00425D97`, `fn_00425FB0`, 11 more | none | drawing state and the 24 system colours at `0x00493878` (FND-GFX-004) |
 | `0x00493A30..0x00493E30` | 256 four-byte entries | none | `fn_004282AA` | the palette `fn_004282AA` reads |
 | `0x00493E30..0x00493F0C` | font record | `fn_00425850` | none | the font `fn_00425850` creates: LOGFONT at `0x00493ECC`, face name at `0x00493EEC` (FND-GFX-004) |
-| `0x00493F88..0x004944F8` | 4 records of 348 bytes | `fn_0042AB80`, `fn_0042AC7A`, `fn_0042ADE9`, 3 more | `fn_0042ABFB`, `fn_0042AE85`, `fn_0042AF31`, 2 more | file slots of `fn_0042AB80` to `fn_0042B7F3` (FND-PLATFORM-010, FND-DATA-007) |
+| `0x00493F88..0x00493F8C` | dword | `fn_0042AB80` | none | written once with the argument of `fn_0042AB80` and never read (FND-PLATFORM-010) |
+| `0x00493F90..0x00494500` | 4 records of 348 bytes | `fn_0042AB80`, `fn_0042AC7A`, `fn_0042ADE9`, 3 more | `fn_0042ABFB`, `fn_0042AE85`, `fn_0042AF31`, 2 more | file slots of `fn_0042AB80` to `fn_0042B7F3` (FND-PLATFORM-010, FND-DATA-007) |
 | `0x00494500..0x00494578` | 20-byte records | `fn_0042B9E0` | `fn_0042CE61` | the awards table (FND-AWARDS-004) |
 | `0x00494578..0x004947CA` | Detailed Combat state | `fn_0042E040`, `fn_0043087E`, `fn_00430C23` | `fn_0042EE46`, `fn_0042F779`, `fn_0042F98B`, 1 more | Detailed Combat (FND-COMBAT-009, FND-COMBAT-010, FND-COMBAT-011); its fields are named there |
 | `0x004947F8..0x00494800` | dwords | `fn_0042E040`, `fn_00430C23` | none | Detailed Combat values of `fn_0042E040` and `fn_00430C23` (FND-COMBAT-011) |
@@ -75,9 +76,9 @@ region's fields, the row names the finding and does not repeat them.
 | `0x00494850..0x00494868` | dwords | `fn_0043D132` | `fn_0043B290` | Attack panel state (FND-ATTACK-003) |
 | `0x00494868..0x00494890` | flags | `fn_00449B20`, `fn_0044FD6C`, `fn_0046FD80` | `fn_00427E60`, `fn_00471F06` | report and events panel flags (FND-EVENT-005) |
 | `0x00494890..0x004948A8` | dwords | `fn_00453087` | `fn_00451F80` | combat results panel state (FND-COMBAT-007) |
-| `0x004948A8..0x004948E8` | rows | `fn_0043F136`, `fn_004437E7` | `fn_0043DAD9`, `fn_004427FA` | Equip and Research list rows (FND-EQUIP-008, FND-RESEARCH-003) |
+| `0x004948A8..0x004948E8` | rows | `fn_0043F136`, `fn_004437E7` | `fn_0043DAD9`, `fn_004427FA` | Equip and Research list rows (FND-EQUIP-012, FND-RESEARCH-003) |
 | `0x004948E8..0x00494900` | dwords | `fn_0044FD6C`, `fn_00451602`, `fn_00451F80`, 2 more | `fn_0044F2FC`, `fn_00453087`, `fn_00453A8D` | combat results and events panel state (FND-COMBAT-007, FND-EVENT-005) |
-| `0x00494900..0x00494AF0` | rows | `fn_0043F136`, `fn_004437E7` | `fn_0043EFE5` | Equip and Research list rows (FND-EQUIP-008, FND-RESEARCH-003) |
+| `0x00494900..0x00494AF0` | rows | `fn_0043F136`, `fn_004437E7` | `fn_0043EFE5` | Equip and Research list rows (FND-EQUIP-012, FND-RESEARCH-003) |
 | `0x00494AF0..0x00494BF4` | dwords | `fn_00451F80` | `fn_00453087`, `fn_00453A8D` | combat results panel state (FND-COMBAT-007, FND-COMBAT-012) |
 | `0x00494BF4..0x00494C20` | dwords | `fn_00458155`, `fn_00458290`, `fn_00458B43`, 3 more | `fn_0045851A`, `fn_00458895`, `fn_00458ACC`, 5 more | CD audio and MCI state (FND-AUDIO-006, FND-AUDIO-007) |
 | `0x00494C28..0x00497FE8` | 48 records of 0x114 bytes | `fn_00458290`, `fn_0045867C`, `fn_00458895` | `fn_0045851A` | sound slots: +0 in use, +0x0A the path, +0x108 the memory handle, +0x10C the data, +0x110 the length (FND-AUDIO-006) |
@@ -135,6 +136,8 @@ places where they touch the match state are the network transfer buffer
 hire orders, and the network block of a save (`0x00498968`).
 
 ## Alternatives
+
+This entry replaces FND-STATE-008, which gave the four file slots as one region `0x00493F88..0x004944F8` of four 348-byte records. `fn_0042AB80` clears the slots' name flags at `0x00493F90 + slot * 0x15C` (`0x0042ABB2`) and stores its argument at `0x00493F88` (`0x0042ABEC`), so the records start 8 bytes later and end at `0x00494500`, as FND-PLATFORM-010 gives them, and the dword before them is a region of its own. The error was found when the spec's ranges were checked against the sizes their entries give.
 
 Several small regions are named only by the functions that use them
 (`0x004854C8`, `0x00487348`, `0x004906A8`, `0x00498BB8`). They belong to the

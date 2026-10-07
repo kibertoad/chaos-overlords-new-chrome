@@ -19,8 +19,23 @@ The authorized canonical repository is
 Before every push, inspect the repository's configured push destination with
 `git remote get-url --push origin` (and `git remote -v` when additional context
 is useful), and verify that it resolves to this canonical repository. Push
-through the configured remote name and an explicit refspec, for example
-`git push origin HEAD:main`.
+through the configured remote name and an explicit refspec that names the
+destination branch: `git push origin HEAD:<branch>`, where `<branch>` is the
+pull request's head branch, or `main` where a push to `main` is allowed.
+
+Never run a bare `git push` or `git push origin`. A branch created from
+`origin/main`, as `git worktree add -b <branch> <path> origin/main` creates
+one, tracks `origin/main`, so a bare push goes to `main` or is refused, and
+`-q` hides the refusal. A branch checked out without `-b` may track nothing.
+Give `-u` on the first push (`git push -u origin HEAD:<branch>`) so the branch
+tracks its own remote branch from then on.
+
+After every push, confirm that it landed before reporting it or reading CI:
+`git ls-remote origin refs/heads/<branch>` must print what
+`git rev-parse HEAD` prints, and for a pull request
+`gh pr view <number> --json headRefOid` must name the same commit. CI results
+and mergeability belong to the pull request's head commit; until that is the
+local commit, they describe an older one.
 
 Never rewrite, replace, or temporarily override a remote URL in order to push.
 This prohibition includes `git remote set-url`, changing `remote.*.url` or

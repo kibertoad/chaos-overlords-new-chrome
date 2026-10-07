@@ -68,7 +68,7 @@ function. Measured on 2026-09-25:
   callback `fn_0041D51B` (1,327; FND-PLATFORM-013, FND-STATE-011), `fn_00419022` (1,271;
   FND-AUDIO-010, FND-UI-032) and `fn_00427A09` (1,111; FND-PLATFORM-015, FND-UI-026).
 - Of the 1,157 `.data` addresses game code reads or writes, 880 lie within 16 bytes of an address
-  the spec cites; the regions around the rest are mapped by FND-STATE-007, FND-STATE-008 and
+  the spec cites; the regions around the rest are mapped by FND-STATE-007, FND-STATE-012 and
   FND-STATE-011, which cite region bounds and record sizes rather than every field. All 9 `.rdata`
   addresses the code reads are cited. Of the 48 `.rsrc` addresses Ghidra links to code, 5 are
   cited by address; the spec names resources by ID (FND-EXE-005).

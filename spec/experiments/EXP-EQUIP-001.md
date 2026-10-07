@@ -30,7 +30,7 @@ As EXP-TURN-030, with `--equip-lists` added
 
 After the end state is dumped, the probe stops the original at the next
 `PeekMessageA` call of the message pump (FND-UI-020), saves the thread
-context and calls the list builder `fn_0043F136` of FND-EQUIP-008 once for
+context and calls the list builder `fn_0043F136` of FND-EQUIP-012 once for
 each category 0 to 3 of each living gang of the human, passing the category,
 the Tech Level field of the gang's definition, the player and the roster slot,
 as the Equip panel does. After each call it reads the sixteen entries at

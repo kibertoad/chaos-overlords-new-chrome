@@ -13,7 +13,7 @@
 //                                      tools/squashed.txt while it exists
 //
 // Every other argument goes to the checker unchanged, so `--check`, `--no-ksy`, `--base <ref>` and
-// `--record-validation <builds>` work as the checker documents them. Without `--base`, a run on
+// `--record-validation <builds>` work as the checker documents them. Without `--base`, a CI run on
 // the base branch itself compares with what the push replaced or with the parent commit, since
 // the checker's own default (the fork point) is HEAD there.
 //
@@ -108,11 +108,16 @@ function squashed() {
 }
 
 /**
- * Without --base the checker compares with where HEAD forked from the base branch. When HEAD is on
+ * Without --base the checker compares with where HEAD forked from the base branch. When CI runs on
  * the base branch itself (a push to main, a scheduled or dispatched run of main) that fork point is
  * HEAD, and the tree would be compared with itself. Returns --base with what the push replaced
  * (`before` in the push event) or, failing that, the parent commit; otherwise nothing, and the
  * checker finds the fork point on its own.
+ *
+ * Outside CI (the pre-commit hook, a run by hand) the tree checked is the staged or working tree on
+ * top of HEAD, so HEAD is the right base even when it is on the base branch. The parent would count
+ * HEAD's own changes as the tree's: on top of the nightly job's commit, every regenerated file
+ * would read as a branch's edit.
  */
 function baseOnTheBaseBranch(dir) {
   const git = (...gitArgs) =>
@@ -134,7 +139,7 @@ function baseOnTheBaseBranch(dir) {
   } catch {
     return []; // no fork point: the checker reports or skips the comparison itself
   }
-  if (!onTarget) return [];
+  if (!onTarget || !process.env.CI) return [];
   let before = null;
   if (process.env.GITHUB_EVENT_NAME === "push" && process.env.GITHUB_EVENT_PATH) {
     try {

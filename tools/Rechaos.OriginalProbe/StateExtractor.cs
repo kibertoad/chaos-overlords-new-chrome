@@ -70,7 +70,7 @@ internal sealed class StateExtractor
                 });
             run["finance"] = panels;
         }
-        // RULE-EQUIP-004, FND-EQUIP-008: the list the Equip panel's builder filled for each category
+        // RULE-EQUIP-004, FND-EQUIP-012: the list the Equip panel's builder filled for each category
         // of each of the first human's living gangs, with the Tech Level it was passed.
         if (trace["EquipLists"] is JsonArray equipLists)
             run["equip_lists"] = new JsonArray(equipLists.Select(list => (JsonNode)new JsonObject
