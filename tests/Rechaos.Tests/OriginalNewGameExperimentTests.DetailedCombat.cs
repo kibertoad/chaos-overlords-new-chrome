@@ -90,7 +90,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheConsolesDetailedCombatControlPlaysTheLastTurnAgain(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var events = CombatResultProjection.AutomaticPresentationEvents(match, human, match.Events);
         var bySequence = events.ToDictionary(gameEvent => gameEvent.Sequence);
