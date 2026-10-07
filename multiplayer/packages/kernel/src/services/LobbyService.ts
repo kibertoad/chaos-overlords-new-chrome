@@ -107,7 +107,7 @@ export class LobbyService {
       limit: PASSWORD_FAILURES_PER_MATCH,
       windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
     })
-    this.chatMessages = new RateLimiter(deps.clock, {
+    this.chatMessages = limiters('chatMessages', {
       limit: LIMITS.chatMessagesPerMinute,
       windowMs: CHAT_WINDOW_MS,
     })
@@ -467,7 +467,7 @@ export class LobbyService {
     if (match.status !== 'lobby') {
       throw new ConflictError('Chat is open only in the lobby', { reason: 'match_not_in_lobby' })
     }
-    const retryAfterSeconds = this.chatMessages.take(`${match.id}:${player.id}`)
+    const retryAfterSeconds = await this.chatMessages.take(`${match.id}:${player.id}`)
     if (retryAfterSeconds !== null) {
       throw new RateLimitedError('Too many chat messages', {
         reason: 'rate_limited',
