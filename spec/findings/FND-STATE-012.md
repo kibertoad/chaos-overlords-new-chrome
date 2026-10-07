@@ -137,8 +137,6 @@ hire orders, and the network block of a save (`0x00498968`).
 
 ## Alternatives
 
-This entry replaces FND-STATE-008, which gave the four file slots as one region `0x00493F88..0x004944F8` of four 348-byte records. `fn_0042AB80` clears the slots' name flags at `0x00493F90 + slot * 0x15C` (`0x0042ABB2`) and stores its argument at `0x00493F88` (`0x0042ABEC`), so the records start 8 bytes later and end at `0x00494500`, as FND-PLATFORM-010 gives them, and the dword before them is a region of its own. The error was found when the spec's ranges were checked against the sizes their entries give.
-
 Several small regions are named only by the functions that use them
 (`0x004854C8`, `0x00487348`, `0x004906A8`, `0x00498BB8`). They belong to the
 modem and network code, which the spec's scope leaves out beyond the lobby
