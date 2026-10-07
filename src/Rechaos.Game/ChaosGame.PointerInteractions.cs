@@ -61,6 +61,8 @@ public sealed partial class ChaosGame
     /// </summary>
     private void CompletePointerRelease(bool pointerMapped, Point point, bool rightButton)
     {
+        // A drag across the name being edited selects only while the left button is down.
+        if (!rightButton) _setupNameSelecting = false;
         if (_pressedPanelFace is { } pressedFace)
         {
             if (_pressedPanelFaceByRightButton != rightButton) return;

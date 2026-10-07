@@ -21,9 +21,7 @@ public sealed class SetupPlayerNameEditor
     /// <summary>DEV-SETUP-003: the card's name row holds ten six-pixel cells.</summary>
     public const int VisibleCharacters = LocalSetupPolicy.MaximumPlayerNameCharacters;
 
-    private string _text = string.Empty;
-
-    public string Text => _text;
+    public string Text { get; private set; } = string.Empty;
 
     /// <summary>The insertion point, from 0 (before the first character) to the text's length.</summary>
     public int Caret { get; private set; }
@@ -38,9 +36,11 @@ public sealed class SetupPlayerNameEditor
     /// <summary>The index of the first character the card shows.</summary>
     public int FirstVisible { get; private set; }
 
+    /// <summary>The number of characters the card shows.</summary>
+    public int VisibleLength => Math.Min(VisibleCharacters, Text.Length - FirstVisible);
+
     /// <summary>The characters the card shows, from <see cref="FirstVisible"/>.</summary>
-    public string VisibleText =>
-        _text.Substring(FirstVisible, Math.Min(VisibleCharacters, _text.Length - FirstVisible));
+    public string VisibleText => Text.Substring(FirstVisible, VisibleLength);
 
     /// <summary>
     /// Starts the control with <paramref name="text"/>, all of it selected, as focusing a
@@ -53,7 +53,7 @@ public sealed class SetupPlayerNameEditor
         if (text.Length > TextLimit)
             throw new ArgumentException($"An edit control holds at most {TextLimit} characters.",
                 nameof(text));
-        _text = text;
+        Text = text;
         Anchor = 0;
         Caret = text.Length;
         FirstVisible = 0;
@@ -70,9 +70,9 @@ public sealed class SetupPlayerNameEditor
     {
         if (character < ' ' || character == (char)127) return false;
         character = UpperCase(character);
-        if (_text.Length - (SelectionEnd - SelectionStart) >= TextLimit) return false;
+        if (Text.Length - (SelectionEnd - SelectionStart) >= TextLimit) return false;
         var at = SelectionStart;
-        _text = string.Concat(_text.AsSpan(0, at), [character], _text.AsSpan(SelectionEnd));
+        Text = string.Concat(Text.AsSpan(0, at), [character], Text.AsSpan(SelectionEnd));
         Collapse(at + 1);
         return true;
     }
@@ -82,7 +82,7 @@ public sealed class SetupPlayerNameEditor
     {
         if (HasSelection) return DeleteSelection();
         if (Caret == 0) return false;
-        _text = _text.Remove(Caret - 1, 1);
+        Text = Text.Remove(Caret - 1, 1);
         Collapse(Caret - 1);
         return true;
     }
@@ -91,8 +91,8 @@ public sealed class SetupPlayerNameEditor
     public bool Delete()
     {
         if (HasSelection) return DeleteSelection();
-        if (Caret == _text.Length) return false;
-        _text = _text.Remove(Caret, 1);
+        if (Caret == Text.Length) return false;
+        Text = Text.Remove(Caret, 1);
         Collapse(Caret);
         return true;
     }
@@ -103,7 +103,7 @@ public sealed class SetupPlayerNameEditor
     /// </summary>
     public void MoveTo(int index, bool extend)
     {
-        index = Math.Clamp(index, 0, _text.Length);
+        index = Math.Clamp(index, 0, Text.Length);
         Caret = index;
         if (!extend) Anchor = index;
         ScrollToCaret();
@@ -129,7 +129,7 @@ public sealed class SetupPlayerNameEditor
                 MoveTo(0, shift);
                 return true;
             case Keys.End:
-                MoveTo(_text.Length, shift);
+                MoveTo(Text.Length, shift);
                 return true;
             case Keys.Back:
                 Backspace();
@@ -151,7 +151,7 @@ public sealed class SetupPlayerNameEditor
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(cellWidth, 1);
         var cells = (int)Math.Round(offset / (double)cellWidth, MidpointRounding.AwayFromZero);
-        return Math.Clamp(FirstVisible + cells, FirstVisible, FirstVisible + VisibleText.Length);
+        return Math.Clamp(FirstVisible + cells, FirstVisible, FirstVisible + VisibleLength);
     }
 
     // A letter whose capital lies outside Latin-1, such as y with a diaeresis, is kept as typed:
@@ -165,7 +165,7 @@ public sealed class SetupPlayerNameEditor
     private bool DeleteSelection()
     {
         var at = SelectionStart;
-        _text = _text.Remove(at, SelectionEnd - at);
+        Text = Text.Remove(at, SelectionEnd - at);
         Collapse(at);
         return true;
     }
@@ -185,6 +185,6 @@ public sealed class SetupPlayerNameEditor
     {
         if (Caret < FirstVisible) FirstVisible = Caret;
         else if (Caret > FirstVisible + VisibleCharacters) FirstVisible = Caret - VisibleCharacters;
-        FirstVisible = Math.Clamp(FirstVisible, 0, Math.Max(0, _text.Length - VisibleCharacters));
+        FirstVisible = Math.Clamp(FirstVisible, 0, Math.Max(0, Text.Length - VisibleCharacters));
     }
 }

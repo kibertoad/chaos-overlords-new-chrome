@@ -92,8 +92,10 @@ public sealed partial class SetupNameEditControlExperimentTests
                     switch (Convert.ToInt32(value, 16))
                     {
                         case 0x0D:
+                            Assert.Equal(shots.Length, shot);
                             return LocalSetupPolicy.NameAfterModalEntry(name, editor.Text);
                         case 0x1B:
+                            Assert.Equal(shots.Length, shot);
                             return name;
                         case var key:
                             Assert.True(editor.Press(key switch

@@ -444,7 +444,7 @@ public sealed partial class ChaosGame
 
     private int SetupNameIndexAt(int index, Point point)
     {
-        var start = SetupPlayerCardArtLayout.NameStart(index, _setupNameEditor.VisibleText.Length);
+        var start = SetupPlayerCardArtLayout.NameStart(index, _setupNameEditor.VisibleLength);
         return _setupNameEditor.IndexAt(point.X - start.X, OriginalFontLayout.CellWidth);
     }
 
@@ -853,16 +853,20 @@ public sealed partial class ChaosGame
         font.Draw(batch, shown, new Vector2(start.X, start.Y), Color.Lime, 1);
         var first = Math.Max(editor.SelectionStart, editor.FirstVisible) - editor.FirstVisible;
         var last = Math.Min(editor.SelectionEnd, editor.FirstVisible + shown.Length) - editor.FirstVisible;
-        if (editor.HasSelection && last > first)
+        var highlighted = editor.HasSelection && last > first;
+        if (highlighted)
         {
             batch.Draw(pixel,
                 SetupPlayerCardArtLayout.NameCells(index, shown.Length, first, last - first), Color.Lime);
             font.Draw(batch, shown[first..last],
                 new Vector2(start.X + OriginalFontLayout.CellWidth * first, start.Y), Color.Black, 1);
         }
+        // The caret's column is the last of the cell before it, so a caret at a selection's right
+        // end falls inside the highlight and is drawn in black there, as an inverted caret shows.
+        var caret = editor.Caret - editor.FirstVisible;
         if (SetupPlayerCardArtLayout.NameCaretShown(_inputTime - _setupNameCaretShownAt))
-            batch.Draw(pixel, SetupPlayerCardArtLayout.NameCaret(
-                index, shown.Length, editor.Caret - editor.FirstVisible), Color.Lime);
+            batch.Draw(pixel, SetupPlayerCardArtLayout.NameCaret(index, shown.Length, caret),
+                highlighted && caret > first && caret <= last ? Color.Black : Color.Lime);
     }
 
     private static void DrawSelectionLight(

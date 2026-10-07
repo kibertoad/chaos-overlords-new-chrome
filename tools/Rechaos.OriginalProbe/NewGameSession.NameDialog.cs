@@ -50,7 +50,12 @@ internal sealed partial class NewGameSession
             var screen = CopyWindow(IntPtr.Zero, false, width, height, origin.X, origin.Y);
             Paste(composed, width, height, dialogCopy, dialogRect.Right - dialogRect.Left,
                 dialogRect.Left - origin.X, dialogRect.Top - origin.Y);
-            if (!composed.AsSpan().SequenceEqual(screen)) screenAgrees = false;
+            // The desktop copy of the first sample that disagrees is kept to show the difference.
+            if (screenAgrees && !composed.AsSpan().SequenceEqual(screen))
+            {
+                screenAgrees = false;
+                WriteBitmap(Path.Combine(outputDirectory, $"name-{entry}-{shot}-desktop.bmp"), width, height, screen);
+            }
             var hash = XxHash128.HashToUInt128(composed);
             var index = hashes.IndexOf(hash);
             if (index < 0)
@@ -58,8 +63,6 @@ internal sealed partial class NewGameSession
                 index = hashes.Count;
                 hashes.Add(hash);
                 images.Add(composed);
-                if (!screenAgrees && index == 0)
-                    WriteBitmap(Path.Combine(outputDirectory, $"name-{entry}-{shot}-desktop.bmp"), width, height, screen);
             }
             samples.Add([at, index]);
             _process.Pump(TimeSpan.FromMilliseconds(20));

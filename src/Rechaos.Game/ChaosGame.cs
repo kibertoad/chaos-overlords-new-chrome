@@ -798,7 +798,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released)
         {
             _leftHoldOutlivesCancel = false;
-            _setupNameSelecting = false;
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: false);
         }
         if (_previousMouse.RightButton == ButtonState.Pressed && mouse.RightButton == ButtonState.Released)
@@ -845,7 +844,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Setup:
                 if (PressSetupName(point)) break;
-                var timed =ScenarioCatalog.Get(_selectedScenario).IsTimed;
+                var timed = ScenarioCatalog.Get(_selectedScenario).IsTimed;
                 var panelControl = SetupPanelLayout.HitTest(point, timed);
                 var durationRefused = !timed && SetupPanelLayout.DurationArea.Contains(point);
                 var setupButton = SetupButtonLayout.HitTest(point);
