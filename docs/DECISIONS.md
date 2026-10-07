@@ -264,7 +264,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   does not.
 - Method: a throwaway harness, not kept in the repository, switched the guard
   per player between the two comparisons. Seat 0 was a simulated human (see
-  [VALIDATION.md](VALIDATION.md#simulated-human-seats)) that always used the
+  [the test harnesses](validation/test-harnesses.md#simulated-human-seats)) that always used the
   corrected comparison; the five computer players used the original comparison
   in one arm and the corrected one in the other, on the same seeds. It ran the
   seven scenarios that have a hunter guard (Greed, Power, Acceptance,

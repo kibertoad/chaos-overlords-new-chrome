@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Regenerates the generated index blocks in docs/*.md, and checks that every relative link (inline
+// Regenerates the generated index blocks in docs/*.md and docs/validation/*.md, and checks that every relative link (inline
 // or a reference-style definition) in those documents, the root README, AGENTS.md, the rebuild's
 // ledgers, spec/, multiplayer/ and tools/ still resolves.
 //
@@ -145,9 +145,11 @@ function processFile(path) {
   return { blocks, stale: updated !== original, updated };
 }
 
-/** Every maintained markdown document in docs/. */
+/** Every maintained markdown document in docs/, and the parts of the validation procedure in docs/validation/. */
 function documentPaths() {
-  return readdirSync(docsDir).filter((n) => n.endsWith(".md")).sort().map((name) => join(docsDir, name));
+  return [docsDir, join(docsDir, "validation")]
+    .filter((dir) => existsSync(dir))
+    .flatMap((dir) => readdirSync(dir).filter((n) => n.endsWith(".md")).sort().map((name) => join(dir, name)));
 }
 
 /** Anchors a markdown file offers, cached per path. */

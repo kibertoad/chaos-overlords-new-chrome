@@ -22,7 +22,7 @@ environment: Windows 11 with a 32-bit desktop, an unelevated copy of the executa
 
 On 2026-10-05 the hash-verified BLD-GOG-EN-1.1 executable ran EXP-SETUP-001's
 setup with seed 52421 to the first planning entry, and the probe took a
-capture there as docs/VALIDATION.md describes. The original's display depth
+capture there as docs/validation/screen-captures.md describes. The original's display depth
 `0x0048787C` (FND-PLATFORM-009) held 16; the probe's window device context
 reported 32.
 
@@ -83,7 +83,7 @@ examined. The planning entry is the only capture with the write recorded here.
 
 ## How to reproduce
 
-Stage the executable as docs/VALIDATION.md describes and run the probe's
+Stage the executable as docs/validation/experiments.md describes and run the probe's
 `new-game --seed 52421 --capture`, then the same with `--white-key`, which
 makes the write above. Count the exact-white pixels of each `capture-blt.bmp`
 and extract both runs with `extract --experiment EXP-SETUP-001` to compare
