@@ -70,6 +70,28 @@ public sealed class MultiplayerRecoveryTokenStoreTests : IDisposable
         Assert.True(MultiplayerRecoveryStore.KeepsTokensInClear(Path()));
     }
 
+    /// <summary>
+    /// A refused token is not offered to the store again by every turn's save, since each offer
+    /// can be a keyring prompt on the game thread; a new token is.
+    /// </summary>
+    [Fact]
+    public void ARefusedTokenIsNotOfferedAgainByEverySave()
+    {
+        _store.RefuseWrites = true;
+        var recovery = Recovery("match-1");
+
+        Assert.True(Save([recovery]));
+        Assert.True(Save([recovery with { LastUpdatedAt = recovery.LastUpdatedAt!.Value.AddMinutes(1) }]));
+        Assert.Equal(1, _store.Attempts);
+
+        _store.RefuseWrites = false;
+        Assert.True(Save([recovery with { Token = "cop_rotated" }]));
+
+        Assert.Equal(2, _store.Attempts);
+        Assert.Equal("cop_rotated", Assert.Single(_store.Secrets).Value);
+        Assert.False(MultiplayerRecoveryStore.KeepsTokensInClear(Path()));
+    }
+
     [Fact]
     public void WithNoStoreTheTokenStaysInClearAndTheScreenIsTold()
     {
@@ -140,15 +162,36 @@ public sealed class MultiplayerRecoveryTokenStoreTests : IDisposable
         var recovery = Recovery("match-1");
         Assert.True(Save([recovery]));
         // A fresh process: nothing is known about the store but what the file names.
-        var path = Path();
-        var fresh = System.IO.Path.Combine(_directory.FullName, "fresh", "recovery.json");
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(fresh)!);
-        File.Copy(path, fresh);
+        MultiplayerRecoveryStore.ForgetLedger(Path());
 
-        Assert.Equal([recovery], MultiplayerRecoveryStore.LoadAll(fresh, Protection));
-        Assert.True(MultiplayerRecoveryStore.TrySaveAll(fresh, [], durable: false, Protection));
+        Assert.Equal([recovery], Load());
+        Assert.True(Save([]));
 
         Assert.Empty(_store.Secrets);
+    }
+
+    /// <summary>
+    /// A copied data root reads the seats the original filed, files them under its own accounts,
+    /// and dropping one there leaves the original's token in the store.
+    /// </summary>
+    [Fact]
+    public void ACopiedHistoryLeavesTheOriginalsTokensAlone()
+    {
+        var kept = Recovery("match-1");
+        var left = Recovery("match-2");
+        Assert.True(Save([kept, left]));
+        var copy = System.IO.Path.Combine(_directory.FullName, "copy", "recovery.json");
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(copy)!);
+        File.Copy(Path(), copy);
+
+        Assert.Equal([kept, left], MultiplayerRecoveryStore.LoadAll(copy, Protection));
+        Assert.True(MultiplayerRecoveryStore.TrySaveAll(copy, [kept], durable: false, Protection));
+
+        Assert.Equal(3, _store.Secrets.Count);
+        MultiplayerRecoveryStore.ForgetLedger(Path());
+        Assert.Equal([kept, left], Load());
+        MultiplayerRecoveryStore.ForgetLedger(copy);
+        Assert.Equal([kept], MultiplayerRecoveryStore.LoadAll(copy, Protection));
     }
 
     /// <summary>
@@ -185,7 +228,7 @@ public sealed class MultiplayerRecoveryTokenStoreTests : IDisposable
         Assert.Empty(Sessions());
     }
 
-    /// <summary>A store the file names that this machine does not have is not answering, not empty.</summary>
+    /// <summary>A seat filed in a store this machine does not have is held back, as if that store were locked.</summary>
     [Fact]
     public void ASeatInAStoreThisMachineLacksIsKept()
     {
@@ -295,8 +338,8 @@ public sealed class PlatformSecretStoreTests
 
         const string account = "test/match-1/player-1@https://games.example.test/";
         var stored = store!.TryStore(account, "Chaos Overlords test seat", "cop_secret_1");
-        // A runner whose keyring is locked or absent answers the write with a refusal, which is
-        // the fallback path, not a failure of the binding: a broken binding throws instead.
+        // A runner whose keyring is locked or absent answers the write with a refusal, which the
+        // game handles by keeping the token in clear; a broken binding throws instead.
         SkipUnlessRequired(!stored, "The store refused the write: no keyring is running or it is locked.");
         try
         {
@@ -338,10 +381,14 @@ internal sealed class FakeSecretStore : ISecretStore
 
     public int Writes { get; private set; }
 
+    /// <summary>Every write asked for, including refused ones.</summary>
+    public int Attempts { get; private set; }
+
     public string Name => "fake";
 
     public bool TryStore(string account, string label, string secret)
     {
+        Attempts++;
         if (!Available || RefuseWrites) return false;
         Writes++;
         Secrets[account] = secret;

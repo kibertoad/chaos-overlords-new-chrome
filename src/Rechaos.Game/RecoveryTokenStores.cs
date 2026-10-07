@@ -90,8 +90,9 @@ internal sealed class RecoveryTokenProtection(bool useDpapi, ISecretStore? store
 /// The items are filed under one service with the account naming the seat. The game is not signed
 /// with a Keychain entitlement, so the items live in the login keychain rather than the data
 /// protection keychain, and their access list names the executable that made them. A build that
-/// replaces that executable is asked once by macOS whether it may read them; refusing answers
-/// <see cref="SecretLookup.Unavailable"/>, which keeps the seat on file without offering it.
+/// replaces that executable is asked by macOS, once for each item, whether it may read it;
+/// refusing answers <see cref="SecretLookup.Unavailable"/>, which keeps the seat on file without
+/// offering it.
 /// </para>
 /// <para>
 /// Only the SecItem calls and the Core Foundation types they take are used. The constants
@@ -298,9 +299,9 @@ internal sealed class KeychainSecretStore : ISecretStore
 /// </para>
 /// <para>
 /// Every failure the library reports through its error out-parameter (no session bus, no keyring
-/// daemon, a locked keyring whose unlock prompt was dismissed) is read as
-/// <see cref="SecretLookup.Unavailable"/>; only a lookup that succeeds and finds nothing is
-/// <see cref="SecretLookup.Missing"/>.
+/// daemon) is read as <see cref="SecretLookup.Unavailable"/>, and so is a lookup that comes back
+/// empty while the item sits in a collection whose unlock prompt was dismissed; only a lookup that
+/// succeeds and finds no item at all is <see cref="SecretLookup.Missing"/>.
 /// </para>
 /// </remarks>
 [SupportedOSPlatform("linux")]
@@ -308,6 +309,7 @@ internal sealed class SecretServiceStore : ISecretStore
 {
     private const string LibSecret = "libsecret-1.so.0";
     private const string GLib = "libglib-2.0.so.0";
+    private const string GObject = "libgobject-2.0.so.0";
     private const string SchemaName = "io.github.kibertoad.ChaosOverlordsNewChrome.Seat";
     private const string ServiceAttribute = "service";
     private const string AccountAttribute = "account";
@@ -318,31 +320,53 @@ internal sealed class SecretServiceStore : ISecretStore
     /// </summary>
     private const int SchemaSize = 8 + 8 + 32 * 16 + 8 + 7 * 8;
 
+    /// <summary><c>SECRET_SEARCH_ALL</c>: every match, without unlocking or loading secrets.</summary>
+    private const int SearchAll = 1 << 1;
+
     private readonly string _service;
     private readonly IntPtr _schema;
     private readonly IntPtr _stringHash;
     private readonly IntPtr _stringEqual;
+    private readonly IntPtr _objectUnref;
+
+    /// <summary>Whether <see cref="HoldsLockedItem"/> can ask; see there.</summary>
+    private readonly bool _canSearch;
 
     public string Name => "secret-service";
 
-    private SecretServiceStore(string service, IntPtr schema, IntPtr stringHash, IntPtr stringEqual)
+    private SecretServiceStore(
+        string service,
+        IntPtr schema,
+        IntPtr stringHash,
+        IntPtr stringEqual,
+        IntPtr objectUnref,
+        bool canSearch)
     {
         _service = service;
         _schema = schema;
         _stringHash = stringHash;
         _stringEqual = stringEqual;
+        _objectUnref = objectUnref;
+        _canSearch = canSearch && objectUnref != IntPtr.Zero;
     }
 
     /// <summary>The store, or null when libsecret or GLib cannot be loaded.</summary>
     public static SecretServiceStore? TryCreate(string service)
     {
         if (!Environment.Is64BitProcess) return null;
-        if (!NativeLibrary.TryLoad(LibSecret, out _) || !NativeLibrary.TryLoad(GLib, out var glib))
+        if (!NativeLibrary.TryLoad(LibSecret, out var libsecret) || !NativeLibrary.TryLoad(GLib, out var glib))
             return null;
         if (!NativeLibrary.TryGetExport(glib, "g_str_hash", out var stringHash)
             || !NativeLibrary.TryGetExport(glib, "g_str_equal", out var stringEqual))
             return null;
-        return new SecretServiceStore(service, BuildSchema(), stringHash, stringEqual);
+        // Optional: without them a dismissed unlock prompt cannot be told from a missing item.
+        var canSearch = NativeLibrary.TryGetExport(libsecret, "secret_password_searchv_sync", out _)
+            && NativeLibrary.TryGetExport(glib, "g_list_free_full", out _);
+        var objectUnref = IntPtr.Zero;
+        if (NativeLibrary.TryLoad(GObject, out var gobject))
+            NativeLibrary.TryGetExport(gobject, "g_object_unref", out objectUnref);
+        return new SecretServiceStore(
+            service, BuildSchema(), stringHash, stringEqual, objectUnref, canSearch);
     }
 
     /// <summary>The schema, laid out as libsecret's <c>SecretSchema</c>, never freed.</summary>
@@ -376,7 +400,8 @@ internal sealed class SecretServiceStore : ISecretStore
             if (found != IntPtr.Zero) secret_password_free(found);
             return SecretLookup.Unavailable;
         }
-        if (found == IntPtr.Zero) return SecretLookup.Missing;
+        if (found == IntPtr.Zero)
+            return HoldsLockedItem(attributes.Table) ? SecretLookup.Unavailable : SecretLookup.Missing;
         try
         {
             secret = Marshal.PtrToStringUTF8(found);
@@ -394,6 +419,25 @@ internal sealed class SecretServiceStore : ISecretStore
         // FALSE without an error means there was nothing to remove, which is the outcome wanted.
         secret_password_clearv_sync(_schema, attributes.Table, IntPtr.Zero, out var error);
         return Succeeded(error);
+    }
+
+    /// <summary>
+    /// Whether the store holds an item under these attributes that a lookup could not open.
+    /// </summary>
+    /// <remarks>
+    /// A lookup that finds the item in a locked collection asks to unlock it, and when the player
+    /// dismisses that prompt libsecret answers with no password and no error, which reads the same
+    /// as an item that is not there. A search that neither unlocks nor loads secrets tells the two
+    /// apart without a second prompt. <c>secret_password_searchv_sync</c> arrived in libsecret 0.19;
+    /// without it the lookup's answer stands.
+    /// </remarks>
+    private bool HoldsLockedItem(IntPtr attributes)
+    {
+        if (!_canSearch) return false;
+        var list = secret_password_searchv_sync(_schema, attributes, SearchAll, IntPtr.Zero, out var error);
+        if (list != IntPtr.Zero) g_list_free_full(list, _objectUnref);
+        // A search that fails says nothing about the item, so the lookup is not trusted either.
+        return !Succeeded(error) || list != IntPtr.Zero;
     }
 
     private static bool Succeeded(IntPtr error)
@@ -456,6 +500,14 @@ internal sealed class SecretServiceStore : ISecretStore
 
     [DllImport(LibSecret)]
     private static extern void secret_password_free(IntPtr password);
+
+    /// <summary>A <c>GList</c> of <c>SecretRetrievable</c> objects, or null when nothing matches.</summary>
+    [DllImport(LibSecret)]
+    private static extern IntPtr secret_password_searchv_sync(
+        IntPtr schema, IntPtr attributes, int flags, IntPtr cancellable, out IntPtr error);
+
+    [DllImport(GLib)]
+    private static extern void g_list_free_full(IntPtr list, IntPtr freeFunction);
 
     [DllImport(GLib)]
     private static extern IntPtr g_hash_table_new(IntPtr hash, IntPtr equal);

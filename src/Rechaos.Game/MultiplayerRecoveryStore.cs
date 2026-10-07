@@ -272,13 +272,14 @@ public static class MultiplayerRecoveryStore
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(protection);
         var ledger = LedgerFor(path);
-        var primary = Read(path, setAsideWhenCorrupt: true, protection, ledger);
+        var scope = AccountScope(path);
+        var primary = Read(path, setAsideWhenCorrupt: true, protection, ledger, scope);
         if (primary.Kind == ReadKind.Read) NewerHistory.NoteCurrent(path);
         var loaded = primary;
         if (primary.Kind == ReadKind.Corrupt)
         {
             // The backup is only read, never set aside: it is the last copy there is.
-            var backup = Read(path + ".bak", setAsideWhenCorrupt: false, protection, ledger);
+            var backup = Read(path + ".bak", setAsideWhenCorrupt: false, protection, ledger, scope);
             loaded = backup.Kind == ReadKind.Read ? backup : ReadResult.Of(ReadKind.Corrupt);
         }
         if (loaded.Kind != ReadKind.Read) return loaded.Recoveries;
@@ -356,7 +357,8 @@ public static class MultiplayerRecoveryStore
         string path,
         bool setAsideWhenCorrupt,
         RecoveryTokenProtection protection,
-        TokenLedger ledger)
+        TokenLedger ledger,
+        string scope)
     {
         var (kind, bytes) = ReadBytes(path, setAsideWhenCorrupt);
         if (bytes is null) return ReadResult.Of(kind);
@@ -380,7 +382,7 @@ public static class MultiplayerRecoveryStore
                 var heldBack = new List<PersistedRecovery>();
                 foreach (var stored in history.Sessions)
                 {
-                    var outcome = Revive(stored, protection, ledger);
+                    var outcome = Revive(stored, protection, ledger, scope);
                     revived.Add(outcome.Recovery);
                     if (outcome.Recovery is not null && stored.Token is not null) clear.Add(outcome.Recovery);
                     if (outcome.HeldBack is { } held
@@ -456,6 +458,8 @@ public static class MultiplayerRecoveryStore
         try
         {
             File.Move(path, path + ".corrupt", overwrite: true);
+            // It may hold tokens in clear from an older build, and it stays on disk.
+            RestrictToOwner(path + ".corrupt");
         }
         catch
         {
@@ -660,6 +664,14 @@ public static class MultiplayerRecoveryStore
 
         /// <summary>The account each seat's token is filed under, by <see cref="SeatKey"/>.</summary>
         public readonly Dictionary<string, string> Accounts = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Every account whose token the store refused, with that token. The saves run on the game
+        /// thread every turn, and a keyring that refused once (a dismissed unlock or access
+        /// prompt) would otherwise prompt again, blocking the frame, at each of them. A token that
+        /// changes is offered again; an unchanged one waits for the next process.
+        /// </summary>
+        public readonly Dictionary<string, string> Refused = new(StringComparer.Ordinal);
         public PersistedRecovery[] HeldBack = [];
         public bool KeptInClear;
     }
@@ -671,6 +683,12 @@ public static class MultiplayerRecoveryStore
         Ledgers.GetOrAdd(Path.GetFullPath(path), _ => new TokenLedger());
 
     /// <summary>
+    /// Forgets what this process learned about the history's tokens, as a new process starts out.
+    /// For tests.
+    /// </summary>
+    internal static void ForgetLedger(string path) => Ledgers.TryRemove(Path.GetFullPath(path), out _);
+
+    /// <summary>
     /// The name a new seat's token is filed under in an operating-system store.
     /// </summary>
     /// <remarks>
@@ -680,11 +698,17 @@ public static class MultiplayerRecoveryStore
     /// token by the name on file, so a data root that moves keeps its seats. Nothing in it is
     /// secret.
     /// </remarks>
-    private static string NewAccount(string historyPath, MultiplayerRecovery recovery)
+    private static string NewAccount(string historyPath, MultiplayerRecovery recovery) =>
+        $"{AccountScope(historyPath)}{recovery.MatchId}/{recovery.PlayerId}@{recovery.Server.ToLowerInvariant()}";
+
+    /// <summary>
+    /// The prefix every account <see cref="NewAccount"/> makes for this history starts with: a
+    /// digest of the history's path and a slash.
+    /// </summary>
+    private static string AccountScope(string historyPath)
     {
         var digest = SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(historyPath)));
-        var scope = Convert.ToHexStringLower(digest, 0, 8);
-        return $"{scope}/{recovery.MatchId}/{recovery.PlayerId}@{recovery.Server.ToLowerInvariant()}";
+        return Convert.ToHexStringLower(digest, 0, 8) + "/";
     }
 
     /// <summary>What tells one seat from another, as <see cref="SameSeat"/> compares them.</summary>
@@ -746,12 +770,17 @@ public static class MultiplayerRecoveryStore
             if (!ledger.Accounts.TryGetValue(seat, out var account))
                 account = NewAccount(historyPath, recovery);
             var known = ledger.Stored.TryGetValue(account, out var held) && held == recovery.Token;
-            if (known || Guarded(() => store.TryStore(account, Label(recovery), recovery.Token)))
+            var refused = !known
+                && ledger.Refused.TryGetValue(account, out var declined) && declined == recovery.Token;
+            if (known
+                || (!refused && Guarded(() => store.TryStore(account, Label(recovery), recovery.Token))))
             {
+                ledger.Refused.Remove(account);
                 ledger.Stored[account] = recovery.Token;
                 ledger.Accounts[seat] = account;
                 return Persisted(recovery, token: null, protectedToken: null, store.Name, account);
             }
+            ledger.Refused[account] = recovery.Token;
             return Persisted(recovery, recovery.Token, protectedToken: null, tokenStore: null, tokenAccount: null);
         }
         var sealedToken = protection.UseDpapi ? Protect(recovery.Token) : null;
@@ -804,10 +833,17 @@ public static class MultiplayerRecoveryStore
     /// </param>
     private readonly record struct Revived(MultiplayerRecovery? Recovery, PersistedRecovery? HeldBack);
 
+    /// <remarks>
+    /// A token found under an account of another data root's scope is read but not adopted: the
+    /// ledger does not record it, so the next save files the token under this root's own account
+    /// and this root never deletes the other one. A copied data root then leaves the original's
+    /// items alone, and a moved one leaves its old items behind in the store.
+    /// </remarks>
     private static Revived Revive(
         PersistedRecovery stored,
         RecoveryTokenProtection protection,
-        TokenLedger ledger)
+        TokenLedger ledger,
+        string scope)
     {
         string? token;
         if (stored.TokenStore is { } storeName)
@@ -829,10 +865,13 @@ public static class MultiplayerRecoveryStore
             switch (lookup)
             {
                 case SecretLookup.Found when !string.IsNullOrEmpty(found):
-                    lock (ledger.Gate)
+                    if (account.StartsWith(scope, StringComparison.Ordinal))
                     {
-                        ledger.Stored[account] = found;
-                        ledger.Accounts[SeatKey(stored.Server, stored.MatchId, stored.PlayerId)] = account;
+                        lock (ledger.Gate)
+                        {
+                            ledger.Stored[account] = found;
+                            ledger.Accounts[SeatKey(stored.Server, stored.MatchId, stored.PlayerId)] = account;
+                        }
                     }
                     token = found;
                     break;

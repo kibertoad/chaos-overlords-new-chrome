@@ -198,7 +198,7 @@ try {
     # or discovery change that silently drops tests fails the run; theories whose rows are only
     # expanded at run time make the executed count somewhat higher. Full = fast + long-running;
     # raise all three together when tests are added.
-    $minimumFastTests = 3076
+    $minimumFastTests = 3078
     $minimumLongRunningTests = 53
     $minimumAllTests = $minimumFastTests + $minimumLongRunningTests
     if ($TestFilter) {
