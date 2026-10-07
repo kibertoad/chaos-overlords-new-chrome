@@ -4,7 +4,7 @@ title: Control pools each player's strength per sector and settles contested sec
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-006, FND-CONTROL-001, FND-CONTROL-002, FND-RNG-003, FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG]
+evidence: [FND-AI-006, FND-CONTROL-001, FND-CONTROL-002, FND-RNG-003, FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG, FND-AWARDS-001, FND-CONTROL-003, FND-HIRE-002, FND-PLATFORM-003, FND-POLICE-002, FND-UI-035, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, RULE-EVENT-012, RULE-EVENT-013, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, RULE-AI-017]

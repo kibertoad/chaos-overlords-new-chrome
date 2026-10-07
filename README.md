@@ -50,7 +50,7 @@ rounding, ordering and quirks, including bugs that players may rely on. It fixes
 only crashes, freezes, corrupted saves and logic that plainly does not do what it
 was written to do; when a bug cannot be told from a design decision, the original
 behaviour stays. Its 63 deliberate departures
-are listed in [DEVIATIONS.md](DEVIATIONS.md); many are interface changes, and
+are listed in [deviations/](deviations), one file each; many are interface changes, and
 seven have a setting that restores the original behaviour. Two of them, the
 computer players' Moves to distant sectors (DEV-AI-007) and their hires outside
 their own sectors (DEV-AI-008), are switched by `--original-computer-moves` and
@@ -73,10 +73,12 @@ validation plans list the open questions.
 
 ### Key omissions
 
-- Recorded runs of the original do not reach combat or the late game yet, and
-  no screen has been compared with a capture of the original
-  ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136),
-  [#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
+- Recorded runs of the original do not reach every part of the late game yet
+  ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136)).
+- Every screen the rebuild draws has been compared with at least one capture
+  of the original, but some states of most, such as pressed faces, selections
+  and drags, have not been captured yet; [VALIDATION.md](docs/VALIDATION.md#screen-capture-coverage)
+  lists them ([#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
 - Help is drawn by a cross-platform viewer, so its typography and paragraph
   layout approximate WinHelp's
   ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).

@@ -49,12 +49,12 @@ Martial Arts 0; it had moved on to sector 16.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state. In the rebuild's replay the attack rolls 5
-dice for one point of damage against a target of Force 8 and Combat 2, and no
-retaliation dice. A retaliation would have rolled 8 + 2 - 4 = 6 dice, so the
-original, which makes the same calls, made no retaliation roll either.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same generator position and state. In
+the rebuild's replay the attack rolls 5 dice for one point of damage against a
+target of Force 8 and Combat 2, and no retaliation dice. A retaliation would
+have rolled 8 + 2 - 4 = 6 dice, so the original, which makes the same calls,
+made no retaliation roll either.
 
 ## Conclusion
 

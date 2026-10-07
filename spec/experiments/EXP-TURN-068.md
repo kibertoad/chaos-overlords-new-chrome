@@ -39,10 +39,10 @@ is unchanged by the Heal.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state. A Heal that rolled dice for a pool of
-0 or less would have added calls of `roll(6)` in turn 2.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state. A Heal that rolled dice for a pool of 0 or less would have added calls of
+`roll(6)` in turn 2.
 
 ## Conclusion
 
