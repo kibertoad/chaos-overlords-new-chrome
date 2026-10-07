@@ -50,7 +50,7 @@ inventory of the build with every address the spec cites. The inventory was take
 12.1.3 project with default auto-analysis. FND-EXE-004 records the layout and every game
 function's range; `tools/ghidra/ReportFunctionInventory.java` and
 `node tools/spec-coverage.mjs --inventory <file>` reproduce the counts (see `docs/GHIDRA.md`), and
-`spec/index/functions.md` lists the entries that cite each function. Measured on 2026-09-25:
+`docs/FUNCTION-INDEX.md` lists the entries that cite each function. Measured on 2026-09-25:
 
 - Ghidra finds 694 functions. Game code runs from `0x00401000` to `0x0047862F`: 464 functions,
   480,397 bytes. The import thunks (Smacker, DirectDraw, WinSock, TAPI, common dialogs) start at

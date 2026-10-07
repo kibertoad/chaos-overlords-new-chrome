@@ -55,11 +55,10 @@ the first row.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` replays the same presses and the
-typed text from the dumped state and compares the elements of SCR-SETUP-002,
-SCR-COMLINK-001 and SCR-UI-003. Leaving out the cash row (DEV-UI-006) and the
-key line (DEV-UI-023), no element differs.
+A test of the rebuild replays the same presses and the typed text from the
+dumped state and compares the elements of SCR-SETUP-002, SCR-COMLINK-001 and
+SCR-UI-003. Leaving out the cash row (DEV-UI-006) and the key line (DEV-UI-023),
+no element differs.
 
 ## Conclusion
 
