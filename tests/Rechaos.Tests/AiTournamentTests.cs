@@ -224,7 +224,7 @@ public sealed class AiTournamentTests
             new(new PlayerId(1), "CPU TWO", PlayerController.Computer)
         ];
         var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(
-            data, new MatchSetup(scenario, duration, seed, setups)));
+            data, new MatchSetup(scenario, duration, seed, setups, MatchDeviations.Original)));
         Assert.Equal(MatchLimits.PlayerCount, recorder.State.Players.Count);
         Assert.All(
             recorder.State.Players,

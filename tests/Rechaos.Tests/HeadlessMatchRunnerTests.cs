@@ -13,7 +13,8 @@ public sealed class HeadlessMatchRunnerTests
     {
         var definitions = BundledOriginalData.Load();
         var options = new HeadlessMatchOptions(
-            ScenarioId.Power, GameDuration.FourYears, 4093, policy,
+            ScenarioId.Power, GameDuration.FourYears, 4093,
+            MatchDeviations.Original with { AiPolicy = policy },
             ThroughTurn: 4, VerifyReplay: true);
 
         var first = HeadlessMatchRunner.Run(
@@ -39,7 +40,7 @@ public sealed class HeadlessMatchRunnerTests
     {
         var definitions = BundledOriginalData.Load();
         var options = new HeadlessMatchOptions(
-            ScenarioId.Greed, GameDuration.SixMonths, 1984, VerifyReplay: true);
+            ScenarioId.Greed, GameDuration.SixMonths, 1984, MatchDeviations.Original, VerifyReplay: true);
 
         var first = HeadlessMatchRunner.Run(
             definitions, options, cancellationToken: TestContext.Current.CancellationToken);
@@ -65,8 +66,8 @@ public sealed class HeadlessMatchRunnerTests
     {
         var options = new HeadlessMatchOptions(
             ScenarioId.Power, GameDuration.FourYears, 4093,
-            ThroughTurn: 4, VerifyReplay: true,
-            ComputerHiresWhereHumansCan: computerHiresWhereHumansCan);
+            MatchDeviations.Original with { ComputerHiresWhereHumansCan = computerHiresWhereHumansCan },
+            ThroughTurn: 4, VerifyReplay: true);
 
         var result = HeadlessMatchRunner.Run(
             BundledOriginalData.Load(), options,
@@ -83,7 +84,7 @@ public sealed class HeadlessMatchRunnerTests
         var result = HeadlessMatchRunner.Run(
             BundledOriginalData.Load(),
             new HeadlessMatchOptions(
-                ScenarioId.Siege, GameDuration.FourYears, 12289,
+                ScenarioId.Siege, GameDuration.FourYears, 12289, MatchDeviations.Original,
                 ThroughTurn: 3, ProgressEveryTurns: 1),
             progress.Add,
             TestContext.Current.CancellationToken);
@@ -103,7 +104,7 @@ public sealed class HeadlessMatchRunnerTests
     {
         var definitions = BundledOriginalData.Load();
         var options = new HeadlessMatchOptions(
-            ScenarioId.Greed, GameDuration.SixMonths, 1984,
+            ScenarioId.Greed, GameDuration.SixMonths, 1984, MatchDeviations.Original,
             SimulatedHumans: [new PlayerId(0)]);
 
         var first = HeadlessMatchRunner.Run(
@@ -128,7 +129,7 @@ public sealed class HeadlessMatchRunnerTests
         var state = OriginalMatchFactory.Create(
             BundledOriginalData.Load(),
             new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1984,
-                [new MatchPlayerSetup(new PlayerId(0), "HUMAN", PlayerController.Human)]));
+                [new MatchPlayerSetup(new PlayerId(0), "HUMAN", PlayerController.Human)], MatchDeviations.Original));
         state.FinishUpkeep();
 
         Assert.Throws<ArgumentException>(() => state.PrepareAiPlanning(new PlayerId(0)));
@@ -145,19 +146,19 @@ public sealed class HeadlessMatchRunnerTests
         Assert.Throws<ArgumentException>(() => HeadlessMatchRunner.Run(
             definitions,
             new HeadlessMatchOptions(
-                ScenarioId.Greed, GameDuration.SixMonths, 1, VerifyReplay: true,
+                ScenarioId.Greed, GameDuration.SixMonths, 1, MatchDeviations.Original, VerifyReplay: true,
                 SimulatedHumans: [new PlayerId(0)]),
             cancellationToken: TestContext.Current.CancellationToken));
         Assert.Throws<ArgumentOutOfRangeException>(() => HeadlessMatchRunner.Run(
             definitions,
             new HeadlessMatchOptions(
-                ScenarioId.Greed, GameDuration.SixMonths, 1,
+                ScenarioId.Greed, GameDuration.SixMonths, 1, MatchDeviations.Original,
                 SimulatedHumans: [new PlayerId(MatchLimits.PlayerCount)]),
             cancellationToken: TestContext.Current.CancellationToken));
         Assert.Throws<ArgumentOutOfRangeException>(() => HeadlessMatchRunner.Run(
             definitions,
             new HeadlessMatchOptions(
-                ScenarioId.Greed, GameDuration.SixMonths, 1,
+                ScenarioId.Greed, GameDuration.SixMonths, 1, MatchDeviations.Original,
                 SimulatedHumans: [new PlayerId(0), new PlayerId(0)]),
             cancellationToken: TestContext.Current.CancellationToken));
     }
@@ -170,12 +171,12 @@ public sealed class HeadlessMatchRunnerTests
         Assert.Throws<ArgumentOutOfRangeException>(() => HeadlessMatchRunner.Run(
             definitions,
             new HeadlessMatchOptions(
-                ScenarioId.Power, GameDuration.SixMonths, 1, ThroughTurn: 0),
+                ScenarioId.Power, GameDuration.SixMonths, 1, MatchDeviations.Original, ThroughTurn: 0),
             cancellationToken: TestContext.Current.CancellationToken));
         Assert.Throws<ArgumentOutOfRangeException>(() => HeadlessMatchRunner.Run(
             definitions,
             new HeadlessMatchOptions(
-                ScenarioId.Power, GameDuration.SixMonths, 1, ProgressEveryTurns: 0),
+                ScenarioId.Power, GameDuration.SixMonths, 1, MatchDeviations.Original, ProgressEveryTurns: 0),
             cancellationToken: TestContext.Current.CancellationToken));
     }
 }

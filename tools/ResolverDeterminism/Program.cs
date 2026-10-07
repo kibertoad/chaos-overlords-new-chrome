@@ -88,6 +88,13 @@ while (client.State.Outcome is null && client.State.Coordinator.Turn <= turns)
     }
 }
 
+if (!steps.Any(step => (string?)step!["kind"] == "snapshot"))
+{
+    // Without it the driver never restores a match, and the run would pass without the check.
+    Console.Error.WriteLine("the run stopped before turn 10, so the transcript has no snapshot to restore from");
+    return 1;
+}
+
 var transcript = new JsonObject
 {
     ["sessionVersion"] = AuthoritativeMatch.SessionVersion,

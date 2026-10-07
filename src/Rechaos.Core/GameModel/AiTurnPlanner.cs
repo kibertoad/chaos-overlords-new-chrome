@@ -447,6 +447,8 @@ public static partial class AiTurnPlanner
     public static HireChoice? ChooseHire(MatchState state, PlayerId playerId)
     {
         ArgumentNullException.ThrowIfNull(state);
+        // The placement draws from the random state, which a seat's view does not hold.
+        state.RefuseOnView();
         if (state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)
             || state.Coordinator.ActivePlayer != playerId)
             throw new InvalidOperationException("AI hiring requires that player's active planning turn.");

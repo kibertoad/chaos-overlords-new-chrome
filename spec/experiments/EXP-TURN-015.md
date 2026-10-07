@@ -57,13 +57,13 @@ where the rebuild has it.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run,
-giving the Sell as one command for the three items, with DEV-AI-007 switched
-off. The rebuild makes the same calls with the same bounds and results, moves
-player 5's gang to sector 5 in turn 5, and reaches the same state. With
-DEV-AI-007 on, it refuses that Move, so the gang stays in sector 9, and at call
-950 its tie count for that player is 8 where the original's is 7.
-EXP-TURN-016 repeats the first four turns, which end before that Move.
+A test of the rebuild replays the run, giving the Sell as one command for the
+three items, with DEV-AI-007 switched off. The rebuild makes the same calls with
+the same bounds and results, moves player 5's gang to sector 5 in turn 5, and
+reaches the same state. With DEV-AI-007 on, it refuses that Move, so the gang
+stays in sector 9, and at call 950 its tie count for that player is 8 where the
+original's is 7. EXP-TURN-016 repeats the first four turns, which end before
+that Move.
 
 ## Conclusion
 

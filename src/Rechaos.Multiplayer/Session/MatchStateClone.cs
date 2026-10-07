@@ -30,7 +30,8 @@ public static class MatchStateClone
 
     /// <summary>
     /// An independent copy of <paramref name="state"/>. A seat's view copies as that seat's view
-    /// (<see cref="SeatView"/>), so the copy refuses to resolve as the original does.
+    /// (<see cref="SeatView"/>), since its save names the seat, so the copy refuses to resolve as
+    /// the original does.
     /// </summary>
     public static MatchState Of(MatchState state, OriginalData definitions)
     {
@@ -39,9 +40,7 @@ public static class MatchStateClone
         using var stream = new MemoryStream();
         NativeSaveSerializer.Save(stream, state);
         stream.Position = 0;
-        return state.ViewedBy is { } seat
-            ? SeatView.Load(stream, definitions, seat)
-            : NativeSaveSerializer.Load(stream, definitions);
+        return NativeSaveSerializer.Load(stream, definitions);
     }
 
     /// <summary>A compressed native snapshot for bootstrap or desync repair, base64-encoded.</summary>

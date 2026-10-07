@@ -26,6 +26,7 @@ public sealed class SeatViewTests
         Assert.Throws<InvalidOperationException>(() => view.FinishCommand(seat));
         Assert.Throws<InvalidOperationException>(() => view.PrepareHireOffers(seat));
         Assert.Throws<InvalidOperationException>(() => view.PrepareSimultaneousHireOffers());
+        Assert.Throws<InvalidOperationException>(() => AiTurnPlanner.ChooseHire(view, seat));
         Assert.Throws<ArgumentException>(() => SeatView.Project(view, seat));
     }
 
@@ -44,6 +45,18 @@ public sealed class SeatViewTests
         Assert.Equal(seat, loaded.ViewedBy);
         Assert.Equal(MatchStateHasher.ComputeFingerprint(view), MatchStateHasher.ComputeFingerprint(loaded));
         Assert.Throws<ArgumentException>(() => SeatView.Save(new MemoryStream(), whole));
+
+        // The payload names its seat: a plain load still restores a view, and SeatView refuses a
+        // payload that is not this seat's view.
+        stream.Position = 0;
+        Assert.Equal(seat, NativeSaveSerializer.Load(stream, BundledOriginalData.Load()).ViewedBy);
+        stream.Position = 0;
+        var other = whole.Players.First(player => player.Id != seat).Id;
+        Assert.Throws<InvalidDataException>(() => SeatView.Load(stream, BundledOriginalData.Load(), other));
+        using var wholeSave = new MemoryStream();
+        NativeSaveSerializer.Save(wholeSave, whole);
+        wholeSave.Position = 0;
+        Assert.Throws<InvalidDataException>(() => SeatView.Load(wholeSave, BundledOriginalData.Load(), seat));
     }
 
     [Fact]
@@ -105,9 +118,10 @@ public sealed class SeatViewTests
     }
 
     /// <summary>
-    /// Every member of the save document the view is built from, with what the view does with it.
-    /// A member added to the save without a line here fails the test, so nobody can add state
-    /// without deciding who may know it. The words match the table in docs/MULTIPLAYER.md.
+    /// Every member of the save document the view is built from, and of every record nested under
+    /// a member that can carry another seat's data, with what the view does with it. A member
+    /// added to the save or to such a record without a line here fails the test, so nobody can add
+    /// state without deciding who may know it. The words match the table in docs/MULTIPLAYER.md.
     /// </summary>
     private static readonly Dictionary<string, string> Decisions = new()
     {
@@ -198,6 +212,7 @@ public sealed class SeatViewTests
         ["RuntimeDocument.AiStrategy"] = "hidden",
         ["RuntimeDocument.AiPlanning"] = "hidden",
         ["RuntimeDocument.Comlink"] = "own",
+        ["RuntimeDocument.ViewedBy"] = "the seat",
         ["PlayerNotificationsDocument.Player"] = "own",
         ["PlayerNotificationsDocument.NextSequence"] = "own",
         ["PlayerNotificationsDocument.Items"] = "own",
@@ -206,25 +221,161 @@ public sealed class SeatViewTests
         ["PlayerComlinkDocument.ReadThroughSequence"] = "own",
         ["PlayerComlinkDocument.Items"] = "own",
         ["PlayerComlinkDocument.ReadSequences"] = "own",
+        // The events a view keeps include other seats' fights and police attacks, so every record
+        // an event holds is listed too. A kept event travels whole, less its dice.
+        ["GameEvent.Sequence"] = "renumbered",
+        ["GameEvent.Turn"] = "kept with the event",
+        ["GameEvent.Phase"] = "kept with the event",
+        ["GameEvent.ExecutionPhase"] = "kept with the event",
+        ["GameEvent.Kind"] = "kept with the event",
+        ["GameEvent.Player"] = "kept with the event",
+        ["GameEvent.Gang"] = "kept with the event",
+        ["GameEvent.Action"] = "kept with the event",
+        ["GameEvent.Target"] = "kept with the event",
+        ["GameEvent.SecondaryTarget"] = "kept with the event",
+        ["GameEvent.TertiaryTarget"] = "kept with the event",
+        ["GameEvent.QuaternaryTarget"] = "kept with the event",
+        ["GameEvent.Resolution"] = "kept with the event",
+        ["GameEvent.Economy"] = "kept with the event",
+        ["GameEvent.Hire"] = "kept with the event",
+        ["GameEvent.HireOffer"] = "kept with the event",
+        ["GameEvent.Elimination"] = "kept with the event",
+        ["GameEvent.PoliceAttack"] = "kept with the event",
+        ["GameEvent.BigManPoints"] = "kept with the event",
+        ["GameEvent.MatchOutcome"] = "kept with the event",
+        ["CommandResolutionDetails.Code"] = "kept with the event",
+        ["CommandResolutionDetails.Rolls"] = "removed",
+        ["CommandResolutionDetails.Successes"] = "kept with the event",
+        ["CommandResolutionDetails.AttackValue"] = "kept with the event",
+        ["CommandResolutionDetails.DefenseValue"] = "kept with the event",
+        ["CommandResolutionDetails.Damage"] = "kept with the event",
+        ["CommandResolutionDetails.PreviousValue"] = "kept with the event",
+        ["CommandResolutionDetails.ResultValue"] = "kept with the event",
+        ["CommandResolutionDetails.CashDelta"] = "kept with the event",
+        ["CommandResolutionDetails.DetectionChance"] = "kept with the event",
+        ["CommandResolutionDetails.DetectionRoll"] = "removed",
+        ["CommandResolutionDetails.ChanceSides"] = "kept with the event",
+        ["CommandResolutionDetails.ChanceRoll"] = "removed",
+        ["CommandResolutionDetails.ItemId"] = "kept with the event",
+        ["CommandResolutionDetails.ReplacedItemId"] = "kept with the event",
+        ["CommandResolutionDetails.RetaliationRolls"] = "removed",
+        ["CommandResolutionDetails.RetaliationSuccesses"] = "kept with the event",
+        ["CommandResolutionDetails.RetaliationDamage"] = "kept with the event",
+        ["CommandResolutionDetails.RetaliationItemId"] = "kept with the event",
+        ["CommandResolutionDetails.ItemIds"] = "kept with the event",
+        ["CommandResolutionDetails.ReplacedItemIds"] = "kept with the event",
+        ["CommandResolutionDetails.Attacker"] = "kept with the event",
+        ["CommandResolutionDetails.Defender"] = "kept with the event",
+        ["CombatantDetails.Owner"] = "kept with the event",
+        ["CombatantDetails.DefinitionId"] = "kept with the event",
+        ["CombatantDetails.SectorId"] = "kept with the event",
+        ["CombatantDetails.Force"] = "kept with the event",
+        ["CombatantDetails.WeaponItemId"] = "kept with the event",
+        ["CombatantDetails.ArmorItemId"] = "kept with the event",
+        ["CombatantDetails.MiscellaneousItemId"] = "kept with the event",
+        ["CombatantDetails.RosterSlot"] = "kept with the event",
+        ["PoliceAttackResolutionDetails.SectorId"] = "kept with the event",
+        ["PoliceAttackResolutionDetails.Detected"] = "kept with the event",
+        ["PoliceAttackResolutionDetails.DetectionChance"] = "kept with the event",
+        ["PoliceAttackResolutionDetails.DetectionRoll"] = "removed",
+        ["PoliceAttackResolutionDetails.AttackValue"] = "kept with the event",
+        ["PoliceAttackResolutionDetails.DefenseValue"] = "kept with the event",
+        ["PoliceAttackResolutionDetails.Rolls"] = "removed",
+        ["PoliceAttackResolutionDetails.Successes"] = "kept with the event",
+        ["PoliceAttackResolutionDetails.Damage"] = "kept with the event",
+        ["PoliceAttackResolutionDetails.PreviousForce"] = "kept with the event",
+        ["PoliceAttackResolutionDetails.ResultForce"] = "kept with the event",
+        ["PoliceAttackResolutionDetails.Target"] = "kept with the event",
+        ["EconomyResolutionDetails.PreviousCash"] = "kept with the event",
+        ["EconomyResolutionDetails.SectorIncome"] = "kept with the event",
+        ["EconomyResolutionDetails.SiteIncome"] = "kept with the event",
+        ["EconomyResolutionDetails.GangUpkeep"] = "kept with the event",
+        ["EconomyResolutionDetails.NetChange"] = "kept with the event",
+        ["EconomyResolutionDetails.ResultCash"] = "kept with the event",
+        ["EconomyResolutionDetails.IsInDebt"] = "kept with the event",
+        ["HireResolutionDetails.Cost"] = "kept with the event",
+        ["HireResolutionDetails.Gang"] = "kept with the event",
+        ["HireResolutionDetails.GangDefinitionId"] = "kept with the event",
+        ["HireResolutionDetails.InitialForce"] = "kept with the event",
+        ["HireResolutionDetails.ReplacementOffer"] = "kept with the event",
+        ["HireResolutionDetails.SectorId"] = "kept with the event",
+        ["HireOfferDetails.RemovedOffer"] = "kept with the event",
+        ["HireOfferDetails.AddedOffer"] = "kept with the event",
+        ["EliminationDetails.EliminatedPlayer"] = "kept with the event",
+        ["EliminationDetails.RemainingPlayers"] = "kept with the event",
+        ["BigManPointDetails.ControlledCentralSectors"] = "kept with the event",
+        ["BigManPointDetails.PreviousPoints"] = "kept with the event",
+        ["BigManPointDetails.ResultPoints"] = "kept with the event",
+        ["MatchOutcomeDetails.Scenario"] = "public",
+        ["MatchOutcomeDetails.Reason"] = "public",
+        ["MatchOutcomeDetails.CompletedTurn"] = "public",
+        ["MatchOutcomeDetails.Winners"] = "public",
+        ["MatchOutcomeDetails.Standings"] = "public",
+        ["MatchOutcomeDetails.Awards"] = "public",
+        ["MatchOutcome.Scenario"] = "public",
+        ["MatchOutcome.Reason"] = "public",
+        ["MatchOutcome.Turn"] = "public",
+        ["MatchOutcome.Winners"] = "public",
+        ["MatchOutcome.Standings"] = "public",
+        ["MatchOutcome.Awards"] = "public",
+        ["MatchStanding.Place"] = "public",
+        ["MatchStanding.Player"] = "public",
+        ["MatchStanding.Score"] = "public",
+        ["EndgameAwardResult.Award"] = "public",
+        ["EndgameAwardResult.Recipients"] = "public",
+        ["EndgameAwardResult.Value"] = "public",
     };
 
     [Fact]
     public void EveryPartOfTheSaveHasAVisibilityDecision()
     {
-        Type[] documents =
+        // Walk from the save's documents down every member whose decision lets another seat's data
+        // through, so a field added to a nested record that travels (a fight event's combatant,
+        // say) needs a decision as well. A member that is the seat's own, or hidden, settles
+        // everything below it.
+        var members = new SortedSet<string>(StringComparer.Ordinal);
+        var visited = new HashSet<Type>();
+        var pending = new Queue<Type>(
         [
             typeof(NativeSaveDocument), typeof(MatchSetupDocument), typeof(PlayerSetupDocument),
             typeof(PlayerDocument), typeof(GangDocument), typeof(StatisticsDocument), typeof(SectorDocument),
             typeof(SiteDocument), typeof(RuntimeDocument), typeof(PlayerNotificationsDocument),
             typeof(PlayerComlinkDocument),
-        ];
-        var members = documents
-            .SelectMany(type => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(property => property.Name != "EqualityContract")
-                .Select(property => $"{type.Name}.{property.Name}"))
-            .Order()
-            .ToArray();
+        ]);
+        while (pending.TryDequeue(out var type))
+        {
+            if (!visited.Add(type)) continue;
+            foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (property.Name == "EqualityContract") continue;
+                var member = $"{type.Name}.{property.Name}";
+                members.Add(member);
+                if (Decisions.TryGetValue(member, out var decision) && decision is "own" or "hidden" or "the seat")
+                    continue;
+                foreach (var nested in NestedRecords(property.PropertyType))
+                    pending.Enqueue(nested);
+            }
+        }
 
-        Assert.Equal(Decisions.Keys.Order(), members);
+        var undecided = members.Except(Decisions.Keys).ToArray();
+        Assert.True(undecided.Length == 0, "No visibility decision for: " + string.Join(", ", undecided));
+        var stale = Decisions.Keys.Except(members).Order(StringComparer.Ordinal).ToArray();
+        Assert.True(stale.Length == 0, "Decisions for members the save no longer has: " + string.Join(", ", stale));
+    }
+
+    // The game's own reference types a member's value holds, directly or as list elements.
+    private static IEnumerable<Type> NestedRecords(Type type)
+    {
+        if (Nullable.GetUnderlyingType(type) is { } underlying) type = underlying;
+        if (type.IsArray) type = type.GetElementType()!;
+        if (type.IsGenericType)
+        {
+            foreach (var argument in type.GetGenericArguments())
+                foreach (var nested in NestedRecords(argument))
+                    yield return nested;
+            yield break;
+        }
+        if (type.IsClass && type.Namespace?.StartsWith("Rechaos.", StringComparison.Ordinal) == true)
+            yield return type;
     }
 }

@@ -58,7 +58,7 @@ public static class PlayerRankingTooltip
             player.Setup.Name.ToUpperInvariant(),
             $"PLACE {Place(state, entry, entries)} OF {entries.Count}"
                 + (!shared ? "" : state.ViewedBy is null ? " (TIED)" : " (SAME HEIGHT)"),
-            $"{ScenarioCatalog.Get(state.Setup.Scenario).Name} RATES: {Basis(state.Setup.Scenario)}",
+            $"{ExecutableStrings.ScenarioTitle(state.Setup.Scenario)} RATES: {Basis(state.Setup.Scenario)}",
             SeatKnowledge.KnowsTotals(state, entry.Player)
                 ? ScoreLine(state, entry.Score)
                 : $"SCORE: {NotShown}",

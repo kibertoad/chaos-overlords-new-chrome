@@ -287,7 +287,7 @@ public sealed class PlayerRankingUiTests
         var data = BundledOriginalData.Load();
         var setups = cash.Select((_, id) => new MatchPlayerSetup(
             new PlayerId(id), $"PLAYER {id + 1}", PlayerController.Human)).ToArray();
-        var setup = new MatchSetup(scenario, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(scenario, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         var players = setups.Select((player, id) => new MatchPlayerState(
             player,
             cash[id],

@@ -39,11 +39,10 @@ and 12 in 9, and the reset value 99 in 4.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results, reaches the
-same state, and holds the same planning records, sector weights, per-player
-values, combat records and, for each computer gang whose family is assigned,
-focus and coverage sector.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results, reaches the same state, and holds the same planning
+records, sector weights, per-player values, combat records and, for each
+computer gang whose family is assigned, focus and coverage sector.
 
 ## Conclusion
 
