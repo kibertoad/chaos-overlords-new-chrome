@@ -20,7 +20,7 @@ public sealed partial class AiTurnPlannerTests
                     new PlayerId(0), OriginalSetupNameRules.OmniscienceName, PlayerController.Human),
                 new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Computer),
                 new MatchPlayerSetup(new PlayerId(2), "THREE", PlayerController.Computer)
-            ]));
+            ], MatchDeviations.Original));
 
         foreach (var player in match.Players)
             Assert.Equal(VisibleWeights(match, player.Id), CachedWeights(match, player.Id));

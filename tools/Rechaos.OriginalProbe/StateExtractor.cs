@@ -158,12 +158,13 @@ internal sealed class StateExtractor
             run["waits"] = new JsonArray(waits.Select(wait => (JsonNode)new JsonArray(
                 wait!["Ticks"]!.GetValue<int>(), (int)wait["Call"]!.GetValue<uint>(),
                 wait["Started"]!.GetValue<long>(), wait["Returned"]!.GetValue<long>())).ToArray());
-        // RULE-UI-003: from the dump on, each slide-in as the benchmark count, the travel and the
-        // offset of each copy (FND-UI-011).
+        // RULE-UI-003: from the dump on, each slide-in as the return address of the helper's call
+        // (FND-UI-066), the benchmark count, the travel and the offset of each copy (FND-UI-011).
         if (trace["Slides"] is JsonArray slides)
             run["slides"] = new JsonArray(slides.Select(slide => (JsonNode)new JsonObject
             {
-                ["benchmark"] = slide!["Benchmark"]!.GetValue<int>(),
+                ["caller"] = (int)slide!["Caller"]!.GetValue<uint>(),
+                ["benchmark"] = slide["Benchmark"]!.GetValue<int>(),
                 ["travel"] = slide["Travel"]!.GetValue<int>(),
                 ["offsets"] = new JsonArray(slide["Offsets"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
             }).ToArray());
@@ -350,11 +351,16 @@ internal sealed class StateExtractor
         return (trace.Settings ?? NewGameSettings.Defaults).Describe().ToArray();
     }
 
-    /// <summary>The orders and Done presses a run was recorded with, one input each.</summary>
+    /// <summary>
+    /// The orders and Done presses the run made, one input each, each order, hire and Search write
+    /// with the player it acted for. A run that stopped before <c>--end-turns</c> ran out lists only
+    /// the turns it played, one per entry of <c>done_at_roll</c>.
+    /// </summary>
     public static (string Name, string Value)[] Turns(string runDirectory)
     {
         var trace = JsonSerializer.Deserialize<ProbeTrace>(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
-        return (trace.Settings ?? NewGameSettings.Defaults).DescribeTurns().ToArray();
+        return (trace.Settings ?? NewGameSettings.Defaults).WithActingPlayers()
+            .DescribeTurns(trace.RollsAtDone?.Count ?? 0).ToArray();
     }
 
     private JsonArray EndState()

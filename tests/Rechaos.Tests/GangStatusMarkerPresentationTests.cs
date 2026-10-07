@@ -76,7 +76,8 @@ public sealed class GangStatusMarkerPresentationTests
         var setupPlayers = Enumerable.Range(0, 2)
             .Select(id => new MatchPlayerSetup(new PlayerId(id), $"P{id + 1}", PlayerController.Human))
             .ToArray();
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setupPlayers);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setupPlayers,
+            MatchDeviations.Original);
         var seer = data.Gangs.OrderByDescending(gang => gang.Stats.Detect).First().Id;
         var plain = data.Gangs.OrderBy(gang => gang.Stats.Stealth).First().Id;
         var hidden = data.Gangs.OrderByDescending(gang => gang.Stats.Stealth).First().Id;
@@ -196,7 +197,8 @@ public sealed class GangStatusMarkerPresentationTests
         var setupPlayers = Enumerable.Range(0, 2)
             .Select(id => new MatchPlayerSetup(new PlayerId(id), $"P{id + 1}", PlayerController.Human))
             .ToArray();
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setupPlayers);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setupPlayers,
+            MatchDeviations.Original);
         var player = new PlayerId(0);
         var definition = data.Gangs[0].Id;
         var watcher = new MatchGangState(new GangId(1), player, definition, 5, 10);

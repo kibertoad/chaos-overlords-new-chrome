@@ -220,6 +220,26 @@ export const matchNameSchema = pipe(
 )
 
 /**
+ * The text of one lobby chat message, on the way in and on the way out.
+ *
+ * Normalised before it is measured, for the reason `displayNameInputSchema` gives, and held to the
+ * same character rule as names: a bidi override or a zero-width joiner in a message rewrites how
+ * every line drawn after it reads. Only this schema ever writes one, so there is no older text that
+ * would have to stay readable under looser rules.
+ */
+export const chatMessageTextSchema = pipe(
+  string(),
+  trim(),
+  normalizeName,
+  minLength(1),
+  maxLength(LIMITS.chatMessageLength),
+  check(
+    (text) => !UNSAFE_NAME_CHARACTERS.test(text),
+    'a chat message may not carry control, format or private-use characters',
+  ),
+)
+
+/**
  * A player's name as the server stores and relays it.
  *
  * Used for reading a roster as well as writing one, so it says nothing about which names a player may
