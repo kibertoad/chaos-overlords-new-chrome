@@ -804,7 +804,7 @@ describe('the lobby, the roster and the turn barrier', () => {
         body: 'AAAA',
         seatSummaries: [],
       }),
-    ).rejects.toMatchObject({ details: { reason: 'host_only' } })
+    ).rejects.toMatchObject({ details: { reason: 'not_tie_breaker' } })
     await h.kernel.snapshots.upload(await h.principalOf(host.token), {
       turn: 1,
       formatVersion: 1,
