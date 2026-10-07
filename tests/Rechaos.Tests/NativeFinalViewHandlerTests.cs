@@ -138,7 +138,6 @@ public sealed class NativeFinalViewHandlerTests
     private static bool LocalPlanningLight(MatchState state, MatchPlayerState player)
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
         var method = typeof(ChaosGame).GetMethod("PlanningLightLit", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new MissingMethodException(nameof(ChaosGame), "PlanningLightLit");
         return (bool)method.Invoke(game, [state, player])!;
@@ -178,7 +177,6 @@ public sealed class NativeFinalViewHandlerTests
     private static (ChaosGame Game, ScreenRouter Router) FinalViewGame(MatchState state)
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
         foreach (var name in new[] { "_pendingFinalViews", "_presentedHotSeatEliminations",
                      "_gangSelection", "_screens", "_lastTurnReportCache", "_combatResultCache",
                      "_eventViewedPages", "_lastTurnEventArchive", "_planningTimer", "_eventPump" })

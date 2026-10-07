@@ -68,7 +68,8 @@ public sealed class ScenarioLifecycleTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Eliminate, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Eliminate, GameDuration.SixMonths, 1996, setups,
+            MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setups[0], 500,
@@ -97,7 +98,7 @@ public sealed class ScenarioLifecycleTests
     {
         MatchPlayerSetup[] setups = factories.Select((_, id) =>
             new MatchPlayerSetup(new PlayerId(id), $"PLAYER {id + 1}", PlayerController.Human)).ToArray();
-        var setup = new MatchSetup(scenario, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(scenario, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         var players = setups.Select((player, id) => new MatchPlayerState(
             player, 500,
             [new MatchGangState(new GangId(id), player.Id, 0, id, 10)],

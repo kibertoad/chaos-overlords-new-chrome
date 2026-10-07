@@ -387,6 +387,19 @@ internal static class OriginalAddresses
     public const uint RosterTypes = 0x004AB638;
     public const uint RosterPortraits = 0x004A5F00;
     public const uint RosterNames = 0x004A2588;
+
+    // FND-SETUP-005, FND-UI-022: the name band of card 0, whose origin is (397, 94), opens dialog
+    // 139, whose edit control is item 1007.
+    public const int NameBandX = 397 + 32;
+    public const int NameBandY = 94 + 62;
+    public const int NameEditControl = 1007;
+
+    // FND-UI-064: in the window procedure's WM_KEYDOWN branch, the instruction after the call of
+    // GetAsyncKeyState(VK_SHIFT), and the jump both translations take once the event is stored.
+    // FND-STATE-008: the input event record, type then the character and the key.
+    public const uint ShiftTested = 0x0045CA62;
+    public const uint KeyEventStored = 0x0045CC35;
+    public const uint InputEvent = 0x00498360;
     public const int RosterNameLength = 12;
     public const byte EmptyPortrait = 15;
 
