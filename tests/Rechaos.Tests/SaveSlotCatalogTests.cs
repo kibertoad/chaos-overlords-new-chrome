@@ -56,6 +56,21 @@ public sealed class SaveSlotCatalogTests
         Assert.Equal("GREED - TURN 1", SaveSlotCatalog.SuggestedName(state));
     }
 
+    [Fact]
+    public void SaveRowsNameTheScenarioByItsTitle()
+    {
+        // RULE-UI-009: the save name and the row details use string resource scenario + 1.
+        var definitions = BundledOriginalData.Load();
+        var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
+            ScenarioId.Big40, GameDuration.SixMonths, 1996,
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
+        var summary = new SaveSlotSummary(0, "ANY", DateTimeOffset.UnixEpoch, ScenarioId.KillEmAll,
+            1, 3, "SINGLE", AiPolicyMode.Original);
+
+        Assert.Equal("THE BIG 40 - TURN 1", SaveSlotCatalog.SuggestedName(state));
+        Assert.Contains("  KILL 'EM ALL  ", summary.Details);
+    }
+
     /// <summary>
     /// Listing a backup-only slot shows it and leaves the disk alone; loading it repairs.
     /// </summary>

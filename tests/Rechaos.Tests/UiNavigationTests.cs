@@ -129,6 +129,7 @@ public sealed partial class UiNavigationTests
     {
         Rectangle[] entries =
         [
+            StatusConsoleLayout.Date,
             StatusConsoleLayout.Score,
             StatusConsoleLayout.Cash,
             .. Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorEntry)
@@ -163,6 +164,61 @@ public sealed partial class UiNavigationTests
         Assert.Equal("5 [-3] (0)", StatusConsolePresentation.CashSummary(5, -3, 0));
         Assert.Equal("120[95](-12)", StatusConsolePresentation.CashSummary(120, 95, -12));
         Assert.Empty(StatusConsoleTooltip.At(Point.Zero));
+    }
+
+    [Fact]
+    public void EveryPlaceThatNamesAScenarioUsesTheTitleTheConsoleDraws()
+    {
+        // RULE-UI-009, FND-UI-040: the console draws string resource scenario + 1. The rebuild's
+        // own texts name the scenario with the same string. The online session list draws the
+        // same ExecutableStrings.ScenarioTitle call inside ChaosGame and has no seam to test here.
+        const string title = "THE BIG 40";
+        Assert.Equal(title, ExecutableStrings.ScenarioTitle(ScenarioId.Big40));
+        Assert.Equal(title, ScenarioSetupTooltip.Lines(ScenarioId.Big40, GameDuration.OneYear)[0]);
+        Assert.StartsWith($"{title} RATES:", StatusConsoleTooltip.ScoreLines(ScenarioId.Big40)[1]);
+        Assert.Equal(title, DiscoveryFilters.Label(DiscoveryFilters.Scenario, (int)ScenarioId.Big40 + 1));
+        Assert.Equal(("SCENARIO", title), OnlineLobbySummary.Rows(ScenarioId.Big40, GameDuration.OneYear,
+            AiDifficulty.CrimeLord, PlanningTimeLimit.TwoMinutes)[0]);
+
+        var state = OriginalMatchFactory.Create(Rechaos.Core.Assets.BundledOriginalData.Load(),new MatchSetup(
+            ScenarioId.Big40, GameDuration.OneYear, 1996,
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
+        var entries = PlayerRankingPresentation.Project(state);
+        Assert.StartsWith($"{title} RATES:", PlayerRankingTooltip.Lines(state, entries[0], entries)[2]);
+        Assert.StartsWith($"{title} - TURN ", SaveSlotCatalog.SuggestedName(state));
+        Assert.Contains($"  {title}  ", new SaveSlotSummary(0, "ANY", DateTimeOffset.UnixEpoch,
+            ScenarioId.Big40, 1, 3, "SINGLE", AiPolicyMode.Original).Details);
+    }
+
+    [Fact]
+    public void DateRowTooltipExplainsTheCalendarAndTheCountdownBesideIt()
+    {
+        // DEV-UI-005 over the FND-UI-040 calendar fields.
+        Assert.Equal(new Rectangle(476, 14, 108, 9), StatusConsoleLayout.Date);
+        var point = StatusConsoleLayout.Date.Center;
+        Assert.True(StatusConsoleTooltip.Contains(point));
+
+        var timed = StatusConsoleTooltip.At(point, ScenarioId.Greed, GameDuration.OneYear);
+        Assert.Equal("DATE", timed[0]);
+        Assert.Contains("2050", string.Join(' ', timed));
+        Assert.Contains("LEFT AFTER THE ONE BEING PLANNED.", timed);
+        Assert.Contains("THE MATCH ENDS AFTER TURN 52,", timed);
+        Assert.Equal("OR SOONER IF ONE OVERLORD IS LEFT.", timed[^1]);
+
+        var untimed = StatusConsoleTooltip.At(point, ScenarioId.Big40, GameDuration.OneYear);
+        Assert.Equal("THE BIG 40 HAS NO TIME LIMIT.", untimed[^1]);
+        Assert.DoesNotContain(untimed, line => line.Contains("TURNS", StringComparison.Ordinal));
+
+        var final = StatusConsoleTooltip.At(point, ScenarioId.Greed, GameDuration.OneYear, complete: true);
+        Assert.Equal("COMPLETE: THE MATCH HAS ENDED.", final[^1]);
+        Assert.DoesNotContain(final, line => line.Contains("TURNS", StringComparison.Ordinal));
+
+        foreach (var lines in new[] { timed, untimed, final })
+        {
+            var bounds = StatusConsoleTooltip.Bounds(point, lines);
+            Assert.True(bounds.X >= 0 && bounds.Y >= 0
+                && bounds.Right <= VirtualInput.Width && bounds.Bottom <= VirtualInput.Height);
+        }
     }
 
     [Fact]

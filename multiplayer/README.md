@@ -167,7 +167,8 @@ and defaults as the Node environment variables above. A deployment also wants th
 the sweeper and the retention sweeps are written for —
 and Cloudflare rate limiting rules on `/api/v1/matches`, `/api/v1/matches/join` and
 `/api/v1/bug-reports`: the in-Worker limiter counts per isolate, so it softens abuse on one edge node
-rather than globally.
+rather than globally. Replacing it with a global limiter is
+[#455](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/455).
 
 For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all four to throwaway local resources.
 It is a development and test fixture, not a deployment.
@@ -310,6 +311,32 @@ deadline route — expired turn, sweep, seal, next turn — runs over real HTTP 
 Postgres; in workerd time cannot be moved, so there the deadline is covered by the alarm-arming test
 and by `listExpiredOpen` in the D1 storage lane instead.
 
+The pool brings its own exact wrangler and miniflare (0.22.0 pins wrangler 4.124.0), so the
+Cloudflare suite runs on an older workerd build than the workspace's `wrangler`, which is the one
+`pnpm dev:worker` and a deploy use. The suite tests the code; the multiplayer workflow tests the
+runtime a deployment gets. After the unit tests it plays a real match with the headless game
+(`tools/OnlineSmoke`) twice: against the Node server, and against the Worker served by the
+workspace's `wrangler dev` in local mode (local D1, R2 and Durable Objects, no Cloudflare account).
+The Worker run also fails when the Worker logs an error, a call to the match's Durable Object that
+failed or that the object answered with an error status, an event stream the server dropped, or an
+uncaught exception, since the lobby requests succeed even when the object behind them is broken. To
+run it by
+hand, with the .NET SDK installed:
+
+```sh
+pnpm build
+cd runtimes/cloudflare
+pnpm db:migrate:local && pnpm db:migrate:bugs:local
+pnpm dev                  # serves on http://localhost:8787
+dotnet run --project ../../../tools/OnlineSmoke/OnlineSmoke.csproj -- http://localhost:8787 3
+```
+
+The pool's wrangler and miniflare are not overridden to the workspace's. A pnpm override of both
+does pass the suite today, but the pool is built and released against the miniflare it pins, and
+Dependabot updates `wrangler` in `package.json` without touching an override, so every bump would
+either leave the override behind or put the pool on a pairing nobody released. A pool release that
+pins a newer wrangler narrows the gap, and the next `wrangler` bump in `package.json` opens it again.
+
 Rules that keep the two runtimes honest:
 
 - A storage method is added to the kernel port, both repository files, and the storage
@@ -319,7 +346,8 @@ Rules that keep the two runtimes honest:
 - **Run one process.** Events fan out in memory, so a second instance behind a load balancer would
   wake only its own subscribers and a client could sit silent through everything the other instance
   wrote — with no error to show for it. Postgres is for durability and familiar operations, not for
-  scaling out; see "Limitations and next steps" in `docs/MULTIPLAYER.md`.
+  scaling out; see "Limitations and next steps" in `docs/MULTIPLAYER.md` and
+  [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
 - No transactions: D1 has none. Every race is a single conditional statement whose row count says
   who won (see the port comments in `packages/kernel/src/ports/storage.ts`).
 - A write a unique index can refuse returns `false` instead of throwing. Driver error shapes are
