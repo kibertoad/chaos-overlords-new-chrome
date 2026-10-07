@@ -10,6 +10,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildNodeRuntime, loadConfig, type NodeRuntime, startHttpServer } from '../src'
 
 /**
+ * The keepalive interval of the conformance facade. Short enough to wait one out, and long enough
+ * that the hub's membership check (every fifth beat) does not end the streams the stream-cap case
+ * holds open on purpose.
+ */
+const KEEPALIVE_MS = 2_000
+
+/**
  * The facade over a real HTTP listener: the client SDK's fetch goes over TCP, so the streaming
  * headers, the abort path and the JSON round-trip are the production ones, not app.request().
  *
@@ -36,7 +43,7 @@ function defineFacadeSuite(name: string, databaseUrl: string | undefined): void 
           BUG_REPORT_RATE_LIMIT_PER_MINUTE: '10000',
           MATCH_CREATION_RATE_LIMIT_PER_MINUTE: '10000',
         }),
-        { clock },
+        { clock, sseHeartbeatMs: KEEPALIVE_MS },
       )
       server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
       await new Promise<void>((resolve) => server.once('listening', () => resolve()))
@@ -51,6 +58,7 @@ function defineFacadeSuite(name: string, databaseUrl: string | undefined): void 
     defineHttpConformance({
       fetch: (input, init) => fetch(input.replace('http://conformance', baseUrl), init),
       publicListing: true,
+      keepaliveMs: KEEPALIVE_MS,
       expireDeadlines: async () => {
         clock.advance(61_000)
         await runtime.kernel.turns.sweep()
