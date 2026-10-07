@@ -80,17 +80,24 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
       principal.player.id,
       kernel.deps.clock.now(),
     )
-    if (tag !== null) {
+    // Set only on the answers that carry the view or stand for it. Hono copies headers already set
+    // on the context onto an error response, so setting them before the view read would tag a
+    // refusal thrown by that read.
+    const tagAnswer = (current: string) => {
       // Per member and current only for a moment: no shared cache may keep it, and a private one
       // must ask again every time.
       c.header('Cache-Control', 'private, no-cache')
-      c.header('ETag', tag)
-      if (matchesIfNoneMatch(c.req.header('if-none-match'), tag)) return c.body(null, 304)
+      c.header('ETag', current)
+    }
+    if (tag !== null && matchesIfNoneMatch(c.req.header('if-none-match'), tag)) {
+      tagAnswer(tag)
+      return c.body(null, 304)
     }
     // A client reads the view to resynchronise, and one that is doing so because its countdown ran
     // out with no seal is owed the seal rather than the same stuck turn; see `sealIfOverdue`.
     const match = await kernel.turns.sealIfOverdue(principal.match)
     const view = await kernel.query.view(match)
+    if (tag !== null) tagAnswer(tag)
     return c.json(
       answering(c, {
         match: view,

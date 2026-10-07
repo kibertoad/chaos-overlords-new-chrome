@@ -81,7 +81,8 @@ export class MatchQueryService {
    * from what the caller already holds and that one read, and it has to move whenever anything the
    * view shows could have moved:
    *
-   * - the match row, whole (status, settings, host, seat and join counters, `updatedAt`, join code).
+   * - the match row, whole but for the password hash (status, settings, host, seat and join
+   *   counters, `updatedAt`, join code).
    *   The auth lookup read it, so it costs nothing, and it covers a settings change, which publishes
    *   no event, and a join rolled back after its seat was claimed, which publishes none either but
    *   gives the seat back;
@@ -90,10 +91,12 @@ export class MatchQueryService {
    *   event is tagged with the older sequence, and the next poll after the event reads again;
    * - the caller, because the detail names them (`you`);
    * - the protocol version, so a deployment that changes what the view says invalidates every tag;
-   * - a thirty-second window of the server's clock. A write whose event was then lost (a crash
-   *   between the two) would otherwise leave the tag where it was and every client on the old view
-   *   until the next event. The window bounds that to thirty seconds at a cost of one full read per
-   *   player per window.
+   * - a thirty-second window of the server's clock, counted from the match's creation. A write
+   *   whose event was then lost (a crash between the two) would otherwise leave the tag where it was
+   *   and every client on the old view until the next event. The window bounds that to thirty
+   *   seconds at a cost of one full read per player per window. Counting from the creation gives
+   *   each lobby its own boundary, so the full reads of many open lobbies do not all land in the
+   *   same second.
    *
    * Only a lobby is tagged. A running match's view carries turn rows, readiness and reports, and
    * reports in particular are written without an event, so a tag that covered it would need the
@@ -106,30 +109,19 @@ export class MatchQueryService {
   async lobbyTag(match: Match, playerId: string, now: Date): Promise<string | null> {
     if (match.status !== 'lobby') return null
     const lastEventSeq = await this.storage.events.lastSeq(match.id)
-    // Plain `JSON.stringify` rather than `canonicalJson`: settings may hold values the canonical
-    // form refuses, and a tag only has to be stable for one stored row, which it is. Two texts for
-    // the same content would cost an extra read, never a stale one.
+    // The whole row but the password hash, which no view shows and no tag should be derived from,
+    // so a field added to the row later is covered without touching this. Plain `JSON.stringify`
+    // rather than `canonicalJson`: settings may hold values the canonical form refuses, and a tag
+    // only has to be stable for one stored row, which it is (dates serialise as ISO text). Two texts
+    // for the same content would cost an extra read, never a stale one.
+    const { passwordHash: _passwordHash, ...row } = match
     const digest = await sha256Hex(
       JSON.stringify({
         protocol: MULTIPLAYER_PROTOCOL_VERSION,
-        window: Math.floor(now.getTime() / LOBBY_TAG_WINDOW_MS),
+        window: Math.floor((now.getTime() - match.createdAt.getTime()) / LOBBY_TAG_WINDOW_MS),
         you: playerId,
         lastEventSeq,
-        match: {
-          id: match.id,
-          protocolVersion: match.protocolVersion,
-          sessionVersion: match.sessionVersion,
-          status: match.status,
-          settings: match.settings,
-          hostPlayerId: match.hostPlayerId,
-          joinCode: match.joinCode,
-          seed: match.seed,
-          currentTurn: match.currentTurn,
-          seatCount: match.seatCount,
-          joinCounter: match.joinCounter,
-          createdAt: match.createdAt.toISOString(),
-          updatedAt: match.updatedAt.toISOString(),
-        },
+        match: row,
       }),
     )
     return `"lobby-${digest.slice(0, 32)}"`

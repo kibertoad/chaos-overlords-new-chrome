@@ -39,8 +39,10 @@ export function createApp(container: ServerContainer): Hono<AppEnv> {
       '*',
       cors({
         origin: [...container.config.corsOrigins],
-        allowHeaders: ['Authorization', 'Content-Type', 'Last-Event-ID'],
-        exposeHeaders: ['X-Request-Id'],
+        allowHeaders: ['Authorization', 'Content-Type', 'Last-Event-ID', 'If-None-Match'],
+        // A browser hides every response header CORS does not name, so a cross-origin caller
+        // could not read when to retry a 429 or which lobby view it holds.
+        exposeHeaders: ['X-Request-Id', 'Retry-After', 'ETag'],
         maxAge: 600,
       }),
     )

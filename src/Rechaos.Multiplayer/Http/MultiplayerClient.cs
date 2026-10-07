@@ -503,13 +503,13 @@ internal sealed class HandshakeState
     }
 }
 
-/// <summary>The absence of a body, for the calls that answer 204.</summary>
 /// <summary>What a conditional read answered.</summary>
 /// <param name="Value">The new value; default when <paramref name="NotModified"/> is set.</param>
 /// <param name="EntityTag">The tag to send with the next read of the same thing; null when untagged.</param>
 /// <param name="NotModified">The server said the caller's copy is still current.</param>
 public readonly record struct ConditionalRead<T>(T? Value, string? EntityTag, bool NotModified);
 
+/// <summary>The absence of a body, for the calls that answer 204.</summary>
 public readonly record struct Unit
 {
     public static Unit Value => default;

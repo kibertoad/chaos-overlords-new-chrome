@@ -177,7 +177,8 @@ Every seated player reads the lobby about once a second until the match starts, 
 steadiest load a server sees. So a lobby's view is tagged. The tag is a digest of the match row the
 token lookup has already read (status, settings, host, seat and join counters, `updatedAt`, join
 code), the match's last event sequence, the reader's player id, the protocol version, and a
-thirty-second window of the server clock. A request whose `If-None-Match` names the current tag,
+thirty-second window of the server clock counted from the match's creation, so each lobby's
+window ends at its own moment. A request whose `If-None-Match` names the current tag,
 by the weak comparison, gets `304` with no body after the token lookup and one `lastSeq` read; the
 roster is not read. The answer is `Cache-Control: private, no-cache`.
 

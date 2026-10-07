@@ -279,6 +279,28 @@ public sealed class MultiplayerLobbySessionTests
     }
 
     [Fact]
+    public async Task AWeakTagIsSentBackAsTheServerGaveIt()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        await using var lobby = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(new Uri("http://server.test")));
+        // A proxy that compresses the answer (Cloudflare does) weakens the tag on the way out. The
+        // poll has to name it as it arrived, prefix and all, for the next answer to be a 304.
+        server.AnswerTagged(HttpMethod.Get, "/matches/m1", new MatchDetail(View(MatchStatus.Lobby), "CODE1234", "p1"), "W/\"lobby-1\"");
+        lobby.Resume("m1", "p1", "cop_test", "CODE1234");
+        await WaitFor<LobbyNotice.Seated>(lobby, cancellationToken);
+        lobby.Refresh();
+        var held = (await WaitFor<LobbyNotice.Updated>(lobby, cancellationToken)).Match;
+        lobby.Refresh();
+        Assert.Same(held, (await WaitFor<LobbyNotice.Updated>(lobby, cancellationToken)).Match);
+
+        var last = server.Requests.Last(request => request.Method == HttpMethod.Get && request.Path.EndsWith("/matches/m1", StringComparison.Ordinal));
+        Assert.Equal("W/\"lobby-1\"", last.IfNoneMatch);
+    }
+
+    [Fact]
     public async Task AnUntaggedAnswerIsNeverNamedOnTheNextPoll()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

@@ -54,9 +54,11 @@ describe('the lobby tag', () => {
 
   it('moves at the end of its window, so a change whose event was lost is read within it', async () => {
     const { host } = await lobby()
-    // Align to the start of a window so the steps below land on either side of its end.
-    const now = h.clock.now().getTime()
-    h.clock.advance(LOBBY_TAG_WINDOW_MS - (now % LOBBY_TAG_WINDOW_MS))
+    // Align to the start of a window, counted from the match's creation, so the steps below land
+    // on either side of its end.
+    const { match } = await h.principalOf(host.token)
+    const elapsed = h.clock.now().getTime() - match.createdAt.getTime()
+    h.clock.advance(LOBBY_TAG_WINDOW_MS - (elapsed % LOBBY_TAG_WINDOW_MS))
     const tag = await tagOf(host.token)
     h.clock.advance(LOBBY_TAG_WINDOW_MS - 1)
     expect(await tagOf(host.token)).toBe(tag)
