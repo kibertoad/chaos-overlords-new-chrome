@@ -238,11 +238,10 @@ public sealed partial class ChaosGame
 
     public ChaosGame(
         string assetRoot,
+        MatchDeviations localDeviations,
         bool debugPhaseStepping = false,
         RuntimeDiagnostics? diagnostics = null,
         string? screenshotFolder = null,
-        bool originalComputerMoves = false,
-        bool originalComputerHires = false,
         ReferenceFrameRequest? referenceFrame = null,
         string? startupSavePath = null)
         : this(assetRoot, ChaosGameServices.Desktop, debugPhaseStepping, diagnostics, screenshotFolder,
@@ -270,8 +269,7 @@ public sealed partial class ChaosGame
             : MultiplayerClientOptions.CreateHttpClient();
         if (services.RunRandomState is { } runRandomState) _runRandomState = runRandomState;
         _startupSavePath = startupSavePath;
-        _originalComputerMoves = originalComputerMoves;
-        _originalComputerHires = originalComputerHires;
+        _localDeviations = localDeviations;
         _referenceFrame = referenceFrame;
         _pointer = new(shape => _shell.ShowPointer(shape),
             () => ComputerTurnsCanRun() ? PresentationPointer.Idle(_state) : PointerShape.Arrow);

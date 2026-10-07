@@ -659,7 +659,7 @@ public sealed class ChaosResolutionTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         var playerZeroGangs = new List<MatchGangState>
         {
             new(new GangId(10), new PlayerId(0), chaosGang, 0, 10)
