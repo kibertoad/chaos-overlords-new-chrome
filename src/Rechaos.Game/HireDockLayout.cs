@@ -42,6 +42,13 @@ public static class HireDockLayout
             : new Rectangle(439 + slot * 66, 373, 66, 64);
     }
 
+    /// <summary>
+    /// FND-HIRE-010: the dragged offer's image, the 64-by-64 portrait shrunk to 40 by 40 and
+    /// centred on the pointer, which is held to x 20 to 620 and y 20 to 440.
+    /// </summary>
+    public static Rectangle DragImage(Point pointer) => new(
+        Math.Clamp(pointer.X, 20, 620) - 20, Math.Clamp(pointer.Y, 20, 440) - 20, 40, 40);
+
     public static Rectangle Reject(int slot)
     {
         ValidateSlot(slot);

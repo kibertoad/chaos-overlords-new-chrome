@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-004, FND-UI-006, FND-UI-011, FND-UI-013, FND-UI-024, FND-UI-023, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-047, FND-UI-052, EXP-UI-009, FND-UI-062, FND-UI-067]
+evidence: [FND-UI-004, FND-UI-006, FND-UI-011, FND-UI-013, FND-UI-024, FND-UI-023, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-047, FND-UI-052, EXP-UI-009, FND-UI-062, FND-UI-067, EXP-UI-041]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-004]
@@ -67,7 +67,8 @@ slide takes about a quarter of a second (RULE-UI-003).
 
 While the exit face is held with the pointer, the rotation stops. The pass that
 ends with the release takes one tick if any fell during the hold and loses the
-others (FND-UI-047).
+others (FND-UI-047). EXP-UI-041 held Exit for more than three seconds: the item frame
+stood still, and the release step's first clear of slot 0 came at once.
 
 ## Differences between builds
 
