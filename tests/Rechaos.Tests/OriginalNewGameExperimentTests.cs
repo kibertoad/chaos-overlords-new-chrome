@@ -197,10 +197,11 @@ public sealed partial class OriginalNewGameExperimentTests
         where !KnownDivergences.ContainsKey((experiment, run))
         select (experiment, run);
 
-    // Each row starts from its run's replay, so the rows play theirs ahead on a few workers. The
-    // replays land in the cache other tests and ScreenCaptureTests read as well.
+    // Each row starts from its run's replay, so the rows play theirs ahead on a few workers, the
+    // longest matches first. The replays land in the cache other tests and ScreenCaptureTests read
+    // as well.
     private static readonly RowPrefetch<(string Experiment, int Run), Replay> MatchingReplays =
-        new(MatchingRunKeys, key => Replayed(Run(key.Experiment, key.Run)));
+        new(MatchingRunKeys, key => Replayed(Run(key.Experiment, key.Run)), key => Run(key.Experiment, key.Run).DoneCount);
 
     public static TheoryData<string, int> DivergingRuns()
     {

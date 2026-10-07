@@ -4,7 +4,9 @@ namespace Rechaos.Tests;
 /// Computes the slow part of a theory's rows on background workers, ahead of the rows. xUnit runs
 /// the rows of one class one after another, so a class whose rows each replay a match or start the
 /// game is a chain no other core can help with. Once a second row asks for its value, every key
-/// is queued for <see cref="RowPrefetchWorkers.Count"/> threads; a row whose key no worker has taken
+/// is queued for <see cref="RowPrefetchWorkers.Count"/> threads, the costliest first when a
+/// <c>cost</c> is given, so a long computation does not start last and hold up the end of the
+/// chain; a row whose key no worker has taken
 /// yet computes it on its own thread, and a row whose key is taken waits for it. A run that asks
 /// for one row queues nothing. A filtered run that asks for two or more rows still queues every
 /// key, and the workers compute values no row reads until the test host exits
@@ -17,7 +19,8 @@ namespace Rechaos.Tests;
 /// asking test's execution context, so <paramref name="compute"/> must not write to
 /// <c>TestContext.Current</c>.
 /// </remarks>
-internal sealed class RowPrefetch<TKey, TValue>(Func<IEnumerable<TKey>> keys, Func<TKey, TValue> compute)
+internal sealed class RowPrefetch<TKey, TValue>(
+    Func<IEnumerable<TKey>> keys, Func<TKey, TValue> compute, Func<TKey, int>? cost = null)
     where TKey : notnull
 {
     private sealed class Slot
@@ -63,6 +66,8 @@ internal sealed class RowPrefetch<TKey, TValue>(Func<IEnumerable<TKey>> keys, Fu
         try
         {
             listed = keys().Distinct().Where(key => !_asked.Contains(key)).ToList();
+            // OrderByDescending is stable, so keys of equal cost keep the rows' order.
+            if (cost is not null) listed = listed.OrderByDescending(cost).ToList();
         }
         catch (Exception)
         {
