@@ -92,5 +92,5 @@ Fixes without a test that would fail if they were reverted:
   - an oversized snapshot answering 413;
   - `Retry-After` on every 429 and `X-Request-Id` on every response, the event stream included.
 - **Cloudflare end to end.** `tools/OnlineSmoke` runs in the multiplayer workflow against the Node
-  runtime, on pull requests, on pushes to main and weekly on main. Nothing plays a match against the
-  workerd runtime.
+  runtime, on pull requests and pushes to main that touch its paths, and weekly on main. Nothing
+  plays a match against the workerd runtime.
