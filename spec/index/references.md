@@ -172,7 +172,7 @@ For each entry, the entries and glossary terms that cite or relate to it, and th
 | [EXP-UI-020](../experiments/EXP-UI-020.md) | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) (body, evidence) |
 | [EXP-UI-021](../experiments/EXP-UI-021.md) | [RULE-COMLINK-003](../rules/RULE-COMLINK-003.md) (evidence), [SCR-COMLINK-001](../screens/SCR-COMLINK-001.md) (evidence) |
 | [EXP-UI-022](../experiments/EXP-UI-022.md) | [RULE-UI-007](../rules/RULE-UI-007.md) (body, evidence) |
-| [EXP-UI-023](../experiments/EXP-UI-023.md) | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) (evidence), [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) (body, evidence) |
+| [EXP-UI-023](../experiments/EXP-UI-023.md) | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) (evidence), [RULE-OBJECTIVE-001](../rules/RULE-OBJECTIVE-001.md) (evidence), [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) (body, evidence) |
 | [EXP-UI-024](../experiments/EXP-UI-024.md) | [RULE-TIMER-004](../rules/RULE-TIMER-004.md) (evidence) |
 | [EXP-UI-025](../experiments/EXP-UI-025.md) | [FND-UI-057](../findings/FND-UI-057.md) (body), [RULE-UI-003](../rules/RULE-UI-003.md) (evidence) |
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | [RULE-UI-015](../rules/RULE-UI-015.md) (evidence), [match_saved](../glossary/match_saved.md) (glossary) |
