@@ -175,12 +175,17 @@ public sealed partial class ChaosGame
         _comlinkStatus = string.Empty;
     }
 
+    /// <summary>
+    /// SCR-COMLINK-001, FND-UI-067: a press outside the panel is refused, and the held Dismiss face
+    /// closes the panel on a release inside it.
+    /// </summary>
     private void HandleComlinkViewClick(Point point)
     {
-        if (ComlinkViewLayout.Previous.Contains(point)) MoveComlinkCursor(-1);
+        if (!ComlinkViewLayout.Panel.Contains(point)) PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+        else if (ComlinkViewLayout.Previous.Contains(point)) MoveComlinkCursor(-1);
         else if (ComlinkViewLayout.Next.Contains(point)) MoveComlinkCursor(1);
         else if (ComlinkViewLayout.Ok.Contains(point))
-            AcceptAndInvoke(CloseComlink);
+            HoldPanelFace(ComlinkViewLayout.Ok, HeldButtonKind.Confirm, CloseComlink);
     }
 
     private void HandleComlinkSendClick(Point point)

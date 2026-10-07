@@ -194,8 +194,12 @@ public sealed partial class ChaosGame
         AcceptInput();
         if (rightButton) _screens.Show(ClientScreen.City);
         else
+        {
             _pressedPanelFace = (SectorDetailLayout.Back, ClientScreen.Sector,
                 () => _screens.Show(ClientScreen.City));
+            // The sector view draws its own back face (SCR-UI-004).
+            _pressedPanelFaceKind = null;
+        }
         return true;
     }
 

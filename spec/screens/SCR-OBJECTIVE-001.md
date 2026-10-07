@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-OBJECTIVE-005, FND-OBJECTIVE-001, FND-AI-005, FND-UI-011, FND-UI-032, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-008]
+evidence: [FND-OBJECTIVE-005, FND-OBJECTIVE-001, FND-AI-005, FND-UI-011, FND-UI-032, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-008, FND-UI-062, FND-UI-067]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-002, RULE-UI-002, SCR-UI-003]
@@ -23,12 +23,13 @@ equals `lo`.
 |---|---|---|---|---|---|
 | Panel with six player-colour rails and a close button | `DATA/PX16/PX05011` | None | `(104, 124, 344, 209)` once it has slid in | While the panel is open | FND-OBJECTIVE-001, FND-OBJECTIVE-005, FND-UI-011 |
 | Overlord portrait, per player slot `p` (0 to 5) | Interface sheet, source `(32 * portrait, 480, 32, 32)`, unscaled | How far the player's `scenario_score` is behind the leader's | Panel-local `(98 + 40 * p, 18 + offset, 32, 32)` | `scenario_standing[p]` is not `0xFF` | FND-OBJECTIVE-005 |
+| Close pressed | `DATA/PX16/PX00129` rectangle (0, 386, 50, 23); plain face (50, 386, 50, 23) while the pointer is outside and after a release that leaves the panel open | None | (137, 293, 50, 23) | While the face is held with the pointer inside it | FND-UI-062, FND-UI-067 |
 
 ## Mouse input
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Close button | `(137, 293, 50, 23)`; the press must land in panel-local `(33, 169, 49, 22)` | Always | Held-button press; closes on a release inside | FND-OBJECTIVE-005 |
+| Close button | `(137, 293, 50, 23)`; the press must land in panel-local `(33, 169, 49, 22)` | Always | Held-button press; closes on a release inside | FND-OBJECTIVE-005, FND-UI-067 |
 | Outside the panel | Outside `(104, 124, 344, 209)` | Always | Plays the rejection sound, slot 4 | FND-OBJECTIVE-005 |
 
 ## Keyboard input

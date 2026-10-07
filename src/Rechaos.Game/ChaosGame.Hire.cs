@@ -286,11 +286,13 @@ public sealed partial class ChaosGame
         _hireCursor = HireDockLayout.MoveCursor(offers, _hireCursor, delta);
     }
 
-    private void HandleHireClick(Point point)
-    {
-        if (HireComparisonLayout.Ok.Contains(point))
-            AcceptAndShow(_managementReturnScreen);
-    }
+    /// <summary>
+    /// SCR-HIRE-001, FND-UI-067: the held close face closes on a release inside it, and a press
+    /// outside the shared panel rectangle, wider than the panel drawn, is refused.
+    /// </summary>
+    private void HandleHireClick(Point point) =>
+        PressPanelFace(point, SharedPanelLayout.Panel, HireComparisonLayout.Ok,
+            () => _screens.Show(_managementReturnScreen));
 
     private void ReportHireSubmission(HireSubmissionResult result, MatchPlayerState player)
     {

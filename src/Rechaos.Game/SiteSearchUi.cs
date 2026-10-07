@@ -15,13 +15,6 @@ public static class SiteSearchLayout
     public static Rectangle None => SharedPanelLayout.At(33, 48, 49, 23);
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
 
-    /// <summary>
-    /// SCR-SEARCH-001, FND-UI-062: the 50-by-23 rectangle the held-button helper draws the face of
-    /// a held ALL, NONE or Done into, one pixel wider and taller than the control it tests.
-    /// </summary>
-    public static Rectangle HeldFace(SiteSearchControl control) =>
-        new(Target(control).Location, new Point(50, 23));
-
     /// <summary>FND-UI-062: the face kind the Search handler passes the held-button helper for each control.</summary>
     public static HeldButtonKind HeldKind(SiteSearchControl control) => control switch
     {
