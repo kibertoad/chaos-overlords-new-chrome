@@ -244,19 +244,18 @@ public sealed partial class ChaosGame
         string? screenshotFolder = null,
         ReferenceFrameRequest? referenceFrame = null,
         string? startupSavePath = null)
-        : this(assetRoot, ChaosGameServices.Desktop, debugPhaseStepping, diagnostics, screenshotFolder,
-            originalComputerMoves, originalComputerHires, referenceFrame, startupSavePath)
+        : this(assetRoot, ChaosGameServices.Desktop, localDeviations, debugPhaseStepping, diagnostics,
+            screenshotFolder, referenceFrame, startupSavePath)
     {
     }
 
     internal ChaosGame(
         string assetRoot,
         ChaosGameServices services,
+        MatchDeviations localDeviations,
         bool debugPhaseStepping = false,
         RuntimeDiagnostics? diagnostics = null,
         string? screenshotFolder = null,
-        bool originalComputerMoves = false,
-        bool originalComputerHires = false,
         ReferenceFrameRequest? referenceFrame = null,
         string? startupSavePath = null)
     {
