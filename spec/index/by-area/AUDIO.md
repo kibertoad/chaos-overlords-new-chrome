@@ -35,6 +35,6 @@ Entries by area.
 | [RULE-AUDIO-006](../../rules/RULE-AUDIO-006.md) | The turn-start sound | supported |
 | [RULE-AUDIO-007](../../rules/RULE-AUDIO-007.md) | The Comlink alert plays slot 6 through the effects gate | supported |
 | [RULE-AUDIO-008](../../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks | supported |
-| [RULE-AUDIO-009](../../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | established |
+| [RULE-AUDIO-009](../../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | supported |
 | [RULE-AUDIO-010](../../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
 | [RULE-AUDIO-011](../../rules/RULE-AUDIO-011.md) | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM | superseded |

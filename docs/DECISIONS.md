@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
 | 2026-10-06 | [Chat in the online lobby, through the match's event log](#2026-10-06--chat-in-the-online-lobby-through-the-matchs-event-log) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
@@ -46,6 +47,43 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-06 — Establish an entry only when its runs reach everything it describes
+
+- A rule, format or screen entry becomes `established` when a static reading
+  and runs of the original agree and those runs reach every branch, edge case,
+  field, value, element, state, input, sound and timing the entry describes.
+  Agreement on the cases a run happens to reach is not enough. This is the
+  work protocol's condition that an experiment raising an entry to
+  `established` covers everything the entry says (docs/upstream/work-protocol.md).
+- A case counts as reached only when it is measured as below. For a rule or
+  format, a temporary trace in the rebuild counts each branch while every
+  replayed run plays, and is removed before commit. A case the probe sets up by
+  writing the original's memory, mirrored by the replay, counts as reached when
+  the code after the write takes the branch. For a screen, a drawn element or state counts as
+  reached when a capture shows it and the comparison does not mask it; a
+  masked element counts only when a `mandatory` deviation's Replaces item
+  names it. An input counts when a recorded run performed it and recorded its
+  result, and a sound or a timing when a run recorded it. A static finding
+  alone reaches nothing.
+- Whatever no run reaches stays in the entry's Open questions with the static
+  finding it rests on, the parity row's notes say the same, and the entry
+  stays `supported`. For a format the entry takes the lowest status of its
+  rows, so a reached field can be `established` while the entry is not. A
+  row the probe does not read is not reached. A memory format that names the
+  save block holding it leaves that placement to the save format
+  (FMT-SAVE-001): decoding a save reaches the save format's claim, and an
+  undecoded block holds back no row of the memory layout.
+- Screens: on this date no screen entry qualifies. Every capture run so far
+  set the sound levels to 0, no run measured a slide, and each screen's
+  captures show some of its states while its keys, refusals and pressed faces
+  rest on static findings. The screen entries stay `supported`, and a capture
+  pull request follows the checklist in
+  [VALIDATION.md](VALIDATION.md#raising-a-screen-entry).
+- Reason: issues #354, #373 and #408 found entries raised, or proposed for
+  raising, on one agreeing run while some of their cases had never been
+  observed, and entries kept at `supported` with no written bar. One stated
+  bar applies the same way to every entry.
 
 ## 2026-10-06 — Chat in the online lobby, through the match's event log
 

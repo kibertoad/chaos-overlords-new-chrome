@@ -68,3 +68,8 @@ None known.
   executable opens it for a computer that joined and not for the host
   (FND-UI-024).
 - The player names' colours, which the manual says match the players.
+- No recorded run of the original reaches other scenario, Mentality and
+  time-limit strings; the eliminated status; the automatic opening after a
+  load or for a joining computer; a press outside the panel; Enter and
+  Execute; the slide sounds and timing (FND-UI-024). These rest on the static
+  findings named, so the entry stays `supported`.

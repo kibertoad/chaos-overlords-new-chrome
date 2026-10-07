@@ -6,7 +6,7 @@ Entries by status.
 
 ## supported
 
-5 entries.
+6 entries.
 
 | ID | Title |
 |---|---|
@@ -14,15 +14,8 @@ Entries by status.
 | [BUG-OPTIONS-002](../../bugs/BUG-OPTIONS-002.md) | An option missing from the registry takes the value of the option read before it |
 | [RULE-OPTIONS-001](../../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup |
 | [RULE-OPTIONS-002](../../rules/RULE-OPTIONS-002.md) | Saving the options to the registry, which always fails |
-| [SCR-OPTIONS-001](../../screens/SCR-OPTIONS-001.md) | Idle gang warning panel |
-
-## established
-
-1 entries.
-
-| ID | Title |
-|---|---|
 | [RULE-OPTIONS-003](../../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle |
+| [SCR-OPTIONS-001](../../screens/SCR-OPTIONS-001.md) | Idle gang warning panel |
 
 ## recorded
 
@@ -34,14 +27,6 @@ Entries by status.
 | [FND-OPTIONS-002](../../findings/FND-OPTIONS-002.md) | Done warns with the PX05020 panel when Warn if Idle Gangs is on and an active gang of the active player has no action |
 | [FND-OPTIONS-003](../../findings/FND-OPTIONS-003.md) | The options loader stops when the key does not open, stores one byte of most values, builds the serial number from two draws, and the idle-gang scan reads only the active player's gangs |
 
-## Established on unreproduced evidence
-
-Entries whose status is established and whose findings and experiments are all only recorded.
-
-| ID | Title |
-|---|---|
-| [RULE-OPTIONS-003](../../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle |
-
 ## Open questions
 
 Entries whose Open questions section says more than None known.
@@ -51,3 +36,5 @@ Entries whose Open questions section says more than None known.
 | [BUG-OPTIONS-001](../../bugs/BUG-OPTIONS-001.md) | Changes made in the Options menu are never saved | supported |
 | [BUG-OPTIONS-002](../../bugs/BUG-OPTIONS-002.md) | An option missing from the registry takes the value of the option read before it | supported |
 | [RULE-OPTIONS-001](../../rules/RULE-OPTIONS-001.md) | Reading the options from the registry at startup | supported |
+| [RULE-OPTIONS-003](../../rules/RULE-OPTIONS-003.md) | Warn if Idle Gangs asks before Done ends a turn with a gang left idle | supported |
+| [SCR-OPTIONS-001](../../screens/SCR-OPTIONS-001.md) | Idle gang warning panel | supported |

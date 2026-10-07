@@ -24,8 +24,8 @@ Entries by area.
 | [RULE-COMLINK-002](../../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | supported |
 | [RULE-COMLINK-003](../../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | established |
 | [RULE-COMLINK-004](../../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox | established |
-| [RULE-COMLINK-005](../../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn | established |
-| [RULE-COMLINK-006](../../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | established |
-| [RULE-COMLINK-007](../../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | established |
+| [RULE-COMLINK-005](../../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn | supported |
+| [RULE-COMLINK-006](../../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | supported |
+| [RULE-COMLINK-007](../../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | supported |
 | [SCR-COMLINK-001](../../screens/SCR-COMLINK-001.md) | Comlink View panel | supported |
 | [SCR-COMLINK-002](../../screens/SCR-COMLINK-002.md) | Comlink Send panel | supported |

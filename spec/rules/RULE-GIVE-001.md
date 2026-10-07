@@ -1,7 +1,7 @@
 ---
 id: RULE-GIVE-001
 title: Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-EQUIP-002, FND-EQUIP-003, FND-EQUIP-007, FND-EQUIP-008, FND-GIVE-001, EXP-TURN-027, EXP-TURN-030, SRC-MANUAL-GOG, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
@@ -90,4 +90,7 @@ None known.
 
 ## Open questions
 
-None known.
+- No recorded run gives a miscellaneous item (mask bit 4), gives to a
+  recipient killed in the same turn's combat, or selects an empty slot. These
+  rest on FND-GIVE-001 and FND-EQUIP-007. Until a run reaches them, the entry
+  stays `supported`.

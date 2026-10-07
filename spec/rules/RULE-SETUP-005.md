@@ -4,7 +4,7 @@ title: A player named with the island modifier puts every neutral sector under a
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-015, FND-SETUP-003, FND-SETUP-001, EXP-SETUP-004, FND-CONTROL-001, FND-PLATFORM-003, FND-UI-035]
+evidence: [FND-SETUP-015, FND-SETUP-003, FND-SETUP-001, EXP-SETUP-004, EXP-SETUP-005, EXP-TURN-116, FND-CONTROL-001, FND-PLATFORM-003, FND-UI-035]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-001, FMT-STATE-002]
@@ -61,4 +61,5 @@ None known.
 
 ## Open questions
 
-- None.
+None known. EXP-SETUP-004 reaches one player with the modifier, EXP-SETUP-005
+two, and EXP-TURN-116 a countdown that leaves the Crackdowns at 100.

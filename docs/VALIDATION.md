@@ -391,7 +391,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -458,7 +458,10 @@ slot.
 (FND-STATE-004), all before the Done press of the given turn, to reach families
 no local match assigns or a match that ends with one player active. `--cash`
 sets the player's `cash` before the Done press of each turn it names, so a
-human can pay for a hire every turn. The fixture
+human can pay for a hire every turn. `--force` sets the `force` of a player's
+gang in a roster slot (FMT-STATE-001), so a gang ordered to Heal can be at
+Force 10 when it acts, and `--tolerance` sets a sector's `base_tolerance`
+(FMT-STATE-002), so one Bribe or Snitch can wrap the signed byte. The fixture
 lists each as a `planning` input, and the replay makes the same change to the
 rebuild's state, a retired player becoming eliminated with its gangs and
 sectors left in place; since that change bypasses the replay recorder, such a
@@ -1012,6 +1015,24 @@ The selected-sector outline cycles through two frames on the pump's counter
 Events and Comlink lights in the lit half of their blink whenever they are on.
 No capture yet shows a light lit, so which counter values the lit half covers
 has not been compared.
+
+### Raising a screen entry
+
+A screen entry stays `supported` until runs of the original reach everything
+it describes (DECISIONS.md, 2026-10-06). A pull request that adds or changes
+captures goes through this list for each screen it compares:
+
+- Each drawn element and each state the entry lists is shown by a capture and
+  compared without a mask, or masked only where a `mandatory` deviation's
+  Replaces item names it.
+- Each mouse region, key and double-click the entry lists was performed by a
+  recorded run, with its result recorded (a later capture, a panel record or
+  the order bytes).
+- Each sound the entry lists was recorded by a run with sound on, and each
+  timing (slides, blinks, cadences) was measured.
+- What is left goes in the entry's Open questions with the finding it rests
+  on, and in the parity row's notes. Only when nothing is left does the entry,
+  and its row, become `established`.
 
 ## Screen capture coverage
 

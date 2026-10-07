@@ -131,6 +131,21 @@ namespace Rechaos.Tests;
 /// turn and order Moves that the Move repair sends back and then gives a random neighbour from a
 /// corner of the city (RULE-MOVE-002, RULE-AI-007), until a hire with 80 gangs is refused and
 /// reported (RULE-HIRE-001, RULE-EVENT-011).
+/// In EXP-TURN-103 a Bribe every turn takes a base Tolerance to 41, where it stays while the later
+/// gangs of the phase act, and the clamp lowers it to 40 (RULE-TOLERANCE-002, RULE-TURN-003). In
+/// EXP-TURN-104 a Research gang acts after its sector's site is completed earlier in the same
+/// phase and rolls without the site's Research (RULE-RESEARCH-001, RULE-TURN-003). EXP-TURN-105
+/// writes families 1, 5, 6 and 12 into four planning records before the closing turns of Greed,
+/// whose handlers then plan Terminate and flag the records (FMT-STATE-007, FND-AI-042).
+/// EXP-TURN-110 writes Force 10 into a gang after its Heal order, and the Heal rolls its pool and
+/// leaves the Force at 10 (RULE-HEAL-001). EXP-TURN-111 and EXP-TURN-114 write a base Tolerance
+/// that one Bribe or one Snitch takes past the signed byte, which wraps and is then clamped
+/// (RULE-BRIBE-001, RULE-SNITCH-001, RULE-TOLERANCE-002). EXP-TURN-115 holds a base Tolerance at
+/// 40 with a Bribe every turn, and each step takes it to 39 first (RULE-TOLERANCE-001).
+/// EXP-TURN-117 nets a Snitch and a Bribe out in one sector and clamps two sectors no gang acted
+/// in (RULE-TOLERANCE-002). EXP-TURN-116 keeps the island modifier's Crackdowns of 100 through a
+/// countdown (RULE-POLICE-003), and EXP-SETUP-005 names two players with that modifier
+/// (RULE-SETUP-005).
 /// In EXP-TURN-109 a family-7 gang whose focus names the sector it stands in, its best research
 /// sector, researches there although a Research site in it is unfinished (RULE-AI-026, FND-AI-078).
 /// Every computer player's pass starts from its sector weights and the hostility step
@@ -144,7 +159,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-TURN-097", "EXP-TURN-098", "EXP-TURN-099", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018", "EXP-COMBAT-001", "EXP-COMBAT-002", "EXP-COMBAT-003", "EXP-COMBAT-004", "EXP-COMBAT-005", "EXP-COMBAT-006", "EXP-COMBAT-007", "EXP-COMBAT-008", "EXP-COMBAT-009", "EXP-UI-019", "EXP-UI-020", "EXP-UI-021", "EXP-UI-022", "EXP-UI-023", "EXP-AUDIO-001", "EXP-VIDEO-001", "EXP-UI-024", "EXP-UI-025", "EXP-UI-026", "EXP-UI-029", "EXP-UI-046", "EXP-UI-047", "EXP-UI-048", "EXP-UI-049", "EXP-UI-054", "EXP-TURN-109"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-TURN-097", "EXP-TURN-098", "EXP-TURN-099", "EXP-TURN-103", "EXP-TURN-104", "EXP-TURN-105", "EXP-TURN-110", "EXP-TURN-111", "EXP-TURN-114", "EXP-TURN-115", "EXP-TURN-116", "EXP-TURN-117", "EXP-SETUP-005", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018", "EXP-COMBAT-001", "EXP-COMBAT-002", "EXP-COMBAT-003", "EXP-COMBAT-004", "EXP-COMBAT-005", "EXP-COMBAT-006", "EXP-COMBAT-007", "EXP-COMBAT-008", "EXP-COMBAT-009", "EXP-UI-019", "EXP-UI-020", "EXP-UI-021", "EXP-UI-022", "EXP-UI-023", "EXP-AUDIO-001", "EXP-VIDEO-001", "EXP-UI-024", "EXP-UI-025", "EXP-UI-026", "EXP-UI-029", "EXP-UI-046", "EXP-UI-047", "EXP-UI-048", "EXP-UI-049", "EXP-UI-054", "EXP-TURN-109"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -802,8 +817,13 @@ public sealed partial class OriginalNewGameExperimentTests
             // A cleared player_active (FND-STATE-004) takes the player out of the match as the
             // elimination check does (RULE-TURN-006), with its gangs and sectors left where they are.
             // A cash write sets the player's cash (FND-AI-055) so a human can pay for a hire every turn.
+            // A force write sets a gang's Force after its order was taken (FMT-STATE-001), so a Heal
+            // can act at Force 10 (RULE-HEAL-001), and a tolerance write a sector's base Tolerance
+            // (FMT-STATE-002), so one Bribe can wrap the signed byte (RULE-BRIBE-001).
             foreach (var write in inputs.Planning.Where(write => write.Turn == turn + 1))
                 if (write.Cash is { } cash) match.Players[write.Player].Cash = cash;
+                else if (write.Force is { } force) match.Players[write.Player].Gangs[write.Slot].Force = force;
+                else if (write.Tolerance is { } tolerance) match.Sectors[write.Slot].BaseTolerance = tolerance;
                 else if (write.Retired) match.Players[write.Player].Status = PlayerStatus.Eliminated;
                 else if (write.Raider) match.AiPlanning.SetRaiderMode(new PlayerId(write.Player));
                 else match.AiPlanning.SetFamily(new PlayerId(write.Player), write.Slot, write.Family);

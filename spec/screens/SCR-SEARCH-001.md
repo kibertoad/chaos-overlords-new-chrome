@@ -71,3 +71,10 @@ None known.
   been checked against `PX00129` (FND-SEARCH-004).
 - The Site Information panel belongs to the interface area; its screen entry
   is not yet cross-referenced here.
+- No recorded run of the original reaches the selected-row font; the pressed
+  ALL, NONE and Done images; the ALL and NONE presses, a row press and a row
+  double-click with Site Information over the panel; presses and double-clicks
+  outside it; Enter and Execute; the accepted and rejected sounds
+  (FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-COMLINK-007,
+  FND-AUDIO-011). These rest on the static findings named, so the entry stays
+  `supported`.
