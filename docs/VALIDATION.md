@@ -686,9 +686,12 @@ with the documentation standard's
 [checks](https://dinorefurb.com/documentation-standard/#checks) over `spec/`,
 `parity/` and `deviations/`. `PARITY.md` and the indexes in `spec/index/` are
 updated on main only, by `.github/workflows/nightly-generated.yml`, and the
-check fails a branch that edits them (`--regenerate` writes them). It also fails when a code comment gives an address that no
-entry the comment cites records, in its locations or text or in the evidence
-of an entry it cites. Comments are read from `.cs`, `.ts`, `.js` and `.mjs` files, so `//` inside a string or
+check fails a branch that edits them (`--regenerate` writes them). It also
+fails when a code comment gives an address, or the code uses one as a number
+or inside a string, that no entry cited by the comment on its line or the
+nearest comment above it records, in its locations or text or in the
+evidence of an entry it cites, and when a spec line names a file of the
+rebuild in `src/`, `tests/` or `multiplayer/`. Comments are read from `.cs`, `.ts`, `.js`, `.mjs` and `.ps1` files, so `//` inside a string or
 a regular expression is not a comment and `/* … */` is; a neutral name (`fn_…`,
 `g_…`) is always an address, and a plain `0x…` value is one only inside an
 image given with `--images` (the script passes the executable's,

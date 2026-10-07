@@ -4,4 +4,4 @@
 # pnpm holds back releases younger than its minimum release age. The checker's releases are taken
 # as soon as they are tagged, so the version package.json pins is excluded here; move both together.
 minimumReleaseAgeExclude:
-  - '@scientific-method/standard-checker@2.5.0'
+  - '@scientific-method/standard-checker@2.5.1'

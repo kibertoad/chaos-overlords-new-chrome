@@ -154,12 +154,15 @@ run `pnpm install` at the root first) with this game's settings: the
 executable image's extent and `multiplayer/` as a directory that may cite IDs.
 It runs the standard's checks over `spec/`, `parity/` and `deviations/`, checks
 that every spec and deviation ID cited in the code resolves and that every
-executable address a code comment gives (`0x…` inside the image, `fn_…` or
-`g_…`) is recorded in an entry the comment cites or in its evidence.
+executable address (`0x…` inside the image, `fn_…` or `g_…`) a code comment
+gives, or the code uses as a number or inside a string, is recorded in an
+entry that the comment on its line or the nearest comment above it cites, or
+in that entry's evidence.
 `PARITY.md` and the generated indexes in `spec/index/` are updated on main
 only, by the nightly workflow `nightly-generated.yml`: a branch leaves them
 as they were where it forked, and the check fails a change that edits one.
-`--regenerate` writes fresh copies to read; do not commit them on a branch. It compiles the Kaitai definitions
+`--regenerate` writes fresh copies to read; do not commit them on a branch.
+It compiles the Kaitai definitions
 when `kaitai-struct-compiler` (or the path in `KSC`) is available; in CI it
 requires the compiler, and the workflows install a pinned release.
 The same check fails a spec line that names a file of the rebuild, a path
