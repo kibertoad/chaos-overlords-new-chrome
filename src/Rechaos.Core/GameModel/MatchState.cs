@@ -356,7 +356,7 @@ public sealed partial class MatchState
     /// </remarks>
     public PlayerId? ViewedBy { get; }
 
-    private void RefuseOnView()
+    internal void RefuseOnView()
     {
         if (ViewedBy is { } seat)
             throw new InvalidOperationException(

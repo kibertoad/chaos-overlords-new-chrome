@@ -68,12 +68,8 @@ public static class NativeSaveSerializer
     internal static MatchState LoadRewritten(Stream source, OriginalData definitions) =>
         Load(source, definitions, verifyStateFingerprint: false);
 
-    /// <summary>Restores a seat's view that <see cref="SeatView.Save"/> wrote.</summary>
-    internal static MatchState LoadView(Stream source, OriginalData definitions, PlayerId seat) =>
-        Load(source, definitions, verifyStateFingerprint: true, seat);
-
     private static MatchState Load(
-        Stream source, OriginalData definitions, bool verifyStateFingerprint, PlayerId? viewedBy = null)
+        Stream source, OriginalData definitions, bool verifyStateFingerprint)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(definitions);
@@ -97,7 +93,7 @@ public static class NativeSaveSerializer
         }
         try
         {
-            return RestoreDocument(document, definitions, verifyStateFingerprint, viewedBy);
+            return RestoreDocument(document, definitions, verifyStateFingerprint);
         }
         catch (InvalidDataException)
         {
@@ -136,8 +132,7 @@ public static class NativeSaveSerializer
     }
 
     internal static MatchState RestoreDocument(
-        NativeSaveDocument document, OriginalData definitions, bool verifyStateFingerprint,
-        PlayerId? viewedBy = null)
+        NativeSaveDocument document, OriginalData definitions, bool verifyStateFingerprint)
     {
         if (document.FormatVersion != CurrentFormatVersion)
             throw UnsupportedFormat(document.FormatVersion);
@@ -242,7 +237,11 @@ public static class NativeSaveSerializer
             document.Runtime.Outcome,
             aiStrategy,
             aiPlanning,
-            viewedBy);
+            document.Runtime.ViewedBy is { } viewer
+                ? setup.Players.Any(player => player.Id.Value == viewer)
+                    ? new PlayerId(viewer)
+                    : throw new InvalidDataException("Native save names a viewing seat that is not in the match.")
+                : null);
         var state = new MatchState(definitions, setup, players, sectors, runtime);
         if (verifyStateFingerprint
             && !string.Equals(
@@ -316,7 +315,8 @@ public static class NativeSaveSerializer
                 state.ComlinkFor(player.Id).NextSequence,
                 state.ComlinkFor(player.Id).LegacyReadThroughSequence,
                 state.ComlinkFor(player.Id).Messages,
-                state.ComlinkFor(player.Id).ReadSequences)).ToArray()));
+                state.ComlinkFor(player.Id).ReadSequences)).ToArray(),
+            state.ViewedBy?.Value));
 
     /// <summary>The document <paramref name="planning"/> is saved as.</summary>
     internal static AiPlanningDocument CaptureAiPlanning(AiPlanningState planning) => new(
@@ -642,7 +642,10 @@ internal sealed record RuntimeDocument(
     MatchOutcome? Outcome,
     AiStrategyDocument? AiStrategy = null,
     AiPlanningDocument? AiPlanning = null,
-    IReadOnlyList<PlayerComlinkDocument>? Comlink = null);
+    IReadOnlyList<PlayerComlinkDocument>? Comlink = null,
+    // The seat a SeatView payload was projected for. A whole match's save leaves it out, so its
+    // bytes are what they were before views existed.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ViewedBy = null);
 
 internal sealed record AiStrategyDocument(
     IReadOnlyList<int> Reactions,

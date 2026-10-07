@@ -50,14 +50,16 @@ public static class SeatView
 
         var whole = NativeSaveSerializer.Capture(state, fingerprint: false);
         var events = ViewEvents(state, seat, out var renumbered);
+        var commands = OwnCommands(whole.Runtime.Commands, seat);
         var view = whole with
         {
             Setup = whole.Setup with { InitialSeed = 0 },
-            Players = whole.Players.Select(player => player.Id == seat.Value
+            Players = WithRankingScores(whole.Players.Select(player => player.Id == seat.Value
                 ? OwnPlayer(player, seat)
-                : OtherPlayer(state, player, seat)).ToArray(),
+                : OtherPlayer(state, player, seat)).ToArray(), state, seat),
+            // Capture never writes a sector's Chaos, so only the crackdown history is cleared.
             Sectors = whole.Sectors.Select(sector => (sector.Owner == seat.Value
-                    ? sector with { CrackdownHistory = [], Chaos = null }
+                    ? sector with { CrackdownHistory = [] }
                     : OtherSector(state.Definitions, sector)) with
                 {
                     // SCR-UI-003 draws the police badge while crackdown_turns is above 0 and no
@@ -72,8 +74,8 @@ public static class SeatView
                 ActivePlayer = seat.Value,
                 RandomState = 0,
                 RandomConsumptionCount = 0,
-                Commands = OwnCommands(whole.Runtime.Commands, seat),
-                NextCommandSequence = whole.Runtime.Commands.Count(command => command.Command.Player == seat),
+                Commands = commands,
+                NextCommandSequence = commands.Count,
                 Events = events,
                 NextEventSequence = events.Count,
                 Notifications = whole.Runtime.Notifications.Select(entry => entry.Player == seat.Value
@@ -95,11 +97,13 @@ public static class SeatView
                 AiPlanning = NativeSaveSerializer.CaptureAiPlanning(AiPlanningState.Initialize()),
                 Comlink = whole.Runtime.Comlink!.Select(entry => entry.Player == seat.Value
                     ? entry
-                    : new PlayerComlinkDocument(entry.Player, 0, -1, [], [])).ToArray()
+                    : new PlayerComlinkDocument(entry.Player, 0, -1, [], [])).ToArray(),
+                // The payload names its seat, so every load of it, through this class or not,
+                // restores a view that refuses to draw or resolve.
+                ViewedBy = seat.Value
             }
         };
-        view = view with { Players = WithRankingScores(view.Players, state, seat) };
-        return NativeSaveSerializer.RestoreDocument(view, state.Definitions, verifyStateFingerprint: false, seat);
+        return NativeSaveSerializer.RestoreDocument(view, state.Definitions, verifyStateFingerprint: false);
     }
 
     /// <summary>Writes <paramref name="view"/> as a save payload, the form it travels in.</summary>
@@ -111,9 +115,19 @@ public static class SeatView
         NativeSaveSerializer.Save(destination, view);
     }
 
-    /// <summary>Reads a view <see cref="Save"/> wrote, as <paramref name="seat"/>'s view.</summary>
-    public static MatchState Load(Stream source, OriginalData definitions, PlayerId seat) =>
-        NativeSaveSerializer.LoadView(source, definitions, seat);
+    /// <summary>
+    /// Reads a view <see cref="Save"/> wrote, refusing a payload that is not
+    /// <paramref name="seat"/>'s view, including a whole match.
+    /// </summary>
+    public static MatchState Load(Stream source, OriginalData definitions, PlayerId seat)
+    {
+        var view = NativeSaveSerializer.Load(source, definitions);
+        if (view.ViewedBy != seat)
+            throw new InvalidDataException(view.ViewedBy is { } other
+                ? $"The payload is seat {other.Value}'s view, not seat {seat.Value}'s."
+                : "The payload is a whole match, not a seat's view.");
+        return view;
+    }
 
     // The seat's own record, less what it says about the other seats: which of them detect its
     // gangs (RULE-DETECT-001 writes visible_to for every observer, and no screen shows it).
@@ -169,7 +183,6 @@ public static class SeatView
             InfluencedBy = null
         }).ToArray(),
         CrackdownHistory = [],
-        Chaos = null,
         // With no site counted, the base is the Tolerance the console shows.
         BaseTolerance = sector.Tolerance,
         Support = 0,
@@ -206,8 +219,10 @@ public static class SeatView
             .Where(gang => gang.IsActive)
             .Select(gang => gang.SectorId)
             .ToHashSet();
+        // A police roll that missed the seat's gang opens no page: the gang may have left the
+        // sector in Movement, and the page would show the other seats' fights there.
         foreach (var gameEvent in state.Events)
-            if (gameEvent.Turn == lastTurn && Fight(state, gameEvent) is { } fight
+            if (gameEvent.Turn == lastTurn && Fight(state, gameEvent) is { Shown: true } fight
                 && (fight.First == seat || fight.Second == seat))
                 pages.Add(fight.Sector);
         var reported = state.NotificationsFor(seat)
@@ -247,14 +262,18 @@ public static class SeatView
     {
         if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
             return gameEvent.PoliceAttack is { } police
-                ? (police.SectorId, gameEvent.Player, null, police.Detected)
+                ? (police.SectorId, gameEvent.Player, null, police.Detected && gameEvent.Gang is { } target
+                    && (state.FindGang(target) is not null || police.Target is not null))
                 : null;
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution is not { } resolution
             || gameEvent.Target.Kind != CommandTargetKind.Gang || gameEvent.Gang is not { } attacker)
             return null;
-        var defender = resolution.Defender?.Owner ?? state.FindGang(new GangId(gameEvent.Target.Id))?.Owner;
-        return (resolution.Attacker?.SectorId ?? state.FindGang(attacker)?.SectorId) is { } sector
-            ? (sector, gameEvent.Player, defender, true)
+        // As the Combat Results screen finds its combatants: the live gang while the roster holds
+        // it, else the one the event recorded, and no page for a fight that lacks either.
+        var attackerSector = state.FindGang(attacker)?.SectorId ?? resolution.Attacker?.SectorId;
+        var defender = state.FindGang(new GangId(gameEvent.Target.Id))?.Owner ?? resolution.Defender?.Owner;
+        return attackerSector is { } sector && defender is { } second
+            ? (sector, gameEvent.Player, second, true)
             : null;
     }
 

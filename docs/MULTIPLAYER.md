@@ -713,7 +713,9 @@ What the spec does not settle:
 match's own save document, with every part the seat may not know removed or set to a neutral value,
 restored as that seat's view. `MatchState.ViewedBy` names the seat, and every call that draws or
 resolves (`FinishCommand`, the execution phases, hire offer draws, the computer players' planning)
-throws on a view. A copy of a view through `MatchStateClone` is still a view.
+throws on a view. A view's save payload names its seat, so every load of it, a copy through
+`MatchStateClone` included, restores a view, and `SeatView.Load` refuses a payload that is not the
+expected seat's view. A whole match's save leaves the field out and is byte for byte what it was.
 
 | What the view does | Parts |
 |---|---|
@@ -730,8 +732,9 @@ tell it roughly how many gangs have been hired before them. Giving each seat its
 the server to translate every order, and is not worth that.
 
 Two tests hold the view to the table. `SeatViewTests.EveryPartOfTheSaveHasAVisibilityDecision`
-lists every member of the save document with what the view does with it, so state added to a save
-without a decision fails it. `OriginalNewGameExperimentTests.ASeatPlansTheSameTurnFromItsView` takes
+lists every member of the save document with what the view does with it, down through every
+record that can carry another seat's data (a kept fight event and the combatants in it, the
+outcome), so state added to a save without a decision fails it. `OriginalNewGameExperimentTests.ASeatPlansTheSameTurnFromItsView` takes
 a view at every planning entry of every recorded run of the original and checks that it hides what
 the table hides; that every order the option catalog offers each of the seat's gangs, and every
 hire, is judged the same on it as on the whole match; that the city's markers, the console values,
@@ -796,8 +799,8 @@ field on the match.
 
 Measured at all 2,504 planning entries of the recorded runs, natively in a Debug build: a view
 takes 0.3 ms to project at the median and 2.4 ms at most. A view's save payload is 87 KB at the
-median and 161 KB at most, and 3 KB and 9 KB with Brotli, against 23 KB and 301 KB for the whole
-match's (the largest at turn 82 of EXP-TURN-099, with 262 gangs in the save). The resolver runs
+median and 161 KB at most, and 3 KB and 9 KB with Brotli, against 23 KB and 301 KB with Brotli
+for the whole match's (the largest at turn 82 of EXP-TURN-099, with 262 gangs in the save). The resolver runs
 about ten times slower under the WebAssembly interpreter than natively, so a view there costs a
 few milliseconds per seat per turn and at most a few tens, beside a turn's hundreds. The server
 compresses it, as it does snapshots.
