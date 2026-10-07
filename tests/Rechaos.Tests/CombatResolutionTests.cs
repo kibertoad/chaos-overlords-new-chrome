@@ -548,7 +548,7 @@ public sealed class CombatResolutionTests
             new(new PlayerId(0), playerZeroName, PlayerController.Human),
             new(new PlayerId(1), playerOneName, PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         var playerZeroGangs = new List<MatchGangState>
         {
             new(new GangId(10), new PlayerId(0), playerZeroDefinition, 0,

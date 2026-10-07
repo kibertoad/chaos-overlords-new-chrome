@@ -220,7 +220,7 @@ public sealed class CommandResolutionTests
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var setup = new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, difficulty);
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, MatchDeviations.Original, difficulty);
         MatchPlayerState[] players =
         [
             new(setup.Players[0], cash,

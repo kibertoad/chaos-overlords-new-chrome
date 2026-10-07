@@ -18,9 +18,9 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     {
         var expected = Recovery(CleanExit: false, Completed: false);
 
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), expected));
+        Assert.True(TrySave(Path(), expected));
 
-        var loaded = Assert.IsType<MultiplayerRecovery>(MultiplayerRecoveryStore.Load(Path()));
+        var loaded = Assert.IsType<MultiplayerRecovery>(Load(Path()));
         Assert.Equal(expected, loaded);
         Assert.True(loaded.ShouldSuggestReconnect);
     }
@@ -74,9 +74,9 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     {
         var recovery = Recovery(CleanExit: true, Completed: false);
 
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+        Assert.True(TrySave(Path(), recovery));
 
-        Assert.False(MultiplayerRecoveryStore.Load(Path())!.ShouldSuggestReconnect);
+        Assert.False(Load(Path())!.ShouldSuggestReconnect);
     }
 
     /// <summary>
@@ -88,9 +88,9 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     {
         var completed = Recovery(CleanExit: true, Completed: true);
 
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), completed));
+        Assert.True(TrySave(Path(), completed));
 
-        Assert.Null(MultiplayerRecoveryStore.Load(Path()));
+        Assert.Null(Load(Path()));
     }
 
     /// <summary>
@@ -104,20 +104,29 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         File.WriteAllText(Path(), System.Text.Json.JsonSerializer.Serialize(
             new { FormatVersion = 2, Sessions = new[] { recovery } }));
 
-        Assert.Equal(recovery, Assert.Single(MultiplayerRecoveryStore.LoadAll(Path())));
+        Assert.Equal(recovery, Assert.Single(LoadAll(Path())));
     }
 
     /// <summary>The token does not sit in the file as the player would read it back.</summary>
+    /// <remarks>
+    /// DPAPI keeps the sealed bytes in the file, so a file that uses only it is still stamped with
+    /// the version before the token store field, and the build before this one still reads it.
+    /// </remarks>
     [Fact]
-    public void SealsTheTokenWhereThePlatformCan()
+    public void SealsTheTokenWithDpapiOnWindows()
     {
-        if (!OperatingSystem.IsWindows()) return;
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "DPAPI is Windows only.");
+        var dpapi = new RecoveryTokenProtection(useDpapi: true, store: null);
         var recovery = Recovery(CleanExit: false, Completed: false);
 
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+        Assert.True(MultiplayerRecoveryStore.TrySaveAll(Path(), [recovery], durable: false, dpapi));
 
-        Assert.DoesNotContain(recovery.Token, File.ReadAllText(Path()), StringComparison.Ordinal);
-        Assert.Equal(recovery, MultiplayerRecoveryStore.Load(Path()));
+        var text = File.ReadAllText(Path());
+        Assert.DoesNotContain(recovery.Token, text, StringComparison.Ordinal);
+        Assert.Contains("\"ProtectedToken\"", text, StringComparison.Ordinal);
+        Assert.Equal(MultiplayerRecoveryHistory.FormatVersionWithoutTokenStore, StoredVersion());
+        Assert.Equal(recovery, Assert.Single(MultiplayerRecoveryStore.LoadAll(Path(), dpapi)));
+        Assert.False(MultiplayerRecoveryStore.KeepsTokensInClear(Path()));
     }
 
     /// <summary>A file copied from another account has a token this one cannot open.</summary>
@@ -145,7 +154,7 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
             }
         }));
 
-        Assert.Empty(MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Empty(LoadAll(Path()));
     }
 
     [Fact]
@@ -154,10 +163,10 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         var first = Recovery(CleanExit: true, Completed: false);
         var second = first with { MatchId = "match-2", PlayerId = "player-2" };
 
-        Assert.True(MultiplayerRecoveryStore.TrySaveAll(Path(), [second, first]));
+        Assert.True(TrySaveAll(Path(), [second, first]));
 
-        Assert.Equal([second, first], MultiplayerRecoveryStore.LoadAll(Path()));
-        Assert.All(MultiplayerRecoveryStore.LoadAll(Path()), item => Assert.True(item.CanReconnect));
+        Assert.Equal([second, first], LoadAll(Path()));
+        Assert.All(LoadAll(Path()), item => Assert.True(item.CanReconnect));
     }
 
     /// <summary>
@@ -175,9 +184,9 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         });
         var current = Enumerable.Range(0, 10).Select(index => template with { MatchId = $"current-{index}" });
 
-        Assert.True(MultiplayerRecoveryStore.TrySaveAll(Path(), older.Concat(current)));
+        Assert.True(TrySaveAll(Path(), older.Concat(current)));
 
-        var loaded = MultiplayerRecoveryStore.LoadAll(Path());
+        var loaded = LoadAll(Path());
         Assert.Equal(
             Enumerable.Range(0, 8).Select(index => $"current-{index}"),
             loaded.Where(item => item.CanResume).Select(item => item.MatchId));
@@ -192,7 +201,7 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         var legacy = Recovery(CleanExit: false, Completed: false);
         File.WriteAllText(Path(), System.Text.Json.JsonSerializer.Serialize(legacy));
 
-        Assert.Equal(legacy, Assert.Single(MultiplayerRecoveryStore.LoadAll(Path())));
+        Assert.Equal(legacy, Assert.Single(LoadAll(Path())));
     }
 
     /// <summary>
@@ -204,9 +213,9 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     {
         var recovery = Recovery(CleanExit: false, Completed: false) with { Password = "GANGWAR" };
 
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+        Assert.True(TrySave(Path(), recovery));
 
-        Assert.Equal(recovery, MultiplayerRecoveryStore.Load(Path()));
+        Assert.Equal(recovery, Load(Path()));
     }
 
     /// <summary>A file from a build that wrote no password reads back as a session without one.</summary>
@@ -234,7 +243,7 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
             }
         }));
 
-        Assert.Equal(string.Empty, Assert.Single(MultiplayerRecoveryStore.LoadAll(Path())).Password);
+        Assert.Equal(string.Empty, Assert.Single(LoadAll(Path())).Password);
     }
 
     /// <summary>
@@ -249,9 +258,9 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
             SessionVersion = MultiplayerSessionVersion.Current + 1
         };
 
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+        Assert.True(TrySave(Path(), recovery));
 
-        var loaded = MultiplayerRecoveryStore.Load(Path())!;
+        var loaded = Load(Path())!;
         Assert.Equal(recovery, loaded);
         Assert.False(loaded.IsCompatible);
         Assert.False(loaded.CanResume);
@@ -270,7 +279,7 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     {
         WriteMembershipWithoutNewRecoveryMetadata();
 
-        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
+        var loaded = Assert.Single(LoadAll(Path()));
         Assert.Equal(MultiplayerSessionVersion.Initial, loaded.SessionVersion);
         Assert.False(loaded.CanResume);
         Assert.True(loaded.CanReconnect);
@@ -285,9 +294,9 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     {
         var joiner = Recovery(CleanExit: false, Completed: false) with { IsHost = false };
 
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), joiner));
+        Assert.True(TrySave(Path(), joiner));
 
-        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
+        var loaded = Assert.Single(LoadAll(Path()));
         Assert.Equal("NIGHT OF THE LONG KNIVES", loaded.SessionName);
         Assert.Equal(LastPlayed, loaded.LastUpdatedAt);
     }
@@ -302,9 +311,9 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
                 occurred, "Playing", "ReportAsync", 409, "turn_open", "edge-409", 2, 17)
         };
 
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+        Assert.True(TrySave(Path(), recovery));
 
-        var loaded = Assert.IsType<MultiplayerRecovery>(MultiplayerRecoveryStore.Load(Path()));
+        var loaded = Assert.IsType<MultiplayerRecovery>(Load(Path()));
         Assert.Equal(recovery.LastFailure, loaded.LastFailure);
         Assert.Equal(recovery.Token, loaded.Token);
     }
@@ -318,7 +327,7 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     {
         WriteMembershipWithoutNewRecoveryMetadata();
 
-        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
+        var loaded = Assert.Single(LoadAll(Path()));
         Assert.Equal(string.Empty, loaded.SessionName);
         Assert.Null(loaded.LastUpdatedAt);
         Assert.True(loaded.CanReconnect);
@@ -354,7 +363,7 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     {
         File.WriteAllText(Path(), "not-json");
 
-        Assert.Null(MultiplayerRecoveryStore.Load(Path()));
+        Assert.Null(Load(Path()));
     }
 
     /// <summary>Bytes that are not a history are moved out of the way of the next save.</summary>
@@ -363,7 +372,7 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     {
         File.WriteAllText(Path(), "not-json");
 
-        Assert.Empty(MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Empty(LoadAll(Path()));
 
         Assert.False(File.Exists(Path()));
         Assert.Equal("not-json", File.ReadAllText(Path() + ".corrupt"));
@@ -382,8 +391,8 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         File.WriteAllText(Path(), newer);
         File.WriteAllText(Path() + ".bak", newer);
 
-        Assert.Empty(MultiplayerRecoveryStore.LoadAll(Path()));
-        Assert.False(MultiplayerRecoveryStore.TrySave(Path(), Recovery(CleanExit: false, Completed: false)));
+        Assert.Empty(LoadAll(Path()));
+        Assert.False(TrySave(Path(), Recovery(CleanExit: false, Completed: false)));
 
         Assert.Equal(newer, File.ReadAllText(Path()));
         Assert.Equal(newer, File.ReadAllText(Path() + ".bak"));
@@ -398,14 +407,14 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     public void AHistoryANewerBuildWritesAfterASaveIsNotOverwritten()
     {
         var recovery = Recovery(CleanExit: false, Completed: false);
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+        Assert.True(TrySave(Path(), recovery));
+        Assert.True(TrySave(Path(), recovery));
 
         var newer = $$"""{"Sessions":[{"FormatVersion":1}],"FormatVersion":{{MultiplayerRecoveryHistory.CurrentFormatVersion + 1}}}""";
         File.WriteAllText(Path(), newer);
         File.SetLastWriteTimeUtc(Path(), DateTime.UtcNow.AddMinutes(1));
 
-        Assert.False(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+        Assert.False(TrySave(Path(), recovery));
         Assert.Equal(newer, File.ReadAllText(Path()));
     }
 
@@ -421,15 +430,17 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     {
         var first = Recovery(CleanExit: false, Completed: false);
         var second = first with { MatchId = "match-2" };
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), first));
-        Assert.True(MultiplayerRecoveryStore.TrySaveAll(Path(), [second, first]));
+        Assert.True(TrySave(Path(), first));
+        Assert.True(TrySaveAll(Path(), [second, first]));
         File.WriteAllText(Path(), broken);
 
-        Assert.Equal([first], MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Equal([first], LoadAll(Path()));
         Assert.Equal(broken, File.ReadAllText(Path() + ".corrupt"));
         // The next save keeps the backup it recovered from, since there is no primary to copy.
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), second));
-        Assert.Equal([first], MultiplayerRecoveryStore.LoadAll(Path() + ".bak"));
+        // (Its token is another matter: this save drops the seat, so the store forgets it.)
+        var backup = File.ReadAllText(Path() + ".bak");
+        Assert.True(TrySave(Path(), second));
+        Assert.Equal(backup, File.ReadAllText(Path() + ".bak"));
     }
 
     /// <summary>
@@ -446,18 +457,38 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     public void AHistoryHeldOpenByAnotherProcessIsNotTreatedAsCorrupt()
     {
         var expected = Recovery(CleanExit: false, Completed: false);
-        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), expected));
+        Assert.True(TrySave(Path(), expected));
 
         using (new FileStream(Path(), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            Assert.Empty(MultiplayerRecoveryStore.LoadAll(Path()));
+            Assert.Empty(LoadAll(Path()));
         }
 
         Assert.False(File.Exists(Path() + ".corrupt"));
-        Assert.Equal([expected], MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Equal([expected], LoadAll(Path()));
     }
 
     public void Dispose() => _directory.Delete(recursive: true);
+
+    private readonly FakeSecretStore _store = new();
+
+    private RecoveryTokenProtection Protection => new(useDpapi: false, _store);
+
+    private IReadOnlyList<MultiplayerRecovery> LoadAll(string path) =>
+        MultiplayerRecoveryStore.LoadAll(path, Protection);
+
+    private MultiplayerRecovery? Load(string path) => LoadAll(path).FirstOrDefault();
+
+    private bool TrySaveAll(string path, IEnumerable<MultiplayerRecovery> recoveries) =>
+        MultiplayerRecoveryStore.TrySaveAll(path, recoveries, durable: false, Protection);
+
+    private bool TrySave(string path, MultiplayerRecovery recovery) => TrySaveAll(path, [recovery]);
+
+    private int StoredVersion()
+    {
+        using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path()));
+        return document.RootElement.GetProperty("FormatVersion").GetInt32();
+    }
 
     private MultiplayerRecovery Recovery(bool CleanExit, bool Completed) => new(
         MultiplayerRecovery.CurrentFormatVersion,

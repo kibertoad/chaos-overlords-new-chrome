@@ -108,5 +108,5 @@ public sealed class SiteSearchUiTests
         new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996,
         [
             new MatchPlayerSetup(new PlayerId(0), "PLAYER 1", PlayerController.Human, 0)
-        ], allowSparsePlayerIds: true));
+        ], MatchDeviations.Original, allowSparsePlayerIds: true));
 }
