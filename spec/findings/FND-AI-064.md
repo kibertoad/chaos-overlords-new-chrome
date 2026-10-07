@@ -79,13 +79,6 @@ cash is the hire price. Mode 0 looks for a cheap gang, mode 3 for a fighter,
 mode 4 for a gang that raises the Tech Level and researches, mode 5 for a
 stealthy one.
 
-This corrects the field names of FND-AI-008. That finding took the statistics
-block to hold Upkeep and then Combat through Martial Arts with no Tech Level
-between them, so every name it gives after Defense is the field one slot
-further on: its Control is Chaos, Heal is Control, Research is Influence,
-Stealth and Strength are Tech Level and Research, and Detect is Stealth. Its
-mode 3 lists four skills where the helper reads five fields after Combat.
-
 ## Alternatives
 
 The field names rest on FMT-DATA-002 placing `tech_level` at `0x82`, which

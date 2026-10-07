@@ -27,14 +27,6 @@ Entries by status.
 | [RULE-COMLINK-003](../../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient |
 | [RULE-COMLINK-004](../../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox |
 
-## superseded
-
-1 entries.
-
-| ID | Title |
-|---|---|
-| [FND-COMLINK-005](../../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer |
-
 ## recorded
 
 11 entries.

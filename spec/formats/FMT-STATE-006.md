@@ -9,7 +9,7 @@ byte_order: little
 size: 10
 text: false
 definition: fmt_state_006.ksy
-evidence: [FND-EVENT-001, FND-EVENT-004, FND-EVENT-005, FND-SAVE-001, EXP-TURN-010, EXP-TURN-011, EXP-TURN-014, EXP-TURN-017, EXP-TURN-033, EXP-TURN-034, EXP-TURN-035, EXP-TURN-093, EXP-TURN-097]
+evidence: [FND-EVENT-001, FND-EVENT-004, FND-EVENT-007, FND-SAVE-001, EXP-TURN-010, EXP-TURN-011, EXP-TURN-014, EXP-TURN-017, EXP-TURN-033, EXP-TURN-034, EXP-TURN-035, EXP-TURN-093, EXP-TURN-097]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002, RULE-EVENT-005]
@@ -29,9 +29,9 @@ are not saved [FND-SAVE-001].
 | `0x00` | 1 | `UINT8` | `occupied` | 1 when the record holds a report of the last resolution, 0 after the clearing before each resolution | supported | FND-EVENT-004 |
 | `0x01` | 1 | `UINT8` | `unk_01` | Padding. Neither the recorder nor the clearing writes it | supported | FND-EVENT-004 |
 | `0x02` | 2 | `INT16LE` | `report_type` | The kind of report, 0 to 9 (Enumerations) | established | FND-EVENT-001, FND-EVENT-004, EXP-TURN-010, EXP-TURN-097 |
-| `0x04` | 2 | `INT16LE` | `arg1` | First argument; its meaning depends on `report_type` (Enumerations) | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-010, EXP-TURN-097 |
-| `0x06` | 2 | `INT16LE` | `arg2` | Second argument | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-010, EXP-TURN-097 |
-| `0x08` | 2 | `INT16LE` | `arg3` | Third argument | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-010, EXP-TURN-097 |
+| `0x04` | 2 | `INT16LE` | `arg1` | First argument; its meaning depends on `report_type` (Enumerations) | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-010, EXP-TURN-097 |
+| `0x06` | 2 | `INT16LE` | `arg2` | Second argument | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-010, EXP-TURN-097 |
+| `0x08` | 2 | `INT16LE` | `arg3` | Third argument | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-010, EXP-TURN-097 |
 | `0x0A` | | | | Total size 10 | | |
 
 ## Enumerations and flags
@@ -43,16 +43,16 @@ reads them. An argument not listed is stored as 0 and never read.
 
 | Value | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|
-| 0 | `REPORT_NONE` | Never recorded. `arg1` to `arg3` are not read | supported | FND-EVENT-001, FND-EVENT-005 |
-| 1 | `REPORT_CRACKDOWN` | A Crackdown in sector `arg1` | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-010 |
-| 2 | `REPORT_CONTROL_GAINED` | The recipient took sector `arg1` from player `arg2`, -1 when it had no owner. `arg2` is not read by the panel | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-010 |
-| 3 | `REPORT_CONTROL_LOST` | The recipient lost sector `arg1`: to player `arg2` through Control, or with `arg2` 0 through a third Crackdown. `arg2` is not read by the panel | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-011, EXP-TURN-093 |
-| 4 | `REPORT_SITE_COMPLETED` | Influence completed the site in slot `arg2` of sector `arg1` | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-010 |
-| 5 | `REPORT_RESEARCH_COMPLETED` | Research completed item `arg1` | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-010 |
-| 6 | `REPORT_CASH_SHORT` | An order failed for lack of cash; `arg1` tells which (below) | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-033, EXP-TURN-034, EXP-TURN-035 |
-| 7 | `REPORT_HIRE_SECTOR_FULL` | A hire into sector `arg1` failed because the player already has 6 gangs there | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-014 |
-| 8 | `REPORT_HIRE_ROSTER_FULL` | A hire of gang definition `arg1` failed for want of a free roster slot | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-097 |
-| 9 | `REPORT_ELIMINATION` | Player `arg1` was eliminated | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-017 |
+| 0 | `REPORT_NONE` | Never recorded. `arg1` to `arg3` are not read | supported | FND-EVENT-001, FND-EVENT-007 |
+| 1 | `REPORT_CRACKDOWN` | A Crackdown in sector `arg1` | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-010 |
+| 2 | `REPORT_CONTROL_GAINED` | The recipient took sector `arg1` from player `arg2`, -1 when it had no owner. `arg2` is not read by the panel | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-010 |
+| 3 | `REPORT_CONTROL_LOST` | The recipient lost sector `arg1`: to player `arg2` through Control, or with `arg2` 0 through a third Crackdown. `arg2` is not read by the panel | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-011, EXP-TURN-093 |
+| 4 | `REPORT_SITE_COMPLETED` | Influence completed the site in slot `arg2` of sector `arg1` | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-010 |
+| 5 | `REPORT_RESEARCH_COMPLETED` | Research completed item `arg1` | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-010 |
+| 6 | `REPORT_CASH_SHORT` | An order failed for lack of cash; `arg1` tells which (below) | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-033, EXP-TURN-034, EXP-TURN-035 |
+| 7 | `REPORT_HIRE_SECTOR_FULL` | A hire into sector `arg1` failed because the player already has 6 gangs there | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-014 |
+| 8 | `REPORT_HIRE_ROSTER_FULL` | A hire of gang definition `arg1` failed for want of a free roster slot | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-097 |
+| 9 | `REPORT_ELIMINATION` | Player `arg1` was eliminated | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-017 |
 
 ### arg1
 
@@ -61,9 +61,9 @@ Only for `REPORT_CASH_SHORT`; for other types `arg1` holds the value the
 
 | Value | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|
-| 1 | `CASH_SHORT_BRIBE` | A Bribe by a gang in sector `arg2` | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-033 |
-| 2 | `CASH_SHORT_EQUIP` | An Equip by a gang in sector `arg2`; `arg3` is the gang's byte at FMT-STATE-001 offset `0x01` (`definition`) | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-034 |
-| 4 | `CASH_SHORT_HIRE` | A hire of gang definition `arg2` | established | FND-EVENT-004, FND-EVENT-005, EXP-TURN-035 |
+| 1 | `CASH_SHORT_BRIBE` | A Bribe by a gang in sector `arg2` | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-033 |
+| 2 | `CASH_SHORT_EQUIP` | An Equip by a gang in sector `arg2`; `arg3` is the gang's byte at FMT-STATE-001 offset `0x01` (`definition`) | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-034 |
+| 4 | `CASH_SHORT_HIRE` | A hire of gang definition `arg2` | established | FND-EVENT-004, FND-EVENT-007, EXP-TURN-035 |
 
 ## Differences between builds
 
@@ -80,7 +80,7 @@ type 3 through Control and EXP-TURN-093 through a third Crackdown,
 EXP-TURN-014 type 7, EXP-TURN-017 type 9, EXP-TURN-033 to EXP-TURN-035 type 6
 with `arg1` 1, 2 and 4, and EXP-TURN-097 to EXP-TURN-099 type 8. Those rows and
 values are `established`. No run holds type 0, which the recorder never
-writes, so that value rests on FND-EVENT-001 and FND-EVENT-005 and stays
+writes, so that value rests on FND-EVENT-001 and FND-EVENT-007 and stays
 `supported`.
 
 The probe does not read `occupied` or `unk_01`, so no run reaches them and
@@ -95,7 +95,7 @@ layout.
 - No run reads `occupied`: that the clearing before each resolution sets it to
   0 and the recorder to 1 rests on FND-EVENT-004.
 - No run holds `report_type` 0; that the recorder never writes it rests on
-  FND-EVENT-001 and FND-EVENT-005.
+  FND-EVENT-001 and FND-EVENT-007.
 - `unk_01` holds whatever the running game or a loaded save left there; no
   code reads it.
 - Whether the network resolution paths `fn_0046A7CB` and `fn_0040CED0` write

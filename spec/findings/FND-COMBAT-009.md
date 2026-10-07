@@ -53,7 +53,7 @@ Combat Results handler `fn_00451F80`, each after the page renderer
 `fn_00453087` (FND-COMBAT-007) or a restore of the panel from surface 7. It
 does nothing for -1. For `n` from 0 to 4 it copies the 34-by-34 cell
 `(120,171)` of surface 6 with the keyed mode 1 of `fn_00427864`
-(FND-PLATFORM-008) to the screen at `(305, 139 + 36 * n)`, one pixel outside
+(FND-PLATFORM-015) to the screen at `(305, 139 + 36 * n)`, one pixel outside
 the opponent portrait `(306, 140 + 36 * n, 32, 32)`.
 
 ## Interpretation

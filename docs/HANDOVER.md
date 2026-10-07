@@ -63,8 +63,8 @@ used by the shared template. What the original does now lives only in
 ### What exists
 
 - `spec/`: one build (BLD-GOG-EN-1.1, every file hashed with xxh3-128), three
-  sources, 334 findings (332 static and two dynamic from window captures;
-  FND-AI-030 and FND-AI-031 are superseded), no experiments, 24 formats (23 binary ones with Kaitai
+  sources, 334 findings (332 static and two dynamic from window captures),
+  no experiments, 24 formats (23 binary ones with Kaitai
   definitions that all compile), 159 rules in pseudocode, 16 bugs and 39
   screens across 47 areas, with the glossary and the generated indexes in
   `spec/index/`. All 464 game functions of FND-EXE-004 are cited. Only static
@@ -865,7 +865,7 @@ same goal.
 `tools/Rechaos.OriginalProbe` runs the original under a debugger, records
 every `roll`, presses Done, can write orders for the human's gang, and dumps
 the state; `OriginalNewGameExperimentTests` replays each run and compares every
-roll and the end state. [VALIDATION.md](VALIDATION.md) gives the commands.
+roll and the end state. [experiments.md](validation/experiments.md) gives the commands.
 EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-011 are recorded,
 up to twenty-five turns, and every run replays exactly. The probe runs the
 original silent unless `--sound` is given.
@@ -904,7 +904,7 @@ original silent unless `--sound` is given.
   or `digest` records each element's digest in the fixture, and
   `ScreenCaptureTests` renders the replayed endpoint with `--reference-frame`
   and compares each element
-  ([VALIDATION.md](VALIDATION.md#screens-against-captures-of-the-original)).
+  ([screen-captures.md](validation/screen-captures.md)).
   The reference frame shows only the city at a planning entry with no panel
   open, and only SCR-UI-003 and SCR-HIRE-002 have element files. EXP-TURN-041's
   capture of the final view differs in the marker, the Done light and the

@@ -83,4 +83,17 @@ public sealed class EquipmentCommandListLayoutTests
         Assert.Equal(new Rectangle(0, 441, 6, 7), EquipmentCommandLayout.ChosenRowGlyphSource(' '));
         Assert.Equal(new Color(0, 255, 0), EquipmentCommandLayout.ChosenRowFrame);
     }
+
+    // FND-EQUIP-011, EXP-UI-041: the Equip row's text ends in its price, the tens digit left a
+    // space when it is 0.
+    [Theory]
+    [InlineData(1, " 1")]
+    [InlineData(12, "12")]
+    [InlineData(0, " 0")]
+    public void AnEquipRowEndsInItsPrice(int price, string end)
+    {
+        var text = EquipmentCommandLayout.ChosenRowText(new string('A', 40), price);
+        Assert.Equal(30, text.Length);
+        Assert.Equal(new string('A', 28) + end, text);
+    }
 }

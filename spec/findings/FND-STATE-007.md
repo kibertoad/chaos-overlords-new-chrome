@@ -34,7 +34,7 @@ environment: null
 
 Every data reference that the 464 game functions make (FND-EXE-004) was listed
 and grouped by address. This finding covers the regions that hold the state of
-a match and of the computer players; FND-STATE-008 covers the interface,
+a match and of the computer players; FND-STATE-012 covers the interface,
 platform and network globals, and FND-STATE-009 the initialized data and the
 constants. Each row gives the region, its element, the functions that write
 it, the functions that only read it, and what it is, with the finding that

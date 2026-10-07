@@ -79,5 +79,3 @@ Disassemble `0x00435A34..0x00435A8B`: the stores of 10 at `0x0048A258` and
 `0x00498DAF`, the pushes `0x5A`, the player, 0 and 0 before `0x00402D70`, the
 `ADD EAX,0x40`, and the three pushes before `0x00408642`, the last of them the
 acting slot. Compare with the selector's own `0x5A` call at `0x00408A6C`.
-FND-AI-038 recorded the same handler with the acting gang's sector in the
-mode.

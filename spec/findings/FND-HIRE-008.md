@@ -93,7 +93,7 @@ Rectangles are written `(x1,y1)-(x2,y2)`, screen coordinates, half-open.
 - `fn_004078B8` (33 bytes) stores -2 in the order byte `0x004A27C8 + player *
   3 + slot` for its two arguments and does nothing else. Its ten calls are all
   in the computer players' planner `fn_00458FA0`, each passing the slot that
-  selector `0x8E` of `fn_00402D70` returns (FND-AI-011).
+  selector `0x8E` of `fn_00402D70` returns (FND-AI-065).
 
 ## Interpretation
 

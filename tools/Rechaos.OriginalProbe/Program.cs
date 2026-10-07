@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 using Rechaos.OriginalProbe;
 
 // Runs the original game under a debugger to record what it does, for experiments and dynamic
-// findings (docs/VALIDATION.md, "The probe"). A run's output holds the original's memory, so it is written
+// findings (docs/validation/experiments.md, "The probe"). A run's output holds the original's memory, so it is written
 // outside the repository; `extract` takes only sanitized numbers from it for a fixture.
 if (!OperatingSystem.IsWindows())
 {
@@ -131,7 +131,7 @@ static int NewGame(string[] args)
         throw new ArgumentException("--equip-lists and --attack-lists record the first --humans slot; list the lowest slot first.");
 
     // --executable runs a copy from another path in the game directory, which escapes the
-    // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
+    // compatibility layers the registry ties to the installed path (docs/validation/experiments.md).
     var executable = Option(args, "--executable") ?? Path.Combine(game, "Chaos Overlords.exe");
     var hash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(executable)));
     if (hash != OriginalAddresses.ExecutableSha256)
@@ -354,8 +354,10 @@ static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
             "dbl" when numbers is [>= 0 and < 640, >= 0 and < 480] =>
                 new ProbeOrderStep("dbl", -1, numbers[0], numbers[1], 0),
             "back" or "exit" or "warn" when numbers is [] => new ProbeOrderStep(parts[0], -1, 0, 0, 0),
+            "down" or "move" or "up" or "rdown" or "rup" when numbers is [>= 0 and < 640, >= 0 and < 480] =>
+                new ProbeOrderStep(parts[0], -1, numbers[0], numbers[1], 0),
             "wait" when numbers is [> 0] => new ProbeOrderStep("wait", -1, 0, 0, numbers[0]),
-            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn, wait:ms, type:TEXT, keys:TOKENS or shot:SCR-ID+...: {entry}"),
+            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn, wait:ms, type:TEXT, keys:TOKENS, down:x:y, move:x:y, up:x:y, rdown:x:y, rup:x:y or shot:SCR-ID+...: {entry}"),
         };
     }).ToArray();
 

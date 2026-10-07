@@ -9,9 +9,11 @@
 //                                      .github/workflows/nightly-generated.yml: the check neither
 //                                      writes nor compares them, and fails a change that edits one
 //   --images 0x00400000..0x004C9000    the extent of the original's executable image (FND-DATA-005)
+//   --squashed OLD=NEW,...             the superseded entries squashed into their replacements, from
+//                                      tools/squashed.txt while it exists
 //
 // Every other argument goes to the checker unchanged, so `--check`, `--no-ksy`, `--base <ref>` and
-// `--record-validation <builds>` work as the checker documents them. Without `--base`, a run on
+// `--record-validation <builds>` work as the checker documents them. Without `--base`, a CI run on
 // the base branch itself compares with what the push replaced or with the parent commit, since
 // the checker's own default (the fork point) is HEAD there.
 //
@@ -78,6 +80,8 @@ const args = [
   // The extent of the original's executable image, which FND-DATA-005 records.
   "--images",
   "0x00400000..0x004C9000",
+  // tools/squashed.txt lists the superseded entries squashed into their replacements.
+  ...squashed(),
   ...(forwarded.includes("--root") ? [] : ["--root", repositoryRoot]),
   // In CI the Kaitai definitions always compile (AGENTS.md), and a pull request that deletes a
   // spec ID or area that exists on its base always fails.
@@ -88,11 +92,32 @@ const args = [
 ];
 
 /**
- * Without --base the checker compares with where HEAD forked from the base branch. When HEAD is on
+ * The --squashed option from tools/squashed.txt: one OLD=NEW line per squashed entry, `#` comments
+ * and blank lines ignored. The checker fails a code file that names a squashed ID, and of the files
+ * in tools/ it reads only .cs, .ts, .mjs, .js, .ps1, .fs, .md and .json, so the list is a .txt file
+ * and not part of this script. Read from the tree being checked; nothing when the file is absent.
+ */
+function squashed() {
+  const file = join(root, "tools", "squashed.txt");
+  if (!existsSync(file)) return [];
+  const items = readFileSync(file, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/#.*/, "").trim())
+    .filter(Boolean);
+  return items.length > 0 ? ["--squashed", items.join(",")] : [];
+}
+
+/**
+ * Without --base the checker compares with where HEAD forked from the base branch. When CI runs on
  * the base branch itself (a push to main, a scheduled or dispatched run of main) that fork point is
  * HEAD, and the tree would be compared with itself. Returns --base with what the push replaced
  * (`before` in the push event) or, failing that, the parent commit; otherwise nothing, and the
  * checker finds the fork point on its own.
+ *
+ * Outside CI (the pre-commit hook, a run by hand) the tree checked is the staged or working tree on
+ * top of HEAD, so HEAD is the right base even when it is on the base branch. The parent would count
+ * HEAD's own changes as the tree's: on top of the nightly job's commit, every regenerated file
+ * would read as a branch's edit.
  */
 function baseOnTheBaseBranch(dir) {
   const git = (...gitArgs) =>
@@ -114,7 +139,7 @@ function baseOnTheBaseBranch(dir) {
   } catch {
     return []; // no fork point: the checker reports or skips the comparison itself
   }
-  if (!onTarget) return [];
+  if (!onTarget || !process.env.CI) return [];
   let before = null;
   if (process.env.GITHUB_EVENT_NAME === "push" && process.env.GITHUB_EVENT_PATH) {
     try {

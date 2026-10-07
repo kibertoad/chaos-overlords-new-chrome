@@ -35,6 +35,8 @@ internal static partial class Native
     public const uint WmLButtonDown = 0x0201;
     public const uint WmLButtonUp = 0x0202;
     public const uint WmLButtonDblClk = 0x0203;
+    public const uint WmRButtonDown = 0x0204;
+    public const uint WmRButtonUp = 0x0205;
     public const uint MfByCommand = 0x0000;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

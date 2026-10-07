@@ -12,6 +12,10 @@ public sealed partial class ChaosGame
 {
     private CommandPanelFaceState _commandPanelFace;
     private CommandPanelButton? _pressedCommandPanelButton;
+
+    // FND-UI-062, EXP-UI-042: once the pointer has left a held Cancel, the helper has copied the
+    // plain face over the panel's own, and it stays until the panel is drawn again.
+    private bool _commandCancelFacePlain;
     private readonly IndexedDoubleClickTracker _commandPanelClicks = new();
 
     // The order the open picker gives and the gang it is for, kept apart from its targets so the
@@ -69,8 +73,13 @@ public sealed partial class ChaosGame
     {
         var button = _pressedCommandPanelButton;
         CancelCommandPanelButton();
-        if (button is not { } pressed || !CommandPanelOpen
-            || !CommandPanelFaces.Hit(pressed).Contains(point)) return;
+        if (button is not { } pressed || !CommandPanelOpen) return;
+        if (!CommandPanelFaces.Hit(pressed).Contains(point))
+        {
+            // FND-UI-062: a release off the face leaves the plain face the helper copied.
+            LeaveCommandPanelFacePlain(pressed);
+            return;
+        }
         if (pressed == CommandPanelButton.Cancel) CancelCommandPanel();
         else ConfirmCommandPanel(pointerButton: true);
     }
@@ -150,11 +159,24 @@ public sealed partial class ChaosGame
     /// <summary>A press outside the panel is refused with slot 4 and leaves it open.</summary>
     private void RejectOutsideCommandPanel() => RejectInput("CLICK INSIDE THE PANEL");
 
+    /// <summary>
+    /// FND-UI-062: the plain face of a held button stays once the pointer has left it: for the
+    /// confirm face that is the enabled image, for Cancel the plain Cancel image.
+    /// </summary>
+    private void LeaveCommandPanelFacePlain(CommandPanelButton button)
+    {
+        if (button == CommandPanelButton.Confirm) _commandPanelFace = CommandPanelFaceState.Enabled;
+        else _commandCancelFacePlain = true;
+    }
+
     private void DrawCommandPanelFaces(SpriteBatch batch)
     {
         if (UiSprites is null) return;
         if (CommandPanelFaces.Source(_commandPanelFace) is { } source)
             batch.Draw(UiSprites, CommandPanelFaces.Face(CommandPanelButton.Confirm), source, Color.White);
+        if (_commandCancelFacePlain)
+            batch.Draw(UiSprites, CommandPanelFaces.Face(CommandPanelButton.Cancel),
+                HeldButtonFaces.Plain(HeldButtonKind.Cancel), Color.White);
         if (_pressedCommandPanelButton is { } pressed && _hoverPoint is { } hover
             && CommandPanelFaces.Hit(pressed).Contains(hover))
             batch.Draw(UiSprites, CommandPanelFaces.Face(pressed),

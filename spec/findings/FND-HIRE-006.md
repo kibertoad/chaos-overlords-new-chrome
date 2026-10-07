@@ -71,7 +71,7 @@ sector count has passed:
 ## Interpretation
 
 The hire price is the field at `+0x7A` of the gang definition (FMT-DATA-002),
-the one the computer players also compare with cash (FND-AI-008). A gang whose
+the one the computer players also compare with cash (FND-AI-064). A gang whose
 price is 0 is hired whatever the player's cash, even in debt; any other price
 fails only when it is greater than cash, so exact cash is enough. The shipped
 `DATA/Gangs` has such a zero-price definition inside the offered range 1 to 89,
