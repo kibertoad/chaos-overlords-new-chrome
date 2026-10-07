@@ -63,9 +63,9 @@ that closing the Search panel makes left it off the map.
 
 ## Results
 
-`TheCityKeepsTheOriginalsGangMarkers` compares the run as in EXP-UI-004, with
-the Search panel's Done drawing the whole map again in the rebuild. The maps
-are the same after every step.
+A test of the rebuild compares the run as in EXP-UI-004, with the Search panel's
+Done drawing the whole map again in the rebuild. The maps are the same after
+every step.
 
 ## Conclusion
 

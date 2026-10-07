@@ -4,7 +4,7 @@ title: A new city's sector Income comes from a random density field, and its sta
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CITY-001, FND-RNG-005, EXP-SETUP-001]
+evidence: [FND-CITY-001, FND-RNG-005, EXP-SETUP-001, FND-CONTROL-001, FND-PLATFORM-003, FND-UI-035]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-002]

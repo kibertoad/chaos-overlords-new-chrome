@@ -72,13 +72,12 @@ The captures show:
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the captures as for
-EXP-UI-006. The rebuild's reference frame closes Last Turn Events as an Exit
-press after the first page does, so the light stays lit only when another
-report is unseen; here the human's one report is the Crackdown in sector 19.
-Leaving out the cash row (DEV-UI-006) and the Tolerance value (DEV-UI-007),
-every element of the four captures matches.
+A test of the rebuild compares the captures as for EXP-UI-006. The rebuild's
+reference frame closes Last Turn Events as an Exit press after the first page
+does, so the light stays lit only when another report is unseen; here the
+human's one report is the Crackdown in sector 19. Leaving out the cash row
+(DEV-UI-006) and the Tolerance value (DEV-UI-007), every element of the four
+captures matches.
 
 ## Conclusion
 

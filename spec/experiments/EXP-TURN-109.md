@@ -56,14 +56,14 @@ held the item number instead of the sector, influenced the site.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches
-the same state and planning records. In the replay, at the planning pass of
-turn 10 the gang stands in sector 12, its focus names sector 12, sector 12
-is the best research sector the handler finds, and one of its Research sites
-is unfinished. With the focus test skipped in that case, so that the gang
-influences the unfinished site, the replay parts from the original at call
-2146, a roll of the dice whose bound differs.
+A test of the rebuild replays the run. The rebuild makes the same calls with
+the same bounds and results and reaches the same state and planning records.
+In the replay, at the planning pass of turn 10 the gang stands in sector 12,
+its focus names sector 12, sector 12 is the best research sector the handler
+finds, and one of its Research sites is unfinished. With the focus test
+skipped in that case, so that the gang influences the unfinished site, the
+replay parts from the original at call 2146, a roll of the dice whose bound
+differs.
 
 ## Conclusion
 

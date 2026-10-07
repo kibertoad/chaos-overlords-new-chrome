@@ -53,13 +53,11 @@ players 1 to 5 stay 0 throughout.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` reaches the same state
-as the original at the dump. `TheSearchPanelChangesTheOriginalsFilters` in
-`OriginalNewGameExperimentTests.Presentation.cs` passes each recorded click to
-the rebuild: the console's hit test opens Search at the first point, and the
-Search panel's hit test and its press handling, starting from an empty
-selection, give the same table after every press and the same open or closed
-panel.
+A test of the rebuild reaches the same state as the original at the dump.
+Another test passes each recorded click to the rebuild: the console's hit test
+opens Search at the first point, and the Search panel's hit test and its press
+handling, starting from an empty selection, give the same table after every
+press and the same open or closed panel.
 
 ## Conclusion
 
