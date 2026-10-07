@@ -132,12 +132,13 @@ public sealed partial class ScreenCaptureTests
         var departures = Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "deviations"), "DEV-*.md")
             .ToDictionary(
                 path => Path.GetFileNameWithoutExtension(path),
-                path => DeviationDeparture().Match(File.ReadAllText(path).Replace("\r\n", "\n")).Groups["from"].Value);
+                path => DeviationDeparture().Match(File.ReadAllText(path).Replace("\r\n", "\n")));
         foreach (var (screen, masks) in ScreenCaptureMasks.ByScreen)
         foreach (var mask in masks)
         {
-            Assert.True(departures.TryGetValue(mask.Deviation, out var from), $"{mask.Deviation} is not in deviations/.");
-            Assert.Contains(screen, from);
+            Assert.True(departures.TryGetValue(mask.Deviation, out var departure), $"{mask.Deviation} is not in deviations/.");
+            Assert.True(departure.Success, $"deviations/{mask.Deviation}.md has no Departs from item.");
+            Assert.Contains(screen, departure.Groups["from"].Value);
         }
     }
 
