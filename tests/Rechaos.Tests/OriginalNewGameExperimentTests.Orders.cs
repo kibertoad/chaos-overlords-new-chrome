@@ -35,7 +35,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheOrderMenusGiveTheOriginalsOrders(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var player = match.FindPlayer(human)!;
         int? sector = null;

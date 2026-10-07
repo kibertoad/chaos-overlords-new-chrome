@@ -64,11 +64,9 @@ hourglass on were made while the hourglass was the last shape selected.
 
 ## Results
 
-`TheHourglassCoversTheWorkBetweenThePlanningEntries` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Pointer.cs` checks these
-observations from the fixture and checks that, at the same points of the
-replay, the rebuild shows the arrow at the human's planning entry and the
-hourglass from the Done press on.
+A test of the rebuild checks these observations from the fixture and checks
+that, at the same points of the replay, the rebuild shows the arrow at the
+human's planning entry and the hourglass from the Done press on.
 
 ## Conclusion
 

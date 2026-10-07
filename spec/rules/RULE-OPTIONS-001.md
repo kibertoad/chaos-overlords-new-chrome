@@ -4,7 +4,7 @@ title: Reading the options from the registry at startup
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OPTIONS-001, FND-OPTIONS-003, FND-RNG-001, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-OPTIONS-001, FND-OPTIONS-003, FND-RNG-001, FND-EXE-004, SRC-MANUAL-GOG, FND-AI-004, FND-AUDIO-001, FND-AUDIO-002, FND-OPTIONS-002, FND-TIMER-001, FND-UI-011]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002]
