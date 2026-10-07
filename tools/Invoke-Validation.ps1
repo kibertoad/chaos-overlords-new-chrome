@@ -154,10 +154,14 @@ try {
     if (Get-Command -Name 'node' -CommandType Application -ErrorAction SilentlyContinue) {
         & node (Join-Path $PSScriptRoot 'update-doc-indexes.mjs') --check
         $documentationCheckFailed = $LASTEXITCODE -ne 0
-        # The spec, PARITY.md and DEVIATIONS.md against the documentation standard's checks.
-        & node (Join-Path $PSScriptRoot 'check-spec.mjs') --check
+        # spec/, parity/ and deviations/ against the documentation standard's checks, run by the
+        # shared checker that `pnpm install` at the repository root installs.
+        & node (Join-Path $PSScriptRoot 'check-documentation.mjs') --check
         $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
-        # The function index spec/index/functions.md, generated from FND-EXE-004 and the entries' citations.
+        # No spec line names a file of the rebuild (until the shared checker's --rebuild is released).
+        & node (Join-Path $PSScriptRoot 'check-rebuild-paths.mjs')
+        $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
+        # The function index docs/FUNCTION-INDEX.md, generated from FND-EXE-004 and the entries' citations.
         & node (Join-Path $PSScriptRoot 'spec-coverage.mjs') --check
         $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
     }
@@ -250,7 +254,7 @@ try {
     }
 
     if ($documentationCheckFailed) {
-        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs, node tools/check-spec.mjs and node tools/spec-coverage.mjs, and fix what they report.'
+        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs, node tools/check-documentation.mjs, node tools/check-rebuild-paths.mjs and node tools/spec-coverage.mjs, and fix what they report.'
     }
 }
 finally {

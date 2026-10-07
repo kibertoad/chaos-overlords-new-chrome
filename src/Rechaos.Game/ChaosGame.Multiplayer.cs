@@ -12,30 +12,8 @@ namespace Rechaos.Game;
 public sealed partial class ChaosGame
 {
     private static readonly TimeSpan LobbyPollInterval = TimeSpan.FromSeconds(1);
-    /// <summary>
-    /// How long every seat may be ready with no sealed turn arriving before the client goes and
-    /// looks for itself.
-    /// </summary>
-    /// <remarks>
-    /// It has to sit ABOVE the stream's own idle detector plus its first reconnect, or it fires
-    /// first and pre-empts the recovery that was already on its way. The server seals in the same
-    /// request that completes the roster, so the ready `PUT` succeeds on a fresh connection while
-    /// `turn.sealed` goes out on a stream a suspended laptop or an expired NAT entry has silently
-    /// killed; the stream notices at <see cref="MatchEventStream.DefaultIdleTimeout"/>, fifty
-    /// seconds, and comes back from its `Last-Event-ID`. At thirty seconds this watchdog was tearing
-    /// the session down twenty seconds before the mechanism that fixes it even woke up.
-    /// <para>
-    /// The margin covers the stream's detector only while the pump is reading: time a handler spends
-    /// on an event is not silence, so a dead socket found during a long handler — a desync repair
-    /// waiting on its reports — can outlast this grace. Losing that race costs a resync and nothing
-    /// more: <see cref="MultiplayerMatchSession.RequestResync"/> also ends that wait.
-    /// </para>
-    /// </remarks>
-    private static readonly TimeSpan OnlineResolutionGrace =
-        MatchEventStream.DefaultIdleTimeout + TimeSpan.FromSeconds(25);
-
     /// <summary>Asks the server again about a turn whose clock ran out; see <see cref="CheckOnlineOverdueSeal"/>.</summary>
-    private readonly OnlineOverdueSealWatchdog _onlineOverdueSeal = new(OnlineResolutionGrace);
+    private readonly OnlineOverdueSealWatchdog _onlineOverdueSeal = new(OnlineResolutionWatchdog.Grace);
 
     private readonly MultiplayerUiState _online = new();
     /// <summary>
