@@ -4,7 +4,7 @@
 
 Entries by status.
 
-## established
+## supported
 
 1 entries.
 
@@ -21,18 +21,10 @@ Entries by status.
 | [FND-HIDE-001](../../findings/FND-HIDE-001.md) | A gang is hidden exactly while its active action is Hide, with no separate hidden flag |
 | [FND-HIDE-002](../../findings/FND-HIDE-002.md) | Four places in the resolver read whether a gang hides, and the Hide case itself only counts |
 
-## Established on unreproduced evidence
-
-Entries whose status is established and whose findings and experiments are all only recorded.
-
-| ID | Title |
-|---|---|
-| [RULE-HIDE-001](../../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player |
-
 ## Open questions
 
 Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-HIDE-001](../../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player | established |
+| [RULE-HIDE-001](../../rules/RULE-HIDE-001.md) | A gang hides while its action is Hide, and each Hide carried out is counted for its player | supported |

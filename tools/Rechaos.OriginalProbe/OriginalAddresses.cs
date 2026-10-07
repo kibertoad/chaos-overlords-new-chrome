@@ -7,6 +7,12 @@ internal static class OriginalAddresses
     public const uint GangRecords = 0x00498DA8;
     public const int PlayerGangStride = 0xA20;
     public const int GangRecordSize = 0x20;
+    public const int GangForceOffset = 3;
+
+    // FMT-STATE-002: 64 sector records of 0x24 bytes, base_tolerance at +2.
+    public const uint SectorRecords = 0x004A08E8;
+    public const int SectorRecordSize = 0x24;
+    public const int SectorBaseToleranceOffset = 2;
 
     public const string ExecutableSha256 = "a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89";
 
@@ -27,9 +33,10 @@ internal static class OriginalAddresses
     // FND-PLATFORM-009: the depth returned by display setup, used to choose the image set.
     public const uint DisplayDepth = 0x0048787C;
 
-    // FND-PLATFORM-014: the SetBkColor call of the keyed mask compositor that passes the 16-bit
-    // key RGB(255,252,255), which a 32-bit surface never holds.
-    public const uint KeyColourCall = 0x00427C84;
+    // FND-PLATFORM-015: the immediate operand of the instruction at 0x00427A23, which stores the
+    // 16-bit key RGB(255,252,255) for the keyed mask compositor. A 32-bit surface never holds
+    // that colour (FND-PLATFORM-014).
+    public const uint SixteenBitKeyImmediate = 0x00427A26;
     public const int SixteenBitWhiteKey = 0x00FFFCFF;
     public const int ThirtyTwoBitWhite = 0x00FFFFFF;
 
@@ -386,6 +393,19 @@ internal static class OriginalAddresses
     public const uint RosterTypes = 0x004AB638;
     public const uint RosterPortraits = 0x004A5F00;
     public const uint RosterNames = 0x004A2588;
+
+    // FND-SETUP-005, FND-UI-022: the name band of card 0, whose origin is (397, 94), opens dialog
+    // 139, whose edit control is item 1007.
+    public const int NameBandX = 397 + 32;
+    public const int NameBandY = 94 + 62;
+    public const int NameEditControl = 1007;
+
+    // FND-UI-064: in the window procedure's WM_KEYDOWN branch, the instruction after the call of
+    // GetAsyncKeyState(VK_SHIFT), and the jump both translations take once the event is stored.
+    // FND-STATE-008: the input event record, type then the character and the key.
+    public const uint ShiftTested = 0x0045CA62;
+    public const uint KeyEventStored = 0x0045CC35;
+    public const uint InputEvent = 0x00498360;
     public const int RosterNameLength = 12;
     public const byte EmptyPortrait = 15;
 
