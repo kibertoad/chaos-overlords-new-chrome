@@ -7,7 +7,7 @@ namespace Rechaos.Game;
 public sealed partial class ChaosGame
 {
     private static readonly Rectangle HandoffReady = HandoffLayout.Ready;
-    private Texture2D? _handoffPanel;
+    private Texture2D? HandoffPanel => Texture("PX00132.bmp");
     private readonly PlanningSelectionMemory _planningSelections = new();
 
     private void AdvanceTurn()
@@ -274,7 +274,7 @@ public sealed partial class ChaosGame
     {
         batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
         var panel = HandoffLayout.Panel;
-        if (_handoffPanel is not null) batch.Draw(_handoffPanel, panel, Color.White);
+        if (HandoffPanel is not null) batch.Draw(HandoffPanel, panel, Color.White);
         else batch.Draw(pixel, panel, new Color(24, 37, 39));
         var playerId = _eliminationHandoffPlayer ?? ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
@@ -287,12 +287,12 @@ public sealed partial class ChaosGame
         var name = player.Setup.Name;
         font.Copy(batch, name[..Math.Min(name.Length, LocalSetupPolicy.MaximumPlayerNameCharacters)],
             HandoffLayout.Name, OriginalFontLayout.PlainStrip);
-        if (_uiSprites is not null)
+        if (UiSprites is not null)
         {
-            batch.Draw(_uiSprites, HandoffLayout.Portrait,
+            batch.Draw(UiSprites, HandoffLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
             if (_handoffReadyHeld && _hoverPoint is { } hover && HandoffLayout.Ready.Contains(hover))
-                batch.Draw(_uiSprites, HandoffLayout.Ready, HandoffLayout.ReadyPressedSource, Color.White);
+                batch.Draw(UiSprites, HandoffLayout.Ready, HandoffLayout.ReadyPressedSource, Color.White);
         }
         if (_session is null) return;
         // Online the card is the break between turns rather than a privacy gate, and the server's

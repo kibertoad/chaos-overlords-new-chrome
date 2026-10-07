@@ -45,51 +45,47 @@ public sealed partial class ChaosGame
     private readonly RollingAutoSave _autoSave;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
-    private Texture2D? _titleBackground;
-    private Texture2D? _setupBackground;
-    private Texture2D? _setupControls;
-    private Texture2D? _setupKeyedControls;
-    private Texture2D? _cityBackground;
-    private readonly Texture2D?[] _cityOwnershipLayers = new Texture2D?[MatchLimits.PlayerCount + 1];
-    private Texture2D? _gameInfoBackground;
-    private Texture2D? _idleGangWarningBackground;
-    private Texture2D? _cityFinanceBackground;
-    private Texture2D? _sectorFinanceBackground;
-    private Texture2D? _rankingBackground;
-    private Texture2D? _gangInfoBackground;
-    private Texture2D? _sectorGangsBackground;
-    private Texture2D? _gangDefinitionInfoBackground;
-    private Texture2D? _siteInfoBackground;
-    private Texture2D? _itemInfoBackground;
-    private Texture2D? _combatBackground;
-    private Texture2D? _combatResultsBackground;
-    private Texture2D? _lastTurnEventsBackground;
+    private Texture2D? TitleBackground => Texture("PX00130.bmp");
+    private Texture2D? SetupBackground => Texture("PX00143.bmp");
+    private Texture2D? SetupControls => Texture("PX00140.bmp");
+    private Texture2D? SetupKeyedControls => Texture("PX00140.bmp", transparentWhite: true);
+    private Texture2D? CityBackground => Texture("PX00128.bmp");
+    private Texture2D? GameInfoBackground => Texture("PX05021.bmp");
+    private Texture2D? IdleGangWarningBackground => Texture("PX05020.bmp");
+    private Texture2D? CityFinanceBackground => Texture("PX05008.bmp");
+    private Texture2D? SectorFinanceBackground => Texture("PX05019.bmp");
+    private Texture2D? RankingBackground => Texture("PX05011.bmp");
+    private Texture2D? GangInfoBackground => Texture("PX05000.bmp");
+    private Texture2D? SectorGangsBackground => Texture("PX05009.bmp");
+    private Texture2D? GangDefinitionInfoBackground => Texture("PX05022.bmp");
+    private Texture2D? SiteInfoBackground => Texture("PX05002.bmp");
+    private Texture2D? ItemInfoBackground => Texture("PX05001.bmp");
+    private Texture2D? CombatBackground => Texture("PX05014.bmp");
+    private Texture2D? CombatResultsBackground => Texture("PX05012.bmp");
+    private Texture2D? LastTurnEventsBackground => Texture("PX05010.bmp");
     private Texture2D? _eventSiteDitherOverlay;
-    private Texture2D? _comlinkViewBackground;
-    private Texture2D? _comlinkSendBackground;
-    private readonly Texture2D?[] _lastTurnEventArtwork = new Texture2D?[10];
-    private Texture2D? _hireComparisonBackground;
-    private Texture2D? _influenceBackground;
-    private Texture2D? _targetAcquisitionBackground;
-    private Texture2D? _equipmentPurchaseBackground;
-    private Texture2D? _equipmentResearchBackground;
-    private Texture2D? _equipmentSellBackground;
-    private Texture2D? _equipmentGiveBackground;
-    private Texture2D? _movementBackground;
-    private Texture2D? _siteSearchBackground;
-    private Texture2D? _siteMarkerSprites;
-    private Texture2D? _sitePortraits;
-    private Texture2D? _gangPortraits;
-    private Texture2D? _itemPortraits;
-    private readonly Texture2D?[] _itemRotationTextures = new Texture2D?[53];
-    private Texture2D? _policeSprites;
-    private Texture2D? _uiSprites;
-    private Texture2D? _uiKeyedSprites;
+    private Texture2D? ComlinkViewBackground => Texture("PX05017.bmp");
+    private Texture2D? ComlinkSendBackground => Texture("PX05018.bmp");
+    private Texture2D? HireComparisonBackground => Texture("PX05016.bmp");
+    private Texture2D? InfluenceBackground => Texture("PX05005.bmp");
+    private Texture2D? TargetAcquisitionBackground => Texture("PX05003.bmp");
+    private Texture2D? EquipmentPurchaseBackground => Texture("PX05004.bmp");
+    private Texture2D? EquipmentResearchBackground => Texture("PX05007.bmp");
+    private Texture2D? EquipmentSellBackground => Texture("PX05013.bmp");
+    private Texture2D? EquipmentGiveBackground => Texture("PX05015.bmp");
+    private Texture2D? MovementBackground => Texture("PX05006.bmp");
+    private Texture2D? SiteSearchBackground => Texture("PX05024.bmp");
+    private Texture2D? SiteMarkerSprites => Texture("PX00150.bmp", transparentWhite: true);
+    private Texture2D? SitePortraits => Texture("PX02000.bmp");
+    private Texture2D? GangPortraits => Texture("PX03000.bmp");
+    private Texture2D? ItemPortraits => Texture("PX04999.bmp");
+    private Texture2D? PoliceSprites => Texture("PX00300.bmp");
+    private Texture2D? UiSprites => Texture("PX00129.bmp");
+    private Texture2D? UiKeyedSprites => Texture("PX00129.bmp", transparentWhite: true);
     private PixelFont? _font;
     /// <summary>The effects the asset pack loads into, unless a test plays them elsewhere.</summary>
     private readonly NativeSoundEffects? _nativeSoundEffects;
     private readonly ISoundEffectOutput _soundEffects;
-    private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
     private readonly DetailedCombatExit _combatExit = new();
     private readonly PanelSlideTransition _panelSlideTransition = new();
@@ -377,59 +373,10 @@ public sealed partial class ChaosGame
         _eventSiteDitherOverlay = LastTurnEventPresentation.CreateEventSiteDitherOverlay(
             GraphicsDevice);
 
-        _titleBackground = LoadTexture("PX00130.bmp");
-        _setupBackground = LoadTexture("PX00143.bmp");
-        _setupControls = LoadTexture("PX00140.bmp");
-        _setupKeyedControls = LoadTexture("PX00140.bmp", transparentWhite: true);
-        _cityBackground = LoadTexture("PX00128.bmp");
-        for (var index = 0; index < _cityOwnershipLayers.Length; index++)
-            _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
-        _endgameBackground = LoadTexture("PX00200.bmp");
-        _endgameSprites = LoadTexture("PX00201.bmp");
-        _endgameKeyedSprites = LoadTexture("PX00201.bmp", transparentWhite: true);
-        _victoryBackground = LoadTexture("PX00202.bmp");
-        _eliminationBackground = LoadTexture("PX00203.bmp");
-        _gameInfoBackground = LoadTexture("PX05021.bmp");
-        _idleGangWarningBackground = LoadTexture("PX05020.bmp");
-        _cityFinanceBackground = LoadTexture("PX05008.bmp");
-        _sectorFinanceBackground = LoadTexture("PX05019.bmp");
-        _rankingBackground = LoadTexture("PX05011.bmp");
-        _handoffPanel = LoadTexture("PX00132.bmp");
-        _gangInfoBackground = LoadTexture("PX05000.bmp");
-        _sectorGangsBackground = LoadTexture("PX05009.bmp");
-        _gangDefinitionInfoBackground = LoadTexture("PX05022.bmp");
-        _siteInfoBackground = LoadTexture("PX05002.bmp");
-        _itemInfoBackground = LoadTexture("PX05001.bmp");
-        _combatBackground = LoadTexture("PX05014.bmp");
-        _combatResultsBackground = LoadTexture("PX05012.bmp");
-        _lastTurnEventsBackground = LoadTexture("PX05010.bmp");
-        _comlinkViewBackground = LoadTexture("PX05017.bmp");
-        _comlinkSendBackground = LoadTexture("PX05018.bmp");
-        for (var eventArt = 1; eventArt <= 9; eventArt++)
-            _lastTurnEventArtwork[eventArt] = LoadTexture(
-                $"PX060{eventArt:00}.bmp", transparentWhite: eventArt == 4);
-        _hireComparisonBackground = LoadTexture("PX05016.bmp");
-        _influenceBackground = LoadTexture("PX05005.bmp");
-        _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
-        _equipmentPurchaseBackground = LoadTexture("PX05004.bmp");
-        _equipmentResearchBackground = LoadTexture("PX05007.bmp");
-        _equipmentSellBackground = LoadTexture("PX05013.bmp");
-        _equipmentGiveBackground = LoadTexture("PX05015.bmp");
-        _movementBackground = LoadTexture("PX05006.bmp");
-        _siteSearchBackground = LoadTexture("PX05024.bmp");
-        _siteMarkerSprites = LoadTexture("PX00150.bmp", transparentWhite: true);
-        _sitePortraits = LoadTexture("PX02000.bmp");
-        _gangPortraits = LoadTexture("PX03000.bmp");
-        _itemPortraits = LoadTexture("PX04999.bmp");
-        for (var itemId = 0; itemId < _itemRotationTextures.Length; itemId++)
-            _itemRotationTextures[itemId] = LoadTexture($"PX04{itemId:000}.bmp");
-        _policeSprites = LoadTexture("PX00300.bmp");
-        _uiSprites = LoadTexture("PX00129.bmp");
-        _uiKeyedSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
-        _font = _uiSprites is null
+        _font = UiSprites is null
             ? throw new InvalidDataException("PX00129 is required for the original UI font.")
-            : new PixelFont(GraphicsDevice, _uiSprites);
-        LoadCombatAnimationTextures();
+            : new PixelFont(GraphicsDevice, UiSprites);
+        FindCombatAnimationFiles();
         _nativeSoundEffects?.LoadAll(_assetRoot);
         LoadGameData();
         _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
@@ -437,7 +384,7 @@ public sealed partial class ChaosGame
             ["helpAvailable"] = (_helpDocument is not null).ToString(),
             ["combatSounds"] = (_nativeSoundEffects?.Count(SoundEffectBank.Combat) ?? 0).ToString(),
             ["generalSounds"] = (_nativeSoundEffects?.Count(SoundEffectBank.General) ?? 0).ToString(),
-            ["combatAnimations"] = _combatAnimationTextures.Count.ToString()
+            ["combatAnimations"] = CombatAnimations.Count.ToString()
         });
     }
 

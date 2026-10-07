@@ -20,7 +20,7 @@ public static class CreditsLayout
 
 public sealed partial class ChaosGame
 {
-    private Texture2D? _creditsBackground;
+    private Texture2D? CreditsBackground => Texture("PX00100.bmp");
     private bool _creditsOpen;
 
     /// <summary>
@@ -30,7 +30,6 @@ public sealed partial class ChaosGame
     /// </summary>
     private void OpenCredits()
     {
-        _creditsBackground ??= LoadTexture("PX00100.bmp");
         _creditsOpen = true;
     }
 
@@ -50,8 +49,8 @@ public sealed partial class ChaosGame
 
     private void DrawCredits(SpriteBatch batch, Texture2D pixel)
     {
-        if (_creditsBackground is not null)
-            batch.Draw(_creditsBackground, CreditsLayout.Screen, Color.White);
+        if (CreditsBackground is not null)
+            batch.Draw(CreditsBackground, CreditsLayout.Screen, Color.White);
         else
             batch.Draw(pixel, CreditsLayout.Screen, Color.Black);
     }

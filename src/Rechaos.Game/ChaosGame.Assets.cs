@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -24,22 +25,78 @@ public sealed partial class ChaosGame
         return texture;
     }
 
-    private void LoadCombatAnimationTextures()
+    // Textures are decoded the first time something draws them. A screen draws a few of the
+    // original's 200-odd bitmaps, and decoding all of them before the first frame took about a
+    // fifth of the start-up. A missing file is remembered as missing.
+    private readonly Dictionary<(string FileName, bool TransparentWhite), Texture2D?> _textures = [];
+
+    private Texture2D? Texture(string fileName, bool transparentWhite = false)
     {
-        for (short animation = 0; animation <= 27; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, false));
-        for (short animation = 0; animation <= 28; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, true));
-        for (short animation = 0; animation <= 19; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, false));
-        for (short animation = 0; animation <= 20; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, true));
+        // Before LoadContent there is no device to decode into, and a shell that never has one
+        // calls LoadGameData alone: every texture is missing to it, as when LoadContent filled them.
+        if (_batch is null) return null;
+        if (!_textures.TryGetValue((fileName, transparentWhite), out var texture))
+            _textures[(fileName, transparentWhite)] = texture = LoadTexture(fileName, transparentWhite);
+        return texture;
     }
 
-    private void LoadCombatAnimationTexture(string fileName)
+    /// <summary>A row of the original's bitmaps read by index, each decoded on first use.</summary>
+    private readonly struct TextureRow(ChaosGame game, (string FileName, bool TransparentWhite)?[] files)
     {
-        var texture = LoadTexture(fileName);
-        if (texture is not null) _combatAnimationTextures[fileName] = texture;
+        public int Length => files.Length;
+
+        public Texture2D? this[int index] =>
+            files[index] is { } file ? game.Texture(file.FileName, file.TransparentWhite) : null;
+    }
+
+    private static readonly (string, bool)?[] CityOwnershipLayerFiles =
+        [.. Enumerable.Range(0, MatchLimits.PlayerCount + 1).Select(index => ((string, bool)?)($"PX1000{index}.bmp", false))];
+
+    // Event art 0 is none; art 4 is drawn with its white keyed out.
+    private static readonly (string, bool)?[] LastTurnEventArtworkFiles =
+        [null, .. Enumerable.Range(1, 9).Select(art => ((string, bool)?)($"PX060{art:00}.bmp", art == 4))];
+
+    private static readonly (string, bool)?[] ItemRotationFiles =
+        [.. Enumerable.Range(0, 53).Select(itemId => ((string, bool)?)($"PX04{itemId:000}.bmp", false))];
+
+    private TextureRow CityOwnershipLayers => new(this, CityOwnershipLayerFiles);
+    private TextureRow LastTurnEventArtwork => new(this, LastTurnEventArtworkFiles);
+    private TextureRow ItemRotationTextures => new(this, ItemRotationFiles);
+
+    /// <summary>
+    /// The combat animation strips found when the content loaded, each decoded the first time a
+    /// clip draws it. Whether any were found decides whether Detailed Combat plays.
+    /// </summary>
+    private readonly struct CombatAnimationTextures(ChaosGame game)
+    {
+        public int Count => game._combatAnimationFiles.Count;
+
+        public bool TryGetValue(string fileName, [NotNullWhen(true)] out Texture2D? texture)
+        {
+            texture = game._combatAnimationFiles.Contains(fileName) ? game.Texture(fileName) : null;
+            return texture is not null;
+        }
+    }
+
+    private readonly HashSet<string> _combatAnimationFiles = [];
+
+    private CombatAnimationTextures CombatAnimations => new(this);
+
+    private void FindCombatAnimationFiles()
+    {
+        for (short animation = 0; animation <= 27; animation++)
+            FindCombatAnimationFile(CombatAnimationRouting.AttackFile(animation, false));
+        for (short animation = 0; animation <= 28; animation++)
+            FindCombatAnimationFile(CombatAnimationRouting.AttackFile(animation, true));
+        for (short animation = 0; animation <= 19; animation++)
+            FindCombatAnimationFile(CombatAnimationRouting.HitFile(animation, false));
+        for (short animation = 0; animation <= 20; animation++)
+            FindCombatAnimationFile(CombatAnimationRouting.HitFile(animation, true));
+    }
+
+    private void FindCombatAnimationFile(string fileName)
+    {
+        if (File.Exists(Path.Combine(_assetRoot, "images", fileName))) _combatAnimationFiles.Add(fileName);
     }
 
     private void PlayCombatSound(short soundIndex) => PlaySound(SoundEffectCue.Combat(soundIndex));
@@ -118,7 +175,7 @@ public sealed partial class ChaosGame
         var first = events.Count;
         while (first > 0 && events[first - 1].Sequence > lastSeen) first--;
         if (first == events.Count) return;
-        if (_detailedCombat && _combatAnimationTextures.Count > 0)
+        if (_detailedCombat && CombatAnimations.Count > 0)
         {
             var presented = CombatResultProjection.AutomaticPresentationEvents(_state, viewer, events.Skip(first));
             foreach (var clip in CombatAnimationRouting.ForPresentation(_state, presented, viewer))
