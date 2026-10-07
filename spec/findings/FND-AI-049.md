@@ -66,9 +66,9 @@ that is again true writes Chaos (`0x00401852`), and the Control store behind it
 
 ## Interpretation
 
-Family 4 raises Chaos in its own sectors unless another
-of its gangs did so last turn, attacks visible hostile human gangs it can
-beat, and otherwise moves through mode 2; it takes a foreign sector by Control
+Family 4 raises Chaos in its own sectors unless another of its gangs did so
+last turn, attacks visible hostile human gangs it can beat, and otherwise
+moves through mode 2; it takes a foreign sector by Control
 only after two moves in a row. The target pool depends on the owner's
 attitude, as for families 0 and 3, with the same out-of-row reads for a
 neutral sector or one under police presence.

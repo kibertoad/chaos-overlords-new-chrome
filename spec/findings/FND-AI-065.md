@@ -52,9 +52,8 @@ changes every turn. `0xFE` is -2 as a signed byte, the snub order in
 `hire_orders` (FND-HIRE-001), so the byte written is most likely that offer's
 element of `hire_orders`. Greed always snubs the first offer. The other
 scenarios snub the offer with the least useful statistics per cost, weighted
-by Tech Level; when every value is 5000 or more they snub slot 0.
-
-Tech Level is the multiplier and is not summed.
+by Tech Level; when every value is 5000 or more they snub slot 0. Tech Level
+is the multiplier and is not summed.
 
 ## Alternatives
 

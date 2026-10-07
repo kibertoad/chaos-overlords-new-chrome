@@ -73,10 +73,10 @@ already excluded.
 Selector `0x5B` has no action argument: it always counts previous Chaos, as
 FND-AI-019 reads it. The addresses FND-AI-019 gives for it are those of
 selectors `0x70` and `0x71`. In families 0 and 4 (FND-AI-048 and FND-AI-049)
-these branches write Chaos: they raise Chaos in the sector when no gang of the player (at `0x0040179A`:
-at most one) carried out Chaos there the turn before, and move on otherwise. The
-count includes the planning gang itself, so a gang that raised Chaos last turn
-moves on.
+these branches write Chaos: they raise Chaos in the sector when no gang of the
+player (at `0x0040179A`: at most one) carried out Chaos there the turn before,
+and move on otherwise. The count includes the planning gang itself, so a gang
+that raised Chaos last turn moves on.
 
 ## Alternatives
 

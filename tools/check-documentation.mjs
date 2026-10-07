@@ -93,11 +93,12 @@ const args = [
 
 /**
  * The --squashed option from tools/squashed.txt: one OLD=NEW line per squashed entry, `#` comments
- * and blank lines ignored. The list lives outside the code because the checker fails code that
- * names a squashed ID. Nothing when the file is absent.
+ * and blank lines ignored. The checker fails a code file that names a squashed ID, and of the files
+ * in tools/ it reads only .cs, .ts, .mjs, .js, .ps1, .fs, .md and .json, so the list is a .txt file
+ * and not part of this script. Read from the tree being checked; nothing when the file is absent.
  */
 function squashed() {
-  const file = join(repositoryRoot, "tools", "squashed.txt");
+  const file = join(root, "tools", "squashed.txt");
   if (!existsSync(file)) return [];
   const items = readFileSync(file, "utf8")
     .split(/\r?\n/)

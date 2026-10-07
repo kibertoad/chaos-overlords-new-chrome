@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Regenerates the generated index blocks in docs/*.md, and checks that every relative link (inline
 // or a reference-style definition) in those documents, the root README, AGENTS.md, the rebuild's
-// ledgers, spec/ (but not spec/index/), multiplayer/ and tools/ still resolves.
+// ledgers, spec/, multiplayer/ and tools/ still resolves.
 //
 // A block is delimited by two HTML comments:
 //
@@ -22,7 +22,7 @@
 // No dependencies. Anchors follow GitHub's heading-slug rules.
 
 import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
-import { join, dirname, relative, resolve } from "node:path";
+import { basename, join, dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -161,6 +161,26 @@ function anchorsOf(path) {
 }
 
 /**
+ * The entries tools/squashed.txt lists as squashed into their replacements. PARITY.md and
+ * spec/index/ are regenerated on main by the nightly job, so until it runs they may still link to
+ * one of them; those links are let through, and every other link in them is checked. Nothing is
+ * let through once the file is deleted.
+ */
+const SQUASHED = (() => {
+  const file = join(repoDir, "tools", "squashed.txt");
+  if (!existsSync(file)) return new Set();
+  return new Set(readFileSync(file, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/#.*/, "").trim())
+    .filter(Boolean)
+    .map((item) => item.split("=")[0]));
+})();
+function isGenerated(path) {
+  const rel = relative(repoDir, path).split(/[\\/]/).join("/");
+  return rel === "PARITY.md" || rel.startsWith("spec/index/");
+}
+
+/**
  * Relative links of the maintained documents that no longer resolve: a missing
  * file, or an `#anchor` no heading produces. Both inline links (`[x](path)`)
  * and reference-style definitions (`[x]: path`) are checked. External and
@@ -187,6 +207,7 @@ function brokenLinks(paths) {
         const [file, anchor] = target.split("#");
         const resolved = file ? resolve(dirname(path), file) : path;
         if (file && !existsSync(resolved)) {
+          if (isGenerated(path) && SQUASHED.has(basename(file, ".md"))) continue;
           broken.push(`${label}:${line}: no such file: ${target}`);
           continue;
         }
@@ -215,9 +236,7 @@ for (const path of documentPaths()) {
     }
   }
 }
-// PARITY.md and spec/index/ are left out: the nightly job regenerates them on main, so a branch
-// that deletes or renames an entry cannot update their links.
-const rootDocuments = ["README.md", "AGENTS.md", "VALIDATION.md", "static_validation_plan.md", "manual_validation_plan.md"]
+const rootDocuments = ["README.md", "AGENTS.md", "PARITY.md", "VALIDATION.md", "static_validation_plan.md", "manual_validation_plan.md"]
   .map((name) => join(repoDir, name))
   .filter((path) => existsSync(path));
 /**
@@ -226,12 +245,11 @@ const rootDocuments = ["README.md", "AGENTS.md", "VALIDATION.md", "static_valida
  * not the repository's documents.
  */
 const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "bin", "obj", ".turbo"]);
-const GENERATED_DIRECTORIES = new Set([join(repoDir, "spec", "index")]);
 function markdownUnder(dir) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true }).sort((x, y) => x.name.localeCompare(y.name)).flatMap((entry) =>
     entry.isDirectory()
-      ? SKIPPED_DIRECTORIES.has(entry.name) || GENERATED_DIRECTORIES.has(join(dir, entry.name)) ? [] : markdownUnder(join(dir, entry.name))
+      ? SKIPPED_DIRECTORIES.has(entry.name) ? [] : markdownUnder(join(dir, entry.name))
       : entry.name.endsWith(".md") ? [join(dir, entry.name)] : []);
 }
 const broken = brokenLinks([
