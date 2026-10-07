@@ -684,8 +684,9 @@ static work still open is listed in
 (`@scientific-method/standard-checker`, pinned in the root `package.json`)
 with the documentation standard's
 [checks](https://dinorefurb.com/documentation-standard/#checks) over `spec/`,
-`parity/` and `deviations/`, and writes `PARITY.md` and the indexes in
-`spec/index/`. It also fails when a code comment gives an address that no
+`parity/` and `deviations/`. `PARITY.md` and the indexes in `spec/index/` are
+updated on main only, by `.github/workflows/nightly-generated.yml`, and the
+check fails a branch that edits them (`--regenerate` writes them). It also fails when a code comment gives an address that no
 entry the comment cites records, in its locations or text or in the evidence
 of an entry it cites. Comments are read from `.cs`, `.ts`, `.js` and `.mjs` files, so `//` inside a string or
 a regular expression is not a comment and `/* … */` is; a neutral name (`fn_…`,

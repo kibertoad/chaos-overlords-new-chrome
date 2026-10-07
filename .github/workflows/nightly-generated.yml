@@ -1,0 +1,128 @@
+# Regenerates the files that are updated on main only, and pushes them to main.
+#
+# spec/index/ and PARITY.md are written entirely by the documentation standard's checker. When every
+# pull request carried its own regeneration, two pull requests that touched the spec or the parity
+# rows conflicted in them on almost every merge. Branches now leave them alone
+# (tools/check-documentation.mjs passes --scheduled-generation, which fails a branch that changes
+# one), and this job keeps main's copies at most a day behind.
+#
+# main has no branch protection, so the job's token can push. If main ever requires pull requests,
+# let github-actions bypass the rule or give this job a token that may push.
+#
+# To add a generated file: append the paths it is generated from to GENERATED_INPUTS, the files it
+# writes to GENERATED_OUTPUTS, and the command that writes them to GENERATE_COMMANDS, and widen
+# COMMIT_MESSAGE.
+name: Nightly generated files
+
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-generated
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    name: Regenerate and push to main
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # Pushes the regenerated files to main.
+    env:
+      # Git pathspecs, separated by spaces, of everything the generators read. A scheduled run
+      # regenerates only when a commit on main touched one of them in the last 26 hours: scheduled
+      # runs start late, and a run whose window overlaps the previous one finds nothing to commit.
+      GENERATED_INPUTS: "spec parity deviations :(exclude)spec/index package.json"
+      # The files the generators write, separated by spaces. Only these are committed.
+      GENERATED_OUTPUTS: "spec/index PARITY.md"
+      # One command per line, run from the repository root in this order. The Kaitai definitions
+      # are not compiled here: CI compiles them, and they do not change what the checker writes.
+      GENERATE_COMMANDS: |
+        node tools/check-documentation.mjs --regenerate --no-ksy
+      COMMIT_MESSAGE: "Regenerate the spec indexes and PARITY.md"
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          # The full history of main, for the 26-hour window below and the checker's base.
+          fetch-depth: 0
+
+      - name: Decide whether to regenerate
+        id: gate
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          set -f # The pathspecs are split on spaces and never globbed by the shell.
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Started by hand, so the generated files are regenerated."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # shellcheck disable=SC2086
+          recent=$(git log --since='26 hours ago' --format=%H origin/main -- $GENERATED_INPUTS)
+          if [ -z "$recent" ]; then
+            echo "No commit on main touched $GENERATED_INPUTS in the last 26 hours; nothing to regenerate."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Commits on main in the last 26 hours touched the inputs:"
+            echo "$recent"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Sets up Node.js and installs the root package.json's dependencies, which the checker needs.
+      # No cache: this job pushes to main (zizmor's cache-poisoning audit).
+      - name: Install the documentation checker
+        if: steps.gate.outputs.run == 'true'
+        uses: ./.github/actions/install-documentation-checker
+        with:
+          cache: "false"
+
+      - name: Regenerate, commit and push
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          set -f
+          remote="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # A generator that fails, such as a check that finds a problem on main, stops the job
+          # before anything is committed.
+          generate() {
+            while IFS= read -r command; do
+              [ -n "$command" ] || continue
+              echo "> $command"
+              bash -euo pipefail -c "$command"
+            done <<< "$GENERATE_COMMANDS"
+          }
+          for attempt in 1 2 3; do
+            generate
+            # shellcheck disable=SC2086
+            if [ -z "$(git status --porcelain -- $GENERATED_OUTPUTS)" ]; then
+              echo "The generated files are up to date; nothing to commit."
+              exit 0
+            fi
+            # shellcheck disable=SC2086
+            git add -A -- $GENERATED_OUTPUTS
+            git commit --quiet -m "$COMMIT_MESSAGE"
+            if git push "$remote" HEAD:main; then
+              echo "Pushed $(git rev-parse --short HEAD) to main."
+              exit 0
+            fi
+            echo "The push was rejected (attempt $attempt of 3); starting again from the new main."
+            git fetch --quiet "$remote" main
+            git reset --hard FETCH_HEAD
+          done
+          echo "Could not push to main after 3 attempts." >&2
+          exit 1
