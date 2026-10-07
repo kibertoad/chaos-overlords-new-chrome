@@ -4,6 +4,7 @@ import {
   type InferOutput,
   literal,
   nullable,
+  optional,
   picklist,
   strictObject,
   variant,
@@ -180,6 +181,13 @@ export const turnDesyncedEventSchema = strictObject({
      * out and what the match will converge on.
      */
     candidateStateHashes: array(stateFingerprintSchema),
+    /**
+     * Who may break a tie between the candidates: the host when the host's report is one of them,
+     * otherwise the lowest-numbered seat whose report is. Null when there is a single candidate,
+     * which anybody holding it may post. Absent from announcements stored before it existed,
+     * whose ties only the host could break.
+     */
+    tieBreakerPlayerId: optional(nullable(resourceIdSchema)),
   }),
 })
 

@@ -225,6 +225,18 @@ public sealed partial class ChaosGame
             ? name
             : name[..KeyBindingsLayout.KeyNameCharacters];
     }
+
+    /// <summary>Whether the shortcut <paramref name="key"/> went down this frame (DEV-UI-024).</summary>
+    /// <remarks>
+    /// A text editor reads typed characters from the physical keys, so while one has focus its
+    /// editing keys are physical too. Otherwise a shortcut rebound to a letter would type that
+    /// letter and also confirm, erase or move the caret.
+    /// </remarks>
+    private bool Pressed(KeyboardState current, Keys key) =>
+        RawPressed(current, TextInputHasFocus() ? key : _keyBindings.Physical(key));
+
+    private bool RawPressed(KeyboardState current, Keys key) =>
+        current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
 }
 
 /// <summary>What the keys that went down while the Keys editor waits for a key mean.</summary>
