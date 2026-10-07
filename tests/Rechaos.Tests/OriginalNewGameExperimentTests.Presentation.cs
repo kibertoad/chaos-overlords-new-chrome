@@ -180,9 +180,8 @@ public sealed partial class OriginalNewGameExperimentTests
                 Assert.False(handled.OpensDetails);
                 // The probe releases each press where it pressed, so ALL, NONE and Done act on
                 // that release (FND-UI-062).
-                if (handled.Press.Control is SiteSearchControl.All or SiteSearchControl.None)
-                    SiteSearchPanel.Apply(selections, human, handled.Press, rows);
-                if (handled.Press.Control == SiteSearchControl.Done) open = false;
+                if (handled.Press.Control is SiteSearchControl.All or SiteSearchControl.None or SiteSearchControl.Done)
+                    open = !SiteSearchPanel.Release(selections, human, handled.Press.Control, rows);
             }
             Assert.Equal(human.Value, click.ActivePlayer);
             Assert.Equal(click.PanelOpen, open);

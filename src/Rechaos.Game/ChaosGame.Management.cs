@@ -188,8 +188,7 @@ public sealed partial class ChaosGame
     /// <summary>A release inside the held ALL, NONE or Done, the only release the panel face hold acts on.</summary>
     private void ReleaseSiteSearchControl(SiteSearchControl held)
     {
-        SiteSearchPanel.Apply(_siteSearchSelections, SiteSearchPlayer(), new SiteSearchPress(held), SiteSearchRows());
-        if (held != SiteSearchControl.Done) return;
+        if (!SiteSearchPanel.Release(_siteSearchSelections, SiteSearchPlayer(), held, SiteSearchRows())) return;
         _message = string.Empty;
         CloseSiteSearch();
     }

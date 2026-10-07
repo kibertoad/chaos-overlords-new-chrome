@@ -125,6 +125,6 @@ None known.
   report type but 1; the omitted date at `elapsed_turns` 0; the arrow presses,
   a press outside the panel, Left, Right, Enter and Execute; the Events
   control with no report; sounds SND00203 and SND00204; the type 5 animation
-  and its counter (FND-EVENT-002, FND-EVENT-003, FND-EVENT-005, FND-UI-012,
+  and its counter (FND-EVENT-002, FND-EVENT-003, FND-EVENT-007, FND-UI-012,
   FND-UI-016, FND-UI-047, FND-AUDIO-011). These rest on the static findings
   named, so the entry stays `supported`.

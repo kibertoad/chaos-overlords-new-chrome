@@ -104,5 +104,5 @@ None known.
   pressed Cancel and Send faces, the disabled Send face after a deselection
   and an empty player slot; Execute with no recipient; a press outside the
   panel; a held button left or released outside; the caret period and phases
-  (FND-COMLINK-003, FND-COMLINK-007, FND-COMLINK-010, FND-UI-019, FND-UI-047).
+  (FND-COMLINK-011, FND-COMLINK-007, FND-COMLINK-010, FND-UI-019, FND-UI-047).
   These rest on the static findings named, so the entry stays `supported`.

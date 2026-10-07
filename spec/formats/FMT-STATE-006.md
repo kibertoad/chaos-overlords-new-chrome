@@ -80,7 +80,7 @@ type 3 through Control and EXP-TURN-093 through a third Crackdown,
 EXP-TURN-014 type 7, EXP-TURN-017 type 9, EXP-TURN-033 to EXP-TURN-035 type 6
 with `arg1` 1, 2 and 4, and EXP-TURN-097 to EXP-TURN-099 type 8. Those rows and
 values are `established`. No run holds type 0, which the recorder never
-writes, so that value rests on FND-EVENT-001 and FND-EVENT-005 and stays
+writes, so that value rests on FND-EVENT-001 and FND-EVENT-007 and stays
 `supported`.
 
 The probe does not read `occupied` or `unk_01`, so no run reaches them and
@@ -95,7 +95,7 @@ layout.
 - No run reads `occupied`: that the clearing before each resolution sets it to
   0 and the recorder to 1 rests on FND-EVENT-004.
 - No run holds `report_type` 0; that the recorder never writes it rests on
-  FND-EVENT-001 and FND-EVENT-005.
+  FND-EVENT-001 and FND-EVENT-007.
 - `unk_01` holds whatever the running game or a loaded save left there; no
   code reads it.
 - Whether the network resolution paths `fn_0046A7CB` and `fn_0040CED0` write

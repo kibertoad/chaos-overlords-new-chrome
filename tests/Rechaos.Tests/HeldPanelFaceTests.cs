@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Game;
 using Xunit;
 
@@ -23,6 +24,24 @@ public sealed class HeldPanelFaceTests
             HeldButtonFaces.Drawn(HeldButtonKind.Confirm, face, pointerInside: false));
         Assert.Equal((new Rectangle(137, 261, 50, 23), new Rectangle(0, 409, 50, 23)),
             HeldButtonFaces.Drawn(HeldButtonKind.Cancel, IdleGangWarningLayout.Cancel, pointerInside: true));
+    }
+
+    [Fact]
+    public void TheSearchPanelsHeldFacesFollowScrSearch001()
+    {
+        // SCR-SEARCH-001, FND-UI-062: the lit faces while ALL, NONE and Done are held.
+        Assert.Equal(new Rectangle(137, 140, 50, 23), HeldButtonFaces.Drawn(
+            SiteSearchLayout.HeldKind(SiteSearchControl.All), SiteSearchLayout.Target(SiteSearchControl.All), true).Destination);
+        Assert.Equal(new Rectangle(137, 172, 50, 23), HeldButtonFaces.Drawn(
+            SiteSearchLayout.HeldKind(SiteSearchControl.None), SiteSearchLayout.Target(SiteSearchControl.None), true).Destination);
+        Assert.Equal(new Rectangle(137, 293, 50, 23), HeldButtonFaces.Drawn(
+            SiteSearchLayout.HeldKind(SiteSearchControl.Done), SiteSearchLayout.Target(SiteSearchControl.Done), true).Destination);
+        Assert.Equal(new Rectangle(97, 560, 50, 23),
+            HeldButtonFaces.Lit(SiteSearchLayout.HeldKind(SiteSearchControl.All)));
+        Assert.Equal(new Rectangle(197, 560, 50, 23),
+            HeldButtonFaces.Lit(SiteSearchLayout.HeldKind(SiteSearchControl.None)));
+        Assert.Equal(new Rectangle(0, 386, 50, 23),
+            HeldButtonFaces.Lit(SiteSearchLayout.HeldKind(SiteSearchControl.Done)));
     }
 
     public static TheoryData<string, Rectangle, Rectangle> PanelFaces() => new()
@@ -81,6 +100,44 @@ public sealed class HeldPanelFaceTests
         Release(game, face.Center);
         Assert.Equal(1, closed);
     }
+
+    [Fact]
+    public void ALeftReleaseAFrameSkippedLetsGoOfTheFaceWithoutClosing()
+    {
+        // A release that an early return in Update skipped (Detailed Combat, a pressed key face's
+        // wait) still ends the hold, as a release outside the face.
+        var closed = 0;
+        var face = CombatResultsLayout.Ok;
+        var game = GameHolding(face, () => closed++);
+        Field("_previousMouse").SetValue(game, Mouse(ButtonState.Pressed));
+        Method("ReleaseSkippedPanelFace").Invoke(game, [Mouse(ButtonState.Pressed)]);
+        Assert.NotNull(Field("_pressedPanelFace").GetValue(game));
+
+        Method("ReleaseSkippedPanelFace").Invoke(game, [Mouse(ButtonState.Released)]);
+        Assert.Equal(0, closed);
+        Assert.Null(Field("_pressedPanelFace").GetValue(game));
+        Assert.Equal((face, ClientScreen.Title, HeldButtonKind.Confirm),
+            ((Rectangle, ClientScreen, HeldButtonKind)?)Field("_releasedPanelFace").GetValue(game));
+    }
+
+    [Fact]
+    public void LettingGoOfAHeldFaceLeavesThePanelOpen()
+    {
+        // The game menu lets go of a held face so a release under it cannot close the panel.
+        var closed = 0;
+        var game = GameHolding(CombatResultsLayout.Ok, () => closed++);
+        Method("LetGoOfLeftHeldPanelFace").Invoke(game, []);
+        Assert.Equal(0, closed);
+        Assert.Null(Field("_pressedPanelFace").GetValue(game));
+        Assert.NotNull(Field("_releasedPanelFace").GetValue(game));
+    }
+
+    private static MouseState Mouse(ButtonState left) =>
+        new(10, 10, 0, left, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
+
+    private static MethodInfo Method(string name) =>
+        typeof(ChaosGame).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(name);
 
     private static ChaosGame GameHolding(Rectangle face, Action close)
     {
