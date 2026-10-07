@@ -33,7 +33,7 @@ public sealed class CombatResultProjectionTests
             ], owner: null, income: 3))
             .ToArray();
         var match = new MatchState(data, new MatchSetup(
-            ScenarioId.Eliminate, GameDuration.SixMonths, 37, setups), players, sectors);
+            ScenarioId.Eliminate, GameDuration.SixMonths, 37, setups, MatchDeviations.Original), players, sectors);
         var recorder = new MatchReplayRecorder(match);
 
         recorder.FinishUpkeep();
@@ -523,7 +523,7 @@ public sealed class CombatResultProjectionTests
             ]))
             .ToArray();
         return new MatchState(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original),
             players, sectors);
     }
 
@@ -555,7 +555,7 @@ public sealed class CombatResultProjectionTests
             ], owner: id == 0 ? new PlayerId(0) : null, crackdownActive: id == 0))
             .ToArray();
         return new MatchState(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setup]),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setup], MatchDeviations.Original),
             [new MatchPlayerState(setup, 500, gangs)], sectors);
     }
 
