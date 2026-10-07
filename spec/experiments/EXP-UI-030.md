@@ -68,7 +68,9 @@ run then made 325 calls of `roll`.
 
 A test of the rebuild replays the steps, each drag as a press, a move to the
 release point and a release, and compares the setup screen after each with the
-copies of every run. No element differs.
+copies of every run. No element differs. A replay of each run's match from
+the same seed and settings makes the same 325 rolls and reaches the same end
+state.
 
 ## Conclusion
 
