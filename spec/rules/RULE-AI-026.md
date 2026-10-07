@@ -4,7 +4,7 @@ title: Family-7 computer gangs sit where sites add the most Research, influence 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060, EXP-TURN-020, FND-AI-074, EXP-TURN-050, EXP-TURN-057, EXP-TURN-073, EXP-TURN-083, EXP-TURN-088, FND-AI-001, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-024, FND-AI-039, FND-AI-047, FND-CONTROL-001, FND-HIRE-002, FND-PLATFORM-003, FND-RESEARCH-001, FND-RESEARCH-002, FND-STATE-004, FND-STATE-006, FND-STATE-007, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035, FND-UI-036]
+evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060, EXP-TURN-020, FND-AI-074, EXP-TURN-050, EXP-TURN-057, EXP-TURN-073, EXP-TURN-083, EXP-TURN-088, FND-AI-001, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-024, FND-AI-039, FND-AI-047, FND-CONTROL-001, FND-HIRE-002, FND-PLATFORM-003, FND-RESEARCH-001, FND-RESEARCH-002, FND-STATE-004, FND-STATE-006, FND-STATE-007, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035, FND-UI-036, FND-AI-078, EXP-TURN-010, EXP-TURN-021, EXP-TURN-039, EXP-TURN-043, EXP-TURN-049, EXP-TURN-109]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -63,6 +63,28 @@ define research_first(player, idx, want):
             return item
     return -1
 
+# Research the item the previous target byte names, whatever the previous action
+# was, while research on it remains; otherwise the next category after its type
+# (FND-AI-078). The item, or -1 when the scan finds none, becomes the focus
+define research_continuation(player, idx):
+    let r = planning_records[idx]
+    let last = r.previous_target
+    let item = -1
+    if research_remaining[last * 6 + player] != 0:
+        item = last
+    else:
+        let want = 2
+        let t = item_definitions[last].type
+        if t == 2:
+            want = 1
+        else if t == 1:
+            want = 3
+        else if t == 3:
+            want = -1
+        item = research_first(player, idx, want)
+    plan(idx, ACTION_RESEARCH, item, 0)
+    aux_records[idx].focus = item
+
 let idx = player * 81 + slot
 let g = gangs[idx]
 let r = planning_records[idx]
@@ -96,50 +118,42 @@ if not done:
         r.previous_target = 0
     if g.force < 8 and g.heal >= -3:
         plan(idx, ACTION_HEAL, 0, 0)
-        done = true
-if not done:
-    let best = s
-    for c in 0..64:
-        if sectors[c].owner == player and research_score(c) > research_score(best):
-            best = c
-    if best != s:
-        plan(idx, ACTION_MOVE, select_sector(player, best + 0x40, idx), 0)
-        aux_records[idx].focus = -1
-        done = true
-if not done:
-    for k in 0..3:
-        if site_definitions[sectors[s].sites[k].definition].research > 0 and site_unfinished(s, k):
-            plan(idx, ACTION_INFLUENCE, k, 0)
-            done = true
-            break
-if not done:
-    aux_records[idx].focus = s
-    let item = -1
-    if prev == ACTION_RESEARCH and research_remaining[r.previous_target * 6 + player] > 0:
-        item = r.previous_target
     else:
-        let want = 2
-        if prev == ACTION_RESEARCH:
-            let last = item_definitions[r.previous_target].type
-            if last == 2:
-                want = 1
-            else if last == 1:
-                want = 3
-            else if last == 3:
-                want = -1
-        item = research_first(player, idx, want)
-        if item == -1:
-            for each fallback in [2, 1, 0, 3, -1]:
-                item = research_first(player, idx, fallback)
-                if item != -1:
+        let best = s
+        for c in 0..64:
+            if sectors[c].owner == player and research_score(c) > research_score(best):
+                best = c
+        # A focus equal to the best sector skips the Move and the Influence (FND-AI-078);
+        # best is never -1 for an active gang
+        if aux_records[idx].focus == best or best == -1:
+            research_continuation(player, idx)
+        else if best != s:
+            plan(idx, ACTION_MOVE, select_sector(player, best + 0x40, idx), 0)
+            aux_records[idx].focus = -1
+        else:
+            let influenced = false
+            for k in 0..3:
+                if site_definitions[sectors[s].sites[k].definition].research > 0 and site_unfinished(s, k):
+                    plan(idx, ACTION_INFLUENCE, k, 0)
+                    influenced = true
                     break
-    if item != -1:
-        plan(idx, ACTION_RESEARCH, item, 0)
-        aux_records[idx].focus = item
-    else:
-        r.family = 0
-        plan(idx, ACTION_MOVE, select_sector(player, 5, idx), 0)
-        aux_records[idx].focus = -1
+            if not influenced:
+                aux_records[idx].focus = s
+                research_continuation(player, idx)
+    # Every branch above ends here; only a Research that found no item leaves -1
+    if r.planned_target == -1:
+        let item = -1
+        for each fallback in [2, 1, 0, 3, -1]:
+            item = research_first(player, idx, fallback)
+            if item != -1:
+                break
+        if item != -1:
+            plan(idx, ACTION_RESEARCH, item, 0)
+            aux_records[idx].focus = item
+        else:
+            r.family = 0
+            plan(idx, ACTION_MOVE, select_sector(player, 5, idx), 0)
+            aux_records[idx].focus = -1
 if scenario == 0 and turns_remaining() < 4:
     plan(idx, ACTION_TERMINATE, 0, 0)
     r.needs_family = 1
@@ -164,9 +178,29 @@ own it, and an owned sector replaces it only with a strictly greater sum, so a
 gang in an unowned sector with a sum of 0 or more stays unless an owned sector
 beats it. A failed attack draw, or a successful one on a gang whose player the
 computer is not hostile to, falls through to the research sequence. Item 0 is
-never researched through the type scans. A previous action whose target byte
-was cleared reads as item 0 in the research continuation only when the
-previous action was Research, which is never cleared.
+never researched through the type scans.
+
+The focus test runs before the Move and the Influence. A gang whose focus
+equals the best research sector researches where it stands, even outside that
+sector and even when its sector has a Research site left to influence. The
+focus holds the gang's sector after an Attack, -1 after a Move and an item
+number after a Research, so an item number equal to the best sector's number
+passes the test too. An Equip, a Heal and an Influence leave the focus of the
+pass before (FND-AI-074, FND-AI-078), so the test after one of them compares
+what that pass stored.
+
+The research continuation reads the previous target byte without looking at
+the previous action. After a previous Equip, Move, Attack or Influence the
+byte has just been cleared, so the gang tests item 0's research byte. A byte
+that survives from another action is read as an item: an Influence the
+duplicate cleanup of
+RULE-AI-001 rewrote to Snitch keeps its site slot, so the gang tests the
+research byte of item 0, 1 or 2 and, when it is 0, asks for the category after
+that item's type.
+
+The fallback scans run when the planned target is -1 after the branch, which
+only a Research whose scan found nothing leaves: a Heal leaves 0, an
+Influence a site slot and a Move a sector (RULE-AI-006).
 
 `research_score` reads a sum the game caches for every sector when a match
 starts or is loaded, not at each planning pass. It adds the Research of the
@@ -188,15 +222,23 @@ None known.
   10549 draws the sole human target and the attack resolves. The fixture
   compares the complete draw stream and final state. EXP-TURN-073 reaches the
   fallback scans and the fixed item list, and a gang that finds no item to
-  research, takes family 0 and moves through selector mode 5. No recorded run
-  isolates the failed or non-hostile attack fallthrough, weapon and armor
-  upgrade cooldowns, Heal, best-Research-sector routing and ties,
-  Research-site Influence, continuation and type cycling, or the late Greed
-  Terminate override, so the research procedure is not established.
+  research, takes family 0 and moves through selector mode 5. EXP-TURN-010's
+  second run, EXP-TURN-039, EXP-TURN-043 and EXP-TURN-049's first run reach
+  the focus test (FND-AI-078) with the gang outside its best research sector
+  and a focus equal to it, and the gang researches in place; without the test
+  all four replays part from the original. EXP-TURN-021 and EXP-TURN-049 reach
+  the research continuation after a Snitch the duplicate cleanup wrote, whose
+  previous target is a site slot, and part from the original when the
+  continuation tests the previous action. EXP-TURN-109 reaches the focus test
+  with the gang in its best sector and a Research site there unfinished; the
+  gang researches, and its replay parts from the original when it influences
+  the site instead. Its next pass, with the item number in the focus,
+  influences that site. No recorded run isolates the failed or non-hostile
+  attack fallthrough, weapon and armor upgrade cooldowns, Heal,
+  best-Research-sector routing and ties, Research-site Influence, type
+  cycling, or the late Greed Terminate override, so the research procedure is
+  not established.
 - The item `type` numbers (0 melee, 1 blade, 2 ranged, 3 armor, 4
   miscellaneous) are assumptions shared with RULE-AI-005.
 - A previous Research of an item of type 4 that is not on the fixed list, or of
   melee, next asks for ranged, as FND-AI-035 states for "every other type".
-- The focus value is written as the current sector and then overwritten by the
-  item number when Research is chosen (FND-AI-015); whether both writes happen
-  is not recorded.

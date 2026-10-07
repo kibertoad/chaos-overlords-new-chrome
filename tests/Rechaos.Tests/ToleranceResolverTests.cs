@@ -90,7 +90,7 @@ public sealed class ToleranceResolverTests
         var playerId = new PlayerId(0);
         var playerSetup = new MatchPlayerSetup(playerId, "ONE", PlayerController.Human);
         var setup = new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 1996, [playerSetup]);
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, [playerSetup], MatchDeviations.Original);
         var player = new MatchPlayerState(playerSetup, 10,
             [new MatchGangState(new GangId(10), playerId, 1, 0, 5)]);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)

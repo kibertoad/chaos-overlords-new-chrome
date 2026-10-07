@@ -93,7 +93,9 @@ length in the name's first byte.
 The Windows dialogs are alerts, confirmations and two text entries; the game
 screens themselves are drawn by the game. In a local game the player can meet
 dialogs 129, 132, 135, 136, 137, 139 and 20007. A player name keeps capitals,
-digits and punctuation up to `Z`; lower-case letters become spaces. Dialog 128
+digits and punctuation up to `Z`. The copy would turn lower-case letters into
+spaces, but the editor's edit control upper-cases letters as they are typed
+(FND-UI-064). Dialog 128
 (an idle gangs warning), 133 (an offer to change the display colours), 134, 145,
 201 (a demo notice) and 20003 (a request to insert the CD) are left over: the
 idle gangs warning is drawn by the game (RULE-OPTIONS-003) and the CD check

@@ -158,12 +158,13 @@ internal sealed class StateExtractor
             run["waits"] = new JsonArray(waits.Select(wait => (JsonNode)new JsonArray(
                 wait!["Ticks"]!.GetValue<int>(), (int)wait["Call"]!.GetValue<uint>(),
                 wait["Started"]!.GetValue<long>(), wait["Returned"]!.GetValue<long>())).ToArray());
-        // RULE-UI-003: from the dump on, each slide-in as the benchmark count, the travel and the
-        // offset of each copy (FND-UI-011).
+        // RULE-UI-003: from the dump on, each slide-in as the return address of the helper's call
+        // (FND-UI-066), the benchmark count, the travel and the offset of each copy (FND-UI-011).
         if (trace["Slides"] is JsonArray slides)
             run["slides"] = new JsonArray(slides.Select(slide => (JsonNode)new JsonObject
             {
-                ["benchmark"] = slide!["Benchmark"]!.GetValue<int>(),
+                ["caller"] = (int)slide!["Caller"]!.GetValue<uint>(),
+                ["benchmark"] = slide["Benchmark"]!.GetValue<int>(),
                 ["travel"] = slide["Travel"]!.GetValue<int>(),
                 ["offsets"] = new JsonArray(slide["Offsets"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
             }).ToArray());
@@ -203,6 +204,22 @@ internal sealed class StateExtractor
             run["gang_markers"] = new JsonArray(gangMarkers.Select(draw => (JsonNode)new JsonArray(
                 draw!["Step"]!.GetValue<int>(), draw["Kind"]!.GetValue<int>(), draw["Player"]!.GetValue<int>(),
                 draw["Sector"]!.GetValue<int>(), draw["Frame"]!.GetValue<int>())).ToArray());
+        // RULE-UI-014, FND-UI-020: each key event the window procedure stored for a posted key, as
+        // the virtual key, whether the Shift test reported Shift held, and the event's type,
+        // character and key.
+        if (trace["KeyEvents"] is JsonArray keyEvents)
+            run["key_events"] = new JsonArray(keyEvents.Select(entry => (JsonNode)new JsonArray(
+                entry!["VirtualKey"]!.GetValue<int>(), entry["Shift"]!.GetValue<bool>() ? 1 : 0,
+                entry["Type"]!.GetValue<int>(), entry["Character"]!.GetValue<int>(), entry["Key"]!.GetValue<int>())).ToArray());
+        // RULE-SETUP-009, FND-UI-022: each name typed into the setup name editor, with the name
+        // record of its slot after OK.
+        if (trace["NameEntries"] is JsonArray nameEntries)
+            run["name_entries"] = new JsonArray(nameEntries.Select(entry => (JsonNode)new JsonObject
+            {
+                ["keys"] = entry!["Keys"]!.GetValue<string>(),
+                ["slot"] = entry["Slot"]!.GetValue<int>(),
+                ["name"] = Integers(entry["Name"]),
+            }).ToArray());
         // RULE-TURN-005, SCR-UI-004: each order step after the dump, the popup it opened with its
         // items' commands and greyed states, the view, the card slots and the active player's orders.
         if (trace["OrderSteps"] is JsonArray orderSteps)
@@ -350,11 +367,16 @@ internal sealed class StateExtractor
         return (trace.Settings ?? NewGameSettings.Defaults).Describe().ToArray();
     }
 
-    /// <summary>The orders and Done presses a run was recorded with, one input each.</summary>
+    /// <summary>
+    /// The orders and Done presses the run made, one input each, each order, hire and Search write
+    /// with the player it acted for. A run that stopped before <c>--end-turns</c> ran out lists only
+    /// the turns it played, one per entry of <c>done_at_roll</c>.
+    /// </summary>
     public static (string Name, string Value)[] Turns(string runDirectory)
     {
         var trace = JsonSerializer.Deserialize<ProbeTrace>(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
-        return (trace.Settings ?? NewGameSettings.Defaults).DescribeTurns().ToArray();
+        return (trace.Settings ?? NewGameSettings.Defaults).WithActingPlayers()
+            .DescribeTurns(trace.RollsAtDone?.Count ?? 0).ToArray();
     }
 
     private JsonArray EndState()

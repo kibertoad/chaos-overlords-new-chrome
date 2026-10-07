@@ -18,7 +18,7 @@ public sealed class GameplayTurnFlowTests
             new(new PlayerId(1), "TWO", PlayerController.Human)
         ];
         var state = OriginalMatchFactory.Create(definitions,
-            new MatchSetup(ScenarioId.Siege, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Siege, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         state.Players[0].Status = PlayerStatus.Eliminated;
         var replay = new MatchReplayRecorder(state);
 
@@ -57,7 +57,7 @@ public sealed class GameplayTurnFlowTests
             new(new PlayerId(2), "ELIMINATED", PlayerController.Human)
         ];
         var state = OriginalMatchFactory.Create(definitions,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         state.Players[2].Status = PlayerStatus.Eliminated;
 
         Assert.False(HotSeatHandoffPresentation.RequiresPrivateHandoff(state));
@@ -79,7 +79,7 @@ public sealed class GameplayTurnFlowTests
             new(new PlayerId(1), "OUT", PlayerController.Human),
             new(new PlayerId(2), "CPU", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setups[0], 500, [new MatchGangState(new GangId(10), new PlayerId(0), 0, 0, 10)]),
@@ -121,7 +121,7 @@ public sealed class GameplayTurnFlowTests
             new(new PlayerId(3), "SURVIVOR", PlayerController.Human)
         ];
         var state = OriginalMatchFactory.Create(definitions,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         state.Players[0].Status = PlayerStatus.Eliminated;
         state.Players[2].Status = PlayerStatus.Eliminated;
 
@@ -148,7 +148,7 @@ public sealed class GameplayTurnFlowTests
             new(new PlayerId(1), "TWO", PlayerController.Human)
         ];
         var state = OriginalMatchFactory.Create(definitions,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         var replay = new MatchReplayRecorder(state);
 
         GameplayTurnFlow.AdvanceToPlanning(replay);

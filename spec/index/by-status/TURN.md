@@ -26,7 +26,7 @@ Entries by status.
 
 ## recorded
 
-116 entries.
+117 entries.
 
 | ID | Title |
 |---|---|
@@ -131,6 +131,7 @@ Entries by status.
 | [EXP-TURN-103](../../experiments/EXP-TURN-103.md) | Does the clamp after the instant phase bring a base Tolerance above 40 back to 40, after the later gangs have acted? |
 | [EXP-TURN-104](../../experiments/EXP-TURN-104.md) | Does a Research gang that acts after a site of its sector is completed in the same instant phase roll without the site's Research? |
 | [EXP-TURN-105](../../experiments/EXP-TURN-105.md) | Do the Greed Terminate branches of the family 1, 5, 6 and 12 handlers flag the record for a new family? |
+| [EXP-TURN-109](../../experiments/EXP-TURN-109.md) | Does a family-7 gang whose focus names its own best research sector research there while a Research site in it is unfinished? |
 | [EXP-TURN-110](../../experiments/EXP-TURN-110.md) | Does a Heal by a gang at Force 10 roll its pool and leave the Force at 10? |
 | [EXP-TURN-111](../../experiments/EXP-TURN-111.md) | Does a Bribe that takes the base Tolerance past 127 wrap the signed byte? |
 | [EXP-TURN-114](../../experiments/EXP-TURN-114.md) | Does a Snitch that takes the base Tolerance below -128 wrap the signed byte? |

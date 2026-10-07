@@ -10,7 +10,7 @@
     {"tick":0,"name":"setup","value":"mentality 0"},
     {"tick":0,"name":"setup","value":"turn_limit 104"},
     {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
-    {"tick":null,"name":"order","value":"turn 1: gang slot 0 action 2 target 0 target_2 0 repeat 0"},
+    {"tick":null,"name":"order","value":"turn 1: player 0 gang slot 0 action 2 target 0 target_2 0 repeat 0"},
     {"tick":null,"name":"planning","value":"turn 1: sector 54 base_tolerance 127"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 1"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 2"}

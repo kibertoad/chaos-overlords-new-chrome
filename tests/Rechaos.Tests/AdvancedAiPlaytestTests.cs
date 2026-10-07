@@ -101,10 +101,13 @@ public sealed class AdvancedAiPlaytestTests
         ];
         var state = OriginalMatchFactory.Create(data, new MatchSetup(
             scenario, GameDuration.FourYears, seed, setups,
-            difficulty,
-            aiPolicy: feature == AiTurnPlanner.AdvancedFeature.None
-                ? AiPolicyMode.Original
-                : AiPolicyMode.Advanced));
+            MatchDeviations.Original with
+            {
+                AiPolicy = feature == AiTurnPlanner.AdvancedFeature.None
+                    ? AiPolicyMode.Original
+                    : AiPolicyMode.Advanced
+            },
+            difficulty));
         var metrics = new CampaignMetrics();
         var boundaries = 0;
         while (state.Outcome is null && state.Coordinator.Turn <= 15
