@@ -100,13 +100,6 @@ the family byte becomes 11 in scenario 7 and 2 otherwise.
 
 ## Interpretation
 
-This corrects FND-AI-030 in three places. The branch it gives for previous Hide
-or Equip is taken after previous Chaos or Equip; the branch it gives for
-previous Heal, Snitch or Move is taken after previous Heal, Hide or Move; and
-the Move it gives for previous Research is taken after previous Snitch, while
-previous Research plans nothing. Where FND-AI-030 says Hide the branches write
-Chaos.
-
 Family 0 raises Chaos where no gang of its player did so last turn, and wanders
 otherwise. After previous Chaos or Equip in an owned sector it always either
 heals or raises Chaos again. The pool of every draw is the human-only list when

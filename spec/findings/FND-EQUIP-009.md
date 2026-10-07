@@ -27,7 +27,7 @@ environment: null
 Equip handler `fn_0043DAD9` and 5 in the Research handler `fn_004427FA`. It
 does nothing for -1. For a category `n` from 0 to 3 it copies the 34-by-34
 cell `(120,171)` of surface 6 (`PX00129`, FND-UI-031) with the keyed mode 1 of
-`fn_00427864` (FND-PLATFORM-008) to the screen at `(207, 139 + 36 * n)`. Any
+`fn_00427864` (FND-PLATFORM-015) to the screen at `(207, 139 + 36 * n)`. Any
 other value leaves the destination rectangle uninitialised.
 
 The category cells of both handlers are the panel-local rectangles

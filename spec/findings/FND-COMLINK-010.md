@@ -62,8 +62,6 @@ environment: null
 
 ## Observation
 
-This entry reads again what FND-COMLINK-005 recorded and replaces it.
-
 Key events in the Send handler `fn_0045EAB1`, whose text cursor is a column
 and a row kept as 16-bit stack words that start at 0:
 

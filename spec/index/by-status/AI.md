@@ -57,23 +57,6 @@ Entries by status.
 | [RULE-AI-016](../../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage |
 | [RULE-AI-017](../../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction |
 
-## superseded
-
-10 entries.
-
-| ID | Title |
-|---|---|
-| [FND-AI-008](../../findings/FND-AI-008.md) | The AI ranks its three hire offers by a role mode, then refuses an unaffordable winner without a fallback |
-| [FND-AI-011](../../findings/FND-AI-011.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and the least efficient offer elsewhere |
-| [FND-AI-025](../../findings/FND-AI-025.md) | Sector selector mode 6 routes toward the scenario leader and hostile human land |
-| [FND-AI-027](../../findings/FND-AI-027.md) | Sector selector modes 10 to 16 and encoded modes, and the filters applied after scoring |
-| [FND-AI-030](../../findings/FND-AI-030.md) | The family-0 handler is a general state machine over the previous action |
-| [FND-AI-031](../../findings/FND-AI-031.md) | The family-4 handler hides, probes and moves through mode 2 |
-| [FND-AI-037](../../findings/FND-AI-037.md) | The family-10 handler improves armor, equips item 44, heals, seeks Stealth sites, then raises Chaos or hides |
-| [FND-AI-038](../../findings/FND-AI-038.md) | The family-12 handler equips and heals when unopposed and wanders at random, and attacks when opposed |
-| [FND-AI-059](../../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself |
-| [FND-AI-067](../../findings/FND-AI-067.md) | The sector selector adds 1 to an encoded mode's sector for every sector a ring visits |
-
 ## recorded
 
 70 entries.
@@ -115,7 +98,6 @@ Entries by status.
 | [FND-AI-041](../../findings/FND-AI-041.md) | The dispatcher resets a flagged planning record before it assigns a family, and its post-handler block is unreachable |
 | [FND-AI-042](../../findings/FND-AI-042.md) | Byte +1 of a planning record is set for an empty roster slot and by the Greed Terminate branches, and byte +11 is never used |
 | [FND-AI-043](../../findings/FND-AI-043.md) | Family 9 is seeded only for a network player the computer takes over; the planning pass's own seeding stores past the flag array |
-| [FND-AI-044](../../findings/FND-AI-044.md) | The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order |
 | [FND-AI-045](../../findings/FND-AI-045.md) | At the start of a match and after a load the computer players' site sums are cached per sector, and a new match also clears the AI flags and seeds the placement anchor |
 | [FND-AI-046](../../findings/FND-AI-046.md) | Selector 0x5B always counts gangs whose previous action is Chaos, and the branches that test it write Chaos at a low count |
 | [FND-AI-047](../../findings/FND-AI-047.md) | The resolver lowers the target's attitude toward its attacker after every attack, evaded or not, and the loser's toward the winner of a Control takeover |
@@ -150,6 +132,7 @@ Entries by status.
 | [FND-AI-078](../../findings/FND-AI-078.md) | Family 7 researches at once when its focus equals the best research sector, and reads the previous target without testing the previous action |
 | [FND-AI-079](../../findings/FND-AI-079.md) | Only the family handlers and their dispatcher store a planned action, and none stores Bribe, Give or Sell |
 | [FND-AI-080](../../findings/FND-AI-080.md) | The family-0 owned-sector tests after previous Control and after previous Heal, Hide or Move read the owner query, which gives -2 under police presence |
+| [FND-AI-081](../../findings/FND-AI-081.md) | The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order |
 
 ## Established on unreproduced evidence
 
