@@ -164,9 +164,12 @@ when `kaitai-struct-compiler` (or the path in `KSC`) is available; in CI it
 requires the compiler, and the workflows install a pinned release.
 The same check fails a spec line that names a file of the rebuild, a path
 into `src/`, `tests/` or `multiplayer/` or a source file found there.
-`node tools/spec-coverage.mjs` writes `docs/FUNCTION-INDEX.md`, which lists
-every game function of FND-EXE-004 with the entries that cite it (`--check`
-fails on a stale index); with `--inventory <file>` it also reports what the
+`node tools/spec-coverage.mjs` writes `docs/FUNCTION-INDEX.md`, a local report
+that lists every game function of FND-EXE-004 with the entries that cite it.
+The report is not committed (`.gitignore` lists it); generate it when you want
+it. `--check` computes the index and prints the coverage line without writing
+anything, and fails when FND-EXE-004's function table is missing; the fast gate
+and the pre-commit hook run that mode. With `--inventory <file>` it also reports what the
 spec leaves uncovered, from an inventory written by
 `tools/ghidra/ReportFunctionInventory.java` (see `docs/GHIDRA.md`).
 
