@@ -107,17 +107,22 @@ public static class NativeSaveSerializer
         }
     }
 
-    /// <summary>The envelope's <c>formatVersion</c>, or null when the bytes are not readable JSON.</summary>
+    /// <summary>
+    /// The envelope's <c>formatVersion</c>: <paramref name="current"/> when the first member
+    /// declares it, whether or not the rest of the file is readable JSON; otherwise the version the
+    /// whole envelope declares, or null when the bytes are not readable JSON.
+    /// </summary>
     /// <remarks>
     /// Leaves the stream rewound for the real deserialization pass. A file in the format
     /// <paramref name="current"/> names, which is nearly every file read, writes that version as its
     /// first member, and the caller deserializes and validates the whole of it next, so the answer
     /// is taken from the first member alone. Parsing the whole envelope as well took about a sixth
-    /// of loading a long match's save. Any other first member is checked as before.
+    /// of loading a long match's save. For any other first member the whole envelope is parsed and
+    /// its <c>formatVersion</c> member read, wherever it stands.
     /// </remarks>
     internal static int? DeclaredFormatVersion(MemoryStream bounded, int current)
     {
-        if (FirstMemberIsFormatVersion(bounded.GetBuffer().AsSpan(0, checked((int)bounded.Length)), current))
+        if (bounded.TryGetBuffer(out var buffer) && FirstMemberIsFormatVersion(buffer, current))
             return current;
         try
         {

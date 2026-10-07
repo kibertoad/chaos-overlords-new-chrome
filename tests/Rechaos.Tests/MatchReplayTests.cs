@@ -434,6 +434,21 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void JournalWritesItsFormatVersionAsTheFirstMember()
+    {
+        // Loading reads the version from the first member alone and parses the whole envelope
+        // only when it finds something else there.
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        recorder.FinishUpkeep();
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+
+        Assert.StartsWith(
+            $"{{\"formatVersion\":{MatchReplaySerializer.CurrentFormatVersion},",
+            Encoding.UTF8.GetString(replay.ToArray()), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void RejectsReplayWhoseExpectedStepHashWasModified()
     {
         var recorder = new MatchReplayRecorder(CreateMatch());

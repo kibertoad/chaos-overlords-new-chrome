@@ -383,6 +383,9 @@ public sealed partial class NativeSaveSerializerTests
         using var stream = new MemoryStream();
         NativeSaveSerializer.Save(stream, match);
         var json = Encoding.UTF8.GetString(stream.ToArray());
+        // The shortcut only applies when the writer puts the version first.
+        Assert.StartsWith(
+            $"{{\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion},", json, StringComparison.Ordinal);
         if (otherVersion)
             json = json.Replace(
                 $"\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion}",
