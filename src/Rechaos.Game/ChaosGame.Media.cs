@@ -210,6 +210,7 @@ public sealed partial class ChaosGame
         {
             try
             {
+                using var transport = DesktopGlSoundtrackStreaming.SerializeTransport();
                 if (MediaPlayer.State == MediaState.Playing)
                 {
                     MediaPlayer.Pause();
@@ -315,7 +316,15 @@ public sealed partial class ChaosGame
     private void DisposeSoundtrack()
     {
         DisableSoundtrack();
-        _soundtrackProgramPlayer?.Dispose();
+        try
+        {
+            _soundtrackProgramPlayer?.Dispose();
+        }
+        finally
+        {
+            // Join streaming work before disposing native songs or the audio device.
+            DesktopGlSoundtrackStreaming.Shutdown();
+        }
         _soundtrackProgramPlayer = null;
         foreach (var song in _soundtrack.Values) song.Dispose();
         _soundtrack.Clear();
