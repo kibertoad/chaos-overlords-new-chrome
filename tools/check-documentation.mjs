@@ -5,12 +5,19 @@
 //   --references multiplayer           the multiplayer server may cite spec and deviation IDs
 //   --rebuild src,tests,multiplayer    no spec file may name a file of the rebuild, the server's
 //                                      included
+//   --scheduled-generation             spec/index/ and PARITY.md are updated on main only, by
+//                                      .github/workflows/nightly-generated.yml: the check neither
+//                                      writes nor compares them, and fails a change that edits one
 //   --images 0x00400000..0x004C9000    the extent of the original's executable image (FND-DATA-005)
 //
 // Every other argument goes to the checker unchanged, so `--check`, `--no-ksy`, `--base <ref>` and
 // `--record-validation <builds>` work as the checker documents them. Without `--base`, a run on
 // the base branch itself compares with what the push replaced or with the parent commit, since
 // the checker's own default (the fork point) is HEAD there.
+//
+// --regenerate (this script's own option) leaves --scheduled-generation out, so the checker writes
+// spec/index/ and PARITY.md. The nightly job uses it on main; elsewhere it gives fresh copies to
+// read, which a branch does not commit.
 //
 // --allow-unrecorded-validation (this script's own option) passes a run whose only problems are
 // test files of validated rows that VALIDATION.md does not record yet or recorded at another
@@ -56,7 +63,8 @@ if (installed !== pinned) {
 
 const argv = process.argv.slice(2);
 const allowUnrecorded = argv.includes("--allow-unrecorded-validation");
-const forwarded = argv.filter((a) => a !== "--allow-unrecorded-validation");
+const regenerate = argv.includes("--regenerate");
+const forwarded = argv.filter((a) => a !== "--allow-unrecorded-validation" && a !== "--regenerate");
 const root = forwarded.includes("--root")
   ? resolve(forwarded[forwarded.indexOf("--root") + 1] ?? ".")
   : repositoryRoot;
@@ -66,6 +74,7 @@ const args = [
   "multiplayer",
   "--rebuild",
   "src,tests,multiplayer",
+  ...(regenerate ? [] : ["--scheduled-generation"]),
   // The extent of the original's executable image, which FND-DATA-005 records.
   "--images",
   "0x00400000..0x004C9000",
