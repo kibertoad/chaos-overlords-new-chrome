@@ -85,6 +85,36 @@ public sealed class KeyboardHireTests
         Assert.Empty(byKey.State.Players[0].PendingHires);
     }
 
+    [Fact]
+    public void AKeyInTheHirePhaseIsRefusedAsAPressOnTheDockIs()
+    {
+        var byKey = Planning(ClientScreen.City);
+        var byPress = Planning(ClientScreen.City);
+        LeavePlanningForTheHirePhase(byKey.State);
+        LeavePlanningForTheHirePhase(byPress.State);
+        var before = MatchStateHasher.ComputeFingerprint(byKey.State);
+
+        DeviationBehaviourTests.Call(byKey.Game, "UpdateCity", new KeyboardState(Keys.D1));
+        DeviationBehaviourTests.Call(byPress.Game, "BeginHireDrag", 0, HireDockLayout.Portrait(0).Center);
+
+        Assert.Equal("HIRING REQUIRES A PLANNING TURN", Message(byKey.Game));
+        Assert.Equal(Message(byPress.Game), Message(byKey.Game));
+        Assert.Equal(before, MatchStateHasher.ComputeFingerprint(byKey.State));
+    }
+
+    /// <summary>
+    /// Ends every seat's planning and runs the execution, which leaves the match in the Hire phase
+    /// with a seat active, so only the phase check of the dock refuses the key.
+    /// </summary>
+    private static void LeavePlanningForTheHirePhase(MatchState state)
+    {
+        while (state.Coordinator.Phase == TurnPhase.Command)
+            state.FinishCommand(state.Coordinator.ActivePlayer!.Value);
+        while (state.Coordinator.Phase == TurnPhase.Execution) state.FinishExecutionPhase();
+        Assert.Equal(TurnPhase.Hire, state.Coordinator.Phase);
+        Assert.NotNull(state.Coordinator.ActivePlayer);
+    }
+
     private sealed record PlanningGame(ChaosGame Game, MatchState State, MatchActions Actions);
 
     private static PlanningGame Planning(ClientScreen screen)

@@ -31,17 +31,12 @@ public sealed partial class ChaosGame
             UpdateIdleGangWarning(keyboard);
             return;
         }
-        var column = _cursor % 8;
-        var row = _cursor / 8;
         var previousCursor = _cursor;
-        if (Pressed(keyboard, Keys.Left) && column > 0) _cursor--;
-        if (Pressed(keyboard, Keys.Right) && column < 7) _cursor++;
-        if (Pressed(keyboard, Keys.Up) && row > 0) _cursor -= 8;
-        if (Pressed(keyboard, Keys.Down) && row < 7) _cursor += 8;
+        if (Pressed(keyboard, Keys.Left)) MoveCursor(-1, 0);
+        if (Pressed(keyboard, Keys.Right)) MoveCursor(1, 0);
+        if (Pressed(keyboard, Keys.Up)) MoveCursor(0, -1);
+        if (Pressed(keyboard, Keys.Down)) MoveCursor(0, 1);
         if (_cursor != previousCursor) _sectorGangCardOwner = null;
-        if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Right)
-            || Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.Down))
-            AnnounceSelectedSectorOwner();
         _gangSelection.KeepOnly(_cursor);
         HireDockOffersByKey(keyboard);
         if (Pressed(keyboard, Keys.Back))

@@ -19,6 +19,9 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.D)) MoveCursor(1, 0);
         if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.W)) MoveCursor(0, -1);
         if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.S)) MoveCursor(0, 1);
+        // DEV-UI-028: the hire keys act before the keys that open another screen, so a hire key
+        // pressed in the same frame as one of them hires from the city.
+        HireDockOffersByKey(keyboard);
         // SCR-UI-003: Enter or Execute opens the detailed sector screen for the selected sector,
         // during planning.
         if (PressedEnterOrExecute(keyboard) && CityPlanningInputOpen()) OpenSectorDetails();
@@ -31,7 +34,6 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.B)) OpenCombatResults(ClientScreen.City);
         if (Pressed(keyboard, Keys.X)) OpenSiteSearch(ClientScreen.City);
         if (Pressed(keyboard, Keys.H)) OpenHire();
-        HireDockOffersByKey(keyboard);
         if (Pressed(keyboard, Keys.M)) OpenComlinkView(ClientScreen.City);
         if (Pressed(keyboard, Keys.N)) OpenComlinkSend(ClientScreen.City);
         if (Pressed(keyboard, Keys.J)) OpenManagement(ClientScreen.GameInfo, ClientScreen.City);

@@ -24,12 +24,14 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// The sector whose owner the pointer shows: a cell of the city map, or on the sector view a
-    /// cell of the nine-sector display or the owner strip. None while something is dragged or a
-    /// prompt is open, so the tooltip never covers a drop.
+    /// cell of the nine-sector display or the owner strip. None while something is dragged, a
+    /// prompt is open or a combat plays over the board, so the tooltip never covers a drop and is
+    /// never drawn under a panel.
     /// </summary>
     private int? HoveredOwnerSector()
     {
         if (_state is null || _hoverPoint is not { } hover || _gameMenuOpen || _idleGangWarningOpen
+            || TakeoverVoteBlocksInput || _combatAnimationPlayer.IsPlaying
             || _draggedHireDefinitionId is not null || _draggedGangId is not null)
             return null;
         return _screens.Current switch
