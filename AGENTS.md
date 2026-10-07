@@ -117,6 +117,8 @@ the repository. Tool procedure is in `docs/GHIDRA.md`.
   deliberate or that players rely on is never strictly better, so its deviation
   starts `off`. The validation suite runs with every setting switched off, and a
   test that reaches a mandatory deviation cites its ID and allows for it.
+  The checker reads an item from its own line only, so the Departs from,
+  Replaces and Tests items are each written on one line, however long.
   Default always describes the deviation, never the option it is carried by:
   when the deviation is to start an option off that the original starts on, the
   Setting item says the setting is inverted and which value is the original's.

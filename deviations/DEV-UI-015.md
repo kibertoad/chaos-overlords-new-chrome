@@ -10,6 +10,5 @@
   keeps one writer at a time, and each keeps its own match. A second copy is also how one computer
   holds two seats of an online match. A setting that restored the refusal would offer nothing
   but the loss of that choice.
-- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs,
-  tests/Rechaos.Tests/RollingAutoSaveTests.cs
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.Persistence.cs, tests/Rechaos.Tests/RollingAutoSaveTests.cs
 - Dropped: no

@@ -7,6 +7,5 @@
 - Default: mandatory
 - Justification: Saving and loading stay available wherever the original allows them, and slots with
   names replace a file dialog that the original's menu bar opens.
-- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs,
-  tests/Rechaos.Tests/SaveSlotCatalogTests.cs
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs, tests/Rechaos.Tests/SaveSlotCatalogTests.cs
 - Dropped: no

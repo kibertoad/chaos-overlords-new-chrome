@@ -8,7 +8,7 @@ import {
 import { safeParse } from 'valibot'
 import type { Snapshot, Turn } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError } from '../domain/errors'
-import { authoritativeCandidates } from '../logic/turn-logic'
+import { authoritativeCandidates, tieBreaker } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
@@ -205,9 +205,12 @@ export class SnapshotService {
    * the one case a host-only rule could not serve at all: a host that is itself the odd one out can
    * never name a majority hash, so no repair existed and the match stayed paused until retention
    * collected it. A TIE — most of all the 1-1 split of a two-player match — is different: there is
-   * no majority, nothing to count, and no third party to ask, so the host breaks it as before and a
-   * peer may not. Letting either side of a tie impose its state would hand a two-player match to
-   * whoever uploaded first.
+   * no majority, nothing to count, and no third party to ask, so exactly one player breaks it and
+   * nobody else may. Letting either side of a tie impose its state would hand a two-player match to
+   * whoever uploaded first. That player is {@link tieBreaker}'s: the host when the host holds one
+   * of the tied hashes, which is every tie of four players or fewer, and otherwise the
+   * lowest-numbered seat that does. It is judged on the reports and the roster as they are now, the
+   * same inputs the announcement that named the player was computed from.
    */
   private async requireRepairAuthority(
     match: Principal['match'],
@@ -226,9 +229,10 @@ export class SnapshotService {
         { reason: 'uncorroborated_state_hash', candidateStateHashes: candidates },
       )
     }
-    if (candidates.length === 1 || player.id === match.hostPlayerId) return
-    throw new ForbiddenError('Only the host may break a tie between reported states', {
-      reason: 'host_only',
+    if (candidates.length === 1) return
+    if (player.id === tieBreaker(players, reports, candidates, match.hostPlayerId)) return
+    throw new ForbiddenError('Only the designated player may break a tie between reported states', {
+      reason: 'not_tie_breaker',
       candidateStateHashes: candidates,
     })
   }
