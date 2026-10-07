@@ -1,9 +1,9 @@
 ---
 id: FND-EVENT-005
 title: The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-EVENT-007]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

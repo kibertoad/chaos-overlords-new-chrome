@@ -299,6 +299,11 @@ public sealed record ScreenCaptureRecord(
                 : null;
             if (menu > 0 && pickerRow is null)
                 unreplayable ??= $"step {index} opened popup menu {step.GetProperty("menu").GetInt32()}, which the rebuild draws as a panel (DEV-UI-021)";
+            // EXP-UI-043: the original presses a console tile with the right button and leaves
+            // the sector view at a right press on Back; the replay has no right presses until #525
+            // compares these shots.
+            if (step.GetProperty("kind").GetString() is "rdown" or "rup")
+                unreplayable ??= $"step {index} presses the right button, which the replay does not press yet (#525)";
             switch (step.GetProperty("kind").GetString())
             {
                 case "open":
@@ -322,6 +327,21 @@ public sealed record ScreenCaptureRecord(
                     break;
                 case "back":
                     clicks.Add(new ReferenceClick(SectorDetailLayout.Back.Center));
+                    break;
+                // A button pressed and kept down, the pointer moved with it, and its release, so a
+                // shot between them shows the held control.
+                case "down" or "move" or "up" or "rdown" or "rup" when step.GetProperty("kind").GetString() is { } edge:
+                    clicks.Add(new ReferenceClick(new Point(Number("x"), Number("y")))
+                    {
+                        Edge = edge switch
+                        {
+                            "down" => ReferenceButtonEdge.Down,
+                            "move" => ReferenceButtonEdge.Move,
+                            "up" => ReferenceButtonEdge.Up,
+                            "rdown" => ReferenceButtonEdge.RightDown,
+                            _ => ReferenceButtonEdge.RightUp,
+                        },
+                    });
                     break;
                 case "type":
                     clicks.Add(new ReferenceClick(Point.Zero)

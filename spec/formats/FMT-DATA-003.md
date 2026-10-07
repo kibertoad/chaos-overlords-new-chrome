@@ -9,7 +9,7 @@ byte_order: little
 size: 166
 text: false
 definition: fmt_data_003.ksy
-evidence: [FND-DATA-006, FND-DATA-007, FND-COMBAT-010, FND-GANG-007, FND-DATA-003, FND-ASSET-001, FND-RESEARCH-002, FND-GANG-001, FND-EQUIP-001, FND-EQUIP-002, FND-AUDIO-002, FND-AUDIO-013, SRC-RECHAOS-3561D41, FND-EVENT-005, FND-UI-013, FND-UI-004, FND-EQUIP-007, FND-EQUIP-012, FND-SELL-001, FND-RESEARCH-003, FND-EXE-004]
+evidence: [FND-DATA-006, FND-DATA-007, FND-COMBAT-010, FND-GANG-007, FND-DATA-003, FND-ASSET-001, FND-RESEARCH-002, FND-GANG-001, FND-EQUIP-001, FND-EQUIP-002, FND-AUDIO-002, FND-AUDIO-013, SRC-RECHAOS-3561D41, FND-EVENT-007, FND-UI-013, FND-UI-004, FND-EQUIP-007, FND-EQUIP-012, FND-SELL-001, FND-RESEARCH-003, FND-EXE-004]
 conflicting: []
 split_with: []
 related: []
@@ -25,7 +25,7 @@ table (FND-RESEARCH-002). Every number is a signed 16-bit little-endian integer.
 
 | Offset | Size | Type | Name | Meaning | Status | Evidence |
 |---|---|---|---|---|---|---|
-| `0x00` | 30 | `char[30]` | `name` | The item's name. ASCII text, then one NUL byte, then spaces to the end of the field; 30 spaces in a blank record. Read it as a C string. | supported | FND-EVENT-005, FND-RESEARCH-003, FND-UI-013, FND-DATA-003, SRC-RECHAOS-3561D41 |
+| `0x00` | 30 | `char[30]` | `name` | The item's name. ASCII text, then one NUL byte, then spaces to the end of the field; 30 spaces in a blank record. Read it as a C string. | supported | FND-EVENT-007, FND-RESEARCH-003, FND-UI-013, FND-DATA-003, SRC-RECHAOS-3561D41 |
 | `0x1E` | 2 | `INT16LE` | `id` | The item's number, equal to the record's index in records 0 to 52, and 0 in the blank records. | supported | FND-DATA-003 |
 | `0x20` | 90 | `char[90]` | `description` | The item's description, drawn as three rows of 30 characters on the item panel. ASCII text padded with spaces to the end of the field, with no NUL byte. | supported | FND-UI-013, FND-UI-004, FND-DATA-003, SRC-RECHAOS-3561D41 |
 | `0x7A` | 2 | `INT16LE` | `type` | The item's category, one of the values below. The statistics rebuild reads it for the weapon to choose the skills added to Combat. | supported | FND-DATA-003, FND-GANG-007, SRC-RECHAOS-3561D41 |
