@@ -41,7 +41,12 @@ export function writeSnapshotArchive(payload: Uint8Array, codec: BrotliCodec): s
  */
 export function readSnapshotArchive(body: string, codec: BrotliCodec): Uint8Array {
   const bytes = fromBase64(body)
-  if (!MAGIC.every((byte, index) => bytes[index] === byte)) return bytes
+  if (!MAGIC.every((byte, index) => bytes[index] === byte)) {
+    if (bytes.length > MAXIMUM_PAYLOAD_BYTES) {
+      throw new Error('the snapshot exceeds the save size limit')
+    }
+    return bytes
+  }
   if (bytes.length < HEADER_BYTES) throw new Error('the snapshot archive is truncated')
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const version = view.getInt32(4, true)

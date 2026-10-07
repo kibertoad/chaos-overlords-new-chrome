@@ -1,5 +1,6 @@
 import { type BrotliCodec, readSnapshotArchive, writeSnapshotArchive } from './archive.js'
 import type { BootstrapInput, MatchStatus } from './core.js'
+import { ResolverRefusedError } from './errors.js'
 
 /** What a resolver build plays. */
 export interface ResolverDescription {
@@ -64,8 +65,17 @@ export function withArchives(host: PayloadResolver, codec: BrotliCodec): MatchRe
   return {
     describe: () => host.describe(),
     bootstrap: (matchId, input) => host.bootstrap(matchId, input),
-    restore: (matchId, snapshot) =>
-      host.restore(matchId, readSnapshotArchive(snapshot.body, codec), snapshot.stateHash),
+    // An archive this host cannot read is refused like a payload the build refuses: rebuilding from
+    // the same stored body would fail the same way. Async, so the refusal rejects the promise.
+    restore: async (matchId, snapshot) => {
+      let payload: Uint8Array
+      try {
+        payload = readSnapshotArchive(snapshot.body, codec)
+      } catch (error: unknown) {
+        throw new ResolverRefusedError(error instanceof Error ? error.message : String(error))
+      }
+      return host.restore(matchId, payload, snapshot.stateHash)
+    },
     applySealedTurn: (matchId, sealedOrders) => host.applySealedTurn(matchId, sealedOrders),
     handOverSeat: (matchId, slot, toComputer) => host.handOverSeat(matchId, slot, toComputer),
     status: (matchId) => host.status(matchId),

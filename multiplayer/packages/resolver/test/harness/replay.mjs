@@ -28,6 +28,8 @@ export async function replayTranscript(resolver, transcript, prefix = '') {
   // beside the live one, so a snapshot crosses from .NET to WebAssembly and carries on identically.
   let matches = [live]
   let resolveMs = 0
+  /** This host's own snapshot of the live match at the snapshot step. */
+  let ownSnapshot
   for (const step of transcript.steps) {
     if (step.kind === 'handOver') {
       for (const id of matches) {
@@ -56,6 +58,7 @@ export async function replayTranscript(resolver, transcript, prefix = '') {
       await resolver.release(`${prefix}bare`)
       // And this host's own archive restores to the hash it was taken at.
       const own = await resolver.snapshot(live)
+      ownSnapshot = own
       check('own snapshot hash', step.hash, own.stateHash)
       const roundTrip = await resolver.restore(`${prefix}own`, own)
       check('own snapshot round trip', step.hash, roundTrip.stateHash)
@@ -68,5 +71,5 @@ export async function replayTranscript(resolver, transcript, prefix = '') {
     check(`finished (${id})`, transcript.finished, (await resolver.status(id))?.finished)
     await resolver.release(id)
   }
-  return { checks, mismatches, resolveMs }
+  return { checks, mismatches, resolveMs, ownSnapshot }
 }

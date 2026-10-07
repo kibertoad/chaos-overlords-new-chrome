@@ -7,6 +7,8 @@ import {
   writeSnapshotArchive,
 } from '../src/archive.js'
 import { nodeBrotliCodec } from '../src/codec-node.js'
+import { ResolverRefusedError } from '../src/errors.js'
+import { type PayloadResolver, withArchives } from '../src/resolver.js'
 
 const payload = new TextEncoder().encode(
   JSON.stringify({ turn: 12, cells: Array(400).fill('gang') }),
@@ -44,6 +46,26 @@ describe('the snapshot archive', () => {
 
   it('reads a body without the header as a bare payload, as older clients uploaded it', () => {
     expect(readSnapshotArchive(toBase64(payload), nodeBrotliCodec)).toEqual(payload)
+  })
+
+  it('refuses a bare payload beyond the save limit', () => {
+    const body = toBase64(new Uint8Array(MAXIMUM_PAYLOAD_BYTES + 1).fill(0x20))
+    expect(() => readSnapshotArchive(body, nodeBrotliCodec)).toThrow(/size limit/)
+  })
+
+  it('has withArchives reject an unreadable archive as resolver_refused, without calling the host', async () => {
+    let restored = false
+    const host = {
+      restore: async () => {
+        restored = true
+        return {}
+      },
+    } as unknown as PayloadResolver
+    const body = toBase64(concat(header(2, payload.length), nodeBrotliCodec.compress(payload)))
+    const pending = withArchives(host, nodeBrotliCodec).restore('m', { body, stateHash: 'h' })
+    await expect(pending).rejects.toBeInstanceOf(ResolverRefusedError)
+    await expect(pending).rejects.toThrow(/version 2/)
+    expect(restored).toBe(false)
   })
 
   it('refuses an archive version it does not read', () => {
