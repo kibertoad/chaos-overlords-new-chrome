@@ -54,11 +54,11 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   Agreement on the cases a run happens to reach is not enough. This is the
   work protocol's condition that an experiment raising an entry to
   `established` covers everything the entry says (docs/upstream/work-protocol.md).
-- Reach is measured, not assumed. For a rule or format, a temporary trace in
-  the rebuild counts each branch while every replayed run plays, and is
-  removed before commit. A case the probe sets up by writing the original's
-  memory, mirrored by the replay, counts as reached when the code after the
-  write takes the branch. For a screen, a drawn element or state counts as
+- A case counts as reached only when it is measured as below. For a rule or
+  format, a temporary trace in the rebuild counts each branch while every
+  replayed run plays, and is removed before commit. A case the probe sets up by
+  writing the original's memory, mirrored by the replay, counts as reached when
+  the code after the write takes the branch. For a screen, a drawn element or state counts as
   reached when a capture shows it and the comparison does not mask it; a
   masked element counts only when a `mandatory` deviation's Replaces item
   names it. An input counts when a recorded run performed it and recorded its

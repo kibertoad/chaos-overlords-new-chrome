@@ -31,7 +31,7 @@ static int Usage()
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
               [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer_slot:sector>,...] [--sound]
               [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...]
-              [--cash <turns:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...]
+              [--cash <turn[-turn]:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...]
               [--search <turn:definition+definition...>,...]
               [--finance <turn:sector>,...]
               [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture] [--white-key]
@@ -396,7 +396,7 @@ static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnly
 // turn, turns being one turn or a range first-last; --force turn:player:slot:force,... sets a gang's
 // force; --tolerance turn:sector:value,... sets a sector's base_tolerance (ProbePlanning).
 static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired, string? cash,
-    string? force = null, string? tolerance = null)
+    string? force, string? tolerance)
 {
     static int[] Numbers(string entry) =>
         entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
