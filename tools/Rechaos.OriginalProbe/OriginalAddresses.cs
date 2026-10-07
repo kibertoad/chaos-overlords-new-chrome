@@ -124,17 +124,17 @@ internal static class OriginalAddresses
     public const uint DetailedCombatEnd = 0x0042EE45;
     public const uint CombatClip = 0x00430C23;
     public const uint CombatClipEnd = 0x00431C53;
-    // FND-COMBAT-016: the clip player's tick, the local at ebp - CombatClipTick, which the clip sets
-    // to 0 at CombatClipTickSet; the screen shows the passes up to tick local - 1.
-    public const uint CombatClipTickSet = 0x00430C2F;
-    public const uint CombatClipTick = 0x20;
     public const uint CombatFocal = 0x004945A0;
     public const uint CombatOther = 0x00494584;
     public const uint CombatFocalBarRight = 0x0049476E;
     public const uint CombatOtherBarRight = 0x004947FE;
     public const uint SoundLoader = 0x0045867C;
+    // FND-COMBAT-016: the clip player's tick, the local at ebp - CombatClipTick, which the clip sets
+    // to 0 at CombatClipTickSet; the screen shows the passes up to tick local - 1.
+    public const uint CombatClipTickSet = 0x00430C2F;
+    public const uint CombatClipTick = 0x20;
 
-    // elapsed_turns: 0 through the first turn, up by one after each resolution.
+    // elapsed_turns (FND-STATE-007): 0 through the first turn, up by one after each resolution.
     public const uint ElapsedTurns = 0x0049CA68;
 
     // FND-AWARDS-001: the endgame's row painter, which reads the awards the builder has given.
@@ -153,7 +153,7 @@ internal static class OriginalAddresses
     public const uint PlayerNames = 0x004A2589;
     public const int PlayerNameStride = 12;
 
-    // match_over: set by the end-of-turn evaluation when the match is finished.
+    // match_over (FND-STATE-007): set by the end-of-turn evaluation when the match is finished.
     public const uint MatchOver = 0x004ABBD4;
 
     // SCR-UI-003: the Done control, (500, 282) with size 100 by 48.
@@ -171,6 +171,8 @@ internal static class OriginalAddresses
     // and site definition, element player * 22 + definition, at 0x004A24E8 (FND-SEARCH-001).
     public const uint CityRedraw = 0x004123CC;
     public const uint SiteMarker = 0x00412AC4;
+    public const uint SearchFilters = 0x004A24E8;
+    public const int SiteDefinitionCount = 22;
 
     // FND-UI-024, EXP-UI-004: the three copies of the gang-status marker function fn_00412BF7, and
     // the sector whose cell it saved under the last incoming mark.
@@ -178,8 +180,6 @@ internal static class OriginalAddresses
     public const uint GangMarkerRestore = 0x00412EB5;
     public const uint GangMarkerIncoming = 0x00412FF8;
     public const uint GangMarkerSavedSector = 0x004906A4;
-    public const uint SearchFilters = 0x004A24E8;
-    public const int SiteDefinitionCount = 22;
 
     // FND-SEARCH-002: fn_00448E32, the Search panel's handler, which runs while the panel is open.
     public const uint SearchPanel = 0x00448E32;
@@ -296,6 +296,7 @@ internal static class OriginalAddresses
         (0x00445A63, 0x2C, 0x00447ADA, 0),
         (0x00448730, 0x2C, 0x00448E30, 0xC),
     ];
+    // cash, one INT32 per player (FND-STATE-007).
     public const uint Cash = 0x004A25E8;
 
     // FND-OPTIONS-001: Slide Panels, read by the panel helpers that slide a panel in and out.
@@ -324,6 +325,7 @@ internal static class OriginalAddresses
     public const uint ComlinkSelected = 0x00498114;
     // FND-COMLINK-010: set while the Send panel's caret cell is drawn plain.
     public const uint ComlinkCaretPlain = 0x00498110;
+    // active_player (FND-STATE-008).
     public const uint ActivePlayer = 0x004ABC84;
     // FND-STATE-004: player_active, one byte per player slot.
     public const uint PlayerActive = 0x004ABBE0;
@@ -346,7 +348,8 @@ internal static class OriginalAddresses
     // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler
     // fn_0045EAB1; FND-COMLINK-004: the helper fn_0045E04D(player, count) that marks and draws one
     // message; FND-COMLINK-006: fn_00460391(player), which drops the leading read messages when the
-    // player's planning ends. FND-COMLINK-007 gives the ranges of all four.
+    // player's planning ends. FND-COMLINK-007 gives the ranges of all four, and FND-EXE-004 the
+    // last byte of fn_0045E04D.
     public const uint ComlinkView = 0x0045D61A;
     public const uint ComlinkSend = 0x0045EAB1;
     public const uint ComlinkShow = 0x0045E04D;
