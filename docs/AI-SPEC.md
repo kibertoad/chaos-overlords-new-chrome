@@ -3,7 +3,7 @@
 How the rebuild's computer players are built: the Original and Advanced policies,
 what the planner reads and guarantees, and how far recorded runs of the original
 prove it. The original's planner itself is specified in the `AI` area of the
-[spec](../spec/index/by-area.md#ai); this document does not restate it.
+[spec](../spec/index/by-area/AI.md); this document does not restate it.
 
 <!-- doc-index:begin toc depth=2 -->
 - [Original and Advanced policy architecture](#original-and-advanced-policy-architecture)
@@ -179,7 +179,7 @@ gang already standing there falls back to the all-zero tie draw.
 The Original policy has no planning code of the rebuild's own: every decision
 comes from a spec rule of the `AI` area, and no `PLACEHOLDER` comment remains in
 the planner. What the rebuild still departs from on purpose is listed in
-[DEVIATIONS.md](../DEVIATIONS.md): DEV-AI-002 (a planned action no human could
+[`deviations/`](../deviations/): DEV-AI-002 (a planned action no human could
 order gives no command), DEV-AI-004 to DEV-AI-006 (reads and writes outside the
 original's tables), DEV-AI-007 and DEV-AI-008 (Moves to distant sectors and
 hires outside the player's sectors, on by default and switched off for the
@@ -215,13 +215,13 @@ handler (RULE-AI-019 to RULE-AI-031) runs only for the gangs the scenario and
 hire roles put in its family, or the probe writes into it: families 13 and 14
 play for the Big Man and Siege objectives, and nothing in the game writes
 family 4, so only a probe write reaches its handler. Every row of the `AI`
-area in [PARITY.md](../PARITY.md) is `validated`. A rule's spec status says
+area in [parity/AI.md](../parity/AI.md) is `validated`. A rule's spec status says
 how much of it the evidence proves: an `established` rule has a static reading
 and the runs in agreement, and a `supported` one does not yet have that
 agreement for the whole rule, so branches of it that no run reaches rest on the
 static reading alone; its Open
-questions and its PARITY.md notes name them. The current status of each rule is
-in the generated [index by status](../spec/index/by-status.md), which this
+questions and its notes in [parity/AI.md](../parity/AI.md) name them. The current status of each rule is
+in the generated [index by status](../spec/index/by-status/AI.md), which this
 document does not repeat.
 
 ### How matches end

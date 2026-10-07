@@ -34,10 +34,10 @@ and holds `crackdown_turns` 7. The human's cash is -33.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state. In the replay, sector 51 cracks down
-in turns 6 and 7 while it is under police presence.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state. In the replay, sector 51 cracks down in turns 6 and 7 while it is under
+police presence.
 
 An eighth Done press eliminates the human in the original and in the rebuild,
 after 1704 calls of `roll`, so the run stops at seven presses.
