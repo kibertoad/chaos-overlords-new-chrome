@@ -77,11 +77,45 @@ jobs:
       # The recovery token's Secret Service store (libsecret) needs a session bus and an unlocked
       # keyring, which the runner image does not start. Without them its test skips, and the
       # binding would never run anywhere in automation.
+      #
+      # The packages are cached per runner image. `apt-get update` and the download usually take
+      # 10-20s, but the Azure Ubuntu mirror the runners use stalls at times, and the step then took
+      # 50-250s before apt fell back to archive.ubuntu.com. With the cache a run reads no package
+      # list and downloads nothing. A new image misses the cache and downloads them once.
+      - name: Name the runner image
+        if: runner.os == 'Linux'
+        id: runner-image
+        run: echo "name=$ImageOS-$ImageVersion" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the keyring packages
+        if: runner.os == 'Linux'
+        id: keyring-packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/keyring-packages
+          key: keyring-packages-${{ steps.runner-image.outputs.name }}
+
       - name: Install a Secret Service keyring
         if: runner.os == 'Linux'
+        env:
+          CACHE_HIT: ${{ steps.keyring-packages.outputs.cache-hit }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends dbus gnome-keyring libsecret-1-0
+          packages=(dbus gnome-keyring libsecret-1-0)
+          download() {
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends --download-only "${packages[@]}"
+            rm -rf ~/keyring-packages
+            mkdir -p ~/keyring-packages
+            find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp {} ~/keyring-packages/ \;
+          }
+          [ "$CACHE_HIT" = true ] || download
+          shopt -s nullglob
+          debs=(~/keyring-packages/*.deb)
+          # A cached set that no longer installs on this image is downloaded again.
+          if [ ${#debs[@]} -eq 0 ] || ! sudo apt-get install -y --no-install-recommends "${debs[@]}"; then
+            download
+            sudo apt-get install -y --no-install-recommends "${packages[@]}"
+          fi
 
       - name: Verify, build, and test
         if: runner.os != 'Linux'
