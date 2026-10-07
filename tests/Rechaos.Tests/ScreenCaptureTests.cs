@@ -50,27 +50,51 @@ public sealed partial class ScreenCaptureTests
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
     {
         var capture = Capture(experiment, run, step);
-        if (capture.BeforeMatch is null && !OriginalNewGameExperimentTests.IsReplayed(experiment))
-            Assert.Skip($"{capture} comes from a run that is not replayed, so the rebuild has no endpoint to draw.");
-        if (capture.Unreplayable is { } reason)
-            Assert.Skip($"{capture} cannot be reached in the rebuild: {reason}.");
-        if (capture.Elements.Count == 0)
-            Assert.Skip($"{capture} records no screen elements; the probe's digest command adds them.");
-        // FND-COMBAT-016: the probe keeps a shot whose clip tick moved during every attempt without
-        // the tick, and drawing the clip at its first tick would compare a different picture. A shot
-        // taken between two clips of a presentation, after one returned and before the next set its
-        // tick up, has no tick either (EXP-UI-029).
-        if (capture.ClipTick is null && capture.Screens.Contains("SCR-COMBAT-002"))
-            Assert.Skip($"{capture} shows the Detailed Combat panel without a clip tick: the tick moved during every copy, or the shot fell between two clips.");
-        if (Repainted.TryGetValue((experiment, run, step), out var repaint))
-            Assert.Skip($"{capture} cannot be compared: {repaint}.");
+        if (SkipReason(capture) is { } skip) Assert.Skip(skip);
+        // First, so a frame a worker drew is taken even when reading the capture fails.
+        var rebuild = Renders.Get(capture);
         var masks = ScreenCaptureMasks.For(capture.Screens);
         // The capture itself is only needed for elements with white or masked pixels; the
         // others are compared by digest.
         var path = OriginalGameFiles.ResolveCapture(
             Environment.GetEnvironmentVariable(OriginalGameFiles.EnvironmentVariable), capture.Xxh3);
         var original = path is null ? null : ScreenFrame.ReadBitmap(File.ReadAllBytes(path));
-        var rebuild = capture.BeforeMatch is { } screen
+
+        var results = capture.Elements
+            .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
+        var output = TestContext.Current.TestOutputHelper;
+        foreach (var result in results) output?.WriteLine(result.ToString());
+        Assert.Empty(results.Where(result => result.Verdict == ElementVerdict.Differs).Select(result => result.ToString()));
+    }
+
+    // Each frame starts the game, so the rows draw theirs ahead on a few workers.
+    private static readonly RowPrefetch<ScreenCaptureRecord, ScreenFrame> Renders = new(
+        () => ScreenCaptureRecord.LoadAll().Where(capture => SkipReason(capture) is null), Render);
+
+    private static string? SkipReason(ScreenCaptureRecord capture)
+    {
+        if (capture.BeforeMatch is null && !OriginalNewGameExperimentTests.IsReplayed(capture.Experiment))
+            return $"{capture} comes from a run that is not replayed, so the rebuild has no endpoint to draw.";
+        if (capture.Unreplayable is { } reason)
+            return $"{capture} cannot be reached in the rebuild: {reason}.";
+        if (capture.Elements.Count == 0)
+            return $"{capture} records no screen elements; the probe's digest command adds them.";
+        // FND-COMBAT-016: the probe keeps a shot whose clip tick moved during every attempt without
+        // the tick, and drawing the clip at its first tick would compare a different picture. A shot
+        // taken between two clips of a presentation, after one returned and before the next set its
+        // tick up, has no tick either (EXP-UI-029).
+        if (capture.ClipTick is null && capture.Screens.Contains("SCR-COMBAT-002"))
+            return $"{capture} shows the Detailed Combat panel without a clip tick: the tick moved during every copy, or the shot fell between two clips.";
+        if (Repainted.TryGetValue((capture.Experiment, capture.Run, capture.Step), out var repaint))
+            return $"{capture} cannot be compared: {repaint}.";
+        // Without an asset pack no frame is drawn, so no replay is copied and nothing is queued.
+        return RebuildFrame.MissingAssetPack();
+    }
+
+    private static ScreenFrame Render(ScreenCaptureRecord capture)
+    {
+        var (experiment, run, step) = (capture.Experiment, capture.Run, capture.Step);
+        return capture.BeforeMatch is { } screen
             ? RebuildFrame.RenderBeforeMatch(screen,
                 $"{experiment}-{run}-{screen}" + (capture.SetupStep is { } setupStep ? $"-{setupStep}" : ""),
                 capture.Clicks)
@@ -79,12 +103,6 @@ public sealed partial class ScreenCaptureTests
                 $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
                 capture.ItemFrame, clipTick: capture.ClipTick, idlePhase: capture.IdlePhase,
                 caretPhase: capture.CaretPhase, clipIndex: capture.ClipIndex);
-
-        var results = capture.Elements
-            .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
-        var output = TestContext.Current.TestOutputHelper;
-        foreach (var result in results) output?.WriteLine(result.ToString());
-        Assert.Empty(results.Where(result => result.Verdict == ElementVerdict.Differs).Select(result => result.ToString()));
     }
 
     // Shots whose screen a repaint of the original's window changed. The rebuild never loses what it
