@@ -142,22 +142,25 @@ export interface PlayerRepository {
    */
   create(player: Player): Promise<boolean>
   /**
-   * Inserts a deterministic-id late member after start; false if any row of that seat still holds
-   * a claim on it (see `isVacated`), or if the id is taken.
+   * Seats a deterministic-id late member after start and releases the seat's former players, as
+   * ONE atomic unit: the insert, and the revocation of the token of every computer-controlled row
+   * of the seat, which ends a former player's right to `rejoin` it. Returns the ids it revoked
+   * (empty when the seat had none to revoke), or null when it refused, in which case nothing was
+   * revoked either.
    *
-   * `maxPlayers` is part of the same statement, and counts only the rows that still hold a claim,
-   * because two late joiners taking two different free slots each passed a capacity check the
-   * other invalidated and the match ended up over capacity, with a roster the match view's seat
-   * schema then refused.
+   * It refuses when the match is not running, when the id is taken, when a row of the seat is not
+   * computer controlled (a human holds it, or a former player took it back a moment earlier), and
+   * when the match is at `maxPlayers` counting the rows that still hold a claim (see `isVacated`)
+   * once the seat's computer rows are released.
+   *
+   * Capacity is part of the unit because two late joiners taking two different free slots each
+   * passed a capacity check the other invalidated, and the match ended up over capacity with a
+   * roster the match view's seat schema then refused. The release is part of it because a claim
+   * refused after a separate release left the seat with nobody: the former player had lost the
+   * right to return and the claimant had not taken it. A `rejoin` racing the claim either lands
+   * first, so the claim refuses, or finds its token revoked.
    */
-  createLate(player: Player): Promise<boolean>
-  /**
-   * Revokes the token of every computer-controlled row of one seat, in ONE statement, and returns
-   * the ids it revoked. This is the step that ends a former player's right to `rejoin` the seat
-   * when a late joiner claims it. Rows a human holds are left alone, so a player who took the seat
-   * back a moment earlier keeps it and the claim's insert then fails.
-   */
-  releaseComputerSeat(matchId: string, slot: number): Promise<string[]>
+  createLate(player: Player): Promise<{ released: string[] } | null>
   get(id: string): Promise<Player | null>
   /** Never matches a revoked membership, whose token hash is null. */
   getByTokenHash(tokenHash: string): Promise<Player | null>

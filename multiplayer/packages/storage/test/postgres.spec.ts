@@ -169,8 +169,46 @@ describe.skipIf(!url)('postgres', () => {
       const joins = [storage.players.createLate(player(2)), storage.players.createLate(player(3))]
       await waitUntilBlocked(client, 2)
       await client.query('COMMIT')
-      expect((await Promise.all(joins)).sort()).toEqual([false, true])
+      expect((await Promise.all(joins)).map((claim) => claim !== null).sort()).toEqual([
+        false,
+        true,
+      ])
       expect((await storage.players.listByMatch(match.id)).length).toBe(3)
+    } finally {
+      await client.query('ROLLBACK').catch(() => {})
+      await client.end()
+    }
+  })
+
+  it('refuses a late claim when the former player takes the seat back while it waits', async () => {
+    // `rejoin` does not take the match lock, so the claim and the return meet on the former
+    // player's row. The return commits first here; the claim must see a human on the seat and
+    // leave the returned player holding it, rather than seat a second human beside them.
+    const { storage, match, player } = await matchWithPlayers(3, 3)
+    const former = player(2)
+    await storage.players.setStatus(former.id, 'computer')
+    const claim: Player = {
+      ...player(2),
+      id: `${match.id}-late2`,
+      joinOrder: 9,
+      tokenHash: `${match.id}-late-token`,
+    }
+    const client = new pg.Client({ connectionString: url as string })
+    await client.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query(
+        "UPDATE players SET status = 'active' WHERE id = $1 AND token_hash IS NOT NULL",
+        [former.id],
+      )
+      const claimed = storage.players.createLate(claim)
+      await waitUntilBlocked(client)
+      await client.query('COMMIT')
+      expect(await claimed).toBeNull()
+      const back = await storage.players.get(former.id)
+      expect(back?.status).toBe('active')
+      expect(back?.tokenHash).toBe(former.tokenHash)
+      expect(await storage.players.get(claim.id)).toBeNull()
     } finally {
       await client.query('ROLLBACK').catch(() => {})
       await client.end()

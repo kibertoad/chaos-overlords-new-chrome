@@ -285,6 +285,9 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
  * The rows that still hold a claim on their seat: every row but a computer-controlled one whose
  * token is gone. The SQL twin of `isVacated`, negated.
  */
+/** Thrown inside the late-claim transaction to roll it back when the claim is refused. */
+const LATE_CLAIM_REFUSED = new Error('late seat claim refused')
+
 function holdsClaim() {
   const { players } = schema
   return or(ne(players.status, 'computer'), isNotNull(players.tokenHash))
@@ -335,43 +338,68 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
       return rows.length === 1
     },
     async createLate(player) {
-      // Lock first, then run the guarded insert as a new READ COMMITTED statement. Putting the
-      // count in the locking SELECT would still let two joins evaluate it against the same old
-      // snapshot. `no key update` serializes late joins without blocking the foreign-key checks
-      // every other insert under this match takes.
-      return db.transaction(async (tx) => {
-        const locked = await tx
-          .select({ id: matches.id })
-          .from(matches)
-          .where(and(eq(matches.id, player.matchId), eq(matches.status, 'running')))
-          .for('no key update')
-        if (locked.length === 0) return false
-        const occupied = tx
-          .select({ id: players.id })
-          .from(players)
-          .where(
-            and(eq(players.matchId, player.matchId), eq(players.slot, player.slot), holdsClaim()),
-          )
-        const rows = await tx
-          .insert(players)
-          .select(
-            tx
-              .select(playerValues(player))
-              .from(matches)
-              .where(
-                and(
-                  eq(matches.id, player.matchId),
-                  eq(matches.status, 'running'),
-                  notExists(occupied),
-                  // Capacity in the same statement as the insert; see the SQLite twin.
-                  sql`(select count(*) from ${players} where ${players.matchId} = ${player.matchId} and ${holdsClaim()}) < ${matches.maxPlayers}`,
-                ),
+      // Lock first, then release, then run the guarded insert as a new READ COMMITTED statement.
+      // Putting the count in the locking SELECT would still let two joins evaluate it against the
+      // same old snapshot. `no key update` serializes late joins without blocking the foreign-key
+      // checks every other insert under this match takes.
+      //
+      // The release comes before the insert because `rejoin` does not take the match lock. Its
+      // update and the release meet on the former player's row: one waits for the other, and a
+      // `rejoin` that commits first leaves a human on the seat for the insert's fresh snapshot to
+      // see. Released after the insert instead, a `rejoin` committed between the two would have
+      // been skipped by the release and missed by the insert, and both players would hold the
+      // seat. A refused insert rolls the release back.
+      try {
+        return await db.transaction(async (tx) => {
+          const locked = await tx
+            .select({ id: matches.id })
+            .from(matches)
+            .where(and(eq(matches.id, player.matchId), eq(matches.status, 'running')))
+            .for('no key update')
+          if (locked.length === 0) throw LATE_CLAIM_REFUSED
+          const released = await tx
+            .update(players)
+            .set({ tokenHash: null })
+            .where(
+              and(
+                eq(players.matchId, player.matchId),
+                eq(players.slot, player.slot),
+                eq(players.status, 'computer'),
+                isNotNull(players.tokenHash),
               ),
-          )
-          .onConflictDoNothing()
-          .returning({ id: players.id })
-        return rows.length === 1
-      })
+            )
+            .returning({ id: players.id })
+          const occupied = tx
+            .select({ id: players.id })
+            .from(players)
+            .where(
+              and(eq(players.matchId, player.matchId), eq(players.slot, player.slot), holdsClaim()),
+            )
+          const rows = await tx
+            .insert(players)
+            .select(
+              tx
+                .select(playerValues(player))
+                .from(matches)
+                .where(
+                  and(
+                    eq(matches.id, player.matchId),
+                    eq(matches.status, 'running'),
+                    notExists(occupied),
+                    // Capacity in the same statement as the insert; see the SQLite twin.
+                    sql`(select count(*) from ${players} where ${players.matchId} = ${player.matchId} and ${holdsClaim()}) < ${matches.maxPlayers}`,
+                  ),
+                ),
+            )
+            .onConflictDoNothing()
+            .returning({ id: players.id })
+          if (rows.length !== 1) throw LATE_CLAIM_REFUSED
+          return { released: released.map((row) => row.id) }
+        })
+      } catch (error) {
+        if (error === LATE_CLAIM_REFUSED) return null
+        throw error
+      }
     },
     async get(id) {
       return firstOrNull((await db.select().from(players).where(eq(players.id, id))).map(toPlayer))
@@ -406,21 +434,6 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
         computer: row.status === 'computer',
         vacated: row.status === 'computer' && row.tokenHash === null,
       }))
-    },
-    async releaseComputerSeat(matchId, slot) {
-      const rows = await db
-        .update(players)
-        .set({ tokenHash: null })
-        .where(
-          and(
-            eq(players.matchId, matchId),
-            eq(players.slot, slot),
-            eq(players.status, 'computer'),
-            isNotNull(players.tokenHash),
-          ),
-        )
-        .returning({ id: players.id })
-      return rows.map((row) => row.id)
     },
     async setStatus(playerId, status) {
       await db.update(players).set({ status }).where(eq(players.id, playerId))

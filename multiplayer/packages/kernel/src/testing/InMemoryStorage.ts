@@ -196,26 +196,27 @@ export class InMemoryStorage implements MultiplayerStorage {
     },
     createLate: async (player) => {
       const match = this.matchRows.get(player.matchId)
-      if (match?.status !== 'running') return false
-      if (this.playerRows.has(player.id)) return false
-      const claimants = [...this.playerRows.values()].filter(
-        (candidate) => candidate.matchId === player.matchId && !isVacated(candidate),
+      if (match?.status !== 'running') return null
+      if (this.playerRows.has(player.id)) return null
+      const rows = [...this.playerRows.values()].filter(
+        (candidate) => candidate.matchId === player.matchId,
       )
-      if (claimants.some((candidate) => candidate.slot === player.slot)) return false
-      // Capacity is part of the claim, not a check the caller made a moment earlier.
-      if (claimants.length >= match.settings.maxPlayers) return false
-      this.playerRows.set(player.id, { ...player })
-      return true
-    },
-    releaseComputerSeat: async (matchId, slot) => {
+      const seat = rows.filter((candidate) => candidate.slot === player.slot)
+      if (seat.some((candidate) => candidate.status !== 'computer')) return null
+      // Capacity is part of the claim, not a check the caller made a moment earlier, and it counts
+      // the seat's computer rows as the claim leaves them: released.
+      const claimants = rows.filter(
+        (candidate) => candidate.slot !== player.slot && !isVacated(candidate),
+      )
+      if (claimants.length >= match.settings.maxPlayers) return null
       const released: string[] = []
-      for (const player of this.playerRows.values()) {
-        if (player.matchId !== matchId || player.slot !== slot) continue
-        if (player.status !== 'computer' || player.tokenHash === null) continue
-        player.tokenHash = null
-        released.push(player.id)
+      for (const former of seat) {
+        if (former.tokenHash === null) continue
+        former.tokenHash = null
+        released.push(former.id)
       }
-      return released
+      this.playerRows.set(player.id, { ...player })
+      return { released }
     },
     get: async (id) => clone(this.playerRows.get(id)),
     getByTokenHash: async (tokenHash) =>

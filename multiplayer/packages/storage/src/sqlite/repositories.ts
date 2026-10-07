@@ -39,6 +39,9 @@ import {
   toTurnOrders,
   toTurnReport,
 } from '../shared/mappers'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import type { DrizzleD1Database } from 'drizzle-orm/d1'
+import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
 import type { SqliteDatabase } from './database'
 import { sqliteEventRepository } from './events'
 import * as schema from './schema'
@@ -315,6 +318,67 @@ function playerValues(player: Player) {
   }
 }
 
+/** Whether the database is D1, the one SQLite driver that batches instead of transacting. */
+function isD1(db: SqliteDatabase): db is SqliteDatabase & DrizzleD1Database<typeof schema> {
+  return typeof (db as Partial<DrizzleD1Database<typeof schema>>).batch === 'function'
+}
+
+/**
+ * The two statements of a late seat claim, in the order they run.
+ *
+ * The insert treats the seat's computer-controlled rows as already released: it refuses only a
+ * seat with a row that is not computer controlled, and counts capacity without the seat's computer
+ * rows. The release then revokes their tokens only when the insert landed, which it tests by the
+ * claimant's row holding the claimant's token, so a refused claim releases nothing. Run as one
+ * unit, nothing can come between them: a `rejoin` lands before the insert, which then sees a human
+ * on the seat, or after the release, and finds its token revoked.
+ *
+ * Capacity is in the same statement as the insert. Two late joiners for two different free slots
+ * each passed a capacity check taken a moment before the other's insert, and the match ended up
+ * holding more players than `maxPlayers`.
+ */
+function lateSeatClaim<TKind extends 'sync' | 'async', TRunResult>(
+  db: BaseSQLiteDatabase<TKind, TRunResult, typeof schema>,
+  player: Player,
+) {
+  const { matches, players } = schema
+  const seat = and(eq(players.matchId, player.matchId), eq(players.slot, player.slot))
+  const humanHeld = db
+    .select({ id: players.id })
+    .from(players)
+    .where(and(seat, ne(players.status, 'computer')))
+  const insert = db
+    .insert(players)
+    .select((query) =>
+      query
+        .select(playerValues(player))
+        .from(matches)
+        .where(
+          and(
+            eq(matches.id, player.matchId),
+            eq(matches.status, 'running'),
+            notExists(humanHeld),
+            sql`(select count(*) from ${players} where ${players.matchId} = ${player.matchId} and ${holdsClaim()} and not (${players.slot} = ${player.slot} and ${players.status} = 'computer')) < ${matches.maxPlayers}`,
+          ),
+        ),
+    )
+    .onConflictDoNothing()
+    .returning({ id: players.id })
+  const release = db
+    .update(players)
+    .set({ tokenHash: null })
+    .where(
+      and(
+        seat,
+        eq(players.status, 'computer'),
+        isNotNull(players.tokenHash),
+        sql`exists (select 1 from ${players} as claimant where claimant.id = ${player.id} and claimant.token_hash = ${player.tokenHash})`,
+      ),
+    )
+    .returning({ id: players.id })
+  return { insert, release }
+}
+
 function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
   const { matches, players } = schema
   return {
@@ -336,34 +400,22 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
         .returning({ id: players.id })
       return rows.length === 1
     },
+    /**
+     * Two statements run as one unit: D1 has no interactive transactions and runs a `batch`
+     * atomically, and better-sqlite3 runs a transaction's callback synchronously. See
+     * `lateSeatClaim` for the statements.
+     */
     async createLate(player) {
-      const occupied = db
-        .select({ id: players.id })
-        .from(players)
-        .where(
-          and(eq(players.matchId, player.matchId), eq(players.slot, player.slot), holdsClaim()),
-        )
-      const rows = await db
-        .insert(players)
-        .select(
-          db
-            .select(playerValues(player))
-            .from(matches)
-            .where(
-              and(
-                eq(matches.id, player.matchId),
-                eq(matches.status, 'running'),
-                notExists(occupied),
-                // Capacity in the same statement as the insert. Two late joiners for two different
-                // free slots each passed a capacity check taken a moment before the other's insert,
-                // and the match ended up holding more players than `maxPlayers`.
-                sql`(select count(*) from ${players} where ${players.matchId} = ${player.matchId} and ${holdsClaim()}) < ${matches.maxPlayers}`,
-              ),
-            ),
-        )
-        .onConflictDoNothing()
-        .returning({ id: players.id })
-      return rows.length === 1
+      if (isD1(db)) {
+        const { insert, release } = lateSeatClaim(db, player)
+        const [inserted, released] = await db.batch([insert, release])
+        return inserted.length === 1 ? { released: released.map((row) => row.id) } : null
+      }
+      return (db as unknown as BetterSQLite3Database<typeof schema>).transaction((tx) => {
+        const { insert, release } = lateSeatClaim(tx, player)
+        if (insert.all().length !== 1) return null
+        return { released: release.all().map((row) => row.id) }
+      })
     },
     async get(id) {
       return firstOrNull((await db.select().from(players).where(eq(players.id, id))).map(toPlayer))
@@ -398,21 +450,6 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
         computer: row.status === 'computer',
         vacated: row.status === 'computer' && row.tokenHash === null,
       }))
-    },
-    async releaseComputerSeat(matchId, slot) {
-      const rows = await db
-        .update(players)
-        .set({ tokenHash: null })
-        .where(
-          and(
-            eq(players.matchId, matchId),
-            eq(players.slot, slot),
-            eq(players.status, 'computer'),
-            isNotNull(players.tokenHash),
-          ),
-        )
-        .returning({ id: players.id })
-      return rows.map((row) => row.id)
     },
     async setStatus(playerId, status) {
       await db.update(players).set({ status }).where(eq(players.id, playerId))
