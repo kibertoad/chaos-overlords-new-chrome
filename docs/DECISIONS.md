@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | Date | Decision |
 |---|---|
 | 2026-10-06 | [Accessibility criteria the rebuild meets](#2026-10-06--accessibility-criteria-the-rebuild-meets) |
+| 2026-10-06 | [Chat in the online lobby, through the match's event log](#2026-10-06--chat-in-the-online-lobby-through-the-matchs-event-log) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
@@ -75,6 +76,47 @@ Reason: these are the criteria from WCAG 2.2 (2.2.2, 2.3.3, 1.3.3, 2.1.1,
 the player can do. Criteria that would need new content, such as spoken text
 or larger fonts with a new layout, are out of scope while screens match the
 original pixel for pixel.
+
+## 2026-10-06 — Chat in the online lobby, through the match's event log
+
+- Decision: players seated in an online lobby can send each other short text
+  messages until the host starts the match. A message is posted with
+  `POST /matches/:id/chat` and stored as a `lobby.chatMessage` event in the
+  match's own event log. The game reads new events whenever its once-a-second
+  lobby poll shows the log has grown, so a message reaches the others within
+  about a second, and a player who joins later reads the conversation so far.
+- Lobby only. Once the match starts, the server refuses chat
+  (`match_not_in_lobby`) and the game hides the panel. Inside a match the
+  original's Comlink is the channel between players, with its own rules about
+  who may write to whom and when (RULE-COMLINK-002 and RULE-COMLINK-003). A
+  second, unrestricted channel beside it would change how the diplomacy of a
+  match is played. Players are free to talk elsewhere, but the game does not
+  offer that channel.
+- Limits:
+  - A message is 1 to 160 characters after trimming and NFC normalisation,
+    the length of a Comlink message. Control, format and private-use
+    characters are refused, as in names.
+  - Each player may post ten messages a minute.
+  - Once a lobby's log holds 1,000 events, chat is refused with
+    `lobby_log_full`. The log is the only store and lobby retention keeps it
+    for days, so a cap on its length is what bounds what one lobby can cost
+    the server, whichever process counted the rate. The check and the append
+    are separate steps, so posts that arrive together can carry the log past
+    1,000 by at most one message each. The cap bounds the log; it does not
+    need to be exact, so no atomic check-and-append is added to storage.
+- The game draws chat in the original font, which has upper-case letters,
+  digits and punctuation. A character it has no glyph for is drawn blank, and
+  the game's own input accepts only characters it can draw. The server accepts
+  any safe text, because other clients may read it.
+- Moderation is the host's kick: it revokes the member's token, which ends
+  their chat along with their seat. Messages already sent stay in the log.
+  There is no word filter.
+- Transport: the event log rather than a WebSocket lane. The lobby already
+  polls once a second, and the log gives ordering, history for latecomers,
+  retention and deletion with the match, all without new infrastructure on
+  either runtime.
+- Status: implemented and tested; protocol version 25, session version
+  unchanged.
 
 ## 2026-10-06 — Recover from a desync without waiting on the host
 

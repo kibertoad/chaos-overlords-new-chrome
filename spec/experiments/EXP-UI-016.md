@@ -36,7 +36,7 @@ press the upper and lower halves of the Comlink control (RULE-UI-002), press
 the card of player 1 on the Send panel and then Cancel, with a copy after each
 of the last three presses. For a copy of the Send panel the probe reads the
 caret's phase byte `0x00498110` before and after the copy (FND-COMLINK-010)
-and keeps it as the shot's item frame, 3 while it is 0 and 0 while it is set,
+and keeps it as the shot's `caret_phase`, 3 while it is 0 and 0 while it is set,
 when the two reads agree.
 
 ## Observations

@@ -91,7 +91,7 @@ public sealed class OriginalAiScenarioStandingRulesTests
             ], owner: id is 0 or 1 ? setups[0].Id : id == 63 ? setups[1].Id : null))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            scenario, GameDuration.SixMonths, 41, setups, AiDifficulty.Criminal),
+            scenario, GameDuration.SixMonths, 41, setups, MatchDeviations.Original, AiDifficulty.Criminal),
             players, sectors);
     }
 }

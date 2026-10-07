@@ -131,6 +131,6 @@ public sealed class OriginalAiFamilyThreeRulesTests
             ], owner: id == 0 ? setups[0].Id : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 5, setups), players, sectors);
+            ScenarioId.Greed, GameDuration.SixMonths, 5, setups, MatchDeviations.Original), players, sectors);
     }
 }
