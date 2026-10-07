@@ -62,9 +62,9 @@ The Search panel copy `0x00449A91` in `fn_004499A9`:
 - The Search handler `fn_00448E32` loads `PX05024` into `(0,144)`, 344 by 209,
   of surface 7 at `0x00448E8D`, then `PX00150` into `(0,0)`, 220 by 56, at
   `0x00448ED5`, and then calls `fn_00449925`, which calls `fn_004499A9` for
-  each of the 22 rows. The handler's later calls of `fn_00449925` (after ALL,
-  after NONE, after a click on a row) follow the same loads, and the handler
-  has no other load into surface 7.
+  each of the 22 rows, as FND-SEARCH-004 records. The handler's later calls
+  of `fn_00449925` (after ALL, after NONE, after a click on a row) follow the
+  same loads, and the handler has no other load into surface 7.
 - `fn_004499A9(n, selected)` copies surface 7 to surface 7 with mode 1: source
   `(20 * (n % 11), 14 * (n / 11))`, 20 by 14, destination
   `(102 + 116 * (n / 11), 166 + 15 * (n % 11))`, 20 by 14. It writes the name
@@ -131,8 +131,9 @@ The copy mode decides pixels in all three: each icon cell holds white, and
 the overlay is white everywhere but its two arrows. With the key matching
 (RULE-GFX-003) the icon shows the panel behind its white pixels, and the
 overlay leaves the portrait visible with only the arrows drawn on it. The
-overlay's two bottom rows, below the 60 rows of the portrait, leave the
-background copied from surface 1.
+overlay's two bottom rows, y 360 and 361, lie below the 60 rows of the
+portrait and leave what the card already holds there: the background copied
+from surface 1 and, on y 361, the first row of the seat's name.
 
 ## Alternatives
 

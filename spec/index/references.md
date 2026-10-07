@@ -4213,7 +4213,7 @@ None.
 | glossary: player_awards | glossary |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | evidence |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | evidence |
-| [RULE-GFX-003](../rules/RULE-GFX-003.md) | evidence |
+| [RULE-GFX-003](../rules/RULE-GFX-003.md) | body, evidence |
 | [SCR-AWARDS-001](../screens/SCR-AWARDS-001.md) | body, evidence |
 | [SCR-AWARDS-002](../screens/SCR-AWARDS-002.md) | body, evidence |
 

@@ -27,10 +27,10 @@ Whenever wrapper `0x00427864` is called with mode 1 for an unscaled copy. A
 scaled copy ignores the mode and is opaque. The mode-1 calls are listed in
 FND-PLATFORM-015: 64 of them copy cells of the interface sheet `PX00129`
 (FND-UI-031), and 8 copy from surface 7, which holds `PX00150` for the site
-markers and the Search panel's icons, `PX06004` for the Last Turn
-illustration, `PX00140` for the arrow overlay of the setup screen and of the
-two network lobbies' seat cards, and `PX00201` for the award icons when they
-are drawn (FND-GFX-009).
+markers and the Search panel's icons (FND-GFX-009), `PX06004` for the Last
+Turn illustration, `PX00140` for the arrow overlay of the setup screen and of
+the two network lobbies' seat cards (FND-GFX-009), and `PX00201` for the award
+icons when they are drawn (FND-AWARDS-004).
 
 ## Parameters
 
@@ -93,3 +93,7 @@ None known.
   (FND-PLATFORM-015).
 - No run at 8-bit depth has been made, so the 8-bit key rests on the static
   reading alone.
+- Whether the network dispatcher can reach the lobby seat functions after the
+  lobby handler has returned, or the Site Information panel opened from a
+  Search row writes the top rows of surface 7, either with surface 7 holding
+  another image, has not been traced (FND-GFX-009).

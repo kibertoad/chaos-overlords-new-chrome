@@ -16,7 +16,7 @@ related: [SCR-SETUP-001, SCR-NET-001]
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
 | Background | `DATA/PX16/PX00145` | None | `(0, 0, 640, 460)` | After the connection opens | FND-SETUP-006 |
-| Seat card, per configured seat | Drawn as the player card of SCR-SETUP-001, with the arrow overlay `(220, 138, 64, 62)` of `DATA/PX16/PX00140` keyed on exact white over the enlarged portrait of every configured seat | The seat's portrait and name | The seat cell's origin | The seat is configured | FND-SETUP-006, FND-SETUP-005, FND-GFX-009 |
+| Seat card, per configured seat | Drawn as the player card of SCR-SETUP-001, with the arrow overlay `(220, 138, 64, 62)` of `DATA/PX16/PX00140` keyed on exact white over the enlarged portrait of every configured seat | The seat's portrait and name | `(cardX, cardY - 3, 76, 68)`, with card origins `(239,125)`, `(322,125)`, `(239,199)` and `(322,199)` for seats 0 to 3; the overlay at `(cardX + 12, cardY - 3, 64, 62)` | The seat is configured | FND-SETUP-006, FND-SETUP-005, FND-GFX-009 |
 
 ## Mouse input
 
