@@ -104,6 +104,19 @@ The `./` matters: without it apt looks the name up in its repositories. Remove
 the game with `sudo apt remove chaos-overlords-new-chrome`. Debian 11 and older
 cannot read the package, because their dpkg does not unpack zstd.
 
+Packages up to 0.10.8 accept ICU only up to `libicu76`, so on Ubuntu 26.04,
+which ships `libicu78`, apt reports the dependency as not installable and
+removes the package again. Add `libicu78` to the package's dependencies and
+install the result instead:
+
+```shell
+dpkg-deb -R "ChaosOverlords-NewChrome-linux-x64-Setup-$VERSION.deb" chaos-overlords-deb
+sed -i 's/libicu76 |/libicu78 | libicu76 |/' chaos-overlords-deb/DEBIAN/control
+dpkg-deb -b --root-owner-group chaos-overlords-deb "ChaosOverlords-NewChrome-linux-x64-Setup-$VERSION-icu78.deb"
+rm -rf chaos-overlords-deb
+sudo apt install "./ChaosOverlords-NewChrome-linux-x64-Setup-$VERSION-icu78.deb"
+```
+
 Fedora, Arch Linux and other distributions without apt have no package of their
 own yet. Install the libraries the game needs, unpack the `.deb` with `ar` and
 `tar`, and copy its files into place. On Fedora:
