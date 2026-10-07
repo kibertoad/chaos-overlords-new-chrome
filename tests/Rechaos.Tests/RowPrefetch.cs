@@ -5,13 +5,12 @@ namespace Rechaos.Tests;
 /// the rows of one class one after another, so a class whose rows each replay a match or start the
 /// game is a chain no other core can help with. Once a second row asks for its value, every key
 /// is queued for <see cref="RowPrefetchWorkers.Count"/> threads, the costliest first when a
-/// <c>cost</c> is given, so a long computation does not start last and hold up the end of the
-/// chain; a row whose key no worker has taken
-/// yet computes it on its own thread, and a row whose key is taken waits for it. A run that asks
-/// for one row queues nothing. A filtered run that asks for two or more rows still queues every
-/// key, and the workers compute values no row reads until the test host exits
-/// (<see cref="RowPrefetchWorkers"/> stops them). A key asked for again after its row had it is
-/// computed again.
+/// <c>cost</c> is given and the run is in CI, so a long computation does not start last and hold
+/// up the end of the chain; a row whose key no worker has taken yet computes it on its own thread,
+/// and a row whose key is taken waits for it. A run that asks for one row queues nothing. A
+/// filtered run that asks for two or more rows still queues every key, and the workers compute
+/// values no row reads until the test host exits (<see cref="RowPrefetchWorkers"/> stops them). A
+/// key asked for again after its row had it is computed again.
 /// </summary>
 /// <remarks>
 /// The value, or the exception computing it threw, reaches the row that asks for its key, so a
@@ -29,6 +28,11 @@ internal sealed class RowPrefetch<TKey, TValue>(
         public TaskCompletionSource<TValue> Result { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public bool Claim() => Interlocked.Exchange(ref _claimed, 1) == 0;
     }
+
+    // A filtered run, which is how the tests run locally, reads few of the keys, and queueing the
+    // costliest first starts with values no row reads: 8 rows of one theory took 11-12s instead of
+    // 7s. A run of the whole class, as in CI, ends 5s sooner. CI is set on the CI runners.
+    private static readonly bool OrderByCost = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI"));
 
     private readonly object _gate = new();
     private readonly Dictionary<TKey, Slot> _slots = [];
@@ -66,14 +70,25 @@ internal sealed class RowPrefetch<TKey, TValue>(
         try
         {
             listed = keys().Distinct().Where(key => !_asked.Contains(key)).ToList();
-            // OrderByDescending is stable, so keys of equal cost keep the rows' order.
-            if (cost is not null) listed = listed.OrderByDescending(cost).ToList();
         }
         catch (Exception)
         {
             // The row asking has nothing to do with the failure, so nothing is queued and every
             // row computes its own value. The rows' data comes from the same source and reports it.
             return;
+        }
+        if (cost is not null && OrderByCost)
+        {
+            try
+            {
+                // OrderByDescending is stable, so keys of equal cost keep the rows' order.
+                listed = listed.OrderByDescending(cost).ToList();
+            }
+            catch (Exception)
+            {
+                // No row reads the cost, so a failure here only loses the ordering: the keys stay
+                // in the rows' order.
+            }
         }
         var pending = new Queue<(TKey, Slot)>();
         foreach (var key in listed)

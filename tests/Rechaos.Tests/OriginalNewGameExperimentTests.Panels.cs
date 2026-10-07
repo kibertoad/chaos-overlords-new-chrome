@@ -80,13 +80,13 @@ public sealed partial class OriginalNewGameExperimentTests
 
     // The panels the rebuild shows at each planning entry of a run, the Done presses its replay
     // made, and whether it ends at a planning entry, whose panels are then the last ones. Each run
-    // is played again with its own game, so the rows replay theirs ahead on a few workers, the
-    // longest matches first.
+    // is played again with its own game, so the rows replay theirs ahead on a few workers, in CI
+    // the longest matches first.
     private sealed record PanelReplay(
         List<string>[] Shown, int DonePresses, bool EndsAtPlanningEntry, ExceptionDispatchInfo? LastEntryFailure);
 
     private static readonly RowPrefetch<(string Experiment, int Run), PanelReplay> PanelReplays =
-        new(PanelRunKeys, key => ReplayPanels(Run(key.Experiment, key.Run)), key => Run(key.Experiment, key.Run).DoneCount);
+        new(PanelRunKeys, key => ReplayPanels(Run(key.Experiment, key.Run)), ReplayCost);
 
     private static PanelReplay ReplayPanels(RecordedRun recorded)
     {
