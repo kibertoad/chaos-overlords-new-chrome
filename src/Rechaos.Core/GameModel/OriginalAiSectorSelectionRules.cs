@@ -98,6 +98,9 @@ internal static class OriginalAiSectorSelectionRules
                     // DEV-AI-006: an element past the table is a dword of player 0's first
                     // planning records in the original; the rebuild leaves the records alone.
                     var element = x * (MatchLimits.BoardWidth + 1) + y;
+                    if (element >= MatchLimits.SectorCount && DeviationObserver is { } observer
+                        && multipliesByFive(sectorId))
+                        observer("DEV-AI-006");
                     if (element < MatchLimits.SectorCount)
                     {
                         // A score of 0 stays 0, so the test is asked only where there is one to scale.
@@ -211,10 +214,19 @@ internal static class OriginalAiSectorSelectionRules
     // DEV-AI-005: a step off the board reads past the player's row of the count list and, when
     // that memory holds 5 or less, leaves the city in the original. The rebuild takes such a step
     // as blocked, so the result stays on the board. A step on the board reads the player's row.
-    private static int GangCount(IReadOnlyList<int> sectorGangCounts, int sectorId) =>
-        sectorId is >= 0 and < MatchLimits.SectorCount
-            ? sectorGangCounts[sectorId]
-            : int.MaxValue;
+    private static int GangCount(IReadOnlyList<int> sectorGangCounts, int sectorId)
+    {
+        if (sectorId is >= 0 and < MatchLimits.SectorCount) return sectorGangCounts[sectorId];
+        DeviationObserver?.Invoke("DEV-AI-005");
+        return int.MaxValue;
+    }
+
+    /// <summary>
+    /// Told each time the selector reaches a case DEV-AI-005 or DEV-AI-006 replaces, so the
+    /// tournaments can count how often matches reach them. Nothing in the game sets it.
+    /// </summary>
+    [ThreadStatic]
+    internal static Action<string>? DeviationObserver;
 
     /// <summary>
     /// FND-AI-066, FND-STATE-007: the memory the pair list at 0x00489F50 runs into. Pair index 64
