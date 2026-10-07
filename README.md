@@ -82,8 +82,9 @@ game, unpack your GOG copy of *Chaos Overlords*, and import its assets.
 
 #### 1. Install the game
 
-Download the package from a terminal. This fetches the newest release; set
-`VERSION` by hand (for example `VERSION=0.10.8`) when the newest one has no
+Download the package from a terminal with `curl`. Ubuntu does not install it by
+default; get it with `sudo apt install curl`. This fetches the newest release;
+set `VERSION` by hand (for example `VERSION=0.10.8`) when the newest one has no
 `.deb`.
 
 ```shell
@@ -159,8 +160,11 @@ sudo rm /usr/local/share/applications/chaos-overlords-new-chrome.desktop
 GOG sells *Chaos Overlords* as a Windows installer only, a file named like
 `setup_chaos_overlords_<version>.exe`. Download it from your
 [GOG library](https://www.gog.com/account) in a browser, or from a terminal with
-`lgogdownloader` (packaged for Ubuntu, Debian and Fedora, and in the AUR on
-Arch). It saves the installer in a `chaos_overlords` folder under `--directory`:
+`lgogdownloader`. Install it first with `sudo apt install lgogdownloader` or
+`sudo dnf install lgogdownloader`; on Arch it is in the AUR (for example
+`yay -S lgogdownloader`). `--login` asks for your GOG email and password; if it
+cannot log in, download the installer in a browser instead. The download lands
+in a `chaos_overlords` folder under `--directory`:
 
 ```shell
 lgogdownloader --login
