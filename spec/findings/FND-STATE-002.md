@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0046E01A..0x0046E065
+    address: 0x0046E01A..0x0046E06C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00475A21..0x00475C65
@@ -147,7 +147,7 @@ by a hire once the Right Hands are dead.
 
 ## How to reproduce
 
-In `0x0046DC10`, read the stores at `0x0046E01A..0x0046E065`. In
+In `0x0046DC10`, read the stores at `0x0046E01A..0x0046E06C`. In
 `0x00472775`, read the local record build at `0x00475A21..0x00475BA9`, the
 slot search at `0x00475BDB..0x00475C2D`, and the action cases that use the
 local copy. In `0x0047781F`, follow the fourteen accumulations and the weapon

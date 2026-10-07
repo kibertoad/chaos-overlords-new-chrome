@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00432DA0..0x00432DD7
+    address: 0x00432DA0..0x00432DDD
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004335AD..0x004335BC
@@ -34,10 +34,10 @@ locations:
     address: 0x004078AB..0x004078B8
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040ABC0..0x0040ABC8
+    address: 0x0040ABC0..0x0040ABC9
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00466910..0x00466918
+    address: 0x00466910..0x00466919
 tool: Python 3.14.7 script disassembling the file bytes with Capstone 5.0.7
 environment: null
 ---

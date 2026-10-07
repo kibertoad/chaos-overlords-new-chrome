@@ -63,8 +63,8 @@ used by the shared template. What the original does now lives only in
 ### What exists
 
 - `spec/`: one build (BLD-GOG-EN-1.1, every file hashed with xxh3-128), three
-  sources, 334 findings (332 static and two dynamic from window captures;
-  FND-AI-030 and FND-AI-031 are superseded), no experiments, 24 formats (23 binary ones with Kaitai
+  sources, 334 findings (332 static and two dynamic from window captures),
+  no experiments, 24 formats (23 binary ones with Kaitai
   definitions that all compile), 159 rules in pseudocode, 16 bugs and 39
   screens across 47 areas, with the glossary and the generated indexes in
   `spec/index/`. All 464 game functions of FND-EXE-004 are cited. Only static

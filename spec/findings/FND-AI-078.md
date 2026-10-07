@@ -29,7 +29,7 @@ it with each sector the player owns whose cached Research sum is strictly
 greater (FND-AI-035); it has no path that returns -1.
 
 The handler then loads the 16-bit focus value of the gang's auxiliary record
-(`0x0048C0BA + player * 0x46E + slot * 14`, FND-AI-044) with sign extension
+(`0x0048C0BA + player * 0x46E + slot * 14`, FND-AI-081) with sign extension
 at `0x004372DD` and compares it with the best sector at `0x004372E5`:
 
 - Equal (`JZ 0x004372F8`): the handler goes straight to item Research.
@@ -110,6 +110,6 @@ either its sector argument or a loop index from 0 to 63.
 
 ## How to reproduce
 
-Disassemble `0x004372AD..0x004372F8`, `0x004377D0..0x004377EE`,
-`0x0043789A..0x004378C6` and `0x00437E82..0x00437E99`, list the references to
+Disassemble `0x004372AD..0x004372F8`, `0x004377D0..0x004377F6`,
+`0x0043789A..0x004378CB` and `0x00437E82..0x00437E99`, list the references to
 `0x00437E82`, and read case `0x30` of `0x00402D70`.

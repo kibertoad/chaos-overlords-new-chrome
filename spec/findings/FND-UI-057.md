@@ -10,10 +10,10 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00414D8C..0x004150F1
+    address: 0x00414D8C..0x004150F6
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041462F..0x00414757
+    address: 0x0041462F..0x0041475C
 tool: Capstone 5.0.7
 environment: null
 ---

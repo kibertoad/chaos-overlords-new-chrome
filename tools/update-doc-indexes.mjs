@@ -22,7 +22,7 @@
 // No dependencies. Anchors follow GitHub's heading-slug rules.
 
 import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
-import { join, dirname, relative, resolve } from "node:path";
+import { basename, join, dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -161,6 +161,26 @@ function anchorsOf(path) {
 }
 
 /**
+ * The entries tools/squashed.txt lists as squashed into their replacements. PARITY.md and
+ * spec/index/ are regenerated on main by the nightly job, so until it runs they may still link to
+ * one of them; those links are let through, and every other link in them is checked. Nothing is
+ * let through once the file is deleted.
+ */
+const SQUASHED = (() => {
+  const file = join(repoDir, "tools", "squashed.txt");
+  if (!existsSync(file)) return new Set();
+  return new Set(readFileSync(file, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/#.*/, "").trim())
+    .filter(Boolean)
+    .map((item) => item.split("=")[0]));
+})();
+function isGenerated(path) {
+  const rel = relative(repoDir, path).split(/[\\/]/).join("/");
+  return rel === "PARITY.md" || rel.startsWith("spec/index/");
+}
+
+/**
  * Relative links of the maintained documents that no longer resolve: a missing
  * file, or an `#anchor` no heading produces. Both inline links (`[x](path)`)
  * and reference-style definitions (`[x]: path`) are checked. External and
@@ -187,6 +207,7 @@ function brokenLinks(paths) {
         const [file, anchor] = target.split("#");
         const resolved = file ? resolve(dirname(path), file) : path;
         if (file && !existsSync(resolved)) {
+          if (isGenerated(path) && SQUASHED.has(basename(file, ".md"))) continue;
           broken.push(`${label}:${line}: no such file: ${target}`);
           continue;
         }

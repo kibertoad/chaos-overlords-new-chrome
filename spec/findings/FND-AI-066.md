@@ -22,7 +22,7 @@ locations:
     address: 0x0040A364
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048992C..0x0048994F
+    address: 0x0048992C..0x00489950
 tool: Python 3.14.7 script disassembling the file bytes with Capstone 5.0.7
 environment: null
 ---
@@ -58,7 +58,7 @@ score of pair `j` (`JGE` at `0x004085CC` skips otherwise), swaps both fields
 of the two pairs. The pairs end sorted by score, highest first, and the order
 of equal scores is whatever the swaps leave.
 
-After the sort, `0x00409B76..0x00409BEB` tests the sector field of pair 0
+After the sort, `0x00409B76..0x00409BF1` tests the sector field of pair 0
 against the gang's column (`ebp-0x20`) and row (`ebp-0x28`), with signed
 `%` and `/` by 8, for a column and a row each within one, and the score of
 pair 0 for being above 0. When all pass, the loop at `0x00409BF1` counts `n`
@@ -81,7 +81,7 @@ own column and row, not the moved result.
 stores 0 in the player's 64 entries (`0x0040A364`) and adds 1 for each gang
 (`0x0040A8E3`), for the player it is called with, so each row holds the counts
 of that player's last refresh (FND-AI-045 gives the calls). The 36 bytes before
-it, `0x0048992C..0x0048994F`, lie in the initialized part of `.data` and hold
+it, `0x0048992C..0x00489950`, lie in the initialized part of `.data` and hold
 the INT32 values 272, 303, 333, 364, 0, 0, 0, 0 and 0 in the file; no
 instruction addresses them. Its last row ends at `0x00489F4F`, where the pair
 list begins.
@@ -110,7 +110,7 @@ can head the list, make the adjacency test fail, and join the tie count, as a
 sector the current call never scored.
 
 The table is the 8-by-8 score map of this selector. FND-STATE-007 gives the
-region `0x0048A150..0x0048A20F` as "eight counters per player"; the stride of 4
+region `0x0048A150..0x0048A210` as "eight counters per player"; the stride of 4
 per row and 32 per column above shows it is this table and that it ends at
 `0x0048A24F`, where the planning records begin.
 

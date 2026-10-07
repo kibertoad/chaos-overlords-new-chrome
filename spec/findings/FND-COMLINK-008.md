@@ -73,6 +73,6 @@ received message carries whatever the sender's buffer held there.
 
 ## How to reproduce
 
-List the references to `0x00498120..0x004981C5`. Read
+List the references to `0x00498120..0x004981C6`. Read
 `0x0045F10B..0x0045F14F`, the key handling at `0x0045F3B7..0x0045F46D`,
 `0x004600D2`, and the copies in `0x0045D2F0`. Dump 48 bytes at `0x004877D4`.

@@ -13,10 +13,10 @@ locations:
     address: 0x00416C75..0x00417CBA
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00470C90..0x00470CCC
+    address: 0x00470C90..0x00470CD1
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004712B5..0x004712F1
+    address: 0x004712B5..0x004712F6
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00412796..0x00412856
@@ -93,7 +93,7 @@ Rectangles are written `(x1,y1)-(x2,y2)`, screen coordinates, half-open.
 - `fn_004078B8` (33 bytes) stores -2 in the order byte `0x004A27C8 + player *
   3 + slot` for its two arguments and does nothing else. Its ten calls are all
   in the computer players' planner `fn_00458FA0`, each passing the slot that
-  selector `0x8E` of `fn_00402D70` returns (FND-AI-011).
+  selector `0x8E` of `fn_00402D70` returns (FND-AI-065).
 
 ## Interpretation
 
