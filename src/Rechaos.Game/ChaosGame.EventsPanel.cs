@@ -281,7 +281,7 @@ public sealed partial class ChaosGame
                 && EventReviewProgress.IsComplete(reportCount, _eventViewedPages))
             {
                 _lastTurnEventArchive.Store(playerId, _state.Coordinator.Turn, currentReports);
-                var count = _state.NotificationsFor(playerId).Count;
+                var count = _state.NotificationCountFor(playerId);
                 for (var index = 0; index < count; index++)
                     _actions.DismissNotification(playerId);
             }
@@ -467,7 +467,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private IReadOnlyList<GameNotification> LastTurnReports(MatchState state, PlayerId playerId)
     {
-        var key = (state.Events.Count, state.Coordinator.Turn, state.NotificationsFor(playerId).Count);
+        var key = (state.Events.Count, state.Coordinator.Turn, state.NotificationCountFor(playerId));
         if (!ReferenceEquals(_lastTurnReportSource, state))
         {
             _lastTurnReportCache.Clear();

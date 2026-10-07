@@ -132,8 +132,8 @@ namespace Rechaos.Tests;
 /// reported (RULE-HIRE-001, RULE-EVENT-011).
 /// EXP-TURN-106 to EXP-TURN-108 play Power, Big 40 and Armageddon matches to the turn each one
 /// ends, a computer player's win and a tie for the lead included (RULE-OBJECTIVE-002,
-/// RULE-OBJECTIVE-004), and in EXP-TURN-107 a player gets more than 64 reports in one turn
-/// (RULE-EVENT-002).
+/// RULE-OBJECTIVE-004), and in EXP-TURN-107 a player gets more than 64 notifications in one
+/// turn, whose Last Turn reports must all survive (RULE-EVENT-002).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
