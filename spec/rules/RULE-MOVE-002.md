@@ -4,7 +4,7 @@ title: Move destinations are rewritten until no sector would hold more than six 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-MOVE-001, FND-MOVE-003, FND-MOVE-006, FND-AI-005, FND-AI-028, EXP-TURN-043, EXP-TURN-097, EXP-TURN-098, EXP-TURN-099]
+evidence: [FND-MOVE-001, FND-MOVE-003, FND-MOVE-006, FND-AI-005, FND-AI-028, EXP-TURN-043, EXP-TURN-097, EXP-TURN-098, EXP-TURN-099, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-AI-006, RULE-AI-007, FMT-STATE-001]

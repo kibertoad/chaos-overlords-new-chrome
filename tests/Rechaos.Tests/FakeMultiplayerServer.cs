@@ -51,6 +51,12 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     /// </summary>
     internal bool CloseStreamOnOpen { get; set; }
 
+    /// <summary>
+    /// When set, every response carries a <c>Date</c> header this far from this machine's clock, as
+    /// a server whose clock differs would send.
+    /// </summary>
+    internal TimeSpan? ServerClockOffset { get; set; }
+
     /// <summary>Ends the connection being read, as a server dropping it would.</summary>
     internal void DropStream()
     {
@@ -211,20 +217,27 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         // path while the backend restarts, a tunnel that has gone stale. Those produce a status
         // with no error envelope, which is a different fact from the server refusing.
         var reply = Next(request.Method, path);
-        if (reply is { Unbuffered: { } unbuffered }) return Unbuffered(reply, unbuffered);
-        if (reply is { EntityTag: { } tag })
+        HttpResponseMessage response;
+        if (reply is { Unbuffered: { } unbuffered }) response = Unbuffered(reply, unbuffered);
+        else if (reply is { EntityTag: { } tag })
         {
             // A tagged answer is conditional, as the server's lobby read is: a request naming the
             // current tag gets 304 and no body.
             if (string.Equals(ifNoneMatch, tag, StringComparison.Ordinal))
-                return new HttpResponseMessage(HttpStatusCode.NotModified);
-            var tagged = Json(reply.Status, reply.Body);
-            tagged.Headers.TryAddWithoutValidation("ETag", tag);
-            return tagged;
+            {
+                response = new HttpResponseMessage(HttpStatusCode.NotModified);
+            }
+            else
+            {
+                response = Json(reply.Status, reply.Body);
+                response.Headers.TryAddWithoutValidation("ETag", tag);
+            }
         }
-        if (reply is not null) return Json(reply.Status, reply.Body);
-        if (path.EndsWith("/stream", StringComparison.Ordinal)) return Streaming();
-        return Json(HttpStatusCode.NotFound, UnroutedEnvelope);
+        else if (reply is not null) response = Json(reply.Status, reply.Body);
+        else if (path.EndsWith("/stream", StringComparison.Ordinal)) response = Streaming();
+        else response = Json(HttpStatusCode.NotFound, UnroutedEnvelope);
+        if (ServerClockOffset is { } offset) response.Headers.Date = DateTimeOffset.UtcNow + offset;
+        return response;
     }
 
     /// <inheritdoc />

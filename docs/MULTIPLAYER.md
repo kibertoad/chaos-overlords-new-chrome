@@ -54,7 +54,9 @@ was ordered**:
    publishes the complete, slot-ordered order set with a digest.
 3. Every client applies the same sealed set to the same deterministic core and reports the
    resulting state hash. The server confirms the turn on agreement and flags a desync otherwise.
-4. On a desync the host uploads a native snapshot; the server judges further reports against it,
+4. On a desync every client first rebuilds the disputed turn from the server's facts and reports
+   again if its own state was wrong. When the reports still disagree, a player holding the
+   most-reported state uploads a native snapshot; the server judges further reports against it,
    so every client converges on one state before the next turn can seal.
 
 Every seat no human took at the start is a computer player, planned by the deterministic AI on every
@@ -237,7 +239,7 @@ golden document, its canonical text and its digest for the C# side to match.
 ```text
 open ──(all ready | deadline)──> sealed ──(unanimous reports)──> confirmed
                                    │
-                                   └──(reports disagree)──> desynced ──(reports match host snapshot)──> confirmed
+                                   └──(reports disagree)──> desynced ──(re-reports agree, or match a repair snapshot)──> confirmed
 ```
 
 Sealing opens the next turn immediately, so players plan turn n+1 while reports for turn n arrive.
@@ -271,8 +273,12 @@ a genuine divergence undetected. The vote that makes the seat computer controlle
 verdict without it.
 
 A desync pauses the match (`match.status = desynced`): the open turn stays open but cannot seal
-until every unsettled turn is confirmed. The host uploads the snapshot of the disputed turn;
-clients load it, re-report, and the match resumes. Because orders are refused for the whole pause,
+until every unsettled turn is confirmed. Two things can lift it. Every client rebuilds the disputed
+turn from the newest snapshot below it and the sealed order sets, and a client whose rebuild differs
+from what it reported adopts the rebuild and reports again; when that makes the reports unanimous,
+the turn confirms with no snapshot at all. Otherwise a player holding the most-reported state uploads
+the snapshot of the disputed turn (see the security model for who may), clients load it, re-report,
+and the match resumes. Because orders are refused for the whole pause,
 the open turn's clock **restarts** when the match resumes — otherwise a pause longer than the timer
 would seal the next turn empty the moment it lifted — and `turn.deadlineExtended` announces the new
 deadline. Once every active player reports `finished`, the match is finished.
@@ -465,10 +471,12 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   body validates spends it. The Node runtime also caps connections and sets header and request
   deadlines, so a client that never finishes sending a request cannot hold a socket for long. The
   windows are per process, which is what a self-hosted server needs; a public deployment puts its
-  platform's rate limiting in front as the real gate. Every 429 carries `Retry-After` in whole
-  seconds, and the envelope's `details.retryAfterSeconds` says the same: the time until the window
-  that refused has room again, for a limiter or the password-attempt budget, and one heartbeat
-  interval for a stream cap.
+  platform's rate limiting in front as the real gate. On Cloudflare the in-Worker windows are per
+  isolate; moving them to a global limiter is
+  [#455](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/455). Every 429 carries
+  `Retry-After` in whole seconds, and the envelope's `details.retryAfterSeconds` says the same: the
+  time until the window that refused has room again, for a limiter or the password-attempt
+  budget, and one heartbeat interval for a stream cap.
 - **A refused request is described, not echoed.** A validation failure names the field and the
   rule; the value the client sent (a mistyped password, an order document) is never written back
   into the response or, through it, into a proxy log.
@@ -483,7 +491,9 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   the hash every other client is told to converge on, so the host may only claim a hash that the
   players themselves already reported in the greatest number. Without that, a host could desync
   deliberately and upload a doctored state as the new truth. A genuine tie — above all the 1-1
-  split of a two-player match — leaves nothing to count and the host breaks it; three or more is
+  split of a two-player match — leaves nothing to count, so one designated player breaks it: the
+  host when the host's report is one of the tied hashes, otherwise the lowest seat whose report is.
+  Three or more is
   where this bites, and consistency is the goal, so converging on the majority is right even when
   the host's own client happens to be the correct one.
 - **What lockstep does not protect**: every client holds the full game state, so a modified
@@ -493,14 +503,15 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   social — `turn.desynced` names every player's hash and the candidates, so the host can see who is
   the odd one out and kick them. Moving resolution server-side (a WebAssembly build of
   `Rechaos.Core` behind a `TurnResolver` port) would close both gaps and is the one design change
-  this layout leaves room for; the wire protocol would not change.
+  this layout leaves room for; the wire protocol would not change. Tracked in
+  [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
 - **Corroboration assumes one human per seat.** There are no accounts, so nothing stops one person
   holding several seats in a public lobby. A host with two of three seats can report a doctored
   hash twice and then upload a snapshot claiming it, and the honest third player is told to
   converge. Counting reports is a defence against one client, not against one person wearing three
   hats, and the server has no way to tell the two apart. It is sound among people who found each
   other elsewhere and it is not a guarantee to strangers; the real fix is the `TurnResolver` port
-  above.
+  above ([#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453)).
 - **Which join codes exist is observable to somebody already scanning the code space.** An unknown
   code and a match that has already started answer the same 404, but a code-gated lobby answers 401
   rather than 404, so a caller who guesses a live code learns that it is live. The space is about
@@ -697,7 +708,11 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    still wait for their reports, because they must not run ahead of the barrier they are clearing.
 5. The server retains each sealed order set as the turn increment; ordinary confirmed turns do not
    upload the whole state again. The host includes the small public seat summary in its state-hash
-   report for late-join selection. On `turn.desynced`, the host uploads a compressed native snapshot
+   report for late-join selection. On `turn.desynced`, the client first rebuilds the disputed turn
+   from the newest snapshot below it and the sealed sets; if the rebuild differs from the hash it
+   reported, it adopts the rebuild, reports every turn since again, and stops there. Otherwise, if
+   it holds the sole most-reported hash or the announcement's `tieBreakerPlayerId` names it, it
+   uploads a compressed native snapshot
    as an exceptional repair (the same state as a quick-save), declaring the **native save** format
    version — the replay format's says nothing about those bytes. Every other client refuses a version
    newer than it reads, and otherwise loads it, recomputes the hash and re-reports.
@@ -784,8 +799,9 @@ the recovery record, and a retired record is dropped rather than written back: t
 capability for that seat, so keeping a spent one on disk buys nothing. On Windows the token is
 sealed with DPAPI to the current user account, so another account on the same machine cannot read
 it out of the file; macOS and Linux keep it in clear under the user's own data root, because their
-keystores want a native dependency the game does not otherwise carry. Neither defends against
-something already running as the player.
+keystores want a native dependency the game does not otherwise carry
+([#456](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/456)). Neither defends
+against something already running as the player.
 
 The session password is kept in clear on every platform. It opens one session's door to whoever the
 player was going to read it out to anyway, where the token is that seat itself, and the player who
@@ -826,7 +842,8 @@ dock a player plans against the dock the sealed turn grants.
   fragment the same way. Postgres is offered for durability and operational familiarity, not as a
   way to scale out; running more than one instance needs a shared fan-out (the Cloudflare runtime's
   Durable Object is the worked example) before it is safe. The `GET /events?after=` fallback is the
-  one path that does work under it, because it reads the log directly.
+  one path that does work under it, because it reads the log directly. Tracked in
+  [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
 - **Late joining is offered, and narrowly.** A host may set `allowLateJoin`, and once the match
   has its bootstrap snapshot a newcomer can take a slot that never belonged to a human. A public match
   can be named by its id or its join code; a `private` one only by its code, because the id rides
@@ -854,24 +871,35 @@ dock a player plans against the dock the sealed turn grants.
   interface mutation.
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
   that follows a desync pause or the closing of an absence vote.
-- **Desync recovery is decided by a count of reports, and the host breaks ties.** The snapshot a
-  client uploads becomes the state every other client must match, so it may only claim a hash more
-  active players reported than any other, and it must name the turn that actually diverged. Whoever
-  holds the SOLE most-reported hash may post it, host or not — which is what makes a desync the host
-  is itself the outlier of repairable at all. A genuine tie leaves nothing to count and the host
-  breaks it, which is every two-player desync. A match where nobody ever uploads stays paused
-  indefinitely, and the escape is the ordinary one: players leave. The match is not abandoned when
-  the last active player goes — it stays `running` so anybody can rejoin, with its turn clock
-  stopped — and retention collects it once it has been silent for long enough. The counting assumes
-  one human per seat; see the security model.
+- **Desync recovery is decided by a count of reports.** A client that finds its own report wrong
+  against a rebuild from the server's facts corrects it, which settles a divergence of its own
+  making with no snapshot. Otherwise the snapshot a client uploads becomes the state every other
+  client must match, so it may only claim a hash more active players reported than any other, and
+  it must name the turn that actually diverged. Whoever holds the SOLE most-reported hash may post
+  it, host or not, which is what makes a desync the host is itself the outlier of repairable at
+  all. A genuine tie leaves nothing to count, and the player `turn.desynced` names breaks it: the
+  host when the host holds one of the tied hashes, which covers every tie of four players or fewer,
+  and otherwise the lowest seat that does. A departure, kick, takeover or rejoin during the pause
+  re-runs the verdict, and the server announces `turn.desynced` again when the candidates or the
+  tie-breaker differ from the turn's latest announcement, even when they return to an earlier one.
+  With another turn desynced as well, it announces again without comparing. The sweep re-runs the
+  verdict too and announces only a difference it can see, which retries a re-announcement that
+  failed. A match where nobody ever uploads stays paused indefinitely, and the escape is the
+  ordinary one: players leave. The match is not abandoned when the last active player goes (it
+  stays `running` so anybody can rejoin, with its turn clock stopped), and retention collects it
+  once it has been silent for long enough. The counting assumes one human per seat; see the
+  security model and
+  [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
 - **A host who never presses ready stalls an untimed match.** Only the host can kick, and without a
   turn timer nothing seals on its own, so the other players' only remedy is to leave. A unanimous
-  vote of the remaining active players, reusing the takeover machinery, is the obvious next step.
+  vote of the remaining active players, reusing the takeover machinery, is the obvious next step
+  ([#457](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/457)).
 - **The host role moves only to fill an empty seat.** `rejoin` promotes the caller when the current
   host has `left`, been `kicked` or been voted to `computer`. A host who is merely
   `takeoverPending` (one missed timed deadline, still connected) keeps the role, or any former
   member could take it at that moment and then kick the real host, whose token a kick revokes for
-  good.
+  good. A vote that moves the role away from a present host is part of
+  [#457](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/457).
 - An event is published after it is durable, so a process dying mid-publish can lose the
   notification but never the event. The stream heartbeat rechecks the durable log even while its
   connection remains healthy. A process dying between persisting an event and its successor simply

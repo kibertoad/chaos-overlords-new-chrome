@@ -215,7 +215,7 @@ public static class EventStreamParser
     /// hashes — and far below the snapshots, which are fetched over REST rather than streamed. It is
     /// here to bound the buffer, not to validate an event.
     /// </remarks>
-    private const int MaximumFrameChars = 256 * 1024;
+    internal const int MaximumFrameChars = 256 * 1024;
 
     /// <summary>
     /// One frame, or null when it carried no data (a keepalive comment).

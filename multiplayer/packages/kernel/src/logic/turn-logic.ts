@@ -94,6 +94,32 @@ export function authoritativeCandidates(
 }
 
 /**
+ * The one player who may break a tie between reported states, or null when there is no tie.
+ *
+ * The host, when the host's own report is one of the tied hashes; otherwise the lowest-numbered
+ * human seat whose report is. A tie has no majority to defer to, so somebody has to be named, and
+ * naming the host alone left a match of five or six paused for good whenever the host's report was
+ * outside the tie (two reports each for two hashes, the host's alone on a third): the host could
+ * not claim a hash it never computed and nobody else was allowed to.
+ */
+export function tieBreaker(
+  players: readonly Player[],
+  reports: readonly TurnReport[],
+  candidates: readonly string[],
+  hostPlayerId: string,
+): string | null {
+  if (candidates.length < 2) return null
+  const tied = new Set(candidates)
+  const holders = new Set(
+    reports.filter((report) => tied.has(report.stateHash)).map((report) => report.playerId),
+  )
+  const eligible = humanParticipants(players).filter((player) => holders.has(player.id))
+  if (eligible.some((player) => player.id === hostPlayerId)) return hostPlayerId
+  const lowest = [...eligible].sort((a, b) => a.slot - b.slot)[0]
+  return lowest?.id ?? null
+}
+
+/**
  * Compare the post-turn state hashes the human seats reported.
  *
  * Without an authoritative hash: once everyone has reported, unanimous agreement confirms the

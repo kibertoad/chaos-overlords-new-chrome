@@ -16,6 +16,8 @@ above and is still open. All of it is low severity: polish, efficiency, or tests
 earlier fix from regressing.
 
 <!-- doc-index:begin toc depth=3 -->
+- [Server](#server)
+  - [A connection that carried an oversized body is dropped under the next request](#a-connection-that-carried-an-oversized-body-is-dropped-under-the-next-request)
 - [Client](#client)
   - [Backoff jitter is not full jitter](#backoff-jitter-is-not-full-jitter)
   - [A recovery file from a newer build is overwritten](#a-recovery-file-from-a-newer-build-is-overwritten)
@@ -23,6 +25,20 @@ earlier fix from regressing.
   - [Smaller allocations](#smaller-allocations)
 - [Test coverage](#test-coverage)
 <!-- doc-index:end -->
+
+## Server
+
+### A connection that carried an oversized body is dropped under the next request
+
+The body caps refuse on `Content-Length` with 413 before reading the body. On the Node runtime,
+`@hono/node-server` then gives the unread remainder half a second to drain and destroys the socket
+when it has not, while the response it sent offered the connection for reuse. With a body of about a
+megabyte the drain does not finish, so the next request the client queued on that connection hangs
+for the half second and fails with the socket closed. Answering with `Connection: close` does not
+help: the server then closes while the client is still writing, and the client reads a reset instead
+of the 413. The game checks sizes before it sends, so a player only meets this after a bug of its
+own, and the .NET handler retries a request that failed on a reused connection. The conformance case
+for the 413 runs last for this reason.
 
 ## Client
 
@@ -60,23 +76,11 @@ it sits, then `DeserializeAsync` straight from the stream.
 
 ## Test coverage
 
-Fixes without a test that would fail if they were reverted:
-
-- **The stream parser's caps.** No test references `MaximumFrameChars` or an unterminated line.
-- **Clock skew.** No test feeds the session a deadline from a server whose clock differs, or reads
-  the offset from a `Date` header.
-- **The resolution watchdog.** `RequestResync` is tested, but the game's watchdog and its grace
-  period (set above the stream idle detector plus a reconnect) are not.
-- **Client refusals and re-handshakes.** Nothing covers `TakeoverVoteFailed` reaching the UI, or
-  the handshake being re-established on reconnect.
-- **Over HTTP**, in `multiplayer/packages/conformance/src/http.ts`, so that every runtime runs it:
-  - password-gated create and join;
-  - the no-echo rule with a wrong-typed secret (e.g. `{ "password": 123456 }`);
-  - the keepalive frame;
-  - `Last-Event-ID` taking precedence over `?after=`;
-  - malformed JSON answering 422;
-  - an oversized snapshot answering 413;
-  - `X-Request-Id` on every response, the event stream included.
-- **Cloudflare end to end.** `tools/OnlineSmoke` runs in the multiplayer workflow against the Node
-  runtime. Nothing plays a match against the workerd runtime, and nothing runs on a schedule to
-  catch drift on a branch nobody touched.
+- **The keepalive frame on Cloudflare.** The conformance case for it runs where the harness can
+  shorten the interval: in process (50 ms) and on the Node runtime (`sseHeartbeatMs`, 2 s). The
+  Durable Object builds its hub with `DEFAULT_SERVER_CONFIG.sseHeartbeatMs`, twenty seconds, and
+  nothing lets a test change it, so the worker pool skips the case rather than wait out a heartbeat.
+- **End to end on a schedule.** `tools/OnlineSmoke` plays a match against the Node server and
+  against the Worker under `wrangler dev` whenever the multiplayer workflow runs, but nothing runs
+  it on a schedule to catch drift on a branch nobody touched. Running it on a schedule is tracked in
+  [#459](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/459).

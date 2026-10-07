@@ -97,19 +97,17 @@ showed the objective the registry held, Kill 'Em All.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the copies with the
-rebuild's title screen, credits and setup screen, which the game draws with
-`--reference-frame title`, `credits` and `setup`. Leaving out the rebuild's
-buttons, line under the logo and credit line (DEV-UI-019), its Intro button
-(DEV-VIDEO-003) and its version (DEV-UI-012), the title screen matches. The
-credits and the setup screen match everywhere, the setup screen also after
-each of the eleven setup copies, with the presses before it made in the
-rebuild as `--reference-clicks` and the drag as a press, a move and a release.
-A first comparison of the setup
-screen found the rebuild without the scenario's title and description, with
-the background's dim bar on the card and with the name in the player's colour
-nine pixels left of the original's.
+A test of the rebuild compares the copies with the rebuild's title screen,
+credits and setup screen, which the game draws with `--reference-frame title`,
+`credits` and `setup`. Leaving out the rebuild's buttons, line under the logo
+and credit line (DEV-UI-019), its Intro button (DEV-VIDEO-003) and its version
+(DEV-UI-012), the title screen matches. The credits and the setup screen match
+everywhere, the setup screen also after each of the eleven setup copies, with
+the presses before it made in the rebuild as `--reference-clicks` and the drag
+as a press, a move and a release. A first comparison of the setup screen found
+the rebuild without the scenario's title and description, with the background's
+dim bar on the card and with the name in the player's colour nine pixels left of
+the original's.
 
 ## Conclusion
 
