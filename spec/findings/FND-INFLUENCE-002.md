@@ -10,13 +10,13 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0044127B..0x004413EE
+    address: 0x0044127B..0x004413EF
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0043F87E..0x00440B23
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00418F16..0x00419021
+    address: 0x00418F16..0x00419022
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -58,7 +58,7 @@ The handler slides the panel in with `fn_0041953E(0)`. When the gang's
 `action` (record offset 7) is already 9 it takes the chosen slot from
 `target` (offset 8), calls `fn_0044127B` for it and enables the confirm face
 `(top=293, left=137, bottom=316, right=187)` through `fn_00418E66`
-(`0x00440726`..`0x00440798`). In its event loop:
+(`0x00440726`..`0x0044079D`). In its event loop:
 
 - Key down: Enter (`0x0D`) or Execute (`0x2B`) plays slot 4 when no slot is
   chosen; otherwise it presses the confirm face through `fn_00418CCC(0, ...)`,

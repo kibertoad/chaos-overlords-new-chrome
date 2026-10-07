@@ -8,4 +8,4 @@ Entries by area.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-TERMINATE-001](../../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move | established |
+| [RULE-TERMINATE-001](../../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move | supported |

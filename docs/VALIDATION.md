@@ -40,7 +40,7 @@ Each part of the procedure has its own document under `docs/validation/`:
 | [static-research-and-spec-checks.md](validation/static-research-and-spec-checks.md) | Static binary research and the spec checks |
 | [tests-against-the-original.md](validation/tests-against-the-original.md) | Which tests a parity row lists, and the deviation settings a test runs with |
 | [screen-captures.md](validation/screen-captures.md) | Taking a capture of the original's screen |
-| [screen-comparison.md](validation/screen-comparison.md) | Comparing the rebuild's reference frame with a capture, and what the reference frame shows |
+| [screen-comparison.md](validation/screen-comparison.md) | Comparing the rebuild's reference frame with a capture, what the reference frame shows, and what a screen entry needs before it is raised to established |
 | [screen-capture-coverage.md](validation/screen-capture-coverage.md) | Which captures cover each screen entry, and the states no capture shows |
 | [native-checks.md](validation/native-checks.md) | The native audio backend, the pattern fill reference and the original pattern resources |
 | [diagnostic-comparisons.md](validation/diagnostic-comparisons.md) | One-off pixel comparisons made with external diagnostic builds |

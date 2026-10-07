@@ -127,6 +127,21 @@ namespace Rechaos.Tests;
 /// turn and order Moves that the Move repair sends back and then gives a random neighbour from a
 /// corner of the city (RULE-MOVE-002, RULE-AI-007), until a hire with 80 gangs is refused and
 /// reported (RULE-HIRE-001, RULE-EVENT-011).
+/// In EXP-TURN-103 a Bribe every turn takes a base Tolerance to 41, where it stays while the later
+/// gangs of the phase act, and the clamp lowers it to 40 (RULE-TOLERANCE-002, RULE-TURN-003). In
+/// EXP-TURN-104 a Research gang acts after its sector's site is completed earlier in the same
+/// phase and rolls without the site's Research (RULE-RESEARCH-001, RULE-TURN-003). EXP-TURN-105
+/// writes families 1, 5, 6 and 12 into four planning records before the closing turns of Greed,
+/// whose handlers then plan Terminate and flag the records (FMT-STATE-007, FND-AI-042).
+/// EXP-TURN-110 writes Force 10 into a gang after its Heal order, and the Heal rolls its pool and
+/// leaves the Force at 10 (RULE-HEAL-001). EXP-TURN-111 and EXP-TURN-114 write a base Tolerance
+/// that one Bribe or one Snitch takes past the signed byte, which wraps and is then clamped
+/// (RULE-BRIBE-001, RULE-SNITCH-001, RULE-TOLERANCE-002). EXP-TURN-115 holds a base Tolerance at
+/// 40 with a Bribe every turn, and each step takes it to 39 first (RULE-TOLERANCE-001).
+/// EXP-TURN-117 nets a Snitch and a Bribe out in one sector and clamps two sectors no gang acted
+/// in (RULE-TOLERANCE-002). EXP-TURN-116 keeps the island modifier's Crackdowns of 100 through a
+/// countdown (RULE-POLICE-003), and EXP-SETUP-005 names two players with that modifier
+/// (RULE-SETUP-005).
 /// In EXP-TURN-109 a family-7 gang whose focus names the sector it stands in, its best research
 /// sector, researches there although a Research site in it is unfinished (RULE-AI-026, FND-AI-078).
 /// Every computer player's pass starts from its sector weights and the hostility step
@@ -162,7 +177,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheRebuildStartsTheSameMatch(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var (match, donePresses, rolls) = Replayed(recorded);
+        var (match, donePresses, rolls) = MatchingReplays.Get((experiment, run));
 
         var human = recorded.Humans[0];
 

@@ -127,3 +127,21 @@ The selected-sector outline cycles through two frames on the pump's counter
 Events and Comlink lights in the lit half of their blink whenever they are on.
 No capture yet shows a light lit, so which counter values the lit half covers
 has not been compared.
+
+## Raising a screen entry
+
+A screen entry stays `supported` until runs of the original reach everything
+it describes (DECISIONS.md, 2026-10-06). A pull request that adds or changes
+captures goes through this list for each screen it compares:
+
+- Each drawn element and each state the entry lists is shown by a capture and
+  compared without a mask, or masked only where a `mandatory` deviation's
+  Replaces item names it.
+- Each mouse region, key and double-click the entry lists was performed by a
+  recorded run, with its result recorded (a later capture, a panel record or
+  the order bytes).
+- Each sound the entry lists was recorded by a run with sound on, and each
+  timing (slides, blinks, cadences) was measured.
+- What is left goes in the entry's Open questions with the finding it rests
+  on, and in the parity row's notes. Only when nothing is left does the entry,
+  and its row, become `established`.

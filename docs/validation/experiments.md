@@ -46,7 +46,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -113,7 +113,10 @@ slot.
 (FND-STATE-004), all before the Done press of the given turn, to reach families
 no local match assigns or a match that ends with one player active. `--cash`
 sets the player's `cash` before the Done press of each turn it names, so a
-human can pay for a hire every turn. The fixture
+human can pay for a hire every turn. `--force` sets the `force` of a player's
+gang in a roster slot (FMT-STATE-001), so a gang ordered to Heal can be at
+Force 10 when it acts, and `--tolerance` sets a sector's `base_tolerance`
+(FMT-STATE-002), so one Bribe or Snitch can wrap the signed byte. The fixture
 lists each as a `planning` input, and the replay makes the same change to the
 rebuild's state, a retired player becoming eliminated with its gangs and
 sectors left in place; since that change bypasses the replay recorder, such a
@@ -284,7 +287,7 @@ holds `match_over` and each player's first three `player_awards` entries.
 From EXP-TURN-048 on, the fixtures also hold the computer players' planning
 state: the planning record fields (FMT-STATE-007), `ai_started`,
 `raider_mode`, `placement_anchor`, `sector_weight` and the `focus` and
-`coverage_sector` values of the auxiliary records (FND-AI-044), each left out
+`coverage_sector` values of the auxiliary records (FND-AI-081), each left out
 when it holds 0; every combat record a resolution has written
 (FMT-STATE-003); and the entries of the combat result rows that hold a gang,
 with the `police_hit` values that are not 0 (FMT-STATE-008). The replay

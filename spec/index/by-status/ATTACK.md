@@ -6,20 +6,13 @@ Entries by status.
 
 ## supported
 
-1 entries.
-
-| ID | Title |
-|---|---|
-| [SCR-ATTACK-001](../../screens/SCR-ATTACK-001.md) | Attack picker (Target Acquisition) |
-
-## established
-
-2 entries.
+3 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-ATTACK-001](../../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
 | [RULE-ATTACK-002](../../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector |
+| [SCR-ATTACK-001](../../screens/SCR-ATTACK-001.md) | Attack picker (Target Acquisition) |
 
 ## recorded
 
@@ -38,21 +31,12 @@ Entries by status.
 | [FND-ATTACK-006](../../findings/FND-ATTACK-006.md) | The Attack picker's roster builder lists an opponent's gangs in a sector that the active player sees, with no bound on the count |
 | [FND-ATTACK-007](../../findings/FND-ATTACK-007.md) | The Attack picker copies a target's second and third item icons into 19-pixel-wide boxes, so they are stretched |
 
-## Established on unreproduced evidence
-
-Entries whose status is established and whose findings and experiments are all only recorded.
-
-| ID | Title |
-|---|---|
-| [RULE-ATTACK-001](../../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes |
-| [RULE-ATTACK-002](../../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector |
-
 ## Open questions
 
 Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-ATTACK-001](../../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | established |
-| [RULE-ATTACK-002](../../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | established |
+| [RULE-ATTACK-001](../../rules/RULE-ATTACK-001.md) | One gang's attack and the retaliation it provokes | supported |
+| [RULE-ATTACK-002](../../rules/RULE-ATTACK-002.md) | An Attack can target only an enemy gang the attacker's player sees in the attacker's sector | supported |
 | [SCR-ATTACK-001](../../screens/SCR-ATTACK-001.md) | Attack picker (Target Acquisition) | supported |

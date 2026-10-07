@@ -152,12 +152,12 @@ public sealed partial class ChaosGame
 
     private void DrawCommandPanelFaces(SpriteBatch batch)
     {
-        if (_uiSprites is null) return;
+        if (UiSprites is null) return;
         if (CommandPanelFaces.Source(_commandPanelFace) is { } source)
-            batch.Draw(_uiSprites, CommandPanelFaces.Face(CommandPanelButton.Confirm), source, Color.White);
+            batch.Draw(UiSprites, CommandPanelFaces.Face(CommandPanelButton.Confirm), source, Color.White);
         if (_pressedCommandPanelButton is { } pressed && _hoverPoint is { } hover
             && CommandPanelFaces.Hit(pressed).Contains(hover))
-            batch.Draw(_uiSprites, CommandPanelFaces.Face(pressed),
+            batch.Draw(UiSprites, CommandPanelFaces.Face(pressed),
                 CommandPanelFaces.HeldSource(pressed), Color.White);
     }
 
@@ -207,11 +207,11 @@ public sealed partial class ChaosGame
         SpriteBatch batch, Texture2D pixel, MatchSiteState site, Rectangle destination, bool completed, bool chosen)
     {
         if (completed) batch.Draw(pixel, destination, Color.Black);
-        if (_sitePortraits is not null)
-            batch.Draw(_sitePortraits, destination, OriginalSpriteLayout.SitePortrait(site.DefinitionId), Color.White);
+        if (SitePortraits is not null)
+            batch.Draw(SitePortraits, destination, OriginalSpriteLayout.SitePortrait(site.DefinitionId), Color.White);
         if (completed) batch.Draw(InfluenceCompletedMask(destination), destination, Color.White);
-        if (_uiKeyedSprites is not null)
-            batch.Draw(_uiKeyedSprites, destination,
+        if (UiKeyedSprites is not null)
+            batch.Draw(UiKeyedSprites, destination,
                 completed ? InfluenceCommandLayout.CompletedSiteFrameSource
                 : chosen ? InfluenceCommandLayout.ChosenSiteFrameSource
                 : InfluenceCommandLayout.SiteFrameSource, Color.White);

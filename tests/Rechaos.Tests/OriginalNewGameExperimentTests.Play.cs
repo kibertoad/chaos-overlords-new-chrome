@@ -81,8 +81,13 @@ public sealed partial class OriginalNewGameExperimentTests
             // A cleared player_active (FND-STATE-004) takes the player out of the match as the
             // elimination check does (RULE-TURN-006), with its gangs and sectors left where they are.
             // A cash write sets the player's cash (FND-AI-055) so a human can pay for a hire every turn.
+            // A force write sets a gang's Force after its order was taken (FMT-STATE-001), so a Heal
+            // can act at Force 10 (RULE-HEAL-001), and a tolerance write a sector's base Tolerance
+            // (FMT-STATE-002), so one Bribe can wrap the signed byte (RULE-BRIBE-001).
             foreach (var write in inputs.Planning.Where(write => write.Turn == turn + 1))
                 if (write.Cash is { } cash) match.Players[write.Player].Cash = cash;
+                else if (write.Force is { } force) match.Players[write.Player].Gangs[write.Slot].Force = force;
+                else if (write.Tolerance is { } tolerance) match.Sectors[write.Slot].BaseTolerance = tolerance;
                 else if (write.Retired) match.Players[write.Player].Status = PlayerStatus.Eliminated;
                 else if (write.Raider) match.AiPlanning.SetRaiderMode(new PlayerId(write.Player));
                 else match.AiPlanning.SetFamily(new PlayerId(write.Player), write.Slot, write.Family);

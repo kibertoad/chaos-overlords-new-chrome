@@ -95,25 +95,26 @@ Entries by area.
 | [FND-AI-077](../../findings/FND-AI-077.md) | Family 2's late Control gates read a local that holds the item of a planned Equip | recorded |
 | [FND-AI-078](../../findings/FND-AI-078.md) | Family 7 researches at once when its focus equals the best research sector, and reads the previous target without testing the previous action | recorded |
 | [FND-AI-079](../../findings/FND-AI-079.md) | Only the family handlers and their dispatcher store a planned action, and none stores Bribe, Give or Sell | recorded |
+| [FND-AI-080](../../findings/FND-AI-080.md) | The family-0 owned-sector tests after previous Control and after previous Heal, Hide or Move read the owner query, which gives -2 under police presence | recorded |
 | [RULE-AI-001](../../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported |
 | [RULE-AI-002](../../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
-| [RULE-AI-003](../../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | established |
+| [RULE-AI-003](../../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |
 | [RULE-AI-004](../../rules/RULE-AI-004.md) | Queries the computer players' handlers share | supported |
-| [RULE-AI-005](../../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | established |
-| [RULE-AI-006](../../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established |
+| [RULE-AI-005](../../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported |
+| [RULE-AI-006](../../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported |
 | [RULE-AI-007](../../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector | supported |
-| [RULE-AI-008](../../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | established |
+| [RULE-AI-008](../../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | supported |
 | [RULE-AI-009](../../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
 | [RULE-AI-010](../../rules/RULE-AI-010.md) | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported |
-| [RULE-AI-011](../../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | established |
-| [RULE-AI-012](../../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | established |
+| [RULE-AI-011](../../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported |
+| [RULE-AI-012](../../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported |
 | [RULE-AI-013](../../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
-| [RULE-AI-014](../../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established |
+| [RULE-AI-014](../../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported |
 | [RULE-AI-015](../../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | established |
 | [RULE-AI-016](../../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | established |
 | [RULE-AI-017](../../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | established |
-| [RULE-AI-018](../../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | established |
-| [RULE-AI-019](../../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | established |
+| [RULE-AI-018](../../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported |
+| [RULE-AI-019](../../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported |
 | [RULE-AI-020](../../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
 | [RULE-AI-021](../../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported |
 | [RULE-AI-022](../../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported |
@@ -121,7 +122,7 @@ Entries by area.
 | [RULE-AI-024](../../rules/RULE-AI-024.md) | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported |
 | [RULE-AI-025](../../rules/RULE-AI-025.md) | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported |
 | [RULE-AI-026](../../rules/RULE-AI-026.md) | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported |
-| [RULE-AI-027](../../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors | established |
+| [RULE-AI-027](../../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors | supported |
 | [RULE-AI-028](../../rules/RULE-AI-028.md) | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported |
 | [RULE-AI-029](../../rules/RULE-AI-029.md) | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported |
 | [RULE-AI-030](../../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, step toward their player's first gang, and attack when opposed | supported |

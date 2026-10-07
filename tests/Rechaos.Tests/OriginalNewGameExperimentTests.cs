@@ -14,6 +14,7 @@ public sealed partial class OriginalNewGameExperimentTests
         "EXP-SETUP-002",
         "EXP-SETUP-003",
         "EXP-SETUP-004",
+        "EXP-SETUP-005",
 
         "EXP-TURN-001",
         "EXP-TURN-002",
@@ -112,7 +113,16 @@ public sealed partial class OriginalNewGameExperimentTests
         "EXP-TURN-097",
         "EXP-TURN-098",
         "EXP-TURN-099",
+        "EXP-TURN-103",
+        "EXP-TURN-104",
+        "EXP-TURN-105",
         "EXP-TURN-109",
+        "EXP-TURN-110",
+        "EXP-TURN-111",
+        "EXP-TURN-114",
+        "EXP-TURN-115",
+        "EXP-TURN-116",
+        "EXP-TURN-117",
 
         "EXP-UI-001",
         "EXP-UI-003",
@@ -189,11 +199,24 @@ public sealed partial class OriginalNewGameExperimentTests
     public static TheoryData<string, int> MatchingRuns()
     {
         var data = new TheoryData<string, int>();
-        foreach (var experiment in Experiments)
-            for (var run = 0; run < Recorded.Value[experiment].Length; run++)
-                if (!KnownDivergences.ContainsKey((experiment, run))) data.Add(experiment, run);
+        foreach (var (experiment, run) in MatchingRunKeys()) data.Add(experiment, run);
         return data;
     }
+
+    private static IEnumerable<(string Experiment, int Run)> MatchingRunKeys() =>
+        from experiment in Experiments
+        from run in Enumerable.Range(0, Recorded.Value[experiment].Length)
+        where !KnownDivergences.ContainsKey((experiment, run))
+        select (experiment, run);
+
+    // Each row starts from its run's replay, so the rows play theirs ahead on a few workers, in CI
+    // the longest matches first. The replays land in the cache other tests and ScreenCaptureTests
+    // read as well.
+    private static readonly RowPrefetch<(string Experiment, int Run), Replay> MatchingReplays =
+        new(MatchingRunKeys, key => Replayed(Run(key.Experiment, key.Run)), ReplayCost);
+
+    // How long a run's replay takes, for the prefetches that queue the longest first in CI.
+    private static int ReplayCost((string Experiment, int Run) key) => Run(key.Experiment, key.Run).DoneCount;
 
     public static TheoryData<string, int> Runs()
     {
