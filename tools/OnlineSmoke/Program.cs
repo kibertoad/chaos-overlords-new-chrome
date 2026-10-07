@@ -37,8 +37,25 @@ public static class Program
         var baseAddress = new Uri(args.Length > 0 ? args[0] : "http://localhost:8787");
         var turns = args.Length > 1 ? int.Parse(args[1], CultureInfo.InvariantCulture) : 3;
         using var http = MultiplayerClientOptions.CreateHttpClient();
-        var anonymous = new MultiplayerClient(http, new MultiplayerClientOptions(baseAddress));
         var definitions = BundledOriginalData.Load();
+
+        // The first match's sessions are disposed before the spectator stage starts, so their
+        // event streams are not left running, undrained, against a match nobody plays any more.
+        var joinCode = await PlayLockstepAsync(http, baseAddress, definitions, turns);
+        await SpectatorSmoke.RunAsync(http, baseAddress, definitions, joinCode);
+        return 0;
+    }
+
+    /// <summary>
+    /// Plays the two-client match and its crash recovery, and returns the match's join code.
+    /// </summary>
+    private static async Task<string> PlayLockstepAsync(
+        HttpClient http,
+        Uri baseAddress,
+        OriginalData definitions,
+        int turns)
+    {
+        var anonymous = new MultiplayerClient(http, new MultiplayerClientOptions(baseAddress));
 
         var settings = new MultiplayerGameSettings(
             ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]);
@@ -162,9 +179,7 @@ public static class Program
         Require(final.CurrentTurn == turns + 2, $"the server is on turn {final.CurrentTurn}");
         Require(final.HostPlayerId == guest.Player.Id, "the recovered host was not persisted");
         Console.WriteLine($"OK: {turns + 1} turns in lockstep, including crash recovery");
-
-        await SpectatorSmoke.RunAsync(http, baseAddress, definitions, host.JoinCode);
-        return 0;
+        return host.JoinCode;
     }
 
     /// <summary>One legal order per turn, so the documents are not all empty.</summary>

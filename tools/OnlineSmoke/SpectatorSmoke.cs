@@ -24,7 +24,8 @@ namespace Rechaos.OnlineSmoke;
 /// </para>
 /// <para>
 /// The match is a second one, apart from the match <see cref="Program"/> plays, so neither stage
-/// depends on what the other did to its players.
+/// depends on what the other did to its players. The first match is used once, by its join code,
+/// as the match that does not allow spectators.
 /// </para>
 /// </remarks>
 internal static class SpectatorSmoke
@@ -139,9 +140,11 @@ internal static class SpectatorSmoke
         await using var hostSession = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
             hostMatch, definitions, started, host.Player.Id, started.LastEventSeq,
             StreamOutageBudget: smokeBudget));
-        await using var guestSession = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
+        // Replaced when the guest takes the seat back, as the game starts a new session then.
+        var guestSession = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
             guestMatch, definitions, started, guest.Player.Id, started.LastEventSeq,
             StreamOutageBudget: smokeBudget));
+        await using var guestScope = new Deferred(() => guestSession.DisposeAsync());
         var hostNotices = new List<MultiplayerNotice>();
 
         var hostState = hostSession.Bootstrap.State;
@@ -162,8 +165,8 @@ internal static class SpectatorSmoke
         string? frankId = null;
         for (var turn = 1; turn <= Turns; turn++)
         {
-            // The guest's seat is the computer's for the one turn between leaving and returning.
-            var guestPlays = turn != LeaveAfterTurn + 1;
+            // The guest's seat is the computer's for the turns between leaving and returning.
+            var guestPlays = turn <= LeaveAfterTurn || turn > ReturnAfterTurn;
             var hostTurn = SpeculativeTurn.For(hostState, definitions, hostSession.Slot);
             Program.Hide(hostTurn);
 
@@ -241,6 +244,21 @@ internal static class SpectatorSmoke
                 var seated = await Program.Seated(lobby);
                 Program.Require(seated.Membership.Player.Status == WirePlayerStatus.Active,
                     "the returning guest's seat was not made active");
+                // The city the host plans the next turn from has the seat back. A spectator only
+                // sees the return with that turn, so this is not the fingerprint of the turn just played.
+                var plannedFrom = HandedOver(hostState, definitions, guestSession.Slot, toComputer: false);
+
+                // The session that saw the seat go to the computer never reports a state hash
+                // for it again, so the guest plays on from a new session restored from the
+                // server's history, the way the game resumes a saved seat.
+                await guestSession.DisposeAsync();
+                var rejoined = (await guestMatch.GetAsync(CancellationToken.None)).Match;
+                guestSession = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
+                    guestMatch, definitions, rejoined, guest.Player.Id, rejoined.LastEventSeq,
+                    JoinedInProgress: true, StreamOutageBudget: smokeBudget));
+                guestState = (await Restored(guestSession)).State;
+                Program.Require(MatchStateHasher.ComputeFingerprint(guestState) == plannedFrom,
+                    $"the returning guest restored another city than the one the host plans turn {turn + 1} on");
                 Console.WriteLine($"spectators: GRACE took the seat back after turn {turn}");
             }
 
@@ -287,7 +305,7 @@ internal static class SpectatorSmoke
         await using (var stale = new MultiplayerSpectatorWatch(http, options, definitions, PollInterval))
         {
             stale.Resume(matchId, membership.Token);
-            var refused = await new Follower("stale watch").EndedAsync(stale);
+            var refused = await new Follower("stale watch") { Bound = follower.Bound }.EndedAsync(stale);
             Program.Require(refused.MembershipGone,
                 $"resuming with a removed token ended without forgetting it: {refused.Reason}");
         }
@@ -298,6 +316,16 @@ internal static class SpectatorSmoke
         Console.WriteLine(
             $"OK: a spectator followed {Turns - Delay} released turns {Delay} behind through two seat "
             + "handovers, reconnected with its token and was removed");
+    }
+
+    /// <summary>The fingerprint of a copy of <paramref name="state"/> with one seat handed over.</summary>
+    private static string HandedOver(MatchState state, OriginalData definitions, int slot, bool toComputer)
+    {
+        var copy = MatchStateClone.Of(state, definitions);
+        var seat = new PlayerId(slot);
+        var changed = toComputer ? copy.TransferPlayerToComputer(seat) : copy.TransferPlayerToHuman(seat);
+        Program.Require(changed, $"seat {slot} did not change hands in the players' city");
+        return MatchStateHasher.ComputeFingerprint(copy);
     }
 
     /// <summary>
@@ -407,6 +435,34 @@ internal static class SpectatorSmoke
         throw new InvalidOperationException($"{what} was allowed");
     }
 
+    /// <summary>Waits for a session that joined in progress to rebuild the match.</summary>
+    private static async Task<MultiplayerNotice.Resumed> Restored(MultiplayerMatchSession session)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (DateTime.UtcNow < deadline)
+        {
+            while (session.TryDequeueNotice(out var notice))
+            {
+                switch (notice)
+                {
+                    case MultiplayerNotice.Resumed resumed:
+                        return resumed;
+                    case MultiplayerNotice.Failed failed:
+                        throw new InvalidOperationException(
+                            $"the returning guest's session failed: {failed.Reason} ({failed.Error})");
+                }
+            }
+            await Task.Delay(50);
+        }
+        throw new TimeoutException("the returning guest's session never restored the match");
+    }
+
+    /// <summary>Disposes what the callback returns when the scope ends, read at that moment.</summary>
+    private sealed class Deferred(Func<ValueTask> dispose) : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync() => dispose();
+    }
+
     private static async Task WaitForNotice<T>(
         MultiplayerMatchSession session,
         List<MultiplayerNotice> seen,
@@ -448,12 +504,6 @@ internal static class SpectatorSmoke
             return joined!;
         }
 
-        public Task<SpectatorNotice.Progressed> WaitAsync(
-            MultiplayerSpectatorWatch watch,
-            string what,
-            Func<SpectatorNotice.Progressed, bool> done) =>
-            ProgressAsync(watch, what, done);
-
         /// <summary>
         /// Waits until the watch shows <paramref name="turn"/> on a view of
         /// <paramref name="currentTurn"/>, and checks the city is the one the players had then.
@@ -464,7 +514,7 @@ internal static class SpectatorSmoke
             int currentTurn,
             IReadOnlyList<string> fingerprints)
         {
-            var progress = await ProgressAsync(watch, $"turn {turn} on turn {currentTurn}", progress =>
+            var progress = await WaitAsync(watch, $"turn {turn} on turn {currentTurn}", progress =>
                 progress.HasState && progress.ShownTurn == turn && progress.View.CurrentTurn == currentTurn);
             Program.Require(progress.View.ReleasedTurn == turn,
                 $"{name} shows turn {turn} with turn {progress.View.ReleasedTurn} released");
@@ -488,7 +538,7 @@ internal static class SpectatorSmoke
             return ended!;
         }
 
-        private async Task<SpectatorNotice.Progressed> ProgressAsync(
+        public async Task<SpectatorNotice.Progressed> WaitAsync(
             MultiplayerSpectatorWatch watch,
             string what,
             Func<SpectatorNotice.Progressed, bool> done)
