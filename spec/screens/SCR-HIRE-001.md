@@ -71,3 +71,9 @@ None known.
   strength or is a slip is not settled by the code (FND-HIRE-009).
 - The rule that turns a value into two cells is the UI area's number-drawing
   rule; its ID should be added to `related` once it exists.
+- No recorded run of the original reaches offers with values other than the
+  captured set, among them a two-digit negative value; a close double-click;
+  presses elsewhere on the panel and outside it; Enter, Execute, Escape and
+  the other keys; the rejected sound (FND-HIRE-009, FND-UI-006,
+  FND-AUDIO-011). These rest on the static findings named, so the entry stays
+  `supported`.

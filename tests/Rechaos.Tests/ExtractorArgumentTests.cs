@@ -1,3 +1,4 @@
+using Rechaos.Core.Assets;
 using Rechaos.Extractor;
 using Xunit;
 
@@ -47,5 +48,31 @@ public sealed class ExtractorArgumentTests
         }
 
         Assert.Contains("--nonsense", writer.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnOutputFolderThatCannotBeWrittenHasItsOwnExitCode()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"rechaos-extractor-output-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var blocker = Path.Combine(root, "blocker");
+        File.WriteAllText(blocker, string.Empty);
+        var writer = new StringWriter();
+        var previous = Console.Error;
+        Console.SetError(writer);
+        try
+        {
+            // The output is checked before the source, so a source that does not exist still
+            // gets the output's answer, which the first-start import tells the player apart.
+            Assert.Equal(ExtractorExitCodes.OutputNotWritable, await ExtractorProgram.RunAsync(
+                ["--source", Path.Combine(root, "missing"), "--output", Path.Combine(blocker, "assets")]));
+        }
+        finally
+        {
+            Console.SetError(previous);
+            Directory.Delete(root, recursive: true);
+        }
+
+        Assert.Contains("Cannot write the asset pack", writer.ToString(), StringComparison.Ordinal);
     }
 }

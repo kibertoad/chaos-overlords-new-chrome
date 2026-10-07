@@ -9,9 +9,6 @@ public sealed partial class ChaosGame
     /// <summary>The close face held down on an information panel, and what releasing it does.</summary>
     private (Rectangle Face, ClientScreen Screen, Action Close)? _pressedPanelFace;
 
-    /// <summary>Whether the right button holds <see cref="_pressedPanelFace"/>, so only its release lets go.</summary>
-    private bool _pressedPanelFaceByRightButton;
-
     /// <summary>
     /// The face kind the held-button helper draws for <see cref="_pressedPanelFace"/>, or null for
     /// the sector view's back control, which draws its own (FND-UI-062).
@@ -56,7 +53,6 @@ public sealed partial class ChaosGame
     {
         AcceptInput();
         _pressedPanelFace = (face, _screens.Current, close);
-        _pressedPanelFaceByRightButton = false;
         _pressedPanelFaceKind = kind;
     }
 
@@ -69,17 +65,18 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawHeldPanelFace(Viewport viewport)
     {
-        if (_batch is null || _uiSprites is null) return;
+        var sprites = UiSprites;
+        if (_batch is null || sprites is null) return;
         (Rectangle Destination, Rectangle Source)? drawn = null;
         if (_pressedPanelFace is { } held && _pressedPanelFaceKind is { } kind
-            && !_pressedPanelFaceByRightButton && held.Screen == _screens.Current)
+            && held.Screen == _screens.Current)
             drawn = HeldButtonFaces.Drawn(kind, held.Face,
                 pointerInside: _hoverPoint is { } hover && held.Face.Contains(hover));
         else if (_releasedPanelFace is { } released && released.Screen == _screens.Current)
             drawn = HeldButtonFaces.Drawn(released.Kind, released.Face, pointerInside: false);
         if (drawn is not { } face) return;
         _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: VirtualInput.Transform(viewport));
-        _batch.Draw(_uiSprites, face.Destination, face.Source, Color.White);
+        _batch.Draw(sprites, face.Destination, face.Source, Color.White);
         _batch.End();
     }
 
@@ -110,14 +107,22 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// A button released: completes what its press holds. Only a face pressed with the right button
-    /// waits on that button; every other held control follows the left one.
+    /// A button released: completes what its press holds. Only a console tile pressed with the right
+    /// button waits on that button (FND-UI-063); every other held control follows the left one.
     /// </summary>
     private void CompletePointerRelease(bool pointerMapped, Point point, bool rightButton)
     {
+        if (_pressedCityConsoleControl is not null && _pressedCityConsoleByRightButton)
+        {
+            if (!rightButton) return;
+            if (pointerMapped) CompleteCityConsolePress(point);
+            else CancelCityConsolePress();
+            return;
+        }
+
         if (_pressedPanelFace is { } pressedFace)
         {
-            if (_pressedPanelFaceByRightButton != rightButton) return;
+            if (rightButton) return;
             _pressedPanelFace = null;
             // FND-UI-062: the helper copies the plain face when the button comes up; a release
             // inside then closes the panel, and any other leaves the face on it.

@@ -393,11 +393,11 @@ public sealed partial class ChaosGame
     /// <summary>SCR-GIVE-001: the recipient cards, the marks, then the item animation.</summary>
     private void DrawGivePanel(SpriteBatch batch, Texture2D pixel, MatchState state)
     {
-        DrawPanelArtwork(batch, pixel, _equipmentGiveBackground, EquipmentGiveLayout.Panel, 248);
+        DrawPanelArtwork(batch, pixel, EquipmentGiveBackground, EquipmentGiveLayout.Panel, 248);
 
         if (_giveGang is not { } gangId || state.FindGang(gangId) is not { } gang) return;
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, EquipmentGiveLayout.Portrait,
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, EquipmentGiveLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
 
         for (var slot = 0; slot < _giveRecipients.Count; slot++)
@@ -405,14 +405,14 @@ public sealed partial class ChaosGame
                 DrawGiveRecipient(batch, state, slot, recipient);
 
         var equipped = EquippedItems(gang);
-        if (_uiKeyedSprites is not null)
+        if (UiKeyedSprites is not null)
         {
             for (var slot = 0; slot < equipped.Length; slot++)
                 if (_giveSelections[slot] && equipped[slot] is not null)
-                    batch.Draw(_uiKeyedSprites, EquipmentGiveLayout.ItemFrame(slot),
+                    batch.Draw(UiKeyedSprites, EquipmentGiveLayout.ItemFrame(slot),
                         EquipmentGiveLayout.ItemFrameSource, Color.White);
             if (_giveCursor >= 0 && _giveCursor < _giveRecipients.Count)
-                batch.Draw(_uiKeyedSprites, EquipmentGiveLayout.RecipientMarker(_giveCursor),
+                batch.Draw(UiKeyedSprites, EquipmentGiveLayout.RecipientMarker(_giveCursor),
                     EquipmentGiveLayout.RecipientMarkerSource, Color.White);
         }
         for (var slot = 0; slot < equipped.Length; slot++)
@@ -428,24 +428,24 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawGiveRecipient(SpriteBatch batch, MatchState state, int slot, MatchGangState recipient)
     {
-        if (_uiSprites is not null)
+        if (UiSprites is not null)
         {
-            batch.Draw(_uiSprites, EquipmentGiveLayout.RecipientHit(slot),
+            batch.Draw(UiSprites, EquipmentGiveLayout.RecipientHit(slot),
                 EquipmentGiveLayout.RecipientCardSource, Color.White);
             if (recipient.Force > 0)
-                batch.Draw(_uiSprites, EquipmentGiveLayout.RecipientForce(slot, recipient.Force),
+                batch.Draw(UiSprites, EquipmentGiveLayout.RecipientForce(slot, recipient.Force),
                     EquipmentGiveLayout.RecipientForceSource(recipient.Force), Color.White);
         }
-        if (_gangPortraits is not null)
+        if (GangPortraits is not null)
             // SCR-GIVE-001, EXP-UI-010: the 64-by-64 portrait halved as the original's stretch does.
-            _scaledGangPortraits.Draw(batch, _gangPortraits,
+            _scaledGangPortraits.Draw(batch, GangPortraits,
                 OriginalSpriteLayout.GangPortrait(recipient.DefinitionId), EquipmentGiveLayout.RecipientPortrait(slot));
-        if (_itemPortraits is not null)
+        if (ItemPortraits is not null)
         {
             var items = EquippedItems(recipient);
             for (var itemSlot = 0; itemSlot < items.Length; itemSlot++)
                 if (items[itemSlot] is { } itemId)
-                    batch.Draw(_itemPortraits, EquipmentGiveLayout.RecipientItem(slot, itemSlot),
+                    batch.Draw(ItemPortraits, EquipmentGiveLayout.RecipientItem(slot, itemSlot),
                         OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
         }
         if (!GiveRecipientEligible(slot))

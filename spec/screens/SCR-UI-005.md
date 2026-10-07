@@ -77,3 +77,9 @@ None known.
   from x 440, past the panel's right edge (FND-UI-024).
 - Which code writes the sector bytes at offsets `0x10` to `0x15` has not been
   read.
+- No recorded run of the original reaches columns 3 to 5 and a seventh gang; a
+  negative skill; opening from SCR-UI-004 and the refusal with no gang in the
+  sector; presses off the face and outside the panel; Enter, Execute and the
+  double-click; the slide sounds and timing (FND-UI-011, FND-UI-014,
+  FND-UI-024). These rest on the static findings named, so the entry stays
+  `supported`.

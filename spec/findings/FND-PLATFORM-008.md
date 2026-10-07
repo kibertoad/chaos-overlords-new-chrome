@@ -1,9 +1,9 @@
 ---
 id: FND-PLATFORM-008
 title: Image copies are opaque except for a pattern mask and an exact-white colour key used by two images
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-PLATFORM-015]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

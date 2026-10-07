@@ -12,8 +12,8 @@ public sealed partial class ChaosGame
         var playerId = ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
         var background = _financeScope == FinanceScope.City
-            ? _cityFinanceBackground
-            : _sectorFinanceBackground;
+            ? CityFinanceBackground
+            : SectorFinanceBackground;
         if (background is not null)
             batch.Draw(background, FinanceLayout.Panel, FinanceLayout.BackgroundSource, Color.White);
         else
@@ -25,8 +25,8 @@ public sealed partial class ChaosGame
         // from the unmarked copy of the city map, as Gangs in Sector does, and frames it in black.
         if (sectorId is { } tileSector)
             DrawUnmarkedSectorCell(batch, pixel, tileSector, FinanceLayout.SectorTile);
-        else if (_uiSprites is not null)
-            batch.Draw(_uiSprites, FinanceLayout.Portrait,
+        else if (UiSprites is not null)
+            batch.Draw(UiSprites, FinanceLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         int[] rows =
         [
@@ -67,7 +67,7 @@ public sealed partial class ChaosGame
     private void DrawSearch(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         DrawMapBackdrop(batch, pixel, font, state, _managementReturnScreen);
-        DrawPanelArtwork(batch, pixel, _siteSearchBackground, SiteSearchLayout.Panel);
+        DrawPanelArtwork(batch, pixel, SiteSearchBackground, SiteSearchLayout.Panel);
 
         var sites = state.Definitions.Sites.OrderBy(site => site.Id)
             .Take(SiteSearchLayout.MaximumSites).ToArray();
@@ -83,8 +83,8 @@ public sealed partial class ChaosGame
             // characters of its name, from the plain font when selected and the row at (152,274)
             // when not.
             var icon = SiteSearchLayout.Icon(index);
-            if (_siteMarkerSprites is not null)
-                batch.Draw(_siteMarkerSprites, icon, SiteSearchLayout.IconSource(sites[index].Id), Color.White);
+            if (SiteMarkerSprites is not null)
+                batch.Draw(SiteMarkerSprites, icon, SiteSearchLayout.IconSource(sites[index].Id), Color.White);
             var name = sites[index].Name;
             font.Copy(batch, name[..Math.Min(name.Length, SiteSearchLayout.NameCharacters)],
                 new Point(icon.X + 24, icon.Y + 3),
@@ -205,13 +205,13 @@ public sealed partial class ChaosGame
 
     private void DrawRankingPanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawPanelArtwork(batch, pixel, _rankingBackground, PlayerRankingLayout.Panel);
-        if (_uiSprites is null) return;
+        DrawPanelArtwork(batch, pixel, RankingBackground, PlayerRankingLayout.Panel);
+        if (UiSprites is null) return;
         var entries = PlayerRankingPresentation.Project(state);
         foreach (var entry in entries)
         {
             var player = state.FindPlayer(entry.Player)!;
-            batch.Draw(_uiSprites,
+            batch.Draw(UiSprites,
                 PlayerRankingLayout.Portrait(entry),
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         }

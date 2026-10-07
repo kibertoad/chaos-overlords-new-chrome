@@ -66,11 +66,9 @@ clears at 0, 68, 239, 391, 562 and 733 milliseconds.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the captures as for
-EXP-UI-041, drawing the recorded item frame. Leaving out the cash row
-(DEV-UI-006) and the Tolerance value (DEV-UI-007), every element of the five
-captures matches.
+A test of the rebuild compares the captures as for EXP-UI-041, drawing the
+recorded item frame. Leaving out the cash row (DEV-UI-006) and the Tolerance
+value (DEV-UI-007), every element of the five captures matches.
 
 ## Conclusion
 

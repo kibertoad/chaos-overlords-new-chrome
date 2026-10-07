@@ -100,3 +100,9 @@ None known.
   read.
 - Resource 5023, which has no file in this build, is never loaded: the flag
   that would select it is 0 and nothing writes it (FND-COMLINK-007).
+- No recorded run of the original reaches typed text, the plain caret, the
+  pressed Cancel and Send faces, the disabled Send face after a deselection
+  and an empty player slot; Execute with no recipient; a press outside the
+  panel; a held button left or released outside; the caret period and phases
+  (FND-COMLINK-003, FND-COMLINK-007, FND-COMLINK-010, FND-UI-019, FND-UI-047).
+  These rest on the static findings named, so the entry stays `supported`.

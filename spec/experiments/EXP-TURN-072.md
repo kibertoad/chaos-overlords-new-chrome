@@ -42,12 +42,12 @@ in its miscellaneous slot. The human's cash is 46.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state, every player's cash included. In the
-transaction pass of turn 30 the rebuild prices item 40 for a gang in a sector
-whose completed Factory belongs to another player, and charges the full Cost
-of 4. With the discount the human's cash would end at 47.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state, every player's cash included. In the transaction pass of turn 30 the
+rebuild prices item 40 for a gang in a sector whose completed Factory belongs to
+another player, and charges the full Cost of 4. With the discount the human's
+cash would end at 47.
 
 ## Conclusion
 

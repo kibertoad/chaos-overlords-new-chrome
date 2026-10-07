@@ -74,3 +74,8 @@ None known.
 - How red costs and green income are chosen per field, and the glyph resource
   the helper copies.
 - The Overlord portrait's resource.
+- No recorded run of the original reaches a gang count of ten or more; the
+  colour of every field beyond the two captured states; Enter and Execute; the
+  slide sounds and the slide's timing (FND-FINANCE-001, FND-FINANCE-002,
+  FND-OPTIONS-001). These rest on the static findings named, so the entry
+  stays `supported`.

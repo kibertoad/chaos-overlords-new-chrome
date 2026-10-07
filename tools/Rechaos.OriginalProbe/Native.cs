@@ -28,6 +28,7 @@ internal static partial class Native
 
     public const uint WmKeyDown = 0x0100;
     public const uint WmKeyUp = 0x0101;
+    public const uint WmChar = 0x0102;
     public const uint WmCommand = 0x0111;
     public const uint WmClose = 0x0010;
     public const uint WmMouseMove = 0x0200;
@@ -155,4 +156,44 @@ internal static partial class Native
 
     [DllImport("gdi32.dll")]
     public static extern int GetDeviceCaps(IntPtr dc, int index);
+
+    [DllImport("user32.dll")]
+    public static extern uint MapVirtualKeyW(uint code, uint mapType);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDlgItem(IntPtr dialog, int item);
+
+    [DllImport("user32.dll")]
+    public static extern bool IsWindow(IntPtr window);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetClassNameW(IntPtr window, char[] name, int length);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool AttachThreadInput(uint attach, uint attachTo, bool join);
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetKeyboardLayout(uint thread);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Message
+    {
+        public IntPtr Window;
+        public uint Id;
+        public IntPtr WParam, LParam;
+        public uint Time;
+        public int X, Y;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern bool PeekMessageW(out Message message, IntPtr window, uint first, uint last, uint remove);
+
+    [DllImport("user32.dll")]
+    public static extern bool GetKeyboardState(byte[] state);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetKeyboardState(byte[] state);
 }

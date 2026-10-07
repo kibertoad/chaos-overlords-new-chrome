@@ -102,10 +102,15 @@ public sealed partial class ChaosGame
         return true;
     }
 
-    private bool BeginCityConsolePress(Point point, ClientScreen returnScreen)
+    /// <summary>
+    /// FND-UI-032: a press on a console tile holds it until the button comes up, and a release
+    /// inside acts. A right press holds it until the right button comes up (FND-UI-063).
+    /// </summary>
+    private bool BeginCityConsolePress(Point point, ClientScreen returnScreen, bool rightButton = false)
     {
         if (CityConsoleLayout.HitTest(point) is not { } control) return false;
         _pressedCityConsoleControl = control;
+        _pressedCityConsoleByRightButton = rightButton;
         _pressedCityConsoleAction = CityConsoleLayout.ActionAt(point);
         _pressedCityConsoleReturnScreen = returnScreen;
         PlayGeneralSound(AudioRouting.PointerPushSound());
@@ -171,6 +176,7 @@ public sealed partial class ChaosGame
     {
         _pressedCityConsoleControl = null;
         _pressedCityConsoleAction = null;
+        _pressedCityConsoleByRightButton = false;
     }
 
     private void OpenManagement(ClientScreen screen, ClientScreen returnScreen)
@@ -192,8 +198,8 @@ public sealed partial class ChaosGame
     private void DrawBoard(
         SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state, SectorViewFrame? sectorView = null)
     {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        if (CityBackground is not null)
+            batch.Draw(CityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         var playerIndex = PlanningViewer?.Value ?? 0;
         var player = state.Players[playerIndex];
         // FND-UI-017, FND-UI-018: the marker follows the viewed player, which on the sector view is
@@ -213,8 +219,8 @@ public sealed partial class ChaosGame
         {
             DrawPreparedCityMap(batch, pixel, state, player.Id,
                 CityMapLayout.Bounds with { X = 0, Y = 0 }, CityMapLayout.Bounds.Location);
-            if (_uiKeyedSprites is not null)
-                batch.Draw(_uiKeyedSprites, CityMapLayout.Destination(_cursor),
+            if (UiKeyedSprites is not null)
+                batch.Draw(UiKeyedSprites, CityMapLayout.Destination(_cursor),
                     CityMapLayout.SelectionFrameSource(SelectionFrameShown()), Color.White);
             else
                 DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
@@ -230,7 +236,8 @@ public sealed partial class ChaosGame
         font.Draw(batch, ExecutableStrings.ScenarioTitle(state.Setup.Scenario),
             new Vector2(StatusConsoleLayout.ScenarioLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
         var (year, week) = MatchCalendar.Of(MatchCalendar.PresentationElapsedTurns(state));
-        // FND-UI-040: separate calendar fields leave the template's separator intact.
+        // FND-UI-040: separate calendar fields leave the template's separator intact; the week is
+        // the one console number drawn with leading zeroes (FND-UI-060).
         // FND-UI-019: glyph cells are copied opaquely, including their blank pixels.
         DrawOpaqueNativeFixedWidthValue(batch, pixel, font, year, StatusConsoleLayout.YearLeft,
             StatusConsoleLayout.DateY, 4);
@@ -249,7 +256,8 @@ public sealed partial class ChaosGame
                      state.Coordinator.Turn) is { } remainingTurns)
             DrawOpaqueNativeFixedWidthValue(batch, pixel, font, remainingTurns,
                 StatusConsoleLayout.RemainingTurnsLeft, StatusConsoleLayout.DateY, 3);
-        // FND-UI-040, RULE-UI-004: five opaque numeric cells, including red unsigned magnitudes.
+        // FND-UI-040, FND-UI-060, RULE-UI-004: five opaque cells of the base-value helper, so 0 is
+        // the bright 0, including red unsigned magnitudes.
         DrawOpaqueNativeFixedWidthValue(batch, pixel, font, StatusConsolePresentation.Score(state, player),
             StatusConsoleLayout.ScoreLeft, StatusConsoleLayout.ScoreY, StatusConsoleLayout.ScoreCells);
         DrawPanelValue(font, batch, StatusConsolePresentation.CashSummary(player.Cash,
@@ -312,19 +320,19 @@ public sealed partial class ChaosGame
     /// <summary>A lit console light; a dark one is the console art under it (FND-EVENT-006).</summary>
     private void DrawCityLight(SpriteBatch batch, Texture2D pixel, Rectangle light)
     {
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites, light, OriginalSelectionLightLayout.CityLightSource, Color.White);
+        if (UiSprites is not null)
+            batch.Draw(UiSprites, light, OriginalSelectionLightLayout.CityLightSource, Color.White);
         else
             DrawSelectionLight(batch, pixel, light);
     }
 
     private void DrawPressedCityConsole(SpriteBatch batch)
     {
-        if (_uiSprites is not null
+        if (UiSprites is not null
             && _pressedCityConsoleControl is { } pressed
             && _hoverPoint is { } hover
             && CityConsoleLayout.HitTest(hover) == pressed)
-            batch.Draw(_uiSprites, CityConsoleLayout.Destination(pressed),
+            batch.Draw(UiSprites, CityConsoleLayout.Destination(pressed),
                 CityConsoleLayout.PressedSource(pressed), Color.White);
     }
 
@@ -346,7 +354,8 @@ public sealed partial class ChaosGame
             var lines = StatusConsoleTooltip.At(
                 statusHover, state.Setup.Scenario, state.Setup.Duration, sector.Tolerance,
                 chaosEstimate, StatusConsolePresentation.ChaosBreakdown(state, chaosEstimate),
-                enemyGangsPresent, StatusConsoleTooltip.ToleranceParts.Of(state, sector));
+                enemyGangsPresent, StatusConsoleTooltip.ToleranceParts.Of(state, sector),
+                complete: _finalViewPlayer is not null);
             DrawHoverTooltip(batch, pixel, font, statusHover, lines,
                 StatusConsoleTooltip.QueuedChaosRangeRow,
                 StatusConsoleTooltip.QueuedChaosRangePrefix,
@@ -397,8 +406,8 @@ public sealed partial class ChaosGame
 
     private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)
     {
-        if (_uiKeyedSprites is not null)
-            batch.Draw(_uiKeyedSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
+        if (UiKeyedSprites is not null)
+            batch.Draw(UiKeyedSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
     }
 
     /// <summary>

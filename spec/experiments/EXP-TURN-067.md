@@ -49,12 +49,12 @@ made no more Heal rolls.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state, and at the end each surviving human
-gang's recurring order matches the original's `repeat_action`. A Heal carried
-on at Force 10 would have rolled dice (FND-HEAL-001) and changed the calls, and
-a dead gang's Chaos carried on would have rolled for a gang no longer there.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state, and at the end each surviving human gang's recurring order matches the
+original's `repeat_action`. A Heal carried on at Force 10 would have rolled dice
+(FND-HEAL-001) and changed the calls, and a dead gang's Chaos carried on would
+have rolled for a gang no longer there.
 
 ## Conclusion
 

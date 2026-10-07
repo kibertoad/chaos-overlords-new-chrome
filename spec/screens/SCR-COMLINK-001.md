@@ -80,3 +80,9 @@ None known.
 - After each step the region (104, 124, 344, 209) is copied to the screen
   again; how long a pressed arrow stays drawn after Left or Right depends on
   a wait that was not read.
+- No recorded run of the original reaches the enabled arrow faces and the
+  pressed Previous, Next and Dismiss faces; message rows 1 to 3 with text and
+  a name longer than 10 characters; Left, Right, Enter and Execute; a press
+  outside the panel; the network refresh (FND-COMLINK-002, FND-COMLINK-007,
+  FND-COMLINK-009). These rest on the static findings named, so the entry
+  stays `supported`.

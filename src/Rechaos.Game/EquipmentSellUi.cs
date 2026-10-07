@@ -225,11 +225,11 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawSellPanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawPanelArtwork(batch, pixel, _equipmentSellBackground, EquipmentSellLayout.Panel, 248);
+        DrawPanelArtwork(batch, pixel, EquipmentSellBackground, EquipmentSellLayout.Panel, 248);
 
         if (_sellGang is not { } gangId || state.FindGang(gangId) is not { } gang) return;
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, EquipmentSellLayout.Portrait,
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, EquipmentSellLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
         var equipped = EquippedItems(gang);
         for (var slot = 0; slot < equipped.Length; slot++)
@@ -248,8 +248,8 @@ public sealed partial class ChaosGame
             DrawOpaqueNativeFixedWidthValue(batch, pixel, font, EquipmentRules.SaleValue(item), price.X, price.Y, 2);
         }
         for (var slot = 0; slot < equipped.Length; slot++)
-            if (_sellSelections[slot] && _uiKeyedSprites is not null)
-                batch.Draw(_uiKeyedSprites, EquipmentSellLayout.Highlight(slot),
+            if (_sellSelections[slot] && UiKeyedSprites is not null)
+                batch.Draw(UiKeyedSprites, EquipmentSellLayout.Highlight(slot),
                     EquipmentSellLayout.HighlightSource, Color.White);
         for (var slot = 0; slot < equipped.Length; slot++)
             if (equipped[slot] is { } itemId)
@@ -268,8 +268,8 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawItemRotation(SpriteBatch batch, short itemId, Rectangle destination)
     {
-        if (itemId >= 0 && itemId < _itemRotationTextures.Length
-            && _itemRotationTextures[itemId] is { } rotation)
+        if (itemId >= 0 && itemId < ItemRotationTextures.Length
+            && ItemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, destination, _referenceFrame?.ItemFrame is { } frame
                 ? ItemRotationPresentation.Frame(frame)
                 : ItemRotationPresentation.FrameAfter(

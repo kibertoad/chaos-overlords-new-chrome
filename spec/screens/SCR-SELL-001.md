@@ -86,3 +86,11 @@ None known.
   highlight.
 - The panel draws half of each item's `cost`, rounded down (FND-SELL-001).
   Selling several rows pays for only one of them (BUG-SELL-001).
+- No recorded run of the original reaches the selection highlight and the
+  enabled OK face, opening on an existing Sell order included; a third filled
+  slot; the Selection made state; the row toggles, OK accepted and refused, a
+  press outside the panel and the double-clicks; Enter, Execute and Escape;
+  the sounds, the slide's timing and the animation counter while a face is
+  held (FND-SELL-001, FND-SELL-002, FND-EQUIP-004, FND-OPTIONS-001,
+  FND-UI-047). These rest on the static findings named, so the entry stays
+  `supported`.

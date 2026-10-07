@@ -92,3 +92,11 @@ None known.
 - The handler stores every gang of the player in the giver's sector in a
   five-entry list without a count check (FND-GIVE-001); whether more than five
   can qualify is not recorded.
+- No recorded run of the original reaches recipient cards 1 to 4, a
+  recipient's item icons and a dimmed card; the item selection frame, the
+  recipient marker and the enabled Confirm face; the Ready state; item
+  toggles, the recipient choice, Confirm and its refusal, a press outside, the
+  double-clicks, Enter, Execute and Escape; the slide and rejected sounds, the
+  slide's timing and the item frame stepping (FND-EQUIP-003, FND-GIVE-001,
+  FND-GIVE-002, FND-GIVE-003, FND-GFX-006, FND-UI-047). These rest on the
+  static findings named, so the entry stays `supported`.

@@ -7,7 +7,7 @@
   "inputs": [
     {"tick":0,"name":"command","value":"File, New Game (0x8101)"},
     {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
-    {"tick":null,"name":"search","value":"turn 1: search filter 0 2 4 6 8 10 12 14 16 18 20"},
+    {"tick":null,"name":"search","value":"turn 1: player 0 search filter 0 2 4 6 8 10 12 14 16 18 20"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 1"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 2"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 3"}

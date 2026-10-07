@@ -4,7 +4,7 @@ title: Bribe pays 3 cash to raise the gang's sector base Tolerance by 3
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-BRIBE-001, FND-TOLERANCE-001, FND-TURN-007, FND-TURN-001, FND-STATE-001, FND-EVENT-001, FND-EXE-004, EXP-TURN-033, SRC-MANUAL-GOG]
+evidence: [FND-BRIBE-001, FND-TOLERANCE-001, FND-TURN-007, FND-TURN-001, FND-STATE-001, FND-EVENT-001, FND-EXE-004, EXP-TURN-033, SRC-MANUAL-GOG, EXP-TURN-042, EXP-TURN-103, EXP-TURN-111, EXP-TURN-117, FND-AWARDS-001, FND-CONTROL-001, FND-EQUIP-006, FND-PLATFORM-003, FND-UI-035, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, RULE-TOLERANCE-001, RULE-TOLERANCE-002]
@@ -68,7 +68,8 @@ emits `BribeCashShort` and changes nothing. Makes no random draw.
   test.
 - The base Tolerance is at most 40 when the phase begins, so the signed byte
   wraps only on the thirtieth Bribe in one sector in one turn, which takes it
-  from 127 to -126; the clamp then sets it to 1.
+  from 127 to -126; the clamp then sets it to 1. EXP-TURN-111 reaches the wrap
+  by writing the base Tolerance before the phase.
 
 ## What the sources say
 
@@ -86,3 +87,8 @@ None known.
 ## Open questions
 
 - The report itself is RULE-EVENT-008, the handler of `BribeCashShort`.
+- The runs reach every case: EXP-TURN-033 a Bribe refused for cash after
+  nine paid ones, EXP-TURN-042 a Bribe with exactly 3 cash, EXP-TURN-103
+  several turns of Bribes in one sector with the base above 40 while later
+  gangs act, EXP-TURN-117 a Bribe after a Snitch in the same sector, and
+  EXP-TURN-111 a Bribe from 126 that wraps the signed byte to -127.

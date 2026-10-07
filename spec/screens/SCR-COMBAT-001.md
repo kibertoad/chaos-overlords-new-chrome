@@ -93,3 +93,10 @@ None known.
   the main console opens by its own route [FND-COMBAT-002].
 - The panel exists as `DATA/PX08/PX05012` too; which file is drawn depends on
   the display mode.
+- No recorded run of the original reaches the police strip, the focus outlines
+  and the both-roles art, dimmed portraits, the arrow faces of a page between
+  the first and the last; any page but the first and the page index kept on
+  reopening; the arrows, their refusals, an opponent portrait press and the
+  force selector; Left, Right and Enter; the accepted and rejected sounds
+  (FND-COMBAT-002, FND-COMBAT-007, FND-COMBAT-012, FND-AUDIO-011). These rest
+  on the static findings named, so the entry stays `supported`.

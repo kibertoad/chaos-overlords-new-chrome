@@ -1,7 +1,7 @@
 ---
 id: RULE-UI-015
 title: File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-UI-058, FND-UI-022, FND-NET-004, EXP-UI-026]
@@ -75,3 +75,7 @@ None known.
 - Whether a network disconnect that is refused keeps the player in planning
   was not run: in a network game `match_saved` stays 1, and the disconnect's
   confirmations belong to the network play the rebuild replaces.
+- No recorded run reaches File, End, a load setting the byte to 1, an order
+  given or cleared through the command box, or no match in play. These rest on
+  FND-UI-058 and FND-UI-022. With network play above, until a run reaches
+  them, the entry stays `supported`.

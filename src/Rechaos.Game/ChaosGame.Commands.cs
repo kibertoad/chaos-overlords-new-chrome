@@ -472,12 +472,12 @@ public sealed partial class ChaosGame
         Texture2D pixel,
         MatchState state)
     {
-        DrawPanelArtwork(batch, pixel, _influenceBackground, InfluenceCommandLayout.Panel, 248);
+        DrawPanelArtwork(batch, pixel, InfluenceBackground, InfluenceCommandLayout.Panel, 248);
 
         var actor = state.FindGang(_commandTargetGang)!;
         var actorDefinition = state.Definitions.Gang(actor.DefinitionId);
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, InfluenceCommandLayout.Portrait,
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, InfluenceCommandLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actorDefinition.Id), Color.White);
 
         var sector = state.Sectors[actor.SectorId];
@@ -521,8 +521,8 @@ public sealed partial class ChaosGame
     {
         var action = _commandTargetAction;
         var background = action == GangAction.Equip
-            ? _equipmentPurchaseBackground
-            : _equipmentResearchBackground;
+            ? EquipmentPurchaseBackground
+            : EquipmentResearchBackground;
         if (background is not null)
             batch.Draw(background, EquipmentCommandLayout.Panel, Color.White);
         else
@@ -530,8 +530,8 @@ public sealed partial class ChaosGame
         // SCR-RESEARCH-001, EXP-UI-009: the item list is written on a black area.
         if (action == GangAction.Research) batch.Draw(pixel, EquipmentCommandLayout.ResearchListArea, Color.Black);
         var actor = state.FindGang(_commandTargetGang)!;
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, EquipmentCommandLayout.Portrait,
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, EquipmentCommandLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actor.DefinitionId), Color.White);
         if (action == GangAction.Equip) DrawEquipmentCommandHeldItems(batch, actor);
 
@@ -565,8 +565,8 @@ public sealed partial class ChaosGame
             if (entry.index == _commandTargetCursor)
                 DrawEquipmentChosenRow(batch, pixel, entry.row, item.Name, cost);
         }
-        if (_uiKeyedSprites is not null)
-            batch.Draw(_uiKeyedSprites, EquipmentCommandLayout.Category(_equipmentCategory),
+        if (UiKeyedSprites is not null)
+            batch.Draw(UiKeyedSprites, EquipmentCommandLayout.Category(_equipmentCategory),
                 EquipmentCommandLayout.CategoryFrameSource, Color.White);
         DrawCommandPanelFaces(batch);
     }
@@ -579,12 +579,12 @@ public sealed partial class ChaosGame
     private void DrawEquipmentChosenRow(SpriteBatch batch, Texture2D pixel, int row, string name, int? price)
     {
         var strip = EquipmentCommandLayout.ItemRow(row);
-        if (_uiSprites is not null)
+        if (UiSprites is not null)
         {
             var origin = EquipmentCommandLayout.ItemNameOrigin(row);
             var text = EquipmentCommandLayout.ChosenRowText(name, price);
             for (var index = 0; index < text.Length; index++)
-                batch.Draw(_uiSprites,
+                batch.Draw(UiSprites,
                     new Rectangle(origin.X + index * OriginalFontLayout.CellWidth, origin.Y,
                         OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight),
                     EquipmentCommandLayout.ChosenRowGlyphSource(text[index]), Color.White);
@@ -594,11 +594,11 @@ public sealed partial class ChaosGame
 
     private void DrawEquipmentCommandHeldItems(SpriteBatch batch, MatchGangState gang)
     {
-        if (_itemPortraits is null) return;
+        if (ItemPortraits is null) return;
         var itemIds = EquippedItems(gang);
         for (var slot = 0; slot < itemIds.Length; slot++)
             if (itemIds[slot] is { } itemId)
-                batch.Draw(_itemPortraits, EquipmentCommandLayout.EquippedItem(slot),
+                batch.Draw(ItemPortraits, EquipmentCommandLayout.EquippedItem(slot),
                     OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
     }
 

@@ -72,4 +72,9 @@ None known.
 
 ## Open questions
 
-None.
+- No recorded run of the original reaches the line's black phase and the blink
+  cadence; the count stopping while a face is held; the results of Cancel and
+  OK; presses off the faces and outside the panel; Enter, Escape and Execute;
+  the sounds and the slide's timing (FND-UI-054, FND-UI-047, FND-OPTIONS-002,
+  FND-UI-024, FND-AUDIO-011, FND-UI-011). These rest on the static findings
+  named, so the entry stays `supported`.

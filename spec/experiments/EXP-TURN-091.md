@@ -46,11 +46,11 @@ The run made 18267 calls of `roll` over thirty-one Done presses. At the end
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. The rebuild makes the same calls with the same bounds and results and
-reaches the same state, the planning records included. The rebuild reaches the
-refused family-0 draw at weight 10 and plans no action for that gang.
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. The rebuild makes the same calls
+with the same bounds and results and reaches the same state, the planning
+records included. The rebuild reaches the refused family-0 draw at weight 10 and
+plans no action for that gang.
 
 ## Conclusion
 

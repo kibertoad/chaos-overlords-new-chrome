@@ -22,7 +22,6 @@ public sealed partial class ChaosGame
         DrawHeldPanelFace(GraphicsDevice.Viewport);
         // RULE-TIMER-004: a pressed key face or a flash is drawn over whatever the screen shows.
         DrawTickedPresentation(GraphicsDevice.Viewport);
-        base.Draw(gameTime);
         CaptureRequestedScreenshot();
         CaptureReferenceFrame();
     }
@@ -54,7 +53,7 @@ public sealed partial class ChaosGame
             texture.SetData(pixels);
             using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                 texture.SaveAsPng(stream, width, height);
-            Window.Title = $"Chaos Overlords: New Chrome - screenshot saved: {Path.GetFileName(path)}";
+            _shell.SetTitle($"{ChaosGameWindow.Title} - screenshot saved: {Path.GetFileName(path)}");
         }
         catch (Exception exception) when (exception is IOException
             or UnauthorizedAccessException or NotSupportedException
@@ -65,7 +64,7 @@ public sealed partial class ChaosGame
                 ["folder"] = _screenshotFolder,
                 ["error"] = exception.Message
             });
-            Window.Title = "Chaos Overlords: New Chrome - screenshot failed";
+            _shell.SetTitle($"{ChaosGameWindow.Title} - screenshot failed");
             _message = "SCREENSHOT FAILED";
         }
     }

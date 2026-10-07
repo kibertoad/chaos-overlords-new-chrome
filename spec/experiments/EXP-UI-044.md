@@ -35,7 +35,7 @@ The steps press the hand-off card's Ready, the lower half of the Comlink
 control and player 1's card as in EXP-UI-016, then hold Send, move the pointer
 off it, wait, release off it, wait and press Cancel. The button steps are
 those of EXP-UI-041, the probe keeps the slot 0 clears per step as there, and
-it reads the caret phase into the item frame as in EXP-UI-016.
+it keeps the caret phase as the shot's `caret_phase` as in EXP-UI-016.
 
 ## Observations
 
@@ -43,7 +43,7 @@ The run made 307 calls of `roll` before the dump and three more after Ready,
 the same 310 calls as EXP-UI-016. All five shots were kept, with sector 33
 selected and every light byte 0:
 
-| Step | Screens | Marker frame | Pump counter | Frame counter | Item frame |
+| Step | Screens | Marker frame | Pump counter | Frame counter | Caret phase |
 |---|---|---|---|---|---|
 | 3 | SCR-COMLINK-002, SCR-UI-003 | 1 | 0 | 6 | 3 |
 | 5 | SCR-COMLINK-002, SCR-UI-003 | 1 | 0 | 6 | 3 |
@@ -65,10 +65,8 @@ across the three shots of the hold. The release step recorded clears at 0,
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the captures as for
-EXP-UI-041, drawing the recorded item frame, and every element of the five
-captures matches.
+A test of the rebuild compares the captures as for EXP-UI-041, drawing the
+recorded item frame, and every element of the five captures matches.
 
 ## Conclusion
 

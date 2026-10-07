@@ -21,7 +21,7 @@ public sealed class LastTurnReportRecordTests
         [
             new MatchPlayerSetup(new PlayerId(0), "PLAYER 1", PlayerController.Human, 0),
             new MatchPlayerSetup(new PlayerId(1), "Rival", PlayerController.Human, 1)
-        ]));
+        ], MatchDeviations.Original));
 
     // RULE-EVENT-004, RULE-EVENT-012, RULE-EVENT-013: types 1 to 3 carry the sector in `arg1`,
     // and the panel shows its label even when the notification names a gang.

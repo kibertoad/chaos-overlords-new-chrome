@@ -110,7 +110,7 @@ public sealed partial class ChaosGame
         }
 
         DrawEndgameBackground(batch, pixel);
-        DrawEndgameNoticeCard(batch, pixel, font, _eliminationBackground, playerId,
+        DrawEndgameNoticeCard(batch, pixel, font, EliminationBackground, playerId,
             player.Setup.PortraitId, player.Setup.Name);
     }
 }

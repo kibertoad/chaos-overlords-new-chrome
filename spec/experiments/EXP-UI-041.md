@@ -115,13 +115,11 @@ kept.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` replays the steps as reference
-clicks, each `down`, `move` and `up` as an edge of its own, and compares the
-captures as for EXP-UI-009. Leaving out the cash row (DEV-UI-006), the
-Tolerance value (DEV-UI-007), the key line (DEV-UI-023) and the Research
-panel's progress column (DEV-RESEARCH-001), every element of the 24 captures
-matches.
+A test of the rebuild replays the steps as reference clicks, each `down`,
+`move` and `up` as an edge of its own, and compares the captures as for
+EXP-UI-009. Leaving out the cash row (DEV-UI-006), the Tolerance value
+(DEV-UI-007), the key line (DEV-UI-023) and the Research panel's progress
+column (DEV-RESEARCH-001), every element of the 24 captures matches.
 
 ## Conclusion
 

@@ -26,14 +26,31 @@ public sealed class Px08BmpDecoderTests
         Assert.Equal([1, 1, 1, 1, 2, 3, 4, 5], output.AsSpan(1078, 8).ToArray());
     }
 
-    [Fact]
-    public void RejectsRunsOutsideKnownDimensions()
+    // RULE-GFX-001, FND-GFX-008: SetDIBits cuts a run at the end of its line, follows a delta
+    // without writing, accepts data with no end code and leaves unwritten pixels as they were.
+    [Theory]
+    [InlineData(new byte[] { 6, 5, 0, 1 }, new byte[] { 5, 5, 5, 5, 0, 0, 0, 0 })]
+    [InlineData(new byte[] { 0, 5, 1, 2, 3, 4, 5, 0, 0, 1 }, new byte[] { 1, 2, 3, 4, 0, 0, 0, 0 })]
+    [InlineData(new byte[] { 2, 7, 0, 2, 1, 1, 1, 9, 0, 1 }, new byte[] { 7, 7, 0, 0, 0, 0, 0, 9 })]
+    [InlineData(new byte[] { 1, 6, 0, 0, 1, 8, 0, 1 }, new byte[] { 6, 0, 0, 0, 8, 0, 0, 0 })]
+    [InlineData(new byte[] { 2, 7 }, new byte[] { 7, 7, 0, 0, 0, 0, 0, 0 })]
+    public void DecodesTheCasesNoShippedFileReachesAsSetDIBitsDoes(byte[] rle, byte[] expected)
     {
-        var source = CreateSource([5, 1, 0, 1]);
+        var output = Px08BmpDecoder.Decode(CreateSource(rle), width: 4, height: 2);
 
-        var exception = Assert.Throws<InvalidDataException>(() => Px08BmpDecoder.Decode(source, width: 4, height: 1));
+        Assert.Equal(expected, output.AsSpan(1078, 8).ToArray());
+    }
 
-        Assert.Contains("bounds", exception.Message, StringComparison.OrdinalIgnoreCase);
+    // RULE-GFX-001: the procedure stops when fewer than two bytes are left, so a lone trailing
+    // byte and a missing pad byte after a final odd absolute run end the data without an error.
+    [Theory]
+    [InlineData(new byte[] { 2, 7, 5 }, new byte[] { 7, 7, 0, 0, 0, 0, 0, 0 })]
+    [InlineData(new byte[] { 0, 3, 1, 2, 3 }, new byte[] { 1, 2, 3, 0, 0, 0, 0, 0 })]
+    public void EndsTheDataWhereTheProcedureStops(byte[] rle, byte[] expected)
+    {
+        var output = Px08BmpDecoder.Decode(CreateSource(rle), width: 4, height: 2);
+
+        Assert.Equal(expected, output.AsSpan(1078, 8).ToArray());
     }
 
     [Fact]

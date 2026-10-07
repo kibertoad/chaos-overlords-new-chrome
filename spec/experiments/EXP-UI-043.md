@@ -52,12 +52,9 @@ as EXP-TURN-071. All three shots were kept, with every light byte 0:
 
 ## Results
 
-`TheOrderMenusGiveTheOriginalsOrders` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Orders.cs` follows the
-right press on the back control back to the city. The rebuild takes a right
-press on the city and sector screens as a cancel, so `TheRebuildDrawsWhatTheOriginalDrew` skips
-the three captures until the rebuild presses the tiles with the right button
-(issue #525).
+A test of the rebuild follows the right press on the back control back to the
+city. The comparison of the screens does not replay right presses yet, so it
+skips the three captures (issue #525).
 
 ## Conclusion
 

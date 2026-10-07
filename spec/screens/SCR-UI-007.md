@@ -67,4 +67,8 @@ None known.
 
 ## Open questions
 
-None.
+- No recorded run of the original reaches a site with no special effect;
+  Resistance less progress in the active player's own sector; opening from
+  Influence and Search; presses outside the panel and off the face; Enter and
+  Execute; the slide sounds and timing (FND-UI-005, FND-UI-024, FND-UI-049).
+  These rest on the static findings named, so the entry stays `supported`.
