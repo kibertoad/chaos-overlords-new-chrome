@@ -584,8 +584,9 @@ describe('desync verdicts, snapshots and recovery', () => {
   })
 
   /**
-   * The other half of the same rule: a tie has no majority, so the host still breaks it and a peer
-   * may not. Without this, whoever uploaded first would decide a two-player match.
+   * The other half of the same rule: a tie has no majority, so one designated player breaks it and
+   * nobody else may. Without this, whoever uploaded first would decide a two-player match. In a
+   * two-player tie the host always holds one of the hashes, so the host is the one designated.
    */
   it('lets only the host break a tie between two reported states', async () => {
     const { host, guest } = await h.startedMatch()
@@ -608,7 +609,9 @@ describe('desync verdicts, snapshots and recovery', () => {
         body: 'BBBB',
         seatSummaries: [],
       }),
-    ).rejects.toMatchObject({ details: { reason: 'host_only' } })
+    ).rejects.toMatchObject({ details: { reason: 'not_tie_breaker' } })
+    const desync = h.notifier.events.find((event) => event.type === 'turn.desynced')
+    expect(desync?.payload).toMatchObject({ tieBreakerPlayerId: host.player.id })
     await h.kernel.snapshots.upload(await h.principalOf(host.token), {
       turn: 1,
       formatVersion: 1,
@@ -675,5 +678,229 @@ describe('desync verdicts, snapshots and recovery', () => {
     ).toBe(false)
     const reports = await h.storage.turns.listReports(host.match.id, 1)
     expect(reports.every((report) => report.stateHash === HASH_A)).toBe(true)
+  })
+
+  describe('without the host', () => {
+    const HASH_C = 'c'.repeat(32)
+
+    async function startedMatchOfFive() {
+      const host = await h.kernel.lobby.createMatch({
+        settings: {
+          name: 'Night City',
+          maxPlayers: 6,
+          turnTimerSeconds: 0,
+          visibility: 'private',
+          gameSettings: {},
+        },
+        hostDisplayName: 'Host',
+      })
+      const join = (displayName: string) =>
+        h.kernel.lobby.join({ joinCode: host.joinCode, displayName })
+      const bea = await join('Bea')
+      const cal = await join('Cal')
+      const dee = await join('Dee')
+      const eve = await join('Eve')
+      await h.kernel.lobby.start(await h.principalOf(host.token))
+      for (const member of [host, bea, cal, dee, eve]) {
+        await h.submit(await h.principalOf(member.token), 1, 1, true)
+      }
+      return { host, bea, cal, dee, eve }
+    }
+
+    const reportAs = async (token: string, stateHash: string) =>
+      h.kernel.turns.report(await h.principalOf(token), 1, { stateHash, finished: false })
+
+    const uploadAs = async (token: string, stateHash: string) =>
+      h.kernel.snapshots.upload(await h.principalOf(token), {
+        turn: 1,
+        formatVersion: 1,
+        stateHash,
+        body: 'AAAA',
+        seatSummaries: [],
+      })
+
+    const announcements = () => h.notifier.events.filter((event) => event.type === 'turn.desynced')
+
+    /**
+     * Two reports each for two hashes and the host's alone on a third. The host cannot claim a
+     * hash it never computed and used to be the only one allowed to break a tie, so the match
+     * stayed paused until retention collected it.
+     */
+    it('lets the lowest seat holding a tied hash break a tie the host is outside of', async () => {
+      const { host, bea, cal, dee, eve } = await startedMatchOfFive()
+      await reportAs(host.token, HASH_C)
+      await reportAs(bea.token, HASH_B)
+      await reportAs(cal.token, HASH_A)
+      await reportAs(dee.token, HASH_A)
+      await reportAs(eve.token, HASH_B)
+      expect(h.storage.statusOf(host.match.id)).toBe('desynced')
+      expect(announcements()).toHaveLength(1)
+      expect(announcements()[0]?.payload).toMatchObject({
+        candidateStateHashes: [HASH_A, HASH_B],
+        tieBreakerPlayerId: bea.player.id,
+      })
+
+      await expect(uploadAs(host.token, HASH_C)).rejects.toMatchObject({
+        details: { reason: 'uncorroborated_state_hash' },
+      })
+      await expect(uploadAs(cal.token, HASH_A)).rejects.toMatchObject({
+        details: { reason: 'not_tie_breaker' },
+      })
+      await expect(uploadAs(bea.token, HASH_B)).resolves.toBeUndefined()
+      for (const member of [host, cal, dee]) await reportAs(member.token, HASH_B)
+      expect(h.storage.statusOf(host.match.id)).toBe('running')
+    })
+
+    /**
+     * A client that rebuilt the disputed turn from the server's facts and found its own report
+     * wrong reports again. When that makes the reports unanimous the turn confirms with no
+     * snapshot from anybody.
+     */
+    it('confirms a desynced turn on unanimous re-reports, with no snapshot', async () => {
+      const { host, guest, third } = await h.startedMatchOfThree()
+      for (const token of [host.token, guest.token, third.token]) {
+        await h.submit(await h.principalOf(token), 1, 1, true)
+      }
+      await reportAs(host.token, HASH_B)
+      await reportAs(guest.token, HASH_A)
+      await reportAs(third.token, HASH_A)
+      expect(h.storage.statusOf(host.match.id)).toBe('desynced')
+
+      await reportAs(host.token, HASH_A)
+      expect((await h.storage.turns.get(host.match.id, 1))?.status).toBe('confirmed')
+      expect(h.storage.statusOf(host.match.id)).toBe('running')
+      expect(await h.storage.snapshots.getLatest(host.match.id)).toBeNull()
+    })
+
+    /**
+     * A re-report or a departure can change what a client may do about the pause, and a client
+     * acts on the last announcement it saw. A changed verdict is announced again; an unchanged one,
+     * and the sweep's re-runs, are not.
+     */
+    it('announces a desync again only when its candidates or tie-breaker change', async () => {
+      const { host, bea, cal, dee, eve } = await startedMatchOfFive()
+      await reportAs(host.token, HASH_C)
+      await reportAs(bea.token, HASH_B)
+      await reportAs(cal.token, HASH_A)
+      await reportAs(dee.token, HASH_A)
+      await reportAs(eve.token, HASH_B)
+      expect(announcements()).toHaveLength(1)
+
+      // The same report again changes nothing anybody acts on.
+      await reportAs(eve.token, HASH_B)
+      await h.kernel.turns.sweep()
+      expect(announcements()).toHaveLength(1)
+
+      // Bea leaves: HASH_A is now the sole most-reported hash, and nobody breaks a tie.
+      await h.kernel.lobby.leave(await h.principalOf(bea.token))
+      expect(announcements()).toHaveLength(2)
+      expect(announcements()[1]?.payload).toMatchObject({
+        candidateStateHashes: [HASH_A],
+        tieBreakerPlayerId: null,
+      })
+    })
+
+    /**
+     * Bea's departure breaks the tie and her return restores it. A key naming only the verdict's
+     * content found the first announcement in the log and dropped the third, so every client kept
+     * acting on the departure's verdict while the server enforced the tie: Bea never learned she
+     * was the tie-breaker, and the holders of the hash the clients took for the majority were
+     * refused with `not_tie_breaker`.
+     */
+    it('announces a verdict again when it returns to an earlier one', async () => {
+      const { host, bea, cal, dee, eve } = await startedMatchOfFive()
+      await reportAs(host.token, HASH_C)
+      await reportAs(bea.token, HASH_B)
+      await reportAs(cal.token, HASH_A)
+      await reportAs(dee.token, HASH_A)
+      await reportAs(eve.token, HASH_B)
+      await h.kernel.lobby.leave(await h.principalOf(bea.token))
+      expect(announcements()).toHaveLength(2)
+      await h.kernel.lobby.rejoin(await h.principalOf(bea.token))
+      // The server now enforces [A, B] with Bea as tie-breaker again.
+      await expect(uploadAs(cal.token, HASH_A)).rejects.toMatchObject({
+        details: { reason: 'not_tie_breaker' },
+      })
+      expect(announcements().at(-1)?.payload).toMatchObject({
+        candidateStateHashes: [HASH_A, HASH_B],
+        tieBreakerPlayerId: bea.player.id,
+      })
+    })
+
+    /**
+     * With two turns desynced the latest announcement in the log is usually the other turn's, so
+     * it cannot tell whether this turn's verdict changed. Falling back to a key naming only the
+     * content dropped a verdict that returned to an earlier one, as above.
+     */
+    it('announces a returning verdict while another turn is desynced too', async () => {
+      const { host, bea, cal, dee, eve } = await startedMatchOfFive()
+      for (const member of [host, bea, cal, dee, eve]) {
+        await h.submit(await h.principalOf(member.token), 2, 1, true)
+      }
+      for (const turn of [1, 2]) {
+        const reports: [string, string][] = [
+          [host.token, HASH_C],
+          [bea.token, HASH_B],
+          [cal.token, HASH_A],
+          [dee.token, HASH_A],
+          [eve.token, HASH_B],
+        ]
+        for (const [token, stateHash] of reports) {
+          await h.kernel.turns.report(await h.principalOf(token), turn, {
+            stateHash,
+            finished: false,
+          })
+        }
+      }
+      expect((await h.storage.turns.get(host.match.id, 2))?.status).toBe('desynced')
+      await h.kernel.lobby.leave(await h.principalOf(bea.token))
+      await h.kernel.lobby.rejoin(await h.principalOf(bea.token))
+      const latestForTurn = (turn: number) =>
+        announcements()
+          .filter((event) => event.payload.turn === turn)
+          .at(-1)?.payload
+      for (const turn of [1, 2]) {
+        expect(latestForTurn(turn)).toMatchObject({
+          candidateStateHashes: [HASH_A, HASH_B],
+          tieBreakerPlayerId: bea.player.id,
+        })
+      }
+    })
+
+    /**
+     * A departure is committed before its verdict is announced again, so a publish that throws in
+     * between leaves clients on the old verdict with nothing on the request path to retry it. The
+     * sweep compares each desynced turn with its latest announcement and publishes the change.
+     */
+    it('announces from the sweep a changed verdict whose announcement failed', async () => {
+      const { host, bea, cal, dee, eve } = await startedMatchOfFive()
+      await reportAs(host.token, HASH_C)
+      await reportAs(bea.token, HASH_B)
+      await reportAs(cal.token, HASH_A)
+      await reportAs(dee.token, HASH_A)
+      await reportAs(eve.token, HASH_B)
+      expect(announcements()).toHaveLength(1)
+
+      const real = h.storage.events.appendOnce
+      let failed = false
+      h.storage.events.appendOnce = async (event, key) => {
+        if (!failed && event.type === 'turn.desynced') {
+          failed = true
+          throw new Error('append of turn.desynced failed')
+        }
+        return real(event, key)
+      }
+      await h.kernel.lobby.leave(await h.principalOf(bea.token)).catch(() => undefined)
+      expect(announcements()).toHaveLength(1)
+
+      await h.kernel.turns.sweep()
+      expect(announcements()).toHaveLength(2)
+      expect(announcements()[1]?.payload).toMatchObject({
+        candidateStateHashes: [HASH_A],
+        tieBreakerPlayerId: null,
+      })
+      await h.kernel.turns.sweep()
+      expect(announcements()).toHaveLength(2)
+    })
   })
 })

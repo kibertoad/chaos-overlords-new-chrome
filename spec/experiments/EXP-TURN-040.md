@@ -48,12 +48,12 @@ and move.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. It
-makes the same writes to the rebuild's planning state before the same Done
-presses, and the rebuild makes the same calls with the same bounds and
-results and reaches the same state. Without the writes the rebuild parts from
-the original at roll 477. No family-4 gang sees a hostile human gang, so the
-family-4 attack draws and its Control after repeated moves are not compared.
+A test of the rebuild replays the run. It makes the same writes to the rebuild's
+planning state before the same Done presses, and the rebuild makes the same
+calls with the same bounds and results and reaches the same state. Without the
+writes the rebuild parts from the original at roll 477. No family-4 gang sees a
+hostile human gang, so the family-4 attack draws and its Control after repeated
+moves are not compared.
 
 ## Conclusion
 

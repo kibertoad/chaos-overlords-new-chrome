@@ -56,10 +56,9 @@ panel of 52 upkeep -1 for the one gang moving in.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches
-the same state, and before each Done press its projection of each opened
-panel gives the nine numbers the original drew.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same state, and before each Done press
+its projection of each opened panel gives the nine numbers the original drew.
 
 ## Conclusion
 

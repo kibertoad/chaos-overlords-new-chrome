@@ -49,15 +49,13 @@ players 3 and 4, tied at standing 0, are listed in slot order and no player is l
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results, reaches the
-same state, stored scores and Last Turn reports, and gives the same awards to
-the same players. The scores count a site from the evaluation of the turn
-that completes it, and the sectors count it after the rebuild that ends the
-match.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results, reaches the same state, stored scores and Last Turn
+reports, and gives the same awards to the same players. The scores count a site
+from the evaluation of the turn that completes it, and the sectors count it
+after the rebuild that ends the match.
 
-The rebuild's endgame lists the players in the same order and places
-(`TheEndgameListsThePlayersInTheOriginalsOrder`).
+The rebuild's endgame lists the players in the same order and places.
 
 ## Conclusion
 
