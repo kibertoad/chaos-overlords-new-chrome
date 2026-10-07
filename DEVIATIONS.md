@@ -1011,8 +1011,9 @@ Whether the original shows the count is not recorded.
 - Reason: Where a number cell's source column lies wholly or partly outside the glyph sheet's
   bitmap, the original changes only the pixels whose source lies inside and leaves the rest of
   the cell holding whatever an earlier draw left on the screen, a glyph of an earlier value
-  included (EXP-UI-002, EXP-UI-038, EXP-UI-039, EXP-UI-040). The rebuild draws the same inside pixels, and the rest of the cell shows
-  what the rebuild drew beneath it in the same frame: the panel or console background.
+  included (EXP-UI-002, EXP-UI-038, EXP-UI-039, EXP-UI-040). The rebuild draws the same inside
+  pixels, and the rest of the cell shows what the rebuild drew beneath it in the same frame: the
+  panel or console background.
 - Setting: None
 - Default: mandatory
 - Justification: The rebuild draws every frame afresh from the match state and keeps no screen

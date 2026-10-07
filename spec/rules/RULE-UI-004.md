@@ -101,9 +101,11 @@ every panel passes `leading_zeros` 0. `modifier_cells` is the modifier helper.
   right, whose 4 and 2 inside pixel columns land at the cell's left edge, and
   -4 and -2 on the left (glyphs 10922 and 21845), whose 2 and 4 inside pixel
   columns, sheet columns 0 and 1 or 0 to 3 within the space glyph's cell,
-  land at the cell's right edge. Runs drew all four: 510 and -2 from both
-  rows, 508 and -4 from the green row (EXP-UI-002, EXP-UI-027, EXP-UI-038,
-  EXP-UI-039, EXP-UI-040). A cell wholly
+  land at the cell's right edge. Runs drew 510 and -2 from both rows and 508
+  from the green row over an earlier glyph or the console, and the clipped
+  copy shows (EXP-UI-002, EXP-UI-027, EXP-UI-038, EXP-UI-039, EXP-UI-040).
+  The one run at -4, from the green row, drew black over the black console,
+  which cannot tell a clipped copy from none (EXP-UI-027). A cell wholly
   outside, such as column 516, changes nothing (EXP-UI-002, EXP-UI-028).
 - At the columns 32762, 32764 and 32766 the copy is a `StretchBlt` whose
   source rectangle spans the whole bitmap (FND-UI-065). It changes nothing

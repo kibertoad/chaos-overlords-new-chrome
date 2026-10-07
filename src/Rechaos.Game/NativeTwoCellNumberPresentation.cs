@@ -43,7 +43,9 @@ public static class NativeTwoCellNumberPresentation
     /// <c>(x, 8, 6, 7)</c> for a negative value, where <c>x</c> is <c>6g</c> cut to a signed 16-bit
     /// number (FND-UI-065), so a large enough glyph wraps back into the bitmap. Only the pixel
     /// columns inside the bitmap are copied, and the rest of the cell keeps what was drawn under it
-    /// (EXP-UI-002). Null when no column of the cell lies inside the bitmap.
+    /// (EXP-UI-002). Null when no column of the cell lies inside the bitmap, which also covers the
+    /// columns 32762 to 32766 whose <c>StretchBlt</c> changes nothing (EXP-UI-038, EXP-UI-039,
+    /// EXP-UI-040).
     /// </summary>
     public static CellCopy? AtlasCell(int glyph, bool negative, int atlasWidth)
     {

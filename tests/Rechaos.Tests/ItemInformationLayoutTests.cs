@@ -122,7 +122,9 @@ public sealed class ItemInformationLayoutTests
         Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(2, 0, 6, 7), 0), NativeTwoCellNumberPresentation.AtlasCell(10923, false, 512));
         Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(506, 8, 6, 7), 0), NativeTwoCellNumberPresentation.AtlasCell(11007, true, 512));
         // Glyph 10922 starts at column -4, so its two right pixel columns come from columns 0 and 1
-        // and land four pixels into the cell (EXP-UI-027). Glyphs 16383, 27306 and 5461 start at
+        // and land four pixels into the cell, as the four of column -2 land two pixels in
+        // (EXP-UI-038, EXP-UI-040); EXP-UI-027's run at -4 drew black over the black console, which
+        // cannot tell the clipped copy from none. Glyphs 16383, 27306 and 5461 start at
         // columns 32762, 32764 and 32766, where the copy becomes a StretchBlt (FND-UI-065) that
         // changes nothing, over the console or an earlier glyph (EXP-UI-028, EXP-UI-038,
         // EXP-UI-039, EXP-UI-040).
@@ -148,9 +150,9 @@ public sealed class ItemInformationLayoutTests
     [Fact]
     public void DrawsAPartlyInsideCellAtItsOffsetWithinTheCell()
     {
-        // RULE-UI-004, EXP-UI-027, EXP-UI-038, EXP-UI-040: at column -4 the two inside pixel
-        // columns land four pixels into the cell, and at column -2 the four inside columns land two
-        // pixels in; at 510 and 508 the copy starts at the cell's left edge (EXP-UI-039).
+        // RULE-UI-004, EXP-UI-038, EXP-UI-040: at column -4 the two inside pixel columns land four
+        // pixels into the cell, and at column -2 the four inside columns land two pixels in; at 510
+        // and 508 the copy starts at the cell's left edge (EXP-UI-002, EXP-UI-039).
         Assert.Equal(new Rectangle(104, 40, 2, 7),
             NativeTwoCellNumberPresentation.AtlasCell(10922, false, 512)!.Value.Destination(100, 40));
         Assert.Equal(new Rectangle(102, 40, 4, 7),
