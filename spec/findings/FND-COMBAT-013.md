@@ -53,16 +53,16 @@ surface 3 or 5:
   (`0x0046501C`).
 
 The Attack picker copies an equipment icon from surface 5 at x 120 (`0x78`,
-stored at `0x0043B4D1`) and y `20 * id` (`0x0043B4BF..0x0043B4CD`), 20 by 20.
+stored at `0x0043B4D1`) and y `20 * id` (`0x0043B4BF..0x0043B4CA`), 20 by 20.
 
 Colour order. `fn_00425E99(out, a, b, c)` stores bits 8 to 15 of `a`, `b` and
 `c` as the first, second and third 16-bit words of the colour
-(`0x00425EA2..0x00425EC0`). `fn_00426575` builds the value it passes to
+(`0x00425EA2..0x00425EBC`). `fn_00426575` builds the value it passes to
 `CreatePen` (`0x004265BB`) and `CreateSolidBrush` (`0x004265FE`) as the first
 word's low byte, plus the second word's low byte shifted left by 8, plus the
-third word's low byte shifted left by 16 (`0x0042659D..0x004265B6`). The
+third word's low byte shifted left by 16 (`0x0042659D..0x004265B4`). The
 Combat Results focal outline pushes `a` 0, `b` 0xFFFF and `c` 0
-(`0x00453B73..0x00453B7C`).
+(`0x00453B73..0x00453B7A`).
 
 Fight list area. The list builder `fn_0043087E` stores each element's 10-byte
 record at `0x004945A8 + 10 * n` (`0x00430AD0`, and the police element's

@@ -20,7 +20,7 @@ player's cash and to the cash it has earned.
 ## When it runs
 
 As `chaos_payout_phase`, after `transaction_phase` and before
-`terminate_phase`, in the resolver `fn_00472775` at `0x00474E57..0x00475098`
+`terminate_phase`, in the resolver `fn_00472775` at `0x00474E57..0x00475091`
 (range in FND-EXE-004) [FND-CHAOS-001, FND-CHAOS-002].
 
 ## Parameters

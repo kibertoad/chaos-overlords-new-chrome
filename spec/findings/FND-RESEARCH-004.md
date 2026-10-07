@@ -13,10 +13,10 @@ locations:
     address: 0x00442855..0x0044288F
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004429C6..0x00442A62
+    address: 0x004429C6..0x00442A5D
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00442A67..0x00443795
+    address: 0x00442A67..0x0044378E
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -34,7 +34,7 @@ minus `(104,124)`.
   with `fn_0041953E(0)`, ending at `(104,124)-(448,333)`.
 - When the gang's action is already 11, it searches the sixteen list entries
   at `0x004948A8` for the gang's `target` item, highlights that row with
-  `fn_0043EFE5` and enables the confirmation face (`0x004429C6..0x00442A62`).
+  `fn_0043EFE5` and enables the confirmation face (`0x004429C6..0x00442A5D`).
 - Key down: `0x2B` or `0x0D` plays sound slot 4 when no row is selected, and
   otherwise presses the face `(137,293)-(187,316)`, writes the selected row's
   list entry (an item number) into the gang's byte 8 (`0x00442B40`) and closes
@@ -47,7 +47,7 @@ minus `(104,124)`.
   clear the selection, rebuild the list and disable the confirmation face. The
   list area local `(148,26)-(328,169)` gives the row `(y_local - 26) / 9`: a
   row whose entry is -1 clears the selection and disables the face, any other
-  row is highlighted with `fn_0043EFE5` and selected (`0x0044324C..0x004432DC`).
+  row is highlighted with `fn_0043EFE5` and selected (`0x0044324C..0x004432D7`).
 - Left double-click, `0x0044336E..`: in local `(148,19)-(328,162)` the row is
   `(y_local - 26) / 9` truncated toward zero; for a row whose entry is not -1
   it copies that item's 166-byte record from `0x004A5F08 + item * 0xA6` and

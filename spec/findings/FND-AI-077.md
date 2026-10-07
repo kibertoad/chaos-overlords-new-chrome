@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041FEF0..0x0042086C
+    address: 0x0041FEF0..0x00420866
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -33,7 +33,7 @@ the weapon Equip branch with the one at `0x004201F2`, before the write at
 `0x004201FA`. Every other branch reaches `0x00420779` after one of the two
 writes of `[EBP-0x4]`.
 
-The gates at `0x00420779..0x0042086C` pass their arguments as follows:
+The gates at `0x00420779..0x00420866` pass their arguments as follows:
 
 | Call | Selector | Arguments |
 |---|---|---|
@@ -65,5 +65,5 @@ everywhere else, so the gates read the item as a sector.
 
 List the writes to `[EBP-0x10]` in `0x0041FEF0`, the references to
 `0x00420779`, and the arguments pushed before each selector call in
-`0x00420779..0x0042086C`. EXP-TURN-055 and EXP-TURN-056 show the result in
+`0x00420779..0x00420866`. EXP-TURN-055 and EXP-TURN-056 show the result in
 the running original.

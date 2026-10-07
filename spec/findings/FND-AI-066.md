@@ -10,13 +10,13 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004099E9..0x00409B71
+    address: 0x004099E9..0x00409B6C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00408553..0x00408642
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00409B71..0x00409DCF
+    address: 0x00409B71..0x00409DCA
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0040A364
@@ -126,7 +126,7 @@ seen to go that far.
 
 Read the 36 bytes of the file's `.data` section at `0x0048992C`.
 
-Disassemble `0x004099E9..0x00409B71` for the refill, `0x00408553..0x00408642`
-for the sort, and `0x00409B71..0x00409DCF` for the two tie counts and the
+Disassemble `0x004099E9..0x00409B6C` for the refill, `0x00408553..0x00408642`
+for the sort, and `0x00409B71..0x00409DCA` for the two tie counts and the
 routing. Search the file for the little-endian addresses `0x00489F50`,
 `0x00489F54` and `0x00489F4C`: every reference falls inside those ranges.

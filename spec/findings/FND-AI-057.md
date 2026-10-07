@@ -61,7 +61,7 @@ current sector (selector `0xAF`):
 - At other weights: when the owner query equals the active player
   (`0x00434F2C`), Move through mode 5.
 - After a failed comparison, and at other weights in a sector the owner query
-  does not give to the player (`0x00434F41..0x004351FF`): Heal when Force is
+  does not give to the player (`0x00434F41..0x004351F5`): Heal when Force is
   below 9 and effective Heal is at least -3; otherwise Control when selector
   `0x2C` accepts the sector; otherwise a Snitch gate. The gate passes when
   selector `0x35` is nonzero and either the attitude read above is negative

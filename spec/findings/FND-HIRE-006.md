@@ -16,7 +16,7 @@ locations:
     address: 0x00475A1B..0x00475BDB
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00475BDB..0x00475C33
+    address: 0x00475BDB..0x00475C2D
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00475C33..0x00475D31
@@ -49,19 +49,19 @@ sector count has passed:
 | `0x02` | the order's sector | `0x00475A80` |
 | `0x01` | the offer's definition | `0x00475A9C` |
 | `0x03` | 10 when the player's byte at `0x004A5EF0` is set, otherwise the bounded draw `fn_0045D227(5)` plus 4 | `0x00475AB8`, `0x00475AD1` |
-| `0x04`, `0x05`, `0x06` | `0xFF` each | `0x00475AD7..0x00475AEC` |
-| `0x12`, `0x13`, `0x14`, `0x15` | the low bytes of the definition fields at `+0x7E`, `+0x80`, `+0x84`, `+0x86` | `0x00475B04..0x00475B64` |
-| `0x07..0x0B` | 0 each | `0x00475B64..0x00475B87` |
+| `0x04`, `0x05`, `0x06` | `0xFF` each | `0x00475AD7..0x00475AE5` |
+| `0x12`, `0x13`, `0x14`, `0x15` | the low bytes of the definition fields at `+0x7E`, `+0x80`, `+0x84`, `+0x86` | `0x00475B04..0x00475B5E` |
+| `0x07..0x0B` | 0 each | `0x00475B64..0x00475B80` |
 | `0x16..0x1F` | the low bytes of the ten definition fields `+0x88` to `+0x9A`, in order | `0x00475BCF` |
 
-- Free-slot search, `0x00475BDB..0x00475C33`. A counter starts at 0; the loop
+- Free-slot search, `0x00475BDB..0x00475C2D`. A counter starts at 0; the loop
   stops when the record's sector byte is 100 (`0x00475C05`) or the counter
   reaches 80 (`0x00475C0E`). A counter of 80 or more afterwards
   (`0x00475C26`) takes the roster-full path.
 - Success, `0x00475C33..0x00475D31`: the copy is written into the free record
   (eight dwords, `0x00475C58`), the gang's entry of `0x00498990` is set to 1
-  (`0x00475C71`), cash spent gains the cost (`0x00475C88..0x00475CAF`), cash
-  loses it (`0x00475CBA..0x00475CEB`), the offer byte is negated
+  (`0x00475C71`), cash spent gains the cost (`0x00475C88..0x00475CA8`), cash
+  loses it (`0x00475CBA..0x00475CE4`), the offer byte is negated
   (`0x00475CF1..0x00475D0A`) and the order is set to -1 (`0x00475D29`).
 - The definition table read here starts at `0x004A2800` with stride `0x9C`:
   the Upkeep scan of `fn_0046E766` reads `+0x7C` of the same records

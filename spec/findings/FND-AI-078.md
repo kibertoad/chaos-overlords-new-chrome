@@ -111,5 +111,5 @@ either its sector argument or a loop index from 0 to 63.
 ## How to reproduce
 
 Disassemble `0x004372AD..0x004372F8`, `0x004377D0..0x004377F6`,
-`0x0043789A..0x004378CB` and `0x00437E82..0x00437E9F`, list the references to
+`0x0043789A..0x004378CB` and `0x00437E82..0x00437E99`, list the references to
 `0x00437E82`, and read case `0x30` of `0x00402D70`.

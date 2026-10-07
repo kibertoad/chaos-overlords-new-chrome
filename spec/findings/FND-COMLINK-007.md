@@ -55,8 +55,8 @@ Send, `fn_0045EAB1`, when it opens:
 - It builds six eligibility bytes in a stack local. Slot `p` is eligible when
   the byte at `0x004ABBE0 + p` (`player_active`) and the byte at
   `0x004ABC58 + p` are both nonzero; then the byte of `active_player` is
-  cleared. The setup functions `fn_00456F80` (`0x00457A3C..0x00457A74`) and
-  `fn_004677F0` (`0x00468821..0x00468859`) set `0x004ABC58 + p` to 1 when
+  cleared. The setup functions `fn_00456F80` (`0x00457A3C..0x00457A6D`) and
+  `fn_004677F0` (`0x00468821..0x00468852`) set `0x004ABC58 + p` to 1 when
   `controller[p]` is 0 or 3 and to 0 otherwise. The event pump stores 0 there
   at `0x00462B8C`, in the branch that also sets `controller[p]` to 1.
 - The text cursor's column and row are stack locals that start at 0, and the

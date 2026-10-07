@@ -38,7 +38,7 @@ and otherwise dispatches on the action byte (record offset `0x07`). The
 dispatch at `0x00473084..0x004730AD` subtracts 2, sends values above 11 to the
 default, and indexes the byte table at `0x004730C9` and the jump table at
 `0x004730AD`. After the case, every non-skipped slot's copy is written back to
-the gang record at `0x004730D5..0x00473101`.
+the gang record at `0x004730D5..0x004730FF`.
 
 | Action | Case | Instructions | Evidence of the case's work |
 |---|---|---|---|

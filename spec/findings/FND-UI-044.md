@@ -54,7 +54,7 @@ them (FND-UI-020). Function extents are those of FND-EXE-004.
   and goes on only when the byte at `0x004ABC60` is 0 (`0x00415B1D`). Outside
   the portrait, or with that byte set, it skips to the double-click part at
   `0x00416714`.
-- Wait loop (`0x00415B5E..0x00415C63`). It reads the pointer record through
+- Wait loop (`0x00415B5E..0x00415C5E`). It reads the pointer record through
   `fn_00465B64` and builds `(x-2,y-2)-(x+2,y+2)` around the screen point. Then,
   on each pass, it calls `fn_0045C2CD`, which peeks at one window message and
   dispatches it, reads the record again, marks the press as moved when the

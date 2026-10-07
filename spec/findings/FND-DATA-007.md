@@ -73,7 +73,7 @@ Sites (`0x004AB668 + site * 0x3E`):
   (FND-STATE-001).
 - No instruction addresses `0x14` or `0x1A`. `fn_0044C476`, the site
   information panel, copies a whole 62-byte record to its stack
-  (`0x0044C4A2..0x0044C4AB`) and reads from the copy the name, `0x14` (as the
+  (`0x0044C4A2..0x0044C4A9`) and reads from the copy the name, `0x14` (as the
   row of a site picture, 64 pixels per row), `0x16` (less the site's progress in one branch),
   `0x18`, `0x1C`, `0x1E` and `0x3C` (added to 29 to pick a text resource). It does not read `0x1A`. `fn_004499A9` and `fn_0044FD6C` pass a
   record's address, the start of its name, to a text routine.
@@ -86,7 +86,7 @@ Gangs (`0x004A2800 + gang * 0x9C`):
   planner `fn_00458FA0`, `fn_004716EB` and the resolver (`0x004759CF`,
   `0x00475C9A`).
 - `0x7C` is read by `fn_00402D70`, `fn_004078D9`, `fn_00449E80`, the finance
-  screen, `fn_0044E6ED`, `fn_00455B6B` and `fn_0046E766` (`0x0046F07A..0x0046F12D`).
+  screen, `fn_0044E6ED`, `fn_00455B6B` and `fn_0046E766` (`0x0046F07A..0x0046F125`).
 - `0x82` is read by nine functions, among them the Equip picker
   `fn_0043DAD9` (`0x0043DE8E`) and the Research picker `fn_004427FA`, and not
   by the statistics rebuild `fn_0047781F`.

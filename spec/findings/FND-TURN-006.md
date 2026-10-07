@@ -40,19 +40,19 @@ Each pass of the loop does the following, in address order:
 
 1. Only when the first-pass flag is 0 (test at `0x0046ED4E`): the recurring
    cleanup over 6 players and 81 roster slots (`0x0046ED56..0x0046EFE5`,
-   FND-TURN-004), then the Upkeep and income scans (`0x0046EFFF..0x0046F1D5`).
+   FND-TURN-004), then the Upkeep and income scans (`0x0046EFFF..0x0046F1CE`).
    The first-pass flag is cleared at `0x0046F209`, after this block.
 2. The sector rebuild: each of the 64 sector records is passed to
    `fn_004782C5` (call `0x0046F23F`) and the result copied back.
 3. The gang rebuild: each gang whose sector byte is not 100 is passed to
    `fn_0047781F` (call `0x0046F2FD`).
 4. One call of the visibility rebuild `fn_0046FA11`, at `0x0046F344`.
-5. A count of human slots (`0x0046F349..0x0046F3C5`): a slot whose controller
+5. A count of human slots (`0x0046F349..0x0046F3C2`): a slot whose controller
    (`0x004AB638`) is 0 counts; one whose controller is 0 and whose active byte
    is 0 also counts and has its controller set to -2 at `0x0046F3B7`. With more
    than one, `0x004ABC98` is set. In a local match with a count of 0 the end
    flag is set at `0x0046F42A`.
-6. The six bytes at `0x004ABC88` are cleared (`0x0046F431..0x0046F454`).
+6. The six bytes at `0x004ABC88` are cleared (`0x0046F431..0x0046F44D`).
 7. The planning loop, slots 0 to 5 (`0x0046F459..0x0046F5E0`). A slot enters
    only while the end and quit flags are 0 and its active byte is nonzero or
    its controller is -2. Controller 1: `active_player` is set, the offer refill
@@ -63,7 +63,7 @@ Each pass of the loop does the following, in address order:
    `fn_004396C0` when `0x004ABC98` is set, then `fn_0042C3F5`, and the
    controller becomes -1 at `0x0046F597`. There is no branch for controller 3
    or -1.
-8. Network handoff (`0x0046F5E7..0x0046F67E`), only when `0x00482178` or
+8. Network handoff (`0x0046F5E7..0x0046F679`), only when `0x00482178` or
    `0x00487B58` is set.
 9. `fn_004726C0` at `0x0046F706`, which calls the resolver
    (FND-TURN-005), when the quit and end flags are 0 and the human count is
@@ -71,7 +71,7 @@ Each pass of the loop does the following, in address order:
 10. When `0x004ABBD4` is nonzero (test at `0x0046F712`), the match-end branch:
     the sector and gang rebuilds again, the action byte of every gang whose
     sector byte is not 100 set to 8 at `0x0046F87B`, the visibility rebuild at
-    `0x0046F896`, and a loop over slots 0 to 5 (`0x0046F89B..0x0046F924`). For
+    `0x0046F896`, and a loop over slots 0 to 5 (`0x0046F89B..0x0046F91F`). For
     each slot whose controller is 0 it calls `fn_004396C0` when `0x004ABC98`
     is set, then `fn_0042C3F5` when the active byte is 0, or `fn_0046FD80`
     with `0x0048780C` set to 1 around the call otherwise. Then `fn_0042B9E0`
@@ -84,7 +84,7 @@ Besides this function's clear and increment, `0x0049CA68` is written directly
 only by `fn_0046A115` at `0x0046A1B7`; `fn_0046381A`, `fn_00463CC5` and
 `fn_0046A115` also pass its address to other code. Its readers include the Crackdown window of the resolver
 (`0x0047343D`, `0x00473483`) and the Crackdown history stamps
-(`0x0047369A..0x00473788`).
+(`0x0047369A..0x00473783`).
 
 The recurring cleanup reads, for Influence, the sector bytes `+7 + 2 × k`
 and `+8 + 2 × k` with `k` the gang's `repeat_target`, and the word at

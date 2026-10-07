@@ -20,14 +20,14 @@ environment: null
 The transaction pass of the whole-turn resolver `fn_00472775` (FND-EXE-004
 gives its range) occupies `0x0047489A..0x00474E27`. It loops over player slots
 0 to 5; for each it sets the three 81-entry pending arrays to -1
-(`0x004748E4..0x00474911`), then scans roster slots 0 to 80, copying each
+(`0x004748E4..0x00474906`), then scans roster slots 0 to 80, copying each
 32-byte gang record into a local copy.
 
 - Active test: the copied sector byte (offset `0x02`) is compared with 100 at
   `0x0047496B`; a record equal to 100 is skipped whole, with no action handled
   and no copy back. The dispatch on the action byte (offset `0x07`) follows at
   `0x00474D0E` (5), `0x00474D1B` (6) and `0x00474D28` (12). The copy is
-  written back at `0x00474D3A..0x00474D66` for every active record.
+  written back at `0x00474D3A..0x00474D64` for every active record.
 - Equip (action 5), `0x00474986..0x00474ADF`. The item number is the byte at
   offset `0x08` (`target`). The price is the item's 16-bit Cost at
   `0x004A5F86 + item * 0xA6` (item record offset `0x7E`). When the sector
@@ -56,7 +56,7 @@ gives its range) occupies `0x0047489A..0x00474E27`. It loops over player slots
   pending array at the recipient's slot and sets the giver's byte to -1. No
   bit test checks that the slot holds an item, and the recipient's Tech Level
   and sector are not compared with the giver's.
-- Sell (action 12), `0x00474B15..0x00474C14`. The byte at offset `0x08`
+- Sell (action 12), `0x00474B15..0x00474C0C`. The byte at offset `0x08`
   (`target`) is tested against 1 (`0x00474B15`), 2 (`0x00474B51`) and 4
   (`0x00474B95`). Each set bit stores `Cost / 2` of the item in the weapon,
   armor or miscellaneous byte into the resolver's general scratch local

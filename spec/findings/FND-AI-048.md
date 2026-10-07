@@ -23,7 +23,7 @@ environment: null
 `0x00428EF0` (range in FND-EXE-004) reads the gang's sector (selector `0x5A`)
 and previous action (selector `0x3E`), then jumps through the table at
 `0x0042A618` indexed by the byte table at `0x0042A63C` for actions 0 to 13
-(`0x0042A5FC..0x0042A618`). The byte table is
+(`0x0042A5FC..0x0042A611`). The byte table is
 `00 01 08 02 03 04 08 05 05 08 06 08 08 07`, so the targets are:
 
 | Previous action | Target | Behaviour |
@@ -86,7 +86,7 @@ through mode 5 otherwise.
 
 Previous Heal, Hide or Move (`0x0042A073`): the Heal gate writes Heal. Else at
 weight 10, one draw: a passed test writes Attack with the sector at aux +10, a
-failed test writes action 0 and -1 in aux +10 and +12 (`0x0042A308..0x0042A373`).
+failed test writes action 0 and -1 in aux +10 and +12 (`0x0042A308..0x0042A369`).
 Else, when the player does not own the sector and selector `0x2C` is nonzero,
 Control (`0x0042A3BA`); otherwise selector `0x5B` below 1 writes Chaos and a
 positive count Move through mode 5.

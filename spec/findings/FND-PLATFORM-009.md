@@ -113,7 +113,7 @@ When the surfaces exist and the CD test `fn_0046638E` returns nonzero
   `PX00130` loaded into surface 1, music track 0 started with `fn_004642BD(0)`,
   `PX00129` loaded into surface 6, and surface 1 copied to the window.
 
-The title loop (`0x004616D2..0x00462244`) takes one event at a time from
+The title loop (`0x004616D2..0x00462242`) takes one event at a time from
 `fn_00462579` until `quit_requested` (`0x00487828`) is set:
 
 - A left press (event 3) is turned into the command `(0x81, 1)` before the

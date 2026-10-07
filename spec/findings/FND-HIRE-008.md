@@ -37,7 +37,7 @@ Rectangles are written `(x1,y1)-(x2,y2)`, screen coordinates, half-open.
   in `(440,373)-(636,450)` (`0x00470CAA`, `0x00470DC3`, `0x004712CF`,
   `0x00471660`).
 - `fn_00416C75` takes the offer slot from `x - 440`: 0 up to 64, 1 above 64,
-  2 above 130 (`0x00416C8C..0x00416CB7`). While the byte at `0x004ABC60` is
+  2 above 130 (`0x00416C8C..0x00416CB4`). While the byte at `0x004ABC60` is
   nonzero, only the double-click branch runs (`0x00416CBE`, `0x00416CC6`).
 - Double-click with y below 437 (`0x00416E04`, and `0x00416CC6` in the other
   branch): it builds a gang record in a local, with the slot's offered
@@ -58,7 +58,7 @@ Rectangles are written `(x1,y1)-(x2,y2)`, screen coordinates, half-open.
   button is released (`0x004172B5..0x00417364`). A release first ends the
   handler with no change. Otherwise it drags a 40-by-40 image of the offer's
   portrait under the pointer, clamping the pointer to x 20..620 and y
-  20..440 (`0x0041763B..0x0041768C`), until the button is released
+  20..440 (`0x0041763B..0x00417687`), until the button is released
   (`0x00417620`).
 - On release, a point outside `(2,42)-(434,458)` ends the handler with no
   change (`0x004178E1`). In the city map (byte `0x00487B88` nonzero) the
@@ -67,7 +67,7 @@ Rectangles are written `(x1,y1)-(x2,y2)`, screen coordinates, half-open.
   `(x - 64) / 54 + ((y - 60) / 52) * 3`; a cell whose byte in the table at
   `0x004ABC40` is 0 ends the handler, and otherwise the sector is the selected
   sector (`0x004ABC80`) plus -9, -8, -7, -1, 0, +1, +7, +8 or +9 for cells 0 to
-  8 (`0x00417A35..0x00417AFE`). A point in the map area outside that grid gives
+  8 (`0x00417A35..0x00417AFB`). A point in the map area outside that grid gives
   the selected sector itself (`0x00417C03`).
 - The sector is accepted only when its owner byte equals the active player or
   the sector's byte at offset `0x10 + player` is nonzero (`0x00417939`,

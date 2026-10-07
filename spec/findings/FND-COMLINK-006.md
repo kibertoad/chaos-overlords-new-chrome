@@ -28,7 +28,7 @@ locations:
     address: 0x00460391..0x004604A7
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0046E7EE..0x0046E894
+    address: 0x0046E7EE..0x0046E88F
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00498120..0x004981C6
@@ -76,7 +76,7 @@ space, and calls the recorder only in that case.
 The outer match function `fn_0046E766`, on entry and before it tests its
 argument, sets both `comlink_cursor` and `comlink_count` of every player to 0
 and gives each of the 96 records `occupied` 0 and `read` 1
-(`0x0046E7EE..0x0046E894`). In the same place it stores 0 in the 132 Search
+(`0x0046E7EE..0x0046E88F`). In the same place it stores 0 in the 132 Search
 bytes at `0x004A24E8`.
 
 The function `fn_00460391`, given a player, repeats while that player's record

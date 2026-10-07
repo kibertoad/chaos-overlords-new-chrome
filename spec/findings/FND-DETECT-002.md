@@ -23,10 +23,10 @@ In `fn_0046FA11` (range in FND-EXE-004):
   of whether the slot holds an active player. The only per-observer read
   before the sector strengths is the byte `0x004AB588 + observer`
   (`0x0046FA5D`), which picks the starting strength 1000 or -32000.
-- The first scan of the observer's 81 records (`0x0046FAA8..0x0046FB67`)
+- The first scan of the observer's 81 records (`0x0046FAA8..0x0046FB60`)
   skips a record whose sector byte is 100 and keeps, per sector, the first
   record with the strictly highest Detect (offset `0x15`).
-- The second scan (`0x0046FB6C..0x0046FC5F`) stores 1 in the observer's own
+- The second scan (`0x0046FB6C..0x0046FC58`) stores 1 in the observer's own
   byte of each of its active records, offset `0x0C + observer`
   (`0x0046FBCD`), and adds the helper bonus for each active record other than
   the sector's chosen one.

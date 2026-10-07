@@ -60,7 +60,7 @@ the sector at aux +10. Then, when selector `0x6C` is positive and the planned
 action is not Attack, the weapon Equip and then the armor Equip of family 0,
 with the cooldown set to the cost times 3. Then, when the planned action is
 neither Equip nor Attack (`0x00401745`): in a sector the player owns with a
-selector-`0x5B` count below 2 (`0x00401785..0x004017AB`), a second owner test
+selector-`0x5B` count below 2 (`0x00401785..0x004017A5`), a second owner test
 that is again true writes Chaos (`0x00401852`), and the Control store behind it
 (`0x004017F6`) is not reached; any other case writes Move (`0x004018DA`).
 

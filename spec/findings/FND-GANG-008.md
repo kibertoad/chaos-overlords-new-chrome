@@ -24,7 +24,7 @@ Ranges of the functions named here are in FND-EXE-004.
 
 The Hire input handler `fn_00416C75` takes a pointer position and an event
 code. It picks an offer slot from the position's x less `0x1B8`: slot 0 up to
-`0x40`, slot 1 up to `0x82`, slot 2 beyond (`0x00416C8C..0x00416CB7`). When
+`0x40`, slot 1 up to `0x82`, slot 2 beyond (`0x00416C8C..0x00416CB4`). When
 the event code is 2 it builds a 32-byte gang record on its stack in one of two
 places, depending on the byte at `0x004ABC60` (`0x00416CBE`):
 

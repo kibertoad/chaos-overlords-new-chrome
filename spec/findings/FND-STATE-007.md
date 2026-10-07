@@ -25,7 +25,7 @@ locations:
     address: 0x00498DA8..0x004ABDC0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00405404..0x0040552C
+    address: 0x00405404..0x00405525
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -119,12 +119,12 @@ functions appear only the first three by address are named.
 The three definition tables (`0x004A2800`, `0x004A5F08`, `0x004AB668`) are the
 only regions no instruction writes, apart from the name truncation of the
 report panel `fn_0044FD6C`, which writes a NUL into a gang definition's name
-and restores the byte after drawing (`0x00451156..0x00451221`).
+and restores the byte after drawing (`0x00451156..0x0045121A`).
 
 Fixed item numbers. Reference searches report reads of `0x004A26FE`,
 `0x004A2704`, `0x004A270A`, `0x004A2710`, `0x004A271C`, `0x004A272E`,
 `0x004A2734` and `0x004A2740`. They are all one instruction, `0x004054FB` in
-selector `0x73` of `fn_00402D70` (`0x00405404..0x0040552C`), whose index is one
+selector `0x73` of `fn_00402D70` (`0x00405404..0x00405525`), whose index is one
 of the eight constant item numbers 44, 41, 42, 43, 46, 50, 49 and 52; each
 address is `0x004A2608 + item * 6`, the item's `research_remaining` entry of
 player 0. The selector walks the eight items in that order and returns the

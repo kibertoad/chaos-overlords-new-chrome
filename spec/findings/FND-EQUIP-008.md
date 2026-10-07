@@ -31,10 +31,10 @@ locations:
     address: 0x00446E68..0x00446E8E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004470AD..0x00447102
+    address: 0x004470AD..0x004470FC
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004444B0..0x0044455F
+    address: 0x004444B0..0x0044455B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0044465E
@@ -43,7 +43,7 @@ locations:
     address: 0x00444CEA
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00444D68..0x00444E90
+    address: 0x00444D68..0x00444E8C
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -83,7 +83,7 @@ List builder `fn_0043F136`:
 - For a listed item it takes the 16-bit Cost (offset `0x7E`) and, when the
   sector record of the gang's current sector has a nonzero byte at offset
   `0x0E` and its owner byte equals the player argument, replaces it with
-  `Cost - Cost / 3` (`0x0043F343..0x0043F3B7`), the same test and formula as
+  `Cost - Cost / 3` (`0x0043F343..0x0043F3B5`), the same test and formula as
   the transaction pass (FND-EQUIP-007). It draws the name and that price on
   row `count` and stores the item number in entry `count` (`0x0043F513`). The
   count has no upper bound in the loop.
@@ -102,7 +102,7 @@ Give panel `fn_00445A4F`:
   `0x80` among the selected items, starting from 0 (`0x00446029..0x004460FA`).
   A candidate is accepted as recipient only when this requirement is at most
   the 16-bit field at offset `0x82` of the candidate's gang definition
-  (`0x004470AD..0x00447102`).
+  (`0x004470AD..0x004470FC`).
 - On confirmation it stores `misc * 4 + armor * 2 + weapon`, each selection
   flag 0 or 1, into offset `0x08`, and the chosen candidate's roster slot into
   offset `0x09` (`0x004462A7..0x004462CD` pointer, `0x00446E68..0x00446E8E`
@@ -112,7 +112,7 @@ Sell panel `fn_00443BBD`:
 
 - When the gang's action is already 12 (`0x004444B0`) the three flags are
   taken from bits 1, 2 and 4 of offset `0x08`; otherwise all three start at 0
-  (`0x00444553..0x0044455F`).
+  (`0x00444553..0x0044455B`).
 - A flag can be switched only when its slot byte (offset `0x04`, `0x05`,
   `0x06`) is not -1 (`0x00444D68`, `0x00444DE3`, `0x00444E61`).
 - Confirmation is refused while all three flags are 0 (`0x004445D2`,
@@ -143,7 +143,7 @@ Sell panel `fn_00443BBD`:
 
 ## Alternatives
 
-- The Give panel's other Tech Level references (`0x0044722D..0x0044725D`,
+- The Give panel's other Tech Level references (`0x0044722D..0x00447255`,
   keyboard selection) were not followed; they are assumed to apply the same
   test.
 - The five-entry candidate array has no bound in its fill loop; at most five

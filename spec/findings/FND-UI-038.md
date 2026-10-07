@@ -67,7 +67,7 @@ clears the flag with `fn_004328F8(1)` (`0x00462CA1`). In it:
   (`0x00462DB4..0x00462DE0`).
 - While `0x00487B8C` is not -1, the frame `(20k, 626)-(20k + 20, 646)` of the
   sheet goes to `(50 + 70v, 6)-(70 + 70v, 26)` of the window, and the counter
-  `0x00487B90` steps and wraps from 11 to 0 (`0x00462EC0..0x00462EE2`).
+  `0x00487B90` steps and wraps from 11 to 0 (`0x00462EC0..0x00462EDC`).
 
 ## Interpretation
 

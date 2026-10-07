@@ -21,7 +21,7 @@ environment: null
 ## Observation
 
 `fn_0044D1BB(player, sector)` (range in FND-EXE-004) clears its eight sums
-(`0x0044D1C7..0x0044D20A`) and branches on `sector == -1` at `0x0044D20F`.
+(`0x0044D1C7..0x0044D203`) and branches on `sector == -1` at `0x0044D20F`.
 
 City variant (`sector` is -1). It loads resource `0x1390` (5008,
 `0x0044D262`), then:
@@ -61,7 +61,7 @@ plus `sector % 8` and a row digit `1` plus `sector / 8` at buffer
 
 - only hires queued for this sector (`0x0044DA62`);
 - a gang whose action is 10 and whose offset `0x08` byte is this sector adds
-  one to the count and subtracts its Upkeep (`0x0044DB18..0x0044DB70`), before
+  one to the count and subtracts its Upkeep (`0x0044DB18..0x0044DB6D`), before
   the test on its own sector;
 - only gangs whose sector byte is this sector (`0x0044DB73`) enter the action
   switch, which is the City switch with three differences: action 10 adds the

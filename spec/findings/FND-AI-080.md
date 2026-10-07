@@ -16,7 +16,7 @@ locations:
     address: 0x00429F43..0x00429FBA
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042A378..0x0042A3CB
+    address: 0x0042A378..0x0042A3C3
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -41,7 +41,7 @@ and the weight-10 draw, the block at `0x0042A378` calls the same dispatcher
 with selector `0x21` and the sector from `[EBP-4]`, and skips to `0x0042A40D`
 when the result equals the player (`0x0042A38A..0x0042A393`). Otherwise it
 calls selector `0x2C` with the player, the slot and the sector, and a nonzero
-result writes Control (4) (`0x0042A3A1..0x0042A3CB`).
+result writes Control (4) (`0x0042A3A1..0x0042A3C3`).
 
 Selector `0x21` returns the sector's owner byte, or -2 when the sector's byte
 +0x0F (`crackdown_turns`) is nonzero (FND-AI-048).

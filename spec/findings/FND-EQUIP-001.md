@@ -16,7 +16,7 @@ locations:
     address: 0x004749B2
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004749E1..0x004749F9
+    address: 0x004749E1..0x004749F3
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0043F36D
@@ -39,7 +39,7 @@ environment: null
   instruction at `0x00474998` loads the chosen item's Cost as a signed value.
   At `0x004749B2` the code reads the byte at offset `0x0E` of the sector
   record. When that byte is set and the sector's owner byte at offset `0x00`
-  equals the buying player, the instructions at `0x004749E1..0x004749F9` divide the Cost
+  equals the buying player, the instructions at `0x004749E1..0x004749F3` divide the Cost
   by three with signed integer division and subtract the quotient from the
   Cost.
 - The byte at offset `0x0E` of the sector record has four direct reads:

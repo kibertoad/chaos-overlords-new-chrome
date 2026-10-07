@@ -39,7 +39,7 @@ runs four parts in this order.
    +2, the 32-bit values at +4, +8, +12 and +16, and the byte at +20. All 36
    records are cleared, not only the planning player's row. At `0x0040A2A0` it
    writes 0 to the 32-bit value at `0x0048E2E0 + player * 4`.
-2. `0x0040A2AB..0x0040A6E5`, for each sector 0 to 63, in the 14-byte record at
+2. `0x0040A2AB..0x0040A6E0`, for each sector 0 to 63, in the 14-byte record at
    `0x0048E310 + player * 0x380 + sector * 14`: +0 receives the sector's owner
    byte (`0x0040A2EA`), +2 the result of selector `0x90` for the player and
    sector (`0x0040A320`), +4 the result of selector `0x5E` (`0x0040A353`); and
@@ -53,10 +53,10 @@ runs four parts in this order.
    computes `(+4) - (+16)` and `(+12) - (+8)`; when the first is smaller
    (`JGE` at `0x0040A69C`) and selector `0x5E` again returns a count above 0
    (`0x0040A6B8`), it adds 1 to +2 (`0x0040A6D8`).
-3. `0x0040A6E5..0x0040A87D`: the hostility test of FND-AI-018 for each other
+3. `0x0040A6E5..0x0040A878`: the hostility test of FND-AI-018 for each other
    player, reading +0 and +2 of the pair record and writing +20 and the
    attitude at `0x004AB590 + player * 0x18 + other * 4`.
-4. `0x0040A87D..0x0040AA5B`: for each roster slot 0 to 80 whose gang sector is
+4. `0x0040A87D..0x0040AA56`: for each roster slot 0 to 80 whose gang sector is
    not 100, it adds 1 to `0x0048E2E0 + player * 4` and to
    `0x00489950 + player * 0x100 + sector * 4`. When selector `0x48` returns 1
    for the slot (byte +1 of the planning record, FND-AI-042), it fills the

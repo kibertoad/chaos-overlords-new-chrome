@@ -13,13 +13,13 @@ locations:
     address: 0x00430CE0..0x00430DE8
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00430FE3..0x004310B7
+    address: 0x00430FE3..0x004310B2
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004310BC..0x004310E8
+    address: 0x004310BC..0x004310E3
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042E6A3..0x0042E7C7
+    address: 0x0042E6A3..0x0042E7C0
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -33,7 +33,7 @@ environment: null
   `0x187` and top `0x40`, left 0, bottom `0x80`, right `0x40`, and makes the
   same call at `0x00430DE3`. These are the only copies before the loop that
   reads input with `fn_00462579` at `0x00430DF4`.
-- The loop dispatches the event type at `0x004310BC..0x004310E8`: 2 to
+- The loop dispatches the event type at `0x004310BC..0x004310E3`: 2 to
   `0x00430E3F`, 3 to `0x00430EA5` and 7 to `0x00430FE3`. The type 7 branch
   calls `fn_0045CD70(7, ...)` at `0x00430FF3`, builds the rectangle top
   `0x7C`, left `0x68`, bottom `0x14D`, right `0x1C0` and the rectangle top
@@ -49,7 +49,7 @@ environment: null
   `[ebp - 0x128]` gets 0 and the hit strip local `[ebp - 0x10]` gets 2 at
   `0x0042E6BD` and `0x0042E6C7`, and 1 and `0x12` at `0x0042E6F9` and
   `0x0042E703` when the definition's base Martial Arts word is above 0. At
-  `0x0042E70A..0x0042E724` the definition number is compared with `0x3F`, and
+  `0x0042E70A..0x0042E71A` the definition number is compared with `0x3F`, and
   when equal only `[ebp - 0x128]` is set, to 2. The damage tests from
   `0x0042E786` follow (FND-COMBAT-010).
 

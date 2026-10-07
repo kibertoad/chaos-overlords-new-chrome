@@ -40,7 +40,7 @@ FND-EXE-004), and these are its only writes to the matrix.
   the attack was evaded, hit, or drew a retaliation. It loads the reaction of
   the player in the attacker's `target` byte (`0x00473EFC`), replaces it with
   the attacker's stored opening damage when that is larger
-  (`0x00473F2E..0x00473F5A`), subtracts the result from the cell
+  (`0x00473F2E..0x00473F53`), subtracts the result from the cell
   `target_player * 6 + attacker_player` (`0x00473F7D`), and sets the cell to
   -10 when it is below -10 (`0x00473F84..0x00473FC3`). An evaded attack has
   opening damage -1, so the reaction is subtracted. The retaliation writes no
@@ -48,7 +48,7 @@ FND-EXE-004), and these are its only writes to the matrix.
 - At a Control takeover, `0x00475740..0x004757C5`, reached only when the
   winner of a sector differs from its owner. When the previous owner is not -1
   (`0x00475740`), after raising the winner's overthrow count (`0x00475753`),
-  it doubles the previous owner's reaction (`0x00475762..0x0047576B`),
+  it doubles the previous owner's reaction (`0x00475762..0x00475769`),
   subtracts it from the cell `previous_owner * 6 + winner` (`0x00475781`) and
   clamps the cell at -10 (`0x0047579A..0x004757C5`). The owner byte is then
   written at `0x004757D4` (FND-CONTROL-003).

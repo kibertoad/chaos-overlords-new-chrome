@@ -31,9 +31,9 @@ top-left corner.
   local `(26,17)-(90,81)`. Each equipped item (weapon, armor, miscellaneous)
   gets a 20 by 20 icon from surface 5, column taken from the item record's
   `id` word (`0x004A5F26 + item * 0xA6`), at local `(26,82)`, `(48,82)` and
-  `(70,82)` (`0x0043B4A7..0x0043B6DA`). A definition byte of -1 draws a blank
+  `(70,82)` (`0x0043B4A7..0x0043B6D5`). A definition byte of -1 draws a blank
   from surface 6 instead (`0x0043B3D1`).
-- The opponent cells (`0x0043B795..0x0043B9C4`) are the other five player
+- The opponent cells (`0x0043B795..0x0043B9C1`) are the other five player
   slots in ascending order, skipping the acting player, in cells
   `k` 0 to 4 at local `(98, 16 + 36k)`. A cell is enabled when the byte at
   offset `0x10 + opponent` of the acting gang's sector record (`gangs_seen`,
@@ -42,24 +42,24 @@ top-left corner.
   byte `0x004A5F00 + opponent`.
 - The first enabled cell is chosen when the picker opens; when the gang's
   action byte is already 1 and its `target` byte names an enabled opponent,
-  that opponent is chosen instead (`0x0043B8BE..0x0043B8EE`). The chosen
+  that opponent is chosen instead (`0x0043B8BE..0x0043B8EB`). The chosen
   opponent's gangs are listed by `fn_0043D132(opponent, sector)`
   (`0x0043B9D8`) into the six-entry list at `0x00494850`. When the action is
   already Attack, the cell whose list entry equals the `target_2` byte becomes
   the chosen target (`0x0043BA08..0x0043BA3B`).
 - A click in local `(135,16)-(337,193)` selects cell `3 * (y > 104) +
   (x > 201) + (x > 269)` when the list entry for that cell is not -1
-  (`0x0043C298..0x0043C321`).
+  (`0x0043C298..0x0043C319`).
 - Keys (event 2): `0x2B` or `0x0D` confirms when both an opponent and a target
   are chosen, and otherwise calls `fn_00464290(4)`
-  (`0x0043BB10..0x0043BBE7`); `0x1B` draws the pressed look over screen
-  `(137,261)-(187,284)` and closes without an order (`0x0043BBEA..0x0043BC50`).
+  (`0x0043BB10..0x0043BBE2`); `0x1B` draws the pressed look over screen
+  `(137,261)-(187,284)` and closes without an order (`0x0043BBEA..0x0043BC4C`).
   No other key is tested.
 - Faces: a click in local `(33,137)-(82,159)` tracks the screen face
   `(137,261)-(187,284)` and closes without an order when released on it
-  (`0x0043BCD7..0x0043BD81`); a click in local `(33,169)-(82,191)` confirms
+  (`0x0043BCD7..0x0043BD7D`); a click in local `(33,169)-(82,191)` confirms
   under the same condition as the keys, tracking screen `(137,293)-(187,316)`
-  (`0x0043BD8F..0x0043BEA0`). A click outside the panel calls
+  (`0x0043BD8F..0x0043BE9B`). A click outside the panel calls
   `fn_00464290(4)` (`0x0043C4A5`).
 - The confirm writes the chosen opponent's player slot into byte `0x08` of the
   gang record and the list entry of the chosen cell into byte `0x09`

@@ -31,7 +31,7 @@ icons (FND-ATTACK-003). Rectangles are `(left, top)-(right, bottom)`.
   previous opponent are erased.
 - For each gang the list takes, it composes a card at `(0,0)-(66,87)` of
   surface 7 and then copies that card to the target cell:
-  - the card frame, surface 6 `(0,299)-(66,386)` (`0x0043D2B7..0x0043D2ED`);
+  - the card frame, surface 6 `(0,299)-(66,386)` (`0x0043D2B7..0x0043D2E8`);
   - the 64-by-64 portrait cell of surface 3 chosen by the definition's word at
     `0x004A281E + definition * 0x9C`, at `(1,1)-(65,65)`;
   - a black fill of `(2,58)-(64,63)` over the bottom of the portrait
@@ -42,7 +42,7 @@ icons (FND-ATTACK-003). Rectangles are `(left, top)-(right, bottom)`.
     byte 3 of the gang record (FND-STATE-002);
   - the 20-by-20 icon of each of bytes 4, 5 and 6 that is not -1, from surface
     5 at x 120 and row `20 * id`, at `(1,66)`, `(23,66)` and `(45,66)`
-    (`0x0043D647..0x0043D811`).
+    (`0x0043D647..0x0043D80F`).
 - The card is copied to `(135 + 68 * (n % 3), 160 + 90 * (n / 3))` of surface
   7 for the `n`th listed gang (`0x0043D89B..0x0043D8C7`). With the panel at
   rows 144 to 353, that is panel-local `(135 + 68 * (n % 3), 16 + 90 * (n / 3))`.

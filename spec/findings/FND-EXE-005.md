@@ -80,7 +80,7 @@ Loaders. Each kind of resource is loaded in one place:
   and 160 are named nowhere.
 - Dialogs: `DialogBoxParamA` (`0x004AE810`) and `CreateDialogParamA`
   (`0x004AE8BC`) as listed in FND-UI-022.
-- Bitmaps: `LoadBitmapA` (`0x004AE8E0`) at `0x00428071..0x004280C2` in the
+- Bitmaps: `LoadBitmapA` (`0x004AE8E0`) at `0x00428071..0x004280BC` in the
   pattern compositor `fn_00427E60` for 143, 146 and 147 (FND-GFX-004). The only
   other request is for bitmap 107, which does not exist, in `fn_00426F77`,
   which has no callers. Bitmap 148 is never loaded.

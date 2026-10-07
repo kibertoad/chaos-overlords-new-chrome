@@ -10,13 +10,13 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004737D8..0x00473FE9
+    address: 0x004737D8..0x00473FE4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00473FE9..0x00474255
+    address: 0x00473FE9..0x00474250
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00474255..0x0047489A
+    address: 0x00474255..0x00474895
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004A8888..0x004AAE08
@@ -33,13 +33,13 @@ FND-EXE-004. The gang record offsets are those of FND-STATE-002: player
 Stealth `0x14`, Detect `0x15`, Martial Arts `0x1F`. `difficulty_band` is the
 `INT32` array at `0x004A2570`.
 
-Before the attack block, `0x004737D8..0x0047387A` clears a local array of 486
+Before the attack block, `0x004737D8..0x0047386F` clears a local array of 486
 bytes, one per gang (`player * 81 + slot`), and a local 6 by 64 array of
 32-bit counters, one per player and sector. The 486 local 32-bit damage
 totals, one per gang, were cleared at the very start of resolution
 (`0x00472935`), and nothing writes them between there and the attack block.
 
-Attack block, `0x00473884..0x00473FE9`: a scan of player slots 0 to 5 and
+Attack block, `0x00473884..0x00473FE4`: a scan of player slots 0 to 5 and
 roster slots 0 to 80. A record copy is processed only when its sector byte is
 not 100 and its action byte is 1 (`0x004738FB`). Nothing tests the target's
 sector or whether the target is active. For such a gang, in this order:
@@ -61,12 +61,12 @@ sector or whether the target is active. For such a gang, in this order:
    attacker's Combat byte (`0x00473AE7`) minus the target's Defense byte
    (`0x00473AFD`). The Defense is lowered by a quarter, rounded toward zero,
    at `0x00473B61` when the band of the player named by the target record's
-   own byte `0x00` is 0 (`0x00473B25..0x00473B4E`). The dice routine
+   own byte `0x00` is 0 (`0x00473B25..0x00473B47`). The dice routine
    `fn_00475F70` is called with the attacker's band's threshold: 6 at
    `0x00473BC1` (band 0), 5 at `0x00473BE3` (band 1), 4 at `0x00473C05`
    (band 2). When the pool is positive and the successes are fewer than the
    pool divided by 4, the damage becomes the pool divided by 4
-   (`0x00473C4F..0x00473C93`).
+   (`0x00473C4F..0x00473C90`).
 5. The damage is added to the target's damage total (`0x00473C9F`), to the
    attacker's player's Damage Inflicted (`0x00473CCC`, FND-COMBAT-003), and
    stored as the attacker's opening damage (`0x00473CF1`).
@@ -83,7 +83,7 @@ sector or whether the target is active. For such a gang, in this order:
    (band 2). The successes are halved with the signed division by 2. The
    result is added to the attacker's damage total (`0x00473ED0`) and stored as
    the attacker's retaliation damage (`0x00473EF5`).
-8. `0x00473EFC..0x00473FC3` lowers an attitude cell for every attack that
+8. `0x00473EFC..0x00473FB8` lowers an attitude cell for every attack that
    reaches this block, evaded or not (FND-AI-047).
 
 An evaded attack skips steps 4 to 7: its opening damage stays -1, nothing is
@@ -97,12 +97,12 @@ entry is not cleared. The six bytes at `0x004A8918 + sector * 0x96 + player`
 are set to 0 (`0x00474098`), and the byte `0x004988F8 + sector` is set to 0
 (`0x004740AB`).
 
-Police scan, `0x004740B7..0x00474255`: player slots 0 to 5, roster slots 0 to
+Police scan, `0x004740B7..0x00474250`: player slots 0 to 5, roster slots 0 to
 80. For every slot, active or not, byte 9 of the combat record is set to -1
 (`0x0047413C`). A gang whose sector is not 100 (`0x0047414B`) and whose
 sector's presence byte (offset `0x0F`, `0x0047415E`) is greater than 0 has the
 value `100 - (20 if action is 8) - (5 * Stealth - 15)` computed into a
-register (`0x0047416E..0x00474199`) before the draw `fn_0045D227(100)` at
+register (`0x0047416E..0x00474197`) before the draw `fn_0045D227(100)` at
 `0x0047419B`. The compare at `0x004741A3` skips the gang when the value is
 less than the draw (`JL`), so the gang is found when the draw is less than or
 equal to the value. A found gang gets its byte in the local byte array
@@ -111,10 +111,10 @@ equal to the value. A found gang gets its byte in the local byte array
 stored in byte 9 of its record (`0x00474224`), and the byte `0x004A8918 +
 sector * 0x96 + player` set to 1 (`0x00474243`). The band is not read.
 
-Cap, `0x00474255..0x004742EC`: every one of the 486 damage totals above 10 is
-set to 10 (`0x004742B1..0x004742E2`).
+Cap, `0x00474255..0x004742E7`: every one of the 486 damage totals above 10 is
+set to 10 (`0x004742B1..0x004742D7`).
 
-Record and row fill, `0x004742EC..0x0047476F`: for every slot, the byte
+Record and row fill, `0x004742EC..0x0047476A`: for every slot, the byte
 `0x00498BC0 + player * 81 + slot` is set to 0 (`0x0047434E`) and then to 1
 when the gang's byte in the local array is set (`0x0047437E`). Only for such
 a gang does the loop continue, with no test of the gang's sector: it sets
@@ -135,7 +135,7 @@ before this loop, so for a gang that fought without attacking (a target, or a
 gang the police found) the two bytes receive whatever those stack locations
 held.
 
-Damage and deaths, `0x0047476F..0x0047489A`: for every slot whose sector byte
+Damage and deaths, `0x0047476F..0x00474895`: for every slot whose sector byte
 is not 100, the Force byte is replaced by Force minus the capped damage total
 (`0x00474827`); when the new Force is less than 1 the sector byte is set to
 100 (`0x0047486F`) and the player's casualty count is raised (`0x00474889`,

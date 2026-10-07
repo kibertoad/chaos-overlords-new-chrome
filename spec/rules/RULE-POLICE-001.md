@@ -21,7 +21,7 @@ dice, each die of 5 or 6 one point of damage.
 
 As `police_phase`, called by RULE-COMBAT-002 after every gang attack and
 before the damage is applied, in the resolver `fn_00472775` at
-`0x004740B7..0x00474255` (range in FND-EXE-004) [FND-COMBAT-001,
+`0x004740B7..0x00474250` (range in FND-EXE-004) [FND-COMBAT-001,
 FND-COMBAT-008].
 
 ## Parameters

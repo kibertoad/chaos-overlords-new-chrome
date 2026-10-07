@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004740B7..0x0047424B
+    address: 0x004740B7..0x00474243
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004742EC..0x0047455E
@@ -29,7 +29,7 @@ ranges of the functions.
 
 In the whole-turn resolver `fn_00472775`:
 
-- The police loop (`0x004740B7..0x0047424B`) visits every player slot and
+- The police loop (`0x004740B7..0x00474243`) visits every player slot and
   every roster slot, living or not, and first stores -1 in byte 9
   (`0x0047413C`). When the gang is in a sector with police and the police hit
   it, it stores the police damage in byte 9 (`0x00474224`) and flags the gang
@@ -52,7 +52,7 @@ In the whole-turn resolver `fn_00472775`:
 
 - Byte 3 is written only by Detailed Combat `fn_0042E040` (`0x0042E1A5`),
   which copies byte 1 into it. The same function also moves whole records
-  (DWORD, DWORD, WORD copies at `0x0042E968..0x0042EDF4`).
+  (DWORD, DWORD, WORD copies at `0x0042E968..0x0042EDF0`).
 - The stored values are single bytes taken from the low byte of the source.
 
 ## Interpretation

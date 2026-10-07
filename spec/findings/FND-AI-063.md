@@ -56,7 +56,7 @@ that restores that value.
   Support threshold of FND-AI-062, is at `D - 0x70`.
 - The selector `fn_00402D70` takes four arguments. Called from the dispatcher,
   its frame pointer is `D - 0x64`, and its local -0xC is at `D - 0x70`. Its
-  prologue writes 0 to locals -4, -8, -0xC and -0x10 (`0x00402D79..0x00402D95`)
+  prologue writes 0 to locals -4, -8, -0xC and -0x10 (`0x00402D79..0x00402D8E`)
   before the case switch.
 - Case `0x48` (`0x00405A5E..0x00405A94`) and case `0x7C`
   (`0x004062DF..0x004062EC`) write only local -0x14, and the common exit at

@@ -72,7 +72,7 @@ host's addresses as text at `0x00493270` and shows dialog 20002
 (`0x00424CE2`). It
 then stores 4269 (`0x10AD`) at `0x00424D4D` and sets its port selector to 1
 at `0x00424D53`, just before the switch on that selector at
-`0x00424DE2..0x00424E0E`; every path to the switch passes these two stores.
+`0x00424DE2..0x00424E09`; every path to the switch passes these two stores.
 Case 1 converts 4269 with `htons`. Case 2, which would take the port
 `getservbyname` returns for the name at `0x00492F90` and the protocol `tcp`
 (`0x00424D94`) and shows a message box when the lookup fails, and case 0,

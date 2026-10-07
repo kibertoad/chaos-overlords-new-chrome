@@ -13,7 +13,7 @@ locations:
     address: 0x0047170D..0x004717AB
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004717AB..0x004718E4
+    address: 0x004717AB..0x004718DF
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -31,7 +31,7 @@ player in the global at `0x004ABC84`.
   negation of the slot's current byte (`0x0047178C`). It stores the accepted
   value at `0x004717A4`. These four comparisons are the whole test: it reads no
   other player's offers, no gang record and no other array.
-- Drawing, `0x004717AB..0x004718E4`, runs for every slot, refilled or not. It
+- Drawing, `0x004717AB..0x004718DF`, runs for every slot, refilled or not. It
   reads the 16-bit field at `+0x1E` of the offered definition (`0x004A281E +
   definition * 0x9C`, `0x004717C8`), and takes the 64-by-64 source rectangle at
   x `(n mod 10) * 64`, y `(n / 10) * 64`. It copies it from surface 3 to

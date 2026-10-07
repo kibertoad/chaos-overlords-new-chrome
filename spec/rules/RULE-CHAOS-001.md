@@ -21,7 +21,7 @@ paid for Chaos there this turn. The payout itself comes later in the turn
 ## When it runs
 
 As `chaos_phase`, after `instant_phase` and before `combat_phase`, in the
-resolver `fn_00472775` at `0x00473188..0x004737D8` (range in FND-EXE-004)
+resolver `fn_00472775` at `0x00473188..0x004737D3` (range in FND-EXE-004)
 [FND-CHAOS-001, FND-CHAOS-002].
 
 ## Parameters

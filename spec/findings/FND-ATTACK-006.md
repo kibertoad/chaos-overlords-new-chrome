@@ -29,16 +29,16 @@ starts at `0x00498DA8` with 81 records per player.
   second argument (`0x0043B9D8..0x0043B9E5`). The caller removes the
   arguments.
 - `fn_0043D132` sets the six INT32 entries at `0x00494850` to -1
-  (`0x0043D13E..0x0043D171`) and draws the picker's target area.
-- For roster slots 0 to 80 of the opponent (`0x0043D252..0x0043D26B`) it skips
+  (`0x0043D13E..0x0043D16C`) and draws the picker's target area.
+- For roster slots 0 to 80 of the opponent (`0x0043D252..0x0043D265`) it skips
   the record unless its signed sector byte (offset `0x02`, `0x00498DAA`)
-  equals the sector argument (`0x0043D26B..0x0043D28E`) and its byte at offset
+  equals the sector argument (`0x0043D26B..0x0043D288`) and its byte at offset
   `0x0C` plus `active_player`, the value at `0x004ABC84`, is nonzero
-  (`0x0043D28E..0x0043D2B7`).
+  (`0x0043D28E..0x0043D2B1`).
 - For a listed record it draws the target card at a place derived from the
   count's quotient and remainder by 3 (`0x0043D85F..0x0043D888`), stores the
   roster slot in entry `count` and increments the count
-  (`0x0043D91D..0x0043D92D`). Nothing compares the count with 6.
+  (`0x0043D91D..0x0043D92A`). Nothing compares the count with 6.
 - It returns with no value (`0x0043D93B`).
 
 ## Interpretation

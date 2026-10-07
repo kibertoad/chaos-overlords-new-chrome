@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00459431..0x004594E4
+    address: 0x00459431..0x004594DF
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0040AB20..0x0040ABC0
@@ -29,7 +29,7 @@ environment: null
 
 ## Observation
 
-In `0x00458FA0`, the dispatch loop (`0x0045946E..0x004594EC`) writes 9 to the
+In `0x00458FA0`, the dispatch loop (`0x0045946E..0x004594E7`) writes 9 to the
 family byte of every record whose gang sector is not 100 before calling the
 dispatcher, whenever the byte at `0x00482158 + player` is nonzero
 (`0x004594AF`, store at `0x004594C6`).
@@ -45,7 +45,7 @@ The references to `0x00482158` are:
   to the file transfer.
 
 The store at `0x00459467` sits after the duplicate-cleanup loop
-(`0x00459377..0x00459431`), which counts `[EBP-0xC]` from 0 to 64 over the
+(`0x00459377..0x0045942C`), which counts `[EBP-0xC]` from 0 to 64 over the
 sectors. It runs when selector 2 (turns remaining) is 13 or less
 (`CMP EAX,0xD` / `JG` at `0x00459441`) and selector `0x31` for the player is
 nonzero. `[EBP-0xC]` is not reloaded between the loop and the store, so it
