@@ -44,7 +44,7 @@ one and `fn_0042773E(from, to, source, destination)` and
 - `0x00417446..0x004174DC`: `fn_00427864(6, 7, (150,386)-(190,426),
   (0,0)-(40,40), 1)` copies the area of surface 6 that the setup drag helper
   also lays over its portrait (FND-UI-031) onto the image with mode 1, the
-  keyed copy (FND-PLATFORM-008).
+  keyed copy (FND-PLATFORM-015).
 - `0x004174E4..0x00417560`: `fn_0042773E(0, 7, ...)` keeps the 40-by-40 area
   of the screen at the point the handler takes as its first argument in
   `(40,0)-(80,40)` of surface 7.
