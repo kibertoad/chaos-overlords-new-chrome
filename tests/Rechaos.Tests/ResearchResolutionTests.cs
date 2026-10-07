@@ -301,7 +301,7 @@ public sealed class ResearchResolutionTests
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var setup = new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, difficulty);
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, MatchDeviations.Original, difficulty);
         var researchGang = gangDefinitionId is { } definitionId
             ? data.Gangs.Single(gang => gang.Id == definitionId)
             : data.Gangs.OrderByDescending(gang => gang.Stats.Research).First();

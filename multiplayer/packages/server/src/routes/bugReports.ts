@@ -22,7 +22,8 @@ export function registerBugReportRoutes(api: Hono<AppEnv>): void {
       })
     }
     const request = c.req.valid('json')
-    const release = request.state === undefined ? undefined : c.get('bugReportJournalBudget')?.()
+    const release =
+      request.state === undefined ? undefined : await c.get('bugReportJournalBudget')?.()
     const denied = release === null
     const submitted = denied ? { ...request, state: undefined } : request
     let stored = false
@@ -35,7 +36,7 @@ export function registerBugReportRoutes(api: Hono<AppEnv>): void {
       // A digest refusal, global-byte omission, row failure, or any other non-storage outcome
       // cannot spend the caller's allowance. The reservation is per request and safe to release
       // even if another request has since entered the same address window.
-      if (!stored) release?.()
+      if (!stored) await release?.()
     }
   })
 }

@@ -7,12 +7,12 @@
   "inputs": [
     {"tick":0,"name":"command","value":"File, New Game (0x8101)"},
     {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
-    {"tick":null,"name":"order","value":"turn 1: gang slot 0 action 5 target 12 target_2 0 repeat 0"},
+    {"tick":null,"name":"order","value":"turn 1: player 0 gang slot 0 action 5 target 12 target_2 0 repeat 0"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 1"},
-    {"tick":null,"name":"order","value":"turn 2: gang slot 0 action 5 target 24 target_2 0 repeat 0"},
-    {"tick":null,"name":"hire","value":"turn 2: offer slot 1 sector 33"},
+    {"tick":null,"name":"order","value":"turn 2: player 0 gang slot 0 action 5 target 24 target_2 0 repeat 0"},
+    {"tick":null,"name":"hire","value":"turn 2: player 0 offer slot 1 sector 33"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 2"},
-    {"tick":null,"name":"order","value":"turn 3: gang slot 0 action 6 target 3 target_2 1 repeat 0"},
+    {"tick":null,"name":"order","value":"turn 3: player 0 gang slot 0 action 6 target 3 target_2 1 repeat 0"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 3"}
   ],
   "seeds": [24133],

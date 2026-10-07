@@ -93,7 +93,7 @@ public sealed class CommandActionTooltipTests
     {
         var state = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
             ScenarioId.Greed, GameDuration.SixMonths, 1996,
-            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)],
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original,
             allowSparsePlayerIds: true));
         var gang = state.Players[0].Gangs[0];
         var sector = state.Sectors[gang.SectorId];
