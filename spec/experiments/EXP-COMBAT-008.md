@@ -50,14 +50,10 @@ that clip's damage, `256 + 6 * force_shown` for the focal gang and
 
 ## Results
 
-`DetailedCombatPlaysTheOriginalsClips` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.DetailedCombat.cs` replays
-the run and, at each of the human's planning entries, builds the rebuild's
-automatic presentation of the last turn's fights. Its clips have the same
-focal and other gangs, hold argument, bar ends and slot-5 sound, in the same
-order. `TheRebuildStartsTheSameMatch` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the rolls.
-`TheConsolesDetailedCombatControlPlaysTheLastTurnAgain` in the same file
+A test of the rebuild replays the run and, at each of the human's planning
+entries, builds the rebuild's automatic presentation of the last turn's fights.
+Its clips have the same focal and other gangs, hold argument, bar ends and
+slot-5 sound, in the same order. Another test replays the rolls. A third test
 checks the presentation the console's control opened against the rebuild's
 control at `(500, 211, 48, 15)` (SCR-UI-003).
 

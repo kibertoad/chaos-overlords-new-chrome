@@ -48,10 +48,8 @@ and at the end of the run.
 
 ## Results
 
-`ANewGameHasNoTurnStartSound` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Sounds.cs` checks these
-calls, replays the match, and checks that the rebuild's local game has no
-turn-start cue.
+A test of the rebuild checks these calls, replays the match, and checks that the
+rebuild's local game has no turn-start cue.
 
 ## Conclusion
 

@@ -52,9 +52,8 @@ in slots 0 and 1 held no weapon, and the gang in slot 2 held item 0.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same generator position and state.
 
 Slot 2 ends with item 0. Only the swap in turn 3 puts item 0 in slot 1, whose
 Give in turn 4 is the later of the two, so the turn 3 Gives swapped the

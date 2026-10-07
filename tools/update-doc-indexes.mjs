@@ -215,7 +215,7 @@ for (const path of documentPaths()) {
     }
   }
 }
-const rootDocuments = ["README.md", "AGENTS.md", "PARITY.md", "DEVIATIONS.md", "static_validation_plan.md", "manual_validation_plan.md"]
+const rootDocuments = ["README.md", "AGENTS.md", "PARITY.md", "VALIDATION.md", "static_validation_plan.md", "manual_validation_plan.md"]
   .map((name) => join(repoDir, name))
   .filter((path) => existsSync(path));
 /**
@@ -234,7 +234,7 @@ function markdownUnder(dir) {
 const broken = brokenLinks([
   ...documentPaths(),
   ...rootDocuments,
-  ...["spec", "multiplayer", "tools"].flatMap((name) => markdownUnder(join(repoDir, name))),
+  ...["spec", "parity", "deviations", "multiplayer", "tools"].flatMap((name) => markdownUnder(join(repoDir, name))),
 ]);
 for (const problem of broken) console.error(`broken link: ${problem}`);
 

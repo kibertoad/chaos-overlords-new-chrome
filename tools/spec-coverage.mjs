@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // Measures how much of the executable the spec describes, and writes the function index
-// spec/index/functions.md.
+// docs/FUNCTION-INDEX.md. It lives outside spec/index/, which holds only what the documentation
+// standard's check writes.
 //
 // Usage:
-//   node tools/spec-coverage.mjs                      rewrite spec/index/functions.md when stale
-//   node tools/spec-coverage.mjs --check              fail when spec/index/functions.md is stale
+//   node tools/spec-coverage.mjs                      rewrite docs/FUNCTION-INDEX.md when stale
+//   node tools/spec-coverage.mjs --check              fail when docs/FUNCTION-INDEX.md is stale
 //   node tools/spec-coverage.mjs --inventory <file>   also report coverage against a function
 //                                                     inventory from tools/ghidra/ReportFunctionInventory.java
 //
@@ -34,7 +35,7 @@ const argv = process.argv.slice(2);
 const checkOnly = argv.includes("--check");
 const inventoryPath = argv.includes("--inventory") ? argv[argv.indexOf("--inventory") + 1] : null;
 const MAP_ID = "FND-EXE-004";
-const indexPath = join(specDir, "index", "functions.md");
+const indexPath = join(repoDir, "docs", "FUNCTION-INDEX.md");
 
 const hex = (n) => "0x" + n.toString(16).toUpperCase().padStart(8, "0");
 const fnName = (n) => "fn_" + n.toString(16).toUpperCase().padStart(8, "0");
@@ -50,8 +51,13 @@ for (const dir of ["findings", "rules", "formats", "screens", "bugs", "experimen
     entries.push({ id: f.slice(0, -3), text });
   }
 }
-const glossaryPath = join(specDir, "glossary.md");
-if (existsSync(glossaryPath)) entries.push({ id: "glossary", text: readFileSync(glossaryPath, "utf8").replace(/\r\n/g, "\n") });
+// The glossary, one file per term in spec/glossary/, counts as one entry.
+const glossaryDir = join(specDir, "glossary");
+if (existsSync(glossaryDir)) {
+  const terms = readdirSync(glossaryDir).filter((f) => f.endsWith(".md")).sort();
+  const text = terms.map((f) => readFileSync(join(glossaryDir, f), "utf8").replace(/\r\n/g, "\n")).join("\n");
+  entries.push({ id: "glossary", text });
+}
 
 // Game functions from the table in FND-EXE-004.
 const mapEntry = entries.find((e) => e.id === MAP_ID);
@@ -142,11 +148,11 @@ const current = existsSync(indexPath) ? readFileSync(indexPath, "utf8").replace(
 let failed = false;
 if (current !== index) {
   if (checkOnly) {
-    console.error("spec/index/functions.md is stale; run node tools/spec-coverage.mjs");
+    console.error("docs/FUNCTION-INDEX.md is stale; run node tools/spec-coverage.mjs");
     failed = true;
   } else {
     writeFileSync(indexPath, index);
-    console.log("wrote spec/index/functions.md");
+    console.log("wrote docs/FUNCTION-INDEX.md");
   }
 }
 console.log(`function index: ${cited.length} of ${functions.length} game functions cited`);
