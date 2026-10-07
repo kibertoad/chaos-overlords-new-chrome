@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Regenerates the generated index blocks in docs/*.md, and checks that every relative link (inline
 // or a reference-style definition) in those documents, the root README, AGENTS.md, the rebuild's
-// ledgers, spec/, multiplayer/ and tools/ still resolves.
+// ledgers, spec/ (but not spec/index/), multiplayer/ and tools/ still resolves.
 //
 // A block is delimited by two HTML comments:
 //
@@ -215,7 +215,9 @@ for (const path of documentPaths()) {
     }
   }
 }
-const rootDocuments = ["README.md", "AGENTS.md", "PARITY.md", "VALIDATION.md", "static_validation_plan.md", "manual_validation_plan.md"]
+// PARITY.md and spec/index/ are left out: the nightly job regenerates them on main, so a branch
+// that deletes or renames an entry cannot update their links.
+const rootDocuments = ["README.md", "AGENTS.md", "VALIDATION.md", "static_validation_plan.md", "manual_validation_plan.md"]
   .map((name) => join(repoDir, name))
   .filter((path) => existsSync(path));
 /**
@@ -224,11 +226,12 @@ const rootDocuments = ["README.md", "AGENTS.md", "PARITY.md", "VALIDATION.md", "
  * not the repository's documents.
  */
 const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "bin", "obj", ".turbo"]);
+const GENERATED_DIRECTORIES = new Set([join(repoDir, "spec", "index")]);
 function markdownUnder(dir) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true }).sort((x, y) => x.name.localeCompare(y.name)).flatMap((entry) =>
     entry.isDirectory()
-      ? SKIPPED_DIRECTORIES.has(entry.name) ? [] : markdownUnder(join(dir, entry.name))
+      ? SKIPPED_DIRECTORIES.has(entry.name) || GENERATED_DIRECTORIES.has(join(dir, entry.name)) ? [] : markdownUnder(join(dir, entry.name))
       : entry.name.endsWith(".md") ? [join(dir, entry.name)] : []);
 }
 const broken = brokenLinks([

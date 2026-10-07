@@ -26,7 +26,7 @@ the selected sector, -9, -8, -7, -1, +1, +7, +8 and +9, into the index 0 to 7
 
 The function does nothing for -1. For an index `i` from 0 to 7 it copies the
 32-by-32 cell `(32 * i, 448)` of surface 6 (`PX00129`, FND-UI-031) with the
-keyed mode 1 of `fn_00427864` (FND-PLATFORM-008) to the screen at:
+keyed mode 1 of `fn_00427864` (FND-PLATFORM-015) to the screen at:
 
 | Index | Offset | Screen corner | Panel-local corner |
 |---|---|---|---|

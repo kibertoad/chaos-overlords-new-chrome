@@ -127,8 +127,7 @@ sounds slot 6 exactly where the original did.
 The runs agree with RULE-COMLINK-001 to RULE-COMLINK-007, FMT-STATE-005 and
 the planning-entry and repeat alerts of RULE-AUDIO-007 wherever a local game
 reaches them. The characters `0x5B` and above are
-dropped, as FND-COMLINK-007 and FND-COMLINK-008 read; FND-COMLINK-005's
-`0x20..0x5B` is one too high. No key event delivers a lower-case letter, since
+dropped, as FND-COMLINK-007 and FND-COMLINK-008 read. No key event delivers a lower-case letter, since
 `MapVirtualKeyA` returns capitals (FND-UI-020), so the step that turns `a` to
 `z` into capitals is not reached from the keyboard. Two branches stay
 unobserved: delivery to another computer, and the recorder moving a cursor

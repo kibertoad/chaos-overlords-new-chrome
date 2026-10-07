@@ -99,8 +99,8 @@ Copies:
 
 - `fn_0042773E(src, dst, src_rect, dst_rect)` copies with `BitBlt(SRCCOPY)` when
   the two rectangles have the same size and otherwise sets `COLORONCOLOR` and
-  calls `StretchBlt(SRCCOPY)` (FND-PLATFORM-008). `fn_00427864` adds the copy
-  mode of FND-PLATFORM-008.
+  calls `StretchBlt(SRCCOPY)` (FND-PLATFORM-015). `fn_00427864` adds the copy
+  mode of FND-PLATFORM-015.
 - `fn_00449B20(value)` sets `0x00494868` to 2 below 86, 0 from 86 to 170 and 1
   above; `fn_00427E60` loads bitmap 143 for 0, 146 for 1, 147 for 2 and 143 for
   anything else.

@@ -116,11 +116,6 @@ The count of own gangs in part 2 is read through selector `0x5E` both for the
 list loop and for the final test; the two calls return the same value, since
 nothing in between moves a gang.
 
-This entry replaces FND-AI-044, which gave the end of the pair records as
-`0x0048FB4F`. Six records of 0x90 bytes from `0x0048F810` take 0x360 bytes,
-so their last byte is `0x0048FB6F`; the error was found when the spec's
-ranges were checked against the sizes their entries give.
-
 ## How to reproduce
 
 Read `0x0040A1A7` from its entry: the double loop clearing `0x0048F810`, the

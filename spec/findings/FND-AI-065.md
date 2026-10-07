@@ -54,10 +54,7 @@ element of `hire_orders`. Greed always snubs the first offer. The other
 scenarios snub the offer with the least useful statistics per cost, weighted
 by Tech Level; when every value is 5000 or more they snub slot 0.
 
-This corrects the field names of FND-AI-011, which named every field after
-Defense one slot off (see FND-AI-064): its Stealth multiplier is Tech Level,
-and its summed fields are the same twelve, its Control being Chaos and its
-Tech being Martial Arts. Tech Level is the multiplier and is not summed.
+Tech Level is the multiplier and is not summed.
 
 ## Alternatives
 
