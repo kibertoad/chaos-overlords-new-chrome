@@ -11,7 +11,8 @@ namespace Rechaos.Tests;
 /// count of exact white pixels of each screen element it is compared at. The rebuild replays the
 /// run, draws its endpoint with <c>--reference-frame</c> at the capture's marker frame, and has to
 /// draw every element as the original did, outside the areas a deviation draws
-/// (<see cref="ScreenCaptureMasks"/>). docs/VALIDATION.md gives the workflow.
+/// (<see cref="ScreenCaptureMasks"/>). docs/validation/screen-captures.md and
+/// docs/validation/screen-comparison.md give the workflow.
 /// </summary>
 public sealed partial class ScreenCaptureTests
 {
@@ -31,8 +32,8 @@ public sealed partial class ScreenCaptureTests
     // SCR-HIRE-001, SCR-GANG-002, SCR-COMBAT-001, SCR-EVENT-001, SCR-OBJECTIVE-001, SCR-SEARCH-001,
     // SCR-MOVE-001, SCR-EQUIP-001, SCR-RESEARCH-001, SCR-GANG-001, SCR-GIVE-001, SCR-SELL-001,
     // SCR-INFLUENCE-001, SCR-ATTACK-001, SCR-OPTIONS-001, SCR-COMLINK-002, SCR-COMLINK-001,
-    // SCR-AWARDS-001, SCR-OBJECTIVE-002, SCR-COMBAT-002 and SCR-AWARDS-002. docs/VALIDATION.md,
-    // "Screen capture coverage", lists the experiments whose captures each screen is compared at,
+    // SCR-AWARDS-001, SCR-OBJECTIVE-002, SCR-COMBAT-002 and SCR-AWARDS-002.
+    // docs/validation/screen-capture-coverage.md lists the experiments whose captures each screen is compared at,
     // and CoverageTableNamesEveryComparedCapture holds that table to the fixtures.
     // The site and Force meters of RULE-UI-005 and the sector values of RULE-UI-011 are compared
     // as elements of those screens, and the pylons of RULE-UI-012 on the city map of Siege
@@ -204,16 +205,13 @@ public sealed partial class ScreenCaptureTests
     [GeneratedRegex(@"EXP-UI-(\d{3})(?: to EXP-UI-(\d{3}))?")]
     private static partial Regex CoverageExperiments();
 
-    // docs/VALIDATION.md, "Screen capture coverage": for every screen, the table names exactly the
+    // docs/validation/screen-capture-coverage.md: for every screen, the table names exactly the
     // experiments whose captures TheRebuildDrawsWhatTheOriginalDrew compares at that screen.
     [Fact]
     public void CoverageTableNamesEveryComparedCapture()
     {
-        var doc = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "VALIDATION.md")).Replace("\r\n", "\n");
-        var start = doc.IndexOf("\n## Screen capture coverage\n", StringComparison.Ordinal);
-        Assert.True(start >= 0, "docs/VALIDATION.md has no Screen capture coverage section.");
-        var end = doc.IndexOf("\n## ", start + 1, StringComparison.Ordinal);
-        var section = end < 0 ? doc[start..] : doc[start..end];
+        var section = File.ReadAllText(
+            Path.Combine(AppContext.BaseDirectory, "docs", "validation", "screen-capture-coverage.md")).Replace("\r\n", "\n");
         var table = CoverageRow().Matches(section).ToDictionary(
             row => row.Groups[1].Value,
             row => CoverageExperiments().Matches(row.Groups[2].Value)

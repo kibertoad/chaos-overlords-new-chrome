@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 using Rechaos.OriginalProbe;
 
 // Runs the original game under a debugger to record what it does, for experiments and dynamic
-// findings (docs/VALIDATION.md, "The probe"). A run's output holds the original's memory, so it is written
+// findings (docs/validation/experiments.md, "The probe"). A run's output holds the original's memory, so it is written
 // outside the repository; `extract` takes only sanitized numbers from it for a fixture.
 if (!OperatingSystem.IsWindows())
 {
@@ -131,7 +131,7 @@ static int NewGame(string[] args)
         throw new ArgumentException("--equip-lists and --attack-lists record the first --humans slot; list the lowest slot first.");
 
     // --executable runs a copy from another path in the game directory, which escapes the
-    // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
+    // compatibility layers the registry ties to the installed path (docs/validation/experiments.md).
     var executable = Option(args, "--executable") ?? Path.Combine(game, "Chaos Overlords.exe");
     var hash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(executable)));
     if (hash != OriginalAddresses.ExecutableSha256)
