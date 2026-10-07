@@ -93,7 +93,8 @@ public sealed partial class ScreenCaptureTests
     {
         // FND-COMBAT-032: before tick 3 frame 0 of the strips is on the screen only, and a paint
         // restores the apertures as the panel's back buffer holds them, black. EXP-UI-054 shows
-        // frame 0 at ticks 0 to 3 of the same clip.
+        // frame 0 at ticks 0 to 3 of the same clip. The rebuild draws frame 0 whatever paints come
+        // (DEV-COMBAT-003).
         [("EXP-UI-049", 0, 13)] = "its apertures are black at tick 2 of the second clip, as a paint before tick 3 leaves them (FND-COMBAT-032)",
     };
 

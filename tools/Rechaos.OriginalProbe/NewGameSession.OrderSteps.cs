@@ -85,8 +85,9 @@ internal sealed partial class NewGameSession
                 heldCounter = _process.ReadInt32(OriginalAddresses.PumpCounter);
         }, quiet: true);
         // FND-UI-052, FND-UI-053: the frame local of the last of Item Information, Sell and Give
-        // to open, while it runs, and FND-UI-054 the idle gang warning's countdown. It is read from memory around the capture, since a breakpoint's
-        // report reaches the probe only after the game has gone on drawing.
+        // to open, while it runs, and FND-UI-054 the idle gang warning's countdown. It is read
+        // from memory around the capture, since a breakpoint's report reaches the probe only after
+        // the game has gone on drawing.
         // A return pops the entries down to its own handler's, so a handler whose return went
         // unseen cannot leave its frame to be read by a later shot.
         var itemHandlers = new Stack<(uint Starts, uint Ebp, uint Local, uint ShownLocal)>();
@@ -158,7 +159,8 @@ internal sealed partial class NewGameSession
                 var file = $"capture-step-{_orderSteps.Count}";
                 // The item, the warning line, the Send caret and a clip's tick step every few ticks,
                 // so a capture one of them moved under is taken again. Each is read before and
-                // after the copy, and kept only when both reads agree.
+                // after the copy, and kept only when both reads agree. A value that appears during
+                // the copy, such as the tick of a clip that started, counts as moved too.
                 Func<int?>[] readers = [ItemFrame, IdlePhase, () => CaretFrame(step), ClipTick, ClipIndex];
                 string[] names =
                 [
@@ -167,23 +169,28 @@ internal sealed partial class NewGameSession
                 ];
                 var before = new int?[readers.Length];
                 var values = new int?[readers.Length];
+                var moved = new bool[readers.Length];
                 (int MarkerFrame, int PumpCounter, int[] Lamps, int SelectedSector)? area;
                 var attempts = 0;
-                bool Moved() => Enumerable.Range(0, readers.Length).Any(index => before[index] is not null && values[index] is null);
+                bool Moved() => moved.Contains(true);
                 do
                 {
                     for (var index = 0; index < readers.Length; index++) before[index] = readers[index]();
                     area = CaptureDrawingArea(window, file);
                     for (var index = 0; index < readers.Length; index++)
-                        values[index] = readers[index]() == before[index] ? before[index] : null;
+                    {
+                        moved[index] = readers[index]() != before[index];
+                        values[index] = moved[index] ? null : before[index];
+                    }
                 } while (Moved() && ++attempts < 5);
                 for (var index = 0; index < readers.Length; index++)
-                    if (before[index] is not null && values[index] is null)
+                    if (moved[index])
                         _notes.Add($"{file}: {names[index]} moved during each capture.");
                 var shot = area is var (marker, pump, lamps, selected)
                     ? new CaptureShot(file + ".bmp", marker, pump, lamps, selected,
                         _process.Read(OriginalAddresses.SelectionFrameHeld, 1)[0] == 0 ? pump : heldCounter,
-                        values[0], values[3], values[1], values[2], values[4])
+                        ItemFrame: values[0], IdlePhase: values[1], CaretPhase: values[2],
+                        ClipTick: values[3], ClipIndex: values[4])
                     : null;
                 _orderSteps.Add(new OrderStepRecord(step, -1, null,
                     _process.ReadInt32(OriginalAddresses.CityViewShown) != 0, SectorCardSlots(), ActiveGangOrders(),

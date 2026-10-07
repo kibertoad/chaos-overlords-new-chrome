@@ -2553,12 +2553,14 @@ None.
 
 | Cited by | In |
 |---|---|
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 
 ## EXP-UI-048
 
 | Cited by | In |
 |---|---|
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 
 ## EXP-UI-049
@@ -2575,6 +2577,7 @@ None.
 | Cited by | In |
 |---|---|
 | [EXP-UI-049](../experiments/EXP-UI-049.md) | body |
+| [RULE-COMBAT-004](../rules/RULE-COMBAT-004.md) | body, evidence |
 | [SCR-COMBAT-002](../screens/SCR-COMBAT-002.md) | body, evidence |
 
 ## EXP-VIDEO-001

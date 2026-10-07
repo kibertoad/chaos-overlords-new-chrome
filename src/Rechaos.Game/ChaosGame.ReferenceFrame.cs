@@ -38,8 +38,8 @@ namespace Rechaos.Game;
 /// flip to plain and 3 to 5 after a flip to inverse (FND-COMLINK-010), in place of the clock's.
 /// </param>
 /// <param name="ClipTick">
-/// The tick of the Detailed Combat clip the capture showed (FND-COMBAT-016), which the clip the
-/// clicks started is drawn at, in place of its first.
+/// The tick of the Detailed Combat clip the capture showed (FND-COMBAT-016), which the clip
+/// <see cref="ClipIndex"/> names is drawn at, in place of its first.
 /// </param>
 /// <param name="ClipIndex">
 /// The index within its presentation of the Detailed Combat clip the capture showed, counted from
@@ -141,63 +141,6 @@ public sealed record ReferenceFrameRequest(
         // A clip is drawn at a tick, so its index alone gives nothing to draw.
         if (clip >= 0 && tick < 0) throw new ArgumentException("--clip-index requires --clip-tick.");
         var output = Path.GetFullPath(Operand(args, reference + 2));
-        int? frame = null;
-        if (marker >= 0)
-        {
-            // FND-UI-038: the marker counter wraps after its twelve frames.
-            if (!int.TryParse(Operand(args, marker + 1),
-                    System.Globalization.NumberStyles.None,
-                    System.Globalization.CultureInfo.InvariantCulture, out var value)
-                || value is < 0 or > 11)
-                throw new ArgumentException("--marker-frame must be between 0 and 11.");
-            frame = value;
-        }
-        if (string.Equals(save, output, OperatingSystem.IsWindows()
-                ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-            throw new ArgumentException("The capture bitmap must not overwrite the input save.");
-        int? counter = null;
-        if (pump >= 0)
-        {
-            // FND-UI-017: the pump counts from 0 to 7.
-            if (!int.TryParse(Operand(args, pump + 1),
-                    System.Globalization.NumberStyles.None,
-                    System.Globalization.CultureInfo.InvariantCulture, out var value)
-                || value is < 0 or > 7)
-                throw new ArgumentException("--pump-counter must be between 0 and 7.");
-            counter = value;
-        }
-        int? sector = null;
-        if (selected >= 0)
-        {
-            if (!int.TryParse(Operand(args, selected + 1),
-                    System.Globalization.NumberStyles.None,
-                    System.Globalization.CultureInfo.InvariantCulture, out var value)
-                || value >= MatchLimits.SectorCount)
-                throw new ArgumentException("--selected-sector must be between 0 and 63.");
-            sector = value;
-        }
-        int? itemFrame = null;
-        if (item >= 0)
-        {
-            // FND-UI-052, FND-UI-053: the items turn through their fifteen frames.
-            if (!int.TryParse(Operand(args, item + 1),
-                    System.Globalization.NumberStyles.None,
-                    System.Globalization.CultureInfo.InvariantCulture, out var value)
-                || value >= ItemRotationPresentation.FrameCount)
-                throw new ArgumentException("--item-frame must be between 0 and 14.");
-            itemFrame = value;
-        }
-        int? clipTick = null;
-        if (tick >= 0)
-        {
-            // FND-COMBAT-016: a clip ends on tick 22, so the screen shows ticks 0 to 21.
-            if (!int.TryParse(Operand(args, tick + 1),
-                    System.Globalization.NumberStyles.None,
-                    System.Globalization.CultureInfo.InvariantCulture, out var value)
-                || value >= CombatAnimationRouting.CompletionTick)
-                throw new ArgumentException("--clip-tick must be between 0 and 21.");
-            clipTick = value;
-        }
         int? Bounded(int at, string name, int limit)
         {
             if (at < 0) return null;
@@ -210,6 +153,18 @@ public sealed record ReferenceFrameRequest(
                     : $"{name} must be between 0 and {limit - 1}.");
             return value;
         }
+        // FND-UI-038: the marker counter wraps after its twelve frames.
+        var frame = Bounded(marker, "--marker-frame", 12);
+        if (string.Equals(save, output, OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            throw new ArgumentException("The capture bitmap must not overwrite the input save.");
+        // FND-UI-017: the pump counts from 0 to 7.
+        var counter = Bounded(pump, "--pump-counter", 8);
+        var sector = Bounded(selected, "--selected-sector", MatchLimits.SectorCount);
+        // FND-UI-052, FND-UI-053: the items turn through their fifteen frames.
+        var itemFrame = Bounded(item, "--item-frame", ItemRotationPresentation.FrameCount);
+        // FND-COMBAT-016: a clip ends on tick 22, so the screen shows ticks 0 to 21.
+        var clipTick = Bounded(tick, "--clip-tick", CombatAnimationRouting.CompletionTick);
         // FND-UI-054: the warning's line repeats every eight ticks.
         var idlePhase = Bounded(idle, "--idle-phase", 8);
         // FND-COMLINK-010: the caret flips every third timer event, so its cycle is six.
