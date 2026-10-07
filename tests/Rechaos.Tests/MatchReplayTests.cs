@@ -270,7 +270,7 @@ public sealed class MatchReplayTests
         var data = BundledOriginalData.Load();
         var setupPlayer = new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human);
         var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer])));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer], MatchDeviations.Original)));
         recorder.FinishUpkeep();
 
         var offers = recorder.PrepareHireOffers(setupPlayer.Id).ToArray();
@@ -324,7 +324,7 @@ public sealed class MatchReplayTests
         var setupPlayer = new MatchPlayerSetup(
             new PlayerId(0), "CPU", PlayerController.Computer);
         var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(data,
-            new MatchSetup(ScenarioId.BigMan, GameDuration.SixMonths, 1996, [setupPlayer])));
+            new MatchSetup(ScenarioId.BigMan, GameDuration.SixMonths, 1996, [setupPlayer], MatchDeviations.Original)));
         recorder.FinishUpkeep();
         recorder.PrepareAiPlanning(setupPlayer.Id);
 

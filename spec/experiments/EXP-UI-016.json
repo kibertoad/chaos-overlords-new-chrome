@@ -8599,7 +8599,7 @@
               }
             ],
             "frame_counter": 3,
-            "item_frame": 3
+            "caret_phase": 3
           }
         },
         {
@@ -8856,7 +8856,7 @@
               }
             ],
             "frame_counter": 3,
-            "item_frame": 3
+            "caret_phase": 3
           }
         },
         {
