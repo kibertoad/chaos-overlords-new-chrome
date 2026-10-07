@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
 | 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
 | 2026-10-06 | [Chat in the online lobby, through the match's event log](#2026-10-06--chat-in-the-online-lobby-through-the-matchs-event-log) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
@@ -47,6 +48,21 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-07 — Import the assets on first start on macOS and Linux
+
+- Decision: on macOS and Linux, a start that finds no current asset pack in the per-user folder
+  asks for the original installation with a native dialog (`osascript`, then `zenity` or
+  `kdialog`), runs the packaged extractor on it and goes on starting. Startup errors on those
+  platforms are shown in the same kind of dialog. Windows keeps importing in Setup.
+- Reason: the `.pkg` and `.deb` cannot import while they install: their scripts run as root,
+  with no player to ask and no home folder of theirs to write to. The import was left to a
+  terminal helper, and a game started from Finder or a desktop menu without it closed without a
+  word, because the startup error went to stderr.
+- Boundary: the macOS builds stay unsigned; there is no Apple Developer membership, and the
+  README's Gatekeeper steps are the supported install. A Linux desktop with neither `zenity` nor
+  `kdialog` gets no dialog and imports with `chaos-overlords-new-chrome-import`. An explicit
+  `--assets` folder and test runs are never offered an import.
 
 ## 2026-10-06 — Establish an entry only when its runs reach everything it describes
 
