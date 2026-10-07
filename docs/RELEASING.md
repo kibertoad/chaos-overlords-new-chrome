@@ -189,8 +189,8 @@ signature from an unexpected key means nothing.
 
 macOS installers are never signed, the `signed release` choice has no macOS
 option, and there are no plans to add one. Apple issues signing identities and
-notarizes only for paid Apple Developer members, and the project does not pay
-for a membership. Players allow the unsigned `.pkg` through Gatekeeper as the
+notarizes only for Apple Developer members, and we do not have Apple Developer
+membership. Players allow the unsigned `.pkg` through Gatekeeper as the
 [README](../README.md#macos) describes, and that is the supported way to install
 on macOS.
 

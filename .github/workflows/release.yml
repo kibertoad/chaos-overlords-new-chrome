@@ -440,7 +440,7 @@ jobs:
           retention-days: 1
 
   # macOS installers are never signed, and there are no plans to sign them: Apple signing needs a
-  # paid Apple Developer membership, which the project does not hold (see docs/RELEASING.md).
+  # Apple Developer membership, and we do not have Apple Developer membership (see docs/RELEASING.md).
   build-macos:
     name: Build macOS ${{ matrix.arch }} installer
     needs: [prepare, test]

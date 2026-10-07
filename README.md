@@ -30,8 +30,8 @@ when importing them.
 ### macOS
 
 The macOS builds are not signed or notarized, and there are no plans to change
-that: Apple signs and notarizes only for paid Apple Developer members, and the
-project does not pay for a membership. macOS therefore refuses to open the
+that: Apple signs and notarizes only for Apple Developer members, and we do not
+have Apple Developer membership. macOS therefore refuses to open the
 installer until you allow it, and the steps below are how to install the game
 on a Mac for the foreseeable future. Releases that include macOS
 builds carry `ChaosOverlords-NewChrome-osx-arm64-Setup-<version>.pkg` for Apple
