@@ -226,7 +226,7 @@ Entries by kind.
 
 ## findings
 
-391 entries.
+394 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -307,6 +307,8 @@ Entries by kind.
 | [FND-AI-075](../findings/FND-AI-075.md) | Family 12 stores the focus with every action it plans and a Move's destination as the coverage sector | recorded |
 | [FND-AI-076](../findings/FND-AI-076.md) | Family 3 stores -1 in the focus after every action it plans after None, Control, Equip or Heal | recorded |
 | [FND-AI-077](../findings/FND-AI-077.md) | Family 2's late Control gates read a local that holds the item of a planned Equip | recorded |
+| [FND-AI-078](../findings/FND-AI-078.md) | Family 7 researches at once when its focus equals the best research sector, and reads the previous target without testing the previous action | recorded |
+| [FND-AI-079](../findings/FND-AI-079.md) | Only the family handlers and their dispatcher store a planned action, and none stores Bribe, Give or Sell | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -616,6 +618,7 @@ Entries by kind.
 | [FND-UI-059](../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation | recorded |
 | [FND-UI-060](../findings/FND-UI-060.md) | The planning entry draws the console's year, week, countdown, score and cash with the base-value number helper | recorded |
 | [FND-UI-063](../findings/FND-UI-063.md) | Only the About screen, the main console and the detailed sector screen take the right button, and the held-button helper acts at once on a right press | recorded |
+| [FND-UI-066](../findings/FND-UI-066.md) | Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the handler that opened the panel | recorded |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
