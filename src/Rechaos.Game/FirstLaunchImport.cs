@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text.Json;
 using Rechaos.Core.Assets;
 
 namespace Rechaos.Game;
@@ -35,23 +34,7 @@ public static class FirstLaunchImport
 {
     public const string ExtractorFileName = "Rechaos.Extractor";
 
-    public static AssetPackState Inspect(string assetRoot)
-    {
-        var manifestPath = Path.Combine(assetRoot, "manifest.json");
-        if (!File.Exists(manifestPath)) return AssetPackState.Missing;
-        try
-        {
-            var manifest = JsonSerializer.Deserialize<AssetManifest>(File.ReadAllText(manifestPath));
-            return manifest?.FormatVersion == AssetManifest.CurrentFormatVersion
-                ? AssetPackState.Ready
-                : AssetPackState.Incompatible;
-        }
-        catch (Exception exception) when (exception is JsonException or IOException
-            or UnauthorizedAccessException)
-        {
-            return AssetPackState.Incompatible;
-        }
-    }
+    public static AssetPackState Inspect(string assetRoot) => AssetPackInspection.Of(assetRoot).State;
 
     /// <summary>
     /// The extractor packaged with the game: <c>Contents/Resources/Tools</c> in the macOS bundle,
@@ -69,19 +52,24 @@ public static class FirstLaunchImport
 
     public static string IntroMessage(AssetPackState state, string assetRoot) =>
         (state == AssetPackState.Incompatible
-            ? "The imported game assets were made by an older version of " +
-              $"{StartupFailureReporter.ApplicationTitle} and have to be imported again."
+            ? "The imported game assets were made by another version of " +
+              $"{StartupFailureReporter.ApplicationTitle} or cannot be read, and have to be imported again."
             : $"{StartupFailureReporter.ApplicationTitle} needs the art, sound, music and video of " +
               "the original Chaos Overlords, and does not include them.") +
         "\n\nChoose the folder of your Chaos Overlords installation, for example the one GOG " +
         "installed. The original files are only read, never changed. The imported copy is " +
         $"stored in {assetRoot}.";
 
+    public static string OutputFailureMessage(string assetRoot, ExtractorRun run) =>
+        $"The imported assets could not be written to {assetRoot}.\n\n" +
+        (!string.IsNullOrWhiteSpace(run.FailureMessage) ? run.FailureMessage + "\n\n" : "") +
+        "Make sure the disk has free space and that you can write to that folder, then try again.";
+
     public static string FailureMessage(string source, ExtractorRun run) =>
         $"The assets could not be imported from {source}.\n\n" +
-        (string.IsNullOrWhiteSpace(run.FailureMessage)
-            ? $"The importer stopped with exit code {run.ExitCode}."
-            : run.FailureMessage) +
+        (!string.IsNullOrWhiteSpace(run.FailureMessage) ? run.FailureMessage
+            : run.ExitCode == 0 ? "The importer finished, but left no usable asset pack."
+            : $"The importer stopped with exit code {run.ExitCode}.") +
         "\n\nChoose the folder that holds the original game's DATA folder.";
 
     public static FirstLaunchImportResult Run(
@@ -94,10 +82,13 @@ public static class FirstLaunchImport
         ArgumentNullException.ThrowIfNull(extract);
         var message = IntroMessage(state, assetRoot);
         var accept = "Choose Folder";
+        // A source that was fine but could not be written out is used again, so the player who
+        // freed space or fixed a permission is not asked for the folder a second time.
+        string? retrySource = null;
         while (true)
         {
             if (!dialogs.Ask(message, accept, "Quit")) return FirstLaunchImportResult.Declined;
-            var source = dialogs.ChooseFolder("Choose your Chaos Overlords folder");
+            var source = retrySource ?? dialogs.ChooseFolder("Choose your Chaos Overlords folder");
             if (source is null) return FirstLaunchImportResult.Declined;
             // osascript ends the path with a slash, and the extractor takes the parent of a picked
             // DATA folder as the installation, which a trailing slash would make DATA itself.
@@ -105,10 +96,18 @@ public static class FirstLaunchImport
             ExtractorRun run;
             using (dialogs.ShowProgress("Importing the game assets. This can take a minute."))
                 run = extract(source);
-            if (run.ExitCode == 0 && Inspect(assetRoot) == AssetPackState.Ready)
+            if (run.ExitCode == ExtractorExitCodes.Success && Inspect(assetRoot) == AssetPackState.Ready)
                 return FirstLaunchImportResult.Imported;
+            if (run.ExitCode == ExtractorExitCodes.OutputNotWritable)
+            {
+                message = OutputFailureMessage(assetRoot, run);
+                accept = "Try Again";
+                retrySource = source;
+                continue;
+            }
             message = FailureMessage(source, run);
             accept = "Choose Another Folder";
+            retrySource = null;
         }
     }
 

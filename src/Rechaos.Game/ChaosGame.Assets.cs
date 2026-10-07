@@ -201,13 +201,5 @@ public sealed partial class ChaosGame
         _combatPresentationProgress.MarkSeen(viewer, events[^1].Sequence);
     }
 
-    private void ValidateAssetPack()
-    {
-        var manifestPath = Path.Combine(_assetRoot, "manifest.json");
-        if (!File.Exists(manifestPath))
-            throw new FileNotFoundException("Original assets are not installed. Run Rechaos.Extractor with --source pointing at a legal Chaos Overlords installation.", manifestPath);
-        var manifest = JsonSerializer.Deserialize<AssetManifest>(File.ReadAllText(manifestPath));
-        if (manifest?.FormatVersion != AssetManifest.CurrentFormatVersion)
-            throw new InvalidDataException("The asset pack is incompatible. Run the current extractor again.");
-    }
+    private void ValidateAssetPack() => AssetPackInspection.Of(_assetRoot).ThrowIfNotReady();
 }

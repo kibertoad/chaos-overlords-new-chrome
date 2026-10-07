@@ -82,6 +82,48 @@ public sealed class FirstLaunchImportTests : IDisposable
     }
 
     [Fact]
+    public void AnOutputThatCannotBeWrittenIsRetriedWithTheSameFolder()
+    {
+        var dialogs = new FakeDialogs(asks: [true, true], folders: ["/games"]);
+        var sources = new List<string>();
+
+        var result = FirstLaunchImport.Run(AssetPackState.Missing, AssetRoot, dialogs, source =>
+        {
+            sources.Add(source);
+            if (sources.Count == 1)
+                return new ExtractorRun(ExtractorExitCodes.OutputNotWritable, "Cannot write the asset pack: disk full.");
+            WriteManifest(AssetManifest.CurrentFormatVersion);
+            return new ExtractorRun(0, null);
+        });
+
+        Assert.Equal(FirstLaunchImportResult.Imported, result);
+        Assert.Equal(["/games", "/games"], sources);
+        Assert.Equal("Try Again", dialogs.AcceptLabels[1]);
+        Assert.Contains(AssetRoot, dialogs.Messages[1], StringComparison.Ordinal);
+        Assert.Contains("disk full", dialogs.Messages[1], StringComparison.Ordinal);
+        Assert.DoesNotContain("DATA folder", dialogs.Messages[1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheInspectionKeepsTheErrorTheStartupReports()
+    {
+        Assert.IsType<FileNotFoundException>(AssetPackInspection.Of(AssetRoot).Problem);
+
+        WriteManifest(AssetManifest.CurrentFormatVersion - 1);
+        Assert.IsType<InvalidDataException>(AssetPackInspection.Of(AssetRoot).Problem);
+
+        File.WriteAllText(Path.Combine(AssetRoot, "manifest.json"), "{ not json");
+        var unreadable = AssetPackInspection.Of(AssetRoot);
+        Assert.IsAssignableFrom<JsonException>(unreadable.Problem);
+        Assert.ThrowsAny<JsonException>(unreadable.ThrowIfNotReady);
+
+        WriteManifest(AssetManifest.CurrentFormatVersion);
+        var ready = AssetPackInspection.Of(AssetRoot);
+        Assert.Null(ready.Problem);
+        ready.ThrowIfNotReady();
+    }
+
+    [Fact]
     public void QuittingOrCancellingThePickerRunsNoImport()
     {
         var calls = 0;
@@ -99,11 +141,21 @@ public sealed class FirstLaunchImportTests : IDisposable
     }
 
     [Fact]
-    public void AnIncompatiblePackIsExplainedAsAnOlderImport()
+    public void AnIncompatiblePackIsExplainedAsAnotherVersionOrUnreadable()
     {
         var message = FirstLaunchImport.IntroMessage(AssetPackState.Incompatible, AssetRoot);
 
-        Assert.Contains("older version", message, StringComparison.Ordinal);
+        Assert.Contains("another version", message, StringComparison.Ordinal);
+        Assert.Contains("cannot be read", message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ASuccessfulExitWithoutAPackIsNotReportedAsAnExitCode()
+    {
+        var message = FirstLaunchImport.FailureMessage("/games", new ExtractorRun(0, null));
+
+        Assert.Contains("left no usable asset pack", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("exit code", message, StringComparison.Ordinal);
     }
 
     [Theory]

@@ -62,7 +62,12 @@ try
             && FirstLaunchImport.Run(packState, assetRoot, dialogs,
                 source => FirstLaunchImport.RunExtractor(extractor, source, assetRoot))
                 == FirstLaunchImportResult.Declined)
+        {
+            // A dialog that could not be shown reads as a decline, so a start from a terminal
+            // still says why the game did not open.
+            Console.Error.WriteLine($"The original game assets were not imported into {assetRoot}.");
             return 0;
+        }
     }
 
     using var game = new ChaosGame(

@@ -29,6 +29,11 @@ public static class NativeDialogs
         if (OperatingSystem.IsMacOS())
             return FindOnPath("osascript") is { } osascript ? new AppleScriptDialogs(osascript) : null;
         if (!OperatingSystem.IsLinux()) return null;
+        // Without a display, zenity and kdialog exit with the same code a cancel does, so a start
+        // from a terminal or over SSH would read as the player quitting and print nothing.
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"))
+            && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+            return null;
         if (FindOnPath("zenity") is { } zenity) return new ZenityDialogs(zenity);
         if (FindOnPath("kdialog") is { } kdialog) return new KDialogDialogs(kdialog);
         return null;
@@ -49,8 +54,19 @@ public static class NativeDialogs
             UseShellExecute = false
         };
         foreach (var argument in arguments) startInfo.ArgumentList.Add(argument);
-        using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException($"{tool} did not start.");
+        Process? started;
+        try
+        {
+            started = Process.Start(startInfo);
+        }
+        catch (System.ComponentModel.Win32Exception exception)
+        {
+            // FindOnPath only checks that the file exists. A tool that cannot run shows nothing,
+            // which reads as a cancel, rather than replacing the startup error with this one.
+            Console.Error.WriteLine($"{tool} could not be started: {exception.Message}");
+            return (-1, string.Empty);
+        }
+        using var process = started ?? throw new InvalidOperationException($"{tool} did not start.");
         var error = process.StandardError.ReadToEndAsync();
         var output = process.StandardOutput.ReadToEnd();
         process.WaitForExit();
