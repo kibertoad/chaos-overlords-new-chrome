@@ -149,12 +149,18 @@ export class PostgresClusterBus implements ClusterBus {
       locked = result.rows[0]?.locked === true
       if (locked) await run()
     } finally {
+      let unlockFailed: Error | undefined
       if (locked) {
         await client
           .query('select pg_advisory_unlock($1)', [JOB_LOCK_KEYS[job]])
-          .catch(() => undefined)
+          .catch((error: unknown) => {
+            unlockFailed = error instanceof Error ? error : new Error(String(error))
+          })
       }
-      client.release()
+      // A connection that may still hold the lock is destroyed rather than pooled: the pool would
+      // keep reusing it for announcements, and the lock would keep every other instance off the
+      // job for as long as it stayed open.
+      client.release(unlockFailed)
     }
   }
 
@@ -179,8 +185,11 @@ export class PostgresClusterBus implements ClusterBus {
       connectionTimeoutMillis: 10_000,
       application_name: this.listenerName,
       // The listener sits idle between notifications; keepalive lets the OS notice a dead peer
-      // instead of the instance waiting on a connection that will never deliver again.
+      // instead of the instance waiting on a connection that will never deliver again. The first
+      // probe goes out after ten idle seconds; left at 0, `pg` keeps the OS default, which on Linux
+      // is two hours of silence before the first probe.
       keepAlive: true,
+      keepAliveInitialDelayMillis: 10_000,
     })
     // An error or an end on the listening connection is the same event: whatever arrives next is
     // lost until a new connection listens again.

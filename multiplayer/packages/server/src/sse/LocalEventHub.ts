@@ -69,7 +69,7 @@ export interface EventHubObserver {
 interface Subscription {
   playerId: string
   lobby: boolean
-  wake: () => void
+  wake: (force?: boolean) => void
   close: (reason: HubCloseReason) => void
 }
 
@@ -144,10 +144,16 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
    * processes may have been lost (the connection that carries them dropped and came back).
    */
   resync(): void {
-    for (const log of this.logs.values()) log.forget()
-    // Snapshot deliberately: waking a stream can close it, which can drop its match's entry.
+    // One forced read per stream, as at the periodic catch-up. Lowering what each `MatchLog` was
+    // told instead would leave every stream of an idle match reading the log at every heartbeat
+    // until that match's next event. Every append after the gap is announced, and a stream opened
+    // later reads the log when it opens, so one read is enough.
+    // Snapshot deliberately: waking a stream can close it, which mutates the sets being walked.
     // oxlint-disable-next-line unicorn/no-useless-spread
-    for (const matchId of [...this.listeners.keys()]) this.wake(matchId)
+    for (const subscriptions of [...this.listeners.values()]) {
+      // oxlint-disable-next-line unicorn/no-useless-spread
+      for (const subscription of [...subscriptions]) subscription.wake(true)
+    }
   }
 
   /** Wake every stream of a match; used when the notification arrives without the event body. */

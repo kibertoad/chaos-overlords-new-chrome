@@ -96,14 +96,6 @@ export class MatchLog {
   }
 
   /**
-   * Stop trusting what this process was told, after a gap in which notifications may have been
-   * lost. Every stream reads the log on its next wake and heartbeat until a notification arrives.
-   */
-  forget(): void {
-    this.notified = 0
-  }
-
-  /**
    * Whether a stream at `lastSeq` holds every event this process has been told about.
    *
    * False whenever nothing has been (see `notified`), so an unsure answer is always the one that

@@ -39,6 +39,8 @@ export interface NodeRuntime {
   kernel: Kernel
   /** Bug report intake, when this server is configured to take them. */
   bugReports?: BugReportService
+  /** Event streams this instance holds open right now. */
+  readonly openStreams: number
   /**
    * Ends every open event stream and stops the background timers, without closing the databases.
    *
@@ -46,8 +48,6 @@ export interface NodeRuntime {
    * cannot return while one is open; ending them lets the HTTP server go quiet at once and lets
    * clients reconnect to the next process with their `Last-Event-ID` instead of seeing a reset.
    */
-  /** Event streams this instance holds open right now. */
-  readonly openStreams: number
   closeStreams(): void
   /** Releases timers and both databases. */
   close(): Promise<void>
@@ -111,15 +111,10 @@ export async function buildNodeRuntime(
 
   // Instances sharing a Postgres database announce their appends and kicks to each other and take
   // the background jobs in turn; a SQLite file has one process and nobody to tell. See `ClusterBus`.
+  // The Postgres bus is started last, after everything that can still throw, so a failed start
+  // never leaves its listening connection and pool open. Nothing announces before then: the
+  // runtime takes no request and runs no job until it is returned.
   let bus: ClusterBus = singleProcessBus
-  if (opened.dialect === 'postgres') {
-    try {
-      bus = await PostgresClusterBus.start({ connectionString: config.databaseUrl, hub, logger })
-    } catch (error) {
-      await opened.close()
-      throw error
-    }
-  }
 
   let scheduler: TimerDeadlineScheduler | undefined
   let warnedAboutProxy = false
@@ -129,7 +124,16 @@ export async function buildNodeRuntime(
       notifier: {
         notify: async (event) => {
           await hub.notify(event)
-          await bus.appended(event)
+          // Not awaited: the announcement is a hint to other instances, and waiting on its round
+          // trip (or on a free connection in the bus's small pool) would hold up the request that
+          // appended. A lost one is read at the other instances' periodic catch-up.
+          void bus.appended(event).catch((error: unknown) => {
+            logger.warn('could not announce an event to the other instances', {
+              matchId: event.matchId,
+              seq: event.seq,
+              error: String(error),
+            })
+          })
         },
       },
       streams: {
@@ -148,11 +152,6 @@ export async function buildNodeRuntime(
   )
   scheduler = new TimerDeadlineScheduler(kernel.turns, clock, logger)
   const bugReports = openBugReports(config, clock, logger)
-  const stopSweeper = startSweeper(kernel, config.sweepIntervalMs, logger, bus)
-  const stopCleanup = startCleanup(kernel, config.retentionIntervalMs, logger, {
-    bus,
-    bugReports: bugReports?.service,
-  })
 
   const perMinute = (limit: number) => new RateLimiter(clock, { limit, windowMs: 60_000 })
   const container: ServerContainer = {
@@ -195,6 +194,20 @@ export async function buildNodeRuntime(
     },
   }
   const app = createApp(container)
+  if (opened.dialect === 'postgres') {
+    try {
+      bus = await PostgresClusterBus.start({ connectionString: config.databaseUrl, hub, logger })
+    } catch (error) {
+      await opened.close()
+      await bugReports?.close()
+      throw error
+    }
+  }
+  const stopSweeper = startSweeper(kernel, config.sweepIntervalMs, logger, bus)
+  const stopCleanup = startCleanup(kernel, config.retentionIntervalMs, logger, {
+    bus,
+    bugReports: bugReports?.service,
+  })
   logger.info('runtime ready', {
     databaseUrl: redactUrl(config.databaseUrl),
     publicListing: config.publicListing,
@@ -225,9 +238,16 @@ export async function buildNodeRuntime(
     closeStreams,
     close: async () => {
       closeStreams()
-      await bus.close()
-      await opened.close()
-      await bugReports?.close()
+      // A bus that fails to close must not keep the databases open behind it.
+      try {
+        await bus.close()
+      } finally {
+        try {
+          await opened.close()
+        } finally {
+          await bugReports?.close()
+        }
+      }
     },
   }
 }
