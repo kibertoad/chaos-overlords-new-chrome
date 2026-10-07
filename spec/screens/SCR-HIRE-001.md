@@ -75,4 +75,4 @@ None known.
   presses elsewhere on the panel and outside it; Enter, Execute, Escape and
   the other keys; the rejected sound (FND-HIRE-009, FND-UI-006,
   FND-AUDIO-011). These rest on the static findings named, so the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

@@ -4,7 +4,7 @@ title: How a computer player picks a weapon, armor or miscellaneous upgrade, and
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-021, FND-AI-024, FND-AI-071, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054, FND-AI-055, EXP-TURN-017, EXP-TURN-036]
+evidence: [FND-AI-021, FND-AI-024, FND-AI-071, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054, FND-AI-055, EXP-TURN-017, EXP-TURN-036, FND-AI-044, FND-COMBAT-004, FND-CONTROL-001, FND-EQUIP-006, FND-HIRE-002, FND-HIRE-006, FND-PLATFORM-003, FND-RESEARCH-001, FND-RESEARCH-002, FND-STATE-004, FND-UI-035, FND-UI-036, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-003, RULE-AI-004]
@@ -223,4 +223,4 @@ None known.
   weight of 10 for a fully equipped gang, index 64 reading a weight of 10, or
   a Detect miscellaneous upgrade (selector `0x74`). These rest on FND-AI-021,
   FND-AI-024, FND-AI-055 and FND-AI-071. Until a run reaches them, the entry
-  stays `supported` (DECISIONS.md, 2026-10-06).
+  stays `supported`.

@@ -4,7 +4,7 @@ title: A gang's Combat takes the skills that match its weapon when its statistic
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [EXP-TURN-010, EXP-TURN-011, FND-COMBAT-008, FND-EXE-004, FND-GANG-007, SRC-MANUAL-GOG]
+evidence: [EXP-TURN-010, EXP-TURN-011, FND-COMBAT-008, FND-EXE-004, FND-GANG-007, SRC-MANUAL-GOG, FND-RESEARCH-002]
 conflicting: []
 split_with: []
 related: [RULE-GANG-001, RULE-ATTACK-001, FMT-STATE-001, FMT-DATA-003]
@@ -90,4 +90,4 @@ None known.
 - No recorded run reaches a weapon whose type is not 0 to 2, which Equip never
   puts in the weapon slot, or a newly hired gang's statistics read before the
   next rebuild. These rest on FND-GANG-007 and FMT-DATA-003. Until a run
-  reaches them, the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  reaches them, the entry stays `supported`.

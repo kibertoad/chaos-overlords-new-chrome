@@ -46,7 +46,7 @@ sector 0 has 40 and sector 7 has 1.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
+A test of the rebuild replays the run with
 the same writes. The rebuild makes the same calls with the same bounds and
 results and reaches the same state. In its replay the step of turn 2 leaves
 sector 54 at 14, moves sector 0 to 59 and sector 7 to -19; the Snitch takes

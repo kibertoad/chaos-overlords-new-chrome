@@ -4,7 +4,7 @@ title: Give empties the giver's selected slots and holds the items for delivery 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-002, FND-EQUIP-003, FND-EQUIP-007, FND-EQUIP-008, FND-GIVE-001, EXP-TURN-027, EXP-TURN-030, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-002, FND-EQUIP-003, FND-EQUIP-007, FND-EQUIP-008, FND-GIVE-001, EXP-TURN-027, EXP-TURN-030, SRC-MANUAL-GOG, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-002, FMT-STATE-001]
@@ -93,4 +93,4 @@ None known.
 - No recorded run gives a miscellaneous item (mask bit 4), gives to a
   recipient killed in the same turn's combat, or selects an empty slot. These
   rest on FND-GIVE-001 and FND-EQUIP-007. Until a run reaches them, the entry
-  stays `supported` (DECISIONS.md, 2026-10-06).
+  stays `supported`.

@@ -69,4 +69,4 @@ None known.
 - The probe reads `report_type` and the arguments of the records below the
   count only, so no run compares the bytes the clearing leaves alone
   (FMT-STATE-006). That rests on FND-EVENT-004. Until a run reaches them, the
-  entry stays `supported` (DECISIONS.md, 2026-10-06).
+  entry stays `supported`.

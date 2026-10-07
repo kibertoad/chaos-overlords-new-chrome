@@ -4,7 +4,7 @@ title: A gang hides while its action is Hide, and each Hide carried out is count
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIDE-001, FND-HIDE-002, FND-AWARDS-001, FND-AWARDS-002, FND-TURN-007, FND-TURN-001, FND-TURN-002, FND-TURN-004, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-010, EXP-TURN-057]
+evidence: [FND-HIDE-001, FND-HIDE-002, FND-AWARDS-001, FND-AWARDS-002, FND-TURN-007, FND-TURN-001, FND-TURN-002, FND-TURN-004, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-010, EXP-TURN-057, FND-PLATFORM-003]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
@@ -92,4 +92,4 @@ None known.
 - No recorded run replaces or cancels a Hide during planning, which ends the
   hiding at once; the probe writes orders once and compares the end state.
   That rests on FND-HIDE-001. Until a run reaches them, the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

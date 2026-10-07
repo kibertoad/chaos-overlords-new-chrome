@@ -4,7 +4,7 @@ title: The end of a turn removes eliminated players, reports each elimination to
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-003, FND-TURN-008, FND-POLICE-001, FND-EVENT-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-017, EXP-TURN-018, EXP-TURN-020, EXP-TURN-022, EXP-TURN-025]
+evidence: [FND-TURN-003, FND-TURN-008, FND-POLICE-001, FND-EVENT-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-017, EXP-TURN-018, EXP-TURN-020, EXP-TURN-022, EXP-TURN-025, FND-HIRE-002, FND-OBJECTIVE-003, FND-PLATFORM-003, FND-STATE-004, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-POLICE-003, RULE-EVENT-003, RULE-OBJECTIVE-001, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -113,4 +113,4 @@ None known.
 - No recorded run eliminates two players in one match or in one turn, loses
   the Right Hands while other gangs live, or has slot 0 holding another gang.
   These rest on FND-TURN-008 and FND-TURN-003. Until a run reaches them, the
-  entry stays `supported` (DECISIONS.md, 2026-10-06).
+  entry stays `supported`.

@@ -4,7 +4,7 @@ title: Showing a Comlink message marks it read and dates it from its turn
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-004, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, FND-EXE-004, EXP-COMLINK-001]
+evidence: [FND-COMLINK-004, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, FND-EXE-004, EXP-COMLINK-001, FND-COMLINK-001, FND-COMLINK-002]
 conflicting: []
 split_with: []
 related: [FMT-STATE-005]
@@ -75,4 +75,4 @@ None known.
 
 - The runs reach turns 0 and 1 only. No recorded run reaches the rollover from
   week 52 of 2050 to week 1 of 2051. That rests on FND-COMLINK-004. Until a
-  run reaches them, the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  run reaches them, the entry stays `supported`.

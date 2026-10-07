@@ -81,4 +81,4 @@ None known.
   press, a close double-click, an equipment double-click, a refused press
   outside, Enter and Execute; the sounds and the slide's timing (FND-GANG-006,
   FND-GANG-008, FND-UI-047, FND-OPTIONS-001). These rest on the static
-  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  findings named, so the entry stays `supported`.

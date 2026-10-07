@@ -72,4 +72,4 @@ None known.
   slots and other name lengths; Done, the Awards and Stats tabs and menu
   command 9; the push cue (FND-AWARDS-003, FND-AWARDS-004, FND-AWARDS-005,
   FND-AUDIO-010). These rest on the static findings named, so the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

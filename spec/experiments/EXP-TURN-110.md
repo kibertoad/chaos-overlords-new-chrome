@@ -44,7 +44,7 @@ in the fixture. At the third planning entry the gang is at Force 10.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
+A test of the rebuild replays the run. The
 rebuild takes the Heal while the gang is at Force 9 and then writes Force 10,
 as the probe does. It makes the same calls with the same bounds and results
 and reaches the same state. In its replay the Heal of turn 2 acts at Force 10,

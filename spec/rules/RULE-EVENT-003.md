@@ -64,4 +64,4 @@ None known.
   [FND-EVENT-004].
 - No recorded run eliminates two players in one turn, or reports to a slot no
   player ever held. These rest on FND-TURN-003 and FND-EVENT-004. Until a run
-  reaches them, the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  reaches them, the entry stays `supported`.

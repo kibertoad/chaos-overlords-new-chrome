@@ -52,7 +52,7 @@ in the fixture.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run, with
+A test of the rebuild replays the run, with
 the same cash written before each Done press. The rebuild makes the same calls
 with the same bounds and results and reaches the same state. In its replay
 the slot 0 gang's Influence of turn 3 completes the site, and the slot 1 gang

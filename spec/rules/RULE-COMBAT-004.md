@@ -4,7 +4,7 @@ title: Detailed Combat plays the viewer's fights sector by sector, one clip per 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-004, FND-COMBAT-005, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-EXE-004, FND-UI-001, EXP-COMBAT-001, EXP-COMBAT-002, EXP-COMBAT-003, EXP-COMBAT-005, EXP-COMBAT-006, EXP-COMBAT-007, EXP-COMBAT-008, EXP-COMBAT-009]
+evidence: [FND-AUDIO-002, FND-AUDIO-013, FND-COMBAT-004, FND-COMBAT-005, FND-COMBAT-008, FND-COMBAT-010, FND-COMBAT-011, FND-COMBAT-013, FND-EXE-004, FND-UI-001, EXP-COMBAT-001, EXP-COMBAT-002, EXP-COMBAT-003, EXP-COMBAT-005, EXP-COMBAT-006, EXP-COMBAT-007, EXP-COMBAT-008, EXP-COMBAT-009, FND-AI-010, FND-PLATFORM-003]
 conflicting: []
 split_with: []
 related: [SCR-COMBAT-002, RULE-COMBAT-002, RULE-AUDIO-005, FMT-STATE-001, FMT-STATE-003, FMT-STATE-008]
@@ -172,4 +172,4 @@ None known.
   lookup of the target's own target in another row, Escape ending the
   presentation, or a list over 36 entries. These rest on FND-COMBAT-004,
   FND-COMBAT-010, FND-COMBAT-011 and FND-COMBAT-013. Until a run reaches them,
-  the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  the entry stays `supported`.

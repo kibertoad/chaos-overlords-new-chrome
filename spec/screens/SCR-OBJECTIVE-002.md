@@ -69,5 +69,4 @@ None known.
 - No recorded run of the original reaches the card over the city screen; the
   Done press and the close; presses elsewhere on the card; the push cue; the
   pressed Done image (FND-OBJECTIVE-002, FND-AWARDS-003, FND-AUDIO-010). These
-  rest on the static findings named, so the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  rest on the static findings named, so the entry stays `supported`.

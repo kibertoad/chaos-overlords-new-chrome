@@ -85,4 +85,4 @@ None known.
   a name longer than 10 characters; Left, Right, Enter and Execute; a press
   outside the panel; the network refresh (FND-COMLINK-002, FND-COMLINK-007,
   FND-COMLINK-009). These rest on the static findings named, so the entry
-  stays `supported` (DECISIONS.md, 2026-10-06).
+  stays `supported`.

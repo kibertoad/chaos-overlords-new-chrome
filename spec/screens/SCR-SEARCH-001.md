@@ -77,4 +77,4 @@ None known.
   outside it; Enter and Execute; the accepted and rejected sounds
   (FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-COMLINK-007,
   FND-AUDIO-011). These rest on the static findings named, so the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

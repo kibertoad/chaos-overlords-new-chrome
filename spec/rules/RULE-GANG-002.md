@@ -79,4 +79,4 @@ None known.
 - No recorded run reaches the Eliminate scenario's clean-up retiring a
   player's remaining gangs; in EXP-TURN-022 the eliminated player has none
   left. That rests on FND-GANG-003. Until a run reaches them, the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

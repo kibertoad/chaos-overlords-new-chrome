@@ -78,4 +78,4 @@ None known.
 - No recorded run reaches File, End, a load setting the byte to 1, an order
   given or cleared through the command box, or no match in play. These rest on
   FND-UI-058 and FND-UI-022. With network play above, until a run reaches
-  them, the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  them, the entry stays `supported`.

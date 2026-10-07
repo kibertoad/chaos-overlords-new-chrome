@@ -79,4 +79,4 @@ None known.
 - Every run set the sound levels to 0, so the runs record the sound loaded for
   each clip and no playback. No recorded run has a police pass that finds no
   gang. That rests on FND-AUDIO-013. Until a run reaches them, the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

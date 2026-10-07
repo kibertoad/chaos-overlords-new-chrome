@@ -4,7 +4,7 @@ title: A new match gives every player $20, or $500 in Armageddon, and $1,500 to 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-015, FND-SETUP-001, FND-SETUP-004, FND-RNG-005, SRC-MANUAL-GOG, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-004]
+evidence: [FND-SETUP-015, FND-SETUP-001, FND-SETUP-004, FND-RNG-005, SRC-MANUAL-GOG, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-004, FND-EQUIP-006, FND-PLATFORM-003, FND-STATE-004, FND-UI-003, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-004]
@@ -92,5 +92,4 @@ None known.
   match reaches this rule with a network flag set, are not recorded.
 - No recorded run reaches a name that differs from a modifier only in case,
   the cash modifier in Armageddon, or a network game skipping the scan. These
-  rest on FND-SETUP-015. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  rest on FND-SETUP-015. Until a run reaches them, the entry stays `supported`.

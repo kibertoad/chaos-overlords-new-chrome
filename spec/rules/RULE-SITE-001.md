@@ -4,7 +4,7 @@ title: Before planning, each sector record is rebuilt from its completed sites, 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GANG-001, FND-STATE-001, FND-UPKEEP-001, FND-UI-035, FND-TURN-001, FND-CONTROL-001, SRC-MANUAL-GOG, SRC-RECHAOS-3561D41, FND-EXE-004, EXP-SETUP-001, FND-OBJECTIVE-004, EXP-TURN-038, EXP-TURN-059, EXP-TURN-062, FND-DATA-011, EXP-TURN-083]
+evidence: [FND-GANG-001, FND-STATE-001, FND-UPKEEP-001, FND-UI-035, FND-TURN-001, FND-CONTROL-001, SRC-MANUAL-GOG, SRC-RECHAOS-3561D41, FND-EXE-004, EXP-SETUP-001, FND-OBJECTIVE-004, EXP-TURN-038, EXP-TURN-059, EXP-TURN-062, FND-DATA-011, EXP-TURN-083, FND-STATE-011, FND-TURN-006]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]
@@ -147,4 +147,4 @@ None known.
 - Where `turn_start` calls this recomputation relative to `upkeep_phase` is given
   by the TURN rules.
 - Until a run reaches the cases of the first item, the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

@@ -44,7 +44,7 @@ in the fixture. At the third planning entry sector 54 has base Tolerance 2.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
+A test of the rebuild replays the run with
 the same write. The rebuild makes the same calls with the same bounds and
 results and reaches the same state. In its replay the Bribe of turn 1 finds
 the base at 126 and the human at 20 cash, pays 3 and stores -127; the gangs

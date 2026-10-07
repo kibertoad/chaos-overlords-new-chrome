@@ -81,4 +81,4 @@ None known.
   sector; presses off the face and outside the panel; Enter, Execute and the
   double-click; the slide sounds and timing (FND-UI-011, FND-UI-014,
   FND-UI-024). These rest on the static findings named, so the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

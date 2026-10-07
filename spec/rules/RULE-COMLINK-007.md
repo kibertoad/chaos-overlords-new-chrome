@@ -4,7 +4,7 @@ title: When a player finishes planning, the read messages at the front of the in
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-006, EXP-COMLINK-001]
+evidence: [FND-COMLINK-006, EXP-COMLINK-001, FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-004]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-001, RULE-COMLINK-004, FMT-STATE-005]
@@ -75,5 +75,4 @@ None known.
   where that player's inbox is kept on their own computer, was not read.
 - No recorded run keeps a read message behind an unread one; viewing opens at
   the oldest unread message, so no local input can leave one there. That rests
-  on FND-COMLINK-006. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  on FND-COMLINK-006. Until a run reaches them, the entry stays `supported`.

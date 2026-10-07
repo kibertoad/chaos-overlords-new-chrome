@@ -133,4 +133,4 @@ None known.
   501 and the silent retaliation (FND-COMBAT-005, FND-COMBAT-010,
   FND-COMBAT-011, FND-COMBAT-014, FND-COMBAT-016, FND-UI-001, FND-UI-047,
   FND-AUDIO-002, FND-AUDIO-013). These rest on the static findings named, so
-  the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  the entry stays `supported`.

@@ -50,8 +50,9 @@ public static class Px08BmpDecoder
 
     // RULE-GFX-001, FND-GFX-008: decodes as SetDIBits does. A run past the end of its line is cut
     // there, a delta moves right and up without writing, the data may end without the
-    // end-of-bitmap code, and a pixel no code writes stays 0. Only data that ends inside a code is
-    // refused.
+    // end-of-bitmap code, and a pixel no code writes stays 0. A lone byte after the last code is
+    // ignored, as the rule's loop does, and so is a missing pad byte after a final absolute run.
+    // Only a delta or an absolute run whose own bytes the data cuts off is refused.
     private static byte[] DecodeIndices(ReadOnlySpan<byte> encoded, int width, int height)
     {
         var pixels = new byte[checked(width * height)];
@@ -64,8 +65,8 @@ public static class Px08BmpDecoder
             var value = encoded[sourceIndex++];
             if (count != 0)
             {
-                for (var k = 0; k < count; k++, x++)
-                    Write(pixels, x, y, width, height, value);
+                Clip(pixels, x, y, width, height, count).Fill(value);
+                x += count;
                 continue;
             }
 
@@ -84,9 +85,10 @@ public static class Px08BmpDecoder
                     break;
                 default: // Absolute run.
                     var literalCount = value;
-                    Require(encoded, sourceIndex, literalCount + (literalCount & 1));
-                    for (var k = 0; k < literalCount; k++, x++)
-                        Write(pixels, x, y, width, height, encoded[sourceIndex + k]);
+                    Require(encoded, sourceIndex, literalCount);
+                    var target = Clip(pixels, x, y, width, height, literalCount);
+                    encoded.Slice(sourceIndex, target.Length).CopyTo(target);
+                    x += literalCount;
                     sourceIndex += literalCount + (literalCount & 1);
                     break;
             }
@@ -94,9 +96,12 @@ public static class Px08BmpDecoder
         return pixels;
     }
 
-    private static void Write(byte[] pixels, int x, int y, int width, int height, byte value)
+    // The part of a run of count pixels from (x, y) that lies inside the image. The unsigned
+    // comparison also leaves out a position that has wrapped past int.MaxValue.
+    private static Span<byte> Clip(byte[] pixels, int x, int y, int width, int height, int count)
     {
-        if (x < width && y < height) pixels[y * width + x] = value;
+        if ((uint)x >= (uint)width || (uint)y >= (uint)height) return Span<byte>.Empty;
+        return pixels.AsSpan(y * width + x, Math.Min(count, width - x));
     }
 
     private static void Require(ReadOnlySpan<byte> source, int offset, int count)

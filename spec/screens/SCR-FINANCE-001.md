@@ -74,4 +74,4 @@ None known.
   colour of every field beyond the two captured states; Enter and Execute; the
   slide sounds and the slide's timing (FND-FINANCE-001, FND-FINANCE-002,
   FND-OPTIONS-001). These rest on the static findings named, so the entry
-  stays `supported` (DECISIONS.md, 2026-10-06).
+  stays `supported`.

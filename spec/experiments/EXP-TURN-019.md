@@ -36,11 +36,10 @@ inactive and player 0's `controller` was still 0.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run,
-giving the Terminate as a command. The rebuild makes the same calls with the
-same bounds and results and reaches the same generator position and state,
-with the human's gang retired and the human still in the match at the next
-planning phase.
+A test of the rebuild replays the run, giving the Terminate as a command. The
+rebuild makes the same calls with the same bounds and results and reaches the
+same generator position and state, with the human's gang retired and the human
+still in the match at the next planning phase.
 
 ## Conclusion
 

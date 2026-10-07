@@ -105,4 +105,4 @@ None known.
   and swap; cards of computer and network slots; the roster kept from an
   earlier Begin; the sounds (FND-SETUP-005, FND-SETUP-013, FND-SETUP-014,
   FND-SETUP-019, FND-RNG-005, FND-AUDIO-010). These rest on the static
-  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  findings named, so the entry stays `supported`.

@@ -105,4 +105,4 @@ None known.
   player who spent exactly 999,999 when nobody spent less, while the Edge
   cases say nobody gets it; no run decides between them. These rest on
   FND-AWARDS-001, FND-AWARDS-002 and FND-AWARDS-004. Until a run reaches them,
-  the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  the entry stays `supported`.
