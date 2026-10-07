@@ -118,6 +118,19 @@ point `(x, y)` as `open` does (FND-UI-020), `strip:x:y:0` presses a point,
 control and `exit` the Exit of the panel the planning entry left open.
 EXP-UI-006 to EXP-UI-014 are taken this way.
 
+A shot can also show a control while a button holds it. `down:x:y` presses the
+left button at `(x, y)` and keeps it down, `move:x:y` moves the pointer there
+with the button down, and `up:x:y` releases it there; `rdown:x:y` and
+`rup:x:y` press and release the right button. The helpers that hold a button
+read the pointer record and the two pointer points of FND-UI-020 (FND-UI-046),
+so the probe writes both points itself, as the hire steps do, and posts only
+the button messages. The desktop cursor's own moves also reach those points, so
+a shot taken while a button is down writes the held point again and waits
+0.3 seconds before it copies. Every order step also keeps `slot_zero_clears`,
+the milliseconds from the step's start to each tick of timer slot 0 a panel
+loop took before the next step began (FND-UI-047), read from breakpoints on the
+calls that clear the slot. EXP-UI-041 to EXP-UI-044 are taken with these steps.
+
 `new-game --title-capture` copies the title screen before the run presses New
 Game: a breakpoint at the title loop's first load of its art (FND-UI-055)
 stops the presses, and the drawing area is copied two seconds later. `extract`

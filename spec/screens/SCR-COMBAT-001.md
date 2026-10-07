@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AUDIO-002, FND-AUDIO-011, FND-COMBAT-002, FND-COMBAT-004, FND-COMBAT-007, FND-COMBAT-009, FND-COMBAT-012, FND-COMBAT-013, FND-EXE-004, FND-GFX-005, EXP-UI-008]
+evidence: [FND-AUDIO-002, FND-AUDIO-011, FND-COMBAT-002, FND-COMBAT-004, FND-COMBAT-007, FND-COMBAT-009, FND-COMBAT-012, FND-COMBAT-013, FND-EXE-004, FND-GFX-005, EXP-UI-008, FND-UI-062, FND-UI-067, EXP-UI-041]
 conflicting: []
 split_with: []
 related: [RULE-COMBAT-002]
@@ -32,6 +32,7 @@ FND-EXE-004) [FND-COMBAT-012].
 | Sector tile | 54-by-52 cell of the drawn city map, framed in black | The page's sector | `(135, 191, 54, 52)` | While the panel is open | FND-COMBAT-007 |
 | Police strip | `DATA/PX16/PX00129` `(0, 432, 54, 9)` | A police result in the sector | `(135, 191, 54, 9)` | When any player's police flag for the sector is set | FND-COMBAT-007 |
 | Sector code | The font of `fn_00413FD5` | A column letter A to H and a row digit 1 to 8 | From `(156, 246)` | While the panel is open | FND-COMBAT-007 |
+| Exit pressed | `DATA/PX16/PX00129` rectangle (0, 386, 50, 23); plain face (50, 386, 50, 23) while the pointer is outside and after a release that leaves the panel open | None | (137, 293, 50, 23) | While the face is held with the pointer inside it | FND-UI-062, FND-UI-067 |
 
 ## Mouse input
 
@@ -41,7 +42,8 @@ FND-EXE-004) [FND-COMBAT-012].
 | Next page | `(163, 157, 26, 23)` | Always; on the last page it only plays the rejected sound | Shows the next qualifying sector | FND-AUDIO-011, FND-COMBAT-002 |
 | Opponent portrait `n` | `(306, 140 + 36 * n, 32, 32)`, `n` 0 to 4 | The player has a result row in the sector | Selects that opponent's forces | FND-AUDIO-011, FND-COMBAT-002 |
 | Viewer's force selector | `(205, 151, 88, 156)` | The viewer's entry in the slot is not -1 | Selects one of the six result slots: right column when x is greater than 248, second row when y is greater than 202, third row when y is greater than 254. The slot's gang becomes the focal gang, its target the focal target, and the page is redrawn with the same opponent | FND-COMBAT-002, FND-COMBAT-012 |
-| Exit | `(137, 293, 49, 22)` | Always | Closes the panel | FND-COMBAT-002 |
+| Exit | `(137, 293, 49, 22)` | Always | Held through the held-button helper; closes the panel only when the button is released inside it | FND-COMBAT-002, FND-UI-067 |
+| Outside the panel | Outside `(104, 124, 344, 209)` | Always | Refused with slot 4 | FND-UI-067 |
 
 ## Keyboard input
 
@@ -60,7 +62,7 @@ None.
 | Sound | Resource | Played when | Evidence |
 |---|---|---|---|
 | Accepted input | `DATA/SND00203` (effect slot 3) | A page step that changes the page, or a click that changes the selected opponent | FND-AUDIO-011 |
-| Rejected input | `DATA/SND00204` (effect slot 4) | Previous on the first page or Next on the last page | FND-AUDIO-011 |
+| Rejected input | `DATA/SND00204` (effect slot 4) | Previous on the first page or Next on the last page, or a press outside the panel | FND-AUDIO-011, FND-UI-067 |
 
 ## States
 
