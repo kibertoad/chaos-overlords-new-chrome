@@ -112,6 +112,7 @@ function apiRoutes(): Hono<AppEnv> {
     bodyLimit({ maxSize: LIMITS.gameSettingsBytes + SMALL_BODY }),
   )
   api.use('/matches/:matchId/profile', bodyLimit({ maxSize: SMALL_BODY }))
+  api.use('/matches/:matchId/chat', bodyLimit({ maxSize: SMALL_BODY }))
   api.use('/matches/:matchId/players/:playerId/takeover-vote', bodyLimit({ maxSize: SMALL_BODY }))
   api.use('/matches/:matchId/turns/:turn/orders', bodyLimit({ maxSize: LIMITS.ordersBytes }))
   api.use('/matches/:matchId/turns/:turn/report', bodyLimit({ maxSize: SMALL_BODY }))

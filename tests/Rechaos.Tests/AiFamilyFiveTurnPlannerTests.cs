@@ -248,6 +248,6 @@ public sealed class AiFamilyFiveTurnPlannerTests
                 income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            scenario, GameDuration.SixMonths, 41, setups, mentality), players, sectors);
+            scenario, GameDuration.SixMonths, 41, setups, MatchDeviations.Original, mentality), players, sectors);
     }
 }

@@ -14,11 +14,10 @@ public sealed partial class ChaosGame
     /// screen until the cadence allows the next one. A reference frame draws every tick: its clock
     /// stands at zero, so the cadence would never allow a second draw to a window without focus.
     /// </remarks>
-    protected override bool BeginDraw() =>
-        (_referenceFrame is not null || _backgroundRedrawCadence.ShouldRedraw(IsActive, _inputTime))
-        && base.BeginDraw();
+    internal bool ShouldDraw() =>
+        _referenceFrame is not null || _backgroundRedrawCadence.ShouldRedraw(IsActive, _inputTime);
 
-    protected override void Draw(GameTime gameTime)
+    internal void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(new Color(8, 10, 12));
         _gangSight.BeginFrame();

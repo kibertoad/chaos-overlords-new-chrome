@@ -7,6 +7,7 @@ import { migrate as migrateSqlite } from 'drizzle-orm/better-sqlite3/migrator'
 import { drizzle as drizzlePostgres } from 'drizzle-orm/node-postgres'
 import { migrate as migratePostgres } from 'drizzle-orm/node-postgres/migrator'
 import pg from 'pg'
+import { postgresRateLimitStore, type SweepableRateLimitStore } from '../postgres/rateLimits'
 import { createPostgresStorage } from '../postgres/repositories'
 import * as postgresSchema from '../postgres/schema'
 import { createSqliteStorage } from '../sqlite/repositories'
@@ -28,6 +29,11 @@ export interface OpenedStorage {
    * (the retention batch above all) by this.
    */
   dialect: 'sqlite' | 'postgres'
+  /**
+   * Rate limit windows every process on this database shares, when the database can be shared.
+   * Postgres has one; a SQLite file belongs to one process, which counts in memory.
+   */
+  rateLimits?: SweepableRateLimitStore
   close(): Promise<void>
 }
 
@@ -95,9 +101,12 @@ export async function openPostgresStorage(
   return {
     storage: createPostgresStorage(db),
     dialect: 'postgres',
+    rateLimits: postgresRateLimitStore(db),
     close: () => pool.end(),
   }
 }
+
+export type { SweepableRateLimitStore }
 
 export type StorageTarget =
   | { kind: 'sqlite'; filename: string }
