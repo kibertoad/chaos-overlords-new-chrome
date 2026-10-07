@@ -13,13 +13,13 @@ locations:
     address: 0x004ABBE0..0x004ABBE5
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00476F3B..0x00477129
+    address: 0x00476F3B..0x0047712A
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0046EB91
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040F63D..0x0040F72D
+    address: 0x0040F63D..0x0040F72E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004A2608..0x004A2787
@@ -104,5 +104,5 @@ slot 0 has place `p`.
 ## How to reproduce
 
 List the references to `0x004ABBE0`, `0x004A2588`, `0x004A2589`,
-`0x004A2608` and `0x004ABC08`. Read `0x00476F3B..0x00477129`,
-`0x0040F63D..0x0040F72D` and case `0x2D` of `0x00402D70`.
+`0x004A2608` and `0x004ABC08`. Read `0x00476F3B..0x0047712A`,
+`0x0040F63D..0x0040F72E` and case `0x2D` of `0x00402D70`.
