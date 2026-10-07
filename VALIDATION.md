@@ -2,7 +2,7 @@
 
 The test files of the validated parity rows that read the original's files, as they were when every test in them passed against those files.
 
-- Commit: 3f8818a428f3a91595293d05add0977bff19b59a
+- Commit: 7b138d65b3c076bcb5be778b832942ea221bcdd8
 - Date: 2026-10-07
 - Builds: BLD-GOG-EN-1.1
 

@@ -95,7 +95,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   captures show some of its states while its keys, refusals and pressed faces
   rest on static findings. The screen entries stay `supported`, and a capture
   pull request follows the checklist in
-  [VALIDATION.md](VALIDATION.md#raising-a-screen-entry).
+  [validation/screen-comparison.md](validation/screen-comparison.md#raising-a-screen-entry).
 - Reason: issues #354, #373 and #408 found entries raised, or proposed for
   raising, on one agreeing run while some of their cases had never been
   observed, and entries kept at `supported` with no written bar. One stated
@@ -319,7 +319,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   does not.
 - Method: a throwaway harness, not kept in the repository, switched the guard
   per player between the two comparisons. Seat 0 was a simulated human (see
-  [VALIDATION.md](VALIDATION.md#simulated-human-seats)) that always used the
+  [the test harnesses](validation/test-harnesses.md#simulated-human-seats)) that always used the
   corrected comparison; the five computer players used the original comparison
   in one arm and the corrected one in the other, on the same seeds. It ran the
   seven scenarios that have a hunter guard (Greed, Power, Acceptance,

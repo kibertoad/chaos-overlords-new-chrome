@@ -25,7 +25,7 @@ Both functions are called only by the Give handler `fn_00445A4F`
 surface 7 at `(0,144)`, so surface 7 `(x, y)` is panel-local `(x, y - 144)`
 and screen `(104 + x, y - 20)`. Surface 3 holds `PX03000`, surface 5 holds
 `PX04999` at x 120 (FND-INFLUENCE-002), surface 6 holds `PX00129`
-(FND-UI-031). Copy modes are those of FND-PLATFORM-008.
+(FND-UI-031). Copy modes are those of FND-PLATFORM-015.
 
 `fn_00448027(player, tech_needed)`, the recipient list, is called when the
 panel opens (`0x00446129`) and when the highest Tech Level of the selected

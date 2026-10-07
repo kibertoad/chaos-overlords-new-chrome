@@ -24,14 +24,6 @@ Entries by status.
 | [RULE-AUDIO-009](../../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat |
 | [RULE-AUDIO-010](../../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc |
 
-## superseded
-
-1 entries.
-
-| ID | Title |
-|---|---|
-| [RULE-AUDIO-011](../../rules/RULE-AUDIO-011.md) | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM |
-
 ## recorded
 
 16 entries.
@@ -70,4 +62,3 @@ Entries whose Open questions section says more than None known.
 | [RULE-AUDIO-008](../../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks | supported |
 | [RULE-AUDIO-009](../../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | supported |
 | [RULE-AUDIO-010](../../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
-| [RULE-AUDIO-011](../../rules/RULE-AUDIO-011.md) | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM | superseded |

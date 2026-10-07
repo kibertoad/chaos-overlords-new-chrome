@@ -57,7 +57,7 @@ internal static class OriginalAddresses
     // planning loop in fn_0046FD80.
     public const uint PlanningTimeCheck = 0x0041BDD5;
 
-    // FND-EQUIP-008: the Equip panel's list builder, called as (category, tech_level, player,
+    // FND-EQUIP-012: the Equip panel's list builder, called as (category, tech_level, player,
     // roster slot), the sixteen INT32 entries it fills, the 16-bit Tech Level of the gang
     // definition records, 156 bytes apart, and the panel's own instruction that loads the Tech
     // Level for the call, which the probe uses as the return address of every call it makes.
@@ -239,7 +239,7 @@ internal static class OriginalAddresses
     public const uint PopupMenuTracked = 0x0042571B;
     public const int PopupMenuTrackArguments = 7;
 
-    // FND-UI-015, FND-UI-018, FND-STATE-008: the view byte, 1 while the city is shown and 0 in the
+    // FND-UI-015, FND-UI-018, FND-STATE-012: the view byte, 1 while the city is shown and 0 in the
     // sector view, the player whose gangs the sector view lists, and its six card slots, a roster
     // slot or -1 each.
     public const uint CityViewShown = 0x00487B88;
@@ -285,6 +285,13 @@ internal static class OriginalAddresses
     public const uint SelectionFrameHeld = 0x004854C8;
     public const uint PanelHoldsSelectionFrame = 0x004196E4;
 
+    // FND-UI-047: the calls of fn_004328F8(0) by which each panel loop that holds a face through
+    // the held-button helper takes a tick of timer slot 0 for its animation: Item Information,
+    // Last Turn Events, Sell, Give, gang information, Comlink Send, Detailed Combat and the
+    // idle-gang warning.
+    public static readonly uint[] PanelSlotZeroClears =
+        [0x0044C34D, 0x0044FC61, 0x004451C7, 0x0044764D, 0x0044B415, 0x0045FD63, 0x00431100, 0x00448C6B];
+
     // FND-UI-052, FND-UI-053: where Item Information, Sell and Give set their frame local to 0,
     // the local's offset below ebp, and where each handler returns. FND-UI-054: the idle gang
     // warning's countdown of ticks, whose phase also needs its shown flag; ShownLocal is 0 for
@@ -325,7 +332,7 @@ internal static class OriginalAddresses
     public const uint ComlinkSelected = 0x00498114;
     // FND-COMLINK-010: set while the Send panel's caret cell is drawn plain.
     public const uint ComlinkCaretPlain = 0x00498110;
-    // active_player (FND-STATE-008).
+    // active_player (FND-STATE-012).
     public const uint ActivePlayer = 0x004ABC84;
     // FND-STATE-004: player_active, one byte per player slot.
     public const uint PlayerActive = 0x004ABBE0;
@@ -345,7 +352,7 @@ internal static class OriginalAddresses
     public static readonly uint[] ExitQuitStores = [0x00470586, 0x004705A8, 0x004705FB];
     public const uint ExitQuitStoreLength = 7;
 
-    // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler
+    // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-011: the Send handler
     // fn_0045EAB1; FND-COMLINK-004: the helper fn_0045E04D(player, count) that marks and draws one
     // message; FND-COMLINK-006: fn_00460391(player), which drops the leading read messages when the
     // player's planning ends. FND-COMLINK-007 gives the ranges of all four, and FND-EXE-004 the
@@ -363,7 +370,7 @@ internal static class OriginalAddresses
     public const int ComlinkSendX = 552 + 24;
     public const int ComlinkSendY = 159 + 7;
 
-    // FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-007: the panels' controls on the screen, the
+    // FND-COMLINK-002, FND-COMLINK-011, FND-COMLINK-007: the panels' controls on the screen, the
     // panel at (104, 124). View: Previous (135, 157, 26, 23), Next (163, 157, 26, 23) and Dismiss
     // (137, 293, 49, 22). Send: the card of slot p at (202 + 121 * (p / 3), 144 + 34 * (p % 3)),
     // 100 by 32, Cancel (137, 261, 49, 22) and Send (137, 293, 49, 22).
@@ -405,7 +412,7 @@ internal static class OriginalAddresses
 
     // FND-UI-064: in the window procedure's WM_KEYDOWN branch, the instruction after the call of
     // GetAsyncKeyState(VK_SHIFT), and the jump both translations take once the event is stored.
-    // FND-STATE-008: the input event record, type then the character and the key.
+    // FND-STATE-012: the input event record, type then the character and the key.
     public const uint ShiftTested = 0x0045CA62;
     public const uint KeyEventStored = 0x0045CC35;
     public const uint InputEvent = 0x00498360;

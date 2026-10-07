@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-FINANCE-001, FND-FINANCE-002, FND-OPTIONS-001, FND-GANG-004, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-006, EXP-UI-007]
+evidence: [FND-FINANCE-001, FND-FINANCE-002, FND-OPTIONS-001, FND-GANG-004, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-006, EXP-UI-007, FND-UI-062, FND-UI-067, FND-AUDIO-011]
 conflicting: []
 split_with: []
 related: [RULE-FINANCE-001, RULE-UI-003, RULE-UI-004]
@@ -22,12 +22,14 @@ related: [RULE-FINANCE-001, RULE-UI-003, RULE-UI-004]
 | Value fields | Not recorded | The amounts of RULE-FINANCE-001, each drawn by `number_cells` (RULE-UI-004) in four glyph cells from the field's left edge: Gang Upkeep at y = 151, New Recruits 160, Equipment 178, City Officials 196, Sector Tax 214, Site Protection 223, Chaos (Estimate) 241 and Cash Adjustment 268 | `(394, y, 24, 7)` | While the panel is open | FND-FINANCE-001, FND-FINANCE-002, FND-GANG-004 |
 | Gang count | Not recorded | The number of gangs counted on the Gang Upkeep row, queued hires included (RULE-FINANCE-001): one bright cell at x = 316 below ten, two cells from x = 316 otherwise, then a closing parenthesis at x = 322 or 328. The opening parenthesis is part of the panel image | On the Gang Upkeep row, y = 151 | While the panel is open | FND-FINANCE-001, FND-FINANCE-002 |
 | Sector name | Not recorded | In the Sector variant, the column letter and row digit of the sector | Buffer `(396, 216)`, screen `(180, 196)` | When opened as Sector | FND-FINANCE-002 |
+| Close pressed | `DATA/PX16/PX00129` rectangle (0, 386, 50, 23); plain face (50, 386, 50, 23) while the pointer is outside and after a release that leaves the panel open | None | (161, 293, 50, 23) | While the face is held with the pointer inside it | FND-UI-062, FND-UI-067 |
 
 ## Mouse input
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Close control | `(161, 293, 49, 22)` | Always | Closes the panel | FND-FINANCE-001 |
+| Close control | `(161, 293, 49, 22)` | Always | Held through the held-button helper; closes the panel only when the button is released inside it | FND-FINANCE-001, FND-UI-067 |
+| Outside the panel | Outside `(104, 124, 344, 209)`, the shared panel rectangle, wider than the panel drawn | Always | Refused with slot 4 | FND-UI-067 |
 
 ## Keyboard input
 
@@ -45,6 +47,8 @@ None.
 |---|---|---|---|
 | Panel opening | General effect slot 0, as RULE-UI-003 gives | The panel slides in, with Slide Panels on | FND-OPTIONS-001 |
 | Panel closing | General effect slot 1, as RULE-UI-003 gives | The panel slides out, with Slide Panels on | FND-OPTIONS-001 |
+| Accepted input | `DATA/SND00203` (effect slot 3) | The close control is pressed | FND-AUDIO-011, FND-UI-062 |
+| Rejected input | `DATA/SND00204` (effect slot 4) | A press outside the panel | FND-UI-067 |
 
 ## States
 

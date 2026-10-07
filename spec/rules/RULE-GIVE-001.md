@@ -4,7 +4,7 @@ title: Give empties the giver's selected slots and holds the items for delivery 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-002, FND-EQUIP-003, FND-EQUIP-007, FND-EQUIP-008, FND-GIVE-001, EXP-TURN-027, EXP-TURN-030, SRC-MANUAL-GOG, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
+evidence: [FND-EQUIP-002, FND-EQUIP-003, FND-EQUIP-007, FND-EQUIP-012, FND-GIVE-001, EXP-TURN-027, EXP-TURN-030, SRC-MANUAL-GOG, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-002, FMT-STATE-001]
@@ -72,7 +72,7 @@ draw.
 - The resolver checks neither Tech Level nor sector. The panel offers only
   another of the player's gangs in the giver's sector whose definition Tech
   Level is at least the highest Tech Level of the selected items
-  [FND-EQUIP-008, FND-GIVE-001]. Selecting a higher-level item in the panel
+  [FND-EQUIP-012, FND-GIVE-001]. Selecting a higher-level item in the panel
   drops a recipient already chosen that no longer qualifies [FND-GIVE-001].
 - A selected slot that holds no item gives -1, which the delivery skips.
 

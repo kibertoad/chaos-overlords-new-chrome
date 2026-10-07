@@ -57,7 +57,7 @@ Entries by kind.
 
 ## rules
 
-162 entries.
+161 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -104,7 +104,6 @@ Entries by kind.
 | [RULE-AUDIO-008](../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks | supported |
 | [RULE-AUDIO-009](../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | supported |
 | [RULE-AUDIO-010](../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
-| [RULE-AUDIO-011](../rules/RULE-AUDIO-011.md) | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM | superseded |
 | [RULE-AWARDS-001](../rules/RULE-AWARDS-001.md) | The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three | supported |
 | [RULE-AWARDS-002](../rules/RULE-AWARDS-002.md) | The endgame lists players by standing, ties in slot order, eliminated players last, and shows a victory splash first when one player is left | supported |
 | [RULE-BRIBE-001](../rules/RULE-BRIBE-001.md) | Bribe pays 3 cash to raise the gang's sector base Tolerance by 3 | established |
@@ -226,7 +225,7 @@ Entries by kind.
 
 ## findings
 
-400 entries.
+388 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -237,10 +236,8 @@ Entries by kind.
 | [FND-AI-005](../findings/FND-AI-005.md) | The shared AI sector selector scores sectors by mode in growing squares, and scenario standings rank players | recorded |
 | [FND-AI-006](../findings/FND-AI-006.md) | A six-by-six attitude matrix starts from the Mentality, recovers each turn and drops after attacks and takeovers | recorded |
 | [FND-AI-007](../findings/FND-AI-007.md) | A per-player difficulty band set from the Mentality changes the dice of several resolved actions | recorded |
-| [FND-AI-008](../findings/FND-AI-008.md) | The AI ranks its three hire offers by a role mode, then refuses an unaffordable winner without a fallback | superseded |
 | [FND-AI-009](../findings/FND-AI-009.md) | The AI hire role comes from a per-scenario schedule indexed by the elapsed turn | recorded |
 | [FND-AI-010](../findings/FND-AI-010.md) | The AI keeps an encoded hire placement anchor per player and refreshes it by fixed scans | recorded |
-| [FND-AI-011](../findings/FND-AI-011.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and the least efficient offer elsewhere | superseded |
 | [FND-AI-012](../findings/FND-AI-012.md) | The AI tries to hire only below a gang limit set by territory, cash and scenario, with scenario time gates | recorded |
 | [FND-AI-013](../findings/FND-AI-013.md) | AI queries for the first sector holding a visible hostile human gang and for family-6 coverage | recorded |
 | [FND-AI-014](../findings/FND-AI-014.md) | The family-6 hire guards compare the previous hire role with schedule slot numbers | recorded |
@@ -254,26 +251,19 @@ Entries by kind.
 | [FND-AI-022](../findings/FND-AI-022.md) | The turn resolver decodes a gang's two target bytes differently for each action | recorded |
 | [FND-AI-023](../findings/FND-AI-023.md) | A resolved hire takes the first inactive roster slot below 80 | recorded |
 | [FND-AI-024](../findings/FND-AI-024.md) | The family-11 handler equips, heals, attacks the first visible local gang, or moves in blocks of six | recorded |
-| [FND-AI-025](../findings/FND-AI-025.md) | Sector selector mode 6 routes toward the scenario leader and hostile human land | superseded |
 | [FND-AI-026](../findings/FND-AI-026.md) | Sector selector modes 7, 8 and 9 score owned sectors by site Support, Cash and Stealth | recorded |
-| [FND-AI-027](../findings/FND-AI-027.md) | Sector selector modes 10 to 16 and encoded modes, and the filters applied after scoring | superseded |
 | [FND-AI-028](../findings/FND-AI-028.md) | The 48 direct calls of the shared sector selector, by mode and caller | recorded |
 | [FND-AI-029](../findings/FND-AI-029.md) | The family-6 handler hunts hostile human sectors and attacks there with up to six target draws | recorded |
-| [FND-AI-030](../findings/FND-AI-030.md) | The family-0 handler is a general state machine over the previous action | superseded |
-| [FND-AI-031](../findings/FND-AI-031.md) | The family-4 handler hides, probes and moves through mode 2 | superseded |
 | [FND-AI-032](../findings/FND-AI-032.md) | The family-2 handler equips, heals, attacks visible hostiles and takes weak or hostile sectors | recorded |
 | [FND-AI-033](../findings/FND-AI-033.md) | The family-3 handler influences Cash sites, and AI target draws compare a gang from a different list | recorded |
 | [FND-AI-034](../findings/FND-AI-034.md) | The family-5 handler has the family-3 shape with Support sites and mode 7 | recorded |
 | [FND-AI-035](../findings/FND-AI-035.md) | The family-7 handler researches items and influences Research sites | recorded |
 | [FND-AI-036](../findings/FND-AI-036.md) | The family-9 handler equips without a cooldown check, then leaves owned land or fights and takes enemy land | recorded |
-| [FND-AI-037](../findings/FND-AI-037.md) | The family-10 handler improves armor, equips item 44, heals, seeks Stealth sites, then raises Chaos or hides | superseded |
-| [FND-AI-038](../findings/FND-AI-038.md) | The family-12 handler equips and heals when unopposed and wanders at random, and attacks when opposed | superseded |
 | [FND-AI-039](../findings/FND-AI-039.md) | The family-13 and family-14 handlers move to and hold the Big Man centre or the Eliminate headquarters | recorded |
 | [FND-AI-040](../findings/FND-AI-040.md) | The sector selector breaks ties with one draw and routes one step, x then y, under a six-gang limit | recorded |
 | [FND-AI-041](../findings/FND-AI-041.md) | The dispatcher resets a flagged planning record before it assigns a family, and its post-handler block is unreachable | recorded |
 | [FND-AI-042](../findings/FND-AI-042.md) | Byte +1 of a planning record is set for an empty roster slot and by the Greed Terminate branches, and byte +11 is never used | recorded |
 | [FND-AI-043](../findings/FND-AI-043.md) | Family 9 is seeded only for a network player the computer takes over; the planning pass's own seeding stores past the flag array | recorded |
-| [FND-AI-044](../findings/FND-AI-044.md) | The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order | recorded |
 | [FND-AI-045](../findings/FND-AI-045.md) | At the start of a match and after a load the computer players' site sums are cached per sector, and a new match also clears the AI flags and seeds the placement anchor | recorded |
 | [FND-AI-046](../findings/FND-AI-046.md) | Selector 0x5B always counts gangs whose previous action is Chaos, and the branches that test it write Chaos at a low count | recorded |
 | [FND-AI-047](../findings/FND-AI-047.md) | The resolver lowers the target's attitude toward its attacker after every attack, evaded or not, and the loser's toward the winner of a Control takeover | recorded |
@@ -288,7 +278,6 @@ Entries by kind.
 | [FND-AI-056](../findings/FND-AI-056.md) | Mode 4 of the sector selector scores a sector 1 when selector 0x2D accepts the owner query's value for the planning player | recorded |
 | [FND-AI-057](../findings/FND-AI-057.md) | The family-1 handler's switch has a fourth branch for Attack, Hide and Move, and its crime gate falls through to the Goon test | recorded |
 | [FND-AI-058](../findings/FND-AI-058.md) | The family-2 handler tests the hostile pool's own count, reads the owner query, and runs its late Control gates after every branch | recorded |
-| [FND-AI-059](../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself | superseded |
 | [FND-AI-060](../findings/FND-AI-060.md) | The family-7 handler's Attack test reads the attitude toward the drawn gang's player | recorded |
 | [FND-AI-061](../findings/FND-AI-061.md) | The family-11 handler's miscellaneous Equip and Heal also need a previous action other than Attack, and most branches keep the current sector as focus | recorded |
 | [FND-AI-062](../findings/FND-AI-062.md) | Families 13 and 14 make up to five draws on a contested objective, can write nothing after a failed attack, and compare Support with an unset value | recorded |
@@ -296,7 +285,6 @@ Entries by kind.
 | [FND-AI-064](../findings/FND-AI-064.md) | The AI ranks its three hire offers by Chaos, Control, Influence, fighting strength, Tech Level and Research, or Stealth, then refuses an unaffordable winner | recorded |
 | [FND-AI-065](../findings/FND-AI-065.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and elsewhere the offer with the smallest Tech Level times positive statistics per cost | recorded |
 | [FND-AI-066](../findings/FND-AI-066.md) | The sector selector keeps its score pairs between calls, skips filtered sectors when refilling them, and counts ties past the end of the list | recorded |
-| [FND-AI-067](../findings/FND-AI-067.md) | The sector selector adds 1 to an encoded mode's sector for every sector a ring visits | superseded |
 | [FND-AI-068](../findings/FND-AI-068.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, which sends the gang toward sector 37, and a gang covers a sector for itself | recorded |
 | [FND-AI-069](../findings/FND-AI-069.md) | The sector selector scores on the owner query, ends mode 6 after its hostile-human bonus, and multiplies table element x * 9 + y in its common block | recorded |
 | [FND-AI-070](../findings/FND-AI-070.md) | The family-12 handler equips and heals when unopposed, otherwise moves toward the sector of the player's first gang, and attacks when opposed | recorded |
@@ -310,6 +298,7 @@ Entries by kind.
 | [FND-AI-078](../findings/FND-AI-078.md) | Family 7 researches at once when its focus equals the best research sector, and reads the previous target without testing the previous action | recorded |
 | [FND-AI-079](../findings/FND-AI-079.md) | Only the family handlers and their dispatcher store a planned action, and none stores Bribe, Give or Sell | recorded |
 | [FND-AI-080](../findings/FND-AI-080.md) | The family-0 owned-sector tests after previous Control and after previous Heal, Hide or Move read the owner query, which gives -2 under police presence | recorded |
+| [FND-AI-081](../findings/FND-AI-081.md) | The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -366,7 +355,6 @@ Entries by kind.
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls | recorded |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
 | [FND-COMLINK-004](../findings/FND-COMLINK-004.md) | Comlink View marks the shown message read and draws it from a self-contained 166-byte record | recorded |
-| [FND-COMLINK-005](../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer | superseded |
 | [FND-COMLINK-006](../findings/FND-COMLINK-006.md) | Comlink messages are stored only on the recipient's computer, cleared when the match loop starts, and read messages at the front of an inbox are dropped when its player finishes planning | recorded |
 | [FND-COMLINK-007](../findings/FND-COMLINK-007.md) | Comlink Send tests player_active and players_human, starts from a blank draft, wraps the cursor between rows, and View draws a 64-by-64 portrait; the positions of both panels' fields | recorded |
 | [FND-COMLINK-008](../findings/FND-COMLINK-008.md) | The Send panel builds a message in a 166-byte buffer, with 160 characters from space to Z filled with spaces and no terminator, a signed turn, and a last byte nothing writes | recorded |
@@ -407,7 +395,7 @@ Entries by kind.
 | [FND-EXE-001](../findings/FND-EXE-001.md) | The executable is a stripped 32-bit PE for the Windows GUI subsystem with image base 0x00400000 | recorded |
 | [FND-EXE-002](../findings/FND-EXE-002.md) | The executable has six sections, and .data has a large zero-initialized tail | recorded |
 | [FND-EXE-003](../findings/FND-EXE-003.md) | The executable was linked by Microsoft's linker 3.10 with a statically linked C runtime | recorded |
-| [FND-EXE-004](../findings/FND-EXE-004.md) | Game code occupies 0x00401000..0x0047862F as 464 functions, followed by import thunks and the C runtime | recorded |
+| [FND-EXE-004](../findings/FND-EXE-004.md) | Game code occupies 0x00401000..0x00478630 as 464 functions, followed by import thunks and the C runtime | recorded |
 | [FND-EXE-005](../findings/FND-EXE-005.md) | The resource section holds five menus, one accelerator table, 27 dialogs, 104 strings, four bitmaps, eight icon groups and a version record, and the code loads each kind through one place | recorded |
 | [FND-FINANCE-001](../findings/FND-FINANCE-001.md) | The Financial panel is drawn as the 320-pixel alternate panel with four-cell value fields and its own close control | recorded |
 | [FND-FINANCE-002](../findings/FND-FINANCE-002.md) | The Financial panel sums eight amounts from the queued orders, hires and owned sectors; the Sector variant opens PX05019 when a sector is passed and limits every sum to that sector | recorded |
@@ -486,7 +474,6 @@ Entries by kind.
 | [FND-PLATFORM-005](../findings/FND-PLATFORM-005.md) | Preferences live under the Stick Man Games registry key, and an App Paths key locates the installation | recorded |
 | [FND-PLATFORM-006](../findings/FND-PLATFORM-006.md) | Sound, CD music, timers and Smacker video come from WINMM and smackw32.dll | recorded |
 | [FND-PLATFORM-007](../findings/FND-PLATFORM-007.md) | The palette loader fills entries 10 to 245 of a 256-entry palette from a CLT file | recorded |
-| [FND-PLATFORM-008](../findings/FND-PLATFORM-008.md) | Image copies are opaque except for a pattern mask and an exact-white colour key used by two images | superseded |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | The program entry allows one instance, picks the image set, sets up the display, sound and menus, runs the title loop, and undoes it all on the way out | recorded |
 | [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | Data files are named by the App Paths install directory and length-prefixed names, and four file slots open them with no message on failure | recorded |
 | [FND-PLATFORM-011](../findings/FND-PLATFORM-011.md) | At 8 bits the palette comes from data/CLT00002, read as red, green, blue, and PX08 pictures are mapped to it through their own colour tables | recorded |

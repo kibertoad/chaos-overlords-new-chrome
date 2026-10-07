@@ -229,18 +229,6 @@ public sealed partial class ChaosGame
             DrawFlashLightening(batch, TickedPresentationKind.CityCellFlash);
             foreach (var label in CityMapLayout.GridLabels())
                 DrawGridLabel(batch, font, label);
-            if (_draggedHireDefinitionId is not null
-                && CityMapLayout.TrySectorAt(_dragPoint, out var dropSector))
-            {
-                var friendlyGangs = player.Gangs.Where(
-                    gang => gang.IsActive && gang.SectorId == dropSector).ToArray();
-                var source = friendlyGangs.Length == 0
-                    ? OriginalSpriteLayout.IncomingGangStatus
-                    : GangStatusSource(state, player.Id, dropSector, friendlyGangs, hasPendingHire: true);
-                DrawGangStatusMarker(batch, dropSector, source);
-                DrawBorder(batch, pixel, CityMapLayout.Destination(dropSector),
-                    state.Sectors[dropSector].Owner == player.Id ? Color.Lime : Color.OrangeRed, 2);
-            }
         }
 
         var selectedSector = state.Sectors[_cursor];
@@ -302,13 +290,8 @@ public sealed partial class ChaosGame
         if (_finalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
-        if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && GangPortraits is not null)
-        {
-            var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 18, 36, 36);
-            batch.Draw(GangPortraits, token,
-                OriginalSpriteLayout.GangPortrait(draggedDefinition), Color.White);
-            DrawBorder(batch, pixel, token, Color.White, 1);
-        }
+        if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition)
+            DrawHireDragImage(batch, draggedDefinition);
         // Online, the footer says where the turn stands instead of which keys save: a match nobody
         // can save is one where the only thing worth knowing is whether it is waiting on you.
         var footer = _session is null

@@ -59,7 +59,7 @@ environment: null
 
 ## Observation
 
-This extends the data map of FND-STATE-007 and FND-STATE-008 with the
+This extends the data map of FND-STATE-007 and FND-STATE-012 with the
 addresses `node tools/spec-coverage.mjs --inventory` listed on 2026-09-25 as
 the most used ones no entry cited. Most lie inside regions those findings
 already bound; the rows name the field. An indexed access such as
@@ -74,7 +74,7 @@ Fields of records already mapped:
 | `0x004905D4` | movie slot 0 (`0x004905C0`, 36 bytes) +0x14, the `SmackBuf` handle | `fn_0040DAE0` (`0x0040DB57`), `fn_0040DBC0` (`0x0040DCAD`) | `fn_0040DBC0`, `fn_0040DD7B`, `fn_0040DDFF` | FND-VIDEO-002 |
 | `0x004905D8`, `0x004905DC` | the same slot +0x18 and +0x1C, the destination rectangle's top and left, bottom and right | `fn_0040DAE0` (`0x0040DB90`), `fn_0040DBC0` (`0x0040DC40`) | `fn_0040DDFF` (`0x0040DF39`) | FND-VIDEO-002 |
 | `0x004905E0` | the same slot +0x20, the volume | `fn_0040DAE0` (`0x0040DBA8`), `fn_0040E049` (`0x0040E081`) | `fn_0040E02B` (`0x0040E037`) | FND-VIDEO-002 |
-| `0x00490720..0x00490860` | connection 0 (`0x004906D0`, `0x350` bytes) +0x50, ten 32-byte texts | cleared by `fn_004211E0` (`0x00421460`); the serial set-up `fn_00424FB4` copies the port chosen in combo box 1001 into the first (`0x004251A4`) | `fn_00424FB4`, which passes it to `CommConfigDialogA` (`0x004251C8`) | FND-STATE-008 |
+| `0x00490720..0x00490860` | connection 0 (`0x004906D0`, `0x350` bytes) +0x50, ten 32-byte texts | cleared by `fn_004211E0` (`0x00421460`); the serial set-up `fn_00424FB4` copies the port chosen in combo box 1001 into the first (`0x004251A4`) | `fn_00424FB4`, which passes it to `CommConfigDialogA` (`0x004251C8`) | FND-STATE-012 |
 | `0x00493FA4`, `0x00493FA8`, `0x00493FAC` | file slot 0 (`0x00493F90`, `0x15C` bytes) +0x14, +0x18 and +0x1C: the dialog's filter, custom filter and custom filter size, fields of the `OPENFILENAMEA` at +8; the last two are set to 0 | `fn_0042AFDD` (`0x0042B081` to `0x0042B0B3`), `fn_0042B27A` (`0x0042B393` to `0x0042B3C5`) | the file dialogs those two open | FND-PLATFORM-010 |
 | `0x00493FB4`, `0x00493FB8` | file slot 0 +0x24 and +0x28: the file buffer pointer and its size, 260 (`0x104`) | `fn_0042AFDD`, `fn_0042B27A`, `fn_0042B60F` | `fn_0042AC7A`, `fn_0042B27A`, `fn_0042B60F` | FND-PLATFORM-010 |
 | `0x00493FCC` to `0x00493FD4` | file slot 0 +0x3C, +0x40, +0x42 and +0x44: the dialog's flags, the two 16-bit name offsets and the default extension pointer | `fn_0042AFDD` (flags `0x1810`, extension `0x0048766C`, `0x0042B1A3` to `0x0042B20D`), `fn_0042B27A` (flags `0x816`, extension `0x004876AC`, `0x0042B4B5` to `0x0042B51F`); both set the offsets to 0 | the file dialogs those two open | FND-PLATFORM-010, FND-SAVE-002 |
@@ -85,7 +85,7 @@ Fields of records already mapped:
 | `0x0048F824` | player-pair record (`0x0048F810`, 24 bytes, observer * 0x90 + other * 0x18) +0x14, the out-fight flag | `fn_0040A1A7`: cleared at `0x0040A28B`, set at `0x0040A859` | `fn_0041FEF0` (`0x0042085D`) | FND-STATE-007 |
 | `0x004AB698` to `0x004AB6A2` | `site_definitions` entry 0 (`0x004AB668`, 62 bytes) +0x30 to +0x3A: the 16-bit modifiers to Research, Strength, Blade, Range, Fighting and Martial Arts (FMT-DATA-001) | none; read whole from the file | the sector bonus rebuild `fn_004782C5` (`0x004784DF` and on), which adds them to the gangs in the site's sector, and the computer players' selector function `fn_00402D70` (`0x0040323B` and on) | FND-STATE-007, FND-GANG-001 |
 
-Modem state inside the modem region `0x004854D0..0x0048626C` of FND-STATE-008:
+Modem state inside the modem region `0x004854D0..0x0048626C` of FND-STATE-012:
 
 | Address | Element | Writers | Readers | What it is |
 |---|---|---|---|---|
@@ -109,7 +109,7 @@ Socket and serial state:
 | `0x00493290`, `0x004932B0` | 32-byte texts | `fn_00424AE5` (`0x00424C7A`, `0x00424C9B`, `0x00424CC3`) | the dialog procedure `fn_00465EC6` (`0x004660EA`) | entries 1 and 2 of this host's address texts at `0x00493270` (FND-UI-022), listed in dialog 20002 |
 | `0x00493598..0x004935CC` | 52-byte serial configuration block | size 52 (`0x34`) by `fn_00424FB4` (`0x004251AA`); filled by `CommConfigDialogA` | `fn_00424FB4`; `SetCommConfig` in `fn_00424E55` (`0x00424F2C`) | the serial port configuration |
 
-Per-connection flags between the regions of FND-STATE-008:
+Per-connection flags between the regions of FND-STATE-012:
 
 | Address | Element | Writers | Readers | What it is |
 |---|---|---|---|---|
@@ -128,7 +128,7 @@ Of these addresses, only two groups reach the rules: the six skill modifiers
 of each site definition, which the sector bonus rebuild adds to the gangs in
 a site's sector, and the player-pair flag the computer players compute and
 read. The rest belongs to the movie, file, sound and drawing layers, whose
-records FND-STATE-008 already names, or to the modem, socket and serial code
+records FND-STATE-012 already names, or to the modem, socket and serial code
 that the spec's scope leaves out beyond the lobby screens and file
 transfers.
 
@@ -137,7 +137,7 @@ transfers.
 - The roles of the two 1,024-byte modem buffers and of `0x00485D08` are read
   from the functions they are passed to and not traced further, since the
   modem code is out of scope.
-- FND-STATE-008 places 32-byte name records at `0x00493220`. The reads and
+- FND-STATE-012 places 32-byte name records at `0x00493220`. The reads and
   writes listed here use `0x00493220` as a flag with the socket at +0x18 and the
   address at +0x1C; the 32-byte texts start at `0x00493270`.
 

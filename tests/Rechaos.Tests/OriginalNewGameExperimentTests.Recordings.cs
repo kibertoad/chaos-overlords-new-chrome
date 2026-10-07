@@ -97,7 +97,7 @@ public sealed partial class OriginalNewGameExperimentTests
     private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
 
     // The list the original's Equip list builder filled for one category of one of the human's
-    // gangs at the recording's endpoint, with the Tech Level it was passed (FND-EQUIP-008).
+    // gangs at the recording's endpoint, with the Tech Level it was passed (FND-EQUIP-012).
     private sealed record RecordedEquipList(int Slot, int Category, int TechLevel, IReadOnlyList<int> Items);
 
     // The opponent's roster slots the original's Attack picker roster builder listed for one of the
