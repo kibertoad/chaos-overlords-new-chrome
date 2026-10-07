@@ -58,6 +58,22 @@ public static partial class AiTurnPlanner
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
+        int gangSlot) =>
+        PlannedCommand(state, playerId, gang, gangSlot) is { } command
+        && CommandValidator.Validate(state, command).IsValid
+        && IsDetectableAttack(state, playerId, command)
+            ? command
+            : null;
+
+    /// <summary>
+    /// The command the gang's record describes (RULE-AI-002), before validation: null when the
+    /// record holds no action, an action whose command needs more than the record holds, or no
+    /// target the action needs.
+    /// </summary>
+    internal static GameCommand? PlannedCommand(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
         int gangSlot)
     {
         var action = state.AiPlanning.PlannedAction(playerId, gangSlot);
@@ -71,11 +87,7 @@ public static partial class AiTurnPlanner
         if (targetId is not { } id
             || !CommandTarget.TryCreate(rule.PrimaryTarget, id, out var target))
             return null;
-        var command = new GameCommand(playerId, gang.Id, action, target);
-        return CommandValidator.Validate(state, command).IsValid
-            && IsDetectableAttack(state, playerId, command)
-                ? command
-                : null;
+        return new GameCommand(playerId, gang.Id, action, target);
     }
 
     private static void PrepareFamilyElevenCommand(

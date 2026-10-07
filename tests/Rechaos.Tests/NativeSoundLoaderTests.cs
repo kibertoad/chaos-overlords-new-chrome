@@ -1,5 +1,3 @@
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework.Audio;
 using Rechaos.Game;
 using Xunit;
@@ -17,14 +15,14 @@ public sealed class NativeSoundLoaderTests
         var files = OriginalFormatFiles.Require("FMT-AUDIO-001");
         Assert.Equal(28, files.Count);
         using var assets = new TemporaryAudioAssets();
-        var game = AudioOnlyGame(assets.Root);
+        using var effects = new NativeSoundEffects();
         OriginalFormatFiles.CheckEach(files, file =>
         {
             var bytes = file.ReadAllBytes();
             var samples = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(0x28));
             var name = file.Name + ".wav";
             File.WriteAllBytes(Path.Combine(assets.AudioDirectory, name), bytes);
-            using var effect = Load(game, name);
+            using var effect = effects.Load(assets.Root, name);
             Assert.NotNull(effect);
             AssertDuration(samples, effect.Duration);
         });
@@ -37,8 +35,8 @@ public sealed class NativeSoundLoaderTests
         // not a failed sound system. FMT-AUDIO-001: the odd-length RIFF size
         // omits the pad byte; native decoding must still accept the samples.
         using var assets = new TemporaryAudioAssets();
-        var game = AudioOnlyGame(assets.Root);
-        Assert.Null(Load(game, "missing.wav"));
+        using var effects = new NativeSoundEffects();
+        Assert.Null(effects.Load(assets.Root, "missing.wav"));
         const int samples = 22_051;
         var path = Path.Combine(assets.AudioDirectory, "synthetic.wav");
         using (var stream = File.Create(path))
@@ -52,27 +50,13 @@ public sealed class NativeSoundLoaderTests
             writer.Write(Enumerable.Repeat((byte)128, samples).ToArray());
             writer.Write((byte)0);
         }
-        using var effect = Load(game, "synthetic.wav");
+        using var effect = effects.Load(assets.Root, "synthetic.wav");
         Assert.NotNull(effect);
         AssertDuration(samples, effect.Duration);
     }
 
     private static void AssertDuration(uint samples, TimeSpan actual) =>
         Assert.InRange(Math.Abs((actual - TimeSpan.FromSeconds(samples / 22_050d)).Ticks), 0, 1);
-
-    private static ChaosGame AudioOnlyGame(string root)
-    {
-        // Call the actual loader without creating a window or using user data.
-        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
-        (typeof(ChaosGame).GetField("_assetRoot", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new MissingFieldException("_assetRoot")).SetValue(game, root);
-        return game;
-    }
-
-    private static SoundEffect? Load(ChaosGame game, string name) =>
-        (SoundEffect?)(typeof(ChaosGame).GetMethod("LoadSound", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new MissingMethodException("LoadSound")).Invoke(game, [name]);
 
     private sealed class TemporaryAudioAssets : IDisposable
     {

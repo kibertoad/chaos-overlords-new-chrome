@@ -167,7 +167,7 @@ person, and the computer planner plays it.
 
 ```csharp
 var result = HeadlessMatchRunner.Run(definitions, new HeadlessMatchOptions(
-    ScenarioId.Dominance, GameDuration.FourYears, seed,
+    ScenarioId.Dominance, GameDuration.FourYears, seed, MatchDeviations.Original,
     SimulatedHumans: [new PlayerId(0)]));
 ```
 
@@ -319,6 +319,20 @@ Only sanitized mechanical values belong in a checked-in fixture; original
 pixels, media, saves of uncertain redistribution status, and narrative text do
 not.
 
+### The headless game
+
+A test that checks what the game does with a player's input, rather than what a
+rule helper returns, plays the game in `HeadlessGame`
+(`tests/Rechaos.Tests/HeadlessGame.cs`). It runs the game's own update on every
+tick, with no window, graphics device or audio device, from a temporary user
+data folder that holds the preferences the test starts from. The test presses
+keys and buttons, types text, moves the pointer and the clock, and reads the
+game through the read-only members of `ChaosGame.Observation.cs`. Every sound
+effect the game asks for is recorded with its volume, and an online test hands
+the game the transport of a fake server. The game loads its bundled data
+but no asset pack, so a test that needs pixels belongs with the screen
+comparisons instead.
+
 ## Current canonical identities
 
 - Full `DATA` + `HELP` + `MUSIC` source fingerprint:
@@ -377,7 +391,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -409,20 +423,35 @@ follows the last one. The human's planning phase opens the Combat Results
 panel (SCR-COMBAT-001) after a fight that involved its gangs, and the Last
 Turn Events panel (SCR-EVENT-001) when it has reports, and waits in each; the
 probe breaks on both handlers and presses Exit before the next Done, and presses
-Done again if a press left the turn unmoved for 20 seconds. Each call of
+Done again if a press left the turn unmoved for 20 seconds. A match that ends,
+or a human eliminated, before `--end-turns` runs out stops the presses there,
+and the fixture's inputs list only the turns the run played: one Done press, or
+one turn left to the planning time limit, per entry of `done_at_roll`, with
+that turn's writes before it, which the replay tests check. A press repeated
+after 20 seconds and the press at the final view of a match that ends
+(FND-OBJECTIVE-004) are not listed. Each call of
 either handler is kept with the roll count at the call and whether the panel
 stayed open until the probe pressed Exit, since the Combat Results handler
 returns at once when no fight qualifies; a panel still open at the dump counts
 as shown. The fixture holds the calls as `panels`. `--orders` writes
-an order into a gang record of the first human before the Done press of the
+an order into a gang record of a human before the Done press of the
 given turn, counted from 1: the `action`, `target` and `target_2` bytes of
 FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
-as the order screens write them (RULE-TURN-005). The fixture lists each order
-as an `order` input before its Done press, and the replay submits the same
-order as a command. `--hires` writes the sector byte of the first human's
-hire order for an offer slot into `hire_orders` before the Done press of the
-given turn, as the hire screen does (RULE-HIRE-003); the fixture lists it as a
-`hire` input, and the replay hires the gang the rebuild offers in that slot.
+as the order screens write them (RULE-TURN-005). The player after the turn
+names the human; an entry without one writes for the first `--humans` slot, or
+slot 0 when the option is left out. The probe presses Done only in that human's
+planning, and another human's begins behind a Ready card that refills its offers
+(RULE-SETUP-008), so the probe refuses an order or hire for any other player, and
+the replay requires each one to name the lowest human, whose planning it plays.
+A Search write may name any human of the run. The fixture lists each order as an `order` input before
+its Done press, with the player it was written for (`turn 3: player 0 gang
+slot 0 action 13 target 0 target_2 0 repeat 0`), and the replay submits the
+same order as that player's command. `--hires` writes the sector byte of a
+human's hire order for an offer slot into `hire_orders` before the Done press
+of the given turn, as the hire screen does (RULE-HIRE-003), with the player
+given as for `--orders`; the fixture lists it as a `hire` input naming the
+player, and the replay hires the gang the rebuild offers that player in that
+slot.
 `--families` writes the `family` byte of a computer player's planning record
 (FMT-STATE-007) and `--raiders` sets the player's byte of `raider_mode`
 (RULE-AI-027), and `--retire` clears the player's byte of `player_active`
@@ -434,12 +463,14 @@ lists each as a `planning` input, and the replay makes the same change to the
 rebuild's state, a retired player becoming eliminated with its gangs and
 sectors left in place; since that change bypasses the replay recorder, such a
 run's journal is not verified.
-`--search` sets the first human's `search_filters` entries for the given site
+`--search` sets a human's `search_filters` entries for the given site
 definitions before the Done press of the given turn, as the Search panel's
-rows do (RULE-SEARCH-001), and keeps the site markers of each city redraw
-(FND-SEARCH-006). The fixture lists each write as a `search` input and holds
-the markers of the last redraw before the dump as `city_markers`; the replay
-compares them with the rebuild's markers for the same filter.
+rows do (RULE-SEARCH-001), with the player given as for `--orders`, and keeps
+the site markers of each city redraw (FND-SEARCH-006). The fixture lists each
+write as a `search` input naming the player and holds the markers of the last
+redraw before the dump as `city_markers`, with the human it was drawn for; the
+replay compares them with the rebuild's markers for that human and the filter
+the probe set for that human.
 A run that ends the match keeps the endgame's first drawing: the renderer's
 arguments and the player of each row it lists, ranked, eliminated or the
 victory splash (FND-AWARDS-005), which the fixture holds as `endgame_rows`.
@@ -541,9 +572,10 @@ slot 0, and each call of the wait `fn_00464CD9` with its argument, the address
 of the call and the times it starts and returns (FND-TIMER-002). The fixture
 holds them as `ticks` and `waits` (RULE-TIMER-004, EXP-UI-024).
 `--slides` logs, from the dump on, each slide-in of the panel-open helper
-`fn_0041953E` with the startup benchmark count, the travel and the offset of
-each copy (FND-UI-011). The fixture holds them as `slides` (RULE-UI-003,
-EXP-UI-025).
+`fn_0041953E` with the return address of its call, the startup benchmark
+count, the travel and the offset of each copy (FND-UI-011). The fixture holds
+them as `slides`, the return address as `caller`, which FND-UI-066 maps to the
+panel's handler (RULE-UI-003, EXP-UI-025).
 `--saved turn:value,...` writes 0 or 1 to the saved byte `0x00498350`
 (FND-UI-058) before the Done press of that turn, or at the dump when the turn
 is one past the last, and records the value it replaced. `--closes
@@ -682,6 +714,17 @@ deviation cannot be switched off, so a listed test that reaches the behaviour it
 changes cites the deviation's ID and leaves that case out or compares with the
 original's result as the deviation changes it.
 
+A `MatchSetup` and a `HeadlessMatchOptions` have no default for the deviation
+settings a match carries (DEV-AI-003, DEV-AI-007, DEV-AI-008): every caller
+passes a `MatchDeviations`. A test that builds its own setup passes
+`MatchDeviations.Original`, with every setting off, and a test of a deviation
+itself switches that one setting on and cites its ID. The game, the online match
+bootstrap and the `ai-tournament` command start from `MatchDeviations.Defaults`,
+the Default column of `DEVIATIONS.md`, with the Advanced AI choice of the player,
+the host or `--policy` in place of its DEV-AI-003 value. A test that starts its
+match through the online bootstrap therefore runs with DEV-AI-007 and DEV-AI-008
+on and is not listed in `PARITY.md`.
+
 ## Screens against captures of the original
 
 A screen entry is compared with the original through a capture of the drawing
@@ -778,12 +821,17 @@ the frame counter is that value while the flag is set, the pump counter when it
 is clear, and null when the probe could not tell. A panel that slides in over
 another finds the flag set and leaves the counter as it was. While Item
 Information, Sell or Give is open the shot also keeps `item_frame`, the frame
-of its rotating items, read from the handler's local before and after the
-capture, which is taken again when the two reads differ (FND-UI-052,
-FND-UI-053); while the idle gang warning is open, the ticks since its open
-modulo 8, read from its countdown and shown flag (FND-UI-054); and for a shot
-of the Comlink Send panel, 3 while its caret is drawn inverse and 0 while
-plain, read from the byte at `0x00498110` (FND-COMLINK-010). A `warn` step
+of its rotating items, read from the handler's local (FND-UI-052,
+FND-UI-053); while the idle gang warning is open, `idle_phase`, the ticks since
+its open modulo 8, read from its countdown and shown flag (FND-UI-054); for a
+shot of the Comlink Send panel, `caret_phase`, 3 while its caret is drawn
+inverse and 0 while plain, read from the byte at `0x00498110`
+(FND-COMLINK-010); and while a Detailed Combat clip plays, `clip_tick`, the
+clip's tick (FND-COMBAT-016), and `clip_index`, the clip's index within its
+presentation, counted from 0 (FND-COMBAT-011); a shot taken between two clips
+keeps neither. Each is read before and after
+the capture, which is taken again when the two reads differ, and a value that
+moved during every attempt is left out. A `warn` step
 switches Warn if Idle Gangs back on for the steps after it. `extract` gives that
 order step a `capture` object as above and a `screens` string naming the
 screens it is compared at. The steps before it bring the screen up: `open:s`
@@ -834,7 +882,8 @@ save, and starts the game with
 ```text
 Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n>
     [--pump-counter <0-7>] [--selected-sector <0-63>] [--lamps <0|1>,<0|1>]
-    [--item-frame <0-14>] [--clip-tick <0-21>]
+    [--item-frame <0-14>] [--idle-phase <0-7>] [--caret-phase <0-5>]
+    [--clip-tick <0-21> [--clip-index <n>]]
     [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]
 ```
 
@@ -849,10 +898,13 @@ second and fourth of the capture's `lamps`, the bytes that say the Events and
 the Comlink lamp were drawn lit, which pick the blink phase of those lights in
 place of the clock's (FND-EVENT-006). `--item-frame` passes `item_frame`, the
 frame the rotating items of Item Information, Sell and Give are drawn at
-(FND-UI-052, FND-UI-053), the idle gang warning's ticks since its open
-modulo 8 (FND-UI-054), or the Comlink caret's phase (FND-COMLINK-010).
+(FND-UI-052, FND-UI-053). `--idle-phase` passes `idle_phase`, the idle gang
+warning's ticks since its open modulo 8 (FND-UI-054), and `--caret-phase`
+passes `caret_phase`, the Comlink caret's phase (FND-COMLINK-010).
 `--clip-tick` passes `clip_tick`, the tick of the Detailed Combat clip a shot
-shows (FND-COMBAT-016), which the clip the clicks started is drawn at. The blinking
+shows (FND-COMBAT-016), and `--clip-index` passes `clip_index`: the rebuild
+passes over that many clips of the presentation the clicks started and draws
+the next at the tick. A shot without `clip_index` is drawn at the first clip. The blinking
 and cycling parts of the screen stay at time zero however many clicks were
 made: the marker is drawn at `--marker-frame`, or at its first frame without it.
 `--reference-clicks` lists the presses that take the rebuild from the planning
@@ -901,7 +953,8 @@ The test then compares each element:
 - `ScreenCaptureMasks` lists, for each screen, the rectangles a deviation draws
   over, each under the ID of the deviation. All the masks of the screens a
   capture names apply to the whole frame. `EveryMaskCitesADeviationFromItsScreen`
-  checks that each deviation's Departs from line names the screen.
+  checks that each deviation's Departs from item, wrapped lines included,
+  names the screen.
 
 The test prints every element's verdict and fails on an element that differs.
 It skips a capture that records no screen elements, and skips the rendering
@@ -1005,7 +1058,7 @@ detailed sector screen's card and group strips.
 | SCR-COMLINK-001 | EXP-UI-021, one message | Several messages; a step between them; a pressed face |
 | SCR-AWARDS-001 | EXP-UI-017, both tabs | An eliminated player's row; the endgame after an elimination card (#419) |
 | SCR-OBJECTIVE-002 | EXP-UI-018 | The card behind a Ready card (#421); the press of its Done |
-| SCR-COMBAT-002 | EXP-UI-019, a bare-handed attack without Martial Arts; EXP-UI-020, a police clip | An armed attack; a bare-handed Martial Arts attack; an attack on the viewer's gang; an evaded attack; the pressed Exit face |
+| SCR-COMBAT-002 | EXP-UI-019, a bare-handed attack without Martial Arts; EXP-UI-020, a police clip; EXP-UI-029, a second police clip; EXP-UI-046, an armed and an unarmed attack on the viewer's gang; EXP-UI-047, a bare-handed Martial Arts attack; EXP-UI-048, an evaded attack by the viewer's gang; EXP-UI-049 and EXP-UI-054, evaded attacks on the viewer's gang | The pressed Exit face; a no-damage hit strip; a clip whose hold flag is cleared; a paint before tick 3, which EXP-UI-049 shows once and the rebuild does not draw (FND-COMBAT-032) |
 | SCR-AWARDS-002 | EXP-UI-023, a human survivor | A computer survivor; a tab pressed |
 
 ## Fixture classes

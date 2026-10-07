@@ -142,7 +142,8 @@ public sealed class PoliceCombatResolutionTests
     {
         var data = BundledOriginalData.Load();
         var playerSetup = new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human);
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [playerSetup]);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [playerSetup],
+            MatchDeviations.Original);
         var player = new MatchPlayerState(playerSetup, 500, gangs);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
