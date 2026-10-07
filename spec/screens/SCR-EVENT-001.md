@@ -127,4 +127,4 @@ None known.
   control with no report; sounds SND00203 and SND00204; the type 5 animation
   and its counter (FND-EVENT-002, FND-EVENT-003, FND-EVENT-005, FND-UI-012,
   FND-UI-016, FND-UI-047, FND-AUDIO-011). These rest on the static findings
-  named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  named, so the entry stays `supported`.

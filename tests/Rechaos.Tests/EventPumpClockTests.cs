@@ -156,7 +156,6 @@ public sealed class EventPumpClockTests
     {
         // FND-AUDIO-017: the fade runs inside the pump's music step and leaves timer slot 0 alone.
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
         Field("_combatExit").SetValue(game, new DetailedCombatExit());
         Assert.False(OutsideEventPump(game));
         Field("_soundtrackFade").SetValue(game, new SoundtrackFade(1f, TimeSpan.Zero));
@@ -170,7 +169,6 @@ public sealed class EventPumpClockTests
     public void TheHoldsThatKeepThePumpFromRunning()
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
         var combatExit = new DetailedCombatExit();
         Field("_combatExit").SetValue(game, combatExit);
         Assert.False(Holds(game));

@@ -97,5 +97,4 @@ None known.
   reopening; the arrows, their refusals, an opponent portrait press and the
   force selector; Left, Right and Enter; the accepted and rejected sounds
   (FND-COMBAT-002, FND-COMBAT-007, FND-COMBAT-012, FND-AUDIO-011). These rest
-  on the static findings named, so the entry stays `supported` (DECISIONS.md,
-  2026-10-06).
+  on the static findings named, so the entry stays `supported`.

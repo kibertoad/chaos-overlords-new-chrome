@@ -147,4 +147,4 @@ None known.
 - Where `turn_start` calls this recomputation relative to `upkeep_phase` is given
   by the TURN rules.
 - Until a run reaches the cases of the first item, the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

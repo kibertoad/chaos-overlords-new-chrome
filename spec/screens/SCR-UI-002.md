@@ -65,4 +65,4 @@ None known.
   18 closing the screen; its redraw on a paint message; opening from another
   screen than the title; the restored screen after it closes; whether the
   music keeps playing (FND-UI-007, FND-UI-008). These rest on the static
-  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  findings named, so the entry stays `supported`.

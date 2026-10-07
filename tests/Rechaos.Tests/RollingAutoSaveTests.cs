@@ -329,6 +329,6 @@ public sealed class RollingAutoSaveTests
             [
                 new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human),
                 new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Computer)
-            ]));
+            ], MatchDeviations.Original));
     }
 }

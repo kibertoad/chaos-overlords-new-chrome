@@ -78,5 +78,4 @@ None known.
   it.
 - Every run starts one match in one process, so no recorded run reaches a
   second match or a load continuing the sequence. That rests on FND-RNG-005.
-  Until a run reaches them, the entry stays `supported` (DECISIONS.md,
-  2026-10-06).
+  Until a run reaches them, the entry stays `supported`.

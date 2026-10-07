@@ -92,4 +92,4 @@ None known.
 - No recorded run replaces or cancels a Hide during planning, which ends the
   hiding at once; the probe writes orders once and compares the end state.
   That rests on FND-HIDE-001. Until a run reaches them, the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

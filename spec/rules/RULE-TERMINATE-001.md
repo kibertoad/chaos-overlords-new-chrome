@@ -72,5 +72,4 @@ None known.
 
 - No recorded run has a Move that needs the place a Terminate frees, or a
   Terminate by a gang killed in combat, which is skipped. These rest on
-  FND-MOVE-003. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  FND-MOVE-003. Until a run reaches them, the entry stays `supported`.

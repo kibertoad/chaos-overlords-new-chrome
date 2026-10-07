@@ -90,5 +90,4 @@ None known.
 - No recorded run reaches, in Eliminate, the loser's other gangs retired, its
   site progress cleared, or the retired records keeping their items; in
   EXP-TURN-022 the loser has no other gang and no influenced site. These rest
-  on FND-TURN-003. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  on FND-TURN-003. Until a run reaches them, the entry stays `supported`.

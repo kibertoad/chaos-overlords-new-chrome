@@ -96,5 +96,4 @@ None known.
 
 - The duration draw is the call at `0x004737A9` [FND-POLICE-004].
 - No recorded run raises a permanent presence of 100 to 103 to 105. That rests
-  on FND-SETUP-003. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  on FND-SETUP-003. Until a run reaches them, the entry stays `supported`.

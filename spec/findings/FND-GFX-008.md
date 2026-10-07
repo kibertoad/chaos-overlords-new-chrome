@@ -14,7 +14,7 @@ locations:
   - build: BLD-GOG-EN-1.1
     file: DATA/PX08/PX00202
     offset: 0x436..0xCA9A
-tool: a test of the rebuild calling gdi32, and a Python 3.14.7 ctypes script calling gdi32
+tool: a test of the rebuild calling gdi32 and a Python 3.14.7 ctypes script calling gdi32
 environment: Windows 11 Pro 10.0.26200, gdi32 of that system, called in-process with no window and no device context
 ---
 
@@ -67,10 +67,10 @@ not depend on it. Windows versions other than this one were not tried.
 
 ## How to reproduce
 
-On Windows with the original files available, upload each shipped `PX08` file
-with `SetDIBits` as the Observation describes and compare every pixel inside
-the documented width and height with the plain RLE8 reading of RULE-GFX-001.
-For the hand-written cases, create a 4-by-4 8-bit
+On Windows, upload each shipped `PX08` file with `SetDIBits` as the
+Observation describes and compare every pixel inside the file's documented
+width and height with the plain RLE8 reading of RULE-GFX-001. For the
+hand-written cases, create a 4-by-4 8-bit
 DIB section with `CreateDIBSection`, fill its pixels with `0xAA`, call
 `SetDIBits` with a `BITMAPINFOHEADER` of width 4, height 4, 1 plane, 8 bits,
 compression 1 (`BI_RLE8`) and the data's length as image size, a 256-entry

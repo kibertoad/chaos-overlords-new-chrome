@@ -90,4 +90,4 @@ None known.
   carried-icon double-click; the Item chosen state; the slide and rejected
   sounds and the slide's timing (FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-009,
   FND-EQUIP-010, FND-OPTIONS-001). These rest on the static findings named, so
-  the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  the entry stays `supported`.

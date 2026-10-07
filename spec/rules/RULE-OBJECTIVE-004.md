@@ -138,5 +138,4 @@ None known.
 - No recorded run reaches the Dominance weights of a 208-turn match, Power's
   timed end, Big 40 at 40 sectors, Siege holding all six headquarters,
   Armageddon at 64, or two winners in one turn. These rest on
-  FND-OBJECTIVE-003. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  FND-OBJECTIVE-003. Until a run reaches them, the entry stays `supported`.

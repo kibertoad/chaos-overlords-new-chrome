@@ -99,4 +99,4 @@ None known.
   computer players.
 - No recorded run is a network game, which skips the modifier scan. That rests
   on FND-SETUP-015 and FND-NET-004. Until a run reaches them, the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

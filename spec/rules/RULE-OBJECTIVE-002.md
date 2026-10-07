@@ -143,4 +143,4 @@ None known.
 - No recorded run has an active player below -32000 counting inactive slots
   above it (BUG-OBJECTIVE-001), or a Dominance score with a negative
   numerator. These rest on FND-AI-005. Until a run reaches them, the entry
-  stays `supported` (DECISIONS.md, 2026-10-06).
+  stays `supported`.

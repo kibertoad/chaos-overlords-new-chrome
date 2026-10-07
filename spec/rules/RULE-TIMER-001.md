@@ -65,4 +65,4 @@ None known.
 
 - No recorded run records the stored -1 of choice 0, a choice outside 0 to 3,
   or a loaded game. These rest on FND-TIMER-001 and FND-TIMER-003. Until a run
-  reaches them, the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  reaches them, the entry stays `supported`.

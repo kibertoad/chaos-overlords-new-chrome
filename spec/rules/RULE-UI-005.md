@@ -67,4 +67,4 @@ None known.
 - The captures draw only full and empty meters. No recorded capture shows a
   truncated part such as 2 of 3, a partly filled meter, or a completed site
   with nonzero Resistance. These rest on FND-UI-036. Until a run reaches them,
-  the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  the entry stays `supported`.

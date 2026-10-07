@@ -106,5 +106,4 @@ None known.
 - Modes 0 and 1 are not reached by any recorded call (FND-AI-017).
 - Besides modes 0 and 1, no recorded call passes a mode from 2 to 63, which
   returns 99; only the encoded mode is called. These rest on FND-AI-016 and
-  FND-AI-017. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  FND-AI-017. Until a run reaches them, the entry stays `supported`.

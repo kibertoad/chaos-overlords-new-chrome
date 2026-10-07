@@ -75,4 +75,4 @@ None known.
 
 - The runs reach turns 0 and 1 only. No recorded run reaches the rollover from
   week 52 of 2050 to week 1 of 2051. That rests on FND-COMLINK-004. Until a
-  run reaches them, the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  run reaches them, the entry stays `supported`.

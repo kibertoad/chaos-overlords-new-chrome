@@ -68,5 +68,4 @@ None known.
 - No recorded run of the original reaches the pressed Ready face while held
   and a release outside; the card entered before an elimination card; menu
   commands 3, 4 and 9; a card after turn 1 as pixels (FND-SETUP-016). These
-  rest on the static findings named, so the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  rest on the static findings named, so the entry stays `supported`.

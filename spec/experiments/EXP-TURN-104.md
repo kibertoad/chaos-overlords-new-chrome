@@ -52,14 +52,14 @@ in the fixture.
 
 ## Results
 
-A test of the rebuild replays the run, with the same cash written before each
-Done press. The rebuild makes the same calls with the same bounds and results
-and reaches the same state. In its replay the slot 0 gang's Influence of turn 3
-completes the site, and the slot 1 gang then rolls 5 dice for Research: its
-Force plus the Research rebuilt at the start of the turn, before the site was
-complete. Counting the site would have added its Research value in dice and as
-many calls of `roll`. At the next `turn_start` the gang's Research is rebuilt
-with the site's value added.
+A test of the rebuild replays the run, with
+the same cash written before each Done press. The rebuild makes the same calls
+with the same bounds and results and reaches the same state. In its replay
+the slot 0 gang's Influence of turn 3 completes the site, and the slot 1 gang
+then rolls 5 dice for Research: its Force plus the Research rebuilt at the
+start of the turn, before the site was complete. Counting the site would have
+added its Research value in dice and as many calls of `roll`. At the next
+`turn_start` the gang's Research is rebuilt with the site's value added.
 
 ## Conclusion
 

@@ -107,5 +107,4 @@ None known.
 - No recorded run checks a hidden gang (the 20-point penalty), or reaches a
   chance of 0 or less, an empty pool, or a found gang taking 0 damage; the
   last three need statistics the shipped tables do not give. These rest on
-  FND-COMBAT-008. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  FND-COMBAT-008. Until a run reaches them, the entry stays `supported`.

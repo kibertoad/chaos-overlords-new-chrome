@@ -10,6 +10,7 @@ import {
   variant,
 } from 'valibot'
 import {
+  chatMessageTextSchema,
   eventSeqSchema,
   formatVersionSchema,
   isoTimestampSchema,
@@ -75,6 +76,16 @@ export const lobbyPlayerUpdatedEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('lobby.playerUpdated'),
   payload: strictObject({ player: playerViewSchema }),
+})
+
+/**
+ * A message a seated player posted to the lobby. Chat is a lobby feature: the server refuses it
+ * once the match has started, so these events all precede `match.started` in a log.
+ */
+export const lobbyChatMessageEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('lobby.chatMessage'),
+  payload: strictObject({ playerId: resourceIdSchema, text: chatMessageTextSchema }),
 })
 
 export const lobbyHostChangedEventSchema = strictObject({
@@ -206,6 +217,7 @@ export const matchEventSchema = variant('type', [
   lobbyPlayerJoinedEventSchema,
   lobbyPlayerLeftEventSchema,
   lobbyPlayerUpdatedEventSchema,
+  lobbyChatMessageEventSchema,
   lobbyHostChangedEventSchema,
   matchStartedEventSchema,
   matchStatusChangedEventSchema,

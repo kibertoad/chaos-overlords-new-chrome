@@ -39,9 +39,10 @@ set, and every unowned sector holds a `crackdown_turns` of 100.
 
 ## Results
 
-A test of the rebuild replays the run. The rebuild, given the same names, makes
-the same calls with the same bounds and results and reaches the same state,
-every sector's `crackdown_turns` included.
+A test of the rebuild replays the run. The
+rebuild, given the same names, makes the same calls with the same bounds and
+results and reaches the same state, every sector's `crackdown_turns`
+included.
 
 ## Conclusion
 

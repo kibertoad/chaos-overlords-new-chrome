@@ -82,4 +82,4 @@ None known.
   from the other panels and cards; presses outside the panel and off the face;
   Enter and Execute; the sounds and the slide's timing (FND-UI-004,
   FND-UI-013, FND-UI-047, FND-UI-052, FND-AUDIO-011). These rest on the static
-  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  findings named, so the entry stays `supported`.

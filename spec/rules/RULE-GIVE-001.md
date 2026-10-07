@@ -93,4 +93,4 @@ None known.
 - No recorded run gives a miscellaneous item (mask bit 4), gives to a
   recipient killed in the same turn's combat, or selects an empty slot. These
   rest on FND-GIVE-001 and FND-EQUIP-007. Until a run reaches them, the entry
-  stays `supported` (DECISIONS.md, 2026-10-06).
+  stays `supported`.

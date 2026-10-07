@@ -116,5 +116,4 @@ None known.
 - No recorded run reaches a helper with negative Detect, which the shipped
   gang and item tables cannot give, or an observer slot no player ever held.
   With the inactive gangs' bytes above, these rest on FND-DETECT-001 and
-  FND-DETECT-002. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  FND-DETECT-002. Until a run reaches them, the entry stays `supported`.

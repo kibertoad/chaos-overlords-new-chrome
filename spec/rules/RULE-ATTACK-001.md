@@ -179,5 +179,4 @@ None known.
 - No recorded run reaches an Attack on a target that is inactive or in another
   sector, which the procedure does not check, or a bare-handed attacker with
   negative Martial Arts. These rest on FND-COMBAT-006, FND-COMBAT-008 and
-  FND-COMBAT-003. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  FND-COMBAT-003. Until a run reaches them, the entry stays `supported`.

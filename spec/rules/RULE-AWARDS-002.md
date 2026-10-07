@@ -97,5 +97,4 @@ None known.
 - No recorded run shows a computer survivor's splash to a human, the Stats tab
   with one survivor, the Awards tab bringing the splash back, or Done from
   either view as a recorded input. These rest on FND-AWARDS-004 and
-  FND-AWARDS-005. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  FND-AWARDS-005. Until a run reaches them, the entry stays `supported`.

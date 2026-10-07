@@ -158,12 +158,13 @@ internal sealed class StateExtractor
             run["waits"] = new JsonArray(waits.Select(wait => (JsonNode)new JsonArray(
                 wait!["Ticks"]!.GetValue<int>(), (int)wait["Call"]!.GetValue<uint>(),
                 wait["Started"]!.GetValue<long>(), wait["Returned"]!.GetValue<long>())).ToArray());
-        // RULE-UI-003: from the dump on, each slide-in as the benchmark count, the travel and the
-        // offset of each copy (FND-UI-011).
+        // RULE-UI-003: from the dump on, each slide-in as the return address of the helper's call
+        // (FND-UI-066), the benchmark count, the travel and the offset of each copy (FND-UI-011).
         if (trace["Slides"] is JsonArray slides)
             run["slides"] = new JsonArray(slides.Select(slide => (JsonNode)new JsonObject
             {
-                ["benchmark"] = slide!["Benchmark"]!.GetValue<int>(),
+                ["caller"] = (int)slide!["Caller"]!.GetValue<uint>(),
+                ["benchmark"] = slide["Benchmark"]!.GetValue<int>(),
                 ["travel"] = slide["Travel"]!.GetValue<int>(),
                 ["offsets"] = new JsonArray(slide["Offsets"]!.AsArray().Select(value => (JsonNode)value!.GetValue<int>()).ToArray()),
             }).ToArray());
@@ -203,6 +204,22 @@ internal sealed class StateExtractor
             run["gang_markers"] = new JsonArray(gangMarkers.Select(draw => (JsonNode)new JsonArray(
                 draw!["Step"]!.GetValue<int>(), draw["Kind"]!.GetValue<int>(), draw["Player"]!.GetValue<int>(),
                 draw["Sector"]!.GetValue<int>(), draw["Frame"]!.GetValue<int>())).ToArray());
+        // RULE-UI-014, FND-UI-020: each key event the window procedure stored for a posted key, as
+        // the virtual key, whether the Shift test reported Shift held, and the event's type,
+        // character and key.
+        if (trace["KeyEvents"] is JsonArray keyEvents)
+            run["key_events"] = new JsonArray(keyEvents.Select(entry => (JsonNode)new JsonArray(
+                entry!["VirtualKey"]!.GetValue<int>(), entry["Shift"]!.GetValue<bool>() ? 1 : 0,
+                entry["Type"]!.GetValue<int>(), entry["Character"]!.GetValue<int>(), entry["Key"]!.GetValue<int>())).ToArray());
+        // RULE-SETUP-009, FND-UI-022: each name typed into the setup name editor, with the name
+        // record of its slot after OK.
+        if (trace["NameEntries"] is JsonArray nameEntries)
+            run["name_entries"] = new JsonArray(nameEntries.Select(entry => (JsonNode)new JsonObject
+            {
+                ["keys"] = entry!["Keys"]!.GetValue<string>(),
+                ["slot"] = entry["Slot"]!.GetValue<int>(),
+                ["name"] = Integers(entry["Name"]),
+            }).ToArray());
         // RULE-TURN-005, SCR-UI-004: each order step after the dump, the popup it opened with its
         // items' commands and greyed states, the view, the card slots and the active player's orders.
         if (trace["OrderSteps"] is JsonArray orderSteps)
@@ -350,18 +367,24 @@ internal sealed class StateExtractor
         return (trace.Settings ?? NewGameSettings.Defaults).Describe().ToArray();
     }
 
-    /// <summary>The orders and Done presses a run was recorded with, one input each.</summary>
+    /// <summary>
+    /// The orders and Done presses the run made, one input each, each order, hire and Search write
+    /// with the player it acted for. A run that stopped before <c>--end-turns</c> ran out lists only
+    /// the turns it played, one per entry of <c>done_at_roll</c>.
+    /// </summary>
     public static (string Name, string Value)[] Turns(string runDirectory)
     {
         var trace = JsonSerializer.Deserialize<ProbeTrace>(File.ReadAllText(Path.Combine(runDirectory, "trace.json")))!;
-        return (trace.Settings ?? NewGameSettings.Defaults).DescribeTurns().ToArray();
+        return (trace.Settings ?? NewGameSettings.Defaults).WithActingPlayers()
+            .DescribeTurns(trace.RollsAtDone?.Count ?? 0).ToArray();
     }
 
     private JsonArray EndState()
     {
         var rows = new JsonArray();
+        // FND-STATE-007 maps each of these globals.
         Term(rows, "scenario", 0x004ABBE8, 1, 4);
-        Term(rows, "mentality", 0x00487850, 1, 1);
+        Term(rows, "mentality", 0x00487850, 1, 1); // the prefsDiff option, FND-OPTIONS-001
         Term(rows, "turn_limit", 0x004A5EF8, 1, 4);
         Term(rows, "elapsed_turns", 0x0049CA68, 1, 4);
         Term(rows, "controller", 0x004AB638, 6, 4);
@@ -392,7 +415,8 @@ internal sealed class StateExtractor
         Term(rows, "scenario_score", 0x004A2790, 6, 4);
         Term(rows, "scenario_standing", 0x004ABC08, 6, 1, signed: false);
         // A run that ends the match stops at the endgame: its awards are given (RULE-AWARDS-001),
-        // and only the first three entries of each player's list are written.
+        // and only the first three entries of each player's list are written. match_over is in
+        // FND-STATE-007.
         if (ReadByte(0x004ABBD4, signed: false) != 0)
         {
             Term(rows, "match_over", 0x004ABBD4, 1, 1, signed: false);
@@ -414,6 +438,7 @@ internal sealed class StateExtractor
             "site_heal", "site_influence", "site_research", "site_strength", "site_blade", "site_ranged",
             "site_fighting", "site_martial_arts",
         ];
+        // FND-STATE-007: the 64 sector records.
         for (var sector = 0; sector < 64; sector++)
         {
             var at = 0x004A08E8u + (uint)sector * 0x24;
@@ -431,6 +456,7 @@ internal sealed class StateExtractor
             "chaos", "control", "heal", "influence", "research", "strength", "blade", "ranged", "fighting",
             "martial_arts",
         ];
+        // FND-STATE-007: the 486 gang records.
         for (var record = 0; record < 486; record++)
         {
             var at = 0x00498DA8u + (uint)record * 0x20;
@@ -523,7 +549,7 @@ internal sealed class StateExtractor
                 rows.Add(Field("FMT-STATE-007", record, "armor_cooldown", armor));
         }
 
-        // The computer players' other planning state (FND-AI-019, FND-AI-044, FND-AI-045): ai_started at
+        // The computer players' other planning state (FND-AI-019, FND-AI-081, FND-AI-045): ai_started at
         // 0x00482108, raider_mode at 0x00482158, placement_anchor at 0x0048E2F8, the two 16-bit values of
         // aux_records (14-byte records at 0x0048C0B0, focus at +0x0A and coverage_sector at +0x0C)
         // and sector_weight, the 16-bit value at +2 of the 14-byte records at

@@ -156,7 +156,7 @@ public sealed class AiFamilyNineTurnPlannerTests
                 income: 0))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups, mentality),
+            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups, MatchDeviations.Original, mentality),
             players, sectors);
     }
 }

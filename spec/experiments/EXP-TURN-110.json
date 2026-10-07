@@ -12,7 +12,7 @@
     {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
     {"tick":null,"name":"planning","value":"turn 1: player 0 gang slot 0 force 9"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 1"},
-    {"tick":null,"name":"order","value":"turn 2: gang slot 0 action 7 target 0 target_2 0 repeat 0"},
+    {"tick":null,"name":"order","value":"turn 2: player 0 gang slot 0 action 7 target 0 target_2 0 repeat 0"},
     {"tick":null,"name":"planning","value":"turn 2: player 0 gang slot 0 force 10"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 2"}
   ],

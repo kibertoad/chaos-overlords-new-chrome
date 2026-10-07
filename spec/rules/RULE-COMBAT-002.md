@@ -161,4 +161,4 @@ None known.
   Attack on an inactive target, and the replays compare only the records of
   gangs that fought, so the stale bytes of the others are not compared. These
   rest on FND-COMBAT-008 and FND-STATE-005. Until a run reaches them, the
-  entry stays `supported` (DECISIONS.md, 2026-10-06).
+  entry stays `supported`.

@@ -75,5 +75,4 @@ None known.
   where that player's inbox is kept on their own computer, was not read.
 - No recorded run keeps a read message behind an unread one; viewing opens at
   the oldest unread message, so no local input can leave one there. That rests
-  on FND-COMLINK-006. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  on FND-COMLINK-006. Until a run reaches them, the entry stays `supported`.

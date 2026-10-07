@@ -10,19 +10,19 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004759AE..0x00475A15
+    address: 0x004759AE..0x00475A1B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00475A1B..0x00475BDA
+    address: 0x00475A1B..0x00475BDB
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00475BDB..0x00475C2D
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00475C33..0x00475D29
+    address: 0x00475C33..0x00475D31
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004A2800..0x004A5ED7
+    address: 0x004A2800..0x004A5ED8
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -32,14 +32,14 @@ environment: null
 In the hire block of `fn_00472775` (FND-HIRE-001, FND-HIRE-002), after the
 sector count has passed:
 
-- Cash test, `0x004759AE..0x00475A15`. It loads the signed 16-bit field at
+- Cash test, `0x004759AE..0x00475A1B`. It loads the signed 16-bit field at
   `0x004A287A + definition * 0x9C`, where the definition is the offer byte at
   `0x004ABBC0 + player * 3 + slot`. When that value is 0 (`TEST` at
   `0x004759D7`, `JZ` at `0x004759D9`) it jumps straight to the record build at
   `0x00475A1B`. Otherwise it loads the same field again, compares it with the
   player's cash as `CMP cost, [0x004A25E8 + player * 4]` at `0x00475A0E`, and
   takes the failure path on a signed `JG` at `0x00475A15`.
-- Record build, into the resolver's local 32-byte gang copy, `0x00475A1B..0x00475BDA`,
+- Record build, into the resolver's local 32-byte gang copy, `0x00475A1B..0x00475BDB`,
   by record offset:
 
 | Offset | Value | Instruction |
@@ -58,7 +58,7 @@ sector count has passed:
   stops when the record's sector byte is 100 (`0x00475C05`) or the counter
   reaches 80 (`0x00475C0E`). A counter of 80 or more afterwards
   (`0x00475C26`) takes the roster-full path.
-- Success, `0x00475C33..0x00475D29`: the copy is written into the free record
+- Success, `0x00475C33..0x00475D31`: the copy is written into the free record
   (eight dwords, `0x00475C58`), the gang's entry of `0x00498990` is set to 1
   (`0x00475C71`), cash spent gains the cost (`0x00475C88..0x00475CA8`), cash
   loses it (`0x00475CBA..0x00475CE4`), the offer byte is negated

@@ -91,4 +91,4 @@ None known.
   the sounds, the slide's timing and the animation counter while a face is
   held (FND-SELL-001, FND-SELL-002, FND-EQUIP-004, FND-OPTIONS-001,
   FND-UI-047). These rest on the static findings named, so the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

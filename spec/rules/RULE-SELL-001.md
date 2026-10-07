@@ -92,4 +92,4 @@ None known.
 - No recorded run has Sell cash spent by a later slot's Equip in the same
   pass, or a Sell with an empty mask or slot that pays the stale value. These
   rest on FND-EQUIP-002 and FND-EQUIP-007. Until a run reaches them, the entry
-  stays `supported` (DECISIONS.md, 2026-10-06).
+  stays `supported`.

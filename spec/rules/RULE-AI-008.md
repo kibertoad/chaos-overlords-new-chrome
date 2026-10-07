@@ -120,5 +120,4 @@ None known.
   element of `hire_offers`) is not recorded; offers are refilled at each
   planning entry, before this rule runs.
 - No recorded run requests mode 5 (Stealth) or runs mode 1 in Greed. These
-  rest on FND-AI-064. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  rest on FND-AI-064. Until a run reaches them, the entry stays `supported`.

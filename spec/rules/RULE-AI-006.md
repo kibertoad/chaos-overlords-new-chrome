@@ -4,7 +4,7 @@ title: The shared AI sector selector scores the nearest sectors by mode and rout
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-005, FND-AI-026, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052, FND-AI-066, FND-AI-069, EXP-TURN-004, EXP-TURN-006, EXP-TURN-007, EXP-TURN-010, EXP-TURN-015, EXP-TURN-059, EXP-TURN-060, FND-AI-001, FND-AI-009, FND-AI-015, FND-AI-018, FND-AI-019, FND-AI-021, FND-AI-042, FND-AI-044, FND-CONTROL-001, FND-HIRE-002, FND-PLATFORM-003, FND-STATE-006, FND-STATE-007, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035, FND-UI-036]
+evidence: [FND-AI-005, FND-AI-026, FND-AI-028, FND-AI-040, FND-AI-006, FND-AI-013, FND-EXE-004, FND-AI-056, FND-STATE-004, FND-AI-052, FND-AI-066, FND-AI-069, EXP-TURN-004, EXP-TURN-006, EXP-TURN-007, EXP-TURN-010, EXP-TURN-015, EXP-TURN-059, EXP-TURN-060, FND-AI-001, FND-AI-009, FND-AI-015, FND-AI-018, FND-AI-019, FND-AI-021, FND-AI-042, FND-AI-081, FND-CONTROL-001, FND-HIRE-002, FND-PLATFORM-003, FND-STATE-006, FND-STATE-007, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-007, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -458,5 +458,4 @@ None known.
   sector passing `scales`; an off-board routing target; or computer player 0's
   records being multiplied. With the tie count into `aux_records` and the
   second match above, these rest on the static findings this entry cites.
-  Until a run reaches them, the entry stays `supported` (DECISIONS.md,
-  2026-10-06).
+  Until a run reaches them, the entry stays `supported`.

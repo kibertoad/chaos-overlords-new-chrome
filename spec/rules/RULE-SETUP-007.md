@@ -62,5 +62,4 @@ None known.
 
 - No recorded run keeps the flag across a save and a load, or is a network
   game, which skips the scan. These rest on FND-SETUP-015 and FND-SETUP-011.
-  Until a run reaches them, the entry stays `supported` (DECISIONS.md,
-  2026-10-06).
+  Until a run reaches them, the entry stays `supported`.

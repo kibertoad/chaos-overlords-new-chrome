@@ -113,4 +113,4 @@ None known.
 - No recorded run eliminates two players in one match or in one turn, loses
   the Right Hands while other gangs live, or has slot 0 holding another gang.
   These rest on FND-TURN-008 and FND-TURN-003. Until a run reaches them, the
-  entry stays `supported` (DECISIONS.md, 2026-10-06).
+  entry stays `supported`.

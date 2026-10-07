@@ -67,5 +67,4 @@ None known.
   order is not recorded; the order does not change the result.
 - No recorded run shows that only the low byte of an item's difficulty is
   kept; no shipped item's difficulty lies outside 0 to 255. That rests on
-  FND-RESEARCH-002. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  FND-RESEARCH-002. Until a run reaches them, the entry stays `supported`.

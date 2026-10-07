@@ -6,7 +6,7 @@ Entries by status.
 
 ## supported
 
-33 entries.
+34 entries.
 
 | ID | Title |
 |---|---|
@@ -14,6 +14,7 @@ Entries by status.
 | [BUG-AI-002](../../bugs/BUG-AI-002.md) | The computer players' neighbourhood scans read one element past the last sector, and a failed placement anchor reads before the first |
 | [BUG-AI-003](../../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list |
 | [BUG-AI-004](../../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 |
+| [BUG-AI-005](../../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index |
 | [BUG-AI-006](../../bugs/BUG-AI-006.md) | An objective gang with nothing else to do picks its Influence site against a threshold the planner never sets |
 | [RULE-AI-001](../../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires |
 | [RULE-AI-002](../../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler |
@@ -46,11 +47,10 @@ Entries by status.
 
 ## established
 
-6 entries.
+5 entries.
 
 | ID | Title |
 |---|---|
-| [BUG-AI-005](../../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index |
 | [BUG-AI-007](../../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector |
 | [BUG-AI-008](../../bugs/BUG-AI-008.md) | Family 2's late Control gates test the sector numbered like the item of a planned Equip |
 | [RULE-AI-015](../../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac |
@@ -76,7 +76,7 @@ Entries by status.
 
 ## recorded
 
-68 entries.
+70 entries.
 
 | ID | Title |
 |---|---|
@@ -147,6 +147,8 @@ Entries by status.
 | [FND-AI-075](../../findings/FND-AI-075.md) | Family 12 stores the focus with every action it plans and a Move's destination as the coverage sector |
 | [FND-AI-076](../../findings/FND-AI-076.md) | Family 3 stores -1 in the focus after every action it plans after None, Control, Equip or Heal |
 | [FND-AI-077](../../findings/FND-AI-077.md) | Family 2's late Control gates read a local that holds the item of a planned Equip |
+| [FND-AI-078](../../findings/FND-AI-078.md) | Family 7 researches at once when its focus equals the best research sector, and reads the previous target without testing the previous action |
+| [FND-AI-079](../../findings/FND-AI-079.md) | Only the family handlers and their dispatcher store a planned action, and none stores Bribe, Give or Sell |
 | [FND-AI-080](../../findings/FND-AI-080.md) | The family-0 owned-sector tests after previous Control and after previous Heal, Hide or Move read the owner query, which gives -2 under police presence |
 
 ## Established on unreproduced evidence
@@ -155,7 +157,6 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [BUG-AI-005](../../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index |
 | [BUG-AI-007](../../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector |
 | [BUG-AI-008](../../bugs/BUG-AI-008.md) | Family 2's late Control gates test the sector numbered like the item of a planned Equip |
 | [RULE-AI-015](../../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac |
@@ -172,9 +173,8 @@ Entries whose Open questions section says more than None known.
 | [BUG-AI-002](../../bugs/BUG-AI-002.md) | The computer players' neighbourhood scans read one element past the last sector, and a failed placement anchor reads before the first | supported |
 | [BUG-AI-003](../../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list | supported |
 | [BUG-AI-004](../../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 | supported |
-| [BUG-AI-005](../../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | established |
+| [BUG-AI-005](../../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
 | [BUG-AI-007](../../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector | established |
-| [RULE-AI-001](../../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported |
 | [RULE-AI-002](../../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
 | [RULE-AI-003](../../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |
 | [RULE-AI-004](../../rules/RULE-AI-004.md) | Queries the computer players' handlers share | supported |

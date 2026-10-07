@@ -85,4 +85,4 @@ None known.
   refused; a press outside the panel; Enter, Execute and Escape; the sounds
   and the slide's timing (FND-MOVE-002, FND-MOVE-004, FND-MOVE-005,
   FND-MOVE-007, FND-UI-019, FND-OPTIONS-001). These rest on the static
-  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  findings named, so the entry stays `supported`.

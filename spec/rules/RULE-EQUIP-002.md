@@ -103,5 +103,4 @@ None known.
 
 - No recorded run has a gang killed in combat while it holds a Give or Sell
   order, whose items then stay in the inactive record. That rests on
-  FND-EQUIP-007. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  FND-EQUIP-007. Until a run reaches them, the entry stays `supported`.

@@ -44,11 +44,11 @@ in the fixture. At the third planning entry the gang is at Force 10.
 
 ## Results
 
-A test of the rebuild replays the run. The rebuild takes the Heal while the
-gang is at Force 9 and then writes Force 10, as the probe does. It makes the
-same calls with the same bounds and results and reaches the same state. In its
-replay the Heal of turn 2 acts at Force 10, rolls a pool of 4 dice, scores 2
-successes and leaves the Force at 10.
+A test of the rebuild replays the run. The
+rebuild takes the Heal while the gang is at Force 9 and then writes Force 10,
+as the probe does. It makes the same calls with the same bounds and results
+and reaches the same state. In its replay the Heal of turn 2 acts at Force 10,
+rolls a pool of 4 dice, scores 2 successes and leaves the Force at 10.
 
 ## Conclusion
 

@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043F136..0x0043F52B
+    address: 0x0043F136..0x0043F52C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0043DE42..0x0043DE80
@@ -58,7 +58,7 @@ Equip panel `fn_0043DAD9`:
 
 - When the gang's action byte is already 5 (`0x0043DE42`), the category is
   the queued item's 16-bit type (item offset `0x7A`) minus 1, kept at the type
-  when that would be negative (`0x0043DE4B..0x0043DE62`).
+  when that would be negative (`0x0043DE4B..0x0043DE63`).
 - It calls the list builder `fn_0043F136` with the category, the 16-bit field
   at offset `0x82` of the gang's definition (`0x004A2882`, `0x0043DE80` and
   again at `0x0043E52F`), the player and the roster slot.
@@ -73,7 +73,7 @@ List builder `fn_0043F136`:
 - For items 0 to 63 it computes a category from the 16-bit type at offset
   `0x7A`: `type - 1` when that is 0 or more, else the type itself, so types 0
   and 1 give 0, 2 gives 1, 3 gives 2, 4 gives 3 and 99 gives 98
-  (`0x0043F267..0x0043F26F`).
+  (`0x0043F267..0x0043F270`).
 - It lists the item when all of these hold (`0x0043F293..0x0043F31B`): the
   item's 16-bit field at offset `0x80` is at most the Tech Level argument
   (signed); the category equals the requested one; the byte

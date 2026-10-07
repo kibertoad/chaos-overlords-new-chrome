@@ -99,5 +99,4 @@ None known.
   double-clicks, Enter, Execute and Escape; the slide and rejected sounds, the
   slide's timing and the item frame stepping (FND-EQUIP-003, FND-GIVE-001,
   FND-GIVE-002, FND-GIVE-003, FND-GFX-006, FND-UI-047). These rest on the
-  static findings named, so the entry stays `supported` (DECISIONS.md,
-  2026-10-06).
+  static findings named, so the entry stays `supported`.

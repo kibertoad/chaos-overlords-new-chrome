@@ -70,5 +70,4 @@ None known.
   Resistance less progress in the active player's own sector; opening from
   Influence and Search; presses outside the panel and off the face; Enter and
   Execute; the slide sounds and timing (FND-UI-005, FND-UI-024, FND-UI-049).
-  These rest on the static findings named, so the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  These rest on the static findings named, so the entry stays `supported`.

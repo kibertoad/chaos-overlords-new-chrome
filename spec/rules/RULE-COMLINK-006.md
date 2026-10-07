@@ -110,5 +110,4 @@ None known.
   into capitals is not reached from the keyboard.
 - No recorded run presses Left at column 0, Backspace at column 0 below row 0,
   or Right at column 39. These rest on FND-COMLINK-010. With the capitals step
-  above, until a run reaches them, the entry stays `supported` (DECISIONS.md,
-  2026-10-06).
+  above, until a run reaches them, the entry stays `supported`.

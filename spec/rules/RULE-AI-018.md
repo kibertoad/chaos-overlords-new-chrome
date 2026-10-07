@@ -74,4 +74,4 @@ None known.
   a loaded match keeping its bands, or a computer that takes over a network
   seat keeping band 1; EXP-TURN-040's raider write leaves the controller as it
   was. These rest on FND-AI-007 and FND-AI-053. Until a run reaches them, the
-  entry stays `supported` (DECISIONS.md, 2026-10-06).
+  entry stays `supported`.

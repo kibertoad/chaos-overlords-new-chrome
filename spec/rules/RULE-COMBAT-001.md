@@ -90,4 +90,4 @@ None known.
 - No recorded run reaches a weapon whose type is not 0 to 2, which Equip never
   puts in the weapon slot, or a newly hired gang's statistics read before the
   next rebuild. These rest on FND-GANG-007 and FMT-DATA-003. Until a run
-  reaches them, the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  reaches them, the entry stays `supported`.

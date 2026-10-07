@@ -106,5 +106,4 @@ None known.
 - No recorded run has a limit above 80, so the cap `min(limit, 80)` never
   acts, and none reaches the cash-based limit that applies once no neutral
   sector is free. These rest on the static readings of the gates this entry
-  cites. Until a run reaches them, the entry stays `supported` (DECISIONS.md,
-  2026-10-06).
+  cites. Until a run reaches them, the entry stays `supported`.

@@ -99,4 +99,4 @@ None known.
   player's Bribe in that turn, or an item whose type is none of the five,
   which is paid for and put in no slot. These rest on FND-EQUIP-001,
   FND-EQUIP-006, FND-EQUIP-007 and FND-EQUIP-008. Until a run reaches them,
-  the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  the entry stays `supported`.

@@ -226,7 +226,7 @@ Entries by kind.
 
 ## findings
 
-392 entries.
+400 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -307,6 +307,8 @@ Entries by kind.
 | [FND-AI-075](../findings/FND-AI-075.md) | Family 12 stores the focus with every action it plans and a Move's destination as the coverage sector | recorded |
 | [FND-AI-076](../findings/FND-AI-076.md) | Family 3 stores -1 in the focus after every action it plans after None, Control, Equip or Heal | recorded |
 | [FND-AI-077](../findings/FND-AI-077.md) | Family 2's late Control gates read a local that holds the item of a planned Equip | recorded |
+| [FND-AI-078](../findings/FND-AI-078.md) | Family 7 researches at once when its focus equals the best research sector, and reads the previous target without testing the previous action | recorded |
+| [FND-AI-079](../findings/FND-AI-079.md) | Only the family handlers and their dispatcher store a planned action, and none stores Bribe, Give or Sell | recorded |
 | [FND-AI-080](../findings/FND-AI-080.md) | The family-0 owned-sector tests after previous Control and after previous Heal, Hide or Move read the owner query, which gives -2 under police presence | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
@@ -359,6 +361,7 @@ Entries by kind.
 | [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | Detailed Combat draws each gang portrait and its two Force tracks into the same surface, 68 and 75 rows below the portrait's top | recorded |
 | [FND-COMBAT-016](../findings/FND-COMBAT-016.md) | The Detailed Combat clip player keeps its tick in a stack local, and paints the Force tracks again only on tick 16 | recorded |
 | [FND-COMBAT-017](../findings/FND-COMBAT-017.md) | Detailed Combat copies each clip's sector tile from the unowned city map art and frames it in black | recorded |
+| [FND-COMBAT-032](../findings/FND-COMBAT-032.md) | The Detailed Combat clip player puts the strips' first frames on the screen only, and definition 63 changes only the attack strip | recorded |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | Each player keeps at most 16 Comlink messages, and a 17th drops the oldest | recorded |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls | recorded |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
@@ -426,7 +429,9 @@ Entries by kind.
 | [FND-GFX-004](../findings/FND-GFX-004.md) | The display layer draws with GDI into twelve surface slots, copies the 640-by-460 backing surface to the window's client origin, and uses DirectDraw only to take the screen in full screen | recorded |
 | [FND-GFX-005](../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 | recorded |
 | [FND-GFX-006](../findings/FND-GFX-006.md) | A pattern fill takes its bitmap from the high byte of a 16-bit grey, starts the pattern at the filled rectangle's corner, and outlines the fill with the scratch surface's own pen | recorded |
+| [FND-GFX-007](../findings/FND-GFX-007.md) | Every exact-white pixel of PX00129 that a copy reads lies in a cell copied with the key, except one pixel of an Overlord portrait | recorded |
 | [FND-GFX-008](../findings/FND-GFX-008.md) | SetDIBits decodes every shipped PX08 file as the plain RLE8 reading does, clips runs at the line end, follows delta codes and leaves unwritten pixels as the bitmap held them | recorded |
+| [FND-GFX-009](../findings/FND-GFX-009.md) | Surface 7 holds PX00150 for the Search rows' keyed copy and PX00140 for the network lobbies' keyed seat overlay, and every copied cell holds exact white | recorded |
 | [FND-GIVE-001](../findings/FND-GIVE-001.md) | The Give panel handler lists the giver's sector mates, accepts a recipient only when its Tech Level covers every selected item, and stores the order in the target bytes | recorded |
 | [FND-GIVE-002](../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art | recorded |
 | [FND-GIVE-003](../findings/FND-GIVE-003.md) | The Give recipient list fills no background, and dims an ineligible card with black through bitmap 146 from the card's corner | recorded |
@@ -481,13 +486,14 @@ Entries by kind.
 | [FND-PLATFORM-005](../findings/FND-PLATFORM-005.md) | Preferences live under the Stick Man Games registry key, and an App Paths key locates the installation | recorded |
 | [FND-PLATFORM-006](../findings/FND-PLATFORM-006.md) | Sound, CD music, timers and Smacker video come from WINMM and smackw32.dll | recorded |
 | [FND-PLATFORM-007](../findings/FND-PLATFORM-007.md) | The palette loader fills entries 10 to 245 of a 256-entry palette from a CLT file | recorded |
-| [FND-PLATFORM-008](../findings/FND-PLATFORM-008.md) | Image copies are opaque except for a pattern mask and an exact-white colour key used by two images | recorded |
+| [FND-PLATFORM-008](../findings/FND-PLATFORM-008.md) | Image copies are opaque except for a pattern mask and an exact-white colour key used by two images | superseded |
 | [FND-PLATFORM-009](../findings/FND-PLATFORM-009.md) | The program entry allows one instance, picks the image set, sets up the display, sound and menus, runs the title loop, and undoes it all on the way out | recorded |
 | [FND-PLATFORM-010](../findings/FND-PLATFORM-010.md) | Data files are named by the App Paths install directory and length-prefixed names, and four file slots open them with no message on failure | recorded |
 | [FND-PLATFORM-011](../findings/FND-PLATFORM-011.md) | At 8 bits the palette comes from data/CLT00002, read as red, green, blue, and PX08 pictures are mapped to it through their own colour tables | recorded |
 | [FND-PLATFORM-012](../findings/FND-PLATFORM-012.md) | The startup disc check looks for a fixed drive from the string ".\" and always passes, and the CD track search has no callers | recorded |
 | [FND-PLATFORM-013](../findings/FND-PLATFORM-013.md) | The ordinal imports of WSOCK32 and smackw32 by name, and the functions that call the WinSock, Telephony and serial port imports | recorded |
 | [FND-PLATFORM-014](../findings/FND-PLATFORM-014.md) | On a 32-bit desktop the keyed copies key nothing, and the white they should drop is drawn | recorded |
+| [FND-PLATFORM-015](../findings/FND-PLATFORM-015.md) | The keyed compositor sets its depth's key with one SetBkColor call and restores the colour with a second, and 72 of the 77 calls of the copy wrapper ask for it | recorded |
 | [FND-POLICE-001](../findings/FND-POLICE-001.md) | Each sector keeps its last two Crackdown turns; a third within five turns neutralizes the sector, and each Crackdown adds 3 to 5 police turns | recorded |
 | [FND-POLICE-002](../findings/FND-POLICE-002.md) | A Crackdown report goes to every player who had a gang in the sector when resolution began, and a control-loss report to the displaced owner | recorded |
 | [FND-POLICE-003](../findings/FND-POLICE-003.md) | The police detect a gang on a roll of 1 to 100 against 115 minus 5 Stealth, less 20 for Hide, and attack with 25 minus Defense dice at 5 or better | recorded |
@@ -617,6 +623,8 @@ Entries by kind.
 | [FND-UI-059](../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation | recorded |
 | [FND-UI-060](../findings/FND-UI-060.md) | The planning entry draws the console's year, week, countdown, score and cash with the base-value number helper | recorded |
 | [FND-UI-063](../findings/FND-UI-063.md) | Only the About screen, the main console and the detailed sector screen take the right button, and the held-button helper acts at once on a right press | recorded |
+| [FND-UI-064](../findings/FND-UI-064.md) | The key handler tests Shift once and stores its event at one join, and the name editor's edit control upper-cases what is typed | recorded |
+| [FND-UI-066](../findings/FND-UI-066.md) | Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the handler that opened the panel | recorded |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
@@ -625,7 +633,7 @@ Entries by kind.
 
 ## experiments
 
-163 entries.
+172 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -757,6 +765,7 @@ Entries by kind.
 | [EXP-TURN-103](../experiments/EXP-TURN-103.md) | Does the clamp after the instant phase bring a base Tolerance above 40 back to 40, after the later gangs have acted? | recorded |
 | [EXP-TURN-104](../experiments/EXP-TURN-104.md) | Does a Research gang that acts after a site of its sector is completed in the same instant phase roll without the site's Research? | recorded |
 | [EXP-TURN-105](../experiments/EXP-TURN-105.md) | Do the Greed Terminate branches of the family 1, 5, 6 and 12 handlers flag the record for a new family? | recorded |
+| [EXP-TURN-109](../experiments/EXP-TURN-109.md) | Does a family-7 gang whose focus names its own best research sector research there while a Research site in it is unfinished? | recorded |
 | [EXP-TURN-110](../experiments/EXP-TURN-110.md) | Does a Heal by a gang at Force 10 roll its pool and leave the Force at 10? | recorded |
 | [EXP-TURN-111](../experiments/EXP-TURN-111.md) | Does a Bribe that takes the base Tolerance past 127 wrap the signed byte? | recorded |
 | [EXP-TURN-114](../experiments/EXP-TURN-114.md) | Does a Snitch that takes the base Tolerance below -128 wrap the signed byte? | recorded |
@@ -791,6 +800,14 @@ Entries by kind.
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? | recorded |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? | recorded |
+| [EXP-UI-029](../experiments/EXP-UI-029.md) | Does the Detailed Combat panel look the same in the rebuild through the second clip of a presentation? | recorded |
+| [EXP-UI-046](../experiments/EXP-UI-046.md) | Does the Detailed Combat panel look the same in the rebuild through an armed and an unarmed attack on the viewer's gang? | recorded |
+| [EXP-UI-047](../experiments/EXP-UI-047.md) | Does the Detailed Combat panel look the same in the rebuild through a bare-handed Martial Arts attack? | recorded |
+| [EXP-UI-048](../experiments/EXP-UI-048.md) | Does the Detailed Combat panel look the same in the rebuild through an attack of the viewer's that its target evades? | recorded |
+| [EXP-UI-049](../experiments/EXP-UI-049.md) | Does the Detailed Combat panel look the same in the rebuild through two evaded attacks on the viewer's gang? | recorded |
+| [EXP-UI-052](../experiments/EXP-UI-052.md) | Which character does the window procedure store for each number-pad key and each main-keyboard key, with Shift held and not? | recorded |
+| [EXP-UI-053](../experiments/EXP-UI-053.md) | Which name does the setup name editor give for each number-pad key and each main-keyboard key, with Shift held and not? | recorded |
+| [EXP-UI-054](../experiments/EXP-UI-054.md) | What do the Detailed Combat apertures show before the second clip's first strip frame? | recorded |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | How many steps does the intro show of each movie when it plays out? | recorded |
 
 ## bugs
@@ -803,7 +820,7 @@ Entries by kind.
 | [BUG-AI-002](../bugs/BUG-AI-002.md) | The computer players' neighbourhood scans read one element past the last sector, and a failed placement anchor reads before the first | supported |
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list | supported |
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 | supported |
-| [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | established |
+| [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
 | [BUG-AI-006](../bugs/BUG-AI-006.md) | An objective gang with nothing else to do picks its Influence site against a threshold the planner never sets | supported |
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector | established |
 | [BUG-AI-008](../bugs/BUG-AI-008.md) | Family 2's late Control gates test the sector numbered like the item of a planned Equip | established |

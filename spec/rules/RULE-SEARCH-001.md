@@ -87,5 +87,4 @@ readings:
 - a loaded match, whose filters the match function empties [FND-SEARCH-005];
 - two humans in a hot-seat game, each with their own filter
   [FND-SEARCH-001].
-- Until a run reaches the cases above, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+- Until a run reaches the cases above, the entry stays `supported`.

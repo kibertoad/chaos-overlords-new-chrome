@@ -40,10 +40,11 @@ the fixture. At the second planning entry the unowned sectors still hold a
 
 ## Results
 
-A test of the rebuild replays the run. The rebuild makes the same calls with
-the same bounds and results and reaches the same state, every sector's
-`crackdown_turns` included. In its replay the countdown at the end of turn 1
-finds the permanent Crackdowns at 100 and leaves them there.
+A test of the rebuild replays the run. The
+rebuild makes the same calls with the same bounds and results and reaches the
+same state, every sector's `crackdown_turns` included. In its replay the
+countdown at the end of turn 1 finds the permanent Crackdowns at 100 and
+leaves them there.
 
 ## Conclusion
 

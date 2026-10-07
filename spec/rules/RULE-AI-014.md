@@ -72,4 +72,4 @@ None known.
   the same initializer is not recorded; neither step reads the other's result.
 - No recorded run has an empty player slot counting as a computer; every run
   has six players. That rests on the static reading this entry cites. Until a
-  run reaches them, the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  run reaches them, the entry stays `supported`.

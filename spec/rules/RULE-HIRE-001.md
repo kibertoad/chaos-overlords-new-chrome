@@ -164,4 +164,4 @@ None known.
 - No recorded run hires with `hire_force_modifier` set, which gives Force 10
   without the `roll(5)`, or hires a gang of cost 0 while in debt. These rest
   on FND-HIRE-005 and FND-HIRE-006. Until a run reaches them, the entry stays
-  `supported` (DECISIONS.md, 2026-10-06).
+  `supported`.

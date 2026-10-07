@@ -87,4 +87,4 @@ None known.
 - No recorded list holds a hidden gang the player still sees; EXP-ATTACK-001
   to EXP-ATTACK-003 record 15 lists. With the seventh target above, this rests
   on FND-ATTACK-006 and FND-DETECT-001. Until a run reaches them, the entry
-  stays `supported` (DECISIONS.md, 2026-10-06).
+  stays `supported`.

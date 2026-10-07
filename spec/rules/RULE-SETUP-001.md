@@ -92,5 +92,4 @@ None known.
   match reaches this rule with a network flag set, are not recorded.
 - No recorded run reaches a name that differs from a modifier only in case,
   the cash modifier in Armageddon, or a network game skipping the scan. These
-  rest on FND-SETUP-015. Until a run reaches them, the entry stays `supported`
-  (DECISIONS.md, 2026-10-06).
+  rest on FND-SETUP-015. Until a run reaches them, the entry stays `supported`.
