@@ -99,10 +99,9 @@ slots, or changes one slot's `portrait` or name. Makes no draws.
 A release outside every card after a drag changes nothing. A drag onto an
 empty card moves the player there and leaves its old slot empty. EXP-UI-030
 repeats a swap of two players, a move to an empty card in both directions and
-a drag that stays within the box, which acts as a press at its start, three
-times with the same result. A press in
-the middle of a selected card, between the two portrait bands and above the
-name band, does nothing. With six humans on six different portraits the
+a drag that stays within the box, which acts as a press, three times with the
+same result. A press in the middle of a selected card, between the two
+portrait bands and above the name band, does nothing. With six humans on six different portraits the
 arrows still find one of the nine free ones.
 
 ## What the sources say

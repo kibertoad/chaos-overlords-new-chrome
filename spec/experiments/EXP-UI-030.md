@@ -56,8 +56,10 @@ byte. Add put a second human in slot 1 and selected card 1. The drag from card
 0 to card 1 swapped the two players and left card 1 selected. The drag from
 card 0 to the empty card 4 moved the player in slot 0 to slot 4, left card 0
 empty and selected card 4. The drag that stayed inside the box acted as a
-press at its start: 56 pixels right of card 4's origin and 20 below it, it
-gave card 4 the next portrait. The drag from card 1 to the empty card 0 moved
+press and gave card 4 the next portrait. It started 56 pixels right of card
+4's origin and 20 below it and was released one pixel up and left of that,
+both in the band of the next portrait, so the run does not tell whether the
+press or the release point picks the band. The drag from card 1 to the empty card 0 moved
 that player to slot 0. Card 4 and Remove then took out the player of slot 4,
 and the last copy equals the setup screen as New Game first opened it. Each
 run then made 325 calls of `roll`.
@@ -66,8 +68,8 @@ run then made 325 calls of `roll`.
 
 `TheRebuildDrawsWhatTheOriginalDrew` in
 `tests/Rechaos.Tests/ScreenCaptureTests.cs` replays the steps in the rebuild,
-each drag as a press, moves and a release, and compares the setup screen
-after each with the copies of every run. No element differs.
+each drag as a press, a move to the release point and a release, and compares
+the setup screen after each with the copies of every run. No element differs.
 
 ## Conclusion
 

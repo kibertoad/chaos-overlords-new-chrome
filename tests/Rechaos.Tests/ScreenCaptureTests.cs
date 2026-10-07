@@ -38,7 +38,8 @@ public sealed partial class ScreenCaptureTests
     // RULE-UI-012 on the city map of Siege (EXP-UI-013) and Big Man (EXP-UI-014). The setup steps
     // of EXP-UI-015 compare the first setup of RULE-SETUP-002 and RULE-SETUP-010, the card presses
     // of RULE-SETUP-009, Add and Remove of RULE-SETUP-010, and setup buttons released inside and
-    // outside (RULE-UI-001). The setup steps of EXP-UI-030 compare the card drags of RULE-SETUP-009. The Done press of EXP-UI-012 opens the warning of RULE-OPTIONS-003
+    // outside (RULE-UI-001). The setup steps of EXP-UI-030 compare the card drags of
+    // RULE-SETUP-009. The Done press of EXP-UI-012 opens the warning of RULE-OPTIONS-003
     // from the original's gangs, one of them idle. EXP-UI-016 compares the hand-off card SCR-SETUP-002
     // and the Comlink Send panel SCR-COMLINK-002 of a match of two humans. The console presses
     // before these captures route as RULE-UI-002 reads them. EXP-UI-017 compares the endgame

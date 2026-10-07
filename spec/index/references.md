@@ -2510,6 +2510,7 @@ None.
 |---|---|
 | [EXP-UI-015](../experiments/EXP-UI-015.md) | body |
 | [RULE-SETUP-009](../rules/RULE-SETUP-009.md) | body, evidence |
+| [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | evidence |
 
 ## EXP-VIDEO-001
 

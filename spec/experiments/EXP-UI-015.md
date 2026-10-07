@@ -90,9 +90,9 @@ posted the moves as `WM_MOUSEMOVE` and did not write the two pointer points of
 FND-UI-020, one of which the window procedure takes from the desktop cursor, so
 the unreliable drags may come from the probe rather than the game, and this run
 does not settle card-face drags. EXP-UI-030 repeats them with a probe that
-writes both points, and they act as FND-SETUP-005 reads in every run. Its data dump holds the six colour records
-at `0x004ABC18` as (255,0,0), (0,255,0), (0,0,255), (255,255,0), (255,0,255)
-and (0,255,255). Earlier runs that took only the title copy, and the title and
+writes both points, and they act as FND-SETUP-005 reads in every run. This
+run's data dump holds the six colour records at `0x004ABC18` as (255,0,0),
+(0,255,0), (0,0,255), (255,255,0), (255,0,255) and (0,255,255). Earlier runs that took only the title copy, and the title and
 the credits, gave the same captures of them. One that did not write the options
 showed the objective the registry held, Kill 'Em All.
 
