@@ -59,7 +59,7 @@ version 1 of the
 published at dinorefurb.com. This section summarizes them; where they differ,
 the published pages win. `docs/upstream/` holds a copy of the standard, the
 methodology and the work protocol as published at refurbished-dinosaurs
-`e84495f`, the revision this repository follows.
+`61a7104`, the revision this repository follows.
 
 ### The spec
 
