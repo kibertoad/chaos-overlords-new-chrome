@@ -391,7 +391,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--finance <turn:sector>,...] [--search <turn:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -423,20 +423,35 @@ follows the last one. The human's planning phase opens the Combat Results
 panel (SCR-COMBAT-001) after a fight that involved its gangs, and the Last
 Turn Events panel (SCR-EVENT-001) when it has reports, and waits in each; the
 probe breaks on both handlers and presses Exit before the next Done, and presses
-Done again if a press left the turn unmoved for 20 seconds. Each call of
+Done again if a press left the turn unmoved for 20 seconds. A match that ends,
+or a human eliminated, before `--end-turns` runs out stops the presses there,
+and the fixture's inputs list only the turns the run played: one Done press, or
+one turn left to the planning time limit, per entry of `done_at_roll`, with
+that turn's writes before it, which the replay tests check. A press repeated
+after 20 seconds and the press at the final view of a match that ends
+(FND-OBJECTIVE-004) are not listed. Each call of
 either handler is kept with the roll count at the call and whether the panel
 stayed open until the probe pressed Exit, since the Combat Results handler
 returns at once when no fight qualifies; a panel still open at the dump counts
 as shown. The fixture holds the calls as `panels`. `--orders` writes
-an order into a gang record of the first human before the Done press of the
+an order into a gang record of a human before the Done press of the
 given turn, counted from 1: the `action`, `target` and `target_2` bytes of
 FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
-as the order screens write them (RULE-TURN-005). The fixture lists each order
-as an `order` input before its Done press, and the replay submits the same
-order as a command. `--hires` writes the sector byte of the first human's
-hire order for an offer slot into `hire_orders` before the Done press of the
-given turn, as the hire screen does (RULE-HIRE-003); the fixture lists it as a
-`hire` input, and the replay hires the gang the rebuild offers in that slot.
+as the order screens write them (RULE-TURN-005). The player after the turn
+names the human; an entry without one writes for the first `--humans` slot, or
+slot 0 when the option is left out. The probe presses Done only in that human's
+planning, and another human's begins behind a Ready card that refills its offers
+(RULE-SETUP-008), so the probe refuses an order or hire for any other player, and
+the replay requires each one to name the lowest human, whose planning it plays.
+A Search write may name any human of the run. The fixture lists each order as an `order` input before
+its Done press, with the player it was written for (`turn 3: player 0 gang
+slot 0 action 13 target 0 target_2 0 repeat 0`), and the replay submits the
+same order as that player's command. `--hires` writes the sector byte of a
+human's hire order for an offer slot into `hire_orders` before the Done press
+of the given turn, as the hire screen does (RULE-HIRE-003), with the player
+given as for `--orders`; the fixture lists it as a `hire` input naming the
+player, and the replay hires the gang the rebuild offers that player in that
+slot.
 `--families` writes the `family` byte of a computer player's planning record
 (FMT-STATE-007) and `--raiders` sets the player's byte of `raider_mode`
 (RULE-AI-027), and `--retire` clears the player's byte of `player_active`
@@ -448,12 +463,14 @@ lists each as a `planning` input, and the replay makes the same change to the
 rebuild's state, a retired player becoming eliminated with its gangs and
 sectors left in place; since that change bypasses the replay recorder, such a
 run's journal is not verified.
-`--search` sets the first human's `search_filters` entries for the given site
+`--search` sets a human's `search_filters` entries for the given site
 definitions before the Done press of the given turn, as the Search panel's
-rows do (RULE-SEARCH-001), and keeps the site markers of each city redraw
-(FND-SEARCH-006). The fixture lists each write as a `search` input and holds
-the markers of the last redraw before the dump as `city_markers`; the replay
-compares them with the rebuild's markers for the same filter.
+rows do (RULE-SEARCH-001), with the player given as for `--orders`, and keeps
+the site markers of each city redraw (FND-SEARCH-006). The fixture lists each
+write as a `search` input naming the player and holds the markers of the last
+redraw before the dump as `city_markers`, with the human it was drawn for; the
+replay compares them with the rebuild's markers for that human and the filter
+the probe set for that human.
 A run that ends the match keeps the endgame's first drawing: the renderer's
 arguments and the player of each row it lists, ranked, eliminated or the
 victory splash (FND-AWARDS-005), which the fixture holds as `endgame_rows`.
