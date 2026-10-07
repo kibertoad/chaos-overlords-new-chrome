@@ -6,7 +6,7 @@ Entries by status.
 
 ## supported
 
-4 entries.
+5 entries.
 
 | ID | Title |
 |---|---|
@@ -14,19 +14,19 @@ Entries by status.
 | [RULE-TURN-002](../../rules/RULE-TURN-002.md) | Resolution carries out the orders in a fixed order of steps, each visiting players and roster slots in ascending order |
 | [RULE-TURN-004](../../rules/RULE-TURN-004.md) | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions |
 | [RULE-TURN-005](../../rules/RULE-TURN-005.md) | Giving a gang an order replaces its whole previous order, one-off or recurring |
+| [RULE-TURN-006](../../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective |
 
 ## established
 
-2 entries.
+1 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-TURN-003](../../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
-| [RULE-TURN-006](../../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective |
 
 ## recorded
 
-110 entries.
+117 entries.
 
 | ID | Title |
 |---|---|
@@ -128,9 +128,16 @@ Entries by status.
 | [EXP-TURN-097](../../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? |
 | [EXP-TURN-098](../../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? |
 | [EXP-TURN-099](../../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? |
-| [EXP-TURN-100](../../experiments/EXP-TURN-100.md) | Does the Move repair's neighbour draw from corner sector 56 draw again when only the test of the western edge refuses the result? |
-| [EXP-TURN-101](../../experiments/EXP-TURN-101.md) | Where does a family-13 or family-14 computer gang move in a scenario without objective sectors? |
+| [EXP-TURN-103](../../experiments/EXP-TURN-103.md) | Does the clamp after the instant phase bring a base Tolerance above 40 back to 40, after the later gangs have acted? |
+| [EXP-TURN-104](../../experiments/EXP-TURN-104.md) | Does a Research gang that acts after a site of its sector is completed in the same instant phase roll without the site's Research? |
+| [EXP-TURN-105](../../experiments/EXP-TURN-105.md) | Do the Greed Terminate branches of the family 1, 5, 6 and 12 handlers flag the record for a new family? |
 | [EXP-TURN-109](../../experiments/EXP-TURN-109.md) | Does a family-7 gang whose focus names its own best research sector research there while a Research site in it is unfinished? |
+| [EXP-TURN-110](../../experiments/EXP-TURN-110.md) | Does a Heal by a gang at Force 10 roll its pool and leave the Force at 10? |
+| [EXP-TURN-111](../../experiments/EXP-TURN-111.md) | Does a Bribe that takes the base Tolerance past 127 wrap the signed byte? |
+| [EXP-TURN-114](../../experiments/EXP-TURN-114.md) | Does a Snitch that takes the base Tolerance below -128 wrap the signed byte? |
+| [EXP-TURN-115](../../experiments/EXP-TURN-115.md) | Does a base Tolerance held at 40 step to 39 each resolution and return to 40 with a Bribe? |
+| [EXP-TURN-116](../../experiments/EXP-TURN-116.md) | Does the end-of-turn police countdown leave the island modifier's permanent Crackdowns at 100? |
+| [EXP-TURN-117](../../experiments/EXP-TURN-117.md) | Do a Snitch and a Bribe in one sector net out before the clamp, and is a sector no gang acted in clamped? |
 | [FND-TURN-001](../../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls |
 | [FND-TURN-002](../../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one |
 | [FND-TURN-003](../../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective |
@@ -148,7 +155,6 @@ Entries whose status is established and whose findings and experiments are all o
 | ID | Title |
 |---|---|
 | [RULE-TURN-003](../../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 |
-| [RULE-TURN-006](../../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective |
 
 ## Open questions
 
@@ -161,4 +167,4 @@ Entries whose Open questions section says more than None known.
 | [RULE-TURN-003](../../rules/RULE-TURN-003.md) | The instant phase carries out Bribe, Heal, Hide, Influence, Research and Snitch gang by gang, then clamps every base Tolerance to 1..40 | established |
 | [RULE-TURN-004](../../rules/RULE-TURN-004.md) | At turn start, recurring actions that can no longer apply are cleared and the rest become the gangs' actions | supported |
 | [RULE-TURN-005](../../rules/RULE-TURN-005.md) | Giving a gang an order replaces its whole previous order, one-off or recurring | supported |
-| [RULE-TURN-006](../../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | established |
+| [RULE-TURN-006](../../rules/RULE-TURN-006.md) | The end of a turn removes eliminated players, reports each elimination to every player, then evaluates the objective | supported |

@@ -13,7 +13,7 @@ locations:
     address: 0x004740B7..0x00474243
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004742EC..0x00474557
+    address: 0x004742EC..0x0047455E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0042E1A5
@@ -34,7 +34,7 @@ In the whole-turn resolver `fn_00472775`:
   (`0x0047413C`). When the gang is in a sector with police and the police hit
   it, it stores the police damage in byte 9 (`0x00474224`) and flags the gang
   as having fought.
-- The bookkeeping loop (`0x004742EC..0x00474557`) visits every record again
+- The bookkeeping loop (`0x004742EC..0x0047455E`) visits every record again
   and writes bytes 0 to 8 only for a gang flagged as having fought (as
   attacker, as attack target, or hit by police; the flag array is set at
   `0x0047391C`, `0x00473930` and `0x004741B1`):
@@ -68,11 +68,11 @@ with the match (FND-SAVE-001, block 26).
 
 - Byte 2 is computed before the damage application stores the new Force; the
   cap at 10 is the clamp of the per-gang damage total at `0x004742B1..
-  0x004742D7`. Whether any reader shows bytes 0 to 8 of a record whose gang did
+  0x004742E2`. Whether any reader shows bytes 0 to 8 of a record whose gang did
   not fight depends on the Detailed Combat selection, which is not read here.
 
 ## How to reproduce
 
-List the references to `0x004A11E8..0x004A11F1`. In `0x00472775`, read the
+List the references to `0x004A11E8..0x004A11F2`. In `0x00472775`, read the
 loop at `0x004740B7` and the loop at `0x004742EC`, and the conditions on the
 flag array before each store.

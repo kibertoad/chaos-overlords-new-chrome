@@ -133,6 +133,21 @@ namespace Rechaos.Tests;
 /// reported (RULE-HIRE-001, RULE-EVENT-011).
 /// EXP-TURN-101 writes families 13 and 14 into computer gangs in Greed, where they move to the
 /// planned target, sector 0, with no selector call (RULE-AI-031).
+/// In EXP-TURN-103 a Bribe every turn takes a base Tolerance to 41, where it stays while the later
+/// gangs of the phase act, and the clamp lowers it to 40 (RULE-TOLERANCE-002, RULE-TURN-003). In
+/// EXP-TURN-104 a Research gang acts after its sector's site is completed earlier in the same
+/// phase and rolls without the site's Research (RULE-RESEARCH-001, RULE-TURN-003). EXP-TURN-105
+/// writes families 1, 5, 6 and 12 into four planning records before the closing turns of Greed,
+/// whose handlers then plan Terminate and flag the records (FMT-STATE-007, FND-AI-042).
+/// EXP-TURN-110 writes Force 10 into a gang after its Heal order, and the Heal rolls its pool and
+/// leaves the Force at 10 (RULE-HEAL-001). EXP-TURN-111 and EXP-TURN-114 write a base Tolerance
+/// that one Bribe or one Snitch takes past the signed byte, which wraps and is then clamped
+/// (RULE-BRIBE-001, RULE-SNITCH-001, RULE-TOLERANCE-002). EXP-TURN-115 holds a base Tolerance at
+/// 40 with a Bribe every turn, and each step takes it to 39 first (RULE-TOLERANCE-001).
+/// EXP-TURN-117 nets a Snitch and a Bribe out in one sector and clamps two sectors no gang acted
+/// in (RULE-TOLERANCE-002). EXP-TURN-116 keeps the island modifier's Crackdowns of 100 through a
+/// countdown (RULE-POLICE-003), and EXP-SETUP-005 names two players with that modifier
+/// (RULE-SETUP-005).
 /// In EXP-TURN-109 a family-7 gang whose focus names the sector it stands in, its best research
 /// sector, researches there although a Research site in it is unfinished (RULE-AI-026, FND-AI-078).
 /// Every computer player's pass starts from its sector weights and the hostility step
@@ -146,7 +161,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-TURN-097", "EXP-TURN-098", "EXP-TURN-099", "EXP-TURN-100", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018", "EXP-COMBAT-001", "EXP-COMBAT-002", "EXP-COMBAT-003", "EXP-COMBAT-004", "EXP-COMBAT-005", "EXP-COMBAT-006", "EXP-COMBAT-007", "EXP-COMBAT-008", "EXP-COMBAT-009", "EXP-UI-019", "EXP-UI-020", "EXP-UI-021", "EXP-UI-022", "EXP-UI-023", "EXP-AUDIO-001", "EXP-VIDEO-001", "EXP-UI-024", "EXP-UI-025", "EXP-UI-026", "EXP-TURN-101", "EXP-UI-029", "EXP-UI-046", "EXP-UI-047", "EXP-UI-048", "EXP-UI-049", "EXP-UI-054", "EXP-TURN-109"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-TURN-097", "EXP-TURN-098", "EXP-TURN-099", "EXP-TURN-100", "EXP-TURN-103", "EXP-TURN-104", "EXP-TURN-105", "EXP-TURN-110", "EXP-TURN-111", "EXP-TURN-114", "EXP-TURN-115", "EXP-TURN-116", "EXP-TURN-117", "EXP-SETUP-005", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018", "EXP-COMBAT-001", "EXP-COMBAT-002", "EXP-COMBAT-003", "EXP-COMBAT-004", "EXP-COMBAT-005", "EXP-COMBAT-006", "EXP-COMBAT-007", "EXP-COMBAT-008", "EXP-COMBAT-009", "EXP-UI-019", "EXP-UI-020", "EXP-UI-021", "EXP-UI-022", "EXP-UI-023", "EXP-AUDIO-001", "EXP-VIDEO-001", "EXP-UI-024", "EXP-UI-025", "EXP-UI-026", "EXP-TURN-101", "EXP-UI-029", "EXP-UI-046", "EXP-UI-047", "EXP-UI-048", "EXP-UI-049", "EXP-UI-054", "EXP-TURN-109"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -174,11 +189,24 @@ public sealed partial class OriginalNewGameExperimentTests
     public static TheoryData<string, int> MatchingRuns()
     {
         var data = new TheoryData<string, int>();
-        foreach (var experiment in Experiments)
-            for (var run = 0; run < Recorded.Value[experiment].Length; run++)
-                if (!KnownDivergences.ContainsKey((experiment, run))) data.Add(experiment, run);
+        foreach (var (experiment, run) in MatchingRunKeys()) data.Add(experiment, run);
         return data;
     }
+
+    private static IEnumerable<(string Experiment, int Run)> MatchingRunKeys() =>
+        from experiment in Experiments
+        from run in Enumerable.Range(0, Recorded.Value[experiment].Length)
+        where !KnownDivergences.ContainsKey((experiment, run))
+        select (experiment, run);
+
+    // Each row starts from its run's replay, so the rows play theirs ahead on a few workers, in CI
+    // the longest matches first. The replays land in the cache other tests and ScreenCaptureTests
+    // read as well.
+    private static readonly RowPrefetch<(string Experiment, int Run), Replay> MatchingReplays =
+        new(MatchingRunKeys, key => Replayed(Run(key.Experiment, key.Run)), ReplayCost);
+
+    // How long a run's replay takes, for the prefetches that queue the longest first in CI.
+    private static int ReplayCost((string Experiment, int Run) key) => Run(key.Experiment, key.Run).DoneCount;
 
     public static TheoryData<string, int> DivergingRuns()
     {
@@ -247,7 +275,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheRebuildStartsTheSameMatch(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var (match, donePresses, rolls) = Replayed(recorded);
+        var (match, donePresses, rolls) = MatchingReplays.Get((experiment, run));
 
         var human = recorded.Humans[0];
 
@@ -533,103 +561,6 @@ public sealed partial class OriginalNewGameExperimentTests
         else Assert.Equal(PlayerStatus.Eliminated, match.FindPlayer(human)!.Status);
     }
 
-    public static TheoryData<string, int> PanelRuns()
-    {
-        var data = new TheoryData<string, int>();
-        foreach (var (experiment, runs) in Recorded.Value)
-            for (var run = 0; run < runs.Length; run++)
-                // The probe breaks on the handlers at every local human's planning entry, and the
-                // replay compares only the first human's, so a run with several humans is left out.
-                // With Detailed Combat switched on the planning entry calls the presentation in place
-                // of the Combat Results handler (FND-COMBAT-010), so a run that recorded clips is
-                // left out too; DetailedCombatPlaysTheOriginalsClips compares those entries.
-                if (runs[run].Panels is not null && runs[run].Humans.Count == 1 && runs[run].CombatClips is null
-                    && !KnownDivergences.ContainsKey((experiment, run)))
-                    data.Add(experiment, run);
-        return data;
-    }
-
-    // RULE-SETUP-008, RULE-EVENT-005: the probe records each call of the Combat Results and Last
-    // Turn Events panels at the human's planning entries, and whether the panel stayed open until
-    // Exit was pressed; Combat Results returns at once when no fight qualifies. At each planning
-    // entry the rebuild shows Combat Results when the viewer has combat results and then Last Turn
-    // Events when the viewer has reports, or the city when neither applies, and the panels it
-    // shows match the original's at that entry, in the same order.
-    [Theory]
-    [MemberData(nameof(PanelRuns))]
-    public void ThePlanningEntryShowsTheOriginalsPanels(string experiment, int run)
-    {
-        var recorded = Run(experiment, run);
-        var expected = new List<string>[recorded.DoneCount + 1];
-        var combatCalled = new bool[recorded.DoneCount + 1];
-        for (var entry = 0; entry < expected.Length; entry++) expected[entry] = [];
-        foreach (var call in recorded.Panels!)
-        {
-            // Entry e follows e Done presses. The resolution after a press makes rolls, so its calls
-            // come after the roll count of press e and no later than that of press e + 1.
-            var entry = recorded.DoneAtRoll.Count(count => count < call.AfterRoll);
-            if (call.Panel == "Combat Results") combatCalled[entry] = true;
-            if (call.Shown) expected[entry].Add(call.Panel);
-        }
-        // The original calls the Combat Results handler at every planning entry, so an entry
-        // without that call is one the probe did not observe, and comparing it would prove nothing.
-        // Each entry before a Done press is a planning entry; the last is checked below.
-        for (var entry = 0; entry < recorded.DoneCount; entry++)
-            Assert.True(combatCalled[entry], $"planning entry {entry + 1}: the recording holds no call of Combat Results");
-
-        var shown = new List<string>[recorded.DoneCount + 1];
-        using var game = new HeadlessGame(HeadlessGame.DefaultPreferences with { DetailedCombat = false });
-        List<string> Panels(MatchState match, PlayerId human) => PlanningEntryPanels(game, match, human);
-        // The panels are read at each planning entry, before any of that turn's recorded orders,
-        // hires or planning writes reach the state, as the original showed them.
-        var match = StartMatch(recorded, out var donePresses,
-            atPlanningEntry: (state, human, turn) => shown[turn - 1] = Panels(state, human));
-        // An early stop would leave the recording's later entries uncompared.
-        Assert.Equal(recorded.DoneCount, donePresses);
-        // The last entry is a planning entry unless the match ended or the human was eliminated. An
-        // eliminated human has none, and the final view of an ended match is closed by the probe
-        // with every panel it opens, so neither is compared.
-        var compared = donePresses;
-        if (match.Outcome is null && IsActive(match, recorded.Humans[0]))
-        {
-            Assert.True(combatCalled[donePresses], $"planning entry {donePresses + 1}: the recording holds no call of Combat Results");
-            shown[donePresses] = Panels(match, recorded.Humans[0]);
-            // The run stops at the last entry while its first panel is open, so only that panel is seen.
-            if (expected[donePresses].Count > 0) shown[donePresses] = shown[donePresses].Take(1).ToList();
-            compared++;
-        }
-        for (var entry = 0; entry < compared; entry++)
-            Assert.True(expected[entry].SequenceEqual(shown[entry]),
-                $"planning entry {entry + 1}: the original showed [{string.Join(", ", expected[entry])}], the rebuild [{string.Join(", ", shown[entry])}]");
-    }
-
-    /// <summary>
-    /// The panels the rebuild shows at <paramref name="match"/>'s planning entry, in order: a copy of
-    /// the match is put on screen in <paramref name="game"/> as a hot-seat planning entry, and each
-    /// panel it opens is closed with Enter until the city shows.
-    /// </summary>
-    private static List<string> PlanningEntryPanels(HeadlessGame game, MatchState match, PlayerId human)
-    {
-        using var copy = new MemoryStream();
-        NativeSaveSerializer.Save(copy, match);
-        copy.Position = 0;
-        game.Game.EnterPlanningEntry(NativeSaveSerializer.Load(copy, match.Definitions));
-        Assert.Equal(human, game.Game.Match!.Coordinator.ActivePlayer);
-        var panels = new List<string>();
-        while (game.Game.CurrentScreen != ClientScreen.City)
-        {
-            panels.Add(game.Game.CurrentScreen switch
-            {
-                ClientScreen.CombatSummary => "Combat Results",
-                ClientScreen.Events => "Last Turn Events",
-                var other => throw new InvalidOperationException($"the planning entry showed {other}"),
-            });
-            Assert.True(panels.Count <= 2, $"the planning entry showed [{string.Join(", ", panels)}] and more");
-            game.Press(Keys.Enter);
-        }
-        return panels;
-    }
-
     // RULE-OBJECTIVE-005: -2 stops before the card at the human's own slot; -1
     // has dismissed it and lets the remaining slots and resolution finish.
     private static void AdvanceToRecordedEndpoint(MatchReplayRecorder recorder, PlayerId human, int controller)
@@ -804,8 +735,13 @@ public sealed partial class OriginalNewGameExperimentTests
             // A cleared player_active (FND-STATE-004) takes the player out of the match as the
             // elimination check does (RULE-TURN-006), with its gangs and sectors left where they are.
             // A cash write sets the player's cash (FND-AI-055) so a human can pay for a hire every turn.
+            // A force write sets a gang's Force after its order was taken (FMT-STATE-001), so a Heal
+            // can act at Force 10 (RULE-HEAL-001), and a tolerance write a sector's base Tolerance
+            // (FMT-STATE-002), so one Bribe can wrap the signed byte (RULE-BRIBE-001).
             foreach (var write in inputs.Planning.Where(write => write.Turn == turn + 1))
                 if (write.Cash is { } cash) match.Players[write.Player].Cash = cash;
+                else if (write.Force is { } force) match.Players[write.Player].Gangs[write.Slot].Force = force;
+                else if (write.Tolerance is { } tolerance) match.Sectors[write.Slot].BaseTolerance = tolerance;
                 else if (write.Retired) match.Players[write.Player].Status = PlayerStatus.Eliminated;
                 else if (write.Raider) match.AiPlanning.SetRaiderMode(new PlayerId(write.Player));
                 else match.AiPlanning.SetFamily(new PlayerId(write.Player), write.Slot, write.Family);

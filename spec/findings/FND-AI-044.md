@@ -1,16 +1,16 @@
 ---
 id: FND-AI-044
 title: The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AI-081]
 recorded_by: kibertoad
 reproduced_by: []
 method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040A1A7..0x0040AA64
+    address: 0x0040A1A7..0x0040AA65
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0048E310..0x0048F80F

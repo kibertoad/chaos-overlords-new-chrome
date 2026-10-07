@@ -224,21 +224,21 @@ public sealed partial class ChaosGame
         Texture2D pixel,
         MatchState state)
     {
-        DrawPanelArtwork(batch, pixel, _movementBackground, MovementLayout.Panel, 248);
+        DrawPanelArtwork(batch, pixel, MovementBackground, MovementLayout.Panel, 248);
         var actor = state.FindGang(_commandTargetGang)!;
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, MovementLayout.Portrait,
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, MovementLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actor.DefinitionId), Color.White);
 
         DrawMovementNeighborhood(batch, pixel, state, actor.SectorId);
 
-        if (_commandTargetCursor >= 0 && _uiKeyedSprites is not null)
+        if (_commandTargetCursor >= 0 && UiKeyedSprites is not null)
         {
             var selected = _commandTargetOptions[_commandTargetCursor].Target.Id;
             var (column, row) = MovementLayout.PositionOf(actor.SectorId, selected);
             var direction = MovementLayout.DirectionIndex(column, row);
             if (direction >= 0)
-                batch.Draw(_uiKeyedSprites, MovementLayout.Arrow(direction),
+                batch.Draw(UiKeyedSprites, MovementLayout.Arrow(direction),
                     MovementLayout.ArrowSource(direction), Color.White);
         }
         DrawCommandPanelFaces(batch);
