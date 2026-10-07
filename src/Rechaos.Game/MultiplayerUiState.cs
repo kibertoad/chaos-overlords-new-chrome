@@ -249,6 +249,42 @@ internal sealed class MultiplayerUiState
     internal TextField SessionName { get; } = new("SESSION NAME", 64);
     internal TextField JoinCode { get; } = new("JOIN CODE", 8);
 
+    /// <summary>The lobby chat message being written.</summary>
+    internal TextField Chat { get; } = new("CHAT", LobbyChatPresentation.MessageColumns);
+
+    /// <summary>The lobby chat so far, oldest first, as the log carried it.</summary>
+    internal List<LobbyChatLine> ChatLines { get; } = [];
+
+    /// <summary>
+    /// Takes the chat messages a poll read, once each, keeping the newest
+    /// <see cref="LobbyChatPresentation.KeptMessages"/>.
+    /// </summary>
+    /// <remarks>
+    /// A seat that is resumed reads the log from its start again, so a message may arrive twice;
+    /// the sequence number tells.
+    /// </remarks>
+    internal void RecordChat(IEnumerable<LobbyChatLine> lines)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        var newest = ChatLines.Count == 0 ? 0 : ChatLines[^1].Seq;
+        foreach (var line in lines)
+        {
+            if (line.Seq <= newest) continue;
+            ChatLines.Add(line);
+            newest = line.Seq;
+        }
+        if (ChatLines.Count > LobbyChatPresentation.KeptMessages)
+            ChatLines.RemoveRange(0, ChatLines.Count - LobbyChatPresentation.KeptMessages);
+    }
+
+    /// <summary>Forgets the chat of the lobby this client has left.</summary>
+    internal void ClearChat()
+    {
+        ChatLines.Clear();
+        Chat.Set(string.Empty);
+        Chat.IsFocused = false;
+    }
+
     /// <summary>
     /// The lobby password, optional on both sides.
     /// </summary>
@@ -486,6 +522,7 @@ internal sealed class MultiplayerUiState
         Password.Set(string.Empty);
         JoinCode.Set(string.Empty);
         SessionName.Set(string.Empty);
+        ClearChat();
     }
 
     /// <summary>Whether the player may still change the turn they are planning.</summary>

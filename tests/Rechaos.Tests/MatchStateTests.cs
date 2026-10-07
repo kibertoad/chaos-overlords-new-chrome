@@ -362,7 +362,7 @@ public sealed class MatchStateTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        return new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players);
+        return new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original);
     }
 
     private static MatchPlayerState[] Players(MatchSetup setup) =>

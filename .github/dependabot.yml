@@ -44,6 +44,16 @@ updates:
     cooldown:
       default-days: 7
 
+  # The root package.json pins only the documentation standard's checker. A bump also moves the
+  # version pnpm-workspace.yaml names in minimumReleaseAgeExclude; after the cooldown the release is
+  # old enough that a stale entry there does not block the install.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
   # `docker-compose`, not `docker`: the only image this repository pins outside the workflows is the
   # Postgres service in `multiplayer/docker-compose.yml`, and there is no Dockerfile anywhere. The
   # `docker` ecosystem reads Dockerfiles and Kubernetes manifests only, so it failed every run with

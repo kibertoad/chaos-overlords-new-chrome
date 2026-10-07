@@ -60,6 +60,8 @@ public sealed partial class ChaosGame
         switch (notice)
         {
             case LobbyNotice.Seated seated:
+                // The session reads the new seat's log from its start, chat included.
+                _online.ClearChat();
                 _online.IsHost = seated.Membership.Player.IsHost;
                 _online.JoinCodeShown = seated.Membership.JoinCode;
                 _online.Match = seated.Membership.Match;
@@ -106,6 +108,9 @@ public sealed partial class ChaosGame
                 // one the server is still starting is left for a later poll.
                 if (_session is null) TryStartOnlineMatch(updated.Match);
                 return;
+            case LobbyNotice.Chatted chatted:
+                _online.RecordChat(chatted.Lines);
+                return;
             case LobbyNotice.Listed listed:
                 _online.Listings = Describe(listed.Matches);
                 _online.DiscoverySelection = 0;
@@ -137,6 +142,14 @@ public sealed partial class ChaosGame
                 if (failed.Operation == nameof(MultiplayerLobbySession.UpdateProfile))
                 {
                     RejectLobbyProfile(failed);
+                    return;
+                }
+                // A refused chat message (the rate limit, a match that has just started) leaves the
+                // seat as it was too. The connection error is drawn only on the connect form, so
+                // taking that path here told the player nothing.
+                if (failed.Operation == nameof(MultiplayerLobbySession.SendChat))
+                {
+                    _online.Status = failed.Reason;
                     return;
                 }
                 RememberOnlineFailure(failed.Error, failed.Operation, lastEventSequence: null);

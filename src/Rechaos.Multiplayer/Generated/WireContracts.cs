@@ -17,6 +17,7 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonDerivedType(typeof(LobbyPlayerJoinedEvent), "lobby.playerJoined")]
 [JsonDerivedType(typeof(LobbyPlayerLeftEvent), "lobby.playerLeft")]
 [JsonDerivedType(typeof(LobbyPlayerUpdatedEvent), "lobby.playerUpdated")]
+[JsonDerivedType(typeof(LobbyChatMessageEvent), "lobby.chatMessage")]
 [JsonDerivedType(typeof(LobbyHostChangedEvent), "lobby.hostChanged")]
 [JsonDerivedType(typeof(MatchStartedEvent), "match.started")]
 [JsonDerivedType(typeof(MatchStatusChangedEvent), "match.statusChanged")]
@@ -84,6 +85,18 @@ public sealed record LobbyPlayerUpdatedEvent(
     string CreatedAt,
     [property: JsonPropertyName("payload")] LobbyPlayerUpdatedEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "lobby.playerUpdated");
+
+public sealed record LobbyChatMessageEventPayload(
+    [property: JsonPropertyName("playerId")] string PlayerId,
+    [property: JsonPropertyName("text")] string Text
+);
+
+public sealed record LobbyChatMessageEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] LobbyChatMessageEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "lobby.chatMessage");
 
 public sealed record LobbyHostChangedEventPayload(
     [property: JsonPropertyName("hostPlayerId")] string HostPlayerId
@@ -302,7 +315,8 @@ public sealed record TurnDesyncedEventPayloadReports(
 public sealed record TurnDesyncedEventPayload(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("reports")] IReadOnlyList<TurnDesyncedEventPayloadReports> Reports,
-    [property: JsonPropertyName("candidateStateHashes")] IReadOnlyList<string> CandidateStateHashes
+    [property: JsonPropertyName("candidateStateHashes")] IReadOnlyList<string> CandidateStateHashes,
+    [property: JsonPropertyName("tieBreakerPlayerId")] string? TieBreakerPlayerId
 );
 
 public sealed record TurnDesyncedEvent(
@@ -554,6 +568,10 @@ public sealed record JoinRunningMatchRequest(
 public sealed record UpdatePlayerProfileRequest(
     [property: JsonPropertyName("displayName")] string DisplayName,
     [property: JsonPropertyName("portraitId")] int PortraitId
+);
+
+public sealed record PostChatMessageRequest(
+    [property: JsonPropertyName("text")] string Text
 );
 
 public sealed record SubmitOrdersRequest(

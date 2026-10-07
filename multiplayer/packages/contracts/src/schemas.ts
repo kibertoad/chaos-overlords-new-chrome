@@ -17,6 +17,7 @@ import { LIMITS } from './limits'
 import { orderDocumentSchema } from './orders'
 import {
   base64BodySchema,
+  chatMessageTextSchema,
   displayNameInputSchema,
   formatVersionSchema,
   joinCodeInputSchema,
@@ -90,6 +91,11 @@ export const joinRunningMatchRequestSchema = strictObject({
 export const updatePlayerProfileRequestSchema = strictObject({
   displayName: displayNameInputSchema,
   portraitId: portraitIdSchema,
+})
+
+/** One lobby chat message. Accepted only while the match is in its lobby. */
+export const postChatMessageRequestSchema = strictObject({
+  text: chatMessageTextSchema,
 })
 
 export const submitOrdersRequestSchema = strictObject({
@@ -174,6 +180,7 @@ export type CreateMatchRequest = InferOutput<typeof createMatchRequestSchema>
 export type JoinMatchRequest = InferOutput<typeof joinMatchRequestSchema>
 export type JoinRunningMatchRequest = InferOutput<typeof joinRunningMatchRequestSchema>
 export type UpdatePlayerProfileRequest = InferOutput<typeof updatePlayerProfileRequestSchema>
+export type PostChatMessageRequest = InferOutput<typeof postChatMessageRequestSchema>
 export type SubmitOrdersRequest = InferOutput<typeof submitOrdersRequestSchema>
 export type TakeoverVoteRequest = InferOutput<typeof takeoverVoteRequestSchema>
 export type RemovalVoteRequest = InferOutput<typeof removalVoteRequestSchema>

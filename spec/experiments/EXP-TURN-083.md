@@ -56,13 +56,13 @@ attack on the human gang.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. The rebuild makes the same calls up to call 1420, the family-7 draws
-from the human-only pool included. A computer's planned Influence in a sector
-it does not control gives the rebuild no command (DEV-AI-002), so it does not
-roll the ten dice of the Influence in sector 10 and reaches the combat dice
-ten calls early. The test holds the run as a known divergence at that call.
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. The rebuild makes the same calls
+up to call 1420, the family-7 draws from the human-only pool included. A
+computer's planned Influence in a sector it does not control gives the rebuild
+no command (DEV-AI-002), so it does not roll the ten dice of the Influence in
+sector 10 and reaches the combat dice ten calls early. The test holds the run as
+a known divergence at that call.
 
 ## Conclusion
 

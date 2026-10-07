@@ -29,6 +29,8 @@ public static class RouteTemplates
     public const string UpdateMatchSettings = "PUT /matches/:matchId/settings";
     /// <summary><c>PUT /matches/:matchId/profile</c></summary>
     public const string UpdatePlayerProfile = "PUT /matches/:matchId/profile";
+    /// <summary><c>POST /matches/:matchId/chat</c></summary>
+    public const string PostChatMessage = "POST /matches/:matchId/chat";
     /// <summary><c>POST /matches/:matchId/start</c></summary>
     public const string StartMatch = "POST /matches/:matchId/start";
     /// <summary><c>POST /matches/:matchId/leave</c></summary>
@@ -73,6 +75,7 @@ public static class RouteTemplates
         GetMatch,
         UpdateMatchSettings,
         UpdatePlayerProfile,
+        PostChatMessage,
         StartMatch,
         LeaveMatch,
         RejoinMatch,

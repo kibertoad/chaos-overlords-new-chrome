@@ -4,11 +4,13 @@ import {
   type InferOutput,
   literal,
   nullable,
+  optional,
   picklist,
   strictObject,
   variant,
 } from 'valibot'
 import {
+  chatMessageTextSchema,
   eventSeqSchema,
   formatVersionSchema,
   isoTimestampSchema,
@@ -74,6 +76,16 @@ export const lobbyPlayerUpdatedEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('lobby.playerUpdated'),
   payload: strictObject({ player: playerViewSchema }),
+})
+
+/**
+ * A message a seated player posted to the lobby. Chat is a lobby feature: the server refuses it
+ * once the match has started, so these events all precede `match.started` in a log.
+ */
+export const lobbyChatMessageEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('lobby.chatMessage'),
+  payload: strictObject({ playerId: resourceIdSchema, text: chatMessageTextSchema }),
 })
 
 export const lobbyHostChangedEventSchema = strictObject({
@@ -205,6 +217,13 @@ export const turnDesyncedEventSchema = strictObject({
      * out and what the match will converge on.
      */
     candidateStateHashes: array(stateFingerprintSchema),
+    /**
+     * Who may break a tie between the candidates: the host when the host's report is one of them,
+     * otherwise the lowest-numbered seat whose report is. Null when there is a single candidate,
+     * which anybody holding it may post. Absent from announcements stored before it existed,
+     * whose ties only the host could break.
+     */
+    tieBreakerPlayerId: optional(nullable(resourceIdSchema)),
   }),
 })
 
@@ -223,6 +242,7 @@ export const matchEventSchema = variant('type', [
   lobbyPlayerJoinedEventSchema,
   lobbyPlayerLeftEventSchema,
   lobbyPlayerUpdatedEventSchema,
+  lobbyChatMessageEventSchema,
   lobbyHostChangedEventSchema,
   matchStartedEventSchema,
   matchStatusChangedEventSchema,

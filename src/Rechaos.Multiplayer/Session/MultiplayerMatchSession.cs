@@ -175,7 +175,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// <summary>The seat this client plays. Every op it records names this slot.</summary>
     public int Slot { get; }
 
-    /// <summary>Whether this client is the one that repairs a desync by uploading a snapshot.</summary>
+    /// <summary>Whether this client holds the host role, which breaks a desync tie it is part of.</summary>
     public bool IsHost => _isHost;
 
     /// <summary>Whether startup is reconstructing turns or handovers from durable history.</summary>

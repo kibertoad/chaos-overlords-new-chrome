@@ -6,6 +6,7 @@ import {
   kickPlayerContract,
   leaveMatchContract,
   listLobbiesContract,
+  postChatMessageContract,
   rejoinMatchContract,
   removalVoteContract,
   startMatchContract,
@@ -108,6 +109,16 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
     await c
       .get('container')
       .kernel.lobby.updateProfile(
+        requireMember(c.get('principal'), c.req.valid('param').matchId),
+        c.req.valid('json'),
+      )
+    return c.body(null, 204)
+  })
+
+  buildHonoRoute(api, postChatMessageContract, async (c) => {
+    await c
+      .get('container')
+      .kernel.lobby.postChat(
         requireMember(c.get('principal'), c.req.valid('param').matchId),
         c.req.valid('json'),
       )

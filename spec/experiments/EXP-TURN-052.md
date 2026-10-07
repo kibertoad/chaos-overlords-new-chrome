@@ -45,12 +45,11 @@ The run made 407 calls of `roll`. In turn 1 the stored limit was 300000 ms. The 
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same state, with each expired turn taken as a Done press. For the same choice
-it stores the same limit, for each recorded elapsed time it draws the same
-width and plays the same warning slot, and it lets planning go on and end at
-the same elapsed times.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same state, with each expired turn taken
+as a Done press. For the same choice it stores the same limit, for each recorded
+elapsed time it draws the same width and plays the same warning slot, and it
+lets planning go on and end at the same elapsed times.
 
 ## Conclusion
 
