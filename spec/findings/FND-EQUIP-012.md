@@ -22,19 +22,19 @@ locations:
     address: 0x0043E2D6
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00445F2E..0x004460FA
+    address: 0x00445F2E..0x00446105
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004462A7..0x004462CD
+    address: 0x0044629D..0x004462F1
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00446E68..0x00446E8E
+    address: 0x00446E5E..0x00446EB2
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004470AD..0x004470FC
+    address: 0x004470AD..0x00447102
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004444B0..0x0044455B
+    address: 0x004444B0..0x0044455F
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0044465E
@@ -43,7 +43,7 @@ locations:
     address: 0x00444CEA
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00444D68..0x00444E8C
+    address: 0x00444D68..0x00444E94
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -74,7 +74,7 @@ List builder `fn_0043F136`:
   `0x7A`: `type - 1` when that is 0 or more, else the type itself, so types 0
   and 1 give 0, 2 gives 1, 3 gives 2, 4 gives 3 and 99 gives 98
   (`0x0043F267..0x0043F285`).
-- It lists the item when all of these hold (`0x0043F293..0x0043F31B`): the
+- It lists the item when all of these hold (`0x0043F293..0x0043F335`): the
   item's 16-bit field at offset `0x80` is at most the Tech Level argument
   (signed); the category equals the requested one; the byte
   `0x004A2608[item * 6 + active_player]` is 0, where `active_player` is the
@@ -83,7 +83,7 @@ List builder `fn_0043F136`:
 - For a listed item it takes the 16-bit Cost (offset `0x7E`) and, when the
   sector record of the gang's current sector has a nonzero byte at offset
   `0x0E` and its owner byte equals the player argument, replaces it with
-  `Cost - Cost / 3` (`0x0043F343..0x0043F3B5`), the same test and formula as
+  `Cost - Cost / 3` (`0x0043F343..0x0043F3BE`), the same test and formula as
   the transaction pass (FND-EQUIP-007). It draws the name and that price on
   row `count` and stores the item number in entry `count` (`0x0043F513`). The
   count has no upper bound in the loop.
@@ -91,7 +91,7 @@ List builder `fn_0043F136`:
 
 Give panel `fn_00445A4F`:
 
-- The candidate recipients (`0x00445F2E..0x00445FB9`): the five entries of
+- The candidate recipients (`0x00445F2E..0x00445FC1`): the five entries of
   `0x00494838` are set to -1, then every roster slot of the same player other
   than the giver whose sector byte equals the giver's sector byte is stored in
   the next entry.
@@ -99,20 +99,20 @@ Give panel `fn_00445A4F`:
   selects the weapon, bit 2 the armor and bit 4 the miscellaneous item, and
   the recipient entry is the one holding the slot in offset `0x09`.
 - A Tech Level requirement is computed as the highest 16-bit field at offset
-  `0x80` among the selected items, starting from 0 (`0x00446029..0x004460FA`).
+  `0x80` among the selected items, starting from 0 (`0x00446029..0x00446105`).
   A candidate is accepted as recipient only when this requirement is at most
   the 16-bit field at offset `0x82` of the candidate's gang definition
-  (`0x004470AD..0x004470FC`).
+  (`0x004470AD..0x00447102`).
 - On confirmation it stores `misc * 4 + armor * 2 + weapon`, each selection
   flag 0 or 1, into offset `0x08`, and the chosen candidate's roster slot into
-  offset `0x09` (`0x004462A7..0x004462CD` pointer, `0x00446E68..0x00446E8E`
+  offset `0x09` (`0x0044629D..0x004462F1` pointer, `0x00446E5E..0x00446EB2`
   keyboard).
 
 Sell panel `fn_00443BBD`:
 
 - When the gang's action is already 12 (`0x004444B0`) the three flags are
   taken from bits 1, 2 and 4 of offset `0x08`; otherwise all three start at 0
-  (`0x00444553..0x0044455B`).
+  (`0x00444553..0x0044455F`).
 - A flag can be switched only when its slot byte (offset `0x04`, `0x05`,
   `0x06`) is not -1 (`0x00444D68`, `0x00444DE3`, `0x00444E61`).
 - Confirmation is refused while all three flags are 0 (`0x004445D2`,
@@ -143,7 +143,7 @@ Sell panel `fn_00443BBD`:
 
 ## Alternatives
 
-This entry replaces FND-EQUIP-008, which gave the category's "minus 1, kept at the type when that would be negative" as `0x0043DE4B..0x0043DE63` in the Equip panel and `0x0043F267..0x0043F270` in the list builder. Both ranges end after the `dec` and leave out the test that keeps the type: the `cmp` and `jl` at `0x0043DE66` and `0x0043F273` and the `inc` they reach at `0x0043DE75` and `0x0043F282`. Here the ranges run to where both paths join, `0x0043DE78` and `0x0043F285`. The error was found when the spec's ranges were checked against the instructions their text describes.
+This entry replaces FND-EQUIP-008, which gave the category's "minus 1, kept at the type when that would be negative" as `0x0043DE4B..0x0043DE63` in the Equip panel and `0x0043F267..0x0043F270` in the list builder. Both ranges end after the `dec` and leave out the test that keeps the type: the `cmp` and `jl` at `0x0043DE66` and `0x0043F273` and the `inc` they reach at `0x0043DE75` and `0x0043F282`. Here the ranges run to where both paths join, `0x0043DE78` and `0x0043F285`. The error was found when the spec's ranges were checked against the instructions their text describes. The same check found more of its ranges ending before the last instruction their text describes, and they are corrected here too: the list conditions ended at `0x0043F31B`, before the test of the miscellaneous byte (`0x0043F324` to `0x0043F32F`), and now end at `0x0043F335`; the discount ended at the `idiv` at `0x0043F3B5`, before the subtraction at `0x0043F3BB`, and now ends at `0x0043F3BE`; the candidate loop ended at its `inc` at `0x00445FB9` and now ends at `0x00445FC1`; the Tech Level requirement ended at `0x004460FA`, before the last item's load and store, and now ends at `0x00446105`, as does the location that holds both from `0x00445F2E`; the recipient test ended at its `jl` at `0x004470FC` and now ends at `0x00447102`; the pointer and keyboard stores were given as `0x004462A7..0x004462CD` and `0x00446E68..0x00446E8E`, which start after the mask's first loads and end before the store into offset `0x09`, and are now `0x0044629D..0x004462F1` and `0x00446E5E..0x00446EB2`; the Sell panel's three clears ended at the third, `0x0044455B`, and now end at `0x0044455F`, as does the location from `0x004444B0`; and the flag switches ended at `0x00444E8C`, inside the third switch, and now end at `0x00444E94`.
 
 - The Give panel's other Tech Level references (`0x0044722D..0x00447255`,
   keyboard selection) were not followed; they are assumed to apply the same

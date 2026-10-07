@@ -76,9 +76,9 @@ region's fields, the row names the finding and does not repeat them.
 | `0x00494850..0x00494868` | dwords | `fn_0043D132` | `fn_0043B290` | Attack panel state (FND-ATTACK-003) |
 | `0x00494868..0x00494890` | flags | `fn_00449B20`, `fn_0044FD6C`, `fn_0046FD80` | `fn_00427E60`, `fn_00471F06` | report and events panel flags (FND-EVENT-005) |
 | `0x00494890..0x004948A8` | dwords | `fn_00453087` | `fn_00451F80` | combat results panel state (FND-COMBAT-007) |
-| `0x004948A8..0x004948E8` | rows | `fn_0043F136`, `fn_004437E7` | `fn_0043DAD9`, `fn_004427FA` | Equip and Research list rows (FND-EQUIP-008, FND-RESEARCH-003) |
+| `0x004948A8..0x004948E8` | rows | `fn_0043F136`, `fn_004437E7` | `fn_0043DAD9`, `fn_004427FA` | Equip and Research list rows (FND-EQUIP-012, FND-RESEARCH-003) |
 | `0x004948E8..0x00494900` | dwords | `fn_0044FD6C`, `fn_00451602`, `fn_00451F80`, 2 more | `fn_0044F2FC`, `fn_00453087`, `fn_00453A8D` | combat results and events panel state (FND-COMBAT-007, FND-EVENT-005) |
-| `0x00494900..0x00494AF0` | rows | `fn_0043F136`, `fn_004437E7` | `fn_0043EFE5` | Equip and Research list rows (FND-EQUIP-008, FND-RESEARCH-003) |
+| `0x00494900..0x00494AF0` | rows | `fn_0043F136`, `fn_004437E7` | `fn_0043EFE5` | Equip and Research list rows (FND-EQUIP-012, FND-RESEARCH-003) |
 | `0x00494AF0..0x00494BF4` | dwords | `fn_00451F80` | `fn_00453087`, `fn_00453A8D` | combat results panel state (FND-COMBAT-007, FND-COMBAT-012) |
 | `0x00494BF4..0x00494C20` | dwords | `fn_00458155`, `fn_00458290`, `fn_00458B43`, 3 more | `fn_0045851A`, `fn_00458895`, `fn_00458ACC`, 5 more | CD audio and MCI state (FND-AUDIO-006, FND-AUDIO-007) |
 | `0x00494C28..0x00497FE8` | 48 records of 0x114 bytes | `fn_00458290`, `fn_0045867C`, `fn_00458895` | `fn_0045851A` | sound slots: +0 in use, +0x0A the path, +0x108 the memory handle, +0x10C the data, +0x110 the length (FND-AUDIO-006) |
