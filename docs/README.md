@@ -68,7 +68,7 @@ are. Git history provides change dates.
 | Document | What it holds | Kind |
 |---|---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Dependency direction, the projects and their responsibilities, command and event flow, the turn model as implemented, state ownership, determinism and proprietary-content boundaries, online play, error and security model, known debt | Design |
-| [AI-SPEC.md](AI-SPEC.md) | The rebuild's Original and Advanced computer-player policies, planner inputs and invariants, and the parity work still required | Design |
+| [AI-SPEC.md](AI-SPEC.md) | The rebuild's Original and Advanced computer-player policies, planner inputs and invariants, and how far recorded runs of the original prove the planner | Design |
 | [NATIVE-SAVE-FORMAT.md](NATIVE-SAVE-FORMAT.md) | The rebuild's save container and limits, the save document, the compatibility policy, and the replay format | Format specification |
 | [STATE-MAPPING.md](STATE-MAPPING.md) | Each field of the in-memory layouts FMT-STATE-001 to FMT-STATE-009 mapped to the rebuild state that holds it, and the fields that keep a row short of complete | Mapping |
 | [ASSET-PACK.md](ASSET-PACK.md) | The asset-pack fingerprint the extractor checks and the gameplay data bundled from the original tables | Reference |

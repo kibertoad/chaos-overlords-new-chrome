@@ -19,13 +19,13 @@ export interface AppEnv {
      * Reserves one unit of this caller's daily attached-journal budget. Returns a release function
      * when allowed, or null when spent. The handler releases it unless the journal is stored.
      */
-    bugReportJournalBudget?: () => (() => void) | null
+    bugReportJournalBudget?: () => Promise<(() => Promise<void>) | null>
     /**
-     * Spends one unit of the process-wide match-creation budget, or throws the 429 when it is gone.
+     * Spends one unit of the deployment-wide match-creation budget, or throws the 429 when it is gone.
      * Set by `matchCreationRateLimited`, called by the create handler once the body has validated;
      * absent everywhere else.
      */
-    spendMatchCreation?: () => void
+    spendMatchCreation?: () => Promise<void>
     /**
      * The object a contract handler answered with, recorded by `contractJson` so the response
      * validator can check it without parsing the body back out. Wrapped so that a handler

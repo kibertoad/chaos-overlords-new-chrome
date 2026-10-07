@@ -13,7 +13,7 @@ public sealed class ChaosRangeProjectionTests
     {
         var definitions = BundledOriginalData.Load();
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996,
-            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]);
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original);
         var state = OriginalMatchFactory.Create(definitions, setup);
         GameplayTurnFlow.AdvanceToPlanning(new MatchReplayRecorder(state));
         var player = state.Players[0];

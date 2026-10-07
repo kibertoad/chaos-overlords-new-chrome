@@ -43,9 +43,10 @@ public sealed partial class ScreenCaptureTests
     // of EXP-UI-012 opens the warning of RULE-OPTIONS-003 from the original's gangs, one of them
     // idle. The console presses before these captures route as RULE-UI-002 reads them. EXP-UI-018
     // compares the elimination card the only local human sees where its planning would have come
-    // (RULE-OBJECTIVE-005). EXP-UI-019 and EXP-UI-020 draw the rebuild's Detailed Combat clip at
-    // the captured tick (FND-COMBAT-016). EXP-UI-031 compares the first planning entry at every
-    // frame of the active-player marker and both frames of the selected sector's outline.
+    // (RULE-OBJECTIVE-005). The Detailed Combat captures draw the rebuild's clip at the captured
+    // tick (FND-COMBAT-016), after passing over as many clips as the captured index
+    // (FND-COMBAT-011). EXP-UI-031 compares the first planning entry at every frame of the
+    // active-player marker and both frames of the selected sector's outline.
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
@@ -58,9 +59,13 @@ public sealed partial class ScreenCaptureTests
         if (capture.Elements.Count == 0)
             Assert.Skip($"{capture} records no screen elements; the probe's digest command adds them.");
         // FND-COMBAT-016: the probe keeps a shot whose clip tick moved during every attempt without
-        // the tick, and drawing the clip at its first tick would compare a different picture.
+        // the tick, and drawing the clip at its first tick would compare a different picture. A shot
+        // taken between two clips of a presentation, after one returned and before the next set its
+        // tick up, has no tick either (EXP-UI-029).
         if (capture.ClipTick is null && capture.Screens.Contains("SCR-COMBAT-002"))
-            Assert.Skip($"{capture} shows a Detailed Combat clip, but the probe could not settle its tick.");
+            Assert.Skip($"{capture} shows the Detailed Combat panel without a clip tick: the tick moved during every copy, or the shot fell between two clips.");
+        if (Repainted.TryGetValue((experiment, run, step), out var repaint))
+            Assert.Skip($"{capture} cannot be compared: {repaint}.");
         var masks = ScreenCaptureMasks.For(capture.Screens);
         // The capture itself is only needed for elements with white or masked pixels; the
         // others are compared by digest.
@@ -74,13 +79,51 @@ public sealed partial class ScreenCaptureTests
             : RebuildFrame.Render(
                 OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
                 $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
-                capture.ItemFrame, clipTick: capture.ClipTick);
+                capture.ItemFrame, clipTick: capture.ClipTick, idlePhase: capture.IdlePhase,
+                caretPhase: capture.CaretPhase, clipIndex: capture.ClipIndex);
 
         var results = capture.Elements
             .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
         var output = TestContext.Current.TestOutputHelper;
         foreach (var result in results) output?.WriteLine(result.ToString());
         Assert.Empty(results.Where(result => result.Verdict == ElementVerdict.Differs).Select(result => result.ToString()));
+    }
+
+    // Shots whose screen a repaint of the original's window changed. The rebuild never loses what it
+    // drew, so it draws the screen as it stood before the repaint.
+    private static readonly Dictionary<(string Experiment, int Run, int Step), string> Repainted = new()
+    {
+        // FND-COMBAT-032: before tick 3 frame 0 of the strips is on the screen only, and a paint
+        // restores the apertures as the panel's back buffer holds them, black. EXP-UI-054 shows
+        // frame 0 at ticks 0 to 3 of the same clip. The rebuild draws frame 0 whatever paints come
+        // (DEV-COMBAT-003).
+        [("EXP-UI-049", 0, 13)] = "its apertures are black at tick 2 of the second clip, as a paint before tick 3 leaves them (FND-COMBAT-032)",
+    };
+
+    // FND-COMBAT-011: a Detailed Combat shot without clip_index is drawn at the presentation's
+    // first clip. Shots are taken after the dump, where only the console's control (flag 0) opens
+    // a presentation, and every planning presentation (flag 1) has returned by then, so such a shot
+    // shows a first clip when no console presentation of its run started a second. A shot with
+    // neither a tick nor an index, taken between two clips, is skipped and left out here.
+    [Fact]
+    public void ADetailedCombatShotWithoutAClipIndexShowsAFirstClip()
+    {
+        var directory = Path.Combine(AppContext.BaseDirectory, "spec", "experiments");
+        foreach (var run in ScreenCaptureRecord.LoadAll()
+                     .Where(capture => capture.Screens.Contains("SCR-COMBAT-002") && capture.ClipIndex is null
+                                       && capture.ClipTick is not null)
+                     .Select(capture => (capture.Experiment, capture.Run)).Distinct())
+        {
+            using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, run.Experiment + ".json")));
+            var presentations = fixture.RootElement.GetProperty("runs")[run.Run].GetProperty("combat_presentations")
+                .EnumerateArray().ToArray();
+            Assert.All(presentations.Where(presentation => presentation.GetProperty("automatic").GetInt32() != 0),
+                presentation => Assert.True(presentation.GetProperty("returned").GetBoolean(),
+                    $"{run}: a planning presentation was still open after the dump"));
+            Assert.All(presentations.Where(presentation => presentation.GetProperty("automatic").GetInt32() == 0),
+                presentation => Assert.True(presentation.GetProperty("clips").GetInt32() <= 1,
+                    $"{run}: a console presentation started more than one clip, so a shot without clip_index is ambiguous"));
+        }
     }
 
     // The comparison needs a frame that depends on nothing but the state, the marker frame and the
