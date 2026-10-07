@@ -176,13 +176,10 @@ is usually `~/Downloads/setup_chaos_overlords_*.exe`):
 innoextract --gog --output-dir ~/Games/chaos-overlords ~/Downloads/chaos_overlords/setup_chaos_overlords_*.exe
 ```
 
-When the installer comes with `.bin` files, keep them in the same folder as the
-`.exe`; innoextract reads them from there. The game's files end up in
-`~/Games/chaos-overlords`, or in `~/Games/chaos-overlords/app` for older
-installers: the folder you need is the one that holds `DATA`, `HELP` and
-`MUSIC`. innoextract 1.9 or later reads current GOG installers. Ubuntu 22.04
-ships 1.8; if it reports an unsupported installer version, use a 1.9 build from
-the [innoextract website](https://constexpr.org/innoextract/).
+innoextract writes the game's files to `~/Games/chaos-overlords/app`, the folder
+that holds `DATA`, `HELP` and `MUSIC`, and the installer's own images to
+`~/Games/chaos-overlords/tmp`, which the game does not need. GOG's installer
+version 2.1.0.17 unpacks with innoextract 1.8 (Ubuntu 22.04) and later.
 
 A copy installed another way works as well: running the installer under Wine
 puts it in `~/.wine/drive_c/GOG Games/Chaos Overlords`, and the Heroic Games
@@ -198,7 +195,7 @@ or `kdialog`. Without either, or to import before the first start, run the
 import from a terminal:
 
 ```shell
-chaos-overlords-new-chrome-import ~/Games/chaos-overlords
+chaos-overlords-new-chrome-import ~/Games/chaos-overlords/app
 ```
 
 The import reads the folder and copies nothing back into it, so you can delete
