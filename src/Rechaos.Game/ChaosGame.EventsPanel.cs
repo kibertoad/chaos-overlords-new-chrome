@@ -185,7 +185,7 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// A press on the panel (SCR-EVENT-001, FND-EVENT-005). Previous and Next play slot 3 and
+    /// A press on the panel (SCR-EVENT-001, FND-EVENT-007). Previous and Next play slot 3 and
     /// hold their pressed face when a step is allowed, and play slot 4 without holding on the
     /// first or last report. Exit plays slot 3 and holds its face through <c>fn_00418821</c>. All
     /// three act on a release inside themselves.
@@ -403,7 +403,7 @@ public sealed partial class ChaosGame
         font.Draw(batch, LastTurnEventPresentation.Subject(state, record),
             LastTurnEventsLayout.Subject.ToVector2(), Color.Lime, 1);
         // SCR-EVENT-001: the caption is STRING/33 to STRING/44 by the record's type and arg1, cut
-        // to 35 characters (FND-EVENT-005).
+        // to 35 characters (FND-EVENT-007).
         if (LastTurnEventPresentation.Caption(record) is { } caption)
         {
             if (caption.Length > LastTurnEventsLayout.CaptionColumns)

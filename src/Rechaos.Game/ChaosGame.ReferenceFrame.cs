@@ -210,11 +210,43 @@ public sealed record ReferenceLamps(bool Events, bool Comlink)
 }
 
 /// <summary>
+/// One button edge of a <see cref="ReferenceClick"/> made on its own, so that a frame can be drawn
+/// while a button is held: the left button pressed and kept down, the pointer moved with it down,
+/// the left button released, and the right button pressed and released.
+/// </summary>
+public enum ReferenceButtonEdge
+{
+    Down,
+    Move,
+    Up,
+    RightDown,
+    RightUp,
+}
+
+/// <summary>
 /// A left-button click at a point of the drawing area, made twice for a double-click, or a press
-/// there that moves to <see cref="Release"/> with the button held and is released there.
+/// there that moves to <see cref="Release"/> with the button held and is released there, or one
+/// button edge on its own (<see cref="Edge"/>).
 /// </summary>
 public sealed record ReferenceClick(Point Point, bool Double = false, Point? Release = null)
 {
+    /// <summary>
+    /// The one button edge this entry makes in place of a click, written <c>x:y:d</c> (left
+    /// down), <c>x:y:m</c> (move with the left button down), <c>x:y:u</c> (left up),
+    /// <c>x:y:rd</c> and <c>x:y:ru</c> (right down and up).
+    /// </summary>
+    public ReferenceButtonEdge? Edge { get; init; }
+
+    private static readonly IReadOnlyDictionary<string, ReferenceButtonEdge> EdgeCodes =
+        new Dictionary<string, ReferenceButtonEdge>
+        {
+            ["d"] = ReferenceButtonEdge.Down,
+            ["m"] = ReferenceButtonEdge.Move,
+            ["u"] = ReferenceButtonEdge.Up,
+            ["rd"] = ReferenceButtonEdge.RightDown,
+            ["ru"] = ReferenceButtonEdge.RightUp,
+        };
+
     /// <summary>
     /// Text typed in place of a click, a character at a time, as the Comlink Send panel takes keys:
     /// upper-case letters, digits and spaces, written <c>'TEXT</c> in the list.
@@ -229,6 +261,12 @@ public sealed record ReferenceClick(Point Point, bool Double = false, Point? Rel
                        && entry.Skip(1).All(character => character is ' ' or (>= '0' and <= '9') or (>= 'A' and <= 'Z'))
                     ? new ReferenceClick(Point.Zero) { Text = entry[1..] }
                     : throw new ArgumentException($"Typed text is 'TEXT of upper-case letters, digits and spaces: {entry}");
+            if (entry.Split(':') is [var edgeX, var edgeY, var code] && EdgeCodes.TryGetValue(code, out var edge)
+                && int.TryParse(edgeX, System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var x) && x < VirtualInput.Width
+                && int.TryParse(edgeY, System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var y) && y < VirtualInput.Height)
+                return new ReferenceClick(new Point(x, y)) { Edge = edge };
             var ends = entry.Split('>');
             var numbers = ends.SelectMany(end => end.Split(':')).Select(part => int.TryParse(part,
                 System.Globalization.NumberStyles.None,
@@ -243,12 +281,13 @@ public sealed record ReferenceClick(Point Point, bool Double = false, Point? Rel
                     >= 0 and < VirtualInput.Width, >= 0 and < VirtualInput.Height]) =>
                     new ReferenceClick(new Point(numbers[0], numbers[1]), Release: new Point(numbers[2], numbers[3])),
                 _ => throw new ArgumentException(
-                    $"A reference click is x:y, x:y:2 or x:y>x:y inside the drawing area: {entry}"),
+                    $"A reference click is x:y, x:y:2, x:y>x:y, or x:y:d, x:y:m, x:y:u, x:y:rd or x:y:ru inside the drawing area: {entry}"),
             };
         }).ToArray();
 
-    public override string ToString() => Text is not null ? "'" + Text : Release is { } release
-        ? $"{Point.X}:{Point.Y}>{release.X}:{release.Y}"
+    public override string ToString() => Text is not null ? "'" + Text
+        : Edge is { } edge ? $"{Point.X}:{Point.Y}:" + EdgeCodes.Single(code => code.Value == edge).Key
+        : Release is { } release ? $"{Point.X}:{Point.Y}>{release.X}:{release.Y}"
         : $"{Point.X}:{Point.Y}" + (Double ? ":2" : "");
 }
 
@@ -274,6 +313,8 @@ public sealed partial class ChaosGame
         Move,
         Release,
         Type,
+        RightPress,
+        RightRelease,
     }
     private int _referenceEdge;
     private int _referenceSettled;
@@ -312,6 +353,18 @@ public sealed partial class ChaosGame
             _referenceEdges = (_referenceFrame.Clicks ?? [])
                 .SelectMany(click => click.Text is { } text
                     ? text.Select(character => (Point.Zero, ReferenceEdge.Type, character))
+                    : click.Edge is { } edge
+                    ?
+                    [
+                        (click.Point, edge switch
+                        {
+                            ReferenceButtonEdge.Down => ReferenceEdge.Press,
+                            ReferenceButtonEdge.Move => ReferenceEdge.Move,
+                            ReferenceButtonEdge.Up => ReferenceEdge.Release,
+                            ReferenceButtonEdge.RightDown => ReferenceEdge.RightPress,
+                            _ => ReferenceEdge.RightRelease,
+                        }, '\0'),
+                    ]
                     : click.Release is { } release
                     ?
                     [
@@ -373,6 +426,17 @@ public sealed partial class ChaosGame
                     UpdateHoverPoint(point);
                     _dragPoint = point;
                     HoldPointerAt(point);
+                    break;
+                // A right press reaches the game as the live loop's does, through the cancel of
+                // the current interaction with the press point; the pointer stays there while the
+                // button is down.
+                case ReferenceEdge.RightPress:
+                    UpdateHoverPoint(point);
+                    CancelCurrentInteraction(point);
+                    break;
+                case ReferenceEdge.RightRelease:
+                    CompletePointerRelease(pointerMapped: true, point, rightButton: true);
+                    UpdateHoverPoint(null);
                     break;
                 default:
                     CompletePointerRelease(pointerMapped: true, point, rightButton: false);

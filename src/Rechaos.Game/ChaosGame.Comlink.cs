@@ -175,12 +175,17 @@ public sealed partial class ChaosGame
         _comlinkStatus = string.Empty;
     }
 
+    /// <summary>
+    /// SCR-COMLINK-001, FND-UI-067: a press outside the panel is refused, and the held Dismiss face
+    /// closes the panel on a release inside it.
+    /// </summary>
     private void HandleComlinkViewClick(Point point)
     {
-        if (ComlinkViewLayout.Previous.Contains(point)) MoveComlinkCursor(-1);
+        if (!ComlinkViewLayout.Panel.Contains(point)) PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+        else if (ComlinkViewLayout.Previous.Contains(point)) MoveComlinkCursor(-1);
         else if (ComlinkViewLayout.Next.Contains(point)) MoveComlinkCursor(1);
         else if (ComlinkViewLayout.Ok.Contains(point))
-            AcceptAndInvoke(CloseComlink);
+            HoldPanelFace(ComlinkViewLayout.Ok, HeldButtonKind.Confirm, CloseComlink);
     }
 
     private void HandleComlinkSendClick(Point point)
@@ -208,7 +213,7 @@ public sealed partial class ChaosGame
 
     private void BeginComlinkSendButton(ComlinkSendButton button)
     {
-        // Native Send handler 0x0045EAB1 (FND-COMLINK-003) rejects the face immediately when no
+        // Native Send handler 0x0045EAB1 (FND-COMLINK-011) rejects the face immediately when no
         // recipient is selected; it only enters shared held-button helper
         // 0x00418821 after that predicate passes.
         if (button == ComlinkSendButton.Send && !_comlinkRecipients.Any(selected => selected))

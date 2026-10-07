@@ -39,6 +39,8 @@ internal static partial class Native
     public const int ScKeyMenu = 0xF100;
     public const int VkEscape = 0x1B;
     public const int VkDown = 0x28;
+    public const uint WmRButtonDown = 0x0204;
+    public const uint WmRButtonUp = 0x0205;
     public const uint MfByCommand = 0x0000;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

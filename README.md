@@ -171,13 +171,22 @@ lgogdownloader --login
 lgogdownloader --download --game '^chaos_overlords$' --platform windows --include installers --directory ~/Downloads
 ```
 
-Unpack it with `innoextract`, which needs no Wine. Install it with
-`sudo apt install innoextract` or `sudo dnf install innoextract` or
-`sudo pacman -S innoextract`, then point it at the installer (a browser download
-is usually `~/Downloads/setup_chaos_overlords_*.exe`):
+Unpack it with `innoextract`, which needs no Wine. Install it with the command
+for your distribution:
 
 ```shell
-innoextract --gog --output-dir ~/Games/chaos-overlords ~/Downloads/chaos_overlords/setup_chaos_overlords_*.exe
+sudo apt install innoextract      # Debian, Ubuntu
+sudo dnf install innoextract      # Fedora
+sudo pacman -S innoextract        # Arch
+```
+
+Then point it at the installer. The example uses the file name of GOG's
+installer version 2.1.0.17 in `~/Downloads`, where a browser saves it; change
+the name if your download has a different version, and add `chaos_overlords/`
+to the path if lgogdownloader fetched it:
+
+```shell
+innoextract --gog --output-dir ~/Games/chaos-overlords ~/Downloads/setup_chaos_overlords_2.1.0.17.exe
 ```
 
 innoextract writes the game's files to `~/Games/chaos-overlords/app`, the folder

@@ -16,7 +16,7 @@ Rechaos.Game --assets <pack> --reference-frame <save> <bitmap> --marker-frame <n
     [--pump-counter <0-7>] [--selected-sector <0-63>] [--lamps <0|1>,<0|1>]
     [--item-frame <0-14>] [--idle-phase <0-7>] [--caret-phase <0-5>]
     [--clip-tick <0-21> [--clip-index <n>]]
-    [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]
+    [--reference-clicks <x:y[:2|:d|:m|:u|:rd|:ru]|x:y>x:y|'TEXT>,...]
 ```
 
 which shows the save at its planning entry in a 640-by-460 window, holds the
@@ -41,14 +41,20 @@ and cycling parts of the screen stay at time zero however many clicks were
 made: the marker is drawn at `--marker-frame`, or at its first frame without it.
 `--reference-clicks` lists the presses that take the rebuild from the planning
 entry to a shot step's screen, `:2` marking a double-click, and `'TEXT` text
-typed into the Comlink Send panel a character at a time. They run on a clock
+typed into the Comlink Send panel a character at a time. `:d`, `:m` and `:u`
+make one edge of a click on their own: the left button pressed and kept down,
+the pointer moved with it down, and its release; `:rd` and `:ru` press and
+release the right button, which reaches the game as a live right press does.
+They run on a clock
 of their own, one button edge every 50 ms, wait while a pressed face or a flash
 holds the input (RULE-TIMER-004), and the frame is drawn 20 updates after the
 last one. Panels are drawn in place, without the slide. For a shot step the test
 works the presses out from the order steps before it: a double-click at the
 centre of the opened sector's cell for `open`, the step's point for `dbl` and
-`strip`, a card's point for `card`, `(20, 425)` for `back` and the step's text
-for `type`. It leaves out `wait`, which presses nothing, and `exit`, since the
+`strip`, a card's point for `card`, `(20, 425)` for `back`, the step's text
+for `type`, and the edge of its own at the step's point for `down`, `move`,
+`up`, `rdown` and `rup`. It leaves out `wait`, which presses nothing, and
+`exit`, since the
 reference frame does not draw the planning entry's panels.
 For a `title_capture`, `credits_capture` or `setup_capture` the test passes
 `title`, `credits` or `setup` in place of the save; the game draws its title
@@ -129,7 +135,8 @@ on its first page (EXP-UI-036). The test draws such a capture with
 the panel is the one it held when it came in (FND-UI-051), which the capture
 does not record, so `ScreenCaptureTests` reports the elements holding it
 without asserting them. A capture taken with Combat Results open, at the final
-view, during a drag or with a popup menu open cannot be compared.
+view, during a drag or with a popup menu open cannot be compared; a shot step
+holds a drag or a pressed control with the button steps above.
 The probe switches Warn if Idle Gangs off in a run that presses Done, and a
 `warn` step switches it back on; the test passes `--no-idle-warning` for a shot
 that no `warn` step precedes in such a run, so a Done click in its steps does

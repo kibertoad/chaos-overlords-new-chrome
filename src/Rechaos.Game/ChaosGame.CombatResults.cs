@@ -50,10 +50,16 @@ public sealed partial class ChaosGame
 
     private void HandleCombatSummaryClick(Point point)
     {
+        // SCR-COMBAT-001, FND-UI-067: a press outside the panel is refused, and the held Exit face
+        // closes the panel on a release inside it.
+        if (!CombatResultsLayout.Panel.Contains(point))
+        {
+            PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+            return;
+        }
         if (CombatResultsLayout.Ok.Contains(point))
         {
-            AcceptInput();
-            CloseCombatResults();
+            HoldPanelFace(CombatResultsLayout.Ok, HeldButtonKind.Confirm, CloseCombatResults);
             return;
         }
         if (CombatResultsLayout.Previous.Contains(point)) MoveCombatSummary(-1);

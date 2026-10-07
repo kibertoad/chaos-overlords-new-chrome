@@ -463,11 +463,12 @@ public sealed partial class ChaosGame
     /// without calling the event pump, so the steps the pump drives stop (<see cref="EventPumpClock"/>).
     /// They are the Hire handler's two loops for an offer and its reject cross (FND-HIRE-008), the
     /// individual command handler's loops for a gang card's portrait (FND-UI-044), the console tile
-    /// helper (FND-UI-032), the Last Turn Events page arrows (FND-EVENT-005) and the held-button
+    /// helper (FND-UI-032), the Last Turn Events page arrows (FND-EVENT-007) and the held-button
     /// helper behind the faces of the panels, the Comlink Send panel, the attack picker, the
-    /// idle-gang warning, Detailed Combat's Exit face and the sector view's back control
-    /// (FND-UI-046, FND-UI-047). Each loop runs until the button that pressed it comes up: the left
-    /// one, or the right one for a console tile pressed with it (FND-UI-063).
+    /// idle-gang warning, the Search panel's ALL, NONE and Done, Detailed Combat's Exit face and
+    /// the sector view's back control (FND-UI-046, FND-UI-047). Each loop runs until the button
+    /// that pressed it comes up: the left one, or the right one for a console tile pressed with it
+    /// (FND-UI-063).
     /// </summary>
     private bool HoldsPointerOutsideEventPump() =>
         HoldsCityPointer()
