@@ -42,10 +42,10 @@ The run made 7416 calls of `roll` over twenty-one Done presses. At the end
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state, the planning records included. The
-rebuild reaches the Greed hunter test that sets the hire role to slot 5.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state, the planning records included. The rebuild reaches the Greed hunter test
+that sets the hire role to slot 5.
 
 ## Conclusion
 

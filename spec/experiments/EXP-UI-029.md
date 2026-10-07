@@ -70,14 +70,11 @@ clip's gang on the left with its own Force tracks.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` presses the rebuild's console
-control at the same point, passes over as many clips as the shot's index,
-draws the next at the recorded tick and compares the elements of
-SCR-COMBAT-002, and no element differs. It skips step 7, which has no tick.
-`TheConsolesDetailedCombatControlPlaysTheLastTurnAgain` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.DetailedCombat.cs`
-compares the clips the console's press started with the rebuild's first clips.
+A test of the rebuild presses its console control at the same point, passes
+over as many clips as the shot's index, draws the next at the recorded tick and
+compares the elements of SCR-COMBAT-002, and no element differs. It skips step
+7, which has no tick. A second test compares the clips the console's press
+started with the rebuild's first clips.
 
 ## Conclusion
 

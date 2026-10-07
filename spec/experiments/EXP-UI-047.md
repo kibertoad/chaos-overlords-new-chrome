@@ -66,13 +66,10 @@ The captures show the strips `PX07001` and `PX07118`.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` presses the rebuild's console
-control at the same point, draws its clip at the recorded tick and compares
-the elements of SCR-COMBAT-002, and no element differs.
-`TheConsolesDetailedCombatControlPlaysTheLastTurnAgain` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.DetailedCombat.cs`
-compares the clips the console's press started with the rebuild's first clips.
+A test of the rebuild presses its console control at the same point, draws its
+clip at the recorded tick and compares the elements of SCR-COMBAT-002, and no
+element differs. A second test compares the clips the console's press started
+with the rebuild's first clips.
 
 ## Conclusion
 

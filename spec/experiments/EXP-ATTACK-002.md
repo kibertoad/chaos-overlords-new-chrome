@@ -42,8 +42,8 @@ lists for the other players are empty.
 
 ## Results
 
-`TheAttackPickerOffersTheOriginalsTargets` compares the lists as in
-EXP-ATTACK-001, and they are the same, in the same order.
+A test of the rebuild compares the lists as in EXP-ATTACK-001, and they are the
+same, in the same order.
 
 ## Conclusion
 

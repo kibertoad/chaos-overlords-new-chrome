@@ -159,21 +159,24 @@ public sealed partial class ScreenCaptureTests
         }
     }
 
-    [GeneratedRegex(@"^## (DEV-[A-Z]+-\d{3})\s*$\n(?:.*\n)*?- Departs from: (?<from>.*)$", RegexOptions.Multiline)]
-    private static partial Regex DeviationDepartures();
+    // The Departs from item of a deviation entry, with its indented continuation lines.
+    [GeneratedRegex(@"^- Departs from: (?<from>.*(?:\n  .*)*)$", RegexOptions.Multiline)]
+    private static partial Regex DeviationDeparture();
 
     // A mask may only hide what a deviation of that screen draws.
     [Fact]
     public void EveryMaskCitesADeviationFromItsScreen()
     {
-        var text = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "DEVIATIONS.md")).Replace("\r\n", "\n");
-        var departures = DeviationDepartures().Matches(text)
-            .ToDictionary(match => match.Groups[1].Value, match => match.Groups["from"].Value);
+        var departures = Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "deviations"), "DEV-*.md")
+            .ToDictionary(
+                path => Path.GetFileNameWithoutExtension(path),
+                path => DeviationDeparture().Match(File.ReadAllText(path).Replace("\r\n", "\n")));
         foreach (var (screen, masks) in ScreenCaptureMasks.ByScreen)
         foreach (var mask in masks)
         {
-            Assert.True(departures.TryGetValue(mask.Deviation, out var from), $"{mask.Deviation} is not in DEVIATIONS.md.");
-            Assert.Contains(screen, from);
+            Assert.True(departures.TryGetValue(mask.Deviation, out var departure), $"{mask.Deviation} is not in deviations/.");
+            Assert.True(departure.Success, $"deviations/{mask.Deviation}.md has no Departs from item.");
+            Assert.Contains(screen, departure.Groups["from"].Value);
         }
     }
 

@@ -74,15 +74,12 @@ rest of that capture shows the second clip's gangs.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` presses the rebuild's console
-control at the same point, draws each shot's clip at its index and tick and
-compares the elements of SCR-COMBAT-002. No element differs, apart from step
-13, which the test skips: the rebuild draws frame 0 there, as the original
-does without a paint (FND-COMBAT-032, EXP-UI-054).
-`TheConsolesDetailedCombatControlPlaysTheLastTurnAgain` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.DetailedCombat.cs`
-compares the clips the console's press started with the rebuild's first clips.
+A test of the rebuild presses its console control at the same point, draws each
+shot's clip at its index and tick and compares the elements of SCR-COMBAT-002.
+No element differs, apart from step 13, which the test skips: the rebuild draws
+frame 0 there, as the original does without a paint (FND-COMBAT-032,
+EXP-UI-054). A second test compares the clips the console's press started with
+the rebuild's first clips.
 
 ## Conclusion
 

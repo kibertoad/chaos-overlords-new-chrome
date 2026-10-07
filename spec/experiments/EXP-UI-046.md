@@ -75,14 +75,10 @@ unarmed attacker without Martial Arts. Its frame 0 is on the screen at tick 2.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` presses the rebuild's console
-control at the same point, draws each shot's clip at its index and tick and
-compares the elements of SCR-COMBAT-002, and no element differs. Before the
-rebuild took attack strip 2 for definition 63, the attack strip of every shot
-of the second clip differed.
-`TheConsolesDetailedCombatControlPlaysTheLastTurnAgain` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.DetailedCombat.cs`
+A test of the rebuild presses its console control at the same point, draws each
+shot's clip at its index and tick and compares the elements of SCR-COMBAT-002,
+and no element differs. Before the rebuild took attack strip 2 for definition
+63, the attack strip of every shot of the second clip differed. A second test
 compares the clips the console's press started with the rebuild's first clips.
 
 ## Conclusion

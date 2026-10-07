@@ -59,14 +59,11 @@ other portraits and dim names. Between steps 5 and 7 the Send face at
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the captures with the
-presses before each replayed as reference clicks, the planning entry opening
-the hand-off card, and the Send panel's caret drawn in the recorded phase.
-Leaving out the cash row (DEV-UI-006) and the city's key line (DEV-UI-023),
-every element matches. `TheRebuildStartsTheSameMatch` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the 307 rolls
-before the dump.
+A test of the rebuild compares the captures with the presses before each
+replayed as reference clicks, the planning entry opening the hand-off card, and
+the Send panel's caret drawn in the recorded phase. Leaving out the cash row
+(DEV-UI-006) and the city's key line (DEV-UI-023), every element matches.
+Another test replays the 307 rolls before the dump.
 
 A first comparison found the rebuild's hand-off card 18 pixels lower, with a
 centred name, no colour bar and a larger portrait; its Send cards filled in
