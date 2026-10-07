@@ -32,6 +32,8 @@
     <!-- The deviations, for the check that a screen comparison masks only what a deviation of
          that screen draws (ScreenCaptureMasks). -->
     <None Include="../../DEVIATIONS.md" Link="DEVIATIONS.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The capture coverage table, for the check that it names every compared capture. -->
+    <None Include="../../docs/VALIDATION.md" Link="docs/VALIDATION.md" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="xunit.v3" Version="4.0.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />
