@@ -679,7 +679,8 @@ internal sealed partial class NewGameSession(
     }
 
     // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
-    // last complete redraw.
+    // last complete redraw. FND-SEARCH-007: both callers push the viewer as a full dword, so it is
+    // read unmasked.
     private void OnCityRedraw(BreakContext context)
     {
         var redraw = new CityMarkers(context.Argument(0), []);
@@ -691,10 +692,11 @@ internal sealed partial class NewGameSession(
         }, oneShot: true);
     }
 
-    // FND-SEARCH-007: every caller pushes the viewer, the definition, the sector and the ordinal as
-    // full dwords with no leftover high bits, so they are read unmasked.
+    // FND-SEARCH-007: both calls push the definition sign-extended from its byte, the sector and the
+    // ordinal from dword locals, and the controlled flag as an immediate 1 or 0, so all four are full
+    // dwords with no leftover high bits and are read unmasked.
     private void OnSiteMarker(BreakContext context) =>
-        _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3) & 0xFF]);
+        _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3)]);
 
     // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
     // of the Financial control that opens the variant, keeps the nine numbers the panel draws, and

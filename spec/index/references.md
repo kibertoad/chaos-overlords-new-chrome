@@ -4106,7 +4106,6 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-AUDIO-018](../findings/FND-AUDIO-018.md) | body |
-| [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
 
 ## FND-AUDIO-013
 
@@ -4163,6 +4162,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | superseded_by |
+| [FND-EVENT-006](../findings/FND-EVENT-006.md) | body |
 | glossary: comlink_blink_step | glossary |
 | glossary: ComlinkAlert | glossary |
 | [RULE-AUDIO-007](../rules/RULE-AUDIO-007.md) | body, evidence |
@@ -6563,6 +6563,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-ATTACK-004](../findings/FND-ATTACK-004.md) | body |
+| [FND-SEARCH-007](../findings/FND-SEARCH-007.md) | body |
 | glossary: search_filters | glossary |
 | [RULE-SEARCH-001](../rules/RULE-SEARCH-001.md) | body, evidence |
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | body, evidence |

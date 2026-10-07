@@ -37,8 +37,9 @@ Function extents are those of FND-EXE-004.
   from `EAX`, the sector and the ordinal are pushed from dword locals, and the
   controlled flag is pushed as the immediate `PUSH 1` or `PUSH 0`.
 - `fn_004123CC` has two callers. The one at `0x004700DE` pushes the dword at
-  `0x004ABC84`. The one at `0x004498F6` pushes its own first argument
-  `[EBP+0x8]` as a dword, and the only call of its function, at `0x00471D57`,
+  `0x004ABC84`. The one at `0x004498F6`, in the Search panel handler
+  `fn_00448E32` (FND-SEARCH-004), pushes its own first argument `[EBP+0x8]` as
+  a dword, and the only call of that handler, at `0x00471D57`,
   pushes the dword at `0x004ABC84`.
 - `0x004ABC84` is written in five places, each a dword store. The redraw
   compares its first argument with the sector's owner at full width, with

@@ -59,15 +59,15 @@ for i in 0..16:
         comlink_pending = 1
 if comlink_pending:
     emit ComlinkAlert()
-comlink_alert_repeat = 0
+    comlink_alert_repeat = 0
 ```
 
 ## Outputs
 
-No return value. Sets `active_player`, `comlink_pending` and
-`comlink_alert_repeat`, and shows, one after another, the screens named above.
-Each of them blocks until the player closes it. Emits `ComlinkAlert` when the
-player has an unread message. Makes no draws.
+No return value. Sets `active_player` and `comlink_pending`, and shows, one
+after another, the screens named above. Each of them blocks until the player
+closes it. When the player has an unread message, emits `ComlinkAlert` and sets
+`comlink_alert_repeat` to 0. Makes no draws.
 
 ## Edge cases
 

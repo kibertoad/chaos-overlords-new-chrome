@@ -75,7 +75,7 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 | Sound | Resource | Played when | Evidence |
 |---|---|---|---|
 | Press | `DATA/SND00202` (slot 2) | A console tile is pressed (RULE-UI-001) | FND-UI-032, FND-AUDIO-010 |
-| Comlink alert | `DATA/Snd00205` (slot 6) | On entry with unread mail, and every 24 ticks while mail is unread (RULE-AUDIO-007, RULE-AUDIO-008) | FND-AUDIO-018 |
+| Comlink alert | `DATA/Snd00205` (slot 6) | Once at planning entry with unread mail, after the Last Turn Events; when a message for the planning player arrives; and every 24 ticks while mail is unread (RULE-AUDIO-007, RULE-AUDIO-008) | FND-AUDIO-018 |
 | Clock warnings | `DATA/Snd00206` and `DATA/Snd00207` (slots 7 and 8) | The last ten seconds and the last second of a timed turn (RULE-TIMER-003) | FND-TIMER-001 |
 | Game music | CD audio tracks 3 to 8, repeated (RULE-AUDIO-001 mode 2) | From the start of the game | FND-AUDIO-001 |
 

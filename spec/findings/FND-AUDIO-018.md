@@ -80,12 +80,14 @@ planning, after the Last Turn Events panel closes, and then every 24 ticks of
 timer slot 0 (four seconds at the nominal 6 Hz) until every message has been
 read. The planning entry resets the repeat counter but not the eight-step counter,
 so the first repeat comes 17 to 24 ticks after the entry, depending on where
-the eight-step counter stood. FND-AUDIO-012's statement that the
-event pump also plays slot 6 when it enters the city screen does not hold: the
-pump's only other read of the pending byte draws the light.
+the eight-step counter stood.
 
 ## Alternatives
 
+- FND-AUDIO-012's reading that the event pump also plays slot 6 when it enters
+  the city screen with the pending byte set is ruled out: the pump's only other
+  read of the pending byte, at `0x0046331D`, draws the light, and no fourth
+  call pushes slot 6.
 - Whether the eight-step counter and the repeat counter advance only on the
   city and sector screens or on every screen the pump serves has not been
   recorded.
