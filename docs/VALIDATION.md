@@ -319,6 +319,20 @@ Only sanitized mechanical values belong in a checked-in fixture; original
 pixels, media, saves of uncertain redistribution status, and narrative text do
 not.
 
+### The headless game
+
+A test that checks what the game does with a player's input, rather than what a
+rule helper returns, plays the game in `HeadlessGame`
+(`tests/Rechaos.Tests/HeadlessGame.cs`). It runs the game's own update on every
+tick, with no window, graphics device or audio device, from a temporary user
+data folder that holds the preferences the test starts from. The test presses
+keys and buttons, types text, moves the pointer and the clock, and reads the
+game through the read-only members of `ChaosGame.Observation.cs`. Every sound
+effect the game asks for is recorded with its volume, and an online test hands
+the game the transport of a fake server. The game loads its bundled data
+but no asset pack, so a test that needs pixels belongs with the screen
+comparisons instead.
+
 ## Current canonical identities
 
 - Full `DATA` + `HELP` + `MUSIC` source fingerprint:

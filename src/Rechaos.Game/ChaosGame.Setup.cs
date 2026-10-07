@@ -18,7 +18,7 @@ public sealed partial class ChaosGame
     private readonly bool _originalComputerHires;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
-    private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
+    internal static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
     private static readonly Rectangle TitleOptions = new(154, 376, 80, 34);
     private static readonly Rectangle TitleHelp = new(238, 376, 80, 34);
     private static readonly Rectangle TitleIntro = new(322, 376, 80, 34);
@@ -540,6 +540,14 @@ public sealed partial class ChaosGame
         var created = OriginalMatchFactory.Create(_definitions, setup);
         EnterNewMatch(created, advanceToPlanning: !_debugPhaseStepping);
     }
+
+    /// <summary>
+    /// Puts <paramref name="match"/>, which stands at a local human's planning entry, on screen the
+    /// way a hot-seat match enters that player's planning (RULE-SETUP-008): the Ready card when two
+    /// humans remain, then the completed turn's Combat Results and Last Turn Events, then the city.
+    /// For a test that reaches the entry another way, such as a replay of a run of the original.
+    /// </summary>
+    internal void EnterPlanningEntry(MatchState match) => EnterNewMatch(match, advanceToPlanning: false);
 
     /// <summary>
     /// Puts a newly created match on screen at its first planning entry. A match that already

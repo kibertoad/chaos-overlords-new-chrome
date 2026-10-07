@@ -51,7 +51,7 @@ try
             AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
 
-    using var game = new ChaosGame(
+    var game = new ChaosGame(
         assetRoot,
         args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
         diagnostics,
@@ -64,11 +64,12 @@ try
         referenceFrame: referenceFrame,
         // RULE-UI-013: a save named on the command line is opened at start.
         startupSavePath: StartupSave.PathFrom(args));
+    using var window = new ChaosGameWindow(game);
     if (platformSmokeTest)
         return 0;
     try
     {
-        game.Run();
+        window.Run();
     }
     catch (Exception exception) when (referenceFrame is not null)
     {
