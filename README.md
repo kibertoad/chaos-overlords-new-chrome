@@ -72,17 +72,124 @@ Terminal instead, run:
 
 ### Linux
 
-Install `ChaosOverlords-NewChrome-linux-x64-Setup-<version>.deb`, when a release
-includes it, with `sudo apt install ./ChaosOverlords-NewChrome-linux-x64-Setup-<version>.deb`.
-The first time the game starts, it asks for the folder that holds your copy of
-*Chaos Overlords* and imports the original assets from it into
-`~/.local/share/ChaosOverlordsNewChrome/Assets`. The folder picker needs `zenity`
-or `kdialog`, which the package recommends; without either, import from a
-terminal:
+Linux releases carry one x86-64 package,
+`ChaosOverlords-NewChrome-linux-x64-Setup-<version>.deb`. Some releases leave it
+out; pick one from [GitHub Releases](https://github.com/kibertoad/chaos-overlords-new-chrome/releases)
+that lists it. The package installs the game into `/opt/chaos-overlords-new-chrome`,
+the `chaos-overlords-new-chrome` and `chaos-overlords-new-chrome-import`
+commands, and a desktop menu entry. Installing takes three steps: install the
+game, unpack your GOG copy of *Chaos Overlords*, and import its assets.
+
+#### 1. Install the game
+
+Download the package from a terminal. This fetches the newest release; set
+`VERSION` by hand (for example `VERSION=0.10.8`) when the newest one has no
+`.deb`.
 
 ```shell
-chaos-overlords-new-chrome-import "/path/to/Chaos Overlords"
+VERSION=$(curl -fsSL https://api.github.com/repos/kibertoad/chaos-overlords-new-chrome/releases/latest \
+  | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+curl -fLO "https://github.com/kibertoad/chaos-overlords-new-chrome/releases/download/$VERSION/ChaosOverlords-NewChrome-linux-x64-Setup-$VERSION.deb"
 ```
+
+On Ubuntu 22.04 and later, Debian 12 and later, Linux Mint 21 and later, Pop!_OS
+and other distributions built on them, let apt install the package and its
+dependencies:
+
+```shell
+sudo apt install "./ChaosOverlords-NewChrome-linux-x64-Setup-$VERSION.deb"
+```
+
+The `./` matters: without it apt looks the name up in its repositories. Remove
+the game with `sudo apt remove chaos-overlords-new-chrome`. Debian 11 and older
+cannot read the package, because their dpkg does not unpack zstd.
+
+Fedora, Arch Linux and other distributions without apt have no package of their
+own yet. Install the libraries the game needs, unpack the `.deb` with `ar` and
+`tar`, and copy its files into place. On Fedora:
+
+```shell
+sudo dnf install binutils zstd libicu openssl-libs mesa-libGL libX11 zenity
+```
+
+On Arch Linux:
+
+```shell
+sudo pacman -S --needed binutils zstd icu openssl libglvnd libx11 zenity
+```
+
+Then, on either:
+
+```shell
+mkdir chaos-overlords-deb && cd chaos-overlords-deb
+ar x "../ChaosOverlords-NewChrome-linux-x64-Setup-$VERSION.deb" data.tar.zst
+tar --zstd -xf data.tar.zst
+sudo rm -rf /opt/chaos-overlords-new-chrome
+sudo cp -r opt/chaos-overlords-new-chrome /opt/
+sudo install -m 755 usr/bin/chaos-overlords-new-chrome usr/bin/chaos-overlords-new-chrome-import /usr/local/bin/
+sudo install -Dm 644 usr/share/applications/chaos-overlords-new-chrome.desktop /usr/local/share/applications/chaos-overlords-new-chrome.desktop
+cd .. && rm -rf chaos-overlords-deb
+```
+
+On another distribution, install its packages for ICU, OpenSSL 3 (or 1.1),
+OpenGL, libX11 and zenity (or kdialog) the same way. To update, run the same
+commands with the new package. To remove the game:
+
+```shell
+sudo rm -rf /opt/chaos-overlords-new-chrome
+sudo rm /usr/local/bin/chaos-overlords-new-chrome /usr/local/bin/chaos-overlords-new-chrome-import
+sudo rm /usr/local/share/applications/chaos-overlords-new-chrome.desktop
+```
+
+#### 2. Unpack the GOG installer
+
+GOG sells *Chaos Overlords* as a Windows installer only, a file named like
+`setup_chaos_overlords_<version>.exe`. Download it from your
+[GOG library](https://www.gog.com/account) in a browser, or from a terminal with
+`lgogdownloader` (packaged for Ubuntu, Debian and Fedora, and in the AUR on
+Arch). It saves the installer in a `chaos_overlords` folder under `--directory`:
+
+```shell
+lgogdownloader --login
+lgogdownloader --download --game '^chaos_overlords$' --platform windows --include installers --directory ~/Downloads
+```
+
+Unpack it with `innoextract`, which needs no Wine. Install it with
+`sudo apt install innoextract` or `sudo dnf install innoextract` or
+`sudo pacman -S innoextract`, then point it at the installer (a browser download
+is usually `~/Downloads/setup_chaos_overlords_*.exe`):
+
+```shell
+innoextract --gog --output-dir ~/Games/chaos-overlords ~/Downloads/chaos_overlords/setup_chaos_overlords_*.exe
+```
+
+When the installer comes with `.bin` files, keep them in the same folder as the
+`.exe`; innoextract reads them from there. The game's files end up in
+`~/Games/chaos-overlords`, or in `~/Games/chaos-overlords/app` for older
+installers: the folder you need is the one that holds `DATA`, `HELP` and
+`MUSIC`. innoextract 1.9 or later reads current GOG installers. Ubuntu 22.04
+ships 1.8; if it reports an unsupported installer version, use a 1.9 build from
+the [innoextract website](https://constexpr.org/innoextract/).
+
+A copy installed another way works as well: running the installer under Wine
+puts it in `~/.wine/drive_c/GOG Games/Chaos Overlords`, and the Heroic Games
+Launcher puts it in `~/Games/Heroic/Chaos Overlords` by default.
+
+#### 3. Import the assets
+
+Start the game from the desktop menu or with `chaos-overlords-new-chrome`. The
+first time it starts, it asks for the folder that holds your copy of
+*Chaos Overlords* and imports the original assets from it into
+`~/.local/share/ChaosOverlordsNewChrome/Assets`. The folder picker needs `zenity`
+or `kdialog`. Without either, or to import before the first start, run the
+import from a terminal:
+
+```shell
+chaos-overlords-new-chrome-import ~/Games/chaos-overlords
+```
+
+The import reads the folder and copies nothing back into it, so you can delete
+the unpacked copy afterwards.
 
 ## Project status
 
