@@ -67,12 +67,10 @@ The other fifteen bytes stay -1.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` reaches the same state
-as the original at the dump. `TheHireDockSetsTheOriginalsOrders` in
-`OriginalNewGameExperimentTests.Presentation.cs` takes each drop through the
-rebuild's dock placement check and `QueueHire` and each Reject through
-`SnubHireOffer`, and its pending hire and snubbed offer give the same three
-orders after every step.
+A test of the rebuild reaches the same state as the original at the dump.
+Another test takes each drop through the rebuild's dock placement and hire
+queue and each Reject through its snub, and the pending hire and snubbed offer
+give the same three orders after every step.
 
 ## Conclusion
 

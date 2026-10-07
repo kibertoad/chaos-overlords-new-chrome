@@ -11,7 +11,7 @@ verdicts:
 
 - `same`: the rebuild holds the same value at the same point.
 - `representation`: the rebuild encodes the value differently, and no rule result can tell.
-- `deviation DEV-...`: a deviation in [DEVIATIONS.md](../DEVIATIONS.md) covers the difference.
+- `deviation DEV-...`: a deviation in `deviations/` covers the difference.
 - `differs`: the rebuild holds a different value, or does not hold it where a rule reads it.
 - `not checked`: the mapping was not verified against the code.
 

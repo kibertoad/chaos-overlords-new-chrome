@@ -47,7 +47,7 @@ public sealed record SaveSlotSummary(
         SaveSlotStatus.Incompatible => "SAVED BY ANOTHER BUILD  CANNOT BE LOADED HERE",
         SaveSlotStatus.Unreadable => "FILE CANNOT BE READ  NOT SAFE TO OVERWRITE",
         _ => $"{Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)}  "
-             + $"{Scenario.ToString().ToUpperInvariant()}  "
+             + $"{ExecutableStrings.ScenarioTitle(Scenario)}  "
              + $"{MatchType}  H{HumanPlayers} A{AiPlayers}  {AiPolicyPresentation.Label(AiPolicy)} AI"
              + (RecoveredFromBackup
                  ? PrimaryRepaired ? "  RECOVERED" : "  BACKUP ONLY"
@@ -322,8 +322,9 @@ public static class SaveSlotCatalog
         }
     }
 
+    /// <summary>RULE-UI-009: the scenario is named by its title, string resource scenario + 1.</summary>
     public static string SuggestedName(MatchState state) =>
-        $"{state.Setup.Scenario.ToString().ToUpperInvariant()} - TURN {state.Coordinator.Turn}";
+        $"{ExecutableStrings.ScenarioTitle(state.Setup.Scenario)} - TURN {state.Coordinator.Turn}";
 
     private static SaveSlotSummary Summarize(
         int slot,

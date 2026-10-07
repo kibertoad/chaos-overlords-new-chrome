@@ -42,11 +42,10 @@ The run made 557 calls of `roll` over three Done presses. At the end
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state, sites included. An Influence that
-rolled dice for a pool of 0 or less would have added calls of `roll(6)` in
-turn 2.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state, sites included. An Influence that rolled dice for a pool of 0 or less
+would have added calls of `roll(6)` in turn 2.
 
 ## Conclusion
 

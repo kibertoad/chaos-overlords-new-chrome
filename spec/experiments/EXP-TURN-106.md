@@ -42,7 +42,7 @@ the highest score alone.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays both runs.
+A test of the rebuild replays both runs.
 The rebuild makes the same calls with the same bounds and results, ends the
 match with the resolution of turn 26, and reaches the same state, stored
 scores, standings, endgame rows, Last Turn reports and awards.

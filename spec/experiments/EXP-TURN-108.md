@@ -41,7 +41,7 @@ and 5.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
+A test of the rebuild replays the run. The
 rebuild makes the same calls with the same bounds and results, ends the match
 after the same Done press, and reaches the same state, stored scores,
 standings, endgame rows, Last Turn reports and awards.
