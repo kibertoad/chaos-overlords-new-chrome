@@ -65,11 +65,9 @@ quit.
 
 ## Results
 
-`ClosingAsksToSaveExactlyWhileTheMatchIsUnsaved` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Closes.cs` plays the same
-steps in the rebuild and compares the saved mark before each write, and for
-each close whether it asks, whether the answer opens the save browser, and
-whether the game leaves.
+A test of the rebuild plays the same steps in the rebuild and compares the saved
+mark before each write, and for each close whether it asks, whether the answer
+opens the save browser, and whether the game leaves.
 
 ## Conclusion
 

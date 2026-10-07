@@ -4,7 +4,7 @@ title: A computer player tries to hire only below a gang limit and outside each 
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-012, FND-AI-009, FND-EXE-004, FND-SETUP-018, EXP-TURN-028]
+evidence: [FND-AI-012, FND-AI-009, FND-EXE-004, FND-SETUP-018, EXP-TURN-028, FND-CONTROL-001, FND-EQUIP-006, FND-HIRE-002, FND-PLATFORM-003, FND-UI-035, FND-UI-036, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, FMT-STATE-001, FMT-STATE-002]
