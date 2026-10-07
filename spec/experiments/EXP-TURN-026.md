@@ -45,10 +45,10 @@ first Done press.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state. In the replay player 2's family-6 gangs in roster slots 21 and 25
-fail their first strength test in turns 25 and 28 and plan Equip.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same generator position and state. In
+the replay player 2's family-6 gangs in roster slots 21 and 25 fail their first
+strength test in turns 25 and 28 and plan Equip.
 
 ## Conclusion
 

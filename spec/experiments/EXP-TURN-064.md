@@ -44,12 +44,11 @@ and holds `crackdown_turns` 5. The human's cash is -27 and its scenario score
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state. In the replay, sector 51 cracks down
-in turn 6 while it is under police presence, and in turn 7 its Chaos stays at
-or below the Tolerance and the human is paid for it, as in a sector without
-presence.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state. In the replay, sector 51 cracks down in turn 6 while it is under police
+presence, and in turn 7 its Chaos stays at or below the Tolerance and the human
+is paid for it, as in a sector without presence.
 
 An eighth Done press eliminates the human in the original and in the rebuild,
 after 1558 calls of `roll`, so the run stops at seven presses and its end
