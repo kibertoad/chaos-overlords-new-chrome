@@ -27,6 +27,63 @@ for post-1.0 compatibility.
 The installer contains no original assets and requires an installed legal copy
 when importing them.
 
+### macOS
+
+The macOS builds are not signed or notarized, and there are no plans to change
+that: Apple signs and notarizes only for Apple Developer members, and we do not
+have Apple Developer membership. macOS therefore refuses to open the
+installer until you allow it, and the steps below are how to install the game
+on a Mac for the foreseeable future. Releases that include macOS
+builds carry `ChaosOverlords-NewChrome-osx-arm64-Setup-<version>.pkg` for Apple
+silicon (M1 and later) and, in some releases,
+`ChaosOverlords-NewChrome-osx-x64-Setup-<version>.pkg` for Intel Macs.
+
+Allow the downloaded installer in one of these ways:
+
+- macOS 15 (Sequoia) and later: double-click the `.pkg` and click **Done** when
+  macOS says it could not verify it. Open **System Settings > Privacy &
+  Security**, scroll down to the message that the package was blocked, click
+  **Open Anyway**, enter your password, and click **Open Anyway** again.
+- macOS 12 to 14: Control-click (or right-click) the `.pkg` in Finder, choose
+  **Open**, and click **Open** in the warning dialog.
+- Any version, from Terminal: remove the quarantine flag the browser put on the
+  download, then double-click the `.pkg` as usual.
+
+  ```shell
+  xattr -d com.apple.quarantine ~/Downloads/ChaosOverlords-NewChrome-osx-*-Setup-*.pkg
+  ```
+
+The installer puts **Chaos Overlords New Chrome** in Applications. If macOS also
+blocks the app the first time it starts, allow it under **Privacy & Security**
+the same way, or clear the flag from the whole bundle:
+
+```shell
+xattr -dr com.apple.quarantine "/Applications/Chaos Overlords New Chrome.app"
+```
+
+The first time the game starts, it asks for the folder that holds your copy of
+*Chaos Overlords* and imports the original assets from it into
+`~/Library/Application Support/ChaosOverlordsNewChrome/Assets`. To import from
+Terminal instead, run:
+
+```shell
+"/Applications/Chaos Overlords New Chrome.app/Contents/MacOS/Install Original Resources" "/path/to/Chaos Overlords"
+```
+
+### Linux
+
+Install `ChaosOverlords-NewChrome-linux-x64-Setup-<version>.deb`, when a release
+includes it, with `sudo apt install ./ChaosOverlords-NewChrome-linux-x64-Setup-<version>.deb`.
+The first time the game starts, it asks for the folder that holds your copy of
+*Chaos Overlords* and imports the original assets from it into
+`~/.local/share/ChaosOverlordsNewChrome/Assets`. The folder picker needs `zenity`
+or `kdialog`, which the package recommends; without either, import from a
+terminal:
+
+```shell
+chaos-overlords-new-chrome-import "/path/to/Chaos Overlords"
+```
+
 ## Project status
 
 New Chrome is a fully featured reproduction of the original, believed to be
@@ -57,34 +114,39 @@ their own sectors (DEV-AI-008), are switched by `--original-computer-moves` and
 `--original-computer-hires` on the game's command line instead of a screen.
 
 Recorded runs of the original now check it in play. A debugger records every
-random draw of new games from launch and up to twenty-five turns of play, some
-with orders for the human's gang, and the rebuild has to make the same draws and
-reach the same state (EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to
-EXP-TURN-016 in the [spec](spec/README.md)). That covers setup, the computer
-players' planning and hiring, including Siege, Eliminate and Big Man, the
-resolution of most orders, one Attack, one Sell and the police. Deaths in
-combat, the Terminate and Give orders, events and the later game have not been
-recorded yet, and a static reading can still be wrong there. The
+random draw of a new game from launch through up to eighty-two turns of play,
+with the state where the run stops (and, in most runs from EXP-TURN-048 on,
+the computer players' planning records), and the rebuild has to make the same
+draws and reach the same state (the `EXP-` entries of the
+[spec](spec/README.md)). The runs cover setup, every
+scenario and Mentality, the computer players' planning and hiring, every order,
+combat, the police, events, and the end of Greed, Acceptance, Dominance and Big
+Man matches. A static reading can still be wrong where no run reaches: some
+branches of the computer players' planning, the end of Power, Big 40, Siege,
+Armageddon and Eliminate matches, and a Kill 'Em All match played down to one
+player without the probe retiring the others
+([docs/AI-SPEC.md](docs/AI-SPEC.md#how-far-the-planner-is-proved)). The
 [parity matrix](PARITY.md) shows the state of every rule, format and screen;
-75 of its 222 rows are compared with evidence from the original. The
+207 of its 224 rows are compared with evidence from the original. The
 [parity achievement plan](parity-achievement-plan.md) and the
 [static](static_validation_plan.md) and [manual](manual_validation_plan.md)
 validation plans list the open questions.
 
 ### Key omissions
 
-- Recorded runs of the original do not reach every part of the late game yet
+- Recorded runs of the original do not reach every branch of the computer
+  players' planning or the end of every scenario
   ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136)).
 - Every screen the rebuild draws has been compared with at least one capture
   of the original, but some states of most, such as pressed faces, selections
-  and drags, have not been captured yet; [VALIDATION.md](docs/VALIDATION.md#screen-capture-coverage)
+  and drags, have not been captured yet; [the capture coverage table](docs/validation/screen-capture-coverage.md)
   lists them ([#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
 - Help is drawn by a cross-platform viewer, so its typography and paragraph
   layout approximate WinHelp's
   ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
 - Online play has no spectating, lobby chat or Comlink messages between
   players ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)).
-- Key bindings cannot be changed, and macOS builds are not signed or notarized
+- Key bindings cannot be changed
   ([#139](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139)).
 - Save and replay formats may change incompatibly before 1.0.0
   ([#141](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141)).
@@ -102,6 +164,8 @@ The technical documentation is cataloged in [docs/README.md](docs/README.md);
   interoperability will not be recreated. Online play uses the new documented
   transport instead.
 - Legacy Help macros and external-file execution are not run.
+- macOS builds are not signed or notarized, and there are no plans to change
+  that; [macOS](#macos) under Quick start says how to open them.
 
 ## Quality-of-life additions
 

@@ -10,10 +10,10 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00464108..0x0046428F
+    address: 0x00464108..0x00464290
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004273D5..0x0042773D
+    address: 0x004273D5..0x0042773E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0042C53B
@@ -118,4 +118,4 @@ column. Which report kinds reach `PX06000 + kind` in play is not followed here.
 List the calls of `fn_00464108` and read, before each, the image number pushed
 second and the four values pushed to the most recent `fn_00425EDF` call, whose
 result is pushed as the last two arguments. The branches that load `PX06` images
-are chosen by the comparisons at `0x0045076F..0x00450796`.
+are chosen by the comparisons at `0x0045076F..0x0045079B`.

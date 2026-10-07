@@ -9,7 +9,7 @@
     {"tick":0,"name":"setup","value":"scenario 5"},
     {"tick":0,"name":"setup","value":"mentality 0"},
     {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
-    {"tick":null,"name":"order","value":"turn 1: gang slot 0 action 8 target 0 target_2 0 repeat 1"},
+    {"tick":null,"name":"order","value":"turn 1: player 0 gang slot 0 action 8 target 0 target_2 0 repeat 1"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 1"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 2"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 3"},
@@ -97,14 +97,7 @@
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 85"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 86"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 87"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 88"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 89"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 90"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 91"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 92"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 93"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 94"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 95"}
+    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 88"}
   ],
   "seeds": [19],
   "runs": [

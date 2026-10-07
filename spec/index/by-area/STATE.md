@@ -14,7 +14,7 @@ Entries by area.
 | [FMT-STATE-004](../../formats/FMT-STATE-004.md) | Site slot in a sector record | supported |
 | [FMT-STATE-005](../../formats/FMT-STATE-005.md) | Comlink message record | established |
 | [FMT-STATE-006](../../formats/FMT-STATE-006.md) | Last Turn report record | supported |
-| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | supported |
+| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | established |
 | [FMT-STATE-008](../../formats/FMT-STATE-008.md) | Combat result row of one sector | supported |
 | [FMT-STATE-009](../../formats/FMT-STATE-009.md) | Input event record | supported |
 | [FND-STATE-001](../../findings/FND-STATE-001.md) | City generation stores Income and Tolerance in sector bytes 1 and 2, and the refresh before planning rebuilds bytes 3 to 6, 0x0D, 0x0E and 0x16 to 0x23 from them and the completed sites | recorded |

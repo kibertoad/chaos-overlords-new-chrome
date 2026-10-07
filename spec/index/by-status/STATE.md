@@ -6,7 +6,7 @@ Entries by status.
 
 ## supported
 
-8 entries.
+7 entries.
 
 | ID | Title |
 |---|---|
@@ -15,17 +15,17 @@ Entries by status.
 | [FMT-STATE-003](../../formats/FMT-STATE-003.md) | Per-gang combat record of the last resolution |
 | [FMT-STATE-004](../../formats/FMT-STATE-004.md) | Site slot in a sector record |
 | [FMT-STATE-006](../../formats/FMT-STATE-006.md) | Last Turn report record |
-| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot |
 | [FMT-STATE-008](../../formats/FMT-STATE-008.md) | Combat result row of one sector |
 | [FMT-STATE-009](../../formats/FMT-STATE-009.md) | Input event record |
 
 ## established
 
-1 entries.
+2 entries.
 
 | ID | Title |
 |---|---|
 | [FMT-STATE-005](../../formats/FMT-STATE-005.md) | Comlink message record |
+| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot |
 
 ## recorded
 
@@ -52,6 +52,7 @@ Entries whose status is established and whose findings and experiments are all o
 | ID | Title |
 |---|---|
 | [FMT-STATE-005](../../formats/FMT-STATE-005.md) | Comlink message record |
+| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot |
 
 ## Open questions
 
@@ -64,5 +65,5 @@ Entries whose Open questions section says more than None known.
 | [FMT-STATE-003](../../formats/FMT-STATE-003.md) | Per-gang combat record of the last resolution | supported |
 | [FMT-STATE-004](../../formats/FMT-STATE-004.md) | Site slot in a sector record | supported |
 | [FMT-STATE-006](../../formats/FMT-STATE-006.md) | Last Turn report record | supported |
-| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | supported |
+| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | established |
 | [FMT-STATE-008](../../formats/FMT-STATE-008.md) | Combat result row of one sector | supported |

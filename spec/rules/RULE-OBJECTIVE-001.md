@@ -1,10 +1,10 @@
 ---
 id: RULE-OBJECTIVE-001
 title: At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-004, FND-TURN-003, FND-AI-005, SRC-MANUAL-GOG, EXP-TURN-037, EXP-TURN-041, EXP-TURN-058, FND-STATE-004, EXP-TURN-106, EXP-TURN-107, EXP-TURN-108]
+evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-004, FND-TURN-003, FND-AI-005, SRC-MANUAL-GOG, EXP-TURN-037, EXP-TURN-041, EXP-TURN-058, EXP-UI-023, FND-STATE-004, EXP-TURN-106, EXP-TURN-107, EXP-TURN-108]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-002, RULE-OBJECTIVE-004]
@@ -77,3 +77,6 @@ None known.
 
 - Whether a state with no active player can arise is not recorded.
 - How the winners are recorded, beyond the standings, is not recorded.
+- No recorded run reaches a count of 0 active players. That rests on the
+  static reading this entry cites. Until a run reaches them, the entry stays
+  `supported`.

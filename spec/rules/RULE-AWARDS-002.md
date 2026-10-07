@@ -94,3 +94,7 @@ None known.
 - Whether a timed scenario can end with exactly one player active, which
   would show the splash for a player who did not have the best score, is not
   recorded beyond the order of the tests in RULE-OBJECTIVE-001.
+- No recorded run shows a computer survivor's splash to a human, the Stats tab
+  with one survivor, the Awards tab bringing the splash back, or Done from
+  either view as a recorded input. These rest on FND-AWARDS-004 and
+  FND-AWARDS-005. Until a run reaches them, the entry stays `supported`.

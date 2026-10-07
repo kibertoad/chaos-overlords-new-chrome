@@ -23,10 +23,8 @@ Entries by area.
 | [FND-AI-005](../../findings/FND-AI-005.md) | The shared AI sector selector scores sectors by mode in growing squares, and scenario standings rank players | recorded |
 | [FND-AI-006](../../findings/FND-AI-006.md) | A six-by-six attitude matrix starts from the Mentality, recovers each turn and drops after attacks and takeovers | recorded |
 | [FND-AI-007](../../findings/FND-AI-007.md) | A per-player difficulty band set from the Mentality changes the dice of several resolved actions | recorded |
-| [FND-AI-008](../../findings/FND-AI-008.md) | The AI ranks its three hire offers by a role mode, then refuses an unaffordable winner without a fallback | superseded |
 | [FND-AI-009](../../findings/FND-AI-009.md) | The AI hire role comes from a per-scenario schedule indexed by the elapsed turn | recorded |
 | [FND-AI-010](../../findings/FND-AI-010.md) | The AI keeps an encoded hire placement anchor per player and refreshes it by fixed scans | recorded |
-| [FND-AI-011](../../findings/FND-AI-011.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and the least efficient offer elsewhere | superseded |
 | [FND-AI-012](../../findings/FND-AI-012.md) | The AI tries to hire only below a gang limit set by territory, cash and scenario, with scenario time gates | recorded |
 | [FND-AI-013](../../findings/FND-AI-013.md) | AI queries for the first sector holding a visible hostile human gang and for family-6 coverage | recorded |
 | [FND-AI-014](../../findings/FND-AI-014.md) | The family-6 hire guards compare the previous hire role with schedule slot numbers | recorded |
@@ -40,26 +38,19 @@ Entries by area.
 | [FND-AI-022](../../findings/FND-AI-022.md) | The turn resolver decodes a gang's two target bytes differently for each action | recorded |
 | [FND-AI-023](../../findings/FND-AI-023.md) | A resolved hire takes the first inactive roster slot below 80 | recorded |
 | [FND-AI-024](../../findings/FND-AI-024.md) | The family-11 handler equips, heals, attacks the first visible local gang, or moves in blocks of six | recorded |
-| [FND-AI-025](../../findings/FND-AI-025.md) | Sector selector mode 6 routes toward the scenario leader and hostile human land | superseded |
 | [FND-AI-026](../../findings/FND-AI-026.md) | Sector selector modes 7, 8 and 9 score owned sectors by site Support, Cash and Stealth | recorded |
-| [FND-AI-027](../../findings/FND-AI-027.md) | Sector selector modes 10 to 16 and encoded modes, and the filters applied after scoring | superseded |
 | [FND-AI-028](../../findings/FND-AI-028.md) | The 48 direct calls of the shared sector selector, by mode and caller | recorded |
 | [FND-AI-029](../../findings/FND-AI-029.md) | The family-6 handler hunts hostile human sectors and attacks there with up to six target draws | recorded |
-| [FND-AI-030](../../findings/FND-AI-030.md) | The family-0 handler is a general state machine over the previous action | superseded |
-| [FND-AI-031](../../findings/FND-AI-031.md) | The family-4 handler hides, probes and moves through mode 2 | superseded |
 | [FND-AI-032](../../findings/FND-AI-032.md) | The family-2 handler equips, heals, attacks visible hostiles and takes weak or hostile sectors | recorded |
 | [FND-AI-033](../../findings/FND-AI-033.md) | The family-3 handler influences Cash sites, and AI target draws compare a gang from a different list | recorded |
 | [FND-AI-034](../../findings/FND-AI-034.md) | The family-5 handler has the family-3 shape with Support sites and mode 7 | recorded |
 | [FND-AI-035](../../findings/FND-AI-035.md) | The family-7 handler researches items and influences Research sites | recorded |
 | [FND-AI-036](../../findings/FND-AI-036.md) | The family-9 handler equips without a cooldown check, then leaves owned land or fights and takes enemy land | recorded |
-| [FND-AI-037](../../findings/FND-AI-037.md) | The family-10 handler improves armor, equips item 44, heals, seeks Stealth sites, then raises Chaos or hides | superseded |
-| [FND-AI-038](../../findings/FND-AI-038.md) | The family-12 handler equips and heals when unopposed and wanders at random, and attacks when opposed | superseded |
 | [FND-AI-039](../../findings/FND-AI-039.md) | The family-13 and family-14 handlers move to and hold the Big Man centre or the Eliminate headquarters | recorded |
 | [FND-AI-040](../../findings/FND-AI-040.md) | The sector selector breaks ties with one draw and routes one step, x then y, under a six-gang limit | recorded |
 | [FND-AI-041](../../findings/FND-AI-041.md) | The dispatcher resets a flagged planning record before it assigns a family, and its post-handler block is unreachable | recorded |
 | [FND-AI-042](../../findings/FND-AI-042.md) | Byte +1 of a planning record is set for an empty roster slot and by the Greed Terminate branches, and byte +11 is never used | recorded |
 | [FND-AI-043](../../findings/FND-AI-043.md) | Family 9 is seeded only for a network player the computer takes over; the planning pass's own seeding stores past the flag array | recorded |
-| [FND-AI-044](../../findings/FND-AI-044.md) | The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order | recorded |
 | [FND-AI-045](../../findings/FND-AI-045.md) | At the start of a match and after a load the computer players' site sums are cached per sector, and a new match also clears the AI flags and seeds the placement anchor | recorded |
 | [FND-AI-046](../../findings/FND-AI-046.md) | Selector 0x5B always counts gangs whose previous action is Chaos, and the branches that test it write Chaos at a low count | recorded |
 | [FND-AI-047](../../findings/FND-AI-047.md) | The resolver lowers the target's attitude toward its attacker after every attack, evaded or not, and the loser's toward the winner of a Control takeover | recorded |
@@ -74,7 +65,6 @@ Entries by area.
 | [FND-AI-056](../../findings/FND-AI-056.md) | Mode 4 of the sector selector scores a sector 1 when selector 0x2D accepts the owner query's value for the planning player | recorded |
 | [FND-AI-057](../../findings/FND-AI-057.md) | The family-1 handler's switch has a fourth branch for Attack, Hide and Move, and its crime gate falls through to the Goon test | recorded |
 | [FND-AI-058](../../findings/FND-AI-058.md) | The family-2 handler tests the hostile pool's own count, reads the owner query, and runs its late Control gates after every branch | recorded |
-| [FND-AI-059](../../findings/FND-AI-059.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, and a gang covers a sector for itself | superseded |
 | [FND-AI-060](../../findings/FND-AI-060.md) | The family-7 handler's Attack test reads the attitude toward the drawn gang's player | recorded |
 | [FND-AI-061](../../findings/FND-AI-061.md) | The family-11 handler's miscellaneous Equip and Heal also need a previous action other than Attack, and most branches keep the current sector as focus | recorded |
 | [FND-AI-062](../../findings/FND-AI-062.md) | Families 13 and 14 make up to five draws on a contested objective, can write nothing after a failed attack, and compare Support with an unset value | recorded |
@@ -82,7 +72,6 @@ Entries by area.
 | [FND-AI-064](../../findings/FND-AI-064.md) | The AI ranks its three hire offers by Chaos, Control, Influence, fighting strength, Tech Level and Research, or Stealth, then refuses an unaffordable winner | recorded |
 | [FND-AI-065](../../findings/FND-AI-065.md) | When no offer is hired, the AI snubs offer slot 0 in Greed and elsewhere the offer with the smallest Tech Level times positive statistics per cost | recorded |
 | [FND-AI-066](../../findings/FND-AI-066.md) | The sector selector keeps its score pairs between calls, skips filtered sectors when refilling them, and counts ties past the end of the list | recorded |
-| [FND-AI-067](../../findings/FND-AI-067.md) | The sector selector adds 1 to an encoded mode's sector for every sector a ring visits | superseded |
 | [FND-AI-068](../../findings/FND-AI-068.md) | The family-6 handler has no equipment gate, its guard target list ends in sector 100, which sends the gang toward sector 37, and a gang covers a sector for itself | recorded |
 | [FND-AI-069](../../findings/FND-AI-069.md) | The sector selector scores on the owner query, ends mode 6 after its hostile-human bonus, and multiplies table element x * 9 + y in its common block | recorded |
 | [FND-AI-070](../../findings/FND-AI-070.md) | The family-12 handler equips and heals when unopposed, otherwise moves toward the sector of the player's first gang, and attacks when opposed | recorded |
@@ -93,25 +82,29 @@ Entries by area.
 | [FND-AI-075](../../findings/FND-AI-075.md) | Family 12 stores the focus with every action it plans and a Move's destination as the coverage sector | recorded |
 | [FND-AI-076](../../findings/FND-AI-076.md) | Family 3 stores -1 in the focus after every action it plans after None, Control, Equip or Heal | recorded |
 | [FND-AI-077](../../findings/FND-AI-077.md) | Family 2's late Control gates read a local that holds the item of a planned Equip | recorded |
+| [FND-AI-078](../../findings/FND-AI-078.md) | Family 7 researches at once when its focus equals the best research sector, and reads the previous target without testing the previous action | recorded |
+| [FND-AI-079](../../findings/FND-AI-079.md) | Only the family handlers and their dispatcher store a planned action, and none stores Bribe, Give or Sell | recorded |
+| [FND-AI-080](../../findings/FND-AI-080.md) | The family-0 owned-sector tests after previous Control and after previous Heal, Hide or Move read the owner query, which gives -2 under police presence | recorded |
+| [FND-AI-081](../../findings/FND-AI-081.md) | The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order | recorded |
 | [RULE-AI-001](../../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported |
 | [RULE-AI-002](../../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
-| [RULE-AI-003](../../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | established |
+| [RULE-AI-003](../../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |
 | [RULE-AI-004](../../rules/RULE-AI-004.md) | Queries the computer players' handlers share | supported |
-| [RULE-AI-005](../../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | established |
-| [RULE-AI-006](../../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | established |
+| [RULE-AI-005](../../rules/RULE-AI-005.md) | How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one | supported |
+| [RULE-AI-006](../../rules/RULE-AI-006.md) | The shared AI sector selector scores the nearest sectors by mode and routes one step toward the best | supported |
 | [RULE-AI-007](../../rules/RULE-AI-007.md) | Sector selector mode 0 picks a random neighbouring sector | supported |
-| [RULE-AI-008](../../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | established |
+| [RULE-AI-008](../../rules/RULE-AI-008.md) | A computer player ranks its three hire offers by the mode of its hire role | supported |
 | [RULE-AI-009](../../rules/RULE-AI-009.md) | A computer player that hires nothing snubs one offer, the first in Greed and the least efficient elsewhere | supported |
 | [RULE-AI-010](../../rules/RULE-AI-010.md) | A computer player picks a hire role from its scenario's turn schedule, then hires, places or snubs | supported |
-| [RULE-AI-011](../../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | established |
-| [RULE-AI-012](../../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | established |
+| [RULE-AI-011](../../rules/RULE-AI-011.md) | A computer player tries to hire only below a gang limit and outside each scenario's closing turns | supported |
+| [RULE-AI-012](../../rules/RULE-AI-012.md) | The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches | supported |
 | [RULE-AI-013](../../rules/RULE-AI-013.md) | A computer player keeps one hire placement sector and replaces it by fixed scans when it stops being a good base | supported |
-| [RULE-AI-014](../../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | established |
+| [RULE-AI-014](../../rules/RULE-AI-014.md) | A new match starts every attitude at 0, or at Homicidal Maniac at -10 toward humans and +10 toward computers | supported |
 | [RULE-AI-015](../../rules/RULE-AI-015.md) | At the start of each turn's resolution every attitude below +10 rises by 1, except at Homicidal Maniac | established |
 | [RULE-AI-016](../../rules/RULE-AI-016.md) | Every Attack order lowers the target player's attitude toward the attacker by the larger of its reaction and the opening damage | established |
 | [RULE-AI-017](../../rules/RULE-AI-017.md) | A Control takeover lowers the previous owner's attitude toward the new owner by twice its reaction | established |
-| [RULE-AI-018](../../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | established |
-| [RULE-AI-019](../../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | established |
+| [RULE-AI-018](../../rules/RULE-AI-018.md) | A new match gives computer players difficulty band 0 at Goon, 1 at Criminal and 2 at Crime Lord and Homicidal Maniac | supported |
+| [RULE-AI-019](../../rules/RULE-AI-019.md) | Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves | supported |
 | [RULE-AI-020](../../rules/RULE-AI-020.md) | Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander, by previous action, cash and Mentality | supported |
 | [RULE-AI-021](../../rules/RULE-AI-021.md) | Family-2 computer gangs equip, heal, attack visible hostile gangs and take weak or hostile sectors | supported |
 | [RULE-AI-022](../../rules/RULE-AI-022.md) | Family-3 computer gangs influence the best Cash site in owned land, take sectors or move toward Cash | supported |
@@ -119,7 +112,7 @@ Entries by area.
 | [RULE-AI-024](../../rules/RULE-AI-024.md) | Family-5 computer gangs influence the best Support site in owned land, take sectors or move toward Support | supported |
 | [RULE-AI-025](../../rules/RULE-AI-025.md) | Family-6 computer gangs hunt sectors with visible hostile human gangs and fight there | supported |
 | [RULE-AI-026](../../rules/RULE-AI-026.md) | Family-7 computer gangs sit where sites add the most Research, influence Research sites and research items in a fixed cycle | supported |
-| [RULE-AI-027](../../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors | established |
+| [RULE-AI-027](../../rules/RULE-AI-027.md) | Family-9 computer gangs equip without waiting, leave owned land, and fight or take other players' sectors | supported |
 | [RULE-AI-028](../../rules/RULE-AI-028.md) | Family-10 computer gangs improve armor, equip item 44, heal, seek Stealth sites, then raise Chaos or hide | supported |
 | [RULE-AI-029](../../rules/RULE-AI-029.md) | Family-11 computer gangs equip, heal, attack the first visible definition-0 gang, or move in blocks of six behind a leader | supported |
 | [RULE-AI-030](../../rules/RULE-AI-030.md) | Family-12 computer gangs equip and heal when unopposed, step toward their player's first gang, and attack when opposed | supported |

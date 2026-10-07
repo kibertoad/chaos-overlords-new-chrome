@@ -10,22 +10,22 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00460CA0..0x00460CCE
+    address: 0x00460CA0..0x00460CCF
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00482000..0x0048200B
+    address: 0x00482000..0x0048200C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004255F1..0x00425600
+    address: 0x004255F1..0x00425601
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00464AD6..0x00464AE5
+    address: 0x00464AD6..0x00464AE6
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004653AE..0x004653DD
+    address: 0x004653AE..0x004653DE
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00465E9B..0x00465EC5
+    address: 0x00465E9B..0x00465EC6
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -81,7 +81,7 @@ dialog functions of FND-UI-022.
 
 ## How to reproduce
 
-Read the dwords at `0x00482000..0x0048200B` and the pushes in `_cinit` before
+Read the dwords at `0x00482000..0x0048200C` and the pushes in `_cinit` before
 its `_initterm` call. Disassemble each empty function and list its callers.
 Search the file for the little-endian addresses of `fn_004653CE` and
 `fn_00465E9B`.

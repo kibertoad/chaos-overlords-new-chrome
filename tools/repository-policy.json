@@ -88,6 +88,7 @@
     "spec/experiments/EXP-UI-006.json",
     "spec/experiments/EXP-UI-011.json",
     "spec/experiments/EXP-UI-012.json",
-    "spec/experiments/EXP-UI-018.json"
+    "spec/experiments/EXP-UI-018.json",
+    "spec/experiments/EXP-UI-046.json"
   ]
 }

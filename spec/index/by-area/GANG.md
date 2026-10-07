@@ -20,6 +20,6 @@ Entries by area.
 | [FND-GANG-010](../../findings/FND-GANG-010.md) | The compact gang panel places each value field in its 320-pixel frame, closes only on its face, Enter or Execute, and covers the base values with a black pattern | recorded |
 | [FND-GANG-011](../../findings/FND-GANG-011.md) | The compact gang panel dims its base values with black through bitmap 143, starting the pattern at each area's corner | recorded |
 | [RULE-GANG-001](../../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon | supported |
-| [RULE-GANG-002](../../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | established |
+| [RULE-GANG-002](../../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | supported |
 | [SCR-GANG-001](../../screens/SCR-GANG-001.md) | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported |
 | [SCR-GANG-002](../../screens/SCR-GANG-002.md) | Gang information panel for a hired gang | supported |

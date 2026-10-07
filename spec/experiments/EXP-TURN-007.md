@@ -67,7 +67,7 @@ position and state.
 
 ## Conclusion
 
-The fifteen turns agree with RULE-AI-006 as FND-AI-066 and FND-AI-067 give it.
+The fifteen turns agree with RULE-AI-006 as FND-AI-066 and FND-AI-069 give it.
 The call with mode `0x42` from sector 16 scored sector 2 once for each of the
 six sectors of the board within one step of the gang and sorted that 6 into
 pair 0. Player 2's call scored only sector 41 and filtered sector 0, so pair 0
