@@ -226,7 +226,7 @@ Entries by kind.
 
 ## findings
 
-394 entries.
+395 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -618,6 +618,7 @@ Entries by kind.
 | [FND-UI-059](../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation | recorded |
 | [FND-UI-060](../findings/FND-UI-060.md) | The planning entry draws the console's year, week, countdown, score and cash with the base-value number helper | recorded |
 | [FND-UI-063](../findings/FND-UI-063.md) | Only the About screen, the main console and the detailed sector screen take the right button, and the held-button helper acts at once on a right press | recorded |
+| [FND-UI-064](../findings/FND-UI-064.md) | The key handler tests Shift once and stores its event at one join, and the name editor's edit control upper-cases what is typed | recorded |
 | [FND-UI-066](../findings/FND-UI-066.md) | Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the handler that opened the panel | recorded |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
@@ -627,7 +628,7 @@ Entries by kind.
 
 ## experiments
 
-160 entries.
+162 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -789,6 +790,8 @@ Entries by kind.
 | [EXP-UI-047](../experiments/EXP-UI-047.md) | Does the Detailed Combat panel look the same in the rebuild through a bare-handed Martial Arts attack? | recorded |
 | [EXP-UI-048](../experiments/EXP-UI-048.md) | Does the Detailed Combat panel look the same in the rebuild through an attack of the viewer's that its target evades? | recorded |
 | [EXP-UI-049](../experiments/EXP-UI-049.md) | Does the Detailed Combat panel look the same in the rebuild through two evaded attacks on the viewer's gang? | recorded |
+| [EXP-UI-052](../experiments/EXP-UI-052.md) | Which character does the window procedure store for each number-pad key and each main-keyboard key, with Shift held and not? | recorded |
+| [EXP-UI-053](../experiments/EXP-UI-053.md) | Which name does the setup name editor give for each number-pad key and each main-keyboard key, with Shift held and not? | recorded |
 | [EXP-UI-054](../experiments/EXP-UI-054.md) | What do the Detailed Combat apertures show before the second clip's first strip frame? | recorded |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | How many steps does the intro show of each movie when it plays out? | recorded |
 

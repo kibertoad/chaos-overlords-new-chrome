@@ -181,6 +181,7 @@ internal sealed record NewGameSettings(
     {
         "strip" => $"press ({step.X}, {step.Y})",
         "drag" => $"drag ({step.X}, {step.Y}) to ({step.Target}, {step.Choice})",
+        "name" => $"name {step.Text}",
         _ => $"capture for {step.Screens}",
     };
 
@@ -224,7 +225,7 @@ internal sealed record NewGameSettings(
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
         foreach (var step in OrderSteps ?? [])
-            yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", "type" => "key", _ => "left_click" },
+            yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", "type" or "keys" => "key", _ => "left_click" },
                 $"{step} after the dump");
         foreach (var close in Closes ?? []) yield return ("close", $"{close} after the dump");
     }
@@ -275,7 +276,9 @@ internal sealed record ProbeTrace(
     List<SlideRecord>? Slides = null,
     List<CloseRecord>? Closes = null,
     List<SavedWriteRecord>? SavedWrites = null,
-    bool? EffectsEnabled = null);
+    bool? EffectsEnabled = null,
+    List<KeyEventRecord>? KeyEvents = null,
+    List<NameEntryRecord>? NameEntries = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -963,7 +966,8 @@ internal sealed partial class NewGameSession(
             settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
             settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
-            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null);
+            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null,
+            _keyEvents.Count == 0 ? null : _keyEvents, _nameEntries.Count == 0 ? null : _nameEntries);
     }
 
     private static void Click(IntPtr window, int x, int y)
