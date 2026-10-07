@@ -183,6 +183,8 @@ public sealed partial class ChaosGame
                         : null;
                 ResetMatchPresentation(resumed.State);
                 _online.AwaitedSlots = AwaitedSeats(resumed.Match.Players);
+                // The session republishes every open removal vote right after this notice.
+                _online.ForgetRemovalVotes();
                 _online.Status = string.Empty;
                 if (AdoptOnlineState(resumed.State, resumed.Submission, resumed.Turn))
                 {
@@ -292,8 +294,9 @@ public sealed partial class ChaosGame
                 if (!string.Equals(
                         removalClosed.PlayerId, _online.SelfPlayerId, StringComparison.Ordinal))
                 {
+                    // Removed is also true when the host kicked the seat while the vote was open.
                     _message = removalClosed.Removed
-                        ? "THE PLAYERS VOTED TO REMOVE A PLAYER"
+                        ? "A PLAYER WAS REMOVED FROM THE MATCH"
                         : "THE VOTE TO REMOVE A PLAYER IS OFF";
                 }
                 else if (!removalClosed.Removed)

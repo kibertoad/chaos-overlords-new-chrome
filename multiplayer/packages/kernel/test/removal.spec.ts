@@ -123,6 +123,33 @@ describe('removal votes', () => {
     ])
   })
 
+  it('completes the vote when the one player who held keep is handed to the computer', async () => {
+    const { host, guest, third } = await h.startedMatchOfThree()
+    await h.kernel.lobby.voteOnRemoval(await h.principalOf(host.token), third.player.id, {
+      decision: 'remove',
+    })
+    await h.kernel.lobby.voteOnRemoval(await h.principalOf(guest.token), third.player.id, {
+      decision: 'keep',
+    })
+    // The guest misses a timed deadline, and the others hand the seat to the computer.
+    await h.storage.players.transitionStatus(guest.player.id, ['active'], 'takeoverPending')
+    for (const voter of [host, third]) {
+      await h.kernel.lobby.voteOnTakeover(await h.principalOf(voter.token), guest.player.id, {
+        decision: 'computer',
+      })
+    }
+    expect((await h.storage.players.get(guest.player.id))?.status).toBe('computer')
+    expect((await h.storage.players.get(third.player.id))?.status).toBe('kicked')
+    // The close follows the seat's own departure, so clients read it against the updated roster.
+    const types = h.notifier.events.map((event) => event.type)
+    expect(types.lastIndexOf('match.removalVoteClosed')).toBeGreaterThan(
+      types.lastIndexOf('lobby.playerLeft'),
+    )
+    expect(closedEvents().map((event) => event.payload)).toEqual([
+      { playerId: third.player.id, removed: true },
+    ])
+  })
+
   it('closes an open vote when the host kicks the same seat', async () => {
     const { host, guest, third } = await h.startedMatchOfThree()
     await h.kernel.lobby.voteOnRemoval(await h.principalOf(third.token), guest.player.id, {
@@ -163,6 +190,22 @@ describe('removal votes', () => {
     await h.kernel.lobby.kick(await h.principalOf(host.token), third.player.id)
     await expect(
       h.kernel.lobby.voteOnRemoval(await h.principalOf(guest.token), third.player.id, {
+        decision: 'remove',
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'already_removed' } })
+
+    // A kicked computer seat keeps its `computer` status; its revoked token marks it removed.
+    const { host: otherHost, guest: otherGuest, third: quiet } = await h.startedMatchOfThree()
+    await h.kernel.lobby.leave(await h.principalOf(quiet.token))
+    for (const voter of [otherHost, otherGuest]) {
+      await h.kernel.lobby.voteOnTakeover(await h.principalOf(voter.token), quiet.player.id, {
+        decision: 'computer',
+      })
+    }
+    await h.kernel.lobby.kick(await h.principalOf(otherHost.token), quiet.player.id)
+    expect((await h.storage.players.get(quiet.player.id))?.status).toBe('computer')
+    await expect(
+      h.kernel.lobby.voteOnRemoval(await h.principalOf(otherGuest.token), quiet.player.id, {
         decision: 'remove',
       }),
     ).rejects.toMatchObject({ details: { reason: 'already_removed' } })

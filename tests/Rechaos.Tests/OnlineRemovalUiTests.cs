@@ -42,6 +42,24 @@ public sealed class OnlineRemovalUiTests
         Assert.Null(RemovalVotePolicy.SeatToVoteOn(open, "p2"));
     }
 
+    /// <summary>
+    /// A vote on a seat the player kept earlier in the turn is not asked again after it closed and
+    /// opened once more, so a proposer who withdraws and proposes again cannot keep the modal up.
+    /// </summary>
+    [Fact]
+    public void ASeatKeptThisTurnIsNotAskedAboutAgain()
+    {
+        var open = new[]
+        {
+            ("p1", Votes(("p2", RemovalChoice.Remove))),
+            ("p4", Votes(("p2", RemovalChoice.Remove))),
+        };
+        var kept = new HashSet<string>(StringComparer.Ordinal) { "p1" };
+
+        Assert.Equal("p4", RemovalVotePolicy.SeatToVoteOn(open, "p3", kept));
+        Assert.Equal("p1", RemovalVotePolicy.SeatToVoteOn(open, "p3"));
+    }
+
     [Fact]
     public void TheTallyCountsEveryActivePlayerButTheSeat()
     {

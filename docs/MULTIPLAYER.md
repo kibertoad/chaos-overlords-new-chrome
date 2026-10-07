@@ -297,16 +297,22 @@ holds `remove`. `match.removalVoteCast` announces each choice and `match.removal
 announces the end, with `removed` true when the seat went (by the vote, or by the host's kick while
 it was open) and false when nobody approved any more. The tally runs after every vote and whenever
 the set of voters shrinks, as the takeover tally does, so the departure of the one player who had
-not approved completes it. Closing deletes the rows in one statement and only the caller whose
-statement deleted them announces it, so racing tallies log one `match.removalVoteClosed`. A vote does
+not approved, or the computer taking over that player's seat, completes it. A seat the computer
+plays is removed by revoking its owner's token, and a revoked token refuses further votes on it
+(`already_removed`) as the `kicked` status does. Closing deletes the rows in one statement and only
+the caller whose statement deleted them announces it, so racing tallies log one
+`match.removalVoteClosed`, which follows the seat's `lobby.playerLeft` and any host change. A vote does
 not pause the turn clock: it is the remedy for a match that is not moving, and a timed match moves
 on its own.
 
 The game starts a vote from the PLAYERS entry of the online game menu, which lists the other seats
 with REMOVE (or WITHDRAW for a seat this player already voted to remove) and the tally of any vote
 open on them. An open vote is put to every other active player who has not answered it in a modal
-with KEEP and REMOVE; an absence vote, which stops the clock, is shown first when both are open. The
-seat being voted on is told on the turn status line. Clients rebuild open votes from the event log
+with KEEP and REMOVE; an absence vote, which stops the clock, is shown first when both are open. A
+player who chose KEEP on a seat is not asked about it again in the same turn, even when the vote
+closes and is proposed again, so withdrawing and proposing over and over cannot keep a modal in
+front of the others while their clock runs. The seat being voted on is told on the turn status
+line, which keeps the turn countdown. Clients rebuild open votes from the event log
 on a restore, as they do takeover votes.
 
 ### Timer

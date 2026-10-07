@@ -86,10 +86,23 @@ internal sealed class MultiplayerUiState
     /// </summary>
     internal RemovalVotePrompt? CurrentRemovalVote =>
         RemovalVotePolicy.SeatToVoteOn(
-                _removalVotes.Values.Select(vote => (vote.PlayerId, vote.Votes)), SelfPlayerId)
+                _removalVotes.Values.Select(vote => (vote.PlayerId, vote.Votes)),
+                SelfPlayerId,
+                KeptThisTurn)
             is { } playerId && _removalVotes.TryGetValue(playerId, out var prompt)
             ? prompt
             : null;
+
+    /// <summary>
+    /// The seats this player chose to keep during <see cref="_keptTurn"/>, so a vote on one of them
+    /// that closes and opens again in the same turn is not put in front of them a second time.
+    /// </summary>
+    private readonly HashSet<string> _keptSeats = new(StringComparer.Ordinal);
+
+    private int _keptTurn = -1;
+
+    private IReadOnlySet<string> KeptThisTurn =>
+        _keptTurn == PlanningTurn ? _keptSeats : RemovalVotePolicy.NoSeatsKept;
 
     /// <summary>The open vote to remove this client's own seat, if one is open.</summary>
     internal RemovalVotePrompt? OwnRemovalVote =>
@@ -103,10 +116,28 @@ internal sealed class MultiplayerUiState
         ArgumentNullException.ThrowIfNull(prompt);
         if (Stage == MultiplayerStage.Finished) return;
         _removalVotes[prompt.PlayerId] = prompt;
+        if (SelfPlayerId.Length > 0
+            && prompt.Votes.TryGetValue(SelfPlayerId, out var own)
+            && own == RemovalChoice.Keep)
+        {
+            if (_keptTurn != PlanningTurn)
+            {
+                _keptSeats.Clear();
+                _keptTurn = PlanningTurn;
+            }
+            _keptSeats.Add(prompt.PlayerId);
+        }
     }
 
     /// <summary>Forgets the removal vote about a seat, once the server has closed it.</summary>
     internal void CloseRemovalVote(string playerId) => _removalVotes.Remove(playerId);
+
+    /// <summary>
+    /// Forgets every removal vote, before a restore republishes the ones still open. A vote that
+    /// closed while the stream was behind gets no close notice of its own, and kept here it would
+    /// put a modal for a vote the server no longer has in front of the player.
+    /// </summary>
+    internal void ForgetRemovalVotes() => _removalVotes.Clear();
 
     /// <summary>This client's own player id in the running match, or empty when there is none.</summary>
     internal string SelfPlayerId { get; set; } = string.Empty;
@@ -449,6 +480,8 @@ internal sealed class MultiplayerUiState
         ServerStatus = string.Empty;
         _takeoverVotes.Clear();
         _removalVotes.Clear();
+        _keptSeats.Clear();
+        _keptTurn = -1;
         SelfPlayerId = string.Empty;
         Password.Set(string.Empty);
         JoinCode.Set(string.Empty);

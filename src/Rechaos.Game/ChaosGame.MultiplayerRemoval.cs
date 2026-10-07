@@ -16,6 +16,9 @@ namespace Rechaos.Game;
 /// </remarks>
 public static class RemovalVotePolicy
 {
+    /// <summary>No seat kept this turn.</summary>
+    public static readonly IReadOnlySet<string> NoSeatsKept = new HashSet<string>();
+
     /// <summary>
     /// The seat this client is asked about: one with an open vote that is not its own and that it
     /// has not answered yet, the lowest player id first so every client asks in the same order.
@@ -23,16 +26,22 @@ public static class RemovalVotePolicy
     /// <remarks>
     /// A vote the player has answered is not asked again. The vote stays open while anybody holds
     /// <c>remove</c>, so a player who chose to keep the seat would otherwise sit behind a modal for
-    /// as long as somebody else disagreed with them.
+    /// as long as somebody else disagreed with them. A seat the player chose to keep earlier in the
+    /// same turn is not asked about either, even under a vote that closed and opened again since.
+    /// The vote does not stop the clock, so without this one player could withdraw and propose
+    /// again and again, and put a modal that owns the input in front of everybody else each time,
+    /// while their planning time ran out. The open vote still shows in the players panel.
     /// </remarks>
     public static string? SeatToVoteOn(
         IEnumerable<(string PlayerId, IReadOnlyDictionary<string, RemovalChoice> Votes)> openVotes,
-        string selfPlayerId)
+        string selfPlayerId,
+        IReadOnlySet<string>? keptThisTurn = null)
     {
         ArgumentNullException.ThrowIfNull(openVotes);
         return openVotes
             .Where(vote => !string.Equals(vote.PlayerId, selfPlayerId, StringComparison.Ordinal)
-                && !vote.Votes.ContainsKey(selfPlayerId))
+                && !vote.Votes.ContainsKey(selfPlayerId)
+                && keptThisTurn?.Contains(vote.PlayerId) != true)
             .OrderBy(vote => vote.PlayerId, StringComparer.Ordinal)
             .Select(vote => vote.PlayerId)
             .FirstOrDefault();
@@ -259,7 +268,8 @@ public sealed partial class ChaosGame
         var footer = string.IsNullOrEmpty(_message)
             ? "REMOVING A PLAYER TAKES EVERY OTHER PLAYER"
             : _message;
-        DrawCentered(font, batch, footer, 334, Color.White, 1);
+        // Below the fifth row, which ends at y 336.
+        DrawCentered(font, batch, footer, 340, Color.White, 1);
     }
 
     /// <summary>The second line of a roster row: the host mark, the seat's state and an open vote.</summary>
