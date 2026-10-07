@@ -51,13 +51,14 @@ public sealed partial class ScreenCaptureTests
     {
         var capture = Capture(experiment, run, step);
         if (SkipReason(capture) is { } skip) Assert.Skip(skip);
+        // First, so a frame a worker drew is taken even when reading the capture fails.
+        var rebuild = Renders.Get(capture);
         var masks = ScreenCaptureMasks.For(capture.Screens);
         // The capture itself is only needed for elements with white or masked pixels; the
         // others are compared by digest.
         var path = OriginalGameFiles.ResolveCapture(
             Environment.GetEnvironmentVariable(OriginalGameFiles.EnvironmentVariable), capture.Xxh3);
         var original = path is null ? null : ScreenFrame.ReadBitmap(File.ReadAllBytes(path));
-        var rebuild = Renders.Get(capture);
 
         var results = capture.Elements
             .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
@@ -86,7 +87,8 @@ public sealed partial class ScreenCaptureTests
             return $"{capture} shows the Detailed Combat panel without a clip tick: the tick moved during every copy, or the shot fell between two clips.";
         if (Repainted.TryGetValue((capture.Experiment, capture.Run, capture.Step), out var repaint))
             return $"{capture} cannot be compared: {repaint}.";
-        return null;
+        // Without an asset pack no frame is drawn, so no replay is copied and nothing is queued.
+        return RebuildFrame.MissingAssetPack();
     }
 
     private static ScreenFrame Render(ScreenCaptureRecord capture)

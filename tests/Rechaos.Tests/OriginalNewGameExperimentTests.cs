@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.Assets;
@@ -604,7 +605,7 @@ public sealed partial class OriginalNewGameExperimentTests
         for (var entry = 0; entry < recorded.DoneCount; entry++)
             Assert.True(combatCalled[entry], $"planning entry {entry + 1}: the recording holds no call of Combat Results");
 
-        var (shown, donePresses, endsAtPlanningEntry) = PanelReplays.Get((experiment, run));
+        var (shown, donePresses, endsAtPlanningEntry, lastEntryFailure) = PanelReplays.Get((experiment, run));
         // An early stop would leave the recording's later entries uncompared.
         Assert.Equal(recorded.DoneCount, donePresses);
         // The last entry is a planning entry unless the match ended or the human was eliminated. An
@@ -614,6 +615,7 @@ public sealed partial class OriginalNewGameExperimentTests
         if (endsAtPlanningEntry)
         {
             Assert.True(combatCalled[donePresses], $"planning entry {donePresses + 1}: the recording holds no call of Combat Results");
+            lastEntryFailure?.Throw();
             // The run stops at the last entry while its first panel is open, so only that panel is seen.
             if (expected[donePresses].Count > 0) shown[donePresses] = shown[donePresses].Take(1).ToList();
             compared++;
@@ -626,7 +628,8 @@ public sealed partial class OriginalNewGameExperimentTests
     // The panels the rebuild shows at each planning entry of a run, the Done presses its replay
     // made, and whether it ends at a planning entry, whose panels are then the last ones. Each run
     // is played again with its own game, so the rows replay theirs ahead on a few workers.
-    private sealed record PanelReplay(List<string>[] Shown, int DonePresses, bool EndsAtPlanningEntry);
+    private sealed record PanelReplay(
+        List<string>[] Shown, int DonePresses, bool EndsAtPlanningEntry, ExceptionDispatchInfo? LastEntryFailure);
 
     private static readonly RowPrefetch<(string Experiment, int Run), PanelReplay> PanelReplays =
         new(PanelRunKeys, key => ReplayPanels(Run(key.Experiment, key.Run)));
@@ -641,9 +644,21 @@ public sealed partial class OriginalNewGameExperimentTests
             atPlanningEntry: (state, human, turn) => shown[turn - 1] = PlanningEntryPanels(game, state, human));
         var endsAtPlanningEntry = match.Outcome is null && IsActive(match, recorded.Humans[0]);
         // A replay that stopped early fails its row before the last entry is read.
+        // A failure reading it is held for the row, which first checks that the recording holds
+        // that entry's call of Combat Results.
+        ExceptionDispatchInfo? lastEntryFailure = null;
         if (endsAtPlanningEntry && donePresses == recorded.DoneCount)
-            shown[donePresses] = PlanningEntryPanels(game, match, recorded.Humans[0]);
-        return new PanelReplay(shown, donePresses, endsAtPlanningEntry);
+        {
+            try
+            {
+                shown[donePresses] = PlanningEntryPanels(game, match, recorded.Humans[0]);
+            }
+            catch (Exception exception)
+            {
+                lastEntryFailure = ExceptionDispatchInfo.Capture(exception);
+            }
+        }
+        return new PanelReplay(shown, donePresses, endsAtPlanningEntry, lastEntryFailure);
     }
 
     /// <summary>
