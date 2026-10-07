@@ -14,7 +14,6 @@ Entries by area.
 | [FND-COMLINK-002](../../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls | recorded |
 | [FND-COMLINK-003](../../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
 | [FND-COMLINK-004](../../findings/FND-COMLINK-004.md) | Comlink View marks the shown message read and draws it from a self-contained 166-byte record | recorded |
-| [FND-COMLINK-005](../../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer | superseded |
 | [FND-COMLINK-006](../../findings/FND-COMLINK-006.md) | Comlink messages are stored only on the recipient's computer, cleared when the match loop starts, and read messages at the front of an inbox are dropped when its player finishes planning | recorded |
 | [FND-COMLINK-007](../../findings/FND-COMLINK-007.md) | Comlink Send tests player_active and players_human, starts from a blank draft, wraps the cursor between rows, and View draws a 64-by-64 portrait; the positions of both panels' fields | recorded |
 | [FND-COMLINK-008](../../findings/FND-COMLINK-008.md) | The Send panel builds a message in a 166-byte buffer, with 160 characters from space to Z filled with spaces and no terminator, a signed turn, and a last byte nothing writes | recorded |
@@ -24,8 +23,8 @@ Entries by area.
 | [RULE-COMLINK-002](../../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | supported |
 | [RULE-COMLINK-003](../../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | established |
 | [RULE-COMLINK-004](../../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox | established |
-| [RULE-COMLINK-005](../../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn | established |
-| [RULE-COMLINK-006](../../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | established |
-| [RULE-COMLINK-007](../../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | established |
+| [RULE-COMLINK-005](../../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn | supported |
+| [RULE-COMLINK-006](../../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | supported |
+| [RULE-COMLINK-007](../../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | supported |
 | [SCR-COMLINK-001](../../screens/SCR-COMLINK-001.md) | Comlink View panel | supported |
 | [SCR-COMLINK-002](../../screens/SCR-COMLINK-002.md) | Comlink Send panel | supported |

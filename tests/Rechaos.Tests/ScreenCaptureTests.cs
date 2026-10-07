@@ -11,7 +11,8 @@ namespace Rechaos.Tests;
 /// count of exact white pixels of each screen element it is compared at. The rebuild replays the
 /// run, draws its endpoint with <c>--reference-frame</c> at the capture's marker frame, and has to
 /// draw every element as the original did, outside the areas a deviation draws
-/// (<see cref="ScreenCaptureMasks"/>). docs/VALIDATION.md gives the workflow.
+/// (<see cref="ScreenCaptureMasks"/>). docs/validation/screen-captures.md and
+/// docs/validation/screen-comparison.md give the workflow.
 /// </summary>
 public sealed partial class ScreenCaptureTests
 {
@@ -31,8 +32,8 @@ public sealed partial class ScreenCaptureTests
     // SCR-HIRE-001, SCR-GANG-002, SCR-COMBAT-001, SCR-EVENT-001, SCR-OBJECTIVE-001, SCR-SEARCH-001,
     // SCR-MOVE-001, SCR-EQUIP-001, SCR-RESEARCH-001, SCR-GANG-001, SCR-GIVE-001, SCR-SELL-001,
     // SCR-INFLUENCE-001, SCR-ATTACK-001, SCR-OPTIONS-001, SCR-COMLINK-002, SCR-COMLINK-001,
-    // SCR-AWARDS-001, SCR-OBJECTIVE-002, SCR-COMBAT-002 and SCR-AWARDS-002. docs/VALIDATION.md,
-    // "Screen capture coverage", lists the experiments whose captures each screen is compared at,
+    // SCR-AWARDS-001, SCR-OBJECTIVE-002, SCR-COMBAT-002 and SCR-AWARDS-002.
+    // docs/validation/screen-capture-coverage.md lists the experiments whose captures each screen is compared at,
     // and CoverageTableNamesEveryComparedCapture holds that table to the fixtures.
     // The site and Force meters of RULE-UI-005 and the sector values of RULE-UI-011 are compared
     // as elements of those screens, and the pylons of RULE-UI-012 on the city map of Siege
@@ -50,27 +51,51 @@ public sealed partial class ScreenCaptureTests
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
     {
         var capture = Capture(experiment, run, step);
-        if (capture.BeforeMatch is null && !OriginalNewGameExperimentTests.IsReplayed(experiment))
-            Assert.Skip($"{capture} comes from a run that is not replayed, so the rebuild has no endpoint to draw.");
-        if (capture.Unreplayable is { } reason)
-            Assert.Skip($"{capture} cannot be reached in the rebuild: {reason}.");
-        if (capture.Elements.Count == 0)
-            Assert.Skip($"{capture} records no screen elements; the probe's digest command adds them.");
-        // FND-COMBAT-016: the probe keeps a shot whose clip tick moved during every attempt without
-        // the tick, and drawing the clip at its first tick would compare a different picture. A shot
-        // taken between two clips of a presentation, after one returned and before the next set its
-        // tick up, has no tick either (EXP-UI-029).
-        if (capture.ClipTick is null && capture.Screens.Contains("SCR-COMBAT-002"))
-            Assert.Skip($"{capture} shows the Detailed Combat panel without a clip tick: the tick moved during every copy, or the shot fell between two clips.");
-        if (Repainted.TryGetValue((experiment, run, step), out var repaint))
-            Assert.Skip($"{capture} cannot be compared: {repaint}.");
+        if (SkipReason(capture) is { } skip) Assert.Skip(skip);
+        // First, so a frame a worker drew is taken even when reading the capture fails.
+        var rebuild = Renders.Get(capture);
         var masks = ScreenCaptureMasks.For(capture.Screens);
         // The capture itself is only needed for elements with white or masked pixels; the
         // others are compared by digest.
         var path = OriginalGameFiles.ResolveCapture(
             Environment.GetEnvironmentVariable(OriginalGameFiles.EnvironmentVariable), capture.Xxh3);
         var original = path is null ? null : ScreenFrame.ReadBitmap(File.ReadAllBytes(path));
-        var rebuild = capture.BeforeMatch is { } screen
+
+        var results = capture.Elements
+            .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
+        var output = TestContext.Current.TestOutputHelper;
+        foreach (var result in results) output?.WriteLine(result.ToString());
+        Assert.Empty(results.Where(result => result.Verdict == ElementVerdict.Differs).Select(result => result.ToString()));
+    }
+
+    // Each frame starts the game, so the rows draw theirs ahead on a few workers.
+    private static readonly RowPrefetch<ScreenCaptureRecord, ScreenFrame> Renders = new(
+        () => ScreenCaptureRecord.LoadAll().Where(capture => SkipReason(capture) is null), Render);
+
+    private static string? SkipReason(ScreenCaptureRecord capture)
+    {
+        if (capture.BeforeMatch is null && !OriginalNewGameExperimentTests.IsReplayed(capture.Experiment))
+            return $"{capture} comes from a run that is not replayed, so the rebuild has no endpoint to draw.";
+        if (capture.Unreplayable is { } reason)
+            return $"{capture} cannot be reached in the rebuild: {reason}.";
+        if (capture.Elements.Count == 0)
+            return $"{capture} records no screen elements; the probe's digest command adds them.";
+        // FND-COMBAT-016: the probe keeps a shot whose clip tick moved during every attempt without
+        // the tick, and drawing the clip at its first tick would compare a different picture. A shot
+        // taken between two clips of a presentation, after one returned and before the next set its
+        // tick up, has no tick either (EXP-UI-029).
+        if (capture.ClipTick is null && capture.Screens.Contains("SCR-COMBAT-002"))
+            return $"{capture} shows the Detailed Combat panel without a clip tick: the tick moved during every copy, or the shot fell between two clips.";
+        if (Repainted.TryGetValue((capture.Experiment, capture.Run, capture.Step), out var repaint))
+            return $"{capture} cannot be compared: {repaint}.";
+        // Without an asset pack no frame is drawn, so no replay is copied and nothing is queued.
+        return RebuildFrame.MissingAssetPack();
+    }
+
+    private static ScreenFrame Render(ScreenCaptureRecord capture)
+    {
+        var (experiment, run, step) = (capture.Experiment, capture.Run, capture.Step);
+        return capture.BeforeMatch is { } screen
             ? RebuildFrame.RenderBeforeMatch(screen,
                 $"{experiment}-{run}-{screen}" + (capture.SetupStep is { } setupStep ? $"-{setupStep}" : ""),
                 capture.Clicks)
@@ -79,12 +104,6 @@ public sealed partial class ScreenCaptureTests
                 $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
                 capture.ItemFrame, clipTick: capture.ClipTick, idlePhase: capture.IdlePhase,
                 caretPhase: capture.CaretPhase, clipIndex: capture.ClipIndex);
-
-        var results = capture.Elements
-            .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
-        var output = TestContext.Current.TestOutputHelper;
-        foreach (var result in results) output?.WriteLine(result.ToString());
-        Assert.Empty(results.Where(result => result.Verdict == ElementVerdict.Differs).Select(result => result.ToString()));
     }
 
     // Shots whose screen a repaint of the original's window changed. The rebuild never loses what it
@@ -186,16 +205,13 @@ public sealed partial class ScreenCaptureTests
     [GeneratedRegex(@"EXP-UI-(\d{3})(?: to EXP-UI-(\d{3}))?")]
     private static partial Regex CoverageExperiments();
 
-    // docs/VALIDATION.md, "Screen capture coverage": for every screen, the table names exactly the
+    // docs/validation/screen-capture-coverage.md: for every screen, the table names exactly the
     // experiments whose captures TheRebuildDrawsWhatTheOriginalDrew compares at that screen.
     [Fact]
     public void CoverageTableNamesEveryComparedCapture()
     {
-        var doc = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "VALIDATION.md")).Replace("\r\n", "\n");
-        var start = doc.IndexOf("\n## Screen capture coverage\n", StringComparison.Ordinal);
-        Assert.True(start >= 0, "docs/VALIDATION.md has no Screen capture coverage section.");
-        var end = doc.IndexOf("\n## ", start + 1, StringComparison.Ordinal);
-        var section = end < 0 ? doc[start..] : doc[start..end];
+        var section = File.ReadAllText(
+            Path.Combine(AppContext.BaseDirectory, "docs", "validation", "screen-capture-coverage.md")).Replace("\r\n", "\n");
         var table = CoverageRow().Matches(section).ToDictionary(
             row => row.Groups[1].Value,
             row => CoverageExperiments().Matches(row.Groups[2].Value)

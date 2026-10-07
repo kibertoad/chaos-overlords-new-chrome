@@ -10,13 +10,13 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0046F344..0x0046F930
+    address: 0x0046F344..0x0046F936
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004ABBD4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004ABBE0..0x004ABBE5
+    address: 0x004ABBE0..0x004ABBE6
 tool: Ghidra 12.1.3
 environment: null
 ---

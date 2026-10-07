@@ -6,34 +6,26 @@ Entries by status.
 
 ## supported
 
-4 entries.
+7 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-COMLINK-001](../../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages |
 | [RULE-COMLINK-002](../../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message |
+| [RULE-COMLINK-005](../../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn |
+| [RULE-COMLINK-006](../../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters |
+| [RULE-COMLINK-007](../../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped |
 | [SCR-COMLINK-001](../../screens/SCR-COMLINK-001.md) | Comlink View panel |
 | [SCR-COMLINK-002](../../screens/SCR-COMLINK-002.md) | Comlink Send panel |
 
 ## established
 
-5 entries.
+2 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-COMLINK-003](../../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient |
 | [RULE-COMLINK-004](../../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox |
-| [RULE-COMLINK-005](../../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn |
-| [RULE-COMLINK-006](../../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters |
-| [RULE-COMLINK-007](../../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped |
-
-## superseded
-
-1 entries.
-
-| ID | Title |
-|---|---|
-| [FND-COMLINK-005](../../findings/FND-COMLINK-005.md) | Comlink Send edits a fixed grid of four rows of 40 characters, with a caret that alternates every three ticks of a 6 Hz timer |
 
 ## recorded
 
@@ -61,9 +53,6 @@ Entries whose status is established and whose findings and experiments are all o
 |---|---|
 | [RULE-COMLINK-003](../../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient |
 | [RULE-COMLINK-004](../../rules/RULE-COMLINK-004.md) | Comlink View opens at the oldest unread message and refuses an empty inbox |
-| [RULE-COMLINK-005](../../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn |
-| [RULE-COMLINK-006](../../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters |
-| [RULE-COMLINK-007](../../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped |
 
 ## Open questions
 
@@ -74,7 +63,8 @@ Entries whose Open questions section says more than None known.
 | [RULE-COMLINK-001](../../rules/RULE-COMLINK-001.md) | Storing a Comlink message keeps each player's newest 16 messages | supported |
 | [RULE-COMLINK-002](../../rules/RULE-COMLINK-002.md) | Comlink Send opens only when another human player can receive a message | supported |
 | [RULE-COMLINK-003](../../rules/RULE-COMLINK-003.md) | Sending a Comlink message stores a copy for each selected recipient | established |
-| [RULE-COMLINK-006](../../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | established |
-| [RULE-COMLINK-007](../../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | established |
+| [RULE-COMLINK-005](../../rules/RULE-COMLINK-005.md) | Showing a Comlink message marks it read and dates it from its turn | supported |
+| [RULE-COMLINK-006](../../rules/RULE-COMLINK-006.md) | Typing in Comlink Send overwrites a fixed grid of four rows of 40 upper-case characters | supported |
+| [RULE-COMLINK-007](../../rules/RULE-COMLINK-007.md) | When a player finishes planning, the read messages at the front of the inbox are dropped | supported |
 | [SCR-COMLINK-001](../../screens/SCR-COMLINK-001.md) | Comlink View panel | supported |
 | [SCR-COMLINK-002](../../screens/SCR-COMLINK-002.md) | Comlink Send panel | supported |

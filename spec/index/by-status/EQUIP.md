@@ -6,20 +6,20 @@ Entries by status.
 
 ## supported
 
-1 entries.
-
-| ID | Title |
-|---|---|
-| [SCR-EQUIP-001](../../screens/SCR-EQUIP-001.md) | Equip panel |
-
-## established
-
-4 entries.
+3 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-EQUIP-001](../../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
 | [RULE-EQUIP-002](../../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
+| [SCR-EQUIP-001](../../screens/SCR-EQUIP-001.md) | Equip panel |
+
+## established
+
+2 entries.
+
+| ID | Title |
+|---|---|
 | [RULE-EQUIP-003](../../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete |
 | [RULE-EQUIP-004](../../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry |
 
@@ -49,8 +49,6 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [RULE-EQUIP-001](../../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
-| [RULE-EQUIP-002](../../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
 | [RULE-EQUIP-003](../../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete |
 | [RULE-EQUIP-004](../../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry |
 
@@ -60,6 +58,8 @@ Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
+| [RULE-EQUIP-001](../../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | supported |
+| [RULE-EQUIP-002](../../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported |
 | [RULE-EQUIP-003](../../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | established |
 | [RULE-EQUIP-004](../../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | established |
 | [SCR-EQUIP-001](../../screens/SCR-EQUIP-001.md) | Equip panel | supported |

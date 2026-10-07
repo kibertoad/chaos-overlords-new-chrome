@@ -14,5 +14,5 @@ Entries by area.
 | [FND-RNG-004](../../findings/FND-RNG-004.md) | The computer players' 46 bounded draws come from their dispatcher, two shared helpers and twelve family handlers | recorded |
 | [FND-RNG-005](../../findings/FND-RNG-005.md) | From an accepted local Begin to the first city, the draws are portraits, reactions, city and headquarters, in that order | recorded |
 | [FND-RNG-006](../../findings/FND-RNG-006.md) | The 61 bounded draws, call by call, all made on the main thread; no pointer to rand or to any function that reaches it is stored | recorded |
-| [RULE-RNG-001](../../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start | established |
+| [RULE-RNG-001](../../rules/RULE-RNG-001.md) | The generator, its step, and its seed at process start | supported |
 | [RULE-RNG-002](../../rules/RULE-RNG-002.md) | roll(n) gives a whole number from 1 to n from three draws | established |

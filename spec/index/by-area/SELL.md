@@ -11,5 +11,5 @@ Entries by area.
 | [BUG-SELL-001](../../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them | established |
 | [FND-SELL-001](../../findings/FND-SELL-001.md) | The Sell panel handler shows each carried item at half its cost and stores the chosen items as a three-bit mask in the target byte | recorded |
 | [FND-SELL-002](../../findings/FND-SELL-002.md) | The Sell panel marks each selected row with a 192-by-54 keyed overlay from PX00129 and restores the panel's own pixels for the others | recorded |
-| [RULE-SELL-001](../../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | established |
+| [RULE-SELL-001](../../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | supported |
 | [SCR-SELL-001](../../screens/SCR-SELL-001.md) | Sell panel | supported |

@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EQUIP-005, FND-EQUIP-009, FND-EQUIP-010, FND-EQUIP-006, FND-EQUIP-008, FND-EQUIP-001, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-009]
+evidence: [FND-EQUIP-005, FND-EQUIP-009, FND-EQUIP-010, FND-EQUIP-006, FND-EQUIP-012, FND-EQUIP-001, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-009]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-001, RULE-EQUIP-003, RULE-EQUIP-004, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
@@ -83,3 +83,11 @@ None known.
   (FND-EQUIP-010).
 - The look of the glyphs at y 441 of `PX00129` has not been checked against the
   image.
+- No recorded run of the original reaches carried item icons, category frames
+  1 to 3, the chosen-row mark, the Confirm face and opening on a pending Equip
+  order; presses on a category, a row and an empty row; Confirm with and
+  without a choice; Enter, Execute and Escape; a press outside the panel; the
+  carried-icon double-click; the Item chosen state; the slide and rejected
+  sounds and the slide's timing (FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-009,
+  FND-EQUIP-010, FND-OPTIONS-001). These rest on the static findings named, so
+  the entry stays `supported`.
