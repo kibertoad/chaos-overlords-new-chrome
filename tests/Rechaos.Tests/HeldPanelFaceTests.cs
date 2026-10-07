@@ -26,6 +26,24 @@ public sealed class HeldPanelFaceTests
             HeldButtonFaces.Drawn(HeldButtonKind.Cancel, IdleGangWarningLayout.Cancel, pointerInside: true));
     }
 
+    [Fact]
+    public void TheSearchPanelsHeldFacesFollowScrSearch001()
+    {
+        // SCR-SEARCH-001, FND-UI-062: the lit faces while ALL, NONE and Done are held.
+        Assert.Equal(new Rectangle(137, 140, 50, 23), HeldButtonFaces.Drawn(
+            SiteSearchLayout.HeldKind(SiteSearchControl.All), SiteSearchLayout.Target(SiteSearchControl.All), true).Destination);
+        Assert.Equal(new Rectangle(137, 172, 50, 23), HeldButtonFaces.Drawn(
+            SiteSearchLayout.HeldKind(SiteSearchControl.None), SiteSearchLayout.Target(SiteSearchControl.None), true).Destination);
+        Assert.Equal(new Rectangle(137, 293, 50, 23), HeldButtonFaces.Drawn(
+            SiteSearchLayout.HeldKind(SiteSearchControl.Done), SiteSearchLayout.Target(SiteSearchControl.Done), true).Destination);
+        Assert.Equal(new Rectangle(97, 560, 50, 23),
+            HeldButtonFaces.Lit(SiteSearchLayout.HeldKind(SiteSearchControl.All)));
+        Assert.Equal(new Rectangle(197, 560, 50, 23),
+            HeldButtonFaces.Lit(SiteSearchLayout.HeldKind(SiteSearchControl.None)));
+        Assert.Equal(new Rectangle(0, 386, 50, 23),
+            HeldButtonFaces.Lit(SiteSearchLayout.HeldKind(SiteSearchControl.Done)));
+    }
+
     public static TheoryData<string, Rectangle, Rectangle> PanelFaces() => new()
     {
         // FND-UI-067: each panel's face test and the helper rectangle it passes, as (left, top).
@@ -103,19 +121,15 @@ public sealed class HeldPanelFaceTests
     }
 
     [Fact]
-    public void LettingGoOfALeftHeldFaceLeavesARightHeldOneHeld()
+    public void LettingGoOfAHeldFaceLeavesThePanelOpen()
     {
-        // The game menu lets go of a left-held face so a release under it cannot close the panel.
+        // The game menu lets go of a held face so a release under it cannot close the panel.
         var closed = 0;
         var game = GameHolding(CombatResultsLayout.Ok, () => closed++);
         Method("LetGoOfLeftHeldPanelFace").Invoke(game, []);
         Assert.Equal(0, closed);
         Assert.Null(Field("_pressedPanelFace").GetValue(game));
-
-        game = GameHolding(CombatResultsLayout.Ok, () => closed++);
-        Field("_pressedPanelFaceByRightButton").SetValue(game, true);
-        Method("LetGoOfLeftHeldPanelFace").Invoke(game, []);
-        Assert.NotNull(Field("_pressedPanelFace").GetValue(game));
+        Assert.NotNull(Field("_releasedPanelFace").GetValue(game));
     }
 
     private static MouseState Mouse(ButtonState left) =>

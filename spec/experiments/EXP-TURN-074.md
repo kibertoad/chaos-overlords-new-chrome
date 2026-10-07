@@ -48,15 +48,14 @@ The run made 2907 calls of `roll` over eleven Done presses. At the end
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. The rebuild makes the same calls with the same bounds and results and
-reaches the same state, the planning records included. The rebuild reaches the
-Heal and the Chaos after None, Control or Heal, the Chaos in an owned sector
-after Attack, Hide or Move, the weight-10 attack draw with an accepted target,
-and the test for Control outside the gang's own sectors, which fails every
-time it is made here, so the gang moves. No draw is refused and no gang plans
-Control.
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. The rebuild makes the same calls
+with the same bounds and results and reaches the same state, the planning
+records included. The rebuild reaches the Heal and the Chaos after None, Control
+or Heal, the Chaos in an owned sector after Attack, Hide or Move, the weight-10
+attack draw with an accepted target, and the test for Control outside the gang's
+own sectors, which fails every time it is made here, so the gang moves. No draw
+is refused and no gang plans Control.
 
 ## Conclusion
 
