@@ -287,7 +287,7 @@ public sealed class AiObjectiveTurnPlannerTests
                 income: 3))
             .ToArray();
         var match = new MatchState(data, new MatchSetup(
-            ScenarioId.BigMan, GameDuration.SixMonths, 31, setups), players, sectors);
+            ScenarioId.BigMan, GameDuration.SixMonths, 31, setups, MatchDeviations.Original), players, sectors);
         // RULE-AI-002 forces hire role 1 on the first Big Man turn, so the role cases play turn 2.
         if (secondTurn) AdvanceTurn(match);
         return match;

@@ -35,6 +35,7 @@ Entries by area.
 | [FND-COMBAT-015](../../findings/FND-COMBAT-015.md) | Detailed Combat draws each gang portrait and its two Force tracks into the same surface, 68 and 75 rows below the portrait's top | recorded |
 | [FND-COMBAT-016](../../findings/FND-COMBAT-016.md) | The Detailed Combat clip player keeps its tick in a stack local, and paints the Force tracks again only on tick 16 | recorded |
 | [FND-COMBAT-017](../../findings/FND-COMBAT-017.md) | Detailed Combat copies each clip's sector tile from the unowned city map art and frames it in black | recorded |
+| [FND-COMBAT-032](../../findings/FND-COMBAT-032.md) | The Detailed Combat clip player puts the strips' first frames on the screen only, and definition 63 changes only the attack strip | recorded |
 | [RULE-COMBAT-001](../../rules/RULE-COMBAT-001.md) | A gang's Combat takes the skills that match its weapon when its statistics are rebuilt | established |
 | [RULE-COMBAT-002](../../rules/RULE-COMBAT-002.md) | The combat phase runs every attack, then the police, then applies the damage and fills the combat records | established |
 | [RULE-COMBAT-003](../../rules/RULE-COMBAT-003.md) | Damage Inflicted counts the full damage of every opening attack and no retaliation | established |

@@ -162,6 +162,6 @@ public sealed class OriginalAiFamilyTenRulesTests
                 owner: id == 0 ? setups[0].Id : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups), players, sectors);
+            ScenarioId.Eliminate, GameDuration.SixMonths, 41, setups, MatchDeviations.Original), players, sectors);
     }
 }

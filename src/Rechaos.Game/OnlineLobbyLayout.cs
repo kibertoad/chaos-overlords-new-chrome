@@ -101,6 +101,17 @@ public static class OnlineLobbyLayout
     /// </remarks>
     public static Rectangle Setup => new(SettingsLeft, 290, SettingsWidth, 26);
 
+    /// <summary>
+    /// The lobby chat: the conversation so far, and the line a message is typed on.
+    /// </summary>
+    /// <remarks>
+    /// Under the roster, between the line that says the player's own entry can be changed and the
+    /// line that says what the lobby is waiting for, so neither column moves to make room.
+    /// </remarks>
+    public const int ChatCaptionY = 266;
+    public static Rectangle ChatLog => new(RosterLeft, 278, RosterRight - RosterLeft, 48);
+    public static Rectangle ChatInput => new(RosterLeft, 328, RosterRight - RosterLeft, 18);
+
     public static Rectangle Start => OnlineScreenLayout.Action(0);
     public static Rectangle Leave => OnlineScreenLayout.Action(1);
 

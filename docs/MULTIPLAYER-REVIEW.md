@@ -22,7 +22,6 @@ earlier fix from regressing.
   - [A connection that carried an oversized body is dropped under the next request](#a-connection-that-carried-an-oversized-body-is-dropped-under-the-next-request)
 - [Client](#client)
   - [Backoff jitter is not full jitter](#backoff-jitter-is-not-full-jitter)
-  - [A recovery file from a newer build is overwritten](#a-recovery-file-from-a-newer-build-is-overwritten)
   - [Every response is read three times](#every-response-is-read-three-times)
   - [Smaller allocations](#smaller-allocations)
 - [Test coverage](#test-coverage)
@@ -72,14 +71,6 @@ for the 413 runs last for this reason.
 `window × [0.5, 1.0]`, although its doc comment says "full jitter". When the Node server shuts
 down it closes every stream at once, so every client comes back within the same half window.
 Drawing from `[0, window]`, as the TypeScript client does, spreads that herd out.
-
-### A recovery file from a newer build is overwritten
-
-`MultiplayerRecoveryStore.TryLoadAll` (`src/Rechaos.Game/MultiplayerRecoveryStore.cs`) returns an
-empty list when the file's `FormatVersion` is outside the range this build reads. A file this build
-cannot parse is set aside as `.corrupt`, but this one is not. So after a downgrade, the next save
-overwrites the newer build's seats. The single `.bak` generation is gone after two saves. Set such a
-file aside the same way, or refuse to write over it.
 
 ### Every response is read three times
 

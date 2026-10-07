@@ -21,7 +21,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
                 (slot % 16 + index * 8) % 64, 10)).ToArray())).ToArray();
         var sectors = CreateMatch(data, definitionId: 4, force: 10, ownsSource: true).Sectors;
         var match = new MatchState(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.SixMonths, 41, setups), players, sectors);
+            ScenarioId.Power, GameDuration.SixMonths, 41, setups, MatchDeviations.Original), players, sectors);
         // FinishUpkeep derives Hidden from the queued command.
         foreach (var player in players)
         {
@@ -214,7 +214,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
             ], owner: id == 1 ? setups[1].Id : null, income: 3))
             .ToArray();
         var match = new MatchState(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.SixMonths, 41, setups,
+            ScenarioId.Power, GameDuration.SixMonths, 41, setups, MatchDeviations.Original,
             AiDifficulty.HomicidalManiac), players, sectors);
         var player = new PlayerId(0);
         BeginFamilyThreeTurn(match, player);
@@ -359,7 +359,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
                 income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            scenario, GameDuration.SixMonths, 41, setups), players, sectors);
+            scenario, GameDuration.SixMonths, 41, setups, MatchDeviations.Original), players, sectors);
     }
 
     private static MatchState CreateOpponentMatch(
@@ -395,7 +395,7 @@ public sealed class AiFamilyThreeTurnPlannerTests
             ], owner: id == 0 ? setups[1].Id : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.SixMonths, seed, setups,
+            ScenarioId.Power, GameDuration.SixMonths, seed, setups, MatchDeviations.Original,
             AiDifficulty.HomicidalManiac), players, sectors);
     }
 }
