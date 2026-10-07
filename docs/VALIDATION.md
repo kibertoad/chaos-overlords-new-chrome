@@ -391,7 +391,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -458,7 +458,10 @@ slot.
 (FND-STATE-004), all before the Done press of the given turn, to reach families
 no local match assigns or a match that ends with one player active. `--cash`
 sets the player's `cash` before the Done press of each turn it names, so a
-human can pay for a hire every turn. The fixture
+human can pay for a hire every turn. `--force` sets the `force` of a player's
+gang in a roster slot (FMT-STATE-001), so a gang ordered to Heal can be at
+Force 10 when it acts, and `--tolerance` sets a sector's `base_tolerance`
+(FMT-STATE-002), so one Bribe or Snitch can wrap the signed byte. The fixture
 lists each as a `planning` input, and the replay makes the same change to the
 rebuild's state, a retired player becoming eliminated with its gangs and
 sectors left in place; since that change bypasses the replay recorder, such a
@@ -751,14 +754,15 @@ window, and a repainting copy loses it.
 Add `--white-key` as well (docs/DECISIONS.md, 2026-10-05). On a 32-bit desktop
 the original's keyed copies key nothing and draw the white they should leave
 out, which is where the solid white areas of Windows 11 come from
-(FND-PLATFORM-014). The option puts a breakpoint on the `SetBkColor` call of the
-keyed mask compositor and, whenever that call passes the 16-bit key
-`RGB(255,252,255)`, writes `RGB(255,255,255)`, the white a 32-bit surface holds,
-over the argument. The fixture lists it as the setup input `key_colour
-RGB(255,255,255)`. The rolls and the state of a run do not depend on it.
-The breakpoint stops the original on every keyed copy, and the runs that
-checked the option had no planning time limit; whether it moves the timer
-records of a run with `--time-limit` has not been checked.
+(FND-PLATFORM-014). The keyed mask compositor takes its 16-bit key
+`RGB(255,252,255)` from an immediate operand (FND-PLATFORM-015), and the option
+writes `RGB(255,255,255)`, the white a 32-bit surface holds, over that operand
+once, before the game runs. A run with the option stops no more often than one
+without it, so the timer records of a run with `--time-limit` are not moved.
+When the operand does not hold the expected bytes, the write is skipped and the
+run's notes say so. The fixture lists the option as the setup input
+`key_colour RGB(255,255,255)`. The rolls and the state of a run do not depend
+on it.
 
 `extract --screens SCR-UI-003,SCR-HIRE-002` adds a `capture` object to each
 run whose two copies agree:
@@ -861,6 +865,23 @@ the hire steps do, and posts only the button messages. The run's own settings
 then replace only what they set: any other choice keeps what the presses left,
 and the trace notes which choices the presses changed. EXP-UI-015 is taken this
 way, with an earlier drag that posted the moves as `WM_MOUSEMOVE` instead.
+
+Two steps type keys, from tokens `{VKhh}` (a press and release of virtual key
+`hh`), `{CHARhh}` (character `hh` posted as `WM_CHAR`), `{SHIFT}` and
+`{PLAIN}`. The setup step `name:TOKENS` presses the name band of card 0, which
+opens the name editor (dialog 139, FND-UI-064), posts the keys to its edit
+control with Shift set in the keyboard state the probe shares with the game's
+thread while `{SHIFT}` holds, presses OK and keeps slot 0's 12-byte name
+record; `extract` lists the records as `name_entries`. The order step
+`keys:TOKENS` posts the keys to the game window and makes the window
+procedure's Shift test at `0x0045CA62` report Shift held or not as the tokens
+say, since a posted message cannot hold the key; it keeps the type, character
+and key the procedure stores at `0x0045CC35` for each, listed as
+`key_events`. Num Lock plays no part in either: Windows turns a number-pad key
+into a virtual key before it is posted, so a run posts the virtual key each
+Num Lock state would give. Both steps note the keyboard layout of the game's
+thread, which the translation follows. EXP-UI-052 and EXP-UI-053 are taken
+this way.
 
 A capture recorded before the element digests existed, such as those of
 EXP-TURN-041 and EXP-TURN-042, gets them from its bitmap under
@@ -994,6 +1015,24 @@ The selected-sector outline cycles through two frames on the pump's counter
 Events and Comlink lights in the lit half of their blink whenever they are on.
 No capture yet shows a light lit, so which counter values the lit half covers
 has not been compared.
+
+### Raising a screen entry
+
+A screen entry stays `supported` until runs of the original reach everything
+it describes (DECISIONS.md, 2026-10-06). A pull request that adds or changes
+captures goes through this list for each screen it compares:
+
+- Each drawn element and each state the entry lists is shown by a capture and
+  compared without a mask, or masked only where a `mandatory` deviation's
+  Replaces item names it.
+- Each mouse region, key and double-click the entry lists was performed by a
+  recorded run, with its result recorded (a later capture, a panel record or
+  the order bytes).
+- Each sound the entry lists was recorded by a run with sound on, and each
+  timing (slides, blinks, cadences) was measured.
+- What is left goes in the entry's Open questions with the finding it rests
+  on, and in the parity row's notes. Only when nothing is left does the entry,
+  and its row, become `established`.
 
 ## Screen capture coverage
 

@@ -6,20 +6,20 @@ Entries by status.
 
 ## supported
 
-1 entries.
-
-| ID | Title |
-|---|---|
-| [SCR-RESEARCH-001](../../screens/SCR-RESEARCH-001.md) | Research panel with item categories and a fixed sixteen-row item list |
-
-## established
-
 2 entries.
 
 | ID | Title |
 |---|---|
-| [RULE-RESEARCH-001](../../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once |
 | [RULE-RESEARCH-002](../../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon |
+| [SCR-RESEARCH-001](../../screens/SCR-RESEARCH-001.md) | Research panel with item categories and a fixed sixteen-row item list |
+
+## established
+
+1 entries.
+
+| ID | Title |
+|---|---|
+| [RULE-RESEARCH-001](../../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once |
 
 ## recorded
 
@@ -40,7 +40,6 @@ Entries whose status is established and whose findings and experiments are all o
 | ID | Title |
 |---|---|
 | [RULE-RESEARCH-001](../../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once |
-| [RULE-RESEARCH-002](../../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon |
 
 ## Open questions
 
@@ -49,5 +48,5 @@ Entries whose Open questions section says more than None known.
 | ID | Title | Status |
 |---|---|---|
 | [RULE-RESEARCH-001](../../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | established |
-| [RULE-RESEARCH-002](../../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | established |
+| [RULE-RESEARCH-002](../../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | supported |
 | [SCR-RESEARCH-001](../../screens/SCR-RESEARCH-001.md) | Research panel with item categories and a fixed sixteen-row item list | supported |

@@ -85,3 +85,13 @@ None known.
   from the art, not from the code (the card compositor is FND-UI-036's).
 - Whether the site progress meter is drawn for a player who does not own the
   sector (the reading is that it is not).
+- No recorded run of the original reaches an edge sector in the nine-sector
+  display; owner strips of players 1 and 3 to 5; a site meter above 0;
+  equipment icons not under a panel; cards 4 to 6; most action strips; another
+  player's outline colour; the hidden group strip; the popup menus as pixels;
+  neighbour and site double-clicks other than site slot 0; the own-card press
+  and double-click and another player's card; right-button presses and a back
+  release outside; an Overlord portrait press; the Hire dock here; the arrow
+  keys and Enter; any sound; leaving when planning ends. The cash row and
+  the Tolerance value are not compared with the captures (FND-UI-015, FND-UI-018, FND-UI-021, FND-UI-036). These rest
+  on the static findings named, so the entry stays `supported`.

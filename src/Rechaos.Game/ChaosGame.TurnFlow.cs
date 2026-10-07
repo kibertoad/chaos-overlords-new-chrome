@@ -7,7 +7,7 @@ namespace Rechaos.Game;
 public sealed partial class ChaosGame
 {
     private static readonly Rectangle HandoffReady = HandoffLayout.Ready;
-    private Texture2D? HandoffPanel => Texture("PX00132.bmp");
+    private Texture2D? HandoffPanel => Texture(OriginalBitmap.HandoffPanel);
     private readonly PlanningSelectionMemory _planningSelections = new();
 
     private void AdvanceTurn()
