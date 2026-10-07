@@ -4,7 +4,7 @@ title: Family-7 computer gangs sit where sites add the most Research, influence 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060, EXP-TURN-020, FND-AI-074, EXP-TURN-050, EXP-TURN-057, EXP-TURN-073, EXP-TURN-083, EXP-TURN-088, FND-AI-001, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-024, FND-AI-039, FND-AI-047, FND-CONTROL-001, FND-HIRE-002, FND-PLATFORM-003, FND-RESEARCH-001, FND-RESEARCH-002, FND-STATE-004, FND-STATE-006, FND-STATE-007, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035, FND-UI-036, FND-AI-078, EXP-TURN-010, EXP-TURN-021, EXP-TURN-039, EXP-TURN-043, EXP-TURN-049]
+evidence: [FND-AI-035, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-045, FND-AI-044, FND-EXE-004, FND-AI-054, FND-AI-055, FND-AI-042, FND-AI-060, EXP-TURN-020, FND-AI-074, EXP-TURN-050, EXP-TURN-057, EXP-TURN-073, EXP-TURN-083, EXP-TURN-088, FND-AI-001, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-024, FND-AI-039, FND-AI-047, FND-CONTROL-001, FND-HIRE-002, FND-PLATFORM-003, FND-RESEARCH-001, FND-RESEARCH-002, FND-STATE-004, FND-STATE-006, FND-STATE-007, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035, FND-UI-036, FND-AI-078, EXP-TURN-010, EXP-TURN-021, EXP-TURN-039, EXP-TURN-043, EXP-TURN-049, EXP-TURN-109]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
@@ -229,12 +229,15 @@ None known.
   all four replays part from the original. EXP-TURN-021 and EXP-TURN-049 reach
   the research continuation after a Snitch the duplicate cleanup wrote, whose
   previous target is a site slot, and part from the original when the
-  continuation tests the previous action. No recorded run reaches the focus
-  test with a Research site left to influence in the best sector, or isolates
-  the failed or non-hostile attack fallthrough, weapon and armor upgrade
-  cooldowns, Heal, best-Research-sector routing and ties, Research-site
-  Influence, type cycling, or the late Greed Terminate override, so the
-  research procedure is not established.
+  continuation tests the previous action. EXP-TURN-109 reaches the focus test
+  with the gang in its best sector and a Research site there unfinished; the
+  gang researches, and its replay parts from the original when it influences
+  the site instead. Its next pass, with the item number in the focus,
+  influences that site. No recorded run isolates the failed or non-hostile
+  attack fallthrough, weapon and armor upgrade cooldowns, Heal,
+  best-Research-sector routing and ties, Research-site Influence, type
+  cycling, or the late Greed Terminate override, so the research procedure is
+  not established.
 - The item `type` numbers (0 melee, 1 blade, 2 ranged, 3 armor, 4
   miscellaneous) are assumptions shared with RULE-AI-005.
 - A previous Research of an item of type 4 that is not on the fixed list, or of
