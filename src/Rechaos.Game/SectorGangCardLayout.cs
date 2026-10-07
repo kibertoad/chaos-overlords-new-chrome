@@ -17,6 +17,8 @@ public static class SectorGangCardLayout
     private const int FrameHeight = 110;
     private const int OwnerBorderThickness = 1;
     private const int SelectionInset = 1;
+    // FND-UI-069: the card compositor copies the Force meter to card (7,3) and the action strip
+    // to (5,8).
     private const int ContentLeft = 5;
     private const int ForceLeft = 7;
     private const int ForceTop = 3;

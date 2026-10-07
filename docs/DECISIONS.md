@@ -53,8 +53,9 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   gangs the viewer detects, as the original does (RULE-UI-010). Their cards
   draw no action strip, and the card of every gang, the viewer's own
   included, draws none in the final view after the match has ended
-  (FND-UI-069). DEV-UI-008's target highlight follows the viewer's own
-  orders only, so nothing on the screen shows another player's order.
+  (FND-UI-069). DEV-UI-008's target highlight appears only on a card that
+  draws the strip, so nothing on the screen shows another player's order,
+  and the final view shows no target of an order the match will not run.
 - Reason: the 2026-09-18 entry gave as evidence that the original listed only
   the viewing overlord's gangs and had no way to read another's. FND-UI-015
   and EXP-TURN-096 show the portrait press, and DEV-UI-013 was dropped for

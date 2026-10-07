@@ -301,7 +301,7 @@ public sealed partial class ChaosGame
         if (_uiSprites is not null && showsGroupOrderStrip)
             batch.Draw(_uiSprites, SectorDetailLayout.GroupOrderStrip,
                 OriginalSpriteLayout.GroupOrderStrip, Color.White);
-        DrawQueuedCommandTargetHighlight(batch, pixel, viewer, visibleGangs);
+        DrawQueuedCommandTargetHighlight(batch, pixel, viewer, state.Outcome is not null, visibleGangs);
         DrawGangMoveDrag(batch, pixel, state);
         DrawSectorHireDrag(batch, pixel, state);
         // The Sector workspace covers the left side of right-edge tooltips drawn by
@@ -357,15 +357,18 @@ public sealed partial class ChaosGame
         SpriteBatch batch,
         Texture2D pixel,
         PlayerId viewer,
+        bool matchOver,
         IReadOnlyList<MatchGangState> visibleGangs)
     {
         if (_hoverPoint is not { } point) return;
         // The card a press here would take (FND-UI-015), gaps between the cards included.
         var hoveredSlot = SectorGangCardLayout.CardAt(point);
-        // DEV-UI-008 highlights only the viewer's own orders: the original draws no action strip on
-        // another player's card (FND-UI-069), so the workspace shows nothing of that player's order.
+        // DEV-UI-008 highlights the target of the order a card's action strip shows, and only on a
+        // card that draws the strip: the original draws none on another player's card or in the
+        // final view (FND-UI-069), so the workspace shows no other player's order and no order the
+        // match will no longer run.
         if (hoveredSlot < 0 || hoveredSlot >= Math.Min(visibleGangs.Count, SectorGangCardLayout.VisibleCards)
-            || visibleGangs[hoveredSlot].Owner != viewer
+            || !ShowsActionStrip(viewer, visibleGangs[hoveredSlot].Owner, matchOver)
             || visibleGangs[hoveredSlot].QueuedCommand is not { } queued) return;
 
         switch (queued.Command.Action)
