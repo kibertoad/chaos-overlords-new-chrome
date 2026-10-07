@@ -79,7 +79,7 @@ public static class NativeSaveSerializer
         // The version has to be read before the members are bound: JsonOptions refuses unmapped
         // members, so a save from a newer build fails as "JSON is invalid" on the very field the
         // newer build added, and the caller would have no way to tell it from real damage.
-        if (DeclaredFormatVersion(bounded) is { } declared && declared != CurrentFormatVersion)
+        if (DeclaredFormatVersion(bounded, CurrentFormatVersion) is { } declared && declared != CurrentFormatVersion)
             throw UnsupportedFormat(declared);
         NativeSaveDocument document;
         try
@@ -108,9 +108,17 @@ public static class NativeSaveSerializer
     }
 
     /// <summary>The envelope's <c>formatVersion</c>, or null when the bytes are not readable JSON.</summary>
-    /// <remarks>Leaves the stream rewound for the real deserialization pass.</remarks>
-    internal static int? DeclaredFormatVersion(MemoryStream bounded)
+    /// <remarks>
+    /// Leaves the stream rewound for the real deserialization pass. A file in the format
+    /// <paramref name="current"/> names, which is nearly every file read, writes that version as its
+    /// first member, and the caller deserializes and validates the whole of it next, so the answer
+    /// is taken from the first member alone. Parsing the whole envelope as well took about a sixth
+    /// of loading a long match's save. Any other first member is checked as before.
+    /// </remarks>
+    internal static int? DeclaredFormatVersion(MemoryStream bounded, int current)
     {
+        if (FirstMemberIsFormatVersion(bounded.GetBuffer().AsSpan(0, checked((int)bounded.Length)), current))
+            return current;
         try
         {
             using var envelope = JsonDocument.Parse(bounded, new JsonDocumentOptions { MaxDepth = 64 });
@@ -128,6 +136,23 @@ public static class NativeSaveSerializer
         finally
         {
             bounded.Position = 0;
+        }
+    }
+
+    private static bool FirstMemberIsFormatVersion(ReadOnlySpan<byte> json, int current)
+    {
+        try
+        {
+            var reader = new Utf8JsonReader(json, new JsonReaderOptions { MaxDepth = 64 });
+            return reader.Read() && reader.TokenType == JsonTokenType.StartObject
+                && reader.Read() && reader.TokenType == JsonTokenType.PropertyName
+                && reader.ValueTextEquals("formatVersion"u8)
+                && reader.Read() && reader.TokenType == JsonTokenType.Number
+                && reader.TryGetInt32(out var value) && value == current;
+        }
+        catch (JsonException)
+        {
+            return false;
         }
     }
 

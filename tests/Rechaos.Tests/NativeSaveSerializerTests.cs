@@ -371,6 +371,29 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Throws<InvalidDataException>(() => NativeSaveSerializer.Load(stream, changedDefinitions));
     }
 
+    // The format version is read from the first member when it is the current one, so a cut-off
+    // save of the current format has to stay damage, and one of another format, whose envelope is
+    // still parsed whole, has to stay damage as well rather than an intact save of another build.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ACutOffSaveIsDamageWhateverItsFormatVersion(bool otherVersion)
+    {
+        var match = CreateMatch();
+        using var stream = new MemoryStream();
+        NativeSaveSerializer.Save(stream, match);
+        var json = Encoding.UTF8.GetString(stream.ToArray());
+        if (otherVersion)
+            json = json.Replace(
+                $"\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion}",
+                "\"formatVersion\":999", StringComparison.Ordinal);
+        var cut = Encoding.UTF8.GetBytes(json[..(json.Length / 2)]);
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(new MemoryStream(cut), match.Definitions));
+        Assert.Null(IncompatibleSave.ReasonOf(exception));
+    }
+
 
 
 
