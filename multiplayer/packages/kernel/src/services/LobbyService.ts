@@ -454,7 +454,7 @@ export class LobbyService {
    * Post a chat message to the lobby, announced to every member as `lobby.chatMessage`.
    *
    * The log is the message's only store, so it is the log that is bounded: a lobby whose log has
-   * reached `LIMITS.lobbyChatLogEvents` takes no more chat. The per-player budget is counted like
+   * reached `LIMITS.lobbyChatLogEvents` takes no more chat. The per-player budget is in memory, like
    * every other limiter here, and spares the log from one member's flood long before that. The
    * length check and the publish are separate steps, so posts that arrive together can each pass
    * the check and carry the log a few events past the cap; it bounds the log without being exact.
