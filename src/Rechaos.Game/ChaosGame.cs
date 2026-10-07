@@ -456,7 +456,9 @@ public sealed partial class ChaosGame
         // match skips.
         OpenStartupSave();
         InitializeIntroMovies();
-        LoadSoundtrack();
+        // A reference frame is drawn and written before its Update ever reaches the soundtrack,
+        // and opening every track took about a quarter of its run.
+        if (_referenceFrame is null) LoadSoundtrack();
     }
 
     /// <summary>One tick of the game: the input since the last tick, the clocks and the screens.</summary>

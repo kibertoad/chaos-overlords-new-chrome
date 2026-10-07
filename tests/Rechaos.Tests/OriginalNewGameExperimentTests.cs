@@ -166,11 +166,20 @@ public sealed partial class OriginalNewGameExperimentTests
     public static TheoryData<string, int> MatchingRuns()
     {
         var data = new TheoryData<string, int>();
-        foreach (var experiment in Experiments)
-            for (var run = 0; run < Recorded.Value[experiment].Length; run++)
-                if (!KnownDivergences.ContainsKey((experiment, run))) data.Add(experiment, run);
+        foreach (var (experiment, run) in MatchingRunKeys()) data.Add(experiment, run);
         return data;
     }
+
+    private static IEnumerable<(string Experiment, int Run)> MatchingRunKeys() =>
+        from experiment in Experiments
+        from run in Enumerable.Range(0, Recorded.Value[experiment].Length)
+        where !KnownDivergences.ContainsKey((experiment, run))
+        select (experiment, run);
+
+    // Each row starts from its run's replay, so the rows play theirs ahead on a few workers. The
+    // replays land in the cache other tests and ScreenCaptureTests read as well.
+    private static readonly RowPrefetch<(string Experiment, int Run), Replay> MatchingReplays =
+        new(MatchingRunKeys, key => Replayed(Run(key.Experiment, key.Run)));
 
     public static TheoryData<string, int> DivergingRuns()
     {
@@ -239,7 +248,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheRebuildStartsTheSameMatch(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var (match, donePresses, rolls) = Replayed(recorded);
+        var (match, donePresses, rolls) = MatchingReplays.Get((experiment, run));
 
         var human = recorded.Humans[0];
 
@@ -528,6 +537,12 @@ public sealed partial class OriginalNewGameExperimentTests
     public static TheoryData<string, int> PanelRuns()
     {
         var data = new TheoryData<string, int>();
+        foreach (var (experiment, run) in PanelRunKeys()) data.Add(experiment, run);
+        return data;
+    }
+
+    private static IEnumerable<(string Experiment, int Run)> PanelRunKeys()
+    {
         foreach (var (experiment, runs) in Recorded.Value)
             for (var run = 0; run < runs.Length; run++)
                 // The probe breaks on the handlers at every local human's planning entry, and the
@@ -537,8 +552,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 // left out too; DetailedCombatPlaysTheOriginalsClips compares those entries.
                 if (runs[run].Panels is not null && runs[run].Humans.Count == 1 && runs[run].CombatClips is null
                     && !KnownDivergences.ContainsKey((experiment, run)))
-                    data.Add(experiment, run);
-        return data;
+                    yield return (experiment, run);
     }
 
     // RULE-SETUP-008, RULE-EVENT-005: the probe records each call of the Combat Results and Last
@@ -569,23 +583,16 @@ public sealed partial class OriginalNewGameExperimentTests
         for (var entry = 0; entry < recorded.DoneCount; entry++)
             Assert.True(combatCalled[entry], $"planning entry {entry + 1}: the recording holds no call of Combat Results");
 
-        var shown = new List<string>[recorded.DoneCount + 1];
-        using var game = new HeadlessGame(HeadlessGame.DefaultPreferences with { DetailedCombat = false });
-        List<string> Panels(MatchState match, PlayerId human) => PlanningEntryPanels(game, match, human);
-        // The panels are read at each planning entry, before any of that turn's recorded orders,
-        // hires or planning writes reach the state, as the original showed them.
-        var match = StartMatch(recorded, out var donePresses,
-            atPlanningEntry: (state, human, turn) => shown[turn - 1] = Panels(state, human));
+        var (shown, donePresses, endsAtPlanningEntry) = PanelReplays.Get((experiment, run));
         // An early stop would leave the recording's later entries uncompared.
         Assert.Equal(recorded.DoneCount, donePresses);
         // The last entry is a planning entry unless the match ended or the human was eliminated. An
         // eliminated human has none, and the final view of an ended match is closed by the probe
         // with every panel it opens, so neither is compared.
         var compared = donePresses;
-        if (match.Outcome is null && IsActive(match, recorded.Humans[0]))
+        if (endsAtPlanningEntry)
         {
             Assert.True(combatCalled[donePresses], $"planning entry {donePresses + 1}: the recording holds no call of Combat Results");
-            shown[donePresses] = Panels(match, recorded.Humans[0]);
             // The run stops at the last entry while its first panel is open, so only that panel is seen.
             if (expected[donePresses].Count > 0) shown[donePresses] = shown[donePresses].Take(1).ToList();
             compared++;
@@ -593,6 +600,29 @@ public sealed partial class OriginalNewGameExperimentTests
         for (var entry = 0; entry < compared; entry++)
             Assert.True(expected[entry].SequenceEqual(shown[entry]),
                 $"planning entry {entry + 1}: the original showed [{string.Join(", ", expected[entry])}], the rebuild [{string.Join(", ", shown[entry])}]");
+    }
+
+    // The panels the rebuild shows at each planning entry of a run, the Done presses its replay
+    // made, and whether it ends at a planning entry, whose panels are then the last ones. Each run
+    // is played again with its own game, so the rows replay theirs ahead on a few workers.
+    private sealed record PanelReplay(List<string>[] Shown, int DonePresses, bool EndsAtPlanningEntry);
+
+    private static readonly RowPrefetch<(string Experiment, int Run), PanelReplay> PanelReplays =
+        new(PanelRunKeys, key => ReplayPanels(Run(key.Experiment, key.Run)));
+
+    private static PanelReplay ReplayPanels(RecordedRun recorded)
+    {
+        var shown = new List<string>[recorded.DoneCount + 1];
+        using var game = new HeadlessGame(HeadlessGame.DefaultPreferences with { DetailedCombat = false });
+        // The panels are read at each planning entry, before any of that turn's recorded orders,
+        // hires or planning writes reach the state, as the original showed them.
+        var match = StartMatch(recorded, out var donePresses,
+            atPlanningEntry: (state, human, turn) => shown[turn - 1] = PlanningEntryPanels(game, state, human));
+        var endsAtPlanningEntry = match.Outcome is null && IsActive(match, recorded.Humans[0]);
+        // A replay that stopped early fails its row before the last entry is read.
+        if (endsAtPlanningEntry && donePresses == recorded.DoneCount)
+            shown[donePresses] = PlanningEntryPanels(game, match, recorded.Humans[0]);
+        return new PanelReplay(shown, donePresses, endsAtPlanningEntry);
     }
 
     /// <summary>
