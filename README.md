@@ -29,9 +29,11 @@ when importing them.
 
 ### macOS
 
-The project does not pay for an Apple Developer membership, which Apple requires
-before it will sign or notarize anything, so the macOS installers are unsigned
-and macOS refuses to open them until you allow it. Releases that include macOS
+The macOS builds are not signed or notarized, and there are no plans to change
+that: Apple signs and notarizes only for paid Apple Developer members, and the
+project does not pay for a membership. macOS therefore refuses to open the
+installer until you allow it, and the steps below are how to install the game
+on a Mac for the foreseeable future. Releases that include macOS
 builds carry `ChaosOverlords-NewChrome-osx-arm64-Setup-<version>.pkg` for Apple
 silicon (M1 and later) and, in some releases,
 `ChaosOverlords-NewChrome-osx-x64-Setup-<version>.pkg` for Intel Macs.
@@ -121,7 +123,7 @@ validation plans list the open questions.
   ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
 - Online play has no spectating, lobby chat or Comlink messages between
   players ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)).
-- Key bindings cannot be changed, and macOS builds are not signed or notarized
+- Key bindings cannot be changed
   ([#139](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139)).
 - Save and replay formats may change incompatibly before 1.0.0
   ([#141](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141)).
@@ -139,6 +141,8 @@ The technical documentation is cataloged in [docs/README.md](docs/README.md);
   interoperability will not be recreated. Online play uses the new documented
   transport instead.
 - Legacy Help macros and external-file execution are not run.
+- macOS builds are not signed or notarized, and there are no plans to change
+  that; [macOS](#macos) under Quick start says how to open them.
 
 ## Quality-of-life additions
 
