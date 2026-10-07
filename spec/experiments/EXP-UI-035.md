@@ -61,14 +61,11 @@ turn was drawn 6 to 10 ms after the stored start, the time the copy took.
 
 ## Results
 
-`EveryPlanningEntryPutsBackTheConsolesBar` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Timer.cs` checks that every
-copy holds the console's own bar, the digest the rebuild draws at the endpoint
-of EXP-UI-001. `ThePlanningEntryPutsBackTheConsolesBar` in
-`tests/Rechaos.Tests/PlanningTimerLoopTests.cs` checks that the rebuild's
-planning entry forgets the bar of the turn before, so its entry panels show the
-console's bar. `ThePlanningClockMatchesTheOriginals` replays turn 2's clock,
-and `TheRebuildStartsTheSameMatch` the whole run.
+A test of the rebuild checks that every copy holds the console's own bar, the
+digest the rebuild draws at the endpoint of EXP-UI-001. Another checks that the
+rebuild's planning entry forgets the bar of the turn before, so its entry
+panels show the console's bar. Turn 2's clock is replayed tick by tick, and
+the whole run as a match.
 
 ## Conclusion
 

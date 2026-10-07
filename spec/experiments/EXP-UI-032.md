@@ -61,12 +61,10 @@ victory splash, is in player 1's green.
 
 ## Results
 
-`TheRebuildStartsTheSameMatch` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the 388 rolls,
-with the Right Hands taken out of the match as the write does, and Ready and
-Done for player 1. `TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` presses the same controls from the
-replayed endpoint and compares both copies. Every element matches.
+A test of the rebuild replays the 388 rolls, with the Right Hands taken out of
+the match as the write does, and Ready and Done for player 1. Another test
+presses the same controls from the replayed endpoint and compares both copies.
+Every element matches.
 
 A first comparison found the rebuild filling the colour band only on the
 victory splash, so the card of player 1 showed the band of the splash's art.

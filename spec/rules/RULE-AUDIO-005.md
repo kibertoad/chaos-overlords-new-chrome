@@ -4,7 +4,7 @@ title: Playing a sound effect, which cuts off the one playing
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-002, FND-AUDIO-003, FND-AUDIO-006, FND-EXE-004]
+evidence: [FND-AUDIO-002, FND-AUDIO-003, FND-AUDIO-006, FND-EXE-004, FND-AUDIO-013]
 conflicting: []
 split_with: []
 related: []

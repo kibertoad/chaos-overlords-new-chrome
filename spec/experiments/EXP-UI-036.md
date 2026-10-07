@@ -46,17 +46,15 @@ pump's counter as 5. Marker frame 10, every light byte 0.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` draws the replayed endpoint with
-`--entry-panels`, which leaves Last Turn Events open on its first page as at
-the dump. The panel's page number, page count, illustration and footer match,
-and so does every element of SCR-UI-003 except the city map. The Tolerance row
-is masked, since the rebuild draws it orange there under DEV-UI-007. The city
-map, the whole screen and the panel's whole-screen element differ only in the
-selection frame. They
-are reported and not asserted, since the frame the panel held when it came in
-(FND-UI-051) is not what the pump's counter at the dump gives, and the capture
-does not record it.
+A test of the rebuild draws the replayed endpoint with Last Turn Events left
+open on its first page, as at the dump. The panel's page number, page count,
+illustration and footer match, and so does every element of SCR-UI-003 except
+the city map. The Tolerance row is masked, since the rebuild draws it orange
+there under DEV-UI-007. The city map, the whole screen and the panel's
+whole-screen element differ only in the selection frame. They are reported and
+not asserted, since the frame the panel held when it came in (FND-UI-051) is
+not what the pump's counter at the dump gives, and the capture does not record
+it.
 
 ## Conclusion
 

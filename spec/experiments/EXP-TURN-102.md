@@ -74,15 +74,12 @@ own full bar, as in EXP-UI-035.
 
 ## Results
 
-`ThePlanningClockMatchesTheOriginals` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Timer.cs` replays each menu
-turn tick by tick through the recorded ticks of slot 0, with the rebuild's
-PlanningTimer paused from the posting to the close. It redraws on exactly the
-original's ticks with the original's widths and warnings, and expires where the
-original did. `TheGameMenuKeepsOneTickOfTheRedrawCountdown` and
-`TheElapsedTimeRunsOnInTheGameMenu` in
-`tests/Rechaos.Tests/PlanningTimerPolicyTests.cs` check the same two
-behaviours on their own. `TheRebuildStartsTheSameMatch` replays the runs.
+A test of the rebuild replays each menu turn tick by tick through the recorded
+ticks of slot 0, with the rebuild's planning clock paused from the posting to
+the close. It redraws on exactly the original's ticks with the original's
+widths and warnings, and expires where the original did. Two more tests check
+on their own that the menu keeps one tick of the redraw countdown and that the
+elapsed time runs on in the menu. The runs are also replayed as matches.
 
 ## Conclusion
 

@@ -51,13 +51,13 @@ completed items (type 5), and player 4's loss of sector 18 with `arg2` 5
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run up to
-the planning phase that follows the human's elimination. The rebuild makes the
-same calls with the same bounds and results, reaches the same generator
-position and state, and builds the same Last Turn reports for every player. In
-it four gangs of player 2 attack the human's gang in sector 12, which hides:
-three draws fall below the evasion threshold and miss, and the fourth attack
-hits and takes the gang's Force from 4 to 0, which eliminates the human.
+A test of the rebuild replays the run up to the planning phase that follows the
+human's elimination. The rebuild makes the same calls with the same bounds and
+results, reaches the same generator position and state, and builds the same Last
+Turn reports for every player. In it four gangs of player 2 attack the human's
+gang in sector 12, which hides: three draws fall below the evasion threshold and
+miss, and the fourth attack hits and takes the gang's Force from 4 to 0, which
+eliminates the human.
 
 ## Conclusion
 

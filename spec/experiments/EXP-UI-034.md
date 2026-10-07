@@ -58,12 +58,10 @@ with one row kind, the splash of player 0.
 
 ## Results
 
-`TheRebuildStartsTheSameMatch` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the 335 rolls,
-with the computer players retired and player 1's Right Hands taken out as the
-writes do. `TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` draws the replayed endpoint, which
-stands at the awards, and compares both copies. Every element matches.
+A test of the rebuild replays the 335 rolls, with the computer players retired
+and player 1's Right Hands taken out as the writes do. Another test draws the
+replayed endpoint, which stands at the awards, and compares both copies. Every
+element matches.
 
 A first comparison found the rebuild's reference frame showing player 1's
 Ready card for the save of the decided match, where the original had shown

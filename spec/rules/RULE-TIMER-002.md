@@ -4,7 +4,7 @@ title: A human planning turn ends when its time limit passes
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-STATE-010, FND-EXE-004, FND-UI-044, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052, EXP-TURN-102, EXP-UI-035]
+evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-STATE-010, FND-EXE-004, FND-UI-044, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052, EXP-TURN-102, EXP-UI-035, FND-RNG-001]
 conflicting: []
 split_with: []
 related: [RULE-OPTIONS-003]

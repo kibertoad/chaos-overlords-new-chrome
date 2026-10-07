@@ -57,9 +57,15 @@ public sealed partial class OriginalNewGameExperimentTests
         }
     }
 
-    // The players of the names the endgame's first drawing listed, in drawing order, and each row's
-    // kind: splash, ranked or eliminated (FND-AWARDS-005).
-    private sealed record RecordedEndgame(IReadOnlyList<int> Players, IReadOnlyList<string> Kinds);
+    // The three arguments the endgame renderer was called with, the players of the names its first
+    // drawing listed, in drawing order, and each row's kind: splash, ranked or eliminated
+    // (FND-AWARDS-005).
+    private sealed record RecordedEndgame(IReadOnlyList<int> Arguments, IReadOnlyList<int> Players, IReadOnlyList<string> Kinds)
+    {
+        // FND-AWARDS-005: the renderer draws the victory splash of the player in its third argument
+        // when its first argument is not 0 and its second is 0, and the table otherwise.
+        public bool DrawsSplash => Arguments[0] != 0 && Arguments[1] == 0;
+    }
     // The viewer of the last city redraw and its site markers as definition, sector, ordinal and
     // controlled flag (FND-SEARCH-006).
     private sealed record RecordedMarkers(int Viewer, IReadOnlyList<int[]> Markers);
@@ -255,6 +261,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 : [];
             EndgameRows = run.TryGetProperty("endgame_rows", out var endgame)
                 ? new RecordedEndgame(
+                    endgame.GetProperty("arguments").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
                     endgame.GetProperty("players").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
                     endgame.GetProperty("kinds").EnumerateArray().Select(value => value.GetString()!).ToArray())
                 : null;
@@ -347,6 +354,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? soundCalls.EnumerateArray().Select(call => new RecordedSoundCall(
                     call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
                 : null;
+            EffectsEnabled = run.TryGetProperty("effects_enabled", out var effectsEnabled) ? effectsEnabled.GetBoolean() : null;
             IntroMovies = run.TryGetProperty("intro_movies", out var introMovies)
                 ? introMovies.EnumerateArray().Select(movie => new RecordedIntroMovie(
                     movie.GetProperty("name").GetString()!, movie.GetProperty("frames").GetInt32(),
@@ -422,6 +430,10 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedPointerCall>? PointerCalls { get; }
         // Null when the run did not record the play helper.
         public IReadOnlyList<RecordedSoundCall>? SoundCalls { get; }
+        // Whether effects_enabled was set at each read the probe made (FND-AUDIO-002), which decides
+        // whether the effects wrapper's calls reach the play helper. Null when the run did not
+        // record it.
+        public bool? EffectsEnabled { get; }
         // Null when the run did not record the presentation clock: the milliseconds of each tick of
         // timer slot 0 from the dump on, and each call of the wait.
         public IReadOnlyList<long>? Ticks { get; }
