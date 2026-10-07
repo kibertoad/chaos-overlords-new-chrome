@@ -4,7 +4,7 @@ title: Vacant hire offers are refilled in place at the player's planning entry
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HIRE-001, FND-HIRE-007, FND-EXE-004, SRC-MANUAL-GOG, EXP-SETUP-001, EXP-TURN-062]
+evidence: [FND-HIRE-001, FND-HIRE-007, FND-EXE-004, SRC-MANUAL-GOG, EXP-SETUP-001, EXP-TURN-062, FND-AI-064, FND-HIRE-002]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002]

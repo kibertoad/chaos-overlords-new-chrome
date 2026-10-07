@@ -4,7 +4,7 @@ title: Each sector's three sites are drawn uniformly and redrawn until they diff
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CITY-002, FND-RNG-005, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003, EXP-SETUP-004]
+evidence: [FND-CITY-002, FND-RNG-005, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003, EXP-SETUP-004, FND-CONTROL-001, FND-PLATFORM-003, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]

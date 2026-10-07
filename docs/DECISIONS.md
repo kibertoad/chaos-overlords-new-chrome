@@ -7,7 +7,7 @@ implementation plan.
 
 Entries are ordered newest first. Each records the decision, the evidence or
 reasoning behind it, and what it rules in or out. A decision that departs from
-the original is also recorded as an entry of [DEVIATIONS.md](../DEVIATIONS.md),
+the original is also recorded as an entry in `deviations/`,
 which names the spec entries it departs from.
 
 ## Decision index
@@ -139,8 +139,8 @@ original pixel for pixel.
   Tests item makes sure the replacement does what the deviation log claims.
 - The rule is the documentation standard's, a minor version of version 1
   (kibertoad/refurbished-dinosaurs#58, with the checker in
-  kibertoad/refurbished-dinosaurs-toolkit#291). `tools/check-spec.mjs` applies
-  it the same way, and `docs/upstream/` holds the standard's text.
+  kibertoad/refurbished-dinosaurs-toolkit#291). The toolkit's checker, which
+  `tools/check-documentation.mjs` runs, applies it, and `docs/upstream/` holds the standard's text.
 
 ## 2026-10-05 — Capture the original with the 32-bit white key
 

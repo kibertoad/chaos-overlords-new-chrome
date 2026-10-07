@@ -129,6 +129,8 @@ describe('server app over in-memory storage', () => {
   defineHttpConformance({
     fetch: async (input, init) => app.request(input, init),
     publicListing: true,
+    // The hub `build` wires beats every 50 ms.
+    keepaliveMs: 50,
     expireDeadlines: async () => {
       clock.advance(60_000)
       await kernel.turns.sweep()

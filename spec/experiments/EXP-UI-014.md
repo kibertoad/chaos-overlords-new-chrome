@@ -40,10 +40,9 @@ byte 0. The capture shows two gray pylons on the four centre sectors 27, 28,
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the capture as for
-EXP-UI-009. Leaving out the cash row (DEV-UI-006) and the city's key line
-(DEV-UI-023), every element matches, the map with its pylons included.
+A test of the rebuild compares the capture as for EXP-UI-009. Leaving out the
+cash row (DEV-UI-006) and the city's key line (DEV-UI-023), every element
+matches, the map with its pylons included.
 
 ## Conclusion
 

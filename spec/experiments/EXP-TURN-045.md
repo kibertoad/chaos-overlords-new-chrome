@@ -45,11 +45,10 @@ second selected site takes the next ordinal.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches
-the same state, and for the same filter its city shows the same 98 markers,
-with the same definition, sector, ordinal and controlled flag, in the same
-order.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same state, and for the same filter its
+city shows the same 98 markers, with the same definition, sector, ordinal and
+controlled flag, in the same order.
 
 ## Conclusion
 

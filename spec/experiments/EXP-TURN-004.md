@@ -58,10 +58,10 @@ held 5 for the eight sectors 24, 25, 26, 32, 34, 40, 41 and 42 around sector
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the six turns
-of each run, and the rebuild makes the same calls with the same bounds and
-results and reaches the same generator position and state.
+Every result is the one RULE-RNG-002 computes from the recorded seed. A test of
+the rebuild replays the six turns of each run, and the rebuild makes the same
+calls with the same bounds and results and reaches the same generator position
+and state.
 
 ## Conclusion
 

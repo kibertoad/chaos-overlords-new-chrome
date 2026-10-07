@@ -66,15 +66,15 @@ six of its gangs, found no free roster slot.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run, with
-the same cash written before each Done press. The rebuild makes the same calls
-with the same bounds and results, reaches the same state and builds the same
-Last Turn reports for every player. In its resolution of turn 32 the Move
-repair sends slot 1 back to Z and then draws its neighbours: offsets +7, +1,
-+9 and +1 from sector 63 give 70, 64, 72 and 64, past the city's last sector,
-and are drawn again; -1 gives sector 62, which then counts seven, so the mover
-is sent back again; +7 gives 70 and is drawn again; -8 gives sector 55, whose
-earlier mover from sector 47 then goes back, and the repair ends.
+A test of the rebuild replays the run, with the same cash written before each
+Done press. The rebuild makes the same calls with the same bounds and results,
+reaches the same state and builds the same Last Turn reports for every player.
+In its resolution of turn 32 the Move repair sends slot 1 back to Z and then
+draws its neighbours: offsets +7, +1, +9 and +1 from sector 63 give 70, 64, 72
+and 64, past the city's last sector, and are drawn again; -1 gives sector 62,
+which then counts seven, so the mover is sent back again; +7 gives 70 and is
+drawn again; -8 gives sector 55, whose earlier mover from sector 47 then goes
+back, and the repair ends.
 
 ## Conclusion
 
