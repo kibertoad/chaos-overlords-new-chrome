@@ -61,11 +61,27 @@ the same way, or clear the flag from the whole bundle:
 xattr -dr com.apple.quarantine "/Applications/Chaos Overlords New Chrome.app"
 ```
 
-The macOS installer does not import the original assets. Import them once from
-Terminal, passing the folder that holds your copy of *Chaos Overlords*:
+The first time the game starts, it asks for the folder that holds your copy of
+*Chaos Overlords* and imports the original assets from it into
+`~/Library/Application Support/ChaosOverlordsNewChrome/Assets`. To import from
+Terminal instead, run:
 
 ```shell
 "/Applications/Chaos Overlords New Chrome.app/Contents/MacOS/Install Original Resources" "/path/to/Chaos Overlords"
+```
+
+### Linux
+
+Install `ChaosOverlords-NewChrome-linux-x64-Setup-<version>.deb`, when a release
+includes it, with `sudo apt install ./ChaosOverlords-NewChrome-linux-x64-Setup-<version>.deb`.
+The first time the game starts, it asks for the folder that holds your copy of
+*Chaos Overlords* and imports the original assets from it into
+`~/.local/share/ChaosOverlordsNewChrome/Assets`. The folder picker needs `zenity`
+or `kdialog`, which the package recommends; without either, import from a
+terminal:
+
+```shell
+chaos-overlords-new-chrome-import "/path/to/Chaos Overlords"
 ```
 
 ## Project status

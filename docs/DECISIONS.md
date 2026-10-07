@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
 | 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
 | 2026-10-05 | [Switch DEV-AI-008 off from the command line only](#2026-10-05--switch-dev-ai-008-off-from-the-command-line-only) |
@@ -43,6 +44,21 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-07 — Import the assets on first start on macOS and Linux
+
+- Decision: on macOS and Linux, a start that finds no current asset pack in the per-user folder
+  asks for the original installation with a native dialog (`osascript`, then `zenity` or
+  `kdialog`), runs the packaged extractor on it and goes on starting. Startup errors on those
+  platforms are shown in the same kind of dialog. Windows keeps importing in Setup.
+- Reason: the `.pkg` and `.deb` cannot import while they install: their scripts run as root,
+  with no player to ask and no home folder of theirs to write to. The import was left to a
+  terminal helper, and a game started from Finder or a desktop menu without it closed without a
+  word, because the startup error went to stderr.
+- Boundary: the macOS builds stay unsigned; there is no Apple Developer membership, and the
+  README's Gatekeeper steps are the supported install. A Linux desktop with neither `zenity` nor
+  `kdialog` gets no dialog and imports with `chaos-overlords-new-chrome-import`. An explicit
+  `--assets` folder and test runs are never offered an import.
 
 ## 2026-10-05 — Capture the original with the 32-bit white key
 

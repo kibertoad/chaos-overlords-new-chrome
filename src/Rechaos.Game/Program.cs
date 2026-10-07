@@ -50,6 +50,21 @@ try
             AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
 
+    // macOS and Linux packages cannot import the assets while they install, so the first start
+    // does it (FirstLaunchImport). Windows Setup imports them, and an explicit --assets folder or a
+    // run under a test is never offered an import.
+    if (assetArgument < 0 && !platformSmokeTest && referenceFrame is null && !OperatingSystem.IsWindows())
+    {
+        var packState = FirstLaunchImport.Inspect(assetRoot);
+        if (packState != AssetPackState.Ready
+            && NativeDialogs.TryCreate() is { } dialogs
+            && FirstLaunchImport.FindExtractor(AppContext.BaseDirectory) is { } extractor
+            && FirstLaunchImport.Run(packState, assetRoot, dialogs,
+                source => FirstLaunchImport.RunExtractor(extractor, source, assetRoot))
+                == FirstLaunchImportResult.Declined)
+            return 0;
+    }
+
     using var game = new ChaosGame(
         assetRoot,
         args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
