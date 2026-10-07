@@ -4,7 +4,7 @@ title: A new match gives computer players difficulty band 0 at Goon, 1 at Crimin
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-007, FND-AI-053, FND-AI-004, FND-EXE-004, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003]
+evidence: [FND-AI-007, FND-AI-053, FND-AI-004, FND-EXE-004, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003, FND-OBJECTIVE-004, FND-PLATFORM-003, FND-SETUP-002, FND-TURN-005]
 conflicting: []
 split_with: []
 related: []

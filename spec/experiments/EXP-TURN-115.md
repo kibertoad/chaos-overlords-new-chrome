@@ -41,12 +41,11 @@ in the fixture. At the 16th planning entry sector 54 has base Tolerance 40.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run, with
-the same cash written before each Done press. The rebuild makes the same calls
-with the same bounds and results and reaches the same state. In its replay the
-Bribe of turn 13 takes the base to 41 and the clamp to 40, as in EXP-TURN-103.
-In turns 14 and 15 the step moves it from 40 to 39, the Bribe takes it to 42,
-and the clamp sets it to 40.
+A test of the rebuild replays the run, with the same cash written before each
+Done press. The rebuild makes the same calls with the same bounds and results
+and reaches the same state. In its replay the Bribe of turn 13 takes the base
+to 41 and the clamp to 40, as in EXP-TURN-103. In turns 14 and 15 the step
+moves it from 40 to 39, the Bribe takes it to 42, and the clamp sets it to 40.
 
 ## Conclusion
 

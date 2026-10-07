@@ -4,7 +4,7 @@ title: An Attack can target only an enemy gang the attacker's player sees in the
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-ATTACK-001, FND-ATTACK-006, FND-COMBAT-006, FND-DETECT-001, EXP-ATTACK-001, EXP-ATTACK-002, EXP-ATTACK-003, SRC-MANUAL-GOG]
+evidence: [FND-ATTACK-001, FND-ATTACK-006, FND-COMBAT-006, FND-DETECT-001, EXP-ATTACK-001, EXP-ATTACK-002, EXP-ATTACK-003, SRC-MANUAL-GOG, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-DETECT-001, SCR-ATTACK-001, FMT-STATE-001]

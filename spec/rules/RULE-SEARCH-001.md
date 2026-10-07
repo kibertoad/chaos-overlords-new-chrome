@@ -4,7 +4,7 @@ title: Each player's Search filter starts empty and is changed by ALL, NONE and 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-SEARCH-005, FND-COMLINK-006, EXP-SEARCH-001, EXP-SEARCH-002]
+evidence: [FND-SEARCH-001, FND-SEARCH-002, FND-SEARCH-004, FND-SEARCH-005, FND-COMLINK-006, EXP-SEARCH-001, EXP-SEARCH-002, FND-SEARCH-003]
 conflicting: []
 split_with: []
 related: []

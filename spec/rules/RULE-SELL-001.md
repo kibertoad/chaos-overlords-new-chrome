@@ -4,7 +4,7 @@ title: Sell removes every selected item but pays half the Cost of only the last 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-002, FND-EQUIP-004, FND-EQUIP-006, FND-EQUIP-007, FND-EQUIP-008, FND-SELL-001, SRC-MANUAL-GOG, EXP-TURN-016]
+evidence: [FND-EQUIP-002, FND-EQUIP-004, FND-EQUIP-006, FND-EQUIP-007, FND-EQUIP-008, FND-SELL-001, SRC-MANUAL-GOG, EXP-TURN-016, FND-PLATFORM-003, FND-RESEARCH-002, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-DATA-003]

@@ -4,7 +4,7 @@ title: Showing a Comlink message marks it read and dates it from its turn
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-004, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, FND-EXE-004, EXP-COMLINK-001]
+evidence: [FND-COMLINK-004, FND-COMLINK-006, FND-COMLINK-007, FND-AUDIO-002, FND-AUDIO-011, FND-EXE-004, EXP-COMLINK-001, FND-COMLINK-001, FND-COMLINK-002]
 conflicting: []
 split_with: []
 related: [FMT-STATE-005]

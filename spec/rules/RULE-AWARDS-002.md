@@ -4,7 +4,7 @@ title: The endgame lists players by standing, ties in slot order, eliminated pla
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AWARDS-004, FND-OBJECTIVE-004, FND-AWARDS-003, FND-AI-005, FND-AWARDS-001, FND-AWARDS-005, EXP-TURN-038, EXP-TURN-039, SRC-MANUAL-GOG, EXP-TURN-058, EXP-UI-023]
+evidence: [FND-AWARDS-004, FND-OBJECTIVE-004, FND-AWARDS-003, FND-AI-005, FND-AWARDS-001, FND-AWARDS-005, EXP-TURN-038, EXP-TURN-039, SRC-MANUAL-GOG, EXP-TURN-058, EXP-UI-023, FND-AI-009, FND-OBJECTIVE-003, FND-STATE-004, FND-TURN-003]
 conflicting: []
 split_with: []
 related: [RULE-AWARDS-001, SCR-AWARDS-001, SCR-AWARDS-002]
@@ -88,6 +88,9 @@ None known.
 
 ## Open questions
 
+- Where the game keeps `endgame_rows` is not recorded (its glossary entry
+  says `(unknown)`), so this rule stays `supported` until a finding records
+  it.
 - Whether a timed scenario can end with exactly one player active, which
   would show the splash for a player who did not have the best score, is not
   recorded beyond the order of the tests in RULE-OBJECTIVE-001.

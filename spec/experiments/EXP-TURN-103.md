@@ -46,15 +46,14 @@ in the fixture. At the 14th planning entry sector 54 had base Tolerance 40.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run, with
-the same cash written before each Done press. The rebuild makes the same calls
-with the same bounds and results and reaches the same state. In its replay the
-base Tolerance of sector 54 before each Bribe of turns 1 to 13 is 14, 16, 18
-and so on up to 38: each resolution first moves it one point toward
-17 - 3 = 14 (RULE-TOLERANCE-001) and the Bribe adds 3. The Bribe of turn 13
-takes it to 41, the gangs after it in the phase act with the sector at 41,
-among them computer gangs' Influence, Research and Heal, and the clamp then
-sets it to 40.
+A test of the rebuild replays the run, with the same cash written before each
+Done press. The rebuild makes the same calls with the same bounds and results
+and reaches the same state. In its replay the base Tolerance of sector 54
+before each Bribe of turns 1 to 13 is 14, 16, 18 and so on up to 38: each
+resolution first moves it one point toward 17 - 3 = 14 (RULE-TOLERANCE-001) and
+the Bribe adds 3. The Bribe of turn 13 takes it to 41, the gangs after it in
+the phase act with the sector at 41, among them computer gangs' Influence,
+Research and Heal, and the clamp then sets it to 40.
 
 ## Conclusion
 

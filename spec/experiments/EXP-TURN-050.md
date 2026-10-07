@@ -38,11 +38,10 @@ family-7 gang that planned Equip, holds focus 13.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results, reaches the
-same state, and holds the same planning record bytes, sector weights,
-per-player values and, for each computer gang whose family is assigned, focus
-and coverage sector.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results, reaches the same state, and holds the same planning
+record bytes, sector weights, per-player values and, for each computer gang
+whose family is assigned, focus and coverage sector.
 
 ## Conclusion
 

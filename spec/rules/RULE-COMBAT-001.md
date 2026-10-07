@@ -4,7 +4,7 @@ title: A gang's Combat takes the skills that match its weapon when its statistic
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [EXP-TURN-010, EXP-TURN-011, FND-COMBAT-008, FND-EXE-004, FND-GANG-007, SRC-MANUAL-GOG]
+evidence: [EXP-TURN-010, EXP-TURN-011, FND-COMBAT-008, FND-EXE-004, FND-GANG-007, SRC-MANUAL-GOG, FND-RESEARCH-002]
 conflicting: []
 split_with: []
 related: [RULE-GANG-001, RULE-ATTACK-001, FMT-STATE-001, FMT-DATA-003]

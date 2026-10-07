@@ -44,12 +44,11 @@ in the fixture. At the third planning entry sector 54 has base Tolerance 2.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-the same write. The rebuild makes the same calls with the same bounds and
-results and reaches the same state. In its replay the Bribe of turn 1 finds
-the base at 126 and the human at 20 cash, pays 3 and stores -127; the gangs
-after it in the phase act with the sector at -127, and the clamp then sets it
-to 1. The step of turn 2 moves it to 2.
+A test of the rebuild replays the run with the same write. The rebuild makes
+the same calls with the same bounds and results and reaches the same state. In
+its replay the Bribe of turn 1 finds the base at 126 and the human at 20 cash,
+pays 3 and stores -127; the gangs after it in the phase act with the sector at
+-127, and the clamp then sets it to 1. The step of turn 2 moves it to 2.
 
 ## Conclusion
 

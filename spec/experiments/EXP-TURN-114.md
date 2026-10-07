@@ -43,12 +43,11 @@ in the fixture. At the third planning entry sector 54 has base Tolerance 39.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-the same write. The rebuild makes the same calls with the same bounds and
-results and reaches the same state. In its replay the Snitch of turn 1 finds
-the base at -126 and stores 127; the gangs after it in the phase act with the
-sector at 127, and the clamp then sets it to 40. The step of turn 2 moves it
-from 40 to 39.
+A test of the rebuild replays the run with the same write. The rebuild makes
+the same calls with the same bounds and results and reaches the same state. In
+its replay the Snitch of turn 1 finds the base at -126 and stores 127; the
+gangs after it in the phase act with the sector at 127, and the clamp then sets
+it to 40. The step of turn 2 moves it from 40 to 39.
 
 ## Conclusion
 

@@ -44,13 +44,13 @@ in the fixture.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-the same family writes. The rebuild makes the same calls with the same bounds
-and results and reaches the same state, and every byte of every planning
-record matches the original's. In its replay the planning pass of turn 24
-reaches the Greed Terminate branch for the four written records, families 1,
-5, 6 and 12, as well as for gangs of families 2, 3 and 7, and each sets the
-planned action to Terminate and `needs_family` to 1.
+A test of the rebuild replays the run with the same family writes. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state, and every byte of every planning record matches the original's. In its
+replay the planning pass of turn 24 reaches the Greed Terminate branch for the
+four written records, families 1, 5, 6 and 12, as well as for gangs of families
+2, 3 and 7, and each sets the planned action to Terminate and `needs_family` to
+1.
 
 ## Conclusion
 
