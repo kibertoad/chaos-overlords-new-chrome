@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00472BF6..0x00472CF9
+    address: 0x00472BF6..0x00472CFA
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -18,18 +18,18 @@ environment: null
 ## Observation
 
 The Heal case of the instant-phase switch in `fn_00472775` is
-`0x00472BF6..0x00472CF9` (FND-TURN-007). It works on the local copy of the
+`0x00472BF6..0x00472CFA` (FND-TURN-007). It works on the local copy of the
 gang record.
 
 - It reads the player's dword at `0x004A2570 + player * 4` (`0x00472BFC`) and
-  compares it with 0, 1 and 2 (`0x00472C73..0x00472C94`). For 0 and 1 it calls
+  compares it with 0, 1 and 2 (`0x00472C73..0x00472C9A`). For 0 and 1 it calls
   the dice helper `fn_00475F70` with the pool `heal + 4` and threshold 5
   (`0x00472C1B`, `0x00472C3B`); for 2 it passes threshold 4 (`0x00472C5B`).
   `heal` is the signed byte at record offset `0x18`. For any other value it
   calls nothing.
 - It adds the returned count to the signed Force byte at record offset `0x03`
-  in a 32-bit local (`0x00472C9F..0x00472CB2`), replaces the sum with 10 when
-  it is greater than 10 (`0x00472CB8..0x00472CC5`), and stores the low byte
+  in a 32-bit local (`0x00472C9F..0x00472CB8`), replaces the sum with 10 when
+  it is greater than 10 (`0x00472CB8..0x00472CCF`), and stores the low byte
   in the Force byte (`0x00472CD5`).
 - It stores 1 in the gang's entry of the byte array at `0x00498990 + player *
   0x51 + slot` (`0x00472CED`), which the network session host `fn_0046A7CB`

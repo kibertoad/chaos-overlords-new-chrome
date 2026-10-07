@@ -10,13 +10,13 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00462EE9..0x004633DC
+    address: 0x00462EE9..0x004633DD
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00463713..0x00463787
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00487804..0x00487824
+    address: 0x00487804..0x00487825
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -50,9 +50,9 @@ x..x, y..y, end exclusive.
   `0x00487824` has no reference outside the pump, so its starting value is
   the image's.
 - After the lights and the selected-sector frame, the block adds 1 to
-  `0x00487804` and sets it to 0 when it reaches 8 (`0x00463713..0x00463726`);
+  `0x00487804` and sets it to 0 when it reaches 8 (`0x00463713..0x00463730`);
   on that wrap it advances `0x00487808` modulo 3 and plays sound slot 6 when
-  the result is 0 and `0x0048781C` is set (`0x00463730..0x00463770`).
+  the result is 0 and `0x0048781C` is set (`0x00463730..0x00463775`).
 - The pump reads `0x00487814` only at `0x00463267`.
 
 ## Interpretation

@@ -28,10 +28,10 @@ locations:
     address: 0x00460391..0x004604A7
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0046E7EE..0x0046E88F
+    address: 0x0046E7EE..0x0046E894
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00498120..0x004981C5
+    address: 0x00498120..0x004981C6
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -76,7 +76,7 @@ space, and calls the recorder only in that case.
 The outer match function `fn_0046E766`, on entry and before it tests its
 argument, sets both `comlink_cursor` and `comlink_count` of every player to 0
 and gives each of the 96 records `occupied` 0 and `read` 1
-(`0x0046E7EE..0x0046E88F`). In the same place it stores 0 in the 132 Search
+(`0x0046E7EE..0x0046E894`). In the same place it stores 0 in the 132 Search
 bytes at `0x004A24E8`.
 
 The function `fn_00460391`, given a player, repeats while that player's record
@@ -116,6 +116,6 @@ FND-COMLINK-004 can ignore `occupied`.
 Open `fn_0045D2F0`: read the branch on -1 with the copy from `0x00498120`, the
 two send branches with `0x004AB638`, the store of 1 into `0x0048781C` before
 the count test at `0x004981E0`. In `fn_0045EAB1`, read the stores into
-`0x00498120`..`0x00498124` and the four copies from `0x004877D4`, and the call
+`0x00498120`..`0x00498125` and the four copies from `0x004877D4`, and the call
 of `fn_00460560` before the recorder loop. Open `fn_00460391` and list its
 callers. In `fn_0046E766`, read the loops at `0x0046E7EE`.

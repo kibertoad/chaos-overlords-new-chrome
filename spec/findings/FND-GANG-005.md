@@ -10,10 +10,10 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0047476F..0x00474890
+    address: 0x0047476F..0x00474895
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004AB620..0x004AB637
+    address: 0x004AB620..0x004AB638
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00476045
@@ -24,7 +24,7 @@ environment: null
 ## Observation
 
 The damage application of the whole-turn resolver `fn_00472775` (FND-EXE-004
-gives its range) is the double loop at `0x0047476F..0x00474890`, over player
+gives its range) is the double loop at `0x0047476F..0x00474895`, over player
 slots 0 to 5 and, inside each, roster slots 0 to 80. For each gang record it:
 
 1. tests the sector byte (offset `0x02`) against 100 and skips the record when
@@ -41,12 +41,12 @@ The accumulated damage is a local array of 486 32-bit entries, one per player
 and roster slot, cleared at the start of the resolver. The attack block adds
 to it at `0x00473C9F` (damage to the target) and `0x00473ED0` (damage back to
 the attacker), and the police block adds to it at `0x00474202`. The loop at
-`0x00474255..0x004742D7` caps every entry at 10 before the damage application
+`0x00474255..0x004742E2` caps every entry at 10 before the damage application
 runs. Police damage therefore reaches the same subtraction and the same
 increment as attack damage; no other instruction in the resolver writes
 `0x004AB620`.
 
-Every reference to `0x004AB620..0x004AB637` in the game code:
+Every reference to `0x004AB620..0x004AB638` in the game code:
 
 | Instruction | Function | Access |
 |---|---|---|
@@ -54,7 +54,7 @@ Every reference to `0x004AB620..0x004AB637` in the game code:
 | `0x00476045` | `fn_00475FE1` | stores 0 for each player slot, next to the stores of 0 into `0x004A25D0`, `0x0049CA78` and `0x004A27E0` |
 | `0x0042D778`, `0x0042DDBA` | `fn_0042CE61` | reads one player's entry and passes it to the number drawer `fn_00414187` |
 | `0x0046B576` | `fn_0046A7CB` | reads the six entries into a local buffer through `fn_00449DD3` |
-| `0x0046C2B6..0x0046C2F4` | `fn_0046BA84` | passes the address and length 24 to `fn_004689B6`, then rewrites each of the six entries through `fn_00449E26` |
+| `0x0046C2B6..0x0046C2FB` | `fn_0046BA84` | passes the address and length 24 to `fn_004689B6`, then rewrites each of the six entries through `fn_00449E26` |
 | `0x00463AAE`, `0x00463FB3` | `fn_0046381A`, `fn_00463CC5` | push the address as one entry of the save list (entry 11 of FND-SAVE-001, 24 bytes) |
 
 The instruction at `0x0040C127` writes `0x004AB638`, the next array, and is not
@@ -83,7 +83,7 @@ subtraction is stored before the comparison.
 
 ## How to reproduce
 
-List the references to `0x004AB620..0x004AB637`. The only write that adds is
+List the references to `0x004AB620..0x004AB638`. The only write that adds is
 `INC dword ptr [EAX*0x4 + 0x4AB620]` at `0x00474889`, inside `fn_00472775`.
 Read backwards from it to the store of 100 at `0x0047487B`, the comparison with
 1 at `0x0047485A` and the Force store at `0x00474827`; the loop head at

@@ -25,7 +25,7 @@ locations:
     address: 0x0043066C..0x0043087E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00470278..0x0047029D
+    address: 0x00470278..0x004702A2
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -52,7 +52,7 @@ its control.
 - It sets the abort byte `0x00494760` to 1 (`0x0042E058`) and lists, in
   ascending order, the sectors where the first word of the viewer's first
   entry is not -1 or the viewer's police flag is set (`0x0042E05F..0x0042E0EC`).
-- `0x0042E0F4..0x0042E1A5`, once, before anything is shown: for every sector,
+- `0x0042E0F4..0x0042E1AC`, once, before anything is shown: for every sector,
   every player's row and every entry whose first word is not -1, it copies
   byte 1 of that gang's combat record into byte 3 (`0x0042E1A5`).
 - With no listed sector it only calls `fn_00464290(4)` when `flag` is 0.
@@ -66,7 +66,7 @@ its control.
 - entry 0 is the focal gang;
 - when the focal gang's target is not -1 (`0x00430905`), the next entry is the
   target, with the target's own target taken from the target's entry in its
-  player's row of the same sector (`0x00430945..0x004309C1`);
+  player's row of the same sector (`0x00430945..0x004309C9`);
 - then, over the six rows and six entries of the sector
   (`0x004309E5..0x00430B43`), every entry whose first word is not -1, whose
   second word is the focal gang, and whose first word is not the focal gang's
@@ -88,21 +88,21 @@ byte is 1:
   (`0x004A289A + definition * 0x9C`, `0x0042E6CE`), with attack strip 2 for
   definition 63 (`0x0042E711`). A damage byte of 0 selects hit strip 1, and -1
   selects attack strip 27, hit strip 0 and sound number -1
-  (`0x0042E78D..0x0042E7C0`). Then, only when the focal gang's opening damage
+  (`0x0042E78D..0x0042E7C7`). Then, only when the focal gang's opening damage
   (record byte 4) is not -1, the entry's byte 3 is lowered by it, floored at 0
-  (`0x0042E8C8..0x0042E8F7`); the focal gang's byte 3 is always lowered by its
-  byte 5, floored at 0 (`0x0042E90A..0x0042E922`). The timeline is called with
+  (`0x0042E8C8..0x0042E8FC`); the focal gang's byte 3 is always lowered by its
+  byte 5, floored at 0 (`0x0042E90A..0x0042E927`). The timeline is called with
   the hold flag set when the entry's target is not the focal gang
-  (`0x0042E937`), and both records are written back (`0x0042E955..0x0042E99C`).
+  (`0x0042E937`), and both records are written back (`0x0042E955..0x0042E9A0`).
 - When the entry's target is the focal gang (`0x0042E9AE`), a police entry
   loads `PX07301` when its damage is less than 1 and `PX07320` otherwise, with
-  `Px07228` and sound 518 (`0x0042E9CC..0x0042ECE4`); another entry uses the
+  `Px07228` and sound 518 (`0x0042E9CC..0x0042ECE9`); another entry uses the
   mirrored strips chosen the same way from the entry's own record. The focal
   gang's byte 3 is lowered by the entry's byte 4 unless that is -1, floored at
-  0 (`0x0042ED21..0x0042ED50`), the entry's byte 3 by the entry's byte 5,
-  floored at 0 (`0x0042ED63..0x0042ED7B`), the timeline runs with the hold flag
+  0 (`0x0042ED21..0x0042ED55`), the entry's byte 3 by the entry's byte 5,
+  floored at 0 (`0x0042ED63..0x0042ED80`), the timeline runs with the hold flag
   set (`0x0042ED82`), and the focal record and, for a gang entry only, the
-  entry's record are written back (`0x0042ED99..0x0042EDF0`).
+  entry's record are written back (`0x0042ED99..0x0042EDF4`).
 
 An entry that is both the focal gang's target and attacks the focal gang goes
 through both branches, the first with the hold flag cleared.
@@ -112,10 +112,10 @@ The timeline `fn_00430C23(hold)` reads input once per pass
 
 - key `0x1B` (Escape): draws the pressed look over screen
   `(137,293)-(187,316)`, clears the abort byte and ends the clip
-  (`0x00430E3F..0x00430E9C`);
+  (`0x00430E3F..0x00430EA0`);
 - a click inside screen `(104,124)-(448,333)` and inside local
   `(33,169)-(82,191)`: tracks the same face and, when released on it, clears
-  the abort byte and ends the clip (`0x00430F1B..0x00430FBC`); a click outside
+  the abort byte and ends the clip (`0x00430F1B..0x00430FC0`); a click outside
   the panel calls `fn_00464290(4)` (`0x00430FD6`);
 - no other key is tested.
 

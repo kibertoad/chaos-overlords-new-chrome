@@ -10,16 +10,16 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004ABBF0..0x004ABC07
+    address: 0x004ABBF0..0x004ABC08
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004A5F00..0x004A5F05
+    address: 0x004A5F00..0x004A5F06
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00494830..0x00494831
+    address: 0x00494830..0x00494832
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004ABC58..0x004ABC5D
+    address: 0x004ABC58..0x004ABC5E
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -45,7 +45,7 @@ receive the value.
   the value times 32 as the left edge of a 32-pixel cell (`0x00450693`).
 - Block 27, `0x00494830`, one word. `fn_00439563` loads the image `PX10000`
   plus this value into surface 2 as the 432-by-416 city map
-  (`0x00439628..0x00439637`). `fn_004384C0` sets it to 0 (`0x004384E1`); the
+  (`0x00439628..0x0043963C`). `fn_004384C0` sets it to 0 (`0x004384E1`); the
   network receive `fn_0046A115` is the only other store (`0x0046A6BC`).
 - Block 39, `0x004ABC58`, six bytes. The local setup `fn_0040E0A0` sets a
   slot's byte to 1 when its controller is 0 (a human at this computer) and to

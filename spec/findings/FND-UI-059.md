@@ -40,8 +40,8 @@ functions only:
   `0x0045F119`).
 
 In `fn_0046FD80` all five reads come before the combat presentation at
-`0x00470278..0x0047029D`, which opens Detailed Combat or Combat Results
-(FND-COMBAT-010), and before Last Turn Events at `0x004702A5..0x00470356`
+`0x00470278..0x004702A2`, which opens Detailed Combat or Combat Results
+(FND-COMBAT-010), and before Last Turn Events at `0x004702A5..0x0047035B`
 (FND-EVENT-005).
 
 ## Interpretation
@@ -69,5 +69,5 @@ greyed has not been run.
 Verify the executable against BLD-GOG-EN-1.1. In Ghidra, list the references
 to `0x004A2790`, `0x004A25E8` and `0x0049CA68` (`tools/ghidra/ReportReferences.java`)
 and group them by containing function. In `fn_0046FD80`, compare the
-addresses of the reads with the calls at `0x00470278..0x0047029D` and
-`0x004702A5..0x00470356`.
+addresses of the reads with the calls at `0x00470278..0x004702A2` and
+`0x004702A5..0x0047035B`.

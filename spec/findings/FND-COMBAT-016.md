@@ -13,13 +13,13 @@ locations:
     address: 0x00430C23..0x00430C36
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004310E8..0x00431128
+    address: 0x004310E8..0x0043112B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004317CF..0x00431948
+    address: 0x004317CF..0x0043194D
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00431A55..0x00431A5A
+    address: 0x00431A55..0x00431A5F
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00431BD8..0x00431C54
@@ -43,7 +43,7 @@ environment: null
   Case 1 is `0x00431125`, which subtracts 3 from the local at `0x00431128` and
   uses the result as the strip frame. Case 8 is `0x00431BCE`, which does
   nothing. Case 7 is `0x00431BC5`.
-- Case 4, `0x004317CF..0x00431948`, builds the screen rectangles top `0xF7`,
+- Case 4, `0x004317CF..0x0043194D`, builds the screen rectangles top `0xF7`,
   left `0x100`, bottom `0xFA`, right `0x13C` and top `0xF7`, left `0x149`,
   bottom `0xFA`, right `0x185`, and copies to them from surface 7 the
   rectangles top `0x10B`, left `0x98`, bottom `0x10E`, right `0xD4` and top

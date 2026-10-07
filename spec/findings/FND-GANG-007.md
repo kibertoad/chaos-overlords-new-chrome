@@ -58,7 +58,7 @@ The byte at `0x12` gets one more term, chosen at `0x0047818C` by the weapon
 byte (offset `0x04`), using the bytes just rebuilt at `0x1B`, `0x1C`, `0x1D`,
 `0x1E` and `0x1F`:
 
-- no weapon (-1): adds `0x1B + 0x1E + 0x1F` (`0x00478195..0x004781A5`);
+- no weapon (-1): adds `0x1B + 0x1E + 0x1F` (`0x00478195..0x004781A8`);
 - otherwise it adds the weapon's field `0x82` (`0x004781BC`) and switches on
   the weapon's 16-bit type at item offset `0x7A` (`0x004781D6`): type 0 adds
   `0x1B` (`0x004781E6`), type 1 adds `0x1B + 0x1C` (`0x004781F2`), type 2 adds

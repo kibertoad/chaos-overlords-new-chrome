@@ -22,7 +22,7 @@ locations:
     address: 0x00425E99..0x00425EDF
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00426575..0x004265FE
+    address: 0x00426575..0x00426604
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00453B73..0x00453B83
@@ -31,7 +31,7 @@ locations:
     address: 0x0043087E..0x00430C23
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004945A8..0x0049470F
+    address: 0x004945A8..0x00494710
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -53,16 +53,16 @@ surface 3 or 5:
   (`0x0046501C`).
 
 The Attack picker copies an equipment icon from surface 5 at x 120 (`0x78`,
-stored at `0x0043B4D1`) and y `20 * id` (`0x0043B4BF..0x0043B4CA`), 20 by 20.
+stored at `0x0043B4D1`) and y `20 * id` (`0x0043B4BF..0x0043B4CD`), 20 by 20.
 
 Colour order. `fn_00425E99(out, a, b, c)` stores bits 8 to 15 of `a`, `b` and
 `c` as the first, second and third 16-bit words of the colour
-(`0x00425EA2..0x00425EBC`). `fn_00426575` builds the value it passes to
+(`0x00425EA2..0x00425EC0`). `fn_00426575` builds the value it passes to
 `CreatePen` (`0x004265BB`) and `CreateSolidBrush` (`0x004265FE`) as the first
 word's low byte, plus the second word's low byte shifted left by 8, plus the
-third word's low byte shifted left by 16 (`0x0042659D..0x004265B4`). The
+third word's low byte shifted left by 16 (`0x0042659D..0x004265B6`). The
 Combat Results focal outline pushes `a` 0, `b` 0xFFFF and `c` 0
-(`0x00453B73..0x00453B7A`).
+(`0x00453B73..0x00453B7C`).
 
 Fight list area. The list builder `fn_0043087E` stores each element's 10-byte
 record at `0x004945A8 + 10 * n` (`0x00430AD0`, and the police element's
@@ -70,7 +70,7 @@ stores from `0x00430B66`), its element number at `0x00494780 + 2 * n`
 (`0x00430B0E`) and its target at `0x00494718 + 2 * n` (`0x00430B3B`), where
 `n` is the running count, with no test of `n` against a limit. It sets the 36
 words at `0x00494780` to -1 first. No instruction in the program refers to an
-address in `0x004945D0..0x0049470F`; the next global after the record area is
+address in `0x004945D0..0x00494710`; the next global after the record area is
 the list length at `0x00494710`, and the next after the target area is the
 byte `0x00494760`.
 
@@ -106,4 +106,4 @@ List the call sites of `0x00464108` with the pushes before each. Read
 `0x00425E99` and the start of `0x00426575` up to the `CreatePen` call, and
 the pushes at `0x00453B73`. In `0x0043087E`, read the indexed stores at
 `0x00430AD0`, `0x00430B0E` and `0x00430B3B`, and list the references to
-`0x004945D0..0x0049470F`.
+`0x004945D0..0x00494710`.

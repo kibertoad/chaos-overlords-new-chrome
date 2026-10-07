@@ -10,13 +10,13 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004750A2..0x0047527F
+    address: 0x004750A2..0x00475284
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00476A94..0x00476F3B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040867F..0x00408A17
+    address: 0x0040867F..0x00408A1C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00441D89
@@ -38,7 +38,7 @@ the 32 bytes into a local copy, compares the copied sector byte with 100 at
 the action byte with 14 at `0x00475129`; on a match it stores 100 in the
 copy's sector byte (`0x00475132`) and sets the record's changed flag in the
 81-entry per-player array at `0x00498990` (`0x0047513F`). Every active record
-is copied back at `0x00475153..0x0047517D`. The pass calls no function and
+is copied back at `0x00475153..0x0047517F`. The pass calls no function and
 touches no per-player total.
 
 The Move pass follows at `0x00475189`. For each player slot 0 to 5 it first
@@ -50,18 +50,18 @@ the copy's sector byte (`0x0047522E`) and the changed flag set
 
 `fn_00476A94(player)`:
 
-- The recount (`0x00476AE0..0x00476C2F`) clears two 64-entry arrays and the
+- The recount (`0x00476AE0..0x00476C35`) clears two 64-entry arrays and the
   mover list, then for each roster slot whose sector byte is not 100
   (`0x00476B8C`) either adds one to the first array at the byte at offset
   `0x08` and appends the slot to the mover list, when the action is 10
   (`0x00476BB2`), or adds one to the second array at the gang's sector.
 - The scan at `0x00476C3A..0x00476C86` compares the sum of the two arrays with
   6 for each sector and keeps the last sector above 6.
-- The first repair loop (`0x00476CA7..0x00476DB3`) takes the first mover whose
+- The first repair loop (`0x00476CA7..0x00476DBA`) takes the first mover whose
   offset `0x08` byte is that sector and whose own sector's sum of both arrays
   is below 6 (`0x00476D3F`), and stores the mover's sector byte into its
   offset `0x08` byte (`0x00476D96`).
-- If none qualified, the fallback loop (`0x00476DDF..0x00476F20`) takes the
+- If none qualified, the fallback loop (`0x00476DDF..0x00476F27`) takes the
   first mover whose offset `0x08` byte is that sector. When that byte already
   equals the mover's own sector (`0x00476E4C`), it calls
   `fn_00408642(player, 0, slot)` (the literal 0 is the second argument, pushed
@@ -80,7 +80,7 @@ gang's sector byte, and mark the candidate invalid when it would leave the
 8-by-8 grid: column 0 for the three western offsets, column 7 for the three
 eastern ones, sector below 8 for the three northern ones and above 55 for the
 three southern ones. A candidate whose owner byte in the sector table is
-below -1 is also marked invalid (`0x00408A02..0x00408A13`). The loop head at
+below -1 is also marked invalid (`0x00408A02..0x00408A17`). The loop head at
 `0x0040865A` returns the candidate once it is valid and within 0 to 63, and
 otherwise draws again. Mode 0 builds no score map, calls no selector case and
 makes no capacity test.

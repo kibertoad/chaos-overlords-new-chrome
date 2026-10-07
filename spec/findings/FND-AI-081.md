@@ -1,9 +1,9 @@
 ---
-id: FND-AI-044
+id: FND-AI-081
 title: The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order
-status: superseded
+status: recorded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: [FND-AI-081]
+superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
 method: static
@@ -13,16 +13,16 @@ locations:
     address: 0x0040A1A7..0x0040AA65
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048E310..0x0048F80F
+    address: 0x0048E310..0x0048F810
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048F810..0x0048FB4F
+    address: 0x0048F810..0x0048FB70
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048C0B0..0x0048DB43
+    address: 0x0048C0B0..0x0048DB44
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048E2E0..0x0048E2F7
+    address: 0x0048E2E0..0x0048E2F8
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -39,7 +39,7 @@ runs four parts in this order.
    +2, the 32-bit values at +4, +8, +12 and +16, and the byte at +20. All 36
    records are cleared, not only the planning player's row. At `0x0040A2A0` it
    writes 0 to the 32-bit value at `0x0048E2E0 + player * 4`.
-2. `0x0040A2AB..0x0040A6E0`, for each sector 0 to 63, in the 14-byte record at
+2. `0x0040A2AB..0x0040A6E5`, for each sector 0 to 63, in the 14-byte record at
    `0x0048E310 + player * 0x380 + sector * 14`: +0 receives the sector's owner
    byte (`0x0040A2EA`), +2 the result of selector `0x90` for the player and
    sector (`0x0040A320`), +4 the result of selector `0x5E` (`0x0040A353`); and
@@ -53,10 +53,10 @@ runs four parts in this order.
    computes `(+4) - (+16)` and `(+12) - (+8)`; when the first is smaller
    (`JGE` at `0x0040A69C`) and selector `0x5E` again returns a count above 0
    (`0x0040A6B8`), it adds 1 to +2 (`0x0040A6D8`).
-3. `0x0040A6E5..0x0040A878`: the hostility test of FND-AI-018 for each other
+3. `0x0040A6E5..0x0040A87D`: the hostility test of FND-AI-018 for each other
    player, reading +0 and +2 of the pair record and writing +20 and the
    attitude at `0x004AB590 + player * 0x18 + other * 4`.
-4. `0x0040A87D..0x0040AA56`: for each roster slot 0 to 80 whose gang sector is
+4. `0x0040A87D..0x0040AA5B`: for each roster slot 0 to 80 whose gang sector is
    not 100, it adds 1 to `0x0048E2E0 + player * 4` and to
    `0x00489950 + player * 0x100 + sector * 4`. When selector `0x48` returns 1
    for the slot (byte +1 of the planning record, FND-AI-042), it fills the
@@ -77,10 +77,11 @@ read by `0x00402D70` and `0x00436C70`.
 
 The pair records are 24 bytes: +0 the count of the other player's sectors,
 +2 the count of those the player out-fights, +4, +8, +12 and +16 the
-per-sector sums, and +20 the flag. Six observers of 0x90 bytes end at
-`0x0048FB4F`. The per-sector block of six players (0x380 bytes each) ends at
-`0x0048F80F`, directly before the pair records. The auxiliary block of six
-players (0x46E bytes each) ends at `0x0048DB43`.
+per-sector sums, and +20 the flag. The six observers' records of 0x90 bytes
+take `0x0048F810..0x0048FB70`. The per-sector block of six players (0x380
+bytes each) takes `0x0048E310..0x0048F810`, directly before the pair records.
+The auxiliary block of six players (0x46E bytes each) takes
+`0x0048C0B0..0x0048DB44`.
 
 None of the three blocks, nor `0x0048E2E0`, is referenced by the save and load
 functions `0x00463CC5` and `0x0046381A`.
@@ -115,10 +116,15 @@ The count of own gangs in part 2 is read through selector `0x5E` both for the
 list loop and for the final test; the two calls return the same value, since
 nothing in between moves a gang.
 
+This entry replaces FND-AI-044, which gave the end of the pair records as
+`0x0048FB4F`. Six records of 0x90 bytes from `0x0048F810` take 0x360 bytes,
+so their last byte is `0x0048FB6F`; the error was found when the spec's
+ranges were checked against the sizes their entries give.
+
 ## How to reproduce
 
 Read `0x0040A1A7` from its entry: the double loop clearing `0x0048F810`, the
 sector loop with calls to selectors `0x90`, `0x5E`, `0xB0`, `0xB1` and `0x47`,
 the loop over six players with selector `0x36`, and the roster loop with
 selector `0x48` followed by five selector calls and two stores of `0xFFFF`.
-List the references to `0x0048E310..0x0048F80F` and `0x0048C0B0..0x0048DB43`.
+List the references to `0x0048E310..0x0048F810` and `0x0048C0B0..0x0048DB44`.

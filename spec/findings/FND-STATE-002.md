@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0046E01A..0x0046E065
+    address: 0x0046E01A..0x0046E06C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00475A21..0x00475C65
@@ -62,23 +62,23 @@ Player, definition and Force:
   `0x0046E065`).
 - The hire block of the whole-turn resolver `fn_00472775` builds a new record
   in a local copy (at `EBP-0x20BC`) and copies all eight DWORDs into the free
-  slot at `0x00475C51..0x00475C5D`. The copy holds: byte 0, the hiring player
+  slot at `0x00475C51..0x00475C5F`. The copy holds: byte 0, the hiring player
   (`0x00475A21`); byte 1, the offered definition from `0x004ABBC0`
   (`0x00475A8C`); byte 2, the offered sector from `0x004A27C8`
   (`0x00475A70`); byte 3, 10 when the player's byte at `0x004A5EF0` is set,
   otherwise 4 plus the result of `fn_0045D227(5)` (`0x00475AB8`,
-  `0x00475AC6..0x00475ACE`); bytes 4 to 6, -1; bytes 7 to `0x0B`, 0; bytes
+  `0x00475AC6..0x00475AD1`); bytes 4 to 6, -1; bytes 7 to `0x0B`, 0; bytes
   `0x0C..0x11`, 0 except 1 for the hiring player; byte `0x12` from definition
   field `0x7E`, `0x13` from `0x80`, `0x14` from `0x84`, `0x15` from `0x86`,
   and `0x16..0x1F` from the ten fields `0x88..0x9A`
   (`0x00475AEC..0x00475BA9`). Definition field `0x82` is not copied.
 - Byte 1 indexes the definition table wherever it is used: the Upkeep scan
-  reads field `0x7C` through it at `0x0046F068..0x0046F07A`, and the combat
+  reads field `0x7C` through it at `0x0046F068..0x0046F082`, and the combat
   bookkeeping copies it into byte 0 of the combat record at `0x004743DE`.
 - The damage application stores the new Force at byte 3 (`0x00474833`) and
   marks the gang dead when that byte is below 1 (`0x0047485A`).
 
-Hire slot search (`0x00475BDB..0x00475C2D`): the loop starts at slot 0, stops
+Hire slot search (`0x00475BDB..0x00475C33`): the loop starts at slot 0, stops
 at the first slot whose sector byte is 100, and gives up when the index
 reaches `0x50`. A hire lands only in slots 0 to 79; slot 80 is never filled by
 a hire.
@@ -147,9 +147,9 @@ by a hire once the Right Hands are dead.
 
 ## How to reproduce
 
-In `0x0046DC10`, read the stores at `0x0046E01A..0x0046E065`. In
+In `0x0046DC10`, read the stores at `0x0046E01A..0x0046E06C`. In
 `0x00472775`, read the local record build at `0x00475A21..0x00475BA9`, the
-slot search at `0x00475BDB..0x00475C2D`, and the action cases that use the
+slot search at `0x00475BDB..0x00475C33`, and the action cases that use the
 local copy. In `0x0047781F`, follow the fourteen accumulations and the weapon
 class switch. In each picker, list the stores to `0x00498DB0` and
 `0x00498DB1`.

@@ -34,7 +34,7 @@ the order the panel makes them, are:
 | `0x0044E1DC` | the tax sum | 4 | 0 |
 | `0x0044E219` | the protection sum | 4 | 0 |
 | `0x0044E256` | the Chaos sum | 4 | 0 |
-| `0x0044E2AB` | the total, added at `0x0044E25E..0x0044E273` from the seven sums | 4 | 0 |
+| `0x0044E2AB` | the total, added at `0x0044E25E..0x0044E276` from the seven sums | 4 | 0 |
 
 Exactly one of the two gang count calls runs, so one opening of the panel
 makes nine calls of `fn_00414187` from this function. Each is followed by

@@ -58,7 +58,7 @@ The handler slides the panel in with `fn_0041953E(0)`. When the gang's
 `action` (record offset 7) is already 9 it takes the chosen slot from
 `target` (offset 8), calls `fn_0044127B` for it and enables the confirm face
 `(top=293, left=137, bottom=316, right=187)` through `fn_00418E66`
-(`0x00440726`..`0x00440798`). In its event loop:
+(`0x00440726`..`0x0044079D`). In its event loop:
 
 - Key down: Enter (`0x0D`) or Execute (`0x2B`) plays slot 4 when no slot is
   chosen; otherwise it presses the confirm face through `fn_00418CCC(0, ...)`,

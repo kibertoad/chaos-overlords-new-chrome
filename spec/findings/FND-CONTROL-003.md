@@ -22,7 +22,7 @@ its range) runs at `0x00475284..0x00475856`, after the Move pass.
 
 1. `0x00475284..0x004752EB` clears the local 6-by-64 array of 32-bit pools and
    a 64-byte array of sector marks.
-2. The pool build, `0x004752FD..0x00475404`, scans player slots 0 to 5 and
+2. The pool build, `0x004752FD..0x00475409`, scans player slots 0 to 5 and
    roster slots 0 to 80. A record whose sector byte is 100 is skipped
    (`0x00475374`). For a record whose action byte is 4 (`0x004753ED`) it adds
    the Force byte (offset `0x03`, `0x0047538F`) plus the Control byte (offset
@@ -30,7 +30,7 @@ its range) runs at `0x00475284..0x00475856`, after the Move pass.
    the record's own player byte (offset `0x00`, `0x004753B3`). It then reads
    the sector record's byte at offset `0x0F` (`0x004753C4`, police presence)
    and marks the sector only when that byte is 0 (`0x004753DB`).
-3. The sector loop, `0x00475409..0x0047585D`, visits sectors 0 to 63 and skips
+3. The sector loop, `0x00475409..0x00475862`, visits sectors 0 to 63 and skips
    every unmarked sector (`0x00475433`). For a marked sector whose owner byte
    is not -1 (`0x00475453`) it scans the owner's 81 records (`0x0047545C`):
    each whose sector byte equals the sector (`0x004754A9`) and whose action is
@@ -38,14 +38,14 @@ its range) runs at `0x00475284..0x00475856`, after the Move pass.
    (`0x00475537`) to the owner's pool cell for the sector (`0x0047555E`). It
    then adds the sector record's bytes at offset `0x04` (`0x00475573`) and
    offset `0x06` (`0x00475584`) to the owner's cell (`0x004755AB`).
-4. The winner scan, `0x004755B2..0x004756B6`, starts with a best margin of 0,
+4. The winner scan, `0x004755B2..0x004756BC`, starts with a best margin of 0,
    a count of 0, a tie flag of 0 and candidate entry 0 of -1. For each player
    slot 0 to 5 the margin is the player's pool cell minus the sum of the
    sector bytes at offsets `0x04` (`0x00475625`) and `0x06` (`0x00475636`),
    the same sum for every player (`0x00475640`). A margin equal to the best
-   sets the tie flag and appends the player (`0x0047564E..0x00475673`); a
+   sets the tie flag and appends the player (`0x0047564E..0x0047567A`); a
    greater margin clears the flag, the count and entry 0 to that player and
-   becomes the best (`0x00475686..0x004756B6`).
+   becomes the best (`0x00475686..0x004756BC`).
 5. With the tie flag set, `0x004756D9` calls `fn_0045D227` with the count plus
    one and takes the candidate at that position, counting from 1; without it
    the winner is entry 0.
@@ -67,7 +67,7 @@ its range) runs at `0x00475284..0x00475856`, after the Move pass.
 -1 (`0x0047774E`), so the type 3 report of a neutral sector's capture is
 dropped.
 
-Earlier in the resolver, `0x00472964..0x00472A36` subtracts the sector bytes
+Earlier in the resolver, `0x00472964..0x00472A3D` subtracts the sector bytes
 at offsets `0x04` and `0x06` from the same local array for every player other
 than an owned sector's owner. The pool array is cleared again at `0x004731DE`
 and at step 1, so that subtraction has no effect on Control.

@@ -549,7 +549,7 @@ internal sealed class StateExtractor
                 rows.Add(Field("FMT-STATE-007", record, "armor_cooldown", armor));
         }
 
-        // The computer players' other planning state (FND-AI-019, FND-AI-044, FND-AI-045): ai_started at
+        // The computer players' other planning state (FND-AI-019, FND-AI-081, FND-AI-045): ai_started at
         // 0x00482108, raider_mode at 0x00482158, placement_anchor at 0x0048E2F8, the two 16-bit values of
         // aux_records (14-byte records at 0x0048C0B0, focus at +0x0A and coverage_sector at +0x0C)
         // and sector_weight, the 16-bit value at +2 of the 14-byte records at

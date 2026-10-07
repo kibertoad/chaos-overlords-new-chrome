@@ -13,7 +13,7 @@ locations:
     address: 0x00460CA0..0x00460CCF
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00482000..0x0048200B
+    address: 0x00482000..0x0048200C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004255F1..0x00425601
@@ -81,7 +81,7 @@ dialog functions of FND-UI-022.
 
 ## How to reproduce
 
-Read the dwords at `0x00482000..0x0048200B` and the pushes in `_cinit` before
+Read the dwords at `0x00482000..0x0048200C` and the pushes in `_cinit` before
 its `_initterm` call. Disassemble each empty function and list its callers.
 Search the file for the little-endian addresses of `fn_004653CE` and
 `fn_00465E9B`.

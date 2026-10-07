@@ -10,19 +10,19 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043F6E6..0x0043F71B
+    address: 0x0043F6E6..0x0043F720
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00440716..0x00440798
+    address: 0x00440716..0x0044079D
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004407A2..0x0044124E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00414865..0x00414879
+    address: 0x00414865..0x00414880
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00414AA7..0x00414ABB
+    address: 0x00414AA7..0x00414AC2
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -42,7 +42,7 @@ minus `(104,124)`, the subtraction the handler makes at `0x00440970` and
   the definition's `+0x1E` field (`0x0043F727` onward).
 - When the gang's action byte is already 9, it takes the gang's `target` byte
   as the selection, draws it with `fn_0044127B` and draws the confirmation
-  face enabled with `fn_00418E66` (`0x00440726..0x00440798`). Otherwise
+  face enabled with `fn_00418E66` (`0x00440726..0x0044079D`). Otherwise
   nothing is selected.
 - Key down (type 2): the value `0x2B` or `0x0D` plays sound slot 4 when nothing
   is selected (`0x0044089B`); otherwise it runs the press helper
@@ -68,7 +68,7 @@ minus `(104,124)`, the subtraction the handler makes at `0x00440970` and
 - Paint (type 7) restores the screen and panel and redraws the selection and
   the face.
 - On exit it slides the panel out with `fn_004196F5(0, 0)`, calls
-  `fn_004120CB` and stores 1 at `0x00498100` (`0x0044125A..0x00441267`).
+  `fn_004120CB` and stores 1 at `0x00498100` (`0x0044125A..0x0044126E`).
 - Both callers, the command handlers `fn_0041462F` and `fn_00414D8C`, store
   action 9 for the gang when the handler returns nonzero (`0x00414879`,
   `0x00414ABB`); a return of 0 leaves the action as it was.

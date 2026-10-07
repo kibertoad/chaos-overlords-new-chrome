@@ -16,7 +16,7 @@ locations:
     address: 0x00402D70
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004ABBC0..0x004ABBD1
+    address: 0x004ABBC0..0x004ABBD2
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -61,7 +61,7 @@ The modes, with the selectors each passes and the fields they name:
 
 | Mode | Instructions | Ranking and eligibility |
 |---:|---|---|
-| 0 | `0x00407931..0x004079BE`: selector `0x79`, then `0x82`, then a direct read of `0x004A287C` | Lowest Upkeep, starting from a best of 3, among offers with Upkeep at most the best and Chaos at least 0 (`TEST EAX,EAX; JL` at `0x00407985`). A later offer with an equal value replaces the earlier one |
+| 0 | `0x00407931..0x004079C3`: selector `0x79`, then `0x82`, then a direct read of `0x004A287C` | Lowest Upkeep, starting from a best of 3, among offers with Upkeep at most the best and Chaos at least 0 (`TEST EAX,EAX; JL` at `0x00407985`). A later offer with an equal value replaces the earlier one |
 | 1 | selectors 0, `0x83`, `0x79` | Highest Control, starting from 0. In scenario 0 the offer must also have Upkeep below 4. Later equal values win |
 | 2 | selectors 0, `0x85`, `0x79` | Highest Influence, starting from 0. In scenario 0 the offer must also have Upkeep below 4. Later equal values win |
 | 3 | direct reads of `0x004A287E` and `0x004A2892` to `0x004A289A` | Highest Combat plus each of Strength, Blade, Range, Fighting and Martial Arts that is above 0, starting from 0. Later equal values win |

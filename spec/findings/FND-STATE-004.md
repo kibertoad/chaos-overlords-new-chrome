@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004ABBE0..0x004ABBE5
+    address: 0x004ABBE0..0x004ABBE6
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00476F3B..0x0047712A
@@ -22,10 +22,10 @@ locations:
     address: 0x0040F63D..0x0040F72E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004A2608..0x004A2787
+    address: 0x004A2608..0x004A2788
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00403D0C..0x00403DA8
+    address: 0x00403D0C..0x00403DAF
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -74,7 +74,7 @@ each inactive player's byte `0xFF` (FND-AI-005). Selector `0x2D` of
 equals `p`. Otherwise it finds the first index `i` in 0..5 whose byte at
 `0x004ABC08 + i`, loaded with `MOVSX`, equals `p` (6 when none does), and the
 first index `j` whose byte equals `q`, and returns 1 when `j < i` or `i == 0`,
-else 0 (`0x00403D0C..0x00403DA8`). This selector is the only code that searches
+else 0 (`0x00403D0C..0x00403DAF`). This selector is the only code that searches
 `0x004ABC08` by value.
 
 ## Interpretation

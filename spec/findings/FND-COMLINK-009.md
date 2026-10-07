@@ -10,16 +10,16 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0045D5ED..0x0045D609
+    address: 0x0045D5ED..0x0045D610
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0045D74C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0045DF38..0x0045E015
+    address: 0x0045DF38..0x0045E01C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0045E05C..0x0045E0E3
+    address: 0x0045E05C..0x0045E0EA
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -40,7 +40,7 @@ environment: null
 - `fn_0045E04D` marks the message at the player's cursor
   (`0x004981C8 + player * 4`) read, sets `0x0048781C` to 1 when any of the
   player's 16 elements still has the read byte 0 and to 0 otherwise
-  (`0x0045E05C..0x0045E0E3`), and draws that message with the cursor + 1 and
+  (`0x0045E05C..0x0045E0EA`), and draws that message with the cursor + 1 and
   the count passed in (FND-COMLINK-007).
 - The View handler's event loop calls the event pump `fn_00462579` at
   `0x0045D755` for each event.

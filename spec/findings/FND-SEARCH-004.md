@@ -22,7 +22,7 @@ locations:
     address: 0x004123CC..0x00412AC4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004A24E8..0x004A256B
+    address: 0x004A24E8..0x004A256C
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -45,7 +45,7 @@ The Search handler `fn_00448E32`, given the player:
   stores 0 in the player's 22 bytes, but only on a release inside the button;
   then all rows are drawn again and the panel is copied to the screen.
 - For a press inside row `n`, it stores 1 when the byte is 0 and 0 otherwise
-  (`0x00449477..0x004494AF`), draws that row again and copies the row's
+  (`0x00449477..0x004494B7`), draws that row again and copies the row's
   rectangle to the screen.
 - Treats a double-click (event 5) inside the panel by calling the Site
   Information handler `fn_0044C476` with the row's definition for the row it

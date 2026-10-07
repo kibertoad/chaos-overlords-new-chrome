@@ -19,7 +19,7 @@ locations:
     address: 0x00472A50..0x0047317B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004127D4..0x00412856
+    address: 0x004127D4..0x0041285E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0044398E
@@ -46,7 +46,7 @@ setup `fn_0046DC10`):
 
 The refresh before planning, `fn_004782C5`, takes one sector record by value
 (at `EBP+0x0C`), changes it, and returns the whole 36 bytes through its first
-argument (`0x00478616..0x00478621`, nine DWORDs). It is called from
+argument (`0x00478616..0x00478623`, nine DWORDs). It is called from
 `0x0046F246` and `0x0046F77E` in `fn_0046E766`. Its writes, in record offsets:
 
 | Offset | Instruction | Value |
@@ -57,7 +57,7 @@ argument (`0x00478616..0x00478621`, nine DWORDs). It is called from
 | `0x06` | `0x004782CE`, then `0x00478381` | 0, plus the Support field (`+0x18`) of each completed site |
 | `0x0D` | `0x0047831A`, then `0x004785C1` or `0x004785D7` | 0; raised to at least 1 by a completed site whose special field (`+0x3C`) is 1, and to at least 2 by one whose special field is 2 |
 | `0x0E` | `0x0047831E`, then `0x004785E0` | 0; set to 1 by a completed site whose special field is 3 |
-| `0x16..0x23` | `0x004782E2..0x00478316`, then `0x004783E4..0x00478591` | 0, plus the site fields `+0x20, +0x22, ... +0x3A` of each completed site, in the same order: record byte `0x16 + k` takes site field `0x20 + 2k` |
+| `0x16..0x23` | `0x004782E2..0x0047831A`, then `0x004783E4..0x00478594` | 0, plus the site fields `+0x20, +0x22, ... +0x3A` of each completed site, in the same order: record byte `0x16 + k` takes site field `0x20 + 2k` |
 
 The site fields are read from the table at `0x004AB668` with a stride of
 `0x3E`, indexed by the signed site-definition byte of each slot (bytes `0x07`,
@@ -134,4 +134,4 @@ List the references to `0x004A08E9`, `0x004A08EA`, `0x004A08EC`,
 read the stores to `[EBP+0x0F]`, `[EBP+0x10]`, `[EBP+0x11]`, `[EBP+0x12]`,
 `[EBP+0x19]`, `[EBP+0x1A]` and `[EBP+0x22..0x2F]` (record offset = `EBP`
 offset - `0x0C`), the compare at `0x0047835B`, and the switch on the special
-field at `0x004785EE..0x00478606`.
+field at `0x004785EE..0x0047860C`.

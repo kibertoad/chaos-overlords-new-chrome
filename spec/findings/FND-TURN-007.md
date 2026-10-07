@@ -13,13 +13,13 @@ locations:
     address: 0x00472AD9..0x00473106
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00472CFA..0x00472D0B
+    address: 0x00472CFA..0x00472D0C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00472D0C..0x00472ED3
+    address: 0x00472D0C..0x00472ED4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00472ED4..0x00473045
+    address: 0x00472ED4..0x00473046
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004730AD..0x004730D4
@@ -35,19 +35,19 @@ phase is the scan from `0x00472AD9` to `0x00473106`: player slots 0 to 5
 with `0x51`). For each slot it copies the 32-byte gang record into a local copy
 (`0x00472B47`), skips the slot when the sector byte is 100 (`0x00472B50`),
 and otherwise dispatches on the action byte (record offset `0x07`). The
-dispatch at `0x00473084..0x004730A6` subtracts 2, sends values above 11 to the
+dispatch at `0x00473084..0x004730AD` subtracts 2, sends values above 11 to the
 default, and indexes the byte table at `0x004730C9` and the jump table at
 `0x004730AD`. After the case, every non-skipped slot's copy is written back to
-the gang record at `0x004730D5..0x004730FF`.
+the gang record at `0x004730D5..0x00473101`.
 
 | Action | Case | Instructions | Evidence of the case's work |
 |---|---|---|---|
-| 2 | Bribe | `0x00472B6B..0x00472BF5` | FND-BRIBE-001, FND-TOLERANCE-001 |
-| 7 | Heal | `0x00472BF6..0x00472CF9` | FND-HEAL-001 |
-| 8 | Hide | `0x00472CFA..0x00472D0B` | below |
-| 9 | Influence | `0x00472D0C..0x00472ED3` | FND-TURN-001, below |
-| 11 | Research | `0x00472ED4..0x00473045` | FND-RESEARCH-001, below |
-| 13 | Snitch | `0x00473046..0x0047307E` | FND-SNITCH-001, FND-TOLERANCE-001 |
+| 2 | Bribe | `0x00472B6B..0x00472BF6` | FND-BRIBE-001, FND-TOLERANCE-001 |
+| 7 | Heal | `0x00472BF6..0x00472CFA` | FND-HEAL-001 |
+| 8 | Hide | `0x00472CFA..0x00472D0C` | below |
+| 9 | Influence | `0x00472D0C..0x00472ED4` | FND-TURN-001, below |
+| 11 | Research | `0x00472ED4..0x00473046` | FND-RESEARCH-001, below |
+| 13 | Snitch | `0x00473046..0x0047307F` | FND-SNITCH-001, FND-TOLERANCE-001 |
 
 Actions 3 to 6, 10 and 12 map to the default target `0x004730D5`, which is the
 write-back.

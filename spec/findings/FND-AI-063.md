@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00432DA0..0x00432DD7
+    address: 0x00432DA0..0x00432DDD
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004335AD..0x004335BC
@@ -34,10 +34,10 @@ locations:
     address: 0x004078AB..0x004078B8
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040ABC0..0x0040ABC8
+    address: 0x0040ABC0..0x0040ABC9
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00466910..0x00466918
+    address: 0x00466910..0x00466919
 tool: Python 3.14.7 script disassembling the file bytes with Capstone 5.0.7
 environment: null
 ---
@@ -56,7 +56,7 @@ that restores that value.
   Support threshold of FND-AI-062, is at `D - 0x70`.
 - The selector `fn_00402D70` takes four arguments. Called from the dispatcher,
   its frame pointer is `D - 0x64`, and its local -0xC is at `D - 0x70`. Its
-  prologue writes 0 to locals -4, -8, -0xC and -0x10 (`0x00402D79..0x00402D8E`)
+  prologue writes 0 to locals -4, -8, -0xC and -0x10 (`0x00402D79..0x00402D95`)
   before the case switch.
 - Case `0x48` (`0x00405A5E..0x00405A94`) and case `0x7C`
   (`0x004062DF..0x004062EC`) write only local -0x14, and the common exit at

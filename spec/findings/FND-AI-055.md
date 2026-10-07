@@ -48,7 +48,7 @@ Selector `0x61` (`0x0040498A`) sums selectors `0x54`, `0x57` and `0x58` into
 a bare-hands value `B`. It forms three scores: `s1`, the +0x82 value of
 selector `0x6D` with category 1 plus selectors `0x54` and `0x55`; `s0`, that
 of category 0 plus selector `0x54`; `s2`, that of category 2 plus selector
-`0x56`. The comparisons at `0x00404A99..0x00404B3B` choose category -1 when
+`0x56`. The comparisons at `0x00404A99..0x00404B42` choose category -1 when
 `s1`, `s0` and `s2` are all below `B`; otherwise the category with the greatest
 score, where 2 wins a tie with either other and 0 wins a tie with 1. For
 category -1 it returns -1. Otherwise the running choice starts at the equipped

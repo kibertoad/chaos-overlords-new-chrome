@@ -43,16 +43,16 @@ locations:
     address: 0x0048735C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048779C..0x004877C3
+    address: 0x0048779C..0x004877C4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00494C18..0x00494C1F
+    address: 0x00494C18..0x00494C20
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00494C28..0x00497FE7
+    address: 0x00494C28..0x00497FE8
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00498000..0x0049809F
+    address: 0x00498000..0x004980A0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0040BB78
@@ -64,7 +64,7 @@ locations:
     address: 0x004578B4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042E7A3..0x0042E883
+    address: 0x0042E7A3..0x0042E888
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -141,7 +141,7 @@ Function extents are those of FND-EXE-004.
 - `DATA` holds `SND00200` to `SND00204`, `SND00500` to `SND00517`, and
   `Snd00205` to `Snd00208` and `Snd00518`. There is no `SND00499`.
 - In Detailed Combat, `fn_0042E040` sets the sound number to -1 when the attack
-  was evaded (`0x0042E7A3`..`0x0042E7AC`) and then loads slot 5 with `500 +
+  was evaded (`0x0042E7A3`..`0x0042E7B6`) and then loads slot 5 with `500 +
   number` at `0x0042E883`, that is `SND00499`. For an unarmed attack it reads
   the 16-bit value at `0x004A289A + definition * 0x9C`, a field of the gang
   definition table loaded from `data\Gangs` at `0x004A2800`.

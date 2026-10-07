@@ -10,13 +10,13 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041FEF0..0x0042094F
+    address: 0x0041FEF0..0x00420950
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00431C60..0x0043407F
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00434080..0x004384BF
+    address: 0x00434080..0x004384C0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0043A1D0..0x0043B27F
@@ -45,7 +45,7 @@ action bytes and 1 in `needs_family` (`0x0048A251`) and nothing else. Family
 focus and no target.
 
 The focus value of the auxiliary record (`0x0048C0BA + player * 0x46E +
-slot * 14`, FND-AI-044) is stored by families 3 (`0x00435BD0`) and 5
+slot * 14`, FND-AI-081) is stored by families 3 (`0x00435BD0`) and 5
 (`0x0043A1D0`) after each action they plan:
 
 | Action | Family 3 stores | Family 5 stores | Value |

@@ -13,16 +13,16 @@ locations:
     address: 0x00408AA4..0x00408B31
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040983D..0x0040984D
+    address: 0x0040983D..0x00409854
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00408B31..0x00409894
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00408DF2..0x0040902F
+    address: 0x00408DF2..0x00409034
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00409894..0x004098D3
+    address: 0x00409894..0x004098D4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004098D4..0x004099BE
@@ -50,7 +50,7 @@ at `ebp-0x28`; the visited sector is `(row) * 8 + column`, and every case body
 adds to the score table dword at `0x0048A150 + column * 32 + row * 4`.
 
 For each visited sector the mode, less 1, indexes the jump table at
-`0x00409854` when it is at most 15 unsigned (`0x0040983D..0x0040984D`). Any
+`0x00409854` when it is at most 15 unsigned (`0x0040983D..0x00409854`). Any
 other mode goes to `0x00409894`.
 
 Every case that tests an owner reads it with selector `0x21`, the owner byte or
@@ -76,7 +76,7 @@ Every case that tests an owner reads it with selector `0x21`, the owner byte or
 - mode 11 adds 1 to the sector of selector `0x5A` and mode 16 to the sector of
   selector `0x77`.
 
-Mode 6 (`0x00408DF2..0x0040902F`) first tests selector `0x32` above 0, the
+Mode 6 (`0x00408DF2..0x00409034`) first tests selector `0x32` above 0, the
 attitude toward the owner below 0 and selector `0x35` for the sector. When all
 three pass it adds 2, sets `ebp-0x24` and jumps to `0x00409894`
 (`0x00408E80`), past the leader tests. Otherwise it reads selector `0x2E`:
@@ -96,7 +96,7 @@ player * 0x18 + owner * 4` with 0 with no range test on the owner, and when it
 is below 0 calls selector `0x35` for the visited sector. When that passes it
 loads the dword at `0x0048A150 + column * 32 + (column + row) * 4`, multiplies
 it by five with `LEA ECX,[ECX+ECX*4]` and stores it back at the same address
-(`0x0040992F..0x004099AD`). The row term is computed as `(row * 8) % 8` for
+(`0x0040992F..0x004099B4`). The row term is computed as `(row * 8) % 8` for
 the first index and `(row * 8) / 8` added to the column for the second.
 
 After the square, `0x004099BE` leaves the radius loop when `ebp-0x24` is set.

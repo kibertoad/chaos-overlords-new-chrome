@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004141FE..0x00414279
+    address: 0x004141FE..0x0041427E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004142E7
@@ -25,7 +25,7 @@ locations:
     address: 0x00425FB0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00462420..0x00462436
+    address: 0x00462420..0x0046243B
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -37,8 +37,8 @@ Function extents are those of FND-EXE-004.
 - In `fn_00414187` each cell divides the remaining value by the cell's power
   of ten with a signed 32-bit divide (`0x00414202`) and keeps the quotient as a
   32-bit number. A drawn cell adds 16 to it (`0x00414233`). The source column
-  is that glyph number times 6, computed in 32 bits (`0x00414259..0x0041425F`
-  and `0x0041426C..0x00414272`), pushed with the source row (0, or 8 for a
+  is that glyph number times 6, computed in 32 bits (`0x00414259..0x00414261`
+  and `0x0041426C..0x00414274`), pushed with the source row (0, or 8 for a
   negative value) to the rectangle packer `fn_00425EDF`, together with the
   column plus 6 and the row plus 7.
 - `fn_00425EDF` packs its four arguments as 16-bit numbers, in the order top,

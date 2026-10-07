@@ -25,34 +25,34 @@ locations:
     address: 0x00462579..0x004637B8
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0045C67D..0x0045C695
+    address: 0x0045C67D..0x0045C69A
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00461008..0x00461016
+    address: 0x00461008..0x0046101A
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0046224A..0x00462269
+    address: 0x0046224A..0x0046226C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048778C..0x00487798
+    address: 0x0048778C..0x00487799
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00487838..0x0048783C
+    address: 0x00487838..0x0048783D
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00487878..0x0048787B
+    address: 0x00487878..0x0048787C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00487890
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00494BF0..0x00494C17
+    address: 0x00494BF0..0x00494C18
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00497FE8..0x00497FFF
+    address: 0x00497FE8..0x00498000
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004980A0..0x004980BB
+    address: 0x004980A0..0x004980BC
 tool: Ghidra 12.1.3
 environment: null
 ---

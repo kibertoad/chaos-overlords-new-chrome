@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048A250..0x0048C0AF
+    address: 0x0048A250..0x0048C0B0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00409DE1..0x00409F47
@@ -75,6 +75,6 @@ are the high bytes of those words.
 
 ## How to reproduce
 
-List the references to each address `0x0048A250..0x0048A25F`. Read
+List the references to each address `0x0048A250..0x0048A260`. Read
 `0x00409DE1..0x00409F47` and the start of `0x00458FA0`, and case `0x48` of
 `0x00402D70`.

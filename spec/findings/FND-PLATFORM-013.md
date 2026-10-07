@@ -10,16 +10,16 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004AE91C..0x004AE963
+    address: 0x004AE91C..0x004AE964
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004AE974..0x004AE9B3
+    address: 0x004AE974..0x004AE9B4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004786A2..0x0047870D
+    address: 0x004786A2..0x0047870E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0047870E..0x004787A9
+    address: 0x0047870E..0x004787AA
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00421D1A..0x00424E55
@@ -34,20 +34,20 @@ from the executable's import directory with a script; the smackw32 names come
 from the export table of the shipped `SMACKW32.DLL`, the WSOCK32 names from the
 fixed ordinals of the Windows Sockets 1.1 `wsock32.dll`.
 
-`WSOCK32.dll`, slots `0x004AE91C..0x004AE960` in order: 10 `inet_addr`, 2
+`WSOCK32.dll`, slots `0x004AE91C..0x004AE964` in order: 10 `inet_addr`, 2
 `bind`, 23 `socket`, 4 `connect`, 9 `htons`, 115 `WSAStartup`, 116
 `WSACleanup`, 3 `closesocket`, 55 `getservbyname`, 19 `send`, 16 `recv`, 13
 `listen`, 57 `gethostname`, 11 `inet_ntoa`, 52 `gethostbyname`, 111
 `WSAGetLastError`, 1 `accept`, 101 `WSAAsyncSelect`.
 
-`smackw32.dll`, slots `0x004AE974..0x004AE9B0` in order: 20 `_SmackGoto`, 8
+`smackw32.dll`, slots `0x004AE974..0x004AE9B4` in order: 20 `_SmackGoto`, 8
 `_SmackBufferOpen`, 22 `_SmackOpen`, 14 `_SmackClose`, 3 `_SmackBufferClose`,
 28 `_SmackToBuffer`, 26 `_SmackSoundOnOff`, 1 `_SmackBufferBlit`, 15
 `_SmackColorRemap`, 7 `_SmackBufferNewPalette`, 9 `_SmackBufferFocused`, 31
 `_SmackVolumePan`, 21 `_SmackNextFrame`, 17 `_SmackDoFrame`, 29
 `_SmackToBufferRect`, 32 `_SmackWait`.
 
-WinSock. The thunks at `0x004786A2..0x00478708` are called only from:
+WinSock. The thunks at `0x004786A2..0x0047870E` are called only from:
 
 | Function | Imports it calls |
 |---|---|
@@ -72,13 +72,13 @@ host's addresses as text at `0x00493270` and shows dialog 20002
 (`0x00424CE2`). It
 then stores 4269 (`0x10AD`) at `0x00424D4D` and sets its port selector to 1
 at `0x00424D53`, just before the switch on that selector at
-`0x00424DE2..0x00424E09`; every path to the switch passes these two stores.
+`0x00424DE2..0x00424E0E`; every path to the switch passes these two stores.
 Case 1 converts 4269 with `htons`. Case 2, which would take the port
 `getservbyname` returns for the name at `0x00492F90` and the protocol `tcp`
 (`0x00424D94`) and shows a message box when the lookup fails, and case 0,
 which returns 0, are never reached.
 
-Telephony. The thunks at `0x0047870E..0x004787A4` jump through the
+Telephony. The thunks at `0x0047870E..0x004787AA` jump through the
 `TAPI32.dll` import slots, and each is called only from these functions:
 
 | Function | Telephony calls |
@@ -127,5 +127,5 @@ which device or address it opens, was not followed.
 
 Parse the import directory and match the smackw32 ordinals to the export
 table of `SMACKW32.DLL`. List the callers of each thunk in
-`0x004786A2..0x004787A4`, and read the arguments pushed before the calls of
+`0x004786A2..0x004787AA`, and read the arguments pushed before the calls of
 `socket`, `htons` and `WSAStartup`.

@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043C4BC..0x0043CD6D
+    address: 0x0043C4BC..0x0043CD72
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -33,8 +33,8 @@ pointer (`0x0043C514`).
     and calls `fn_00455B6B` (`0x0043C885`), the definition information panel of
     FND-GANG-002.
 - For each of the six cells `k` whose list entry at `0x00494850 + 4 * k` is
-  not -1 (`0x0043C8FF..0x0043C91B`): the portrait is the 64 by 64 rectangle at
-  `(136 + 68 * (k % 3), 17 + 90 * (k / 3))` (`0x0043C932..0x0043C969`), and a
+  not -1 (`0x0043C8FF..0x0043C923`): the portrait is the 64 by 64 rectangle at
+  `(136 + 68 * (k % 3), 17 + 90 * (k / 3))` (`0x0043C932..0x0043C96E`), and a
   double-click there copies that gang's record (the chosen opponent, roster
   slot from the list) and calls `fn_00455B6B` (`0x0043C9DD`). Three 20 by 20
   icons lie 65 rows below the portrait's top at x offsets 0, 22 and 44

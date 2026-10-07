@@ -58,7 +58,7 @@ Instance and window class, in `fn_00465620` (called at `0x00460CF7`):
 - It loads accelerator table 102 into `0x00487B18` and tries to load menu
   resources 0 to 15 into the sixteen handles at `0x00498870`; of these only 1,
   2, 3 and 5 exist (FND-EXE-005). It clears the pointer state at
-  `0x00498598..0x004985A7` (FND-UI-020).
+  `0x00498598..0x004985A8` (FND-UI-020).
 
 Image set and display, in `WinMain`:
 
@@ -106,14 +106,14 @@ When the surfaces exist and the CD test `fn_0046638E` returns nonzero
   surface 1 filled black, the one-second copy benchmark `fn_00432954` from
   surface 1 to the window over that rectangle (its count goes to
   `0x004981F8`), the pointer shown again and set to the arrow;
-- six player colours built at `0x004ABC18..0x004ABC3B`, the default player names
+- six player colours built at `0x004ABC18..0x004ABC3C`, the default player names
   `fn_00410016`, `0x00498350` and `0x004ABC9C` set to 1;
 - the intro `fn_004329C0` when `loaded_game_kind` (`0x0048788C`) is 0;
 - the window's 640-by-460 area filled black, the palette applied again,
   `PX00130` loaded into surface 1, music track 0 started with `fn_004642BD(0)`,
   `PX00129` loaded into surface 6, and surface 1 copied to the window.
 
-The title loop (`0x004616D2..0x00462242`) takes one event at a time from
+The title loop (`0x004616D2..0x00462244`) takes one event at a time from
 `fn_00462579` until `quit_requested` (`0x00487828`) is set:
 
 - A left press (event 3) is turned into the command `(0x81, 1)` before the

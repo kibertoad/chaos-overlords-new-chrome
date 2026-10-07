@@ -20,8 +20,8 @@ environment: null
 
 ## Observation
 
-Neither handler has a jump table. Their prologues (`0x0040ABC9..0x0040ABD7`,
-`0x00466919..0x00466927`) set local -0x18 (the chosen site) to -1, the draw
+Neither handler has a jump table. Their prologues (`0x0040ABC9..0x0040ABDB`,
+`0x00466919..0x0046692B`) set local -0x18 (the chosen site) to -1, the draw
 counter at local -8 to 0 and the stop flag at local -0x1C to 0. Nothing else
 writes the draw counter before either loop.
 
@@ -53,7 +53,7 @@ On an objective the player owns (owner query equal to the player):
   FND-AI-039 with focus -1; otherwise selector `0x75`, whose item is taken
   when it is not negative and its cost is at most the cash, with no
   previous-action test and focus -1; otherwise the site scan.
-- The site scan (`0x0040B713..0x0040B782`, `0x0046745E..0x004674CD`) walks
+- The site scan (`0x0040B713..0x0040B787`, `0x0046745E..0x004674D2`) walks
   slots 0 to 2. A slot with positive remaining Resistance (selector 10) whose
   selector `0xC` value is greater than local -0x14 becomes the chosen site,
   and local -0x14 takes that value. A chosen site writes Influence with the

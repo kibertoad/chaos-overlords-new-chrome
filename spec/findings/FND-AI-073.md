@@ -19,7 +19,7 @@ locations:
     address: 0x004357D2
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00402DD4..0x00402DE1
+    address: 0x00402DD4..0x00402DE6
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -39,7 +39,7 @@ selector 3 for cash, compares EBX with EAX, and skips Equip on signed `JG`,
 at `0x00435684` and `0x004357D2` respectively.
 
 Selector 3 reads the full cash dword at `0x004A25E8 + player * 4`
-(`0x00402DD4..0x00402DE1`), without clamping it to zero. Upkeep can leave
+(`0x00402DD4..0x00402DE6`), without clamping it to zero. Upkeep can leave
 this value negative (FND-UPKEEP-001, RULE-UPKEEP-001).
 
 ## Interpretation
