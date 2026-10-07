@@ -166,6 +166,27 @@ public sealed class PlanningTimer
     /// </summary>
     public bool StopsInGameMenu { get; set; }
 
+    /// <summary>
+    /// Switches <see cref="StopsInGameMenu"/> at <paramref name="now"/>. When the game menu holds
+    /// the clock, as it does while Options is open from it, the change takes effect at once: on,
+    /// the elapsed time stops here; off, it runs on from here.
+    /// </summary>
+    public void SetStopsInGameMenu(bool value, TimeSpan now)
+    {
+        if (StopsInGameMenu == value) return;
+        StopsInGameMenu = value;
+        if (!_paused || !IsActive) return;
+        if (value)
+        {
+            _pausedElapsed = now - _start;
+        }
+        else if (_pausedElapsed is { } elapsed)
+        {
+            _start = now - elapsed;
+            _pausedElapsed = null;
+        }
+    }
+
     /// <summary>The width the bar was last drawn with, 0 to 60.</summary>
     public int VisibleBarWidth { get; private set; } = PlanningTimerPolicy.BarWidth;
 

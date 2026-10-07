@@ -481,6 +481,8 @@ internal sealed partial class NewGameSession(
             {
                 foreach (var delay in (settings.Delays ?? []).Where(delay => delay.Turn == turn))
                     _process.Pump(TimeSpan.FromMilliseconds(delay.Milliseconds));
+                // A --menu record keeps the ticks of its own turn only, up to this press.
+                _turnTicks = null;
                 Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
             }
             if (WaitForNextPlanning(window, turn, waits, turnTimeout) is { } waitFailure)

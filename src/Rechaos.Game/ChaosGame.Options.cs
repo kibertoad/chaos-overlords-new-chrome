@@ -334,7 +334,7 @@ public sealed partial class ChaosGame
     // DEV-TIMER-002: whether a timed turn's clock stops while the game menu is open.
     private void ToggleMenuStopsClock()
     {
-        _planningTimer.StopsInGameMenu = !_planningTimer.StopsInGameMenu;
+        _planningTimer.SetStopsInGameMenu(!_planningTimer.StopsInGameMenu, _inputTime);
         SavePreferences();
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;

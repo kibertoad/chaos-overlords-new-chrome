@@ -22,7 +22,7 @@ internal sealed record ProbeMenu(int Turn, int AfterMs, int HoldMs)
 /// probe posted the opening keys, when the window's thread was seen in menu mode, when the probe
 /// posted Escape and when the thread had left menu mode, the GUITHREADINFO flags seen while it
 /// was open, and each tick of timer slot 0, the presentation clock (FND-UI-023), from the clock's
-/// start to the expiry of the turn.
+/// start to the expiry of the turn or its Done press.
 /// </summary>
 internal sealed record MenuRecord(int Turn, int PostedMs, int OpenMs, int ClosingMs, int ClosedMs, uint Flags, List<int> Ticks);
 
@@ -47,7 +47,7 @@ internal sealed partial class NewGameSession
 
     // The ticks of timer slot 0 through the timer callback fn_004327C0, whose third argument is the
     // slot (FND-TIMER-002), in elapsed milliseconds of the planning clock, from the start of the
-    // clock of a turn with a --menu hold to its expiry.
+    // clock of a turn with a --menu hold to its expiry or its Done press.
     private void ArmMenuTicks()
     {
         _process.SetBreakpoint(OriginalAddresses.PlanningTimerStarted, _ =>

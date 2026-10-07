@@ -489,16 +489,27 @@ public sealed partial class ChaosGame
             PrepareCurrentHireOffers();
             _deferComlinkAlertUntilPlanningVisible = true;
             _managementReturnScreen = ClientScreen.City;
-            if (_referenceFrame?.EntryPanels == true && LastTurnReports(state, playerId).Count > 0)
-            {
-                BeginEventReview(ReviewableReports(state, playerId).Count);
-                _screens.Show(ClientScreen.Events);
-                return;
-            }
-            PresentReferenceFrameCity(state, playerId);
+            PresentReferenceFrameEntryPanels(state, playerId);
             return;
         }
         _screens.Show(ClientScreen.City);
+    }
+
+    /// <summary>
+    /// With <see cref="ReferenceFrameRequest.EntryPanels"/> and reports to show, leaves Last Turn
+    /// Events open on its first page, where the probe's state dump stands (EXP-UI-036); otherwise
+    /// goes on to the city as a shot step does. Both the first planning entry and a hand-off
+    /// card's Ready click come here.
+    /// </summary>
+    private void PresentReferenceFrameEntryPanels(MatchState state, PlayerId playerId)
+    {
+        if (_referenceFrame?.EntryPanels == true && LastTurnReports(state, playerId).Count > 0)
+        {
+            BeginEventReview(ReviewableReports(state, playerId).Count);
+            _screens.Show(ClientScreen.Events);
+            return;
+        }
+        PresentReferenceFrameCity(state, playerId);
     }
 
     /// <summary>

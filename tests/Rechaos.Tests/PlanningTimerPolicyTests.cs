@@ -236,6 +236,38 @@ public sealed class PlanningTimerPolicyTests
         Assert.True(timer.HasExpired(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(20.001)));
     }
 
+    // DEV-TIMER-002 switched on in Options while the game menu holds the clock: the elapsed
+    // time stops from that moment.
+    [Fact]
+    public void SwitchingDevTimer002OnWhileTheMenuIsOpenStopsTheElapsedTimeThere()
+    {
+        var timer = new PlanningTimer();
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        timer.Pause(TimeSpan.FromSeconds(10));
+
+        timer.SetStopsInGameMenu(true, TimeSpan.FromSeconds(15));
+
+        Assert.False(timer.HasExpired(TimeSpan.FromHours(1)));
+        timer.Resume(TimeSpan.FromHours(1));
+        Assert.False(timer.HasExpired(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(15)));
+        Assert.True(timer.HasExpired(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(15.001)));
+    }
+
+    // DEV-TIMER-002 switched off in Options while the game menu holds the clock: the elapsed
+    // time runs on from that moment.
+    [Fact]
+    public void SwitchingDevTimer002OffWhileTheMenuIsOpenRunsTheElapsedTimeFromThere()
+    {
+        var timer = new PlanningTimer { StopsInGameMenu = true };
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        timer.Pause(TimeSpan.FromSeconds(10));
+
+        timer.SetStopsInGameMenu(false, TimeSpan.FromSeconds(100));
+
+        Assert.False(timer.HasExpired(TimeSpan.FromSeconds(120)));
+        Assert.True(timer.HasExpired(TimeSpan.FromSeconds(120.001)));
+    }
+
     // RULE-TIMER-002, EXP-TURN-102: the original's menu bar leaves the elapsed time running, so a
     // turn can pass its limit in the menu; no bar is drawn while it is open.
     [Fact]

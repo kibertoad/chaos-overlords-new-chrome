@@ -482,7 +482,7 @@ when menu mode ends before that. The fixture lists each holding as a `key`
 input and holds it as `menus`: the times of the posting, of menu mode seen, of
 Escape and of menu mode left, the `GUITHREADINFO` flags, and as `ticks` the
 elapsed time of every call of the presentation timer's callback `fn_004327C0`
-for slot 0 (FND-TIMER-002) from the clock's start to its expiry
+for slot 0 (FND-TIMER-002) from the clock's start to its expiry or the turn's Done press
 (EXP-TURN-102). `--clock-captures` breaks at `0x0041B8C8` in the clock's start
 helper, after it stores the start time and before it draws the bar, copies the
 drawing area there, and keeps the player, `elapsed_turns` and the width and
