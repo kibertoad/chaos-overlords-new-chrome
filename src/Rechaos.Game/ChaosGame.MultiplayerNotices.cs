@@ -111,6 +111,9 @@ public sealed partial class ChaosGame
                 return;
             case LobbyNotice.Chatted chatted:
                 _online.RecordChat(chatted.Lines);
+                // Kept for the match, whose stream starts after these and names a departure by id.
+                foreach (var line in chatted.Lines)
+                    if (line.Arrived is { } spectator) _online.SpectatorNames[spectator.Id] = spectator.DisplayName;
                 return;
             case LobbyNotice.Spectators spectators:
                 _online.Spectators = spectators.Watching;

@@ -45,7 +45,12 @@ public abstract record LobbyNotice
 /// Whether the line is the log announcing something rather than a member writing: a spectator
 /// arriving or leaving, which every seat is told of in the order it happened among the messages.
 /// </param>
-public sealed record LobbyChatLine(int Seq, string PlayerId, string Text, bool IsNotice = false);
+/// <param name="Arrived">
+/// The spectator a notice says arrived, so the match can name them when they leave later: a
+/// departure carries only the id, and the match's own stream starts after the lobby's events.
+/// </param>
+public sealed record LobbyChatLine(
+    int Seq, string PlayerId, string Text, bool IsNotice = false, SpectatorView? Arrived = null);
 
 /// <summary>
 /// The lobby half of an online match: taking a seat, watching who else arrives, and starting.
@@ -310,7 +315,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
                 var spectator = joined.Payload.Spectator;
                 _spectatorNames[spectator.Id] = spectator.DisplayName;
                 return new LobbyChatLine(joined.Seq, string.Empty,
-                    SpectatorAnnouncement.Joined(spectator.DisplayName), IsNotice: true);
+                    SpectatorAnnouncement.Joined(spectator.DisplayName), IsNotice: true, Arrived: spectator);
             case SpectatorLeftEvent left:
                 var name = _spectatorNames.GetValueOrDefault(left.Payload.SpectatorId)
                     ?? SpectatorAnnouncement.UnknownName;
@@ -362,7 +367,11 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         try
         {
             if (spectatorId is not null)
+            {
                 await handle.RemoveSpectatorAsync(spectatorId, _stopping.Token).ConfigureAwait(false);
+                // The removal is done; a failure from here on is the list read's, not the removal's.
+                operation = nameof(ListSpectators);
+            }
             var list = await handle.SpectatorsAsync(_stopping.Token).ConfigureAwait(false);
             _notices.Enqueue(new LobbyNotice.Spectators(list.Spectators));
         }

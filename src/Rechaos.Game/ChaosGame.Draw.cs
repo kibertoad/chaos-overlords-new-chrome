@@ -22,6 +22,7 @@ public sealed partial class ChaosGame
     {
         GraphicsDevice.Clear(new Color(8, 10, 12));
         _gangSight.BeginFrame();
+        _spectatorGangSight.BeginFrame();
         if (_batch is null || _pixel is null || _font is null) return;
         if (_introMoviesPlaying)
         {

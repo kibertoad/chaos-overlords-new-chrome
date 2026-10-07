@@ -16,9 +16,18 @@ public sealed partial class ChaosGame
     /// of it at <c>(2,42)</c>; SCR-UI-004's nine-sector display (FND-UI-018) and SCR-MOVE-001's
     /// neighbourhood (FND-MOVE-004) show a 162-by-156 crop, and SCR-UI-005 one sector's cell.
     /// </summary>
+    /// <param name="caches">
+    /// The sight snapshot, marker map and site-search selections to draw from; the local match's
+    /// when omitted. The spectator view passes its own, so watching never reads or clears the
+    /// planning snapshot of a local match kept alive behind the online screens.
+    /// </param>
     private void DrawPreparedCityMap(
-        SpriteBatch batch, Texture2D pixel, MatchState state, PlayerId viewer, Rectangle crop, Point destination)
+        SpriteBatch batch, Texture2D pixel, MatchState state, PlayerId viewer, Rectangle crop, Point destination,
+        CityMapCaches? caches = null)
     {
+        var sight = caches?.Sight ?? _gangSight;
+        var markers = caches?.Markers ?? _gangMarkers;
+        var siteSelections = caches?.SiteSelections ?? _siteSearchSelections.For(viewer);
         var map = new CroppedMap(batch, pixel, crop, destination);
         var neutralLayer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
         var whole = CityMapLayout.Bounds with { X = 0, Y = 0 };
@@ -39,7 +48,7 @@ public sealed partial class ChaosGame
                 map.Draw(_uiKeyedSprites, OriginalSpriteLayout.ObjectiveSectorPylons, CityMapLayout.Source(sectorId));
         }
         foreach (var marker in CitySiteMarkerProjection.Project(
-                     state, viewer, _siteSearchSelections.For(viewer)))
+                     state, viewer, siteSelections))
         {
             var area = CityMapLayout.MapArea(CitySiteMarkerProjection.Destination(marker));
             if (_siteMarkerSprites is not null)
@@ -57,13 +66,17 @@ public sealed partial class ChaosGame
         // RULE-UI-006: the markers the map keeps through the planning phase, and outside it those of
         // a draw of every sector in number order.
         var markerFrames = state.Coordinator.Phase == TurnPhase.Command
-            ? _gangMarkers.Frames(state, viewer, _gangSight.For(state, viewer))
-            : GangStatusMarkerPresentation.MapFrames(state, viewer, _gangSight.For(state, viewer));
+            ? markers.Frames(state, viewer, sight.For(state, viewer))
+            : GangStatusMarkerPresentation.MapFrames(state, viewer, sight.For(state, viewer));
         for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
             if (markerFrames[sectorId] >= 0)
                 map.Draw(_uiKeyedSprites, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]),
                     CityMapLayout.MapArea(GangStatusMarkerLayout.Destination(sectorId)));
     }
+
+    /// <summary>The caches a prepared city map is drawn from, for a view other than the local match's.</summary>
+    private sealed record CityMapCaches(
+        GangSightSnapshotCache Sight, GangStatusMarkerMap Markers, IReadOnlySet<short> SiteSelections);
 
     /// <summary>
     /// Blits parts of the prepared city map at 1:1: each part is given by where it lies on the map,

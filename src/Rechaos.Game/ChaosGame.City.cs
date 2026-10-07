@@ -452,10 +452,16 @@ public sealed partial class ChaosGame
 
     private void MoveCursor(int dx, int dy)
     {
-        var x = Math.Clamp(_cursor % MatchLimits.BoardWidth + dx, 0, MatchLimits.BoardWidth - 1);
-        var y = Math.Clamp(_cursor / MatchLimits.BoardWidth + dy, 0, MatchLimits.BoardWidth - 1);
-        _cursor = y * MatchLimits.BoardWidth + x;
+        _cursor = MovedSector(_cursor, dx, dy);
         _message = string.Empty;
+    }
+
+    /// <summary>The sector <paramref name="dx"/> across and <paramref name="dy"/> down, kept on the board.</summary>
+    private static int MovedSector(int sector, int dx, int dy)
+    {
+        var x = Math.Clamp(sector % MatchLimits.BoardWidth + dx, 0, MatchLimits.BoardWidth - 1);
+        var y = Math.Clamp(sector / MatchLimits.BoardWidth + dy, 0, MatchLimits.BoardWidth - 1);
+        return y * MatchLimits.BoardWidth + x;
     }
 
     private static string SectorCode(int sectorId) =>

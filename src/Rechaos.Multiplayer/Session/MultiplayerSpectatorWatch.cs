@@ -88,6 +88,7 @@ public sealed class MultiplayerSpectatorWatch : IAsyncDisposable
     private Task _leaving = Task.CompletedTask;
     private Task? _disposal;
     private bool _started;
+    private bool _leaveRequested;
 
     /// <param name="http">Shared by every call; the game owns it.</param>
     /// <param name="options">Where the server is, and how patiently to wait for it.</param>
@@ -149,6 +150,9 @@ public sealed class MultiplayerSpectatorWatch : IAsyncDisposable
         {
             handle = _handle;
             _handle = null;
+            // Read by the run under the same lock, so a join answered after this point leaves the
+            // token it was given instead of keeping it on the server's list.
+            _leaveRequested = true;
         }
         _stopping.Cancel();
         if (handle is null) return Task.CompletedTask;
@@ -208,10 +212,25 @@ public sealed class MultiplayerSpectatorWatch : IAsyncDisposable
         try
         {
             var handle = await open(cancellationToken).ConfigureAwait(false);
+            bool orphaned;
             lock (_gate)
             {
-                if (cancellationToken.IsCancellationRequested) return;
-                _handle = handle;
+                orphaned = _leaveRequested;
+                if (!orphaned && cancellationToken.IsCancellationRequested) return;
+                if (!orphaned) _handle = handle;
+            }
+            if (orphaned)
+            {
+                // The spectator left while the server was admitting them: end the token it gave.
+                try
+                {
+                    await handle.LeaveAsync(CancellationToken.None).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (IsServerOrNetworkFailure(exception))
+                {
+                    // Best effort, like any leave: the server retires the token with the match.
+                }
+                return;
             }
             var session = await StartWithRetriesAsync(handle, cancellationToken).ConfigureAwait(false);
             Publish(session, moved: true);
@@ -247,12 +266,15 @@ public sealed class MultiplayerSpectatorWatch : IAsyncDisposable
         {
             // Left or stopped; there is nobody to tell.
         }
-        catch (Exception exception) when (IsServerOrNetworkFailure(exception))
+        catch (Exception exception)
         {
+            // Every failure ends the view with its reason, including one the replay itself raises
+            // (a sealed set that cannot be applied): a run that died without saying so would leave
+            // the view showing its last city as if it were still following the match.
             _notices.Enqueue(new SpectatorNotice.Ended(
                 MultiplayerFailureText.Describe(exception),
                 exception,
-                MultiplayerFailureText.IsMembershipRevoked(exception)));
+                MultiplayerFailureText.IsWatchGone(exception)));
         }
     }
 

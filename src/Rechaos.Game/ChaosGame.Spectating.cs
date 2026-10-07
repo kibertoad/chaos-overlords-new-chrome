@@ -47,6 +47,12 @@ public sealed partial class ChaosGame
     private Uri? _spectatorServer;
     private MultiplayerRecovery? _spectatorRecovery;
 
+    // The view's own map caches: a hot-seat match can stay alive behind the online screens, and
+    // its planning snapshot (RULE-UI-006) and site-search selections must survive the watch.
+    private readonly GangSightSnapshotCache _spectatorGangSight = new();
+    private readonly GangStatusMarkerMap _spectatorGangMarkers = new();
+    private static readonly IReadOnlySet<short> NoSiteSearchSelections = new HashSet<short>();
+
     /// <summary>Where a spectator's memberships are kept, apart from the seats.</summary>
     /// <remarks>
     /// A build that predates spectating reads <c>multiplayer-recovery.json</c> and would take a
@@ -99,20 +105,25 @@ public sealed partial class ChaosGame
     /// <summary>Follows a match again with a spectator token kept from an earlier watch.</summary>
     private void ResumeWatch(MultiplayerRecovery recovery, Uri server)
     {
-        StartWatch(server, recovery.JoinCode, recovery.Password,
-            watch => watch.Resume(recovery.MatchId, recovery.Token));
+        // A record whose watch never started stays as it was, so it can be rejoined later.
+        if (!StartWatch(server, recovery.JoinCode, recovery.Password,
+                watch => watch.Resume(recovery.MatchId, recovery.Token)))
+            return;
         _spectatorRecovery = recovery;
+        // A resumed watch is never announced as joined, so the form is released here.
+        _online.Stage = MultiplayerStage.Connect;
         _online.Status = string.Empty;
         _screens.Show(ClientScreen.Spectate);
     }
 
-    private void StartWatch(
+    /// <returns>Whether the watch was started.</returns>
+    private bool StartWatch(
         Uri server, string joinCode, string? password, Action<MultiplayerSpectatorWatch> begin)
     {
         if (_definitions is null)
         {
             _online.Status = "THE GAME DATA IS NOT LOADED";
-            return;
+            return false;
         }
         // The browser's lobby session has done its job; a spectator holds no seat to poll.
         Forget(_lobby?.StopAsync(), "multiplayer.lobby.stop.failed");
@@ -128,6 +139,7 @@ public sealed partial class ChaosGame
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = SpectatorViewPresentation.Joining;
         begin(_spectatorWatch);
+        return true;
     }
 
     /// <summary>Drains what the watch has to say, on the game thread.</summary>
@@ -157,8 +169,8 @@ public sealed partial class ChaosGame
                 {
                     _spectatorState = state;
                     // The marker caches key on the state they last drew; a new one starts afresh.
-                    _gangSight.Clear();
-                    _gangMarkers.Clear();
+                    _spectatorGangSight.Clear();
+                    _spectatorGangMarkers.Clear();
                     _spectatorFollowedSeat = NextSeatInPlay(state, _spectatorFollowedSeat, 0);
                 }
                 if (progressed.IsComplete && _spectatorRecovery is { Completed: false } finished)
@@ -218,8 +230,8 @@ public sealed partial class ChaosGame
         _spectatorShownTurn = null;
         _spectatorComplete = false;
         _spectatorConnected = true;
-        _gangSight.Clear();
-        _gangMarkers.Clear();
+        _spectatorGangSight.Clear();
+        _spectatorGangMarkers.Clear();
     }
 
     private void RememberSpectatorMembership(SpectatorMembership membership)
@@ -244,7 +256,7 @@ public sealed partial class ChaosGame
         _spectatorRecovery = recovery;
         _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
         _multiplayerRecoveries.Insert(0, recovery);
-        SaveOnlineRecoveries();
+        SaveOnlineRecoveries(seats: false);
     }
 
     private void UpdateSpectatorRecovery(MultiplayerRecovery recovery)
@@ -253,7 +265,7 @@ public sealed partial class ChaosGame
         if (index >= 0) _multiplayerRecoveries[index] = recovery;
         else _multiplayerRecoveries.Insert(0, recovery);
         _spectatorRecovery = recovery;
-        SaveOnlineRecoveries();
+        SaveOnlineRecoveries(seats: false);
     }
 
     private void ForgetSpectatorRecovery()
@@ -261,7 +273,7 @@ public sealed partial class ChaosGame
         if (_spectatorRecovery is not { } recovery) return;
         _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
         _spectatorRecovery = null;
-        SaveOnlineRecoveries();
+        SaveOnlineRecoveries(seats: false);
     }
 
     /// <summary>
@@ -289,22 +301,17 @@ public sealed partial class ChaosGame
         var next = NextSeatInPlay(state, _spectatorFollowedSeat, direction);
         if (next == _spectatorFollowedSeat) return;
         _spectatorFollowedSeat = next;
-        _gangSight.Clear();
-        _gangMarkers.Clear();
+        _spectatorGangSight.Clear();
+        _spectatorGangMarkers.Clear();
     }
 
     private void UpdateSpectate(KeyboardState keyboard)
     {
         if (Pressed(keyboard, Keys.Tab)) FollowSeat(1);
         if (_spectatorState is null) return;
-        var x = _spectatorCursor % MatchLimits.BoardWidth;
-        var y = _spectatorCursor / MatchLimits.BoardWidth;
-        if (Pressed(keyboard, Keys.Left)) x--;
-        if (Pressed(keyboard, Keys.Right)) x++;
-        if (Pressed(keyboard, Keys.Up)) y--;
-        if (Pressed(keyboard, Keys.Down)) y++;
-        _spectatorCursor = Math.Clamp(y, 0, MatchLimits.BoardWidth - 1) * MatchLimits.BoardWidth
-            + Math.Clamp(x, 0, MatchLimits.BoardWidth - 1);
+        var dx = (Pressed(keyboard, Keys.Right) ? 1 : 0) - (Pressed(keyboard, Keys.Left) ? 1 : 0);
+        var dy = (Pressed(keyboard, Keys.Down) ? 1 : 0) - (Pressed(keyboard, Keys.Up) ? 1 : 0);
+        _spectatorCursor = MovedSector(_spectatorCursor, dx, dy);
     }
 
     private void HandleSpectateClick(Point point)
@@ -335,8 +342,8 @@ public sealed partial class ChaosGame
             if (seat != _spectatorFollowedSeat)
             {
                 _spectatorFollowedSeat = seat;
-                _gangSight.Clear();
-                _gangMarkers.Clear();
+                _spectatorGangSight.Clear();
+                _spectatorGangMarkers.Clear();
             }
             return;
         }
@@ -362,7 +369,8 @@ public sealed partial class ChaosGame
         _overlordMarkerClock.OtherView();
         DrawOverlordBar(batch, pixel, state, followed.Id, seatsSeen: null);
         DrawPreparedCityMap(batch, pixel, state, followed.Id,
-            CityMapLayout.Bounds with { X = 0, Y = 0 }, CityMapLayout.Bounds.Location);
+            CityMapLayout.Bounds with { X = 0, Y = 0 }, CityMapLayout.Bounds.Location,
+            new CityMapCaches(_spectatorGangSight, _spectatorGangMarkers, NoSiteSearchSelections));
         if (_uiKeyedSprites is not null)
             batch.Draw(_uiKeyedSprites, CityMapLayout.Destination(_spectatorCursor),
                 CityMapLayout.SelectionFrameSource(SelectionFrameShown()), Color.White);
