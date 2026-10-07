@@ -59,16 +59,20 @@ describe.skipIf(!url)('postgres', () => {
   it('sweeps rolled rate limit windows and keeps live ones', async () => {
     const store = (opened as OpenedStorage).rateLimits
     if (!store) throw new Error('openPostgresStorage returned no rate limit store')
-    // Long before any real window, so this sweep only reaches the rows it wrote itself.
-    const now = 1_000_000_000_000
-    const policy = { limit: 5, windowMs: 1_000 }
+    // On the real clock, so this sweep removes only windows that a Node runtime sweeping the same
+    // database in a parallel suite would remove as well, and theirs cannot reach the live row.
+    const now = Date.now()
+    const rolledPolicy = { limit: 5, windowMs: 1_000 }
+    const livePolicy = { limit: 5, windowMs: 3_600_000 }
     const rolled = `sweep|rolled-${crypto.randomUUID()}`
     const live = `sweep|live-${crypto.randomUUID()}`
-    await store.consume(rolled, policy, now - 5_000)
-    await store.consume(live, policy, now)
-    expect(await store.sweep(now, 10_000)).toBeGreaterThanOrEqual(1)
-    expect(await store.inspect(live, now)).toEqual({ count: 1, resetAt: now + 1_000 })
-    expect((await store.consume(rolled, policy, now - 4_999)).count).toBe(1)
+    await store.consume(rolled, rolledPolicy, now - 5_000)
+    await store.consume(live, livePolicy, now)
+    // A parallel sweep may delete the rolled row first, so the count this sweep returns is not
+    // asserted; the consume below shows the row is gone either way.
+    await store.sweep(now, 10_000)
+    expect(await store.inspect(live, now)).toEqual({ count: 1, resetAt: now + 3_600_000 })
+    expect((await store.consume(rolled, rolledPolicy, now - 4_999)).count).toBe(1)
   })
 
   async function matchWithPlayers(maxPlayers = 2, playerCount = 1, start = true) {

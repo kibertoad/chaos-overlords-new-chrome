@@ -40,7 +40,7 @@ type RateLimitVar =
  * It has to be cached: without the `RATE_LIMITS` binding a rate limiter counts requests within a
  * window in the isolate, so building a fresh one per request would reset the window every time and
  * limit nothing. The router and the D1-backed kernel are per-isolate state for the same reason a
- * server builds them once at startup — there is nothing request-specific in either.
+ * server builds them once at startup: there is nothing request-specific in either.
  *
  * A module-scoped singleton rather than a `WeakMap` keyed on `env`: the bindings object being the
  * same identity on every request is not a documented guarantee, and if it ever stopped being one the

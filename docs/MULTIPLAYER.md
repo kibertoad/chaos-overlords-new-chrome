@@ -800,8 +800,9 @@ dock a player plans against the dock the sealed turn grants.
 - **One server process.** The Node runtime fans events out in memory, so two instances behind a
   load balancer would each wake only their own subscribers: a client on instance A would sit silent
   through everything written on instance B, with no error to show for it. Rate limits do not
-  fragment: on Postgres every instance counts in one shared table. Postgres is offered for durability and operational familiarity, not as a
-  way to scale out; running more than one instance needs a shared fan-out (the Cloudflare runtime's
+  fragment: on Postgres every instance counts in one shared table. Postgres is offered for
+  durability and operational familiarity, not as a way to scale out; running more than one
+  instance needs a shared fan-out (the Cloudflare runtime's
   Durable Object is the worked example) before it is safe. The `GET /events?after=` fallback is the
   one path that does work under it, because it reads the log directly.
 - **Late joining is offered, and narrowly.** A host may set `allowLateJoin`, and once the match

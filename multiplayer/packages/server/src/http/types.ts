@@ -21,7 +21,7 @@ export interface AppEnv {
      */
     bugReportJournalBudget?: () => Promise<(() => Promise<void>) | null>
     /**
-     * Spends one unit of the process-wide match-creation budget, or throws the 429 when it is gone.
+     * Spends one unit of the deployment-wide match-creation budget, or throws the 429 when it is gone.
      * Set by `matchCreationRateLimited`, called by the create handler once the body has validated;
      * absent everywhere else.
      */

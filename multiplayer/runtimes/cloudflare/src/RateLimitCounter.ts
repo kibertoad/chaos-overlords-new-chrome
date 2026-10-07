@@ -46,7 +46,11 @@ export class RateLimitCounter {
   private current: StoredWindow | undefined
   /** Whether `current` is also in storage, so a refund knows to write it back. */
   private persisted = false
-  private loaded = false
+  /**
+   * The one read of storage, shared by every call that arrives before it settles, so a call that
+   * reads late never overwrites a window another call has already counted in.
+   */
+  private loading: Promise<void> | undefined
 
   constructor(
     private readonly state: DurableObjectState,
@@ -63,10 +67,13 @@ export class RateLimitCounter {
     await this.load()
     if (path === PATHS.consume && body.policy && typeof body.now === 'number') {
       const window = consumeWindow(this.current, body.policy, body.now)
-      await this.save(
-        { windowStart: window.windowStart, resetAt: window.resetAt, count: window.count },
-        body.policy.windowMs > MEMORY_ONLY_WINDOW_MS,
-      )
+      // A refused call leaves the window as it was, so there is nothing to write.
+      if (window.allowed) {
+        await this.save(
+          { windowStart: window.windowStart, resetAt: window.resetAt, count: window.count },
+          body.policy.windowMs > MEMORY_ONLY_WINDOW_MS,
+        )
+      }
       return Response.json(window)
     }
     if (path === PATHS.inspect && typeof body.now === 'number') {
@@ -96,11 +103,19 @@ export class RateLimitCounter {
     await this.state.storage.deleteAll()
   }
 
-  private async load(): Promise<void> {
-    if (this.loaded) return
-    this.current = (await this.state.storage.get<StoredWindow>(WINDOW_KEY)) ?? undefined
-    this.persisted = this.current !== undefined
-    this.loaded = true
+  private load(): Promise<void> {
+    this.loading ??= this.state.storage.get<StoredWindow>(WINDOW_KEY).then(
+      (stored) => {
+        this.current = stored ?? undefined
+        this.persisted = this.current !== undefined
+      },
+      (error: unknown) => {
+        // A failed read is retried by the next call rather than remembered.
+        this.loading = undefined
+        throw error
+      },
+    )
+    return this.loading
   }
 
   private async save(window: StoredWindow, persist: boolean): Promise<void> {

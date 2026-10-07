@@ -269,12 +269,6 @@ describe('server app over in-memory storage', () => {
     expect(otherClient.status).toBe(404)
   })
 
-  /**
-   * The default budget has to cover ordinary play from one address, which is often several people
-   * behind one NAT. Each lobby costs a handshake and a create, so four hosts each opening and
-   * cancelling ten lobbies inside a minute is eighty calls; the old budget of thirty refused the
-   * fourth lobby a single player opened and cancelled while a friend on the same network did too.
-   */
   it('holds one budget across instances that share a rate limit store', async () => {
     const store = new MemoryRateLimitStore()
     const limits = { anonymous: { limit: 2, windowMs: 60_000 }, sharedStore: store }
@@ -294,6 +288,12 @@ describe('server app over in-memory storage', () => {
     expect((await join(1)).status).toBe(429)
   })
 
+  /**
+   * The default budget has to cover ordinary play from one address, which is often several people
+   * behind one NAT. Each lobby costs a handshake and a create, so four hosts each opening and
+   * cancelling ten lobbies inside a minute is eighty calls; the old budget of thirty refused the
+   * fourth lobby a single player opened and cancelled while a friend on the same network did too.
+   */
   it('lets several hosts on one address open and cancel lobbies within the default budget', async () => {
     const limited = build(
       {},

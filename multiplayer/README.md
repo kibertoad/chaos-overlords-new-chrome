@@ -170,11 +170,12 @@ the sweeper and the retention sweeps are written for.
 Every budget, the per-player ones and the day-long journal budget included, is counted in the
 `RATE_LIMITS` objects, so it holds however many isolates and locations a caller's requests reach.
 Each object holds one caller's window for one budget and lives near that caller's first request.
-A rate-limited request costs one Durable Object request on top of the Worker's, and a window longer
-than a minute also costs a storage write and an alarm. Cloudflare's own rate limiting binding is
-not used: it counts per Cloudflare location, only over ten or sixty seconds, and answers only yes or
-no, so it cannot give `Retry-After`, peek at the match-creation budget, refund a journal reservation
-or count a day. A counter that fails or takes longer than two seconds lets the request through and
+Every check, spend or refund of a budget costs one Durable Object request on top of the Worker's:
+one for an authenticated call, three for a match creation (the address budget, then a peek and a
+spend of the creation budget), and a window longer than a minute also costs a storage write and an
+alarm. Cloudflare's own rate limiting binding is not used: it counts per Cloudflare location, only
+over ten or sixty seconds, and answers only yes or no, so it cannot give `Retry-After`, peek at the
+match-creation budget, refund a journal reservation or count a day. A counter that fails or takes longer than two seconds lets the request through and
 logs `rate limit store failed` at most once a minute. Cloudflare WAF rate limiting rules in front of
 the Worker remain a sensible extra layer against volumetric floods, but nothing here depends on them.
 

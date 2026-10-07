@@ -92,7 +92,7 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
   // The handler reserves one unit only for a validated report carrying a journal, then releases it
   // if the journal fails its digest check or is omitted by the storage budget.
   c.set('bugReportJournalBudget', () =>
-    container.rateLimiters.bugReportState.reserve(`bugReportState:${rateLimitKey(key)}`),
+    container.rateLimiters.bugReportState.reserve(rateLimitKey(key)),
   )
   await next()
 }
@@ -109,7 +109,7 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
  */
 export const matchCreationRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
   const limiters = c.get('container').rateLimiters
-  const retryAfter = await limiters.matchCreation.peek(`matchCreation:${MATCH_CREATION_KEY}`)
+  const retryAfter = await limiters.matchCreation.peek(MATCH_CREATION_KEY)
   if (retryAfter !== null) refuse(c, retryAfter)
   c.set('spendMatchCreation', () => enforce(limiters, 'matchCreation', MATCH_CREATION_KEY, c))
   await next()
@@ -222,9 +222,9 @@ async function enforce(
   key: string,
   c: Context<AppEnv>,
 ): Promise<void> {
-  const retryAfter = await limiters[tier].take(
-    `${tier}:${IDENTITY_TIERS.has(tier) ? key : rateLimitKey(key)}`,
-  )
+  // No tier prefix: each tier has its own limiter, and a shared store already files a key under
+  // its budget's name.
+  const retryAfter = await limiters[tier].take(IDENTITY_TIERS.has(tier) ? key : rateLimitKey(key))
   if (retryAfter !== null) refuse(c, retryAfter)
 }
 
