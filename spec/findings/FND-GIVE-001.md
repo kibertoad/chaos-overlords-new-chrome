@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00445A4F..0x00447ADA
+    address: 0x00445A4F..0x00447ADB
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00494838..0x0049484B
@@ -20,7 +20,7 @@ environment: null
 
 ## Observation
 
-`fn_00445A4F` occupies `0x00445A4F..0x00447ADA` (8,290 bytes, FND-EXE-004). Its
+`fn_00445A4F` occupies `0x00445A4F..0x00447ADB` (8,290 bytes, FND-EXE-004). Its
 only caller is the gang command handler `fn_00414D8C` at `0x00415794`, which
 calls it when the chosen action is 6 and cancels the action when it returns 0.
 It takes a player slot and a roster slot and returns 1 when it stored an order.

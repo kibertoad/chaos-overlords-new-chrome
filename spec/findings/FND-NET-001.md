@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0046BA84..0x0046CF37
+    address: 0x0046BA84..0x0046CF38
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00498980..0x0049898F
@@ -20,7 +20,7 @@ environment: null
 
 ## Observation
 
-`fn_0046BA84` occupies `0x0046BA84..0x0046CF37` (5,157 bytes, FND-EXE-004). It
+`fn_0046BA84` occupies `0x0046BA84..0x0046CF38` (5,157 bytes, FND-EXE-004). It
 takes no arguments. It is called twice from the event reader `fn_00462579`,
 once from `fn_00456F80` and once from `fn_004677F0`, so incoming packets are
 handled whenever a screen reads its next event.

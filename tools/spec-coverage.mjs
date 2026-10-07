@@ -14,13 +14,13 @@
 //
 // The list of game functions and their extents comes from the table in FND-EXE-004. An entry
 // describes a function when it names it (`fn_0046E766`), writes an eight-digit address inside its
-// body, or writes a range `0x...A..0x...B` of game code that overlaps its body. A range counts as
-// game code when both its ends lie inside game functions; a wider extent, such as the whole image,
-// cites nothing. A function that begins exactly at a range's end is not counted, since such a range
-// stops where the function starts. A constant written as an eight-digit hexadecimal number is read
-// as an address. FND-EXE-004 itself is left out, since it lists every function, and so is an entry
-// whose locations all name another file, such as a library the game ships, since its addresses
-// are that file's.
+// body, or writes a range `0x...A..0x...B` of game code that overlaps its body. Ranges are
+// half-open, so B is one past the range's last byte. A range counts as game code when its first and
+// last bytes lie inside game functions; a wider extent, such as the whole image, cites nothing. A
+// function that begins at B is not counted, since the range stops where it starts. A constant
+// written as an eight-digit hexadecimal number is read as an address. FND-EXE-004 itself is left
+// out, since it lists every function, and so is an entry whose locations all name another file,
+// such as a library the game ships, since its addresses are that file's.
 //
 // The inventory is a tab-separated file with the columns entry, end, bytes, callers, callees,
 // imports (LIBRARY::name), reads and writes. It stays outside the repository like every other
@@ -105,14 +105,13 @@ for (const e of entries) {
     const f = byEntry.get(parseInt(m[1], 16)) ?? containing(parseInt(m[1], 16));
     if (f) f.citedBy.add(e.id);
   }
-  // A range of game code cites every function it overlaps, except one that begins exactly at its
-  // end; a range whose ends are not both in game functions cites nothing.
+  // A half-open range of game code cites every function it overlaps; a range whose first and last
+  // bytes are not both in game functions cites nothing. f.end is a function's last byte.
   for (const m of e.text.matchAll(/\b0x([0-9A-Fa-f]{8})`?\s*\.\.\s*`?0x([0-9A-Fa-f]{8})\b/g)) {
     const start = parseInt(m[1], 16);
     const end = parseInt(m[2], 16);
-    if (!containing(start) || !containing(end)) continue;
-    for (const f of functions)
-      if (f.entry <= end && f.end >= start && !(f.entry === end && start < end)) f.citedBy.add(e.id);
+    if (end <= start || !containing(start) || !containing(end - 1)) continue;
+    for (const f of functions) if (f.entry < end && f.end >= start) f.citedBy.add(e.id);
   }
   // A range's end is handled above; every other address cites the function it lies in.
   for (const m of e.text.matchAll(/(?<!\.\.`?\s*)\b(?:0x|g_)([0-9A-Fa-f]{8})\b/g)) {
@@ -136,9 +135,9 @@ const lines = [
   "script again overwrites it.",
   "",
   "An entry is listed against a function when it names the function, gives an address inside its",
-  "body, or gives a range `0x...A..0x...B` of game code that overlaps its body. A range whose ends are",
-  "not both inside game functions is not listed, and a range whose end is the entry of a function is",
-  "not listed against that function.",
+  "body, or gives a range `0x...A..0x...B` of game code that overlaps its body. Ranges are half-open:",
+  "B is one past the last byte. A range whose first and last bytes are not both inside game functions",
+  "is not listed.",
   "",
 ];
 const cited = functions.filter((f) => f.citedBy.size > 0);
@@ -148,7 +147,7 @@ lines.push("| Function | Range | Bytes | Callers | Cited by |");
 lines.push("|---|---|---|---|---|");
 for (const f of functions) {
   const by = [...f.citedBy].sort(idOrder).join(", ");
-  lines.push(`| \`${fnName(f.entry)}\` | \`${hex(f.entry)}..${hex(f.end)}\` | ${f.bytes} | ${f.callers} | ${by || "None"} |`);
+  lines.push(`| \`${fnName(f.entry)}\` | \`${hex(f.entry)}..${hex(f.end + 1)}\` | ${f.bytes} | ${f.callers} | ${by || "None"} |`);
 }
 lines.push("");
 const index = lines.join("\n");
