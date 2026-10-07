@@ -4,7 +4,7 @@ title: Family-1 computer gangs heal, raise Chaos, snitch, take sectors or wander
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [EXP-TURN-023, EXP-TURN-024, FND-AI-072, FND-AI-020, FND-AI-021, FND-AI-004, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-057]
+evidence: [EXP-TURN-023, EXP-TURN-024, FND-AI-072, FND-AI-020, FND-AI-021, FND-AI-004, FND-AI-028, FND-EXE-004, FND-AI-042, FND-AI-057, EXP-TURN-007, EXP-TURN-017, EXP-TURN-018, EXP-TURN-049, EXP-TURN-091, EXP-TURN-105, EXP-COMBAT-003]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, FMT-STATE-001, FMT-STATE-002]
@@ -142,6 +142,9 @@ the handler writes stores -1. The scenario-0 Terminate also sets
 After Attack, Hide or Move the strength test's attacker is the record in the
 roster slot numbered like the gang's sector (BUG-AI-007).
 
+A weapon upgrade whose cooldown has not run out does not stop the armor test,
+so the gang can buy armor while a better weapon is on offer.
+
 No recorded family-1 branch heals a gang at Force 9. After None or Chaos the
 Heal gate is Force below 8, and after Heal it is Force below 9. A computer
 player's gang never commits a crime in a sector of player 0 at Goon, because
@@ -165,7 +168,32 @@ None known.
 
 ## Open questions
 
-- Whether the weapon choice is taken when its cooldown blocks it, so that
-  armor is not tried, is not recorded; the procedure tries armor when the
-  weapon is missing or its cooldown has not run out.
-- The Tolerance byte read is taken to be `tolerance` at sector record +5.
+- Reach was measured over every replayed run (DECISIONS.md, 2026-10-06). The
+  runs reach, after None or Chaos, the Heal and the Move, with a gang at
+  Force 8 and one whose effective Heal is below -3 (EXP-TURN-007); after
+  Heal, the Heal (Force 8 included), the Control and the Move, and a gang at
+  Force 9 that does not heal; after Control, Equip or Snitch, the weapon and
+  the armor upgrade, an upgrade that finds nothing, both crime tests (the
+  human owner at Crime Lord in EXP-TURN-024 and EXP-COMBAT-003, the Goon test
+  in EXP-TURN-023), Chaos at Tolerance 3 and Snitch at 4, a crime refused for
+  cash below 50, and the Move; after Attack or Move, the weight-10 draw that
+  attacks, with either kind (EXP-TURN-017, EXP-TURN-024), and the one that
+  fails its strength test (EXP-TURN-091), the Move out of the player's own
+  sector, and the Heal, Control, Snitch through a hostile human owner and
+  Move of the fallback; and the Greed Terminate (EXP-TURN-105).
+- The runs settle two readings. A weapon upgrade whose cooldown has not run
+  out lets the armor upgrade be tried: 28 runs buy armor in that case
+  (EXP-TURN-018, EXP-TURN-049 among them), and skipping the armor makes all
+  28 replays diverge. The crime choice compares the refreshed `tolerance`
+  (sector record +5): comparing `base_tolerance` instead makes EXP-TURN-023
+  diverge.
+- No run reaches these cases, which rest on FND-AI-020 and FND-AI-057: after
+  None or Chaos, the Move under a Crackdown and the Chaos after an older
+  Snitch; after Control, Equip or Snitch, cash of exactly 50 passing the
+  crime gate, the Goon test passing for a human owner in slots 1 to 5, a
+  sector of player 0 at Goon (BUG-AI-004), an owner query of -2 under police
+  presence, and a neutral sector counted as human-owned; previous Hide; after
+  Attack, Hide or Move, the Snitch gate passing through Crime Lord alone and
+  passing with cash of 50 or less; and a previous Bribe, Give, Influence,
+  Research, Sell or Terminate, which family 1 never plans itself. Until runs
+  reach them, the entry stays `supported`.
