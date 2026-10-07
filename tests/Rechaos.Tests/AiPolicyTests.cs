@@ -170,14 +170,11 @@ public sealed class AiPolicyTests
         }
     }
 
-    // DEV-AI-003, DEV-AI-007 and DEV-AI-008: MatchDeviations.Defaults is the Default column of
-    // DEVIATIONS.md, and an online match whose host keeps the original policy starts from it.
+    // DEV-AI-003, DEV-AI-007 and DEV-AI-008: MatchDeviations.Defaults follows the Default item of
+    // each entry in deviations/, and an online match whose host keeps the original policy starts from it.
     [Fact]
     public void DeviationDefaultsFollowTheLedgerAndStartOnlineMatches()
     {
-        var ledger = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "DEVIATIONS.md"))
-            .Replace("\r\n", "\n");
-
         Assert.Equal(DefaultIsOn("DEV-AI-003") ? AiPolicyMode.Advanced : AiPolicyMode.Original,
             MatchDeviations.Defaults.AiPolicy);
         Assert.Equal(DefaultIsOn("DEV-AI-007"), MatchDeviations.Defaults.ComputerMovesToNeighboursOnly);
@@ -190,12 +187,10 @@ public sealed class AiPolicyTests
 
         bool DefaultIsOn(string id)
         {
-            var start = ledger.IndexOf($"\n## {id}\n", StringComparison.Ordinal);
-            Assert.True(start >= 0, $"{id} is not in DEVIATIONS.md.");
-            var entry = ledger[(start + 1)..];
-            var next = entry.IndexOf("\n## ", StringComparison.Ordinal);
+            var path = Path.Combine(AppContext.BaseDirectory, "deviations", $"{id}.md");
+            Assert.True(File.Exists(path), $"{id} is not in deviations/.");
             var line = Assert.Single(
-                (next >= 0 ? entry[..next] : entry).Split('\n'),
+                File.ReadAllText(path).Replace("\r\n", "\n").Split('\n'),
                 text => text.StartsWith("- Default: ", StringComparison.Ordinal));
             return line["- Default: ".Length..].Trim() switch
             {
