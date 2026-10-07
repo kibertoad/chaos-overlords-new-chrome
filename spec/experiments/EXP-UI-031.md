@@ -63,8 +63,7 @@ there.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` replays the run, draws its
+A test of the rebuild replays the run, draws its
 endpoint at each shot's marker frame and pump counter, and compares every
 element of SCR-UI-003 with the shot. No element of any shot differs: outside
 the masks of DEV-UI-006 (the cash row) and DEV-UI-023 (the key line) every

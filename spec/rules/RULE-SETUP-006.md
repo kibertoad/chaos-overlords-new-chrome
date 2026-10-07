@@ -4,7 +4,7 @@ title: A player named with either extra-gang modifier starts with five more Forc
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-015, FND-SETUP-004, FND-CITY-003, EXP-SETUP-004]
+evidence: [FND-SETUP-015, FND-SETUP-004, FND-CITY-003, EXP-SETUP-004, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-001, FMT-STATE-001]

@@ -6,7 +6,7 @@ At that point 117 rows were `complete`, 85 `partial` and 20 `missing`, no row li
 compares the rebuild with the original, and `spec/experiments/` held no `EXP-` entry.
 
 Each step names the spec entries it closes. A step is done when the code cites those IDs, the
-`PARITY.md` rows are updated, `node tools/check-spec.mjs --check` passes and the fast gate
+`parity/` rows are updated, `node tools/check-documentation.mjs --check` passes and the fast gate
 (`tools/Invoke-Validation.ps1`) is green. Delete a step from this file when it is done, as the
 validation plans do with their items.
 
