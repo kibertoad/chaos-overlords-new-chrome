@@ -4,7 +4,7 @@ title: A fresh local setup selects the stored scenario preference, which is Gree
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-013, FND-OBJECTIVE-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG, EXP-UI-015]
+evidence: [FND-SETUP-013, FND-OBJECTIVE-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG, EXP-UI-015, FND-AI-005, FND-OBJECTIVE-006, FND-PLATFORM-003, FND-RESEARCH-002, FND-SETUP-018, FND-TURN-003, FND-UI-033]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001]

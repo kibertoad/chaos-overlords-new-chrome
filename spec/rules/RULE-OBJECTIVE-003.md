@@ -4,7 +4,7 @@ title: At the end of resolution, a player without the Right Hands in Eliminate l
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-003, SRC-MANUAL-GOG, EXP-TURN-017, EXP-TURN-022]
+evidence: [FND-TURN-003, SRC-MANUAL-GOG, EXP-TURN-017, EXP-TURN-022, FND-CONTROL-001, FND-HIRE-002, FND-OBJECTIVE-003, FND-PLATFORM-003, FND-STATE-004, FND-UI-035, FND-UI-036]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004]
