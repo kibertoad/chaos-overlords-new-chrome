@@ -2272,6 +2272,7 @@ None.
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | body |
 | [EXP-UI-031](../experiments/EXP-UI-031.md) | body |
 | [RULE-UI-012](../rules/RULE-UI-012.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
 
 ## EXP-UI-002
 
@@ -2511,7 +2512,7 @@ None.
 | Cited by | In |
 |---|---|
 | [FND-UI-017](../findings/FND-UI-017.md) | body |
-| [SCR-UI-003](../screens/SCR-UI-003.md) | evidence |
+| [SCR-UI-003](../screens/SCR-UI-003.md) | body, evidence |
 
 ## EXP-VIDEO-001
 
