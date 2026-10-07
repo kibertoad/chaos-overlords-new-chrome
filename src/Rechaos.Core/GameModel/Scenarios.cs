@@ -26,7 +26,6 @@ public readonly record struct DominanceWeights(int Cash, int Support, int Contro
 
 public sealed record ScenarioDefinition(
     ScenarioId Id,
-    string Name,
     bool IsTimed,
     string Objective);
 
@@ -38,16 +37,16 @@ public static class ScenarioCatalog
 {
     public static readonly IReadOnlyList<ScenarioDefinition> All =
     [
-        new(ScenarioId.Greed, "GREED", true, "Have the most cash when time expires."),
-        new(ScenarioId.Power, "POWER", true, "Control the most sectors when time expires."),
-        new(ScenarioId.Acceptance, "ACCEPTANCE", true, "Have the most support when time expires."),
-        new(ScenarioId.Dominance, "DOMINANCE", true, "Lead the weighted cash, support, and sector score."),
-        new(ScenarioId.KillEmAll, "KILL 'EM ALL", false, "Be the sole surviving Overlord."),
-        new(ScenarioId.Big40, "BIG 40", false, "Be first to control 40 sectors."),
-        new(ScenarioId.Eliminate, "ELIMINATE", false, "Eliminate every opposing Right Hands gang."),
-        new(ScenarioId.Siege, "SIEGE", false, "Control all six important starting sectors simultaneously."),
-        new(ScenarioId.BigMan, "BIG MAN", false, "Accumulate 40 points from the four central sectors."),
-        new(ScenarioId.Armageddon, "ARMAGEDDON", false, "Control all 64 sectors.")
+        new(ScenarioId.Greed, true, "Have the most cash when time expires."),
+        new(ScenarioId.Power, true, "Control the most sectors when time expires."),
+        new(ScenarioId.Acceptance, true, "Have the most support when time expires."),
+        new(ScenarioId.Dominance, true, "Lead the weighted cash, support, and sector score."),
+        new(ScenarioId.KillEmAll, false, "Be the sole surviving Overlord."),
+        new(ScenarioId.Big40, false, "Be first to control 40 sectors."),
+        new(ScenarioId.Eliminate, false, "Eliminate every opposing Right Hands gang."),
+        new(ScenarioId.Siege, false, "Control all six important starting sectors simultaneously."),
+        new(ScenarioId.BigMan, false, "Accumulate 40 points from the four central sectors."),
+        new(ScenarioId.Armageddon, false, "Control all 64 sectors.")
     ];
 
     public static ScenarioDefinition Get(ScenarioId id) => All.Single(scenario => scenario.Id == id);
