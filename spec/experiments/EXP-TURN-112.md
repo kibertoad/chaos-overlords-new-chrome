@@ -42,9 +42,16 @@ stored scores of players 1 to 5 are 1, 1, 1, 1 and 2.
 
 In the resolution after the 96th Done press, player 5 orders two attacks on
 player 3's gangs in sector 34 and five attacks on the human's hiding gang in
-sector 12. Its gang in roster slot 19 Influences site 2 of sector 25 in the
-instant phase, a pool of 9 dice (RULE-INFLUENCE-001); FND-AI-081 traces the
-choice to player 5's cash after an Equip of the 94th turn.
+sector 12. The original rolls 49 dice at `0x00475FBB` before the first Hide
+test at `0x00473ABC`. RULE-ATTACK-001 gives 40 of them: an attack of 14 dice,
+a retaliation of 7 and an attack of 19, the second target being unable to
+strike back. With the thresholds of a Goon attacker, those pools give the
+damage the end state shows on all four gangs. The other 9 dice are the
+Influence of player 5's gang in roster slot 19 on site 2 of sector 25 in the
+instant phase, a pool of 9 (RULE-INFLUENCE-001); FND-AI-081 traces the choice
+to player 5's cash after an Equip of the 94th turn. They add nothing to any
+player's `damage_inflicted`: player 5's grows by 10, which the two attacks and
+the one attack on the human that passes its Hide test account for.
 
 ## Results
 

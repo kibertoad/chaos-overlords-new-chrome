@@ -67,6 +67,10 @@ report. Makes no random draw.
   later Sells, the Chaos payout and the next Upkeep have not.
 - Nothing checked cash when the order was given (FND-EQUIP-006), so an order
   the player cannot afford reaches this point and fails here.
+- A computer player's Equips are tested the same way. Its planning sets no
+  cash aside for them, so every Equip it planned reaches this point, and one
+  planned by a gang that dies in combat before the pass costs nothing and
+  leaves its cash to the Equips after it [FND-AI-081].
 - The replaced item is not sold or returned.
 - A gift delivered to this gang later in the same pass replaces what it bought
   here (RULE-EQUIP-002).

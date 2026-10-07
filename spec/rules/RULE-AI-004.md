@@ -46,7 +46,9 @@ define turns_remaining():
     return turn_limit - elapsed_turns
 
 # Write a planned action into the planning record and into the gang record,
-# with only the target bytes the action uses (FND-AI-074)
+# with only the target bytes the action uses (FND-AI-074). Nothing between
+# planning and resolution drops a planned action for cash: an Equip is tested
+# against the player's cash when the transaction pass reaches it (FND-AI-081)
 define plan(idx, action, t1, t2):
     let r = planning_records[idx]
     let g = gangs[idx]

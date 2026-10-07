@@ -29,6 +29,24 @@ public sealed class AiPolicyTests
         Assert.True(CommandValidator.Validate(advanced, command).IsValid);
     }
 
+    // FND-AI-081: the original plan sets no cash aside, so it can cost more than the player
+    // holds. The fallback budget is then 0, which still lets an idle gang take a free action.
+    [Fact]
+    public void AdvancedRecoversAnIdleGangWhenTheOriginalPlanOverspends()
+    {
+        var match = IdleMatch(AiPolicyMode.Advanced, gangCount: 2);
+        var player = new PlayerId(0);
+        match.Players[0].Cash = 0;
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Bribe);
+
+        var commands = AiPolicyPlanner.Plan(match, player);
+
+        Assert.Equal(GangAction.Bribe, Assert.Single(commands,
+            command => command.Gang == new GangId(10)).Action);
+        Assert.Equal(GangAction.Control, Assert.Single(commands,
+            command => command.Gang == new GangId(11)).Action);
+    }
+
     [Fact]
     public void AdvancedExpertExpandsHealthyIdleGangButCriminalKeepsFallbackOrder()
     {

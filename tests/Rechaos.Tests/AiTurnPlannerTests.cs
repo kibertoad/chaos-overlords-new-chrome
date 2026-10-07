@@ -69,6 +69,28 @@ public sealed partial class AiTurnPlannerTests
             Assert.Equal(GangAction.Equip, command.Action);
             Assert.Equal(CommandTarget.Item(itemId), command.Target);
         });
+
+        // RULE-EQUIP-001: the first Equip spends all the cash, so the transaction pass refuses
+        // the second one and reports it, as it would a human's.
+        Assert.All(commands, command => Assert.True(match.Submit(command).Accepted));
+        match.FinishCommand(playerId);
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase();
+        match.FinishExecutionPhase();
+        Assert.Equal(ExecutionPhase.Transaction, match.Coordinator.ExecutionPhase);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(0, player.Cash);
+        var buyer = match.FindGang(new GangId(30))!;
+        Assert.Equal((short?)itemId, buyer.WeaponItemId ?? buyer.ArmorItemId ?? buyer.MiscellaneousItemId);
+        var equips = match.LastPhaseResolutions
+            .Where(result => result.Command.Action == GangAction.Equip)
+            .ToArray();
+        Assert.Equal([new GangId(30), new GangId(11)], equips.Select(result => result.Command.Gang));
+        Assert.NotEqual(CommandResolutionCode.InsufficientCash, equips[0].Code);
+        Assert.Equal(CommandResolutionCode.InsufficientCash, equips[1].Code);
+        Assert.Equal(GameEventKind.CommandFailed, equips[1].Event!.Kind);
     }
 
     [Fact]

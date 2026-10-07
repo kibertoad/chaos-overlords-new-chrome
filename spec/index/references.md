@@ -3894,8 +3894,8 @@ None.
 |---|---|
 | [EXP-TURN-112](../experiments/EXP-TURN-112.md) | body |
 | [EXP-TURN-113](../experiments/EXP-TURN-113.md) | body |
-| [RULE-AI-004](../rules/RULE-AI-004.md) | evidence |
-| [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | evidence |
+| [RULE-AI-004](../rules/RULE-AI-004.md) | body, evidence |
+| [RULE-EQUIP-001](../rules/RULE-EQUIP-001.md) | body, evidence |
 
 ## FND-ASSET-001
 
@@ -8450,6 +8450,7 @@ None.
 | [EXP-TURN-011](../experiments/EXP-TURN-011.md) | body |
 | [EXP-TURN-017](../experiments/EXP-TURN-017.md) | body |
 | [EXP-TURN-029](../experiments/EXP-TURN-029.md) | body |
+| [EXP-TURN-112](../experiments/EXP-TURN-112.md) | body |
 | [RULE-AI-016](../rules/RULE-AI-016.md) | body, related |
 | [RULE-ATTACK-002](../rules/RULE-ATTACK-002.md) | body |
 | [RULE-COMBAT-001](../rules/RULE-COMBAT-001.md) | body, related |
