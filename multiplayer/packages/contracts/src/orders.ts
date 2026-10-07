@@ -219,7 +219,7 @@ export const dismissNotificationOpSchema = strictObject({
 export const sendComlinkMessageOpSchema = strictObject({
   op: literal('sendComlinkMessage'),
   player: slotSchema,
-  letters: pipe(array(comlinkLetterSchema), minLength(1), maxLength(5)),
+  letters: pipe(array(comlinkLetterSchema), minLength(1), maxLength(LIMITS.maxPlayers - 1)),
 })
 
 /** `MatchState.MarkComlinkRead(player, sequence)`: RULE-COMLINK-005, applied when the turn seals. */

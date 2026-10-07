@@ -422,9 +422,14 @@ export const comlinkPublicKeySchema = pipe(
  * message has the same length whatever its text, so the length tells the server and the other
  * seats nothing. Only the recipient's client can open it; see docs/MULTIPLAYER.md.
  */
+const comlinkEnvelopeBytes = 64 + LIMITS.comlinkMessageLength + 16
+
 export const comlinkEnvelopeSchema = pipe(
   string(),
-  regex(/^[A-Za-z0-9+/]{320}$/, 'expected a 240-byte base64 Comlink envelope'),
+  regex(
+    new RegExp(`^[A-Za-z0-9+/]{${(comlinkEnvelopeBytes / 3) * 4}}$`),
+    `expected a ${comlinkEnvelopeBytes}-byte base64 Comlink envelope`,
+  ),
 )
 
 /**

@@ -231,6 +231,11 @@ public sealed class SpeculativeTurn
     /// <see cref="ComlinkValidationCode.RecipientUnreachable"/>.
     /// </para>
     /// <para>
+    /// The core checks only the length and the blank draft, while a message holds only the
+    /// characters the Send panel types, space to <c>Z</c> (RULE-COMLINK-006). Any other character
+    /// throws before the copy changes, whether or not a key is held to seal it with.
+    /// </para>
+    /// <para>
     /// The copy stores the sealed message in each recipient's inbox there and then, which nobody
     /// sees: it reaches the real inboxes when the turn seals.
     /// </para>
@@ -243,6 +248,11 @@ public sealed class SpeculativeTurn
     {
         ArgumentNullException.ThrowIfNull(recipients);
         ArgumentNullException.ThrowIfNull(text);
+        if (!ComlinkSeal.IsComlinkCharacters(text))
+        {
+            throw new ArgumentException(
+                "A Comlink message holds only the characters space to Z.", nameof(text));
+        }
         var check = State.CheckComlinkMessage(Player, recipients, text);
         if (!check.Accepted || check.Recipients.Count == 0) return check;
         var letters = Comlink?.Seal(State.Coordinator.Turn, Player, check.Recipients, text);

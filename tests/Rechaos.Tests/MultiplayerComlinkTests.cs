@@ -166,6 +166,26 @@ public sealed class MultiplayerComlinkTests
     }
 
     /// <summary>
+    /// RULE-COMLINK-006: text the Send panel cannot type is refused before it is sealed, even with
+    /// no keyring to seal it with, and never reaches the copy or the orders.
+    /// </summary>
+    [Theory]
+    [InlineData("lower case")]
+    [InlineData("TAB\tHERE")]
+    [InlineData("CAFÉ")]
+    [InlineData("[BRACKET]")]
+    public void TextTheWireRefusesIsNeitherSentNorRecorded(string text)
+    {
+        var (replay, definitions) = NewClient();
+        var ada = SpeculativeTurn.For(replay.State, definitions, 0);
+
+        Assert.Throws<ArgumentException>(() => ada.SendComlinkMessage([Grace], text));
+
+        Assert.Empty(ada.Build().Ops);
+        Assert.Equal(0, ada.State.ComlinkFor(Grace).Count);
+    }
+
+    /// <summary>
     /// A document a peer could have written but the rules refuse is refused the same way on every
     /// client: a message to a computer player, to oneself or to one seat twice, a read mark on a
     /// message nobody has. The hash says so.

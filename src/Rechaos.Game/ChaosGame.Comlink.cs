@@ -16,6 +16,14 @@ public sealed partial class ChaosGame
     private void OpenComlinkView(ClientScreen returnScreen)
     {
         if (_state is null || PlanningViewer is not { } playerId) return;
+        // Online, once the turn is ended no read mark can go into it: a message viewed now would
+        // stay unread and come back as the first unread one next turn. Hot-seat play never shows
+        // the panel to a player whose turn is over either. The final view stays readable.
+        if (_session is not null && _actions is null && _finalViewPlayer is null)
+        {
+            RejectInput(OnlinePlanningClosed);
+            return;
+        }
         _managementReturnScreen = returnScreen;
         var inbox = _state.ComlinkFor(playerId);
         if (inbox.Count == 0)
@@ -53,6 +61,13 @@ public sealed partial class ChaosGame
     private void OpenComlinkSend(ClientScreen returnScreen)
     {
         if (_state is null || PlanningViewer is not { } sender) return;
+        // Online, a turn the player has ended takes the planning handle away, so a message typed
+        // now would have no order document to go into and Send would do nothing.
+        if (_session is not null && _actions is null)
+        {
+            RejectInput(OnlinePlanningClosed);
+            return;
+        }
         // RULE-COMLINK-002: with no other human still in the match the panel does not open.
         if (!_state.HasComlinkRecipient(sender))
         {

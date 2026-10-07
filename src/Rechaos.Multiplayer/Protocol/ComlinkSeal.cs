@@ -152,8 +152,12 @@ public static class ComlinkSeal
     /// </summary>
     public static bool IsSendable(string text) =>
         text.Length is > 0 and <= TextBytes
-        && text.All(character => character is >= ' ' and <= 'Z')
+        && IsComlinkCharacters(text)
         && !MatchState.IsBlankComlinkDraft(text);
+
+    /// <summary>Whether every character is one the Send panel types, space to <c>Z</c> (RULE-COMLINK-006).</summary>
+    public static bool IsComlinkCharacters(string text) =>
+        text.All(character => character is >= ' ' and <= 'Z');
 
     /// <summary>The AES-GCM cipher and nonce one envelope is sealed under.</summary>
     /// <remarks>
