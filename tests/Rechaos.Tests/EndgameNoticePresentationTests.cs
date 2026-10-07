@@ -102,7 +102,7 @@ public sealed class EndgameNoticePresentationTests
                 PlayerController.Human, index == 0 ? humanPortrait : checked((short)index)))
             .ToArray();
         var state = OriginalMatchFactory.Create(BundledOriginalData.Load(),
-            new MatchSetup(scenario, GameDuration.SixMonths, 404, setups,
+            new MatchSetup(scenario, GameDuration.SixMonths, 404, setups, MatchDeviations.Original,
                 allowSparsePlayerIds: humanCount < MatchLimits.PlayerCount));
         while (state.Outcome is null)
         {
@@ -125,7 +125,7 @@ public sealed class EndgameNoticePresentationTests
             new(new PlayerId(1), "PLAYER 2", PlayerController.Computer, 1)
         ];
         var setup = new MatchSetup(
-            ScenarioId.Eliminate, GameDuration.SixMonths, 404, setups);
+            ScenarioId.Eliminate, GameDuration.SixMonths, 404, setups, MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setups[0], 20,

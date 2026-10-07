@@ -94,6 +94,9 @@ public static class OnlineConnectLayout
     /// <summary>The line under the list, for what the selected row cannot do and why.</summary>
     public const int HistoryNoteY = 350;
 
+    /// <summary>The line under that, which says when the seats' tokens are saved unencrypted.</summary>
+    public const int HistoryStorageNoteY = 362;
+
     public static Rectangle HistoryRejoin => OnlineScreenLayout.Action(0);
     public static Rectangle HistoryBack => OnlineScreenLayout.Action(1);
 

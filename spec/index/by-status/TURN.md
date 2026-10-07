@@ -26,7 +26,7 @@ Entries by status.
 
 ## recorded
 
-108 entries.
+109 entries.
 
 | ID | Title |
 |---|---|
@@ -129,6 +129,7 @@ Entries by status.
 | [EXP-TURN-098](../../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? |
 | [EXP-TURN-099](../../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? |
 | [EXP-TURN-102](../../experiments/EXP-TURN-102.md) | Does the planning clock run while the menu bar is open? |
+| [EXP-TURN-109](../../experiments/EXP-TURN-109.md) | Does a family-7 gang whose focus names its own best research sector research there while a Research site in it is unfinished? |
 | [FND-TURN-001](../../findings/FND-TURN-001.md) | Instant actions run in player and roster slot order, and each Influence gang changes the site before the next one rolls |
 | [FND-TURN-002](../../findings/FND-TURN-002.md) | Only two command handlers write the recurring action, and each assignment replaces the whole previous one |
 | [FND-TURN-003](../../findings/FND-TURN-003.md) | The end of resolution clears eliminated players, reports each elimination to every player, and only then evaluates the objective |

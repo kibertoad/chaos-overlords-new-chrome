@@ -36,10 +36,16 @@ Entries by area.
 | [EXP-UI-026](../../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? | recorded |
 | [EXP-UI-027](../../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-028](../../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? | recorded |
+| [EXP-UI-029](../../experiments/EXP-UI-029.md) | Does the Detailed Combat panel look the same in the rebuild through the second clip of a presentation? | recorded |
 | [EXP-UI-032](../../experiments/EXP-UI-032.md) | What does the elimination card show behind it after an earlier human has planned? | recorded |
 | [EXP-UI-034](../../experiments/EXP-UI-034.md) | What does the endgame show behind it after an elimination card? | recorded |
 | [EXP-UI-035](../../experiments/EXP-UI-035.md) | What does the planning clock bar show at the next planning entry? | recorded |
 | [EXP-UI-036](../../experiments/EXP-UI-036.md) | What does the drawing area show at the state dump when the planning entry has a report? | recorded |
+| [EXP-UI-046](../../experiments/EXP-UI-046.md) | Does the Detailed Combat panel look the same in the rebuild through an armed and an unarmed attack on the viewer's gang? | recorded |
+| [EXP-UI-047](../../experiments/EXP-UI-047.md) | Does the Detailed Combat panel look the same in the rebuild through a bare-handed Martial Arts attack? | recorded |
+| [EXP-UI-048](../../experiments/EXP-UI-048.md) | Does the Detailed Combat panel look the same in the rebuild through an attack of the viewer's that its target evades? | recorded |
+| [EXP-UI-049](../../experiments/EXP-UI-049.md) | Does the Detailed Combat panel look the same in the rebuild through two evaded attacks on the viewer's gang? | recorded |
+| [EXP-UI-054](../../experiments/EXP-UI-054.md) | What do the Detailed Combat apertures show before the second clip's first strip frame? | recorded |
 | [FND-UI-001](../../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |
@@ -99,6 +105,7 @@ Entries by area.
 | [FND-UI-059](../../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation | recorded |
 | [FND-UI-060](../../findings/FND-UI-060.md) | The planning entry draws the console's year, week, countdown, score and cash with the base-value number helper | recorded |
 | [FND-UI-063](../../findings/FND-UI-063.md) | Only the About screen, the main console and the detailed sector screen take the right button, and the held-button helper acts at once on a right press | recorded |
+| [FND-UI-066](../../findings/FND-UI-066.md) | Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the handler that opened the panel | recorded |
 | [RULE-UI-001](../../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |

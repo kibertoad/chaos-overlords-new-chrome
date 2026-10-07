@@ -19,10 +19,7 @@
     {"tick":null,"name":"planning","value":"turn 1: player 1 gang slot 0 sector 100"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 1"},
     {"tick":null,"name":"left_click","value":"Ready (320, 265) and Done (550, 306) with no orders for each later human, turn 1"},
-    {"tick":null,"name":"left_click","value":"Ready (320, 265) of the first human, turn 2"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 2"},
-    {"tick":null,"name":"left_click","value":"Ready (320, 265) and Done (550, 306) with no orders for each later human, turn 2"},
-    {"tick":null,"name":"left_click","value":"Done (478, 401) on each elimination card the turns reach"},
+    {"tick":null,"name":"left_click","value":"Elimination card Done (478, 401) on each card the turns reach"},
     {"tick":null,"name":"left_click","value":"capture for SCR-AWARDS-002 after the dump"},
     {"tick":null,"name":"left_click","value":"(504, 57), command 0 after the dump"},
     {"tick":null,"name":"left_click","value":"capture for SCR-AWARDS-001 after the dump"}

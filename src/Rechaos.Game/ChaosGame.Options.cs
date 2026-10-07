@@ -431,8 +431,7 @@ public sealed partial class ChaosGame
     {
         try
         {
-            _graphics.ToggleFullScreen();
-            _fullscreen = _graphics.IsFullScreen;
+            _fullscreen = _shell.ToggleFullScreen();
             SavePreferences();
             _message = string.Empty;
         }

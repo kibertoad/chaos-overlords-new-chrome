@@ -1,5 +1,5 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
@@ -8,92 +8,182 @@ using Xunit;
 namespace Rechaos.Tests;
 
 // RULE-TIMER-002: the original tests the time limit only on a pass of the planning loop, so a
-// panel open or an offer or control held at the limit keeps the turn going until it is closed or
-// let go.
+// panel open, the idle-gang warning up, or an offer, a control or a gang held at the limit keeps the
+// turn going until it is closed or let go, and the first pass after that ends the turn. Each test
+// plays a local match in a HeadlessGame with a 30-second limit and drives it by its keys and
+// pointer only.
 public sealed class PlanningTimerLoopTests
 {
+    private static readonly TimeSpan PastTheLimit = TimeSpan.FromSeconds(31);
+
     [Fact]
-    public void AnOpenPanelOrAHeldOfferDefersTheExpiry()
+    public void TheFirstPassPastTheLimitEndsTheTurn()
     {
-        var (game, router, timer) = TimedGame();
-        var pastLimit = TimeSpan.FromSeconds(31);
+        using var game = TimedGame(out var human);
+        game.Advance(TimeSpan.FromSeconds(29));
+        AssertPlanning(game, human);
 
-        router.Show(ClientScreen.Commands);
-        Assert.False(UpdatePlanningTimer(game, pastLimit));
-        Assert.True(timer.IsActive);
-        Assert.True(timer.HasExpired(pastLimit));
-        Assert.False(AtPlanningLoopPass(game));
-
-        router.Show(ClientScreen.City);
-        Field("_draggedHireDefinitionId").SetValue(game, (short)1);
-        Assert.False(UpdatePlanningTimer(game, pastLimit));
-        Assert.True(timer.IsActive);
-        Assert.False(AtPlanningLoopPass(game));
-
-        Field("_draggedHireDefinitionId").SetValue(game, null);
-        // FND-HIRE-008, FND-UI-032: the reject cross and a console tile are held in their own
-        // loops until the button is released.
-        Field("_pressedHireRejectSlot").SetValue(game, 0);
-        Assert.False(UpdatePlanningTimer(game, pastLimit));
-        Assert.True(timer.IsActive);
-        Field("_pressedHireRejectSlot").SetValue(game, null);
-        Field("_pressedCityConsoleControl").SetValue(game, CityConsoleControl.Done);
-        Assert.False(UpdatePlanningTimer(game, pastLimit));
-        Assert.True(timer.IsActive);
-        Field("_pressedCityConsoleControl").SetValue(game, null);
-        Assert.True(AtPlanningLoopPass(game));
-        router.Show(ClientScreen.Sector);
-        Assert.True(AtPlanningLoopPass(game));
+        game.Jump(TimeSpan.FromSeconds(2));
+        AssertTurnEnded(game, human);
+        Assert.False(game.Game.PlanningClock.IsActive);
     }
 
     [Fact]
-    public void AGangHeldOnTheSectorViewDefersTheExpiryUntilItIsLetGo()
+    public void AnOpenPanelDefersTheExpiryUntilItCloses()
+    {
+        using var game = TimedGame(out var human);
+        game.Press(Keys.C);
+        Assert.Equal(ClientScreen.Commands, game.Game.CurrentScreen);
+        game.Jump(PastTheLimit);
+        game.Advance(TimeSpan.FromSeconds(1));
+        AssertPlanning(game, human);
+        Assert.True(game.Game.PlanningClock.HasExpired(game.Now));
+
+        // The test runs before the frame's input, so the update that closes the panel is not yet a
+        // pass of the planning loop; the next one is.
+        game.HoldKey(Keys.Back);
+        Assert.Equal(ClientScreen.City, game.Game.CurrentScreen);
+        AssertPlanning(game, human);
+        game.ReleaseKey(Keys.Back);
+        AssertTurnEnded(game, human);
+    }
+
+    [Fact]
+    public void TheSectorViewIsAPassOfThePlanningLoop()
+    {
+        using var game = TimedGame(out var human);
+        game.Press(Keys.I);
+        Assert.Equal(ClientScreen.Sector, game.Game.CurrentScreen);
+        game.Jump(PastTheLimit);
+        AssertTurnEnded(game, human);
+    }
+
+    [Fact]
+    public void TheIdleGangWarningDefersTheExpiryUntilItIsCancelled()
+    {
+        // SCR-OPTIONS-001: Done with a gang that has no order opens the warning, which answers
+        // before the planning loop tests the limit.
+        using var game = TimedGame(out var human, warnIfIdleGangs: true);
+        game.Press(Keys.Space);
+        Assert.True(game.Game.IdleGangWarningOpen);
+        game.Jump(PastTheLimit);
+        game.Advance(TimeSpan.FromSeconds(1));
+        AssertPlanning(game, human);
+        Assert.True(game.Game.IdleGangWarningOpen);
+
+        // FND-UI-024: Escape presses Cancel for one tick of the presentation clock, then closes.
+        game.HoldKey(Keys.Escape);
+        game.ReleaseKey(Keys.Escape);
+        while (game.Game.IdleGangWarningOpen && game.Now < TimeSpan.FromSeconds(40))
+        {
+            AssertPlanning(game, human);
+            game.Tick();
+        }
+        Assert.False(game.Game.IdleGangWarningOpen);
+        AssertPlanning(game, human);
+        game.Tick();
+        AssertTurnEnded(game, human);
+    }
+
+    [Fact]
+    public void AHeldConsoleTileDefersTheExpiryUntilItIsLetGo()
+    {
+        // FND-UI-032: the console tile helper holds the press in a loop of its own. The release
+        // lands outside the tile, so it does not end the turn by itself.
+        using var game = TimedGame(out var human);
+        game.PressLeft(CityConsoleLayout.Done.Center);
+        Assert.True(game.Game.HoldsPlanningLoop);
+        game.Jump(PastTheLimit);
+        game.MoveTo(new Point(300, 200));
+        AssertPlanning(game, human);
+
+        game.ReleaseLeft();
+        AssertPlanning(game, human);
+        game.Tick();
+        AssertTurnEnded(game, human);
+    }
+
+    [Fact]
+    public void AHeldHireOfferDefersTheExpiryUntilItIsLetGo()
+    {
+        // FND-HIRE-008: the Hire handler follows a pressed offer until the button comes up.
+        using var game = TimedGame(out var human);
+        game.PressLeft(HireDockLayout.Portrait(0).Center);
+        Assert.True(game.Game.HoldsPlanningLoop);
+        game.Jump(PastTheLimit);
+        game.Advance(TimeSpan.FromSeconds(1));
+        AssertPlanning(game, human);
+
+        game.ReleaseLeft();
+        AssertPlanning(game, human);
+        game.Tick();
+        AssertTurnEnded(game, human);
+    }
+
+    [Fact]
+    public void AHeldRejectCrossDefersTheExpiryUntilItIsLetGo()
+    {
+        // FND-HIRE-008: the reject cross is held in a loop of its own as well.
+        using var game = TimedGame(out var human);
+        game.PressLeft(HireDockLayout.Reject(0).Center);
+        Assert.True(game.Game.HoldsPlanningLoop);
+        game.Jump(PastTheLimit);
+        game.MoveTo(new Point(300, 200));
+        AssertPlanning(game, human);
+
+        game.ReleaseLeft();
+        AssertPlanning(game, human);
+        game.Tick();
+        AssertTurnEnded(game, human);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AGangHeldOnTheSectorViewDefersTheExpiryUntilItIsLetGo(bool dragged)
     {
         // FND-UI-044: a left press on the portrait of one of the player's cards waits in the
         // individual command handler for the pointer to leave the rectangle around the press or the
         // button to come up, then follows the dragged gang until the button comes up, pumping
-        // window messages only.
-        // The planning loop's expiry test runs again after the handler returns.
-        var (game, router, timer) = TimedGame();
-        var pastLimit = TimeSpan.FromSeconds(31);
-        router.Show(ClientScreen.Sector);
-
-        // Pressed, not yet moved: the handler's first wait loop.
-        Field("_draggedGangId").SetValue(game, new GangId(0));
-        Assert.False(UpdatePlanningTimer(game, pastLimit));
-        Assert.True(timer.IsActive);
-        Assert.True(timer.HasExpired(pastLimit));
+        // window messages only. The planning loop's expiry test runs again after the handler returns.
+        using var game = TimedGame(out var human);
+        game.Press(Keys.I);
+        var portrait = SectorGangCardLayout.Portrait(0);
+        game.PressLeft(portrait.Center);
+        Assert.NotNull(game.Game.HeldGang);
+        game.Jump(PastTheLimit);
+        AssertPlanning(game, human);
         // Moved past the press point: the drag loop.
-        Field("_gangDragStarted").SetValue(game, true);
-        Assert.False(UpdatePlanningTimer(game, pastLimit));
-        Assert.True(timer.IsActive);
+        if (dragged) game.MoveTo(new Point(portrait.Center.X, portrait.Bottom + 40));
+        game.Advance(TimeSpan.FromSeconds(1));
+        AssertPlanning(game, human);
 
-        Field("_gangDragStarted").SetValue(game, false);
-        Field("_draggedGangId").SetValue(game, null);
-        Assert.True(AtPlanningLoopPass(game));
+        game.ReleaseLeft();
+        AssertPlanning(game, human);
+        game.Tick();
+        AssertTurnEnded(game, human);
     }
 
     [Fact]
     public void AGangHoldLetGoByACancelDefersTheExpiryUntilTheButtonComesUp()
     {
         // FND-UI-044: the original's hold loops end only when the left button comes up, so the
-        // rebuild's Escape or right press, which drops the drag, leaves the expiry test waiting.
-        var (game, router, timer) = TimedGame();
-        var pastLimit = TimeSpan.FromSeconds(31);
-        router.Show(ClientScreen.Sector);
-        Field("_draggedGangId").SetValue(game, new GangId(0));
-        Field("_previousMouse").SetValue(game, new MouseState(
-            0, 0, 0, ButtonState.Pressed, ButtonState.Released, ButtonState.Released,
-            ButtonState.Released, ButtonState.Released));
+        // rebuild's right press, which drops the held gang, leaves the expiry test waiting.
+        using var game = TimedGame(out var human);
+        game.Press(Keys.I);
+        game.PressLeft(SectorGangCardLayout.Portrait(0).Center);
+        Assert.NotNull(game.Game.HeldGang);
+        game.PressRight(SectorGangCardLayout.Portrait(0).Center);
+        game.ReleaseRight();
+        Assert.Null(game.Game.HeldGang);
+        game.Jump(PastTheLimit);
+        game.Advance(TimeSpan.FromSeconds(1));
+        AssertPlanning(game, human);
 
-        Method("CancelCurrentInteraction").Invoke(game, [null]);
-        Assert.Null(Field("_draggedGangId").GetValue(game));
-        Assert.False(UpdatePlanningTimer(game, pastLimit));
-        Assert.True(timer.IsActive);
-
-        // The button comes up.
-        Field("_leftHoldOutlivesCancel").SetValue(game, false);
-        Assert.True(AtPlanningLoopPass(game));
+        game.ReleaseLeft();
+        AssertPlanning(game, human);
+        game.Tick();
+        AssertTurnEnded(game, human);
     }
 
     // RULE-TIMER-002, EXP-UI-035: the planning entry redraws the console, so the next player's entry
@@ -101,42 +191,19 @@ public sealed class PlanningTimerLoopTests
     [Fact]
     public void ThePlanningEntryPutsBackTheConsolesBar()
     {
-        var (game, router, timer) = TimedGame();
-        timer.Advance(TimeSpan.Zero, 0);
-        timer.Advance(TimeSpan.FromSeconds(29), PresentationClock.Ticks(TimeSpan.FromSeconds(29)));
+        using var game = TimedGame(out _);
+        game.Advance(TimeSpan.FromSeconds(29));
+        var timer = game.Game.PlanningClock;
         timer.Stop();
         Assert.True(timer.ShowsBar);
         Assert.NotEqual(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
 
-        Field("_state").SetValue(game, null);
-        router.Show(ClientScreen.Handoff);
-        Method("FinishHandoff").Invoke(game, null);
+        Field("_state").SetValue(game.Game, null);
+        ((ScreenRouter)Field("_screens").GetValue(game.Game)!).Show(ClientScreen.Handoff);
+        Method("FinishHandoff").Invoke(game.Game, null);
         Assert.False(timer.ShowsBar);
         Assert.Equal(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
     }
-
-    /// <summary>A game on a human player's planning turn with a 30-second limit started at zero.</summary>
-    private static (ChaosGame Game, ScreenRouter Router, PlanningTimer Timer) TimedGame()
-    {
-        var state = OriginalNewGameExperimentTests.ReplayedMatch("EXP-SETUP-001", 0);
-        Assert.Equal(TurnPhase.Command, state.Coordinator.Phase);
-        var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
-        var router = new ScreenRouter();
-        var timer = new PlanningTimer();
-        Field("_screens").SetValue(game, router);
-        Field("_planningTimer").SetValue(game, timer);
-        Field("_eventPump").SetValue(game, new EventPumpClock());
-        Field("_state").SetValue(game, state);
-        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
-        return (game, router, timer);
-    }
-
-    private static bool UpdatePlanningTimer(ChaosGame game, TimeSpan now) =>
-        (bool)Method("UpdatePlanningTimer").Invoke(game, [now])!;
-
-    private static bool AtPlanningLoopPass(ChaosGame game) =>
-        (bool)Method("AtPlanningLoopPass").Invoke(game, null)!;
 
     private static FieldInfo Field(string name) => typeof(ChaosGame)
         .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
@@ -145,4 +212,47 @@ public sealed class PlanningTimerLoopTests
     private static MethodInfo Method(string name) => typeof(ChaosGame)
         .GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)
         ?? throw new MissingMethodException(nameof(ChaosGame), name);
+
+    /// <summary>
+    /// A local match on its first planning turn, with the 30-second limit the preferences hold and
+    /// the idle-gang warning as asked; the planning clock started on the update that began it.
+    /// </summary>
+    private static HeadlessGame TimedGame(out PlayerId human, bool warnIfIdleGangs = false)
+    {
+        var game = new HeadlessGame(HeadlessGame.DefaultPreferences with
+        {
+            PlanningTimeLimit = PlanningTimeLimit.ThirtySeconds,
+            WarnIfIdleGangs = warnIfIdleGangs,
+        });
+        try
+        {
+            var match = game.StartLocalMatch();
+            Assert.Equal(ClientScreen.City, game.Game.CurrentScreen);
+            human = match.Coordinator.ActivePlayer ?? throw new InvalidOperationException("No player plans.");
+            Assert.Equal(PlayerController.Human, match.FindPlayer(human)!.Setup.Controller);
+            Assert.True(game.Game.PlanningClock.IsActive);
+            return game;
+        }
+        catch
+        {
+            game.Dispose();
+            throw;
+        }
+    }
+
+    private static void AssertPlanning(HeadlessGame game, PlayerId human)
+    {
+        var match = game.Game.Match!;
+        Assert.Equal(1, match.Coordinator.Turn);
+        Assert.Equal(TurnPhase.Command, match.Coordinator.Phase);
+        Assert.Equal(human, match.Coordinator.ActivePlayer);
+        Assert.True(game.Game.PlanningClock.IsActive);
+    }
+
+    private static void AssertTurnEnded(HeadlessGame game, PlayerId human)
+    {
+        var match = game.Game.Match!;
+        Assert.True(match.Coordinator.Turn > 1 || match.Coordinator.ActivePlayer != human,
+            $"turn {match.Coordinator.Turn} is still planned by player {human.Value}");
+    }
 }

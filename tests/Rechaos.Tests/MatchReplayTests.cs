@@ -270,7 +270,7 @@ public sealed class MatchReplayTests
         var data = BundledOriginalData.Load();
         var setupPlayer = new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human);
         var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer])));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer], MatchDeviations.Original)));
         recorder.FinishUpkeep();
 
         var offers = recorder.PrepareHireOffers(setupPlayer.Id).ToArray();
@@ -324,7 +324,7 @@ public sealed class MatchReplayTests
         var setupPlayer = new MatchPlayerSetup(
             new PlayerId(0), "CPU", PlayerController.Computer);
         var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(data,
-            new MatchSetup(ScenarioId.BigMan, GameDuration.SixMonths, 1996, [setupPlayer])));
+            new MatchSetup(ScenarioId.BigMan, GameDuration.SixMonths, 1996, [setupPlayer], MatchDeviations.Original)));
         recorder.FinishUpkeep();
         recorder.PrepareAiPlanning(setupPlayer.Id);
 
@@ -366,7 +366,7 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
-    public void EncodesOriginalCommandDependentAiTargetBytes()
+    public void EncodesTheTargetBytesPlanStores()
     {
         var state = CreateMatch();
         var computer = state.Players[1];
@@ -389,21 +389,13 @@ public sealed class MatchReplayTests
             OriginalAiActionTargetEncoding.Encode(state,
                 new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Research,
                     CommandTarget.Item(armor))));
-        Assert.Equal(new AiActionTarget(1, 1), OriginalAiActionTargetEncoding.Encode(state,
-            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Give,
-                CommandTarget.Gang(new GangId(50)), SecondaryTarget: CommandTarget.Item(weapon))));
-        Assert.Equal(new AiActionTarget(7, 1), OriginalAiActionTargetEncoding.Encode(state,
+        // FND-AI-079: no handler plans a Give or a Sell, and plan stores no target byte for them.
+        Assert.Equal(AiActionTarget.None, OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Give,
                 CommandTarget.Gang(new GangId(50)), SecondaryTarget: CommandTarget.Item(weapon),
                 TertiaryTarget: CommandTarget.Item(armor),
                 QuaternaryTarget: CommandTarget.Item(miscellaneous))));
-        Assert.Equal(new AiActionTarget(2, 0), OriginalAiActionTargetEncoding.Encode(state,
-            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
-                CommandTarget.Item(armor))));
-        Assert.Equal(new AiActionTarget(4, 0), OriginalAiActionTargetEncoding.Encode(state,
-            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
-                CommandTarget.Item(miscellaneous))));
-        Assert.Equal(new AiActionTarget(7, 0), OriginalAiActionTargetEncoding.Encode(state,
+        Assert.Equal(AiActionTarget.None, OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
                 CommandTarget.Item(weapon), SecondaryTarget: CommandTarget.Item(armor),
                 TertiaryTarget: CommandTarget.Item(miscellaneous))));

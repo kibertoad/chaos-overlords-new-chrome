@@ -40,8 +40,7 @@ match. With `--pass-cards` the probe presses Done on every elimination card it
 reaches and goes on. The state is dumped at the awards.
 
 After the dump the steps copy the Awards tab, which shows the victory splash
-(SCR-AWARDS-002), press Stats and copy again. The fixture's inputs also list
-the presses of turn 2, which the run did not reach.
+(SCR-AWARDS-002), press Stats and copy again.
 
 ## Observations
 

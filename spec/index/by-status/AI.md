@@ -76,7 +76,7 @@ Entries by status.
 
 ## recorded
 
-67 entries.
+69 entries.
 
 | ID | Title |
 |---|---|
@@ -147,6 +147,8 @@ Entries by status.
 | [FND-AI-075](../../findings/FND-AI-075.md) | Family 12 stores the focus with every action it plans and a Move's destination as the coverage sector |
 | [FND-AI-076](../../findings/FND-AI-076.md) | Family 3 stores -1 in the focus after every action it plans after None, Control, Equip or Heal |
 | [FND-AI-077](../../findings/FND-AI-077.md) | Family 2's late Control gates read a local that holds the item of a planned Equip |
+| [FND-AI-078](../../findings/FND-AI-078.md) | Family 7 researches at once when its focus equals the best research sector, and reads the previous target without testing the previous action |
+| [FND-AI-079](../../findings/FND-AI-079.md) | Only the family handlers and their dispatcher store a planned action, and none stores Bribe, Give or Sell |
 
 ## Established on unreproduced evidence
 
