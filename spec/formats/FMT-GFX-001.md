@@ -9,7 +9,7 @@ byte_order: little
 size: null
 text: false
 definition: fmt_gfx_001.ksy
-evidence: [FND-GFX-001, FND-GFX-003, FND-GFX-005, FND-DATA-006, FND-PLATFORM-002, FND-PLATFORM-008, FND-ASSET-001]
+evidence: [FND-GFX-001, FND-GFX-003, FND-GFX-005, FND-DATA-006, FND-PLATFORM-002, FND-PLATFORM-015, FND-ASSET-001]
 conflicting: []
 split_with: []
 related: []
@@ -41,7 +41,7 @@ height and plane count over those fields before it uses the pixels
 | `0x2A` | 4 | `INT32LE` | `y_pixels_per_meter` | 0. | supported | FND-GFX-001 |
 | `0x2E` | 4 | `UINT32LE` | `colors_used` | 0; the file has no colour table. | supported | FND-GFX-001 |
 | `0x32` | 4 | `UINT32LE` | `colors_important` | 0. | supported | FND-GFX-001 |
-| `0x36` | `image_size` | `BYTE[image_size]` | `pixels` | `height` rows, the bottom row first. A row holds `width` pixels of 2 bytes, each a `UINT16LE` RGB555 colour (bits 0 to 4 blue, 5 to 9 green, 10 to 14 red, bit 15 always 0), then zero bytes up to a multiple of 4 bytes, so `image_size` is `height * ((width * 2 + 3) / 4 * 4)`. `width` and `height` are the values in Coverage. The colour `0x7FFF` is the key colour of the white-keyed copies. | supported | FND-GFX-001, FND-GFX-003, FND-PLATFORM-008 |
+| `0x36` | `image_size` | `BYTE[image_size]` | `pixels` | `height` rows, the bottom row first. A row holds `width` pixels of 2 bytes, each a `UINT16LE` RGB555 colour (bits 0 to 4 blue, 5 to 9 green, 10 to 14 red, bit 15 always 0), then zero bytes up to a multiple of 4 bytes, so `image_size` is `height * ((width * 2 + 3) / 4 * 4)`. `width` and `height` are the values in Coverage. The colour `0x7FFF` is the key colour of the white-keyed copies. | supported | FND-GFX-001, FND-GFX-003, FND-PLATFORM-015 |
 | | | | | Total size 54 + image_size | | |
 
 ## Enumerations and flags

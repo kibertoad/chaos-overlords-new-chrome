@@ -19,7 +19,7 @@ Entries by status.
 
 ## recorded
 
-7 entries.
+9 entries.
 
 | ID | Title |
 |---|---|
@@ -29,7 +29,9 @@ Entries by status.
 | [FND-GFX-004](../../findings/FND-GFX-004.md) | The display layer draws with GDI into twelve surface slots, copies the 640-by-460 backing surface to the window's client origin, and uses DirectDraw only to take the screen in full screen |
 | [FND-GFX-005](../../findings/FND-GFX-005.md) | The size the executable passes for each numbered image matches the file data except PX06008, which it reads as 242 by 158 |
 | [FND-GFX-006](../../findings/FND-GFX-006.md) | A pattern fill takes its bitmap from the high byte of a 16-bit grey, starts the pattern at the filled rectangle's corner, and outlines the fill with the scratch surface's own pen |
+| [FND-GFX-007](../../findings/FND-GFX-007.md) | Every exact-white pixel of PX00129 that a copy reads lies in a cell copied with the key, except one pixel of an Overlord portrait |
 | [FND-GFX-008](../../findings/FND-GFX-008.md) | SetDIBits decodes every shipped PX08 file as the plain RLE8 reading does, clips runs at the line end, follows delta codes and leaves unwritten pixels as the bitmap held them |
+| [FND-GFX-009](../../findings/FND-GFX-009.md) | Surface 7 holds PX00150 for the Search rows' keyed copy and PX00140 for the network lobbies' keyed seat overlay, and every copied cell holds exact white |
 
 ## Open questions
 
