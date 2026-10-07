@@ -15,8 +15,8 @@ fixture: EXP-TURN-108.json
 
 ## Question
 
-No recorded run ends an Armageddon match on its objective, and no run plays
-beyond turn 82. Does an Armageddon match at Goon, with the human hiding, end
+No recorded run ends an Armageddon match on its objective, and no other run
+plays beyond turn 88. Does an Armageddon match at Goon, with the human hiding, end
 on the turn the rebuild ends it, with the same scores and awards?
 
 ## Setup
@@ -41,7 +41,7 @@ and 5.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
+A test of the rebuild replays the run. The
 rebuild makes the same calls with the same bounds and results, ends the match
 after the same Done press, and reaches the same state, stored scores,
 standings, endgame rows, Last Turn reports and awards.

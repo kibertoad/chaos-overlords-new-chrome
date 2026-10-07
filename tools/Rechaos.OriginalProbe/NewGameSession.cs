@@ -247,7 +247,8 @@ internal sealed record ProbeTrace(
     List<long>? Ticks = null,
     List<SlideRecord>? Slides = null,
     List<CloseRecord>? Closes = null,
-    List<SavedWriteRecord>? SavedWrites = null);
+    List<SavedWriteRecord>? SavedWrites = null,
+    bool? EffectsEnabled = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -434,6 +435,7 @@ internal sealed partial class NewGameSession(
                 if (!CaptureFinance(window, panel))
                     return Finish(false, $"The Financial panel of turn {turn} for sector {panel.Sector} was not captured.", rollsBeforeBegin);
             _rollsAtDone.Add(_rolls.Count);
+            if (settings.Sounds) SampleEffectsEnabled();
             _turn = turn;
             var waits = settings.ExpireTurns?.Contains(turn) == true;
             // A turn left to run out takes its planning limit before the resolution even starts, so
@@ -844,7 +846,9 @@ internal sealed partial class NewGameSession(
         if (call != 0xE8) _notes.Add($"The preference loader call starts with 0x{call:X2}, not a call.");
         _process.Write(OriginalAddresses.PrefFullScreen, [0]);
         _process.Write(OriginalAddresses.PrefFullScreenCopy, [0]);
-        if (!settings.Sound) Mute();
+        if (settings.Sound) Unmute();
+        else Mute();
+        _preferencesSet = true;
         if (settings.Comlink is not null) _process.Write(OriginalAddresses.PrefSlidePanels, BitConverter.GetBytes(0));
         if (settings.EndTurns == 0 && settings.Comlink is null) return;
         _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(0));
@@ -929,7 +933,7 @@ internal sealed partial class NewGameSession(
             settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
             settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
-            _savedWrites.Count == 0 ? null : _savedWrites);
+            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null);
     }
 
     private static void Click(IntPtr window, int x, int y)

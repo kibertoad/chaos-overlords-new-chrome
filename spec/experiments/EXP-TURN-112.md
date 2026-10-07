@@ -58,8 +58,7 @@ attack on the human that passes its Hide test account for.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results up to call
+A test of the rebuild replays the run. The rebuild makes the same calls with the same bounds and results up to call
 52029, through 95 full turns of the computer players' planning and
 resolution. There it rolls the first Hide test where the original rolls the
 9 extra dice. The test holds the run as a known divergence at that call.

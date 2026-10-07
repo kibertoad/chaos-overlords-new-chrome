@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # Full history, so `check-spec.mjs` can find where this commit forked from main (or its
+          # Full history, so the documentation checker can find where this commit forked from main (or its
           # parent on main) and fail when a spec ID, area or deviation that existed there is gone.
           fetch-depth: 0
 
@@ -54,8 +54,13 @@ jobs:
         with:
           dotnet-version: 10.0.400
 
-      # `check-spec.mjs` (run by Invoke-Validation.ps1) compiles the `.ksy` definitions with it, and
-      # fails when CI is set and no compiler is found.
+      # Invoke-Validation.ps1 runs the documentation standard's checker (tools/check-documentation.mjs),
+      # which the root package.json pins and `pnpm install` at the root installs.
+      - name: Install the documentation checker
+        uses: $/.github/actions/install-documentation-checker
+
+      # The checker compiles the `.ksy` definitions with it, and fails when CI is set and no
+      # compiler is found.
       - name: Install the Kaitai Struct compiler
         id: kaitai
         uses: $/.github/actions/install-kaitai

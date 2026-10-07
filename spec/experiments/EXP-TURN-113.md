@@ -45,8 +45,7 @@ offer draw at `0x0047172A`.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results up to call
+A test of the rebuild replays the run. The rebuild makes the same calls with the same bounds and results up to call
 96038, through 115 full turns and the planning and resolution of the 116th
 up to its hire phase. No computer player queues a hire in the rebuild in that
 turn: the planner of each one rejects an offer instead, player 2 with 0 cash.

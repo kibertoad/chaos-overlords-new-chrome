@@ -13,7 +13,7 @@ using Xunit;
 namespace Rechaos.Tests;
 
 /// <summary>
-/// Checks that the rebuild does what the mandatory deviations of DEVIATIONS.md say it does in place
+/// Checks that the rebuild does what the mandatory deviations in deviations/ say it does in place
 /// of the original's behaviour. These tests compare the rebuild with the deviation log, not with the
 /// original, so they are listed in each deviation's Tests item and in no parity row.
 /// </summary>
