@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00428EF0..0x00428F18
+    address: 0x00428EF0..0x00428F1B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00429F43..0x00429FBA
@@ -25,7 +25,7 @@ environment: null
 
 In the family-0 handler `0x00428EF0` (FND-AI-048), the prologue stores the
 result of selector `0x5A` for the player and roster slot, the gang's sector, in
-the local at `[EBP-4]` (`0x00428F0E..0x00428F18`).
+the local at `[EBP-4]` (`0x00428F0E..0x00428F1B`).
 
 The previous-Control target `0x00429F43` calls the selector dispatcher
 `0x00402D70` with selector `0x21`, the sector from `[EBP-4]` and two zero
@@ -39,7 +39,7 @@ mode 5. No other owner read precedes either store.
 In the previous Heal, Hide or Move target `0x0042A073`, after the Heal gate
 and the weight-10 draw, the block at `0x0042A378` calls the same dispatcher
 with selector `0x21` and the sector from `[EBP-4]`, and skips to `0x0042A40D`
-when the result equals the player (`0x0042A38A..0x0042A38D`). Otherwise it
+when the result equals the player (`0x0042A38A..0x0042A393`). Otherwise it
 calls selector `0x2C` with the player, the slot and the sector, and a nonzero
 result writes Control (4) (`0x0042A3A1..0x0042A3C3`).
 

@@ -16,7 +16,7 @@ locations:
     address: 0x00405C5B..0x00405CD4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048DB48..0x0048E2DF
+    address: 0x0048DB48..0x0048E2E0
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -41,7 +41,7 @@ and the scenario is 8, writes 1 to the hire role at `0x00482128 + player * 4`
 
 Every hire-role-4 cell stores the sector read at the start into the 16-bit
 value at `0x0048C0BC + slot * 14 + player * 0x46E` (for example
-`0x00432EC4`), which is +12 of the 14-byte auxiliary record (FND-AI-044).
+`0x00432EC4`), which is +12 of the 14-byte auxiliary record (FND-AI-081).
 
 After the family switch the dispatcher calls selector `0x5D` for the gang
 (`0x00433C2C`) and runs a further block only when the result is greater than 3
@@ -89,4 +89,4 @@ calls.
 In `0x00432DA0`, follow the call to `0x00402D70` with selector `0x48` and the
 call to `0x00409DE1` that follows it. For the post-handler block, find the
 selector `0x5D` call after the family switch and the comparison with 3; then
-list the references to `0x0048DB48..0x0048E2DF`.
+list the references to `0x0048DB48..0x0048E2E0`.

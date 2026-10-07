@@ -60,7 +60,7 @@ After the scan, `0x0047310B..0x0047317B` sets every sector's byte `+2` below 1
 to 1 and above 40 to 40.
 
 The Chaos sector pass follows. Its neutralizing branch is
-`0x00473705..0x00473768`: report, owner -1 at `0x00473735`, and progress 0 at
+`0x00473705..0x00473770`: report, owner -1 at `0x00473735`, and progress 0 at
 `0x00473746`, `0x00473757` and `0x00473768` (FND-POLICE-004).
 
 The police loop (`0x004740B7..0x0047424B`) visits players 0 to 5 and roster

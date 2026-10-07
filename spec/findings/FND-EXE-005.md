@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004B0000..0x004C1BEB
+    address: 0x004B0000..0x004C1BEC
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00466673..0x0046678D
@@ -34,9 +34,9 @@ The `.rsrc` section (FND-EXE-002) holds these resources, all with language
 | Menu | 1, 2, 3, 5 | `0x004B11E4` (322 bytes), `0x004B1328` (182), `0x004B13E0` (258), `0x004B14E4` (166) |
 | Menu | 101 | `0x004B0D00`, 1252 bytes |
 | Accelerators | 102 | `0x004B158C`, 48 bytes, six entries |
-| Dialog | 128 to 141, 143, 144, 145, 201, 20000, 20002 to 20007 | `0x004B15BC..0x004B39E3`, 190 to 506 bytes each |
+| Dialog | 128 to 141, 143, 144, 145, 201, 20000, 20002 to 20007 | `0x004B15BC..0x004B39E4`, 190 to 506 bytes each |
 | Dialog | `DIALDIALOG`, `DIRECTDIALOG` (named) | `0x004B29CC` (1178 bytes), `0x004B3598` (390) |
-| String table | blocks 1 to 7, strings 1 to 104 | `0x004C0778..0x004C1BEB` |
+| String table | blocks 1 to 7, strings 1 to 104 | `0x004C0778..0x004C1BEC` |
 | Bitmap | 143, 146, 147 | 80 bytes each: 8 by 8, one bit per pixel |
 | Bitmap | 148 | `0x004B3AD4`, 41,072 bytes: 512 by 340, eight bits per pixel |
 | Icon group | 152, 153, 158, 159, 160, 164, 166, 167 | eleven icon images; 152 holds 32, 16 and 48 pixel images |

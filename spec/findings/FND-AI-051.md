@@ -10,16 +10,16 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004594EC..0x00459567
+    address: 0x004594EC..0x00459568
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00403E17..0x00403F3E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048E2F8..0x0048E30F
+    address: 0x0048E2F8..0x0048E310
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004A08C4..0x004A08CF
+    address: 0x004A08C4..0x004A08D0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00408214
@@ -32,7 +32,7 @@ environment: null
 Every access to the placement anchor at `0x0048E2F8 + player * 4` is a 32-bit
 load or store.
 
-The refresh in `0x00458FA0` runs at `0x004594EC..0x00459567`, after the
+The refresh in `0x00458FA0` runs at `0x004594EC..0x00459568`, after the
 duplicate-Chaos cleanup and before the gang limit. It passes the anchor minus
 `0x40` to selector `0x24` (`0x00459502`); a result of 0 jumps to the
 replacement (`0x0045950C`). Otherwise it compares the 32-bit value at
@@ -82,7 +82,7 @@ player only when the human does not sit in slot 0.
 
 ## Alternatives
 
-A path that writes into `0x004A08C4..0x004A08CF` through an index into a
+A path that writes into `0x004A08C4..0x004A08D0` through an index into a
 neighbouring array (for example the array at `0x004A08D0` with a negative
 index) is not excluded; none was found among the references to that array.
 
@@ -90,5 +90,5 @@ index) is not excluded; none was found among the references to that array.
 
 In `0x00458FA0`, read the block from `0x004594EC` to the store at
 `0x00459561`. In `0x00402D70`, read the selector-`0x24` case at `0x00403E17`
-and its column tests. List the references to `0x004A0700..0x004A08E7` and to
-`0x00489900..0x0048994F`.
+and its column tests. List the references to `0x004A0700..0x004A08E8` and to
+`0x00489900..0x00489950`.

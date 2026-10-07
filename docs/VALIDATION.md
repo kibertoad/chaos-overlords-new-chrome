@@ -632,7 +632,7 @@ holds `match_over` and each player's first three `player_awards` entries.
 From EXP-TURN-048 on, the fixtures also hold the computer players' planning
 state: the planning record fields (FMT-STATE-007), `ai_started`,
 `raider_mode`, `placement_anchor`, `sector_weight` and the `focus` and
-`coverage_sector` values of the auxiliary records (FND-AI-044), each left out
+`coverage_sector` values of the auxiliary records (FND-AI-081), each left out
 when it holds 0; every combat record a resolution has written
 (FMT-STATE-003); and the entries of the combat result rows that hold a gang,
 with the `police_hit` values that are not 0 (FMT-STATE-008). The replay

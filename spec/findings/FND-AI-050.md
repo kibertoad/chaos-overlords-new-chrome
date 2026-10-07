@@ -16,7 +16,7 @@ locations:
     address: 0x0045C06D..0x0045C177
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00481018..0x00481033
+    address: 0x00481018..0x00481034
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -60,7 +60,7 @@ becomes `F`.
 
 The order within a block is the order of the columns: remaps, hunter test,
 quotas, the minimum (`c04` below the value sets `k` to 0), the last override.
-The "at most the limit" gate compares `0x0048E2E0 + player * 4` (FND-AI-044)
+The "at most the limit" gate compares `0x0048E2E0 + player * 4` (FND-AI-081)
 with `0x00482110 + player * 4`; when a gate fails the block does nothing more.
 
 Each block then switches on `k` to call the offer ranking `0x004078D9` with a
@@ -70,7 +70,7 @@ Scenarios 0 and 7 then set the chosen offer to -1 when cash is below the
 `0x0045B9EF`). A negative offer leads to selector `0x8E` and `0x004078B8`;
 otherwise `0x00408214` receives the placement: `H + 0x40` when `k` is the
 block's hunter slot `F`, the Right Hands' sector (selector `0x5A` for slot 0)
-plus `0x40` in scenario 7 when `k` is 5 or 7 (`0x0045BA0D..0x0045BA3F`), and
+plus `0x40` in scenario 7 when `k` is 5 or 7 (`0x0045BA0D..0x0045BA44`), and
 the placement anchor at `0x0048E2F8 + player * 4` otherwise.
 
 After the switch, at `0x0045C06D`, for every scenario: `n` is selector `0x23`

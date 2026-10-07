@@ -16,13 +16,13 @@ locations:
     address: 0x00487BE8..0x00487C0B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004A2800..0x004A5ED7
+    address: 0x004A2800..0x004A5ED8
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004A5F08..0x004A8887
+    address: 0x004A5F08..0x004A8888
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004AB668..0x004ABBBB
+    address: 0x004AB668..0x004ABBBC
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0044C476..0x0044D1BB

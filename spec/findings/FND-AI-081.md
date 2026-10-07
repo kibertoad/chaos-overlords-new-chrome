@@ -1,9 +1,9 @@
 ---
-id: FND-AI-044
+id: FND-AI-081
 title: The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order
-status: superseded
+status: recorded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: [FND-AI-081]
+superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
 method: static
@@ -13,16 +13,16 @@ locations:
     address: 0x0040A1A7..0x0040AA65
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048E310..0x0048F80F
+    address: 0x0048E310..0x0048F810
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048F810..0x0048FB4F
+    address: 0x0048F810..0x0048FB70
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048C0B0..0x0048DB43
+    address: 0x0048C0B0..0x0048DB44
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048E2E0..0x0048E2F7
+    address: 0x0048E2E0..0x0048E2F8
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -33,7 +33,7 @@ environment: null
 `0x00458FA0` at `0x0045936F` and from `0x00409F47` at `0x0040A195`. Its body
 runs four parts in this order.
 
-1. `0x0040A1B0..0x0040A288`: for every observer 0 to 5 and every other player
+1. `0x0040A1B0..0x0040A293`: for every observer 0 to 5 and every other player
    0 to 5, it clears the 24-byte record at
    `0x0048F810 + observer * 0x90 + other * 0x18`: the 16-bit values at +0 and
    +2, the 32-bit values at +4, +8, +12 and +16, and the byte at +20. All 36
@@ -77,10 +77,11 @@ read by `0x00402D70` and `0x00436C70`.
 
 The pair records are 24 bytes: +0 the count of the other player's sectors,
 +2 the count of those the player out-fights, +4, +8, +12 and +16 the
-per-sector sums, and +20 the flag. Six observers of 0x90 bytes end at
-`0x0048FB4F`. The per-sector block of six players (0x380 bytes each) ends at
-`0x0048F80F`, directly before the pair records. The auxiliary block of six
-players (0x46E bytes each) ends at `0x0048DB43`.
+per-sector sums, and +20 the flag. The six observers' records of 0x90 bytes
+take `0x0048F810..0x0048FB70`. The per-sector block of six players (0x380
+bytes each) takes `0x0048E310..0x0048F810`, directly before the pair records.
+The auxiliary block of six players (0x46E bytes each) takes
+`0x0048C0B0..0x0048DB44`.
 
 None of the three blocks, nor `0x0048E2E0`, is referenced by the save and load
 functions `0x00463CC5` and `0x0046381A`.
@@ -115,10 +116,19 @@ The count of own gangs in part 2 is read through selector `0x5E` both for the
 list loop and for the final test; the two calls return the same value, since
 nothing in between moves a gang.
 
+This entry replaces FND-AI-044, which gave the end of the pair records as
+`0x0048FB4F`. Six records of 0x90 bytes from `0x0048F810` take 0x360 bytes,
+so their last byte is `0x0048FB6F`; the error was found when the spec's
+ranges were checked against the sizes their entries give. FND-AI-044 also gave
+the clearing loop of part 1 as `0x0040A1B0..0x0040A288`, which stops inside
+the address arithmetic for the byte at +20 and leaves out its store at
+`0x0040A28B`; like parts 2 to 4, the range here runs to the jump back at
+`0x0040A293`.
+
 ## How to reproduce
 
 Read `0x0040A1A7` from its entry: the double loop clearing `0x0048F810`, the
 sector loop with calls to selectors `0x90`, `0x5E`, `0xB0`, `0xB1` and `0x47`,
 the loop over six players with selector `0x36`, and the roster loop with
 selector `0x48` followed by five selector calls and two stores of `0xFFFF`.
-List the references to `0x0048E310..0x0048F80F` and `0x0048C0B0..0x0048DB43`.
+List the references to `0x0048E310..0x0048F810` and `0x0048C0B0..0x0048DB44`.
