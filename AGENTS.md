@@ -161,7 +161,13 @@ in that entry's evidence.
 `PARITY.md` and the generated indexes in `spec/index/` are updated on main
 only, by the nightly workflow `nightly-generated.yml`: a branch leaves them
 as they were where it forked, and the check fails a change that edits one.
-`--regenerate` writes fresh copies to read; do not commit them on a branch.
+`--regenerate` writes fresh copies to read; do not commit them on a branch,
+and restore them afterwards (`git checkout -- spec/index PARITY.md`, then
+`git clean -f -- spec/index`), since the check also fails on uncommitted
+edits to them. When the repository variable `GENERATED_FILES_SCHEDULE` is
+`on-demand`, the workflow skips its nightly runs; after a change to `spec/`,
+`parity/` or `deviations/` reaches main, run it with
+`gh workflow run nightly-generated.yml`.
 It compiles the Kaitai definitions
 when `kaitai-struct-compiler` (or the path in `KSC`) is available; in CI it
 requires the compiler, and the workflows install a pinned release.
