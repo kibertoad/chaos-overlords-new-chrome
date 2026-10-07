@@ -16,7 +16,8 @@ public sealed partial class ChaosGame
             ClientScreen.Setup => _editingPlayerName is not null,
             ClientScreen.Online => _online.Stage == MultiplayerStage.Connect
                                    && OnlineFields.Any(field => field.IsFocused),
-            ClientScreen.Lobby => (_online.IsHost && _online.SessionName.IsFocused) || EditingLobbyName,
+            ClientScreen.Lobby => (_online.IsHost && _online.SessionName.IsFocused) || EditingLobbyName
+                                  || _online.Chat.IsFocused,
             ClientScreen.ComlinkSend => true,
             _ => false
         };
@@ -42,6 +43,11 @@ public sealed partial class ChaosGame
         if (_screens.Current == ClientScreen.Lobby && _online.DisplayName.IsFocused)
         {
             FinishLobbyNameEdit(cancel: true);
+            return;
+        }
+        if (_screens.Current == ClientScreen.Lobby && _online.Chat.IsFocused)
+        {
+            _online.Chat.IsFocused = false;
             return;
         }
         if (_pressedSetupButton is not null)

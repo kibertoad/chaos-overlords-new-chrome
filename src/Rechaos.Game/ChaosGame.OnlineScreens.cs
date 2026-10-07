@@ -388,6 +388,11 @@ public sealed partial class ChaosGame
         {
             DrawLobbyRoster(batch, pixel, font, match);
             DrawLobbySettings(batch, pixel, font, match);
+            font.Draw(batch, "LOBBY CHAT",
+                new Vector2(OnlineLobbyLayout.RosterLeft, OnlineLobbyLayout.ChatCaptionY),
+                OnlineSecondaryText, 1);
+            DrawLobbyChat(batch, pixel, font, match,
+                OnlineLobbyLayout.ChatLog, OnlineLobbyLayout.ChatInput, OnlineInsetFill);
         }
         DrawCentered(font, batch,
             match is null
@@ -448,6 +453,9 @@ public sealed partial class ChaosGame
             font.Draw(batch, "WAITING FOR SERVER", new Vector2(392, 148), OnlineMutedText, 1);
             return;
         }
+
+        DrawLobbyChat(batch, pixel, font, match, ClassicOnlineLobbyLayout.ChatLog,
+            ClassicOnlineLobbyLayout.ChatInput, new Color(0, 0, 0, 210));
 
         var row = 0;
         foreach (var player in match.Players.Where(Seated).Take(MatchLimits.PlayerCount))

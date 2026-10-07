@@ -147,6 +147,8 @@ public sealed partial class ChaosGame
         {
             if (_online.IsHost && _online.SessionName.IsFocused) _online.SessionName.Type(character);
             else if (EditingLobbyName) _online.DisplayName.Type(character);
+            else if (_online.Chat.IsFocused && LobbyChatPresentation.Accepts(character))
+                _online.Chat.Type(character);
             return;
         }
         if (_screens.Current != ClientScreen.Online) return;
@@ -770,6 +772,16 @@ public sealed partial class ChaosGame
 
     private void HandleLobbyClick(Point point)
     {
+        // A click anywhere but the chat line leaves it; what was typed stays for later.
+        _online.Chat.IsFocused = false;
+        // The chat is drawn only once the server has answered with the lobby.
+        if (_online.Match is not null && LobbyChatInput.Contains(point))
+        {
+            CommitLobbySessionName();
+            FinishLobbyNameEdit(cancel: false);
+            _online.Chat.IsFocused = true;
+            return;
+        }
         if (CanConfigureOnlineLobby() && LobbySessionName.Contains(point))
         {
             FinishLobbyNameEdit(cancel: false);
@@ -829,6 +841,12 @@ public sealed partial class ChaosGame
             return;
         }
         SendPendingLobbyProfile();
+        if (_online.Chat.IsFocused)
+        {
+            if (Pressed(keyboard, Keys.Enter)) SendLobbyChat();
+            PollLobby(gameTime);
+            return;
+        }
         if (_online.SessionName.IsFocused)
         {
             if (Pressed(keyboard, Keys.Enter)) CommitLobbySessionName();
