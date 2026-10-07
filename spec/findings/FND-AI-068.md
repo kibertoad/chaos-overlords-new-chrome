@@ -64,9 +64,6 @@ element is `(100 % 8) * 8 + 100 / 8`, element 44, which is sector 37
 (FND-AI-069), so the gang heads for sector 37. Mode 2 is used only when no
 sector has weight 10.
 
-This corrects FND-AI-059, which took mode `0xA4` to score no sector and the
-gang to step toward a sector drawn from all 64.
-
 ## Alternatives
 
 A family-6 gang whose stored coverage sector is 100 and whose focus is -1

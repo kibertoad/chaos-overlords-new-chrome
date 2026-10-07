@@ -29,7 +29,7 @@ Surfaces: the startup loader `fn_00418F16` loads `PX02000` into surface 5 at
 handler `fn_0043F692` loads `PX05005` into surface 7 at `(0,144)`, so a
 surface 7 point `(x, y)` in that area is panel-local `(x, y - 144)` and screen
 `(104 + x, y - 20)`. Mode 0 and mode 1 of the copy wrapper `fn_00427864` are
-the pattern mask and the white key of FND-PLATFORM-008.
+the pattern compositor and the keyed compositor of FND-PLATFORM-015.
 
 For each of the sector's three site slots `s`, the handler (`0x0043F87E`
 onward) takes the slot's site definition `d` (sector bytes `0x07`, `0x09`,
@@ -84,8 +84,8 @@ exceeded its Resistance would be drawn as selectable.
 
 - What the three 120-by-64 frames of `PX00129` look like has not been checked
   against the image.
-- The pattern mask used by mode 0 is chosen by the resource (FND-PLATFORM-008);
-  which pattern applies here has not been read.
+- Which pattern the mode 0 compositor `fn_00427E60` (FND-PLATFORM-015) applies
+  here has not been read.
 
 ## How to reproduce
 

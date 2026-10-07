@@ -23,7 +23,7 @@ a byte flag for one row. For row `r` (0 weapon, 1 armor, 2 miscellaneous):
 
 - When the flag is nonzero it copies the 192-by-54 cell `(222,363)` of
   surface 6 (`PX00129`, FND-UI-031) with the keyed mode 1 of `fn_00427864`
-  (FND-PLATFORM-008) to the screen at `(214, 138 + 64 * r)`.
+  (FND-PLATFORM-015) to the screen at `(214, 138 + 64 * r)`.
 - When the flag is 0 it copies the same 192-by-54 area from surface 7, where
   the handler composed the panel at `(0,144)`, from `(110, 158 + 64 * r)` to
   the screen at `(214, 138 + 64 * r)`, which removes a mark drawn earlier.
