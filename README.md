@@ -27,6 +27,45 @@ for post-1.0 compatibility.
 The installer contains no original assets and requires an installed legal copy
 when importing them.
 
+### macOS
+
+The project does not pay for an Apple Developer membership, which Apple requires
+before it will sign or notarize anything, so the macOS installers are unsigned
+and macOS refuses to open them until you allow it. Releases that include macOS
+builds carry `ChaosOverlords-NewChrome-osx-arm64-Setup-<version>.pkg` for Apple
+silicon (M1 and later) and, in some releases,
+`ChaosOverlords-NewChrome-osx-x64-Setup-<version>.pkg` for Intel Macs.
+
+Allow the downloaded installer in one of these ways:
+
+- macOS 15 (Sequoia) and later: double-click the `.pkg` and click **Done** when
+  macOS says it could not verify it. Open **System Settings > Privacy &
+  Security**, scroll down to the message that the package was blocked, click
+  **Open Anyway**, enter your password, and click **Open Anyway** again.
+- macOS 12 to 14: Control-click (or right-click) the `.pkg` in Finder, choose
+  **Open**, and click **Open** in the warning dialog.
+- Any version, from Terminal: remove the quarantine flag the browser put on the
+  download, then double-click the `.pkg` as usual.
+
+  ```shell
+  xattr -d com.apple.quarantine ~/Downloads/ChaosOverlords-NewChrome-osx-*-Setup-*.pkg
+  ```
+
+The installer puts **Chaos Overlords New Chrome** in Applications. If macOS also
+blocks the app the first time it starts, allow it under **Privacy & Security**
+the same way, or clear the flag from the whole bundle:
+
+```shell
+xattr -dr com.apple.quarantine "/Applications/Chaos Overlords New Chrome.app"
+```
+
+The macOS installer does not import the original assets. Import them once from
+Terminal, passing the folder that holds your copy of *Chaos Overlords*:
+
+```shell
+"/Applications/Chaos Overlords New Chrome.app/Contents/MacOS/Install Original Resources" "/path/to/Chaos Overlords"
+```
+
 ## Project status
 
 New Chrome is a fully featured reproduction of the original, believed to be

@@ -196,8 +196,8 @@ native libraries are unpacked at run time and are neither signed nor notarized,
 which the hardened runtime required for notarization rejects; and
 `Build-MacInstaller.ps1` places `Rechaos.Extractor` under `Contents/Resources`,
 where `codesign` seals it as data rather than as nested code. Until those are
-addressed, a macOS `.pkg` warns on first open and must be opened from the
-context menu.
+addressed, macOS blocks the `.pkg` on first open; the
+[README](../README.md#macos) tells players how to allow it.
 
 ## Continuous integration
 
