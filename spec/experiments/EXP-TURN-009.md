@@ -65,11 +65,11 @@ both runs.
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the twelve
-turns of each run, submitting each written order as the human's command before
-the Done press it preceded, and the rebuild makes the same calls with the same
-bounds and results and reaches the same generator position and state.
+Every result is the one RULE-RNG-002 computes from the recorded seed. A test of
+the rebuild replays the twelve turns of each run, submitting each written order
+as the human's command before the Done press it preceded, and the rebuild makes
+the same calls with the same bounds and results and reaches the same generator
+position and state.
 
 ## Conclusion
 

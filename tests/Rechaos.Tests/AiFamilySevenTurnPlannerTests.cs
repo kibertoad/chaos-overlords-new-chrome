@@ -363,7 +363,7 @@ public sealed class AiFamilySevenTurnPlannerTests
             })
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            scenario, GameDuration.SixMonths, 41, setups, mentality),
+            scenario, GameDuration.SixMonths, 41, setups, MatchDeviations.Original, mentality),
             players, sectors);
     }
 }

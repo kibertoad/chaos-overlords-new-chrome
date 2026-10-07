@@ -46,11 +46,11 @@ The run made 696 calls of `roll` over five Done presses. At the end
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. The rebuild makes the same calls with the same bounds and results and
-reaches the same state, the planning records included. The rebuild reaches the
-family-4 Control after two Moves and the Heal after None, Control or Heal.
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. The rebuild makes the same calls
+with the same bounds and results and reaches the same state, the planning
+records included. The rebuild reaches the family-4 Control after two Moves and
+the Heal after None, Control or Heal.
 
 ## Conclusion
 

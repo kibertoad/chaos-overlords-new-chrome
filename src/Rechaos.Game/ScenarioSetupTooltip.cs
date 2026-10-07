@@ -61,7 +61,7 @@ public static class ScenarioSetupTooltip
             },
             _ => throw new ArgumentOutOfRangeException(nameof(scenario))
         };
-        return new[] { definition.Name, definition.Objective.ToUpperInvariant() }
+        return new[] { ExecutableStrings.ScenarioTitle(scenario), definition.Objective.ToUpperInvariant() }
             .Concat(rules)
             .Append(scenario is ScenarioId.KillEmAll or ScenarioId.Eliminate
                 ? "IT HAS NO OTHER END TEST."
