@@ -191,13 +191,14 @@ public sealed class EventPumpClockTests
         Field("_leftHoldOutlivesCancel").SetValue(game, false);
         Assert.False(Holds(game));
 
-        // The back control's helper loop follows the left button, so a right-button hold of it,
-        // which only the rebuild keeps, lets the pump run.
+        // The console tile helper loops until the button that pressed it comes up, the right one
+        // included (FND-UI-063).
+        Field("_pressedCityConsoleByRightButton").SetValue(game, true);
+        AssertHolds(game, "_pressedCityConsoleControl", CityConsoleControl.Done);
+        Field("_pressedCityConsoleByRightButton").SetValue(game, false);
+
         Field("_pressedPanelFace").SetValue(game,
             (SectorDetailLayout.Back, ClientScreen.Sector, (Action)(() => { })));
-        Field("_pressedPanelFaceByRightButton").SetValue(game, true);
-        Assert.False(Holds(game));
-        Field("_pressedPanelFaceByRightButton").SetValue(game, false);
         Assert.True(Holds(game));
         Field("_pressedPanelFace").SetValue(game, null);
         Assert.False(Holds(game));

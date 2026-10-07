@@ -45,11 +45,11 @@ gang, and one Last Turn report: type 6 (cash short) with `arg1` 4 (hire),
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results, reaches the
-same generator position and state, and builds the same Last Turn reports for
-every player. In its replay the Equip takes the cash from 18 to 14, the hire of
-cost 15 fails, and the next turn's income brings the cash to 15.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results, reaches the same generator position and state, and
+builds the same Last Turn reports for every player. In its replay the Equip
+takes the cash from 18 to 14, the hire of cost 15 fails, and the next turn's
+income brings the cash to 15.
 
 ## Conclusion
 

@@ -55,16 +55,14 @@ events and end state match the first run's.
 
 ## Results
 
-`PanelsSlideInWithTheOriginalsCopies` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Slides.cs` maps each slide
-to the rebuild's panel through its return address (FND-UI-066), fails on a
-return address it does not map, and compares the rebuild's step and copy
-sequence for the recorded benchmark with each slide, and the offsets the
-rebuild's Hire screen and order panel show at its fixed pace
-of 84 copies a second (DEV-TIMER-001). A first comparison found the rebuild's
-order panels, which open on its Commands screen, not sliding at all.
-`TheGameSlidesItsPanelsInWithTheOriginalsCopies` opens the mapped panel in the
-game played headless and compares the offsets of the slide it starts.
+A test of the rebuild maps each slide to the rebuild's panel through its
+return address (FND-UI-066), fails on a return address it does not map, and
+compares the rebuild's step and copy sequence for the recorded benchmark with
+each slide, and the offsets the rebuild's Hire screen and order panel show at
+its fixed pace of 84 copies a second (DEV-TIMER-001). A first comparison found
+the rebuild's order panels, which open on its Commands screen, not sliding at
+all. A second test opens the mapped panel in the game played headless and
+compares the offsets of the slide it starts.
 
 ## Conclusion
 

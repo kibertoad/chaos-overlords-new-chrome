@@ -102,10 +102,15 @@ public sealed partial class ChaosGame
         return true;
     }
 
-    private bool BeginCityConsolePress(Point point, ClientScreen returnScreen)
+    /// <summary>
+    /// FND-UI-032: a press on a console tile holds it until the button comes up, and a release
+    /// inside acts. A right press holds it until the right button comes up (FND-UI-063).
+    /// </summary>
+    private bool BeginCityConsolePress(Point point, ClientScreen returnScreen, bool rightButton = false)
     {
         if (CityConsoleLayout.HitTest(point) is not { } control) return false;
         _pressedCityConsoleControl = control;
+        _pressedCityConsoleByRightButton = rightButton;
         _pressedCityConsoleAction = CityConsoleLayout.ActionAt(point);
         _pressedCityConsoleReturnScreen = returnScreen;
         PlayGeneralSound(AudioRouting.PointerPushSound());
@@ -171,6 +176,7 @@ public sealed partial class ChaosGame
     {
         _pressedCityConsoleControl = null;
         _pressedCityConsoleAction = null;
+        _pressedCityConsoleByRightButton = false;
     }
 
     private void OpenManagement(ClientScreen screen, ClientScreen returnScreen)
