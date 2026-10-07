@@ -769,12 +769,43 @@ this one neither offers it nor prefills its join code. Terminal online
 errors are shown on the title screen and name that recovery path when the saved membership may
 still be valid. A completed match or an explicit Leave retires
 the recovery record, and a retired record is dropped rather than written back: the token is a full
-capability for that seat, so keeping a spent one on disk buys nothing. On Windows the token is
-sealed with DPAPI to the current user account, so another account on the same machine cannot read
-it out of the file; macOS and Linux keep it in clear under the user's own data root, because their
-keystores want a native dependency the game does not otherwise carry
-([#456](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/456)). Neither defends
-against something already running as the player.
+capability for that seat, so keeping a spent one on disk buys nothing.
+
+The token is kept out of the record's clear text wherever the platform offers a per-user store, so
+another account on the same machine, or a copy of the file, does not carry the seat:
+
+- On Windows it is sealed with DPAPI to the current user account, and the sealed bytes stay in the
+  record.
+- On macOS it is a generic password item in the login Keychain, and on Linux a password in the
+  Secret Service keyring (GNOME Keyring, KWallet or KeePassXC), reached through libsecret. The
+  record names the store and the account the token is filed under. Both are libraries the operating
+  system provides (Security.framework, `libsecret-1.so.0`), loaded when first needed, so the build
+  carries no native package for them. Every item is filed under one service of the game's own,
+  "Chaos Overlords New Chrome online seats", and the account name starts with a digest of the
+  record's path, so two data roots on one account keep apart. A record that names an account under
+  another root's digest (a copied or moved data root) is read, and its next save files the token
+  under the root's own account; the other root's item is never deleted from here, so a copy cannot
+  remove the original's seats and a move leaves its old items in the store. The game is not signed
+  with a Keychain entitlement, so after an update replaces the executable macOS asks, once for each
+  saved seat, whether the new build may read the item.
+- Where no store answers (a Linux system without libsecret or without a running keyring, a store
+  that refuses the write, or any other platform), the token stays in clear in the record, which is
+  created readable and writable by its owner only, and the Unfinished Sessions screen says so in
+  one line under the list.
+
+A record written by an older build that still holds a clear token is rewritten by the first load
+that can protect it, and its `.bak` generation is replaced with the rewritten file, so the clear
+token does not wait for the next turn to leave the disk. A save that drops a seat (Leave, a finished
+match, a seat the server has retired) also removes that seat's token from the store. A seat whose
+store does not answer when the record is loaded (the keyring is locked, its unlock prompt was
+dismissed, no keyring runs this session) is not offered, because there is no token to offer it
+with, and is not dropped either: every save writes it back unchanged until a load finds the store
+answering. A store that answers and holds no such token is the one case that drops the seat. A
+record that uses an operating-system store is stamped with a format version the previous build
+leaves alone, since that build would read such a seat as one without a token and drop it; a record
+that does not use one, which is every record on Windows, keeps the version that build reads.
+
+None of this defends against something already running as the player, which nothing local can.
 
 The session password is kept in clear on every platform. It opens one session's door to whoever the
 player was going to read it out to anyway, where the token is that seat itself, and the player who

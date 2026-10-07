@@ -31,6 +31,12 @@ public sealed partial class ChaosGame
     private readonly List<MultiplayerRecovery> _multiplayerRecoveries = [];
 
     /// <summary>
+    /// Whether the recovery file holds a seat's token in clear, because no keyring took it; the
+    /// Unfinished Sessions screen says so. Read after each load and save rather than per frame.
+    /// </summary>
+    private bool _onlineTokensInClear;
+
+    /// <summary>
     /// Bumped whenever <see cref="_multiplayerRecoveries"/> changes, so the filtered view over it
     /// can tell whether it is stale without comparing the lists.
     /// </summary>
@@ -935,6 +941,7 @@ public sealed partial class ChaosGame
     {
         _multiplayerRecoveryVersion++;
         MultiplayerRecoveryStore.TrySaveAll(_multiplayerRecoveryPath, _multiplayerRecoveries, durable);
+        _onlineTokensInClear = MultiplayerRecoveryStore.KeepsTokensInClear(_multiplayerRecoveryPath);
     }
 
     private static bool SameMembership(MultiplayerRecovery left, MultiplayerRecovery right) =>

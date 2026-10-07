@@ -303,6 +303,11 @@ public sealed partial class ChaosGame
         }
         DrawCentered(font, batch, OnlineHistoryPresentation.Hint,
             OnlineConnectLayout.HistoryNoteY, OnlineSecondaryText, 1);
+        if (_onlineTokensInClear && sessions.Count > 0)
+        {
+            DrawCentered(font, batch, OnlineHistoryPresentation.TokensInClearNote,
+                OnlineConnectLayout.HistoryStorageNoteY, OnlineMutedText, 1);
+        }
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN",
             selected is not null ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK",
