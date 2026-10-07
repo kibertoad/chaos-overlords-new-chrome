@@ -82,7 +82,7 @@ jobs:
       # No cache: this job pushes to main (zizmor's cache-poisoning audit).
       - name: Install the documentation checker
         if: steps.gate.outputs.run == 'true'
-        uses: ./.github/actions/install-documentation-checker
+        uses: $/.github/actions/install-documentation-checker
         with:
           cache: "false"
 
