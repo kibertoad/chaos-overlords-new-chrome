@@ -178,7 +178,7 @@ public static partial class AiTurnPlanner
     /// RULE-AI-031, FND-AI-062: families 13 and 14. On an objective the owner query does not give
     /// to the player, a gang fights on turns with an even number remaining and takes Control
     /// otherwise; on its own objective it fights anything visible, heals, buys or Influences.
-    /// Off the objectives it moves toward one.
+    /// Off the objectives it moves toward one, or, outside Big Man and Siege, to its planned target.
     /// </summary>
     private static void PrepareObjectiveFamilyCommand(
         MatchState state,

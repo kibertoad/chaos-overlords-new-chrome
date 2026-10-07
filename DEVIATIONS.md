@@ -556,11 +556,13 @@ started with.
 
 ## DEV-AI-007
 
-- Departs from: RULE-AI-006, RULE-MOVE-001
+- Departs from: RULE-AI-006, RULE-AI-031, RULE-MOVE-001
 - Reason: A computer player's gang moves only to a sector next to its own, as a human's does. The
   original's sector selector can return a sector several steps away: when the first of its sorted
   pairs is a neighbour it returns the tie-break's pick, and a pair that the family-0 and family-1
-  filter kept from an earlier call can tie with the neighbours (RULE-AI-006). The Move pass then
+  filter kept from an earlier call can tie with the neighbours (RULE-AI-006). A family-13 or
+  family-14 gang outside Big Man and Siege moves to its planned target, sector 0, from anywhere in
+  the city (RULE-AI-031, EXP-TURN-101). The Move pass then
   puts the gang in that sector at once (RULE-MOVE-001, EXP-TURN-015). The rebuild refuses such a
   Move when the planned action becomes a command, as DEV-AI-002 does with the other planned
   actions a human could not order, so the gang has no order that turn and keeps its planning

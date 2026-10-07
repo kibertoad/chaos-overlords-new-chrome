@@ -56,7 +56,11 @@ writes the same families before the same Done press. The rebuild makes the same
 calls with the same bounds and results and reaches the same state, the planning
 records included. Each written gang reaches the handler's Move write in the
 planning pass of the third turn and in every pass after it, and the
-destination is sector 0, the planned target the pass starts from. Before the
+destination is sector 0, the planned target the pass starts from. The gang in
+slot 1 of player 1 is the exception: player 1 hired it in the second turn, so
+its record still carries the `needs_family` flag when the probe writes 14, and
+the dispatcher wipes the record and gives it family 0 before any handler runs
+(RULE-AI-002). The write changes only the family and leaves the flag set. Before the
 rebuild was corrected it called the selector in every scenario and refused the
 modes of families 13 and 14 outside Big Man and Siege, so it could not replay
 the run.
