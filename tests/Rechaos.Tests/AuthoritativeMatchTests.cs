@@ -135,6 +135,51 @@ public sealed class AuthoritativeMatchTests
         Assert.Equal(before, resolver.StateHash);
     }
 
+    /// <summary>
+    /// A successor turn the server seals on its deadline after the match ended is ignored, as the
+    /// client session ignores it, instead of throwing inside the applier.
+    /// </summary>
+    [Fact]
+    public void IgnoresASetSealedAfterTheMatchFinished()
+    {
+        var resolver = NewResolver();
+        while (!resolver.IsFinished) resolver.ApplySealedTurn(EmptySeal(resolver.Turn));
+        var finished = resolver.StateHash;
+
+        Assert.Equal(finished, resolver.ApplySealedTurn(EmptySeal(resolver.Turn)));
+        Assert.Equal(finished, resolver.StateHash);
+    }
+
+    /// <summary>
+    /// The recorder the resolver holds its match in keeps no journal, so a long match does not grow
+    /// it turn after turn, and still reaches the hash a journaling client does.
+    /// </summary>
+    [Fact]
+    public void ARecorderWithoutAJournalReachesTheSameHashAndKeepsNoSteps()
+    {
+        var client = NewClient();
+        var server = MatchReplayRecorder.WithoutJournal(
+            MatchBootstrapFactory.Create(Definitions, Seed, Settings, Roster));
+        CommandPhase.Enter(server);
+
+        var sealedOrders = Seal(client.State);
+        Assert.Equal(SealedTurnApplier.Apply(client, sealedOrders), SealedTurnApplier.Apply(server, sealedOrders));
+
+        Assert.False(server.IsJournaling);
+        Assert.Equal(0, server.StepCount);
+        Assert.True(client.StepCount > 0);
+        Assert.Throws<InvalidOperationException>(() => MatchReplaySerializer.Save(new MemoryStream(), server));
+    }
+
+    private static SealedOrdersView EmptySeal(int turn)
+    {
+        var empty = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);
+        var entries = Roster
+            .Select(player => new SealedPlayerOrders(player.Id, player.Slot, empty, OrderDigest.OfDocument(empty)))
+            .ToArray();
+        return new SealedOrdersView(turn, OrderDigest.OfSet(entries), entries);
+    }
+
     [Fact]
     public void PlaysTheSessionVersionOfThisBuild()
     {

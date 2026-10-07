@@ -47,16 +47,15 @@ players 2 and 5, tied at standing 1, are listed in slot order and no player is l
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results, ends the match
-with the resolution of turn 26, reaches the same state, stored scores and Last
-Turn reports, and gives the same awards to the same players. The computer
-players' last planning reads the gangs' statistics as the refresh at the end
-of the match leaves them; without that refresh the rebuild's rolls part from
-the original's in the hire-offer scan of the final turn.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results, ends the match with the resolution of turn 26, reaches
+the same state, stored scores and Last Turn reports, and gives the same awards
+to the same players. The computer players' last planning reads the gangs'
+statistics as the refresh at the end of the match leaves them; without that
+refresh the rebuild's rolls part from the original's in the hire-offer scan of
+the final turn.
 
-The rebuild's endgame lists the players in the same order and places
-(`TheEndgameListsThePlayersInTheOriginalsOrder`).
+The rebuild's endgame lists the players in the same order and places.
 
 ## Conclusion
 

@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
@@ -43,48 +42,7 @@ public sealed partial class ChaosGame
         if (texture is not null) _combatAnimationTextures[fileName] = texture;
     }
 
-    /// <summary>Set once the audio backend has refused to open a device.</summary>
-    /// <remarks>
-    /// Every other audio path in the game treats sound as optional: <see cref="TryPlaySound"/>,
-    /// the soundtrack loader and the movie audio all swallow backend failures. Loading the effects
-    /// did not, so a machine with no output device enabled, a remote desktop session with no audio
-    /// redirection, or a Linux box with no sound server running could not start the game at all, and
-    /// was told to re-import its assets.
-    /// </remarks>
-    private bool _audioUnavailable;
-
-    private SoundEffect? LoadSound(string fileName)
-    {
-        if (_audioUnavailable) return null;
-        var path = Path.Combine(_assetRoot, "audio", fileName);
-        if (!File.Exists(path)) return null;
-        try
-        {
-            using var stream = File.OpenRead(path);
-            return SoundEffect.FromStream(stream);
-        }
-        catch (NoAudioHardwareException)
-        {
-            _audioUnavailable = true;
-            _diagnostics?.Write("audio.unavailable", new Dictionary<string, string?>
-            {
-                ["firstFile"] = fileName
-            });
-            return null;
-        }
-        catch (Exception exception) when (exception is IOException
-            or InvalidOperationException or ArgumentException or OutOfMemoryException)
-        {
-            // RULE-AUDIO-004, FND-AUDIO-006: unreadable files or failed memory
-            // allocation leave the slot empty and do not stop loading the rest.
-            return null;
-        }
-    }
-
-    private void PlayCombatSound(short soundIndex)
-    {
-        if (_combatSounds.TryGetValue(soundIndex, out var sound)) TryPlaySound(sound);
-    }
+    private void PlayCombatSound(short soundIndex) => PlaySound(SoundEffectCue.Combat(soundIndex));
 
     /// <summary>
     /// The player whose view is drawn: the one in its end-of-match final view, else the active one,
@@ -93,11 +51,8 @@ public sealed partial class ChaosGame
     private PlayerId ViewingPlayer(MatchState state) =>
         PlanningViewer ?? new PlayerId(0);
 
-    private void PlayGeneralSound(int slot, bool ignoresEffectsEnabled = false)
-    {
-        if (_generalSounds.TryGetValue(slot, out var sound))
-            TryPlaySound(sound, ignoresEffectsEnabled);
-    }
+    private void PlayGeneralSound(int slot, bool ignoresEffectsEnabled = false) =>
+        PlaySound(SoundEffectCue.General(slot), ignoresEffectsEnabled);
 
     private void ReportInputResult(bool accepted, string rejectionMessage)
     {
@@ -142,35 +97,13 @@ public sealed partial class ChaosGame
     /// direct call does (BUG-AUDIO-001). The level still sets the volume (RULE-AUDIO-003), so at
     /// level 0 the sound is silent, but it still stops the effect before it.
     /// </remarks>
-    private void TryPlaySound(SoundEffect sound, bool ignoresEffectsEnabled = false)
+    private void PlaySound(SoundEffectCue cue, bool ignoresEffectsEnabled = false)
     {
         if (_soundEffectVolumeLevel == 0 && !ignoresEffectsEnabled) return;
-        SoundEffectInstance? next = null;
-        try
-        {
-            next = sound.CreateInstance();
-            next.Volume = AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel);
-            // Native effects go through PlaySoundA without SND_NOSTOP. Its next sound
-            // interrupts the preceding one, while MCI music is a separate path.
-            StopEffectVoice();
-            next.Play();
-            _activeEffectVoice = next;
-        }
-        catch
-        {
-            try { next?.Dispose(); } catch { }
-            // Optional presentation audio must never interrupt gameplay.
-        }
+        _soundEffects.Play(cue, AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel));
     }
 
-    private void StopEffectVoice()
-    {
-        var voice = _activeEffectVoice;
-        _activeEffectVoice = null;
-        if (voice is null) return;
-        try { voice.Stop(); } catch { }
-        try { voice.Dispose(); } catch { }
-    }
+    private void StopEffectVoice() => _soundEffects.Stop();
 
     private void CaptureNewCombatAnimations()
     {

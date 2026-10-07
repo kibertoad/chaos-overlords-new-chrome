@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
@@ -137,7 +138,7 @@ namespace Rechaos.Tests;
 /// </summary>
 public sealed partial class OriginalNewGameExperimentTests
 {
-    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-TURN-097", "EXP-TURN-098", "EXP-TURN-099", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018", "EXP-COMBAT-001", "EXP-COMBAT-002", "EXP-COMBAT-003", "EXP-COMBAT-004", "EXP-COMBAT-005", "EXP-COMBAT-006", "EXP-COMBAT-007", "EXP-COMBAT-008", "EXP-COMBAT-009", "EXP-UI-019", "EXP-UI-020", "EXP-UI-021", "EXP-UI-022", "EXP-UI-023", "EXP-AUDIO-001", "EXP-VIDEO-001", "EXP-UI-024", "EXP-UI-025", "EXP-UI-026"];
+    private static readonly string[] Experiments = ["EXP-SETUP-001", "EXP-SETUP-002", "EXP-SETUP-003", "EXP-SETUP-004", "EXP-TURN-001", "EXP-TURN-002", "EXP-TURN-003", "EXP-TURN-004", "EXP-TURN-005", "EXP-TURN-006", "EXP-TURN-007", "EXP-TURN-008", "EXP-TURN-009", "EXP-TURN-010", "EXP-TURN-011", "EXP-TURN-012", "EXP-TURN-013", "EXP-TURN-014", "EXP-TURN-015", "EXP-TURN-016", "EXP-TURN-017", "EXP-TURN-018", "EXP-TURN-019", "EXP-TURN-020", "EXP-TURN-021", "EXP-TURN-022", "EXP-TURN-023", "EXP-TURN-024", "EXP-TURN-025", "EXP-TURN-026", "EXP-TURN-027", "EXP-TURN-028", "EXP-TURN-029", "EXP-TURN-030", "EXP-TURN-031", "EXP-TURN-032", "EXP-TURN-033", "EXP-TURN-034", "EXP-TURN-035", "EXP-TURN-037", "EXP-TURN-038", "EXP-TURN-039", "EXP-TURN-040", "EXP-TURN-041", "EXP-TURN-042", "EXP-TURN-043", "EXP-TURN-044", "EXP-TURN-045", "EXP-TURN-046", "EXP-TURN-047", "EXP-TURN-048", "EXP-TURN-049", "EXP-TURN-050", "EXP-TURN-051", "EXP-TURN-052", "EXP-TURN-053", "EXP-TURN-054", "EXP-TURN-055", "EXP-TURN-056", "EXP-TURN-057", "EXP-TURN-058", "EXP-TURN-059", "EXP-TURN-060", "EXP-TURN-061", "EXP-TURN-062", "EXP-TURN-063", "EXP-TURN-064", "EXP-TURN-065", "EXP-TURN-066", "EXP-TURN-067", "EXP-TURN-068", "EXP-TURN-069", "EXP-TURN-070", "EXP-TURN-071", "EXP-TURN-072", "EXP-TURN-073", "EXP-TURN-074", "EXP-TURN-075", "EXP-TURN-076", "EXP-TURN-077", "EXP-TURN-078", "EXP-TURN-079", "EXP-TURN-080", "EXP-TURN-081", "EXP-TURN-082", "EXP-TURN-083", "EXP-TURN-084", "EXP-TURN-085", "EXP-TURN-086", "EXP-TURN-087", "EXP-TURN-088", "EXP-TURN-089", "EXP-TURN-090", "EXP-TURN-091", "EXP-TURN-093", "EXP-TURN-094", "EXP-UI-001", "EXP-EQUIP-001", "EXP-EQUIP-002", "EXP-EQUIP-003", "EXP-ATTACK-001", "EXP-ATTACK-002", "EXP-ATTACK-003", "EXP-SEARCH-001", "EXP-SEARCH-002", "EXP-UI-003", "EXP-HIRE-001", "EXP-HIRE-002", "EXP-TURN-095", "EXP-UI-004", "EXP-UI-005", "EXP-TURN-096", "EXP-TURN-097", "EXP-TURN-098", "EXP-TURN-099", "EXP-UI-006", "EXP-UI-007", "EXP-UI-008", "EXP-UI-009", "EXP-UI-010", "EXP-UI-011", "EXP-UI-012", "EXP-UI-013", "EXP-UI-014", "EXP-UI-016", "EXP-UI-017", "EXP-UI-018", "EXP-COMBAT-001", "EXP-COMBAT-002", "EXP-COMBAT-003", "EXP-COMBAT-004", "EXP-COMBAT-005", "EXP-COMBAT-006", "EXP-COMBAT-007", "EXP-COMBAT-008", "EXP-COMBAT-009", "EXP-UI-019", "EXP-UI-020", "EXP-UI-021", "EXP-UI-022", "EXP-UI-023", "EXP-AUDIO-001", "EXP-VIDEO-001", "EXP-UI-024", "EXP-UI-025", "EXP-UI-026", "EXP-UI-029", "EXP-UI-046", "EXP-UI-047", "EXP-UI-048", "EXP-UI-049", "EXP-UI-054"];
 
     private static readonly Lazy<IReadOnlyDictionary<string, RecordedRun[]>> Recorded =
         new(() => Experiments.ToDictionary(experiment => experiment, LoadRuns));
@@ -155,6 +156,12 @@ public sealed partial class OriginalNewGameExperimentTests
     // (FND-OBJECTIVE-004, FND-UI-041). Their fixtures hold no award rows; every other run that
     // ends the match has to.
     private static readonly HashSet<string> EndpointsBeforeAwards = ["EXP-TURN-041", "EXP-TURN-042"];
+
+    // Runs that end after the awards but were recorded before the probe kept the endgame's rows
+    // (FND-AWARDS-005). Every other such run has to hold endgame_rows, so a recording whose
+    // renderer trace timed out fails instead of dropping out of the endgame comparison. A run
+    // leaves this set when it is recorded again.
+    private static readonly HashSet<string> EndgamesBeforeEndgameRows = ["EXP-TURN-037"];
 
     public static TheoryData<string, int> MatchingRuns()
     {
@@ -193,17 +200,9 @@ public sealed partial class OriginalNewGameExperimentTests
     private static int FirstDifferingRoll(
         RecordedRun recorded, bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false)
     {
-        var rolls = new List<(int Bound, int Result)>();
-        DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
-        try
-        {
-            StartMatch(recorded, out _, computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
-                computerHiresWhereHumansCan: computerHiresWhereHumansCan);
-        }
-        finally
-        {
-            DeterministicRandom.RollObserver = null;
-        }
+        var rolls = ObservingRolls(() => StartMatch(recorded, out _,
+            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan: computerHiresWhereHumansCan));
 
         return Enumerable.Range(0, Math.Min(rolls.Count, recorded.Rolls.Count))
             .First(index => rolls[index] != (recorded.Rolls[index].Bound, recorded.Rolls[index].Result));
@@ -240,18 +239,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheRebuildStartsTheSameMatch(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var rolls = new List<(int Bound, int Result)>();
-        MatchState match;
-        int donePresses;
-        DeterministicRandom.RollObserver = (bound, result) => rolls.Add((bound, result));
-        try
-        {
-            match = StartMatch(recorded, out donePresses);
-        }
-        finally
-        {
-            DeterministicRandom.RollObserver = null;
-        }
+        var (match, donePresses, rolls) = Replayed(recorded);
 
         var human = recorded.Humans[0];
 
@@ -505,9 +493,16 @@ public sealed partial class OriginalNewGameExperimentTests
             {
                 // A pre-awards fixture holding award rows would leave them uncompared.
                 Assert.False(recorded.HasTerm("player_awards", 0), "a run stopped before the awards holds no award rows");
+                // EndgameRuns would otherwise compare a drawing that has no recorded awards behind it.
+                Assert.True(recorded.EndgameRows is null, "a run stopped before the awards holds no endgame_rows");
                 return;
             }
             Assert.True(recorded.HasTerm("player_awards", 0), "a run that ends the match after the awards holds their rows");
+            // TheEndgameListsThePlayersInTheOriginalsOrder compares these rows.
+            Assert.True(EndgamesBeforeEndgameRows.Contains(experiment) == (recorded.EndgameRows is null),
+                EndgamesBeforeEndgameRows.Contains(experiment)
+                    ? "a run recorded before endgame_rows holds them, so it leaves EndgamesBeforeEndgameRows"
+                    : "a run that ends the match after the awards holds endgame_rows");
             EndgameAward[] order =
                 [EndgameAward.Fist, EndgameAward.Skull, EndgameAward.BigFatChicken, EndgameAward.DollarSign, EndgameAward.Safe];
             foreach (var player in match.Players)
@@ -575,19 +570,12 @@ public sealed partial class OriginalNewGameExperimentTests
             Assert.True(combatCalled[entry], $"planning entry {entry + 1}: the recording holds no call of Combat Results");
 
         var shown = new List<string>[recorded.DoneCount + 1];
-        static List<string> Panels(MatchState match, PlayerId human)
-        {
-            var hasCombat = CombatResultProjection.Pages(match, human).SelectMany(page => page.Results).Any();
-            var hasReports = LastTurnEventProjection.For(match, human).Count > 0;
-            return HandoffPresentationOrder.First(hasCombat, hasReports) switch
-            {
-                HandoffPresentationStep.Combat => hasReports ? ["Combat Results", "Last Turn Events"] : ["Combat Results"],
-                HandoffPresentationStep.Events => ["Last Turn Events"],
-                _ => [],
-            };
-        }
+        using var game = new HeadlessGame(HeadlessGame.DefaultPreferences with { DetailedCombat = false });
+        List<string> Panels(MatchState match, PlayerId human) => PlanningEntryPanels(game, match, human);
+        // The panels are read at each planning entry, before any of that turn's recorded orders,
+        // hires or planning writes reach the state, as the original showed them.
         var match = StartMatch(recorded, out var donePresses,
-            (state, human, turn) => shown[turn - 1] = Panels(state, human));
+            atPlanningEntry: (state, human, turn) => shown[turn - 1] = Panels(state, human));
         // An early stop would leave the recording's later entries uncompared.
         Assert.Equal(recorded.DoneCount, donePresses);
         // The last entry is a planning entry unless the match ended or the human was eliminated. An
@@ -605,6 +593,33 @@ public sealed partial class OriginalNewGameExperimentTests
         for (var entry = 0; entry < compared; entry++)
             Assert.True(expected[entry].SequenceEqual(shown[entry]),
                 $"planning entry {entry + 1}: the original showed [{string.Join(", ", expected[entry])}], the rebuild [{string.Join(", ", shown[entry])}]");
+    }
+
+    /// <summary>
+    /// The panels the rebuild shows at <paramref name="match"/>'s planning entry, in order: a copy of
+    /// the match is put on screen in <paramref name="game"/> as a hot-seat planning entry, and each
+    /// panel it opens is closed with Enter until the city shows.
+    /// </summary>
+    private static List<string> PlanningEntryPanels(HeadlessGame game, MatchState match, PlayerId human)
+    {
+        using var copy = new MemoryStream();
+        NativeSaveSerializer.Save(copy, match);
+        copy.Position = 0;
+        game.Game.EnterPlanningEntry(NativeSaveSerializer.Load(copy, match.Definitions));
+        Assert.Equal(human, game.Game.Match!.Coordinator.ActivePlayer);
+        var panels = new List<string>();
+        while (game.Game.CurrentScreen != ClientScreen.City)
+        {
+            panels.Add(game.Game.CurrentScreen switch
+            {
+                ClientScreen.CombatSummary => "Combat Results",
+                ClientScreen.Events => "Last Turn Events",
+                var other => throw new InvalidOperationException($"the planning entry showed {other}"),
+            });
+            Assert.True(panels.Count <= 2, $"the planning entry showed [{string.Join(", ", panels)}] and more");
+            game.Press(Keys.Enter);
+        }
+        return panels;
     }
 
     // RULE-OBJECTIVE-005: -2 stops before the card at the human's own slot; -1
@@ -651,6 +666,7 @@ public sealed partial class OriginalNewGameExperimentTests
             var state = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
                 ScenarioId.Power, GameDuration.OneYear, 12345,
                 [new MatchPlayerSetup(new PlayerId(slot), "PROBE", PlayerController.Human, 0)],
+                MatchDeviations.Original,
                 AiDifficulty.Goon, allowSparsePlayerIds: true));
             state.FindPlayer(new PlayerId(slot))!.Status = PlayerStatus.Eliminated;
             foreach (var gang in state.FindPlayer(new PlayerId(slot))!.Gangs) gang.Force = 0;
@@ -685,7 +701,7 @@ public sealed partial class OriginalNewGameExperimentTests
         var human = new PlayerId(2);
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
             ScenarioId.Power, GameDuration.OneYear, 12345,
-            [new MatchPlayerSetup(human, "PROBE", PlayerController.Human, 0)],
+            [new MatchPlayerSetup(human, "PROBE", PlayerController.Human, 0)], MatchDeviations.Original,
             AiDifficulty.Goon, allowSparsePlayerIds: true));
         foreach (var player in match.Players.Where(player => player.Id != human))
         {
@@ -707,55 +723,72 @@ public sealed partial class OriginalNewGameExperimentTests
     private static bool IsActive(MatchState match, PlayerId player) =>
         match.FindPlayer(player)!.Status == PlayerStatus.Active;
 
+    // A replay that a test watches through hooks or with a deviation switched on. Any other test
+    // takes its match from Replayed, which plays each distinct game once.
     private static MatchState StartMatch(
         RecordedRun recorded, out int donePresses, Action<MatchState, PlayerId, int>? beforeDone = null,
         bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false,
+        Action<MatchState, PlayerId, int>? atPlanningEntry = null, Action<MatchState>? afterDone = null) =>
+        Play(ReplayInputs.Of(recorded), out donePresses, beforeDone, computerMovesToNeighboursOnly,
+            computerHiresWhereHumansCan, atPlanningEntry, afterDone);
+
+    // Reads nothing of the recording but the inputs, so the inputs decide the replay and can key
+    // the cache of Replayed.
+    private static MatchState Play(
+        ReplayInputs inputs, out int donePresses, Action<MatchState, PlayerId, int>? beforeDone = null,
+        bool computerMovesToNeighboursOnly = false, bool computerHiresWhereHumansCan = false,
         Action<MatchState, PlayerId, int>? atPlanningEntry = null, Action<MatchState>? afterDone = null)
     {
-        var scenario = OriginalScenario(recorded.Term("scenario", 0));
+        var scenario = OriginalScenario(inputs.Scenario);
         var setup = new MatchSetup(
             scenario,
-            ScenarioCatalog.Get(scenario).IsTimed ? Duration(recorded.Term("turn_limit", 0)) : GameDuration.OneYear,
-            recorded.Seed,
-            recorded.Humans.Select(slot => new MatchPlayerSetup(
-                slot, Name(recorded, slot.Value), PlayerController.Human, (short)recorded.Term("portrait", slot.Value))).ToArray(),
-            (AiDifficulty)recorded.Term("mentality", 0),
-            allowSparsePlayerIds: true,
+            ScenarioCatalog.Get(scenario).IsTimed ? Duration(inputs.TurnLimit) : GameDuration.OneYear,
+            inputs.Seed,
+            inputs.Humans.Select(seat => new MatchPlayerSetup(
+                new PlayerId(seat.Slot), seat.Name, PlayerController.Human, seat.Portrait)).ToArray(),
             // DEV-AI-007 and DEV-AI-008 switched off unless a test asks for them, so the computer's
             // Moves and hires go where the original's do.
-            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
-            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
+            new MatchDeviations(computerMovesToNeighboursOnly, computerHiresWhereHumansCan, AiPolicyMode.Original),
+            (AiDifficulty)inputs.Mentality,
+            allowSparsePlayerIds: true);
         var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);
         match.FinishUpkeep();
         // RULE-SETUP-008: with several local humans the planning phase waits on the Ready card
         // before it refills the offers, and the recording stops there.
         var initialRecorder = new MatchReplayRecorder(match);
-        AdvanceToRecordedEndpoint(initialRecorder, recorded.Humans[0], 0);
-        if (recorded.Humans.Count == 1) match.PrepareHireOffers(recorded.Humans[0]);
+        AdvanceToRecordedEndpoint(initialRecorder, new PlayerId(inputs.Humans[0].Slot), 0);
+        if (inputs.Humans.Count == 1) match.PrepareHireOffers(new PlayerId(inputs.Humans[0].Slot));
 
         // Each Done ends the human's planning with no orders. The computer players then plan and
         // the turn resolves as in a headless match, up to the human's next planning entry.
         // A planning write changes the state outside the recorder, as the probe changes the
         // original's memory outside the game, so such a run's journal is not verified.
-        var recorder = recorded.Planning.Count == 0
+        var recorder = inputs.Planning.Count == 0
             ? new MatchReplayRecorder(match)
             : MatchReplayRecorder.Unverified(match);
-        var human = recorded.Humans[0];
+        var human = new PlayerId(inputs.Humans[0].Slot);
         donePresses = 0;
-        for (var turn = 0; turn < recorded.DoneCount; turn++)
+        for (var turn = 0; turn < inputs.DoneCount; turn++)
         {
             atPlanningEntry?.Invoke(match, human, turn + 1);
             // DEV-EQUIP-001: the rebuild resolves Equip and Sell in the order they are submitted.
             // Every recording lists a turn's orders in roster order, the original's scan order.
-            foreach (var order in recorded.Orders.Where(order => order.Turn == turn + 1))
+            // The replay plays the lowest human's planning only, as the probe presses Done only in
+            // the first human's; an order or hire for another human has no planning to go into.
+            foreach (var order in inputs.Orders.Where(order => order.Turn == turn + 1))
+            {
+                Assert.Equal(human, new PlayerId(order.Player));
                 Submit(recorder, match, human, order);
+            }
             // RULE-HIRE-003: the probe writes the offer slot's hire order as the hire screen does;
             // the rebuild queues the gang that slot offers.
-            foreach (var hire in recorded.Hires.Where(hire => hire.Turn == turn + 1))
+            foreach (var hire in inputs.Hires.Where(hire => hire.Turn == turn + 1))
             {
-                var offered = match.Players[human.Value].HireOfferSlots[hire.OfferSlot].GangDefinitionId;
+                var hiring = new PlayerId(hire.Player);
+                Assert.Equal(human, hiring);
+                var offered = match.Players[hiring.Value].HireOfferSlots[hire.OfferSlot].GangDefinitionId;
                 Assert.NotNull(offered);
-                var result = recorder.QueueHire(human, offered.Value, hire.Sector);
+                var result = recorder.QueueHire(hiring, offered.Value, hire.Sector);
                 Assert.True(result.Accepted, $"turn {hire.Turn}: the rebuild refused the hire: {result}");
             }
             // FMT-STATE-007, RULE-AI-023, RULE-AI-027: the probe writes a computer player's family or
@@ -763,7 +796,7 @@ public sealed partial class OriginalNewGameExperimentTests
             // A cleared player_active (FND-STATE-004) takes the player out of the match as the
             // elimination check does (RULE-TURN-006), with its gangs and sectors left where they are.
             // A cash write sets the player's cash (FND-AI-055) so a human can pay for a hire every turn.
-            foreach (var write in recorded.Planning.Where(write => write.Turn == turn + 1))
+            foreach (var write in inputs.Planning.Where(write => write.Turn == turn + 1))
                 if (write.Cash is { } cash) match.Players[write.Player].Cash = cash;
                 else if (write.Retired) match.Players[write.Player].Status = PlayerStatus.Eliminated;
                 else if (write.Raider) match.AiPlanning.SetRaiderMode(new PlayerId(write.Player));
@@ -779,7 +812,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 afterDone(match);
             }
             donePresses++;
-            AdvanceToRecordedEndpoint(recorder, human, recorded.Term("controller", human.Value));
+            AdvanceToRecordedEndpoint(recorder, human, inputs.HumanController);
             if (!IsActive(match, human) || match.Outcome is not null) break;
 
             recorder.PrepareHireOffers(human);
@@ -788,9 +821,10 @@ public sealed partial class OriginalNewGameExperimentTests
         return match;
     }
 
-    // The probe writes an order straight into the human's gang record (FMT-STATE-001) as the order
-    // screens do (RULE-TURN-005); the rebuild takes the same order as a command. A slot is the
-    // gang's roster slot (FMT-STATE-001), the index of its player's gang list.
+    // The probe writes an order straight into the gang record of the human the input names
+    // (FMT-STATE-001) as the order screens do (RULE-TURN-005); the rebuild takes the same order as
+    // that human's command. A slot is the gang's roster slot (FMT-STATE-001), the index of its
+    // player's gang list.
     private static void Submit(MatchReplayRecorder recorder, MatchState match, PlayerId human, RecordedOrder order)
     {
         var command = Command(match, human, order);
@@ -898,7 +932,7 @@ public sealed partial class OriginalNewGameExperimentTests
     internal static bool IsReplayed(string experiment) => Experiments.Contains(experiment);
 
     /// <summary>The rebuild's match after replaying a recorded run to its endpoint.</summary>
-    internal static MatchState ReplayedMatch(string experiment, int run) => StartMatch(Run(experiment, run), out _);
+    internal static MatchState ReplayedMatch(string experiment, int run) => Replayed(Run(experiment, run)).Match;
     internal static int RecordedTerm(string experiment, int run, string term, int index) =>
         Run(experiment, run).Term(term, index);
 

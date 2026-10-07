@@ -30,7 +30,14 @@ public sealed class AuthoritativeMatch
 {
     private readonly MatchReplayRecorder _replay;
 
-    private AuthoritativeMatch(MatchReplayRecorder replay) => _replay = replay;
+    /// <remarks>
+    /// The recorder skips the check that the state did not move behind its back, which costs a
+    /// whole fingerprint per mutation: this class never hands its state out, so nothing else can
+    /// move it. It also keeps no journal: the server holds a match for its whole life in a
+    /// memory-limited runtime, and a journal and its initial snapshot would grow every turn without
+    /// ever being read. The hashes are unaffected.
+    /// </remarks>
+    private AuthoritativeMatch(MatchState state) => _replay = MatchReplayRecorder.WithoutJournal(state);
 
     /// <summary>The session version this build resolves: see <see cref="MultiplayerSessionVersion"/>.</summary>
     /// <remarks>
@@ -61,10 +68,9 @@ public sealed class AuthoritativeMatch
         MultiplayerGameSettings settings,
         IReadOnlyList<PlayerView> players)
     {
-        var state = MatchBootstrapFactory.Create(definitions, seed, settings, players);
-        var replay = new MatchReplayRecorder(state);
-        CommandPhase.Enter(replay);
-        return new AuthoritativeMatch(replay);
+        var match = new AuthoritativeMatch(MatchBootstrapFactory.Create(definitions, seed, settings, players));
+        CommandPhase.Enter(match._replay);
+        return match;
     }
 
     /// <summary>
@@ -97,7 +103,7 @@ public sealed class AuthoritativeMatch
         var actual = MatchStateHasher.ComputeFingerprint(state);
         if (!string.Equals(actual, stateHash, StringComparison.Ordinal))
             throw new MultiplayerProtocolException("the snapshot does not hash to the state it claims");
-        return new AuthoritativeMatch(new MatchReplayRecorder(state));
+        return new AuthoritativeMatch(state);
     }
 
     /// <summary>
@@ -116,8 +122,6 @@ public sealed class AuthoritativeMatch
     {
         ArgumentNullException.ThrowIfNull(payload);
         ArgumentNullException.ThrowIfNull(stateHash);
-        if (payload.Length > NativeSaveSerializer.MaximumSaveBytes)
-            throw new MultiplayerProtocolException("the snapshot exceeds the save size limit");
         MatchState state;
         try
         {
@@ -135,6 +139,12 @@ public sealed class AuthoritativeMatch
     /// <summary>
     /// Resolves one sealed turn and returns the hash every client is expected to report for it.
     /// </summary>
+    /// <remarks>
+    /// A set sealed after the match reached its outcome is ignored and the unchanged hash returned,
+    /// as every client ignores it. The server can seal a successor turn on its deadline when a seat
+    /// never reported the final one, and the finished state stops short of Command, so applying the
+    /// set would throw inside <see cref="SealedTurnApplier.Apply"/>.
+    /// </remarks>
     /// <exception cref="MultiplayerProtocolException">
     /// The set does not match its own digest, is for another turn, or carries something this build
     /// cannot apply.
@@ -142,6 +152,7 @@ public sealed class AuthoritativeMatch
     public string ApplySealedTurn(SealedOrdersView sealedOrders)
     {
         ArgumentNullException.ThrowIfNull(sealedOrders);
+        if (IsFinished) return StateHash;
         if (!OrderDigest.Verifies(sealedOrders, sealedOrders.OrderSetHash))
         {
             throw new MultiplayerProtocolException(

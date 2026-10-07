@@ -205,6 +205,6 @@ public sealed class AiFamilyTenTurnPlannerTests
                 owner: id == 0 ? setups[0].Id : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Eliminate, GameDuration.SixMonths, seed, setups), players, sectors);
+            ScenarioId.Eliminate, GameDuration.SixMonths, seed, setups, MatchDeviations.Original), players, sectors);
     }
 }
