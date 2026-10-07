@@ -79,4 +79,4 @@ None known.
   other keys; the slide and rejected sounds and the slide's timing
   (FND-GANG-002, FND-GANG-009, FND-GANG-010, FND-GANG-011, FND-GFX-006,
   FND-OPTIONS-001). These rest on the static findings named, so the entry
-  stays `supported` (DECISIONS.md, 2026-10-06).
+  stays `supported`.

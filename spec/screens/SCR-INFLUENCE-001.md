@@ -84,4 +84,4 @@ None known.
   without a choice; a press outside the panel; Enter, Execute and Escape; the
   rejected sound (FND-INFLUENCE-001, FND-INFLUENCE-002, FND-INFLUENCE-003,
   FND-INFLUENCE-005, FND-RESEARCH-005, FND-TURN-001). These rest on the static
-  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  findings named, so the entry stays `supported`.

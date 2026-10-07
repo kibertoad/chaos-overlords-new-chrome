@@ -97,5 +97,4 @@ None known.
   result of Cancel; the four double-click regions; Enter, Execute and Escape;
   the accepted and rejected sounds (FND-ATTACK-001, FND-ATTACK-003,
   FND-ATTACK-004, FND-ATTACK-005, FND-ATTACK-007, FND-AUDIO-011). These rest
-  on the static findings named, so the entry stays `supported` (DECISIONS.md,
-  2026-10-06).
+  on the static findings named, so the entry stays `supported`.

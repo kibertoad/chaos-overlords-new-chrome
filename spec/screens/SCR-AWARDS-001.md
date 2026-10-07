@@ -86,4 +86,4 @@ None known.
   second and third positions; Done and the Left state; menu command 9; an
   Awards press with one player left; the push cue (FND-AWARDS-001,
   FND-AWARDS-003, FND-AWARDS-004, FND-AUDIO-010). These rest on the static
-  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  findings named, so the entry stays `supported`.

@@ -72,4 +72,4 @@ None known.
   time-limit strings; the eliminated status; the automatic opening after a
   load or for a joining computer; a press outside the panel; Enter and
   Execute; the slide sounds and timing (FND-UI-024). These rest on the static
-  findings named, so the entry stays `supported` (DECISIONS.md, 2026-10-06).
+  findings named, so the entry stays `supported`.

@@ -92,8 +92,6 @@ None known.
   neighbour and site double-clicks other than site slot 0; the own-card press
   and double-click and another player's card; right-button presses and a back
   release outside; an Overlord portrait press; the Hire dock here; the arrow
-  keys and Enter; any sound; leaving when planning ends. The cash row is
-  masked by DEV-UI-006 and the Tolerance value by DEV-UI-007, and neither
-  replaces them (FND-UI-015, FND-UI-018, FND-UI-021, FND-UI-036). These rest
-  on the static findings named, so the entry stays `supported` (DECISIONS.md,
-  2026-10-06).
+  keys and Enter; any sound; leaving when planning ends. The cash row and
+  the Tolerance value are not compared with the captures (FND-UI-015, FND-UI-018, FND-UI-021, FND-UI-036). These rest
+  on the static findings named, so the entry stays `supported`.
