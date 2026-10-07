@@ -49,16 +49,15 @@ eliminated during the run.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. The rebuild makes the same calls with the same bounds and results and
-reaches the same state, the planning records included. Before the rebuild was
-corrected it diverged at call 3335: the original drew at `0x004354A9` among
-three gangs, the draw from every visible gang (FND-RNG-006), where the rebuild
-drew among the one human gang because it took the human-only pool without
-testing the weight. The corrected rebuild makes the same draw. The run also
-reaches the human-only pool at weight 10, a further draw after a failed
-strength test, and the Equip of a Detect item.
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. The rebuild makes the same calls
+with the same bounds and results and reaches the same state, the planning
+records included. Before the rebuild was corrected it diverged at call 3335: the
+original drew at `0x004354A9` among three gangs, the draw from every visible
+gang (FND-RNG-006), where the rebuild drew among the one human gang because it
+took the human-only pool without testing the weight. The corrected rebuild makes
+the same draw. The run also reaches the human-only pool at weight 10, a further
+draw after a failed strength test, and the Equip of a Detect item.
 
 ## Conclusion
 

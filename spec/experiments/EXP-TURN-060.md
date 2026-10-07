@@ -36,11 +36,11 @@ of players 0 to 5 are 0, 1, 1, 1, 2 and 1.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state, planning records, sector weights and
-per-player values. With DEV-AI-007 on, it refuses the computer players' Moves
-to sectors more than one step away, and the calls part at the first of them.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state, planning records, sector weights and per-player values. With DEV-AI-007
+on, it refuses the computer players' Moves to sectors more than one step away,
+and the calls part at the first of them.
 
 ## Conclusion
 

@@ -66,10 +66,9 @@ run then made 325 calls of `roll`.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` replays the steps in the rebuild,
-each drag as a press, a move to the release point and a release, and compares
-the setup screen after each with the copies of every run. No element differs.
+A test of the rebuild replays the steps, each drag as a press, a move to the
+release point and a release, and compares the setup screen after each with the
+copies of every run. No element differs.
 
 ## Conclusion
 
