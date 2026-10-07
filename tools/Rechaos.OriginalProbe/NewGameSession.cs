@@ -32,21 +32,28 @@ internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector)
 /// or less writes the <c>family</c> of a computer player's planning record in the slot
 /// (FMT-STATE-007), <see cref="Raider"/> sets a computer player's byte of <c>raider_mode</c>, which
 /// a takeover of a network seat sets (RULE-AI-027), <see cref="Retired"/> clears the player's
-/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006), and
+/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006),
 /// <see cref="Cash"/> sets the player's <c>cash</c> to <paramref name="Value"/>, so a human can pay
-/// for a hire every turn.
+/// for a hire every turn, <see cref="Force"/> sets the <c>force</c> of the player's gang in the slot
+/// (FMT-STATE-001), so a gang ordered to Heal can be at Force 10 when it acts (RULE-HEAL-001), and
+/// <see cref="Tolerance"/> sets the <c>base_tolerance</c> of sector <paramref name="Slot"/>
+/// (FMT-STATE-002), so one Bribe can wrap the signed byte (RULE-BRIBE-001).
 /// </summary>
 internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family, int Value = 0)
 {
     public const int Raider = -1;
     public const int Retired = -2;
     public const int Cash = -3;
+    public const int Force = -4;
+    public const int Tolerance = -5;
 
     public override string ToString() => Family switch
     {
         Raider => $"turn {Turn}: player {Player} raider_mode 1",
         Retired => $"turn {Turn}: player {Player} player_active 0",
         Cash => $"turn {Turn}: player {Player} cash {Value}",
+        Force => $"turn {Turn}: player {Player} gang slot {Slot} force {Value}",
+        Tolerance => $"turn {Turn}: sector {Slot} base_tolerance {Value}",
         _ => $"turn {Turn}: player {Player} gang slot {Slot} family {Family}",
     };
 }
@@ -767,6 +774,14 @@ internal sealed partial class NewGameSession(
             _process.Write(OriginalAddresses.PlayerActive + (uint)write.Player, [0]);
         else if (write.Family == ProbePlanning.Cash)
             _process.Write(OriginalAddresses.Cash + (uint)(write.Player * 4), BitConverter.GetBytes(write.Value));
+        else if (write.Family == ProbePlanning.Force)
+            _process.Write(OriginalAddresses.GangRecords
+                + (uint)(write.Player * OriginalAddresses.PlayerGangStride + write.Slot * OriginalAddresses.GangRecordSize
+                    + OriginalAddresses.GangForceOffset), [(byte)(sbyte)write.Value]);
+        else if (write.Family == ProbePlanning.Tolerance)
+            _process.Write(OriginalAddresses.SectorRecords
+                + (uint)(write.Slot * OriginalAddresses.SectorRecordSize + OriginalAddresses.SectorBaseToleranceOffset),
+                [(byte)(sbyte)write.Value]);
         else
             _process.Write(OriginalAddresses.PlanningRecords
                 + (uint)(write.Player * OriginalAddresses.PlanningPlayerStride

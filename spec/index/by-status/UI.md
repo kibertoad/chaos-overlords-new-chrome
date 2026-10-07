@@ -6,7 +6,7 @@ Entries by status.
 
 ## supported
 
-21 entries.
+23 entries.
 
 | ID | Title |
 |---|---|
@@ -14,6 +14,7 @@ Entries by status.
 | [RULE-UI-002](../../rules/RULE-UI-002.md) | Routing a press on the main console |
 | [RULE-UI-003](../../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right |
 | [RULE-UI-004](../../rules/RULE-UI-004.md) | Drawing numbers in fixed glyph cells |
+| [RULE-UI-005](../../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters |
 | [RULE-UI-006](../../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker |
 | [RULE-UI-007](../../rules/RULE-UI-007.md) | The pointer shape |
 | [RULE-UI-008](../../rules/RULE-UI-008.md) | The presentation timer |
@@ -22,6 +23,7 @@ Entries by status.
 | [RULE-UI-011](../../rules/RULE-UI-011.md) | The sector values on the main console |
 | [RULE-UI-013](../../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out |
 | [RULE-UI-014](../../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop |
+| [RULE-UI-015](../../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded |
 | [SCR-UI-001](../../screens/SCR-UI-001.md) | Title screen |
 | [SCR-UI-002](../../screens/SCR-UI-002.md) | Credits screen |
 | [SCR-UI-003](../../screens/SCR-UI-003.md) | City screen and main console |
@@ -34,13 +36,11 @@ Entries by status.
 
 ## established
 
-3 entries.
+1 entries.
 
 | ID | Title |
 |---|---|
-| [RULE-UI-005](../../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters |
 | [RULE-UI-012](../../rules/RULE-UI-012.md) | Objective sectors marked on the city map |
-| [RULE-UI-015](../../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded |
 
 ## recorded
 
@@ -142,9 +142,7 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [RULE-UI-005](../../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters |
 | [RULE-UI-012](../../rules/RULE-UI-012.md) | Objective sectors marked on the city map |
-| [RULE-UI-015](../../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded |
 
 ## Open questions
 
@@ -155,14 +153,14 @@ Entries whose Open questions section says more than None known.
 | [RULE-UI-001](../../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-004](../../rules/RULE-UI-004.md) | Drawing numbers in fixed glyph cells | supported |
-| [RULE-UI-005](../../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | established |
+| [RULE-UI-005](../../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | supported |
 | [RULE-UI-006](../../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker | supported |
 | [RULE-UI-007](../../rules/RULE-UI-007.md) | The pointer shape | supported |
 | [RULE-UI-008](../../rules/RULE-UI-008.md) | The presentation timer | supported |
 | [RULE-UI-010](../../rules/RULE-UI-010.md) | Which gangs the detailed sector cards and Gangs in Sector list | supported |
 | [RULE-UI-013](../../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
-| [RULE-UI-015](../../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | established |
+| [RULE-UI-015](../../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | supported |
 | [SCR-UI-001](../../screens/SCR-UI-001.md) | Title screen | supported |
 | [SCR-UI-002](../../screens/SCR-UI-002.md) | Credits screen | supported |
 | [SCR-UI-003](../../screens/SCR-UI-003.md) | City screen and main console | supported |

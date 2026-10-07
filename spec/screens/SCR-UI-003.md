@@ -130,8 +130,9 @@ None known.
   and the marker and selection-frame cadences; the site markers, the hire
   stamp and snub cross and a partly run clock bar as pixels; the Comlink alert
   cadence; the game music and the press sound of most tiles; the waiting and
-  loading states; a final view with several humans. The cash row and the key
-  line, with the two bottom rows of the grid letters, are not compared with
-  the captures (FND-UI-015, FND-UI-017,
-  FND-UI-018, FND-UI-032, FND-UI-038, FND-UI-041, FND-UI-043, FND-EVENT-006).
+  loading states; a final view with several humans. The cash row, the key
+  line and the top two pixel rows (y 444 and 445) of the column-letter tabs
+  along the bottom of the map are not compared with the captures; the letters,
+  drawn from y 449, are (FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-032,
+  FND-UI-038, FND-UI-041, FND-UI-043, FND-EVENT-006).
   These rest on the static findings named, so the entry stays `supported`.

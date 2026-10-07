@@ -183,6 +183,26 @@ public sealed class AiFamilyZeroTurnPlannerTests
         Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
     }
 
+    // RULE-AI-019, FND-AI-080: after Control the owned-sector test reads the owner query as well,
+    // so under police presence the gang moves on instead of raising Chaos in its own sector.
+    [Theory]
+    [InlineData(false, GangAction.Chaos)]
+    [InlineData(true, GangAction.Move)]
+    public void PreviousControlOwnedSectorTestReadsTheOwnerQuery(
+        bool crackdown, GangAction expected)
+    {
+        var match = CreateMatch();
+        var player = new PlayerId(0);
+        BeginFamilyZeroTurn(match, player);
+        SetPreviousAction(match, player, GangAction.Control);
+        match.Sectors[0].CrackdownActive = crackdown;
+        match.FinishUpkeep();
+
+        AiHandlerPass.Run(match, player);
+
+        Assert.Equal(expected, match.AiPlanning.PlannedAction(player, 0));
+    }
+
     [Fact]
     public void PreviousChaosUsesNearbyDangerWeaponBeforeArmorOpportunity()
     {

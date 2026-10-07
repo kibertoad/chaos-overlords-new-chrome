@@ -7,6 +7,12 @@ internal static class OriginalAddresses
     public const uint GangRecords = 0x00498DA8;
     public const int PlayerGangStride = 0xA20;
     public const int GangRecordSize = 0x20;
+    public const int GangForceOffset = 3;
+
+    // FMT-STATE-002: 64 sector records of 0x24 bytes, base_tolerance at +2.
+    public const uint SectorRecords = 0x004A08E8;
+    public const int SectorRecordSize = 0x24;
+    public const int SectorBaseToleranceOffset = 2;
 
     public const string ExecutableSha256 = "a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89";
 

@@ -6,25 +6,18 @@ Entries by status.
 
 ## supported
 
-4 entries.
+8 entries.
 
 | ID | Title |
 |---|---|
 | [BUG-OBJECTIVE-001](../../bugs/BUG-OBJECTIVE-001.md) | An active player with a score below -32000 is ranked below the eliminated players |
-| [RULE-OBJECTIVE-005](../../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play |
-| [SCR-OBJECTIVE-001](../../screens/SCR-OBJECTIVE-001.md) | Player Rankings panel with one vertical rail per player and portraits placed by score |
-| [SCR-OBJECTIVE-002](../../screens/SCR-OBJECTIVE-002.md) | Private elimination card shown to an eliminated local human over the city screen |
-
-## established
-
-4 entries.
-
-| ID | Title |
-|---|---|
 | [RULE-OBJECTIVE-001](../../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested |
 | [RULE-OBJECTIVE-002](../../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score |
 | [RULE-OBJECTIVE-003](../../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match |
 | [RULE-OBJECTIVE-004](../../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights |
+| [RULE-OBJECTIVE-005](../../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play |
+| [SCR-OBJECTIVE-001](../../screens/SCR-OBJECTIVE-001.md) | Player Rankings panel with one vertical rail per player and portraits placed by score |
+| [SCR-OBJECTIVE-002](../../screens/SCR-OBJECTIVE-002.md) | Private elimination card shown to an eliminated local human over the city screen |
 
 ## recorded
 
@@ -39,17 +32,6 @@ Entries by status.
 | [FND-OBJECTIVE-005](../../findings/FND-OBJECTIVE-005.md) | The Player Ranking panel places each portrait by its score scaled into 140 pixels, and closes on its button or on Enter or plus |
 | [FND-OBJECTIVE-006](../../findings/FND-OBJECTIVE-006.md) | The network session transfer, the save and the load copy the scenario, the time limit and the turn counter as the same four-byte values, so a restored match keeps the scenario meanings |
 
-## Established on unreproduced evidence
-
-Entries whose status is established and whose findings and experiments are all only recorded.
-
-| ID | Title |
-|---|---|
-| [RULE-OBJECTIVE-001](../../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested |
-| [RULE-OBJECTIVE-002](../../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score |
-| [RULE-OBJECTIVE-003](../../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match |
-| [RULE-OBJECTIVE-004](../../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights |
-
 ## Open questions
 
 Entries whose Open questions section says more than None known.
@@ -57,10 +39,10 @@ Entries whose Open questions section says more than None known.
 | ID | Title | Status |
 |---|---|---|
 | [BUG-OBJECTIVE-001](../../bugs/BUG-OBJECTIVE-001.md) | An active player with a score below -32000 is ranked below the eliminated players | supported |
-| [RULE-OBJECTIVE-001](../../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | established |
-| [RULE-OBJECTIVE-002](../../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | established |
-| [RULE-OBJECTIVE-003](../../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | established |
-| [RULE-OBJECTIVE-004](../../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | established |
+| [RULE-OBJECTIVE-001](../../rules/RULE-OBJECTIVE-001.md) | At the end of each turn the scores are rebuilt, a lone surviving player ends the match, and then the scenario's own condition is tested | supported |
+| [RULE-OBJECTIVE-002](../../rules/RULE-OBJECTIVE-002.md) | Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score | supported |
+| [RULE-OBJECTIVE-003](../../rules/RULE-OBJECTIVE-003.md) | At the end of resolution, a player without the Right Hands in Eliminate loses everything, and any player with no sector and no gang leaves the match | supported |
+| [RULE-OBJECTIVE-004](../../rules/RULE-OBJECTIVE-004.md) | Each scenario's own end condition, and the Dominance weights | supported |
 | [RULE-OBJECTIVE-005](../../rules/RULE-OBJECTIVE-005.md) | An eliminated local human sees the elimination card at that player's place in the slot order, behind the Ready card when several humans play | supported |
 | [SCR-OBJECTIVE-001](../../screens/SCR-OBJECTIVE-001.md) | Player Rankings panel with one vertical rail per player and portraits placed by score | supported |
 | [SCR-OBJECTIVE-002](../../screens/SCR-OBJECTIVE-002.md) | Private elimination card shown to an eliminated local human over the city screen | supported |

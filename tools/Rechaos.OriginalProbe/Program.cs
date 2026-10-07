@@ -31,6 +31,7 @@ static int Usage()
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
               [--orders <turn:slot:action:target:target_2:repeat>,...] [--hires <turn:offer_slot:sector>,...] [--sound]
               [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...]
+              [--cash <turn[-turn]:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...]
               [--search <turn:definition+definition...>,...]
               [--finance <turn:sector>,...]
               [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture] [--white-key]
@@ -78,7 +79,8 @@ static int NewGame(string[] args)
         Option(args, "--orders") is { } orders ? ParseOrders(orders) : null,
         args.Contains("--sound"),
         Option(args, "--hires") is { } hires ? ParseHires(hires) : null,
-        ParsePlanning(Option(args, "--families"), Option(args, "--raiders"), Option(args, "--retire"), Option(args, "--cash")),
+        ParsePlanning(Option(args, "--families"), Option(args, "--raiders"), Option(args, "--retire"), Option(args, "--cash"),
+            Option(args, "--force"), Option(args, "--tolerance")),
         Option(args, "--finance") is { } finance ? ParseFinance(finance) : null,
         Option(args, "--search") is { } search ? ParseSearch(search) : null,
         IntOption(args, "--time-limit"),
@@ -391,8 +393,10 @@ static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnly
 // --families turn:player:slot:family,... writes a planning record's family; --raiders
 // turn:player,... sets a player's raider_mode; --retire turn:player,... clears a player's
 // player_active; --cash turns:player:value,... sets a player's cash before the Done press of each
-// turn, turns being one turn or a range first-last (ProbePlanning).
-static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired, string? cash)
+// turn, turns being one turn or a range first-last; --force turn:player:slot:force,... sets a gang's
+// force; --tolerance turn:sector:value,... sets a sector's base_tolerance (ProbePlanning).
+static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired, string? cash,
+    string? force, string? tolerance)
 {
     static int[] Numbers(string entry) =>
         entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
@@ -427,6 +431,20 @@ static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? rai
             throw new FormatException($"A cash write needs a turn or a range of turns from 1, a player 0 to 5 and a value: {entry}");
         for (var turn = turns[0]; turn <= turns[^1]; turn++)
             writes.Add(new ProbePlanning(turn, parts[0], 0, ProbePlanning.Cash, parts[1]));
+    }
+    foreach (var entry in (force ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var parts = Numbers(entry);
+        if (parts.Length != 4 || parts[0] < 1 || parts[1] is < 0 or > 5 || parts[2] is < 0 or > 80 || parts[3] is < -128 or > 127)
+            throw new FormatException($"A force write needs a turn from 1, a player 0 to 5, a slot 0 to 80 and a value -128 to 127: {entry}");
+        writes.Add(new ProbePlanning(parts[0], parts[1], parts[2], ProbePlanning.Force, parts[3]));
+    }
+    foreach (var entry in (tolerance ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var parts = Numbers(entry);
+        if (parts.Length != 3 || parts[0] < 1 || parts[1] is < 0 or > 63 || parts[2] is < -128 or > 127)
+            throw new FormatException($"A tolerance write needs a turn from 1, a sector 0 to 63 and a value -128 to 127: {entry}");
+        writes.Add(new ProbePlanning(parts[0], 0, parts[1], ProbePlanning.Tolerance, parts[2]));
     }
     return writes.Count == 0 ? null : writes;
 }

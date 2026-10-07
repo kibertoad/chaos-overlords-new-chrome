@@ -99,7 +99,7 @@ Entries by area.
 | [RULE-UI-002](../../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |
 | [RULE-UI-004](../../rules/RULE-UI-004.md) | Drawing numbers in fixed glyph cells | supported |
-| [RULE-UI-005](../../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | established |
+| [RULE-UI-005](../../rules/RULE-UI-005.md) | Lengths of the site progress and Force meters | supported |
 | [RULE-UI-006](../../rules/RULE-UI-006.md) | Choosing a sector's gang-status marker | supported |
 | [RULE-UI-007](../../rules/RULE-UI-007.md) | The pointer shape | supported |
 | [RULE-UI-008](../../rules/RULE-UI-008.md) | The presentation timer | supported |
@@ -109,7 +109,7 @@ Entries by area.
 | [RULE-UI-012](../../rules/RULE-UI-012.md) | Objective sectors marked on the city map | established |
 | [RULE-UI-013](../../rules/RULE-UI-013.md) | The program starts one instance, chooses the image set and display depth, runs the title loop, and undoes its setup on the way out | supported |
 | [RULE-UI-014](../../rules/RULE-UI-014.md) | Input reaches the screen loops as one polled event at a time, and the event step handles the option commands and window activation for every loop | supported |
-| [RULE-UI-015](../../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | established |
+| [RULE-UI-015](../../rules/RULE-UI-015.md) | File, End and File, Exit during a match offer to save first when the match changed since it was last saved or loaded | supported |
 | [SCR-UI-001](../../screens/SCR-UI-001.md) | Title screen | supported |
 | [SCR-UI-002](../../screens/SCR-UI-002.md) | Credits screen | supported |
 | [SCR-UI-003](../../screens/SCR-UI-003.md) | City screen and main console | supported |
