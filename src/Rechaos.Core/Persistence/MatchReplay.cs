@@ -484,7 +484,7 @@ public static class MatchReplaySerializer
     /// </summary>
     /// <remarks>
     /// The version has to be read before the members are bound, as the native save load does:
-    /// JsonOptions refuses unmapped members, so a journal from a newer build would otherwise fail as
+    /// the save options refuse unmapped members, so a journal from a newer build would otherwise fail as
     /// "JSON is invalid" on the very field that build added. That reads as damage, and
     /// <see cref="MatchReplayStore.LoadAndReplayRecoveringBackup"/> would then fall back to the
     /// backup generation and could overwrite the newer primary with it.
