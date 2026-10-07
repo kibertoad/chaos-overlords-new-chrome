@@ -226,7 +226,7 @@ Entries by kind.
 
 ## findings
 
-390 entries.
+391 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -358,6 +358,7 @@ Entries by kind.
 | [FND-COMBAT-015](../findings/FND-COMBAT-015.md) | Detailed Combat draws each gang portrait and its two Force tracks into the same surface, 68 and 75 rows below the portrait's top | recorded |
 | [FND-COMBAT-016](../findings/FND-COMBAT-016.md) | The Detailed Combat clip player keeps its tick in a stack local, and paints the Force tracks again only on tick 16 | recorded |
 | [FND-COMBAT-017](../findings/FND-COMBAT-017.md) | Detailed Combat copies each clip's sector tile from the unowned city map art and frames it in black | recorded |
+| [FND-COMBAT-032](../findings/FND-COMBAT-032.md) | The Detailed Combat clip player puts the strips' first frames on the screen only, and definition 63 changes only the attack strip | recorded |
 | [FND-COMLINK-001](../findings/FND-COMLINK-001.md) | Each player keeps at most 16 Comlink messages, and a 17th drops the oldest | recorded |
 | [FND-COMLINK-002](../findings/FND-COMLINK-002.md) | Comlink View opens at the first unread message, refuses an empty inbox, and pages with bounded Previous and Next controls | recorded |
 | [FND-COMLINK-003](../findings/FND-COMLINK-003.md) | Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send | recorded |
@@ -623,7 +624,7 @@ Entries by kind.
 
 ## experiments
 
-153 entries.
+159 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -779,6 +780,12 @@ Entries by kind.
 | [EXP-UI-026](../experiments/EXP-UI-026.md) | When does closing the window during planning ask to save first? | recorded |
 | [EXP-UI-027](../experiments/EXP-UI-027.md) | What does the original draw for a number cell whose source column is negative, and for a red cell partly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? | recorded |
+| [EXP-UI-029](../experiments/EXP-UI-029.md) | Does the Detailed Combat panel look the same in the rebuild through the second clip of a presentation? | recorded |
+| [EXP-UI-046](../experiments/EXP-UI-046.md) | Does the Detailed Combat panel look the same in the rebuild through an armed and an unarmed attack on the viewer's gang? | recorded |
+| [EXP-UI-047](../experiments/EXP-UI-047.md) | Does the Detailed Combat panel look the same in the rebuild through a bare-handed Martial Arts attack? | recorded |
+| [EXP-UI-048](../experiments/EXP-UI-048.md) | Does the Detailed Combat panel look the same in the rebuild through an attack of the viewer's that its target evades? | recorded |
+| [EXP-UI-049](../experiments/EXP-UI-049.md) | Does the Detailed Combat panel look the same in the rebuild through two evaded attacks on the viewer's gang? | recorded |
+| [EXP-UI-054](../experiments/EXP-UI-054.md) | What do the Detailed Combat apertures show before the second clip's first strip frame? | recorded |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | How many steps does the intro show of each movie when it plays out? | recorded |
 
 ## bugs
