@@ -15,7 +15,7 @@ fixture: EXP-TURN-112.json
 
 ## Question
 
-No recorded run plays Siege beyond turn 82, and none ends a Siege match. With
+No recorded run plays Siege beyond turn 23, and none ends a Siege match. With
 one human in the match, a recorded run stops when that human is eliminated
 (RULE-OBJECTIVE-005). Does a Siege match at Goon, with the human hiding, make
 the same draws as the rebuild until the human's last gang dies, and does any
@@ -42,15 +42,19 @@ stored scores of players 1 to 5 are 1, 1, 1, 1 and 2.
 
 In the resolution after the 96th Done press, player 5 orders two attacks on
 player 3's gangs in sector 34 and five attacks on the human's hiding gang in
-sector 12. The original rolls 49 dice at `0x00475FBB` after the last
-non-combat draw and before the first Hide test at `0x00473ABC`. RULE-ATTACK-001
-gives 40 of them: an attack of 14 dice, a retaliation of 7 and an attack of
-19, the second target being unable to strike back. With the thresholds of a
-Goon attacker, those pools give the damage the end state shows on all four
-gangs whether the other 9 dice come before, between or after them. The 9 add
-nothing to any player's `damage_inflicted`: player 5's grows by 10, which the
-two attacks and the one attack on the human that passes its Hide test account
-for.
+sector 12. Between the last draw at another address (`0x00466E0E`) and the
+first Hide test at `0x00473ABC` the original makes 646 calls at `0x00475FBB`
+and the rebuild 637. That address also rolls the resolver's dice outside
+combat (FND-RNG-006), and every one of these calls is `roll(6)`, so comparing
+bounds and results does not show which 9 of the original's calls are the
+extra ones. The rebuild's last 40 are the combat phase's dice before that
+test, as RULE-ATTACK-001 gives them for player 5's two attacks: an attack of
+14 dice, a retaliation of 7 and an attack of 19, the second target being
+unable to strike back. With the thresholds of a Goon attacker, those pools
+give the damage the end state shows on all four gangs whether the other 9
+dice come before, between or after them. The 9 add nothing to any player's
+`damage_inflicted`: player 5's grows by 10, which the two attacks and the one
+attack on the human that passes its Hide test account for.
 
 ## Results
 
@@ -63,6 +67,7 @@ resolution. There it rolls the first Hide test where the original rolls the
 ## Conclusion
 
 The run agrees with the rebuild through 95 Siege turns at Goon and shows no
-computer player ending a Siege match in that time. The 9 dice the original
-rolls in the last combat phase are not explained by RULE-ATTACK-001 as
-written; which gang rolls them is an open question.
+computer player ending a Siege match in that time. In the last resolution
+the original rolls 9 more dice than the rebuild before the first Hide test.
+If they belong to the combat phase, RULE-ATTACK-001 as written does not give
+them; which step or gang rolls them is an open question.

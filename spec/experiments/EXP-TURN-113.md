@@ -15,7 +15,7 @@ fixture: EXP-TURN-113.json
 
 ## Question
 
-No recorded run plays Kill 'Em All beyond turn 82. Kill 'Em All ends only when
+No recorded run plays Kill 'Em All beyond turn 30. Kill 'Em All ends only when
 one player is left (RULE-OBJECTIVE-001), and with one human in the match a
 recorded run cannot see a computer player win it unless every other player,
 the human included, is eliminated. Does a Kill 'Em All match at Goon, with the

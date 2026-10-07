@@ -176,8 +176,10 @@ None known.
 - `phase_damage`, `fight_marks`, `opening_damage` and `retaliation_damage`
   are locals of the resolver `fn_00472775` with no fixed address
   [FND-COMBAT-008].
-- 2026-10-06: in the last combat phase of EXP-TURN-112 the original rolls 9
-  dice at `0x00475FBB` that this procedure does not give, before the first
-  Hide test. They add to no player's `damage_inflicted`, and the other 40
-  dice of the phase account for the damage the end state shows, so they may
-  be a retaliation. Which gang rolls them is not recorded.
+- 2026-10-06: in the last resolution of EXP-TURN-112 the original rolls 9
+  more dice at `0x00475FBB` than the rebuild before the first Hide test.
+  Every one is `roll(6)`, so the replay does not show which step rolls them.
+  They add to no player's `damage_inflicted`, and the 40 dice this procedure
+  gives the combat phase before that test account for the damage the end
+  state shows, so they may be a retaliation this procedure does not give.
+  Which gang or step rolls them is not recorded.

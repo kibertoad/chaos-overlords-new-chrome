@@ -334,7 +334,6 @@ None known.
 
 ## Open questions
 
-None.
 - 2026-10-06: in the 116th turn of EXP-TURN-113 the original resolves a hire
   (a draw at `0x00475AC6`) where the procedure, with the cash the rebuild
   holds, leaves every computer player snubbing an offer; one of them has 0
