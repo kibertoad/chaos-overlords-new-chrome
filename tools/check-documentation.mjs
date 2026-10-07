@@ -3,6 +3,8 @@
 // `pnpm install` at the repository root) and this game's settings:
 //
 //   --references multiplayer           the multiplayer server may cite spec and deviation IDs
+//   --rebuild src,tests,multiplayer    no spec file may name a file of the rebuild, the server's
+//                                      included
 //   --images 0x00400000..0x004C9000    the extent of the original's executable image (FND-DATA-005)
 //
 // Every other argument goes to the checker unchanged, so `--check`, `--no-ksy`, `--base <ref>` and
@@ -62,6 +64,9 @@ const args = [
   checker,
   "--references",
   "multiplayer",
+  "--rebuild",
+  "src,tests,multiplayer",
+  // The extent of the original's executable image, which FND-DATA-005 records.
   "--images",
   "0x00400000..0x004C9000",
   ...(forwarded.includes("--root") ? [] : ["--root", repositoryRoot]),

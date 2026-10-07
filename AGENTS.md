@@ -59,7 +59,7 @@ version 1 of the
 published at dinorefurb.com. This section summarizes them; where they differ,
 the published pages win. `docs/upstream/` holds a copy of the standard, the
 methodology and the work protocol as published at refurbished-dinosaurs
-`11dbbc5`, the revision this repository follows.
+`e84495f`, the revision this repository follows.
 
 ### The spec
 
@@ -160,10 +160,8 @@ rewrites `PARITY.md` and the generated indexes in `spec/index/`; `--check`
 fails on a stale one instead of writing it. It compiles the Kaitai definitions
 when `kaitai-struct-compiler` (or the path in `KSC`) is available; in CI it
 requires the compiler, and the workflows install a pinned release.
-`node tools/check-rebuild-paths.mjs` fails a spec line that names a file of
-the rebuild, a path into `src/`, `tests/` or `multiplayer/` or a source file
-found there; until the shared checker's release carries that check, this
-script runs it.
+The same check fails a spec line that names a file of the rebuild, a path
+into `src/`, `tests/` or `multiplayer/` or a source file found there.
 `node tools/spec-coverage.mjs` writes `docs/FUNCTION-INDEX.md`, which lists
 every game function of FND-EXE-004 with the entries that cite it (`--check`
 fails on a stale index); with `--inventory <file>` it also reports what the
