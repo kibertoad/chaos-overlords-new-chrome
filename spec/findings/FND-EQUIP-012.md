@@ -1,9 +1,9 @@
 ---
-id: FND-EQUIP-008
+id: FND-EQUIP-012
 title: The Equip, Give and Sell panels store the item, the item mask and the recipient in target and target_2, and the Equip list and the Give recipients are filtered by the gang definition's Tech Level
-status: superseded
+status: recorded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: [FND-EQUIP-012]
+superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
 method: static
@@ -58,7 +58,7 @@ Equip panel `fn_0043DAD9`:
 
 - When the gang's action byte is already 5 (`0x0043DE42`), the category is
   the queued item's 16-bit type (item offset `0x7A`) minus 1, kept at the type
-  when that would be negative (`0x0043DE4B..0x0043DE63`).
+  when that would be negative (`0x0043DE4B..0x0043DE78`).
 - It calls the list builder `fn_0043F136` with the category, the 16-bit field
   at offset `0x82` of the gang's definition (`0x004A2882`, `0x0043DE80` and
   again at `0x0043E52F`), the player and the roster slot.
@@ -73,7 +73,7 @@ List builder `fn_0043F136`:
 - For items 0 to 63 it computes a category from the 16-bit type at offset
   `0x7A`: `type - 1` when that is 0 or more, else the type itself, so types 0
   and 1 give 0, 2 gives 1, 3 gives 2, 4 gives 3 and 99 gives 98
-  (`0x0043F267..0x0043F270`).
+  (`0x0043F267..0x0043F285`).
 - It lists the item when all of these hold (`0x0043F293..0x0043F31B`): the
   item's 16-bit field at offset `0x80` is at most the Tech Level argument
   (signed); the category equals the requested one; the byte
@@ -142,6 +142,8 @@ Sell panel `fn_00443BBD`:
 - A Sell can select only carried items and at least one of them.
 
 ## Alternatives
+
+This entry replaces FND-EQUIP-008, which gave the category's "minus 1, kept at the type when that would be negative" as `0x0043DE4B..0x0043DE63` in the Equip panel and `0x0043F267..0x0043F270` in the list builder. Both ranges end after the `dec` and leave out the test that keeps the type: the `cmp` and `jl` at `0x0043DE66` and `0x0043F273` and the `inc` they reach at `0x0043DE75` and `0x0043F282`. Here the ranges run to where both paths join, `0x0043DE78` and `0x0043F285`. The error was found when the spec's ranges were checked against the instructions their text describes.
 
 - The Give panel's other Tech Level references (`0x0044722D..0x00447255`,
   keyboard selection) were not followed; they are assumed to apply the same

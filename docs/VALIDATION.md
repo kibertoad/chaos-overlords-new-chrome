@@ -493,7 +493,7 @@ the planning clock of each such turn as `timers` (RULE-TIMER-002,
 RULE-TIMER-003).
 `--equip-lists` reads the item lists of the Equip panel after the dump: at
 the next `PeekMessageA` call of the message pump (FND-UI-020) the probe saves
-the thread context and calls the list builder `fn_0043F136` (FND-EQUIP-008)
+the thread context and calls the list builder `fn_0043F136` (FND-EQUIP-012)
 for each category of each living gang of the first human, with the Tech Level
 of the gang's definition, as the panel does. The builder's research test reads
 `active_player`, so the probe sets it to that human for the calls and puts it
