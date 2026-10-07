@@ -50,11 +50,9 @@ gangs stand in its Headquarters sector 12, with no orders.
 
 ## Results
 
-`TheCityKeepsTheOriginalsGangMarkers` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Markers.cs` replays the
-run, takes each hire step as `TheHireDockSetsTheOriginalsOrders` does, and
-compares the map the log leaves after each step with the rebuild's marker map.
-They are the same after every step.
+A test of the rebuild replays the run, takes each hire step through the
+rebuild's Hire dock as EXP-HIRE-001's comparison does, and compares the map the log leaves after each step with the
+rebuild's marker map. They are the same after every step.
 
 ## Conclusion
 

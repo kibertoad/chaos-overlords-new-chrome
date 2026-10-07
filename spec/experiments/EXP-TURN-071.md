@@ -40,12 +40,11 @@ and `crackdown_turns` 3 (FMT-STATE-002).
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state, and at the end each human gang's
-recurring order matches the original's `repeat_action`. The Crackdown comes to
-sector 19 in turn 6, and the start of turn 7 drops the Control of roster slot
-1 and keeps the Chaos of the other two.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state, and at the end each human gang's recurring order matches the original's
+`repeat_action`. The Crackdown comes to sector 19 in turn 6, and the start of
+turn 7 drops the Control of roster slot 1 and keeps the Chaos of the other two.
 
 ## Conclusion
 

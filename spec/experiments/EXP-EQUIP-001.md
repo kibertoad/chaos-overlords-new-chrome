@@ -49,11 +49,10 @@ lists holds one or two items.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Presentation.cs`
-(`TheEquipListOffersTheOriginalsItems`) replays the run and, for each list,
-compares the rebuild's legal Equip orders of the gang in that category with
-the recorded items. They are the same items in the same order, and the gang's
-Tech Level is the one the builder was passed.
+A test of the rebuild replays the run and, for each list, compares the rebuild's
+legal Equip orders of the gang in that category with the recorded items. They
+are the same items in the same order, and the gang's Tech Level is the one the
+builder was passed.
 
 Within each category the rebuild's item table rules out items by research
 alone (up to eleven in one list), by research and Tech Level together, and,
