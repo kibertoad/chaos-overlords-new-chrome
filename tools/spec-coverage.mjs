@@ -6,6 +6,10 @@
 // Usage:
 //   node tools/spec-coverage.mjs                      rewrite docs/FUNCTION-INDEX.md when stale
 //   node tools/spec-coverage.mjs --check              fail when docs/FUNCTION-INDEX.md is stale
+//   node tools/spec-coverage.mjs --scheduled-generation
+//                                                     compute the index without writing or comparing
+//                                                     it, and fail when the change since the fork point
+//                                                     edits docs/FUNCTION-INDEX.md
 //   node tools/spec-coverage.mjs --inventory <file>   also report coverage against a function
 //                                                     inventory from tools/ghidra/ReportFunctionInventory.java
 //
@@ -19,6 +23,15 @@
 // whose locations all name another file, such as a library the game ships, since its addresses
 // are that file's.
 //
+// docs/FUNCTION-INDEX.md is regenerated on main by .github/workflows/nightly-generated.yml, which
+// runs this script without options. Branches leave it alone, so concurrent pull requests do not
+// conflict on it; the pre-commit hook and the fast gate run --scheduled-generation. The fork point
+// is `git merge-base HEAD origin/$GITHUB_BASE_REF` (origin/main when GITHUB_BASE_REF is unset),
+// taken with MERGE_HEAD as well while a merge is being committed, so a merge that brings main's
+// index passes. The change is the working tree against the fork point plus untracked files git
+// does not ignore. When the fork point does not resolve (no git, a shallow clone, a base branch
+// that was never fetched), the comparison is skipped with a message instead of failing.
+//
 // The inventory is a tab-separated file with the columns entry, end, bytes, callers, callees,
 // imports (LIBRARY::name), reads and writes. It stays outside the repository like every other
 // Ghidra output.
@@ -27,12 +40,18 @@
 
 import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const specDir = join(repoDir, "spec");
 const argv = process.argv.slice(2);
 const checkOnly = argv.includes("--check");
+const scheduledGeneration = argv.includes("--scheduled-generation");
+if (checkOnly && scheduledGeneration) {
+  console.error("--check and --scheduled-generation cannot be combined");
+  process.exit(2);
+}
 const inventoryPath = argv.includes("--inventory") ? argv[argv.indexOf("--inventory") + 1] : null;
 const MAP_ID = "FND-EXE-004";
 const indexPath = join(repoDir, "docs", "FUNCTION-INDEX.md");
@@ -146,7 +165,9 @@ lines.push("");
 const index = lines.join("\n");
 const current = existsSync(indexPath) ? readFileSync(indexPath, "utf8").replace(/\r\n/g, "\n") : null;
 let failed = false;
-if (current !== index) {
+if (scheduledGeneration) {
+  failed = !checkUnchangedSinceForkPoint("docs/FUNCTION-INDEX.md");
+} else if (current !== index) {
   if (checkOnly) {
     console.error("docs/FUNCTION-INDEX.md is stale; run node tools/spec-coverage.mjs");
     failed = true;
@@ -256,3 +277,46 @@ if (inventoryPath) {
 }
 
 if (failed) process.exit(1);
+
+// Runs git in the repository; returns its trimmed output, or null when git fails or is missing.
+function git(...args) {
+  const r = spawnSync("git", args, { cwd: repoDir, encoding: "utf8" });
+  return r.status === 0 ? r.stdout.trim() : null;
+}
+
+// Fails (returns false) when the change since the fork point edits `path`, a generated file that
+// only main carries. Returns true when the file is unchanged or the comparison cannot be made.
+function checkUnchangedSinceForkPoint(path) {
+  const base = `origin/${process.env.GITHUB_BASE_REF || "main"}`;
+  if (git("rev-parse", "--is-inside-work-tree") !== "true") {
+    console.log(`${path}: comparison with the fork point skipped: git is unavailable or this is not a git work tree`);
+    return true;
+  }
+  if (git("rev-parse", "--verify", "--quiet", `${base}^{commit}`) === null) {
+    console.log(`${path}: comparison with the fork point skipped: ${base} is not fetched`);
+    return true;
+  }
+  // While a merge is being committed, the fork point is the one the merge commit will have.
+  const mergeHead = git("rev-parse", "--verify", "--quiet", "MERGE_HEAD");
+  const fork = git("merge-base", base, "HEAD", ...(mergeHead ? [mergeHead] : []));
+  if (!fork) {
+    console.log(`${path}: comparison with the fork point skipped: HEAD and ${base} have no merge base in this clone (shallow, or unrelated)`);
+    return true;
+  }
+  const changed = git("diff", "--name-only", fork, "--", path);
+  const untracked = git("ls-files", "--others", "--exclude-standard", "--", path);
+  if (changed === null || untracked === null) {
+    console.log(`${path}: comparison with the fork point skipped: git diff failed`);
+    return true;
+  }
+  if (changed === "" && untracked === "") return true;
+  const short = fork.slice(0, 12);
+  console.error(
+    `${path} differs from the fork point ${short} (merge base with ${base}). It is generated, and only ` +
+      "main carries it: the nightly job (.github/workflows/nightly-generated.yml) regenerates it there. " +
+      `Drop the change with \`git checkout ${short} -- ${path}\` or \`git restore --source=${short} -- ${path}\`` +
+      (untracked ? ` (an untracked ${path}: delete it)` : "") +
+      ".",
+  );
+  return false;
+}

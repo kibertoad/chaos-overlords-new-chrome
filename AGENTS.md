@@ -168,7 +168,15 @@ script runs it.
 every game function of FND-EXE-004 with the entries that cite it (`--check`
 fails on a stale index); with `--inventory <file>` it also reports what the
 spec leaves uncovered, from an inventory written by
-`tools/ghidra/ReportFunctionInventory.java` (see `docs/GHIDRA.md`).
+`tools/ghidra/ReportFunctionInventory.java` (see `docs/GHIDRA.md`). Only main
+carries changes to `docs/FUNCTION-INDEX.md`: the nightly job
+`.github/workflows/nightly-generated.yml` regenerates and commits it there
+on days when `spec/` changed, so it is at most a day behind. Branches never
+regenerate or commit it. The fast gate and the pre-commit hook run the script
+with `--scheduled-generation`, which computes the index without writing it
+and fails when the change since the fork point with the base branch
+(`git merge-base HEAD origin/main`) edits the file; drop such an edit with
+`git checkout <fork point> -- docs/FUNCTION-INDEX.md`.
 
 `docs/README.md` catalogs the other documents. Their tables of contents and the
 decision index are generated blocks between `<!-- doc-index:begin ... -->` and

@@ -5,7 +5,8 @@
 # The checks run on what is being committed: the index (GIT_INDEX_FILE during a partial commit) is
 # copied to a temporary directory, so unstaged edits and untracked files neither hide a problem
 # nor block a clean commit. GIT_DIR and GIT_WORK_TREE keep the checks' git calls (the deleted-ID
-# comparison) on this repository.
+# comparison, and spec-coverage's comparison of docs/FUNCTION-INDEX.md with the fork point) on
+# this repository.
 set -e
 if ! command -v node >/dev/null 2>&1; then
   echo "pre-commit: node is not on the path, so the spec checks were skipped; CI runs them." >&2
@@ -33,5 +34,7 @@ export GIT_DIR="$git_dir" GIT_WORK_TREE="$staged"
 # tests ran against the original's files, so a missing or stale record does not block the commit.
 node "$staged/tools/check-documentation.mjs" --check --no-ksy --allow-unrecorded-validation
 node "$staged/tools/check-rebuild-paths.mjs"
-node "$staged/tools/spec-coverage.mjs" --check
+# docs/FUNCTION-INDEX.md is regenerated on main by the nightly job, so a commit must not change it
+# against the fork point; a merge that brings main's index leaves it equal to main's.
+node "$staged/tools/spec-coverage.mjs" --scheduled-generation
 node "$staged/tools/update-doc-indexes.mjs" --check
