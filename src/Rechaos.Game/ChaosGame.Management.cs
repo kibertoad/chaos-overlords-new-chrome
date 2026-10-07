@@ -171,16 +171,26 @@ public sealed partial class ChaosGame
         {
             case SiteSearchControl.All:
             case SiteSearchControl.None:
-                AcceptInput();
-                break;
             case SiteSearchControl.Done:
-                ApplySiteSearch();
+                // FND-UI-062: the face is held until the button comes up and acts only on a
+                // release inside it.
+                var held = click.Press.Control;
+                PressPanelFace(point, SiteSearchLayout.Panel, SiteSearchLayout.Target(held),
+                    () => ReleaseSiteSearchControl(held), SiteSearchLayout.HeldKind(held));
                 break;
             case SiteSearchControl.Row:
                 _siteSearchCursor = click.Press.Row;
                 if (click.OpensDetails) OpenSiteDefinitionDetails(rows[click.Press.Row], ClientScreen.Search);
                 break;
         }
+    }
+
+    /// <summary>A release inside the held ALL, NONE or Done, the only release the panel face hold acts on.</summary>
+    private void ReleaseSiteSearchControl(SiteSearchControl held)
+    {
+        if (!SiteSearchPanel.Release(_siteSearchSelections, SiteSearchPlayer(), held, SiteSearchRows())) return;
+        _message = string.Empty;
+        CloseSiteSearch();
     }
 
     private PlayerId SiteSearchPlayer() =>
@@ -204,7 +214,7 @@ public sealed partial class ChaosGame
                 PlayerRankingLayout.Portrait(entry),
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         }
-        if (_hoverPoint is { } hover)
+        if (TooltipHoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, PlayerRankingTooltip.At(hover, state, entries));
     }
 }

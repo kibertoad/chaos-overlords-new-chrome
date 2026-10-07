@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-GANG-004, FND-GANG-006, FND-GANG-008, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-008, FND-UI-047]
+evidence: [FND-GANG-004, FND-GANG-006, FND-GANG-008, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-008, FND-UI-047, FND-UI-062, FND-UI-067, EXP-UI-041]
 conflicting: []
 split_with: []
 related: [RULE-GANG-001, RULE-UI-003, RULE-UI-004, SCR-UI-006]
@@ -22,12 +22,13 @@ related: [RULE-GANG-001, RULE-UI-003, RULE-UI-004, SCR-UI-006]
 | Right value column | The digits of `DATA/PX16/PX00129` | Upkeep, negated before drawing, on row 216, Tech Level on row 225, Stealth and Detect on rows 243 and 252, and Strength, Blade, Ranged, Fighting and Martial Arts on rows 270 to 306 | Fields starting at x = 372 | While the panel is open | FND-GANG-004, FND-GANG-006 |
 | Base values | The digits drawn by `fn_0041B668` | The definition's base value of each of the fourteen statistics | x 258 and x 354, on the rows of the effective value | When `pref_base_stats` is set | FND-GANG-006 |
 | Equipment | The item's strip `PX04xxx`, 15 frames of 48 by 48 | The gang's `weapon`, `armor` and `misc`, animated | `(392, 141 + 64 * k, 48, 48)` for slot `k` | For each filled slot | SRC-MANUAL-GOG, FND-GANG-006 |
+| Close pressed | `DATA/PX16/PX00129` rectangle (0, 386, 50, 23); plain face (50, 386, 50, 23) while the pointer is outside and after a release that leaves the panel open | None | (137, 293, 50, 23) | While the face is held with the pointer inside it | FND-UI-062, FND-UI-067 |
 
 ## Mouse input
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Close face | `(137, 293, 49, 22)` | Always | Closes the panel when the button is released inside; a double-click there does the same | FND-GANG-006 |
+| Close face | `(137, 293, 49, 22)` | Always | Held through the held-button helper; closes the panel when the button is released inside; a double-click there does the same | FND-GANG-006, FND-UI-067 |
 | Equipment picture, double-click | `(391, 140 + 64 * k, 50, 50)` | The slot holds an item | Opens SCR-UI-006 for the item | FND-GANG-006 |
 | Outside the panel | Outside `(104, 124, 344, 209)` | Always | Refused with slot 4 | FND-GANG-006 |
 

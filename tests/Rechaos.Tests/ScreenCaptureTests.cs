@@ -45,7 +45,10 @@ public sealed partial class ScreenCaptureTests
     // compares the elimination card the only local human sees where its planning would have come
     // (RULE-OBJECTIVE-005). The Detailed Combat captures draw the rebuild's clip at the captured
     // tick (FND-COMBAT-016), after passing over as many clips as the captured index
-    // (FND-COMBAT-011). EXP-UI-051 compares the setup screen the game drew under the name
+    // (FND-COMBAT-011). EXP-UI-041 and EXP-UI-042 hold a button across their shots: console
+    // tiles, close, Cancel and confirm faces held under the pointer and off it (FND-UI-062,
+    // FND-UI-067), a hire offer in flight (FND-HIRE-010), and the order panels with a choice made
+    // (FND-EQUIP-011). EXP-UI-051 compares the setup screen the game drew under the name
     // dialog SCR-SETUP-003, which Windows draws, with card 0's name row left to the editor of
     // DEV-SETUP-003.
     [Theory(SkipTestWithoutData = true)]

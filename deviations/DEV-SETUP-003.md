@@ -28,7 +28,11 @@
   setup screen is the original's. The name typed, the way it is edited and the name OK keeps are
   those of the control, so a player can type and correct a name as before. The keys left out
   copy text between programs or undo one edit of a name ten characters long, and Tab only
-  reaches buttons whose work Enter and Escape do.
+  reaches buttons whose work Enter and Escape do. The characters are the platform's, as the
+  control's were Windows': a player on any keyboard layout types what the original gave them on
+  that layout, and on a United States layout the names OK keeps match EXP-UI-053. On Linux and
+  macOS the platform's own text input supplies them, so dead keys, AltGr and Shift with the
+  number-pad keys follow that platform, which the original never ran on.
 - Tests: tests/Rechaos.Tests/SetupNameEditControlTests.cs,
   tests/Rechaos.Tests/SetupNameEditControlExperimentTests.cs, tests/Rechaos.Tests/ScreenCaptureTests.cs
 - Dropped: no

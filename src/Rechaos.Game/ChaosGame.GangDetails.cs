@@ -245,7 +245,7 @@ public sealed partial class ChaosGame
         }
 
         // DEV-GANG-001: the full panel's statistics explain themselves on hover.
-        if (!compact && _hoverPoint is { } hover)
+        if (!compact && TooltipHoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.GangAt(hover,
                 gang is null
                     ? null

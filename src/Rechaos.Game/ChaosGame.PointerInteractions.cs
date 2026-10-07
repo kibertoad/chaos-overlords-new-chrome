@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
 namespace Rechaos.Game;
@@ -9,20 +10,72 @@ public sealed partial class ChaosGame
     private (Rectangle Face, ClientScreen Screen, Action Close)? _pressedPanelFace;
 
     /// <summary>
-    /// A press on an information panel: on the close face it plays slot 3 and holds the face until
-    /// the release, outside the panel it is refused with slot 4, and elsewhere inside it does
-    /// nothing (SCR-GANG-001, SCR-GANG-002, SCR-UI-005). The held-button helper plays slot 3 when
-    /// the press starts, whether or not the release lands inside the face (FND-AUDIO-011).
+    /// The face kind the held-button helper draws for <see cref="_pressedPanelFace"/>, or null for
+    /// the sector view's back control, which draws its own (FND-UI-062).
     /// </summary>
-    private void PressPanelFace(Point point, Rectangle panel, Rectangle face, Action close)
+    private HeldButtonKind? _pressedPanelFaceKind;
+
+    /// <summary>
+    /// The plain face a release left on a panel that stayed open: the helper copies it when the
+    /// button comes up, wherever that happens, and it stays until the panel goes (FND-UI-062).
+    /// </summary>
+    private (Rectangle Face, ClientScreen Screen, HeldButtonKind Kind)? _releasedPanelFace;
+
+    /// <summary>
+    /// The point the information panels' hover tooltips (DEV-UI-005) explain: none while one of
+    /// their faces is held, since the held-button helper draws nothing but the face until the
+    /// release (FND-UI-046, EXP-UI-041).
+    /// </summary>
+    private Point? TooltipHoverPoint => _pressedPanelFace is null ? _hoverPoint : null;
+
+    /// <summary>
+    /// A press on a panel whose close face goes through the held-button helper: on the face it
+    /// plays slot 3 and holds the face until the release, outside the panel it is refused with
+    /// slot 4, and elsewhere inside it does nothing (SCR-GANG-001, SCR-GANG-002, SCR-UI-005,
+    /// FND-UI-067). The held-button helper plays slot 3 when the press starts, whether or not the
+    /// release lands inside the face (FND-AUDIO-011).
+    /// </summary>
+    private void PressPanelFace(Point point, Rectangle panel, Rectangle face, Action close,
+        HeldButtonKind kind = HeldButtonKind.Confirm)
     {
         if (face.Contains(point))
-        {
-            AcceptInput();
-            _pressedPanelFace = (face, _screens.Current, close);
-        }
+            HoldPanelFace(face, kind, close);
         else if (!panel.Contains(point))
             PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+    }
+
+    /// <summary>
+    /// Holds a face in the held-button helper (FND-UI-062): it draws the lit face of
+    /// <paramref name="kind"/> while the pointer is over it, and <paramref name="close"/> runs on a
+    /// release inside it.
+    /// </summary>
+    private void HoldPanelFace(Rectangle face, HeldButtonKind kind, Action close)
+    {
+        AcceptInput();
+        _pressedPanelFace = (face, _screens.Current, close);
+        _pressedPanelFaceKind = kind;
+    }
+
+    /// <summary>
+    /// SCR-UI-005, SCR-UI-006, SCR-UI-007, SCR-UI-008, SCR-GANG-001, SCR-GANG-002, SCR-FINANCE-001,
+    /// SCR-OBJECTIVE-001, SCR-COMBAT-001, SCR-HIRE-001, SCR-COMLINK-001, SCR-OPTIONS-001 and
+    /// SCR-SEARCH-001 (FND-UI-062, FND-UI-067): the face the held-button helper copies to the window
+    /// over a held face, lit while the pointer is over it and plain while it is off it, and the
+    /// plain face a release left on a panel that stayed open. It goes into the batch of the fixed
+    /// screen after the panel and before Detailed Combat, the game menu and the online popups,
+    /// which cover the panel and so cover its face too.
+    /// </summary>
+    private void DrawHeldPanelFace(SpriteBatch batch)
+    {
+        if (UiSprites is null) return;
+        (Rectangle Destination, Rectangle Source)? drawn = null;
+        if (_pressedPanelFace is { } held && _pressedPanelFaceKind is { } kind
+            && held.Screen == _screens.Current)
+            drawn = HeldButtonFaces.Drawn(kind, held.Face,
+                pointerInside: _hoverPoint is { } hover && held.Face.Contains(hover));
+        else if (_releasedPanelFace is { } released && released.Screen == _screens.Current)
+            drawn = HeldButtonFaces.Drawn(released.Kind, released.Face, pointerInside: false);
+        if (drawn is { } face) batch.Draw(UiSprites, face.Destination, face.Source, Color.White);
     }
 
     /// <summary>Enter, or the Execute key (virtual key 0x2B), which the original's panels also take.</summary>
@@ -52,6 +105,28 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
+    /// A left release that an early return in Update skipped, such as during the Detailed Combat a
+    /// key starts or a pressed key face's wait, still lets go of a held panel face. Otherwise the
+    /// face stays held, with the event pump stopped, until some later release takes it. In a frame
+    /// that handled the release the face is already let go of, and this does nothing.
+    /// </summary>
+    private void ReleaseSkippedPanelFace(MouseState mouse)
+    {
+        if (PointerButtonEdges.Released(mouse.LeftButton, _previousMouse.LeftButton))
+            LetGoOfLeftHeldPanelFace();
+    }
+
+    /// <summary>
+    /// Lets go of a held panel face, which only the left button holds (FND-UI-063), as a release
+    /// outside it: the plain face is left on the panel and the panel stays open (FND-UI-062).
+    /// </summary>
+    private void LetGoOfLeftHeldPanelFace()
+    {
+        if (_pressedPanelFace is not null)
+            CompletePointerRelease(pointerMapped: false, Point.Zero, rightButton: false);
+    }
+
+    /// <summary>
     /// A button released: completes what its press holds. Only a console tile pressed with the right
     /// button waits on that button (FND-UI-063); every other held control follows the left one.
     /// </summary>
@@ -71,6 +146,10 @@ public sealed partial class ChaosGame
         {
             if (rightButton) return;
             _pressedPanelFace = null;
+            // FND-UI-062: the helper copies the plain face when the button comes up; a release
+            // inside then closes the panel, and any other leaves the face on it.
+            if (_pressedPanelFaceKind is { } kind && pressedFace.Screen == _screens.Current)
+                _releasedPanelFace = (pressedFace.Face, pressedFace.Screen, kind);
             if (pointerMapped && pressedFace.Screen == _screens.Current
                 && pressedFace.Face.Contains(point))
                 pressedFace.Close();
