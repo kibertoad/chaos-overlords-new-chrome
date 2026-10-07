@@ -807,6 +807,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     /// <summary>Records this frame's input as the previous frame's, which every edge test reads.</summary>
     private void EndUpdate(GameTime gameTime, KeyboardState keyboard, MouseState mouse)
     {
+        ReleaseSkippedPanelFace(mouse);
         FlushScenarioPreference();
         _pointer.Refresh();
         _previousKeyboard = keyboard;

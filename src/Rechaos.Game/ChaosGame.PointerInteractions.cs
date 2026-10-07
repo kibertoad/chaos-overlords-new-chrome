@@ -58,11 +58,13 @@ public sealed partial class ChaosGame
     /// SCR-OBJECTIVE-001, SCR-COMBAT-001, SCR-HIRE-001, SCR-COMLINK-001, SCR-OPTIONS-001 and
     /// SCR-SEARCH-001 (FND-UI-062, FND-UI-067): the face the held-button helper copies to the window
     /// over a held face, lit while the pointer is over it and plain while it is off it, and the
-    /// plain face a release left on a panel that stayed open.
+    /// plain face a release left on a panel that stayed open. It goes into the batch of the fixed
+    /// screen after the panel and before Detailed Combat, the game menu and the online popups,
+    /// which cover the panel and so cover its face too.
     /// </summary>
-    private void DrawHeldPanelFace(Viewport viewport)
+    private void DrawHeldPanelFace(SpriteBatch batch)
     {
-        if (_batch is null || _uiSprites is null) return;
+        if (_uiSprites is null) return;
         (Rectangle Destination, Rectangle Source)? drawn = null;
         if (_pressedPanelFace is { } held && _pressedPanelFaceKind is { } kind
             && !_pressedPanelFaceByRightButton && held.Screen == _screens.Current)
@@ -70,10 +72,7 @@ public sealed partial class ChaosGame
                 pointerInside: _hoverPoint is { } hover && held.Face.Contains(hover));
         else if (_releasedPanelFace is { } released && released.Screen == _screens.Current)
             drawn = HeldButtonFaces.Drawn(released.Kind, released.Face, pointerInside: false);
-        if (drawn is not { } face) return;
-        _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: VirtualInput.Transform(viewport));
-        _batch.Draw(_uiSprites, face.Destination, face.Source, Color.White);
-        _batch.End();
+        if (drawn is { } face) batch.Draw(_uiSprites, face.Destination, face.Source, Color.White);
     }
 
     /// <summary>Enter, or the Execute key (virtual key 0x2B), which the original's panels also take.</summary>
@@ -100,6 +99,28 @@ public sealed partial class ChaosGame
             CompletePointerRelease(pointerMapped: false, Point.Zero, rightButton: false);
         if (PointerButtonEdges.Released(mouse.RightButton, _previousMouse.RightButton))
             CompletePointerRelease(pointerMapped: false, Point.Zero, rightButton: true);
+    }
+
+    /// <summary>
+    /// A left release that an early return in Update skipped, such as during the Detailed Combat a
+    /// key starts or a pressed key face's wait, still lets go of a held panel face. Otherwise the
+    /// face stays held, with the event pump stopped, until some later release takes it. In a frame
+    /// that handled the release the face is already let go of, and this does nothing.
+    /// </summary>
+    private void ReleaseSkippedPanelFace(MouseState mouse)
+    {
+        if (PointerButtonEdges.Released(mouse.LeftButton, _previousMouse.LeftButton))
+            LetGoOfLeftHeldPanelFace();
+    }
+
+    /// <summary>
+    /// Lets go of a panel face the left button holds as a release outside it: the plain face is
+    /// left on the panel and the panel stays open (FND-UI-062).
+    /// </summary>
+    private void LetGoOfLeftHeldPanelFace()
+    {
+        if (_pressedPanelFace is not null && !_pressedPanelFaceByRightButton)
+            CompletePointerRelease(pointerMapped: false, Point.Zero, rightButton: false);
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Game;
 using Xunit;
 
@@ -81,6 +82,48 @@ public sealed class HeldPanelFaceTests
         Release(game, face.Center);
         Assert.Equal(1, closed);
     }
+
+    [Fact]
+    public void ALeftReleaseAFrameSkippedLetsGoOfTheFaceWithoutClosing()
+    {
+        // A release that an early return in Update skipped (Detailed Combat, a pressed key face's
+        // wait) still ends the hold, as a release outside the face.
+        var closed = 0;
+        var face = CombatResultsLayout.Ok;
+        var game = GameHolding(face, () => closed++);
+        Field("_previousMouse").SetValue(game, Mouse(ButtonState.Pressed));
+        Method("ReleaseSkippedPanelFace").Invoke(game, [Mouse(ButtonState.Pressed)]);
+        Assert.NotNull(Field("_pressedPanelFace").GetValue(game));
+
+        Method("ReleaseSkippedPanelFace").Invoke(game, [Mouse(ButtonState.Released)]);
+        Assert.Equal(0, closed);
+        Assert.Null(Field("_pressedPanelFace").GetValue(game));
+        Assert.Equal((face, ClientScreen.Title, HeldButtonKind.Confirm),
+            ((Rectangle, ClientScreen, HeldButtonKind)?)Field("_releasedPanelFace").GetValue(game));
+    }
+
+    [Fact]
+    public void LettingGoOfALeftHeldFaceLeavesARightHeldOneHeld()
+    {
+        // The game menu lets go of a left-held face so a release under it cannot close the panel.
+        var closed = 0;
+        var game = GameHolding(CombatResultsLayout.Ok, () => closed++);
+        Method("LetGoOfLeftHeldPanelFace").Invoke(game, []);
+        Assert.Equal(0, closed);
+        Assert.Null(Field("_pressedPanelFace").GetValue(game));
+
+        game = GameHolding(CombatResultsLayout.Ok, () => closed++);
+        Field("_pressedPanelFaceByRightButton").SetValue(game, true);
+        Method("LetGoOfLeftHeldPanelFace").Invoke(game, []);
+        Assert.NotNull(Field("_pressedPanelFace").GetValue(game));
+    }
+
+    private static MouseState Mouse(ButtonState left) =>
+        new(10, 10, 0, left, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
+
+    private static MethodInfo Method(string name) =>
+        typeof(ChaosGame).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(name);
 
     private static ChaosGame GameHolding(Rectangle face, Action close)
     {
