@@ -35,7 +35,7 @@ public static class OnlineLobbySummary
         AiDifficulty mentality,
         PlanningTimeLimit turnTimer) =>
     [
-        ("SCENARIO", ScenarioCatalog.Get(scenario).Name),
+        ("SCENARIO", ExecutableStrings.ScenarioTitle(scenario)),
         ("LENGTH", DurationSetupTooltip.Label(duration)),
         ("OPPONENTS", DifficultyPresentation.Label(mentality)),
         ("TURN TIMER", PlanningTimerPolicy.Label(turnTimer))

@@ -245,6 +245,31 @@ public sealed class CitySectorClickTracker
     public void Cancel() => _lastSector = null;
 }
 
+/// <summary>
+/// Tells a second press of a button within the double-click window, close to the first, from a new
+/// press, as Windows tells a double-click event from a press. A double-click ends the pair, so a
+/// third press starts a new one.
+/// </summary>
+public sealed class PointDoubleClickTracker
+{
+    private Point? _lastPoint;
+    private TimeSpan _lastClick;
+
+    public bool Register(Point point, TimeSpan timestamp)
+    {
+        if (timestamp < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timestamp));
+        var doubleClick = _lastPoint is { } last
+            && Math.Abs(point.X - last.X) < 4 && Math.Abs(point.Y - last.Y) < 4
+            && timestamp >= _lastClick
+            && timestamp - _lastClick <= CitySectorClickTracker.DoubleClickWindow;
+        _lastPoint = doubleClick ? null : point;
+        _lastClick = timestamp;
+        return doubleClick;
+    }
+
+    public void Cancel() => _lastPoint = null;
+}
+
 public static partial class CityConsoleLayout;
 
 /// <summary>SCR-SETUP-002, FND-SETUP-016: the hand-off card and what is drawn on it.</summary>

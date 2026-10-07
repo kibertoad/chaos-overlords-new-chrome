@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
 | 2026-10-06 | [Keep 1.x saves loadable and play replays only under their own rules](#2026-10-06--keep-1x-saves-loadable-and-play-replays-only-under-their-own-rules) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
@@ -45,6 +46,50 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-06 — Recover from a desync without waiting on the host
+
+- Decision: a desync no longer depends on the host's snapshot in either of the
+  two places it still did.
+  - Every client first checks its own report. It rebuilds the disputed turn
+    from server facts (the newest snapshot below the turn, then the sealed order
+    sets) and compares the result with the hash it reported. When they differ,
+    its live state went wrong somewhere outside the sealed sets, so it adopts
+    the rebuilt state and reports again. A divergence of that kind then settles
+    on unanimous reports, with no snapshot uploaded by anybody.
+  - A tie is broken by a designated player rather than by the host alone. The
+    designee is the host when the host's report is one of the tied hashes, and
+    otherwise the lowest-numbered seat whose report is. `turn.desynced` names
+    the designee, and the server takes a tie-breaking snapshot only from that
+    player.
+- Reason: with five or six players a tie can leave the host outside every tied
+  hash (two reports each for two hashes, the host's alone on a third). The host
+  could not claim a hash it did not hold, no peer was allowed to break the tie,
+  and the match stayed paused until retention collected it. The self-check
+  covers the other gap: a client that diverged through its own fault, which in
+  a two-player match is a tie, had its state imposed on the other player
+  whenever it was the host.
+- The designee is recomputed when the roster changes. A departure, a kick, a
+  takeover or a rejoin during the pause re-runs the verdict, and when the
+  candidates or the designee differ from the turn's latest announcement the
+  server announces `turn.desynced` again, keyed by the announcement it follows,
+  so a verdict that returns to an earlier one (a seat that leaves and rejoins)
+  is announced too. While another turn is desynced as well, the latest
+  announcement is often that turn's, and the verdict is announced again
+  without the comparison. The sweep re-runs verdicts quietly: it announces
+  only a verdict that differs from the turn's own latest announcement, which
+  retries a re-announcement whose publish failed after the roster change it
+  follows was committed, and a paused match costs one indexed read per
+  desynced turn and no writes while nothing changes.
+- Unchanged: a snapshot may still only claim a hash the most players reported,
+  and a sole most-reported hash may still be posted by anyone holding it. The
+  self-check changes nothing but this client's own report: the server still
+  confirms a turn only on unanimous reports or against a snapshot that claims
+  a most-reported hash.
+- Out of scope: resolving turns on the server, which would remove snapshots
+  from recovery altogether, is tracked in #453.
+- Status: implemented and tested; protocol version 24, session version
+  unchanged.
 
 ## 2026-10-06 — Keep 1.x saves loadable and play replays only under their own rules
 
