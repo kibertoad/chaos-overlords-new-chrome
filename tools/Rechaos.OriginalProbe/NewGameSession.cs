@@ -7,24 +7,27 @@ internal sealed record RollRecord(string Call, int Bound, int Result);
 internal sealed record HumanSlot(int Slot, string? Modifier);
 
 /// <summary>
-/// An order the probe writes into a gang record of the first human before the Done press of
-/// <paramref name="Turn"/>, counted from 1: the FMT-STATE-001 bytes <c>action</c>, <c>target</c>
-/// and <c>target_2</c>, and for a recurring order <c>repeat_action</c> and <c>repeat_target</c>, as
-/// RULE-TURN-005 has the order screens write them.
+/// An order the probe writes into a gang record of human <paramref name="Player"/> before the Done
+/// press of <paramref name="Turn"/>, counted from 1: the FMT-STATE-001 bytes <c>action</c>,
+/// <c>target</c> and <c>target_2</c>, and for a recurring order <c>repeat_action</c> and
+/// <c>repeat_target</c>, as RULE-TURN-005 has the order screens write them. A player of -1, which
+/// only a trace written before the probe kept the player holds, is the first <c>--humans</c> slot
+/// (<see cref="NewGameSettings.WithActingPlayers"/>).
 /// </summary>
-internal sealed record ProbeOrder(int Turn, int Slot, int Action, int Target, int Target2, bool Repeat)
+internal sealed record ProbeOrder(int Turn, int Slot, int Action, int Target, int Target2, bool Repeat, int Player = -1)
 {
     public override string ToString() =>
-        $"turn {Turn}: gang slot {Slot} action {Action} target {Target} target_2 {Target2} repeat {(Repeat ? 1 : 0)}";
+        $"turn {Turn}: player {Player} gang slot {Slot} action {Action} target {Target} target_2 {Target2} repeat {(Repeat ? 1 : 0)}";
 }
 
 /// <summary>
-/// A hire the human places before a Done press: the hire offer slot 0 to 2 and the sector it is
-/// dropped on, written into <c>hire_orders</c> as the hire screen does (RULE-HIRE-003).
+/// A hire human <paramref name="Player"/> places before a Done press: the hire offer slot 0 to 2
+/// and the sector it is dropped on, written into <c>hire_orders</c> as the hire screen does
+/// (RULE-HIRE-003). A player of -1 is the first <c>--humans</c> slot, as for <see cref="ProbeOrder"/>.
 /// </summary>
-internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector)
+internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector, int Player = -1)
 {
-    public override string ToString() => $"turn {Turn}: offer slot {OfferSlot} sector {Sector}";
+    public override string ToString() => $"turn {Turn}: player {Player} offer slot {OfferSlot} sector {Sector}";
 }
 
 /// <summary>
@@ -52,13 +55,14 @@ internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family,
 }
 
 /// <summary>
-/// Search filter entries the probe sets for the first human before the Done press of
-/// <paramref name="Turn"/>: a byte of <c>search_filters</c> per site definition, as the Search panel
-/// writes them (RULE-SEARCH-001).
+/// Search filter entries the probe sets for human <paramref name="Player"/> before the Done press
+/// of <paramref name="Turn"/>: a byte of <c>search_filters</c> per site definition, as the Search
+/// panel writes them (RULE-SEARCH-001). A player of -1 is the first <c>--humans</c> slot, as for
+/// <see cref="ProbeOrder"/>.
 /// </summary>
-internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions)
+internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions, int Player = -1)
 {
-    public override string ToString() => $"turn {Turn}: search filter {string.Join(" ", Definitions)}";
+    public override string ToString() => $"turn {Turn}: player {Player} search filter {string.Join(" ", Definitions)}";
 }
 
 /// <summary>
@@ -134,6 +138,26 @@ internal sealed record NewGameSettings(
 {
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
+    /// <summary>The <c>--humans</c> slots in the order given, or slot 0, the setup screen's human, when the option is left out.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public IReadOnlyList<int> HumanSlots => Humans is { Count: > 0 } humans ? humans.Select(human => human.Slot).ToArray() : [0];
+
+    /// <summary>The first of <see cref="HumanSlots"/>.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public int FirstHuman => HumanSlots[0];
+
+    /// <summary>
+    /// These settings with every order, hire and Search write naming its player: one that names
+    /// none, as in a trace written before the probe kept the player, acts for
+    /// <see cref="FirstHuman"/>, the player the probe wrote for then.
+    /// </summary>
+    public NewGameSettings WithActingPlayers() => this with
+    {
+        Orders = Orders?.Select(order => order.Player < 0 ? order with { Player = FirstHuman } : order).ToArray(),
+        Hires = Hires?.Select(hire => hire.Player < 0 ? hire with { Player = FirstHuman } : hire).ToArray(),
+        Search = Search?.Select(write => write.Player < 0 ? write with { Player = FirstHuman } : write).ToArray(),
+    };
+
     public IEnumerable<string> Describe()
     {
         if (Scenario is { } scenario) yield return $"scenario {scenario}";
@@ -165,11 +189,14 @@ internal sealed record NewGameSettings(
     /// The orders and Done presses after the first planning phase, then the presses after the dump,
     /// one input each: an order is named <c>order</c>, a press <c>left_click</c>, a hire step's
     /// drag <c>drag</c>, a wait <c>wait</c>, a write of <c>match_saved</c> <c>saved</c> and a
-    /// close of the window <c>close</c>.
+    /// close of the window <c>close</c>. Only the first <paramref name="turnsPlayed"/> turns are
+    /// listed, the turns whose writes and Done press the run made, one entry of
+    /// <see cref="ProbeTrace.RollsAtDone"/> each: a match that ends, or a human eliminated, before
+    /// <c>--end-turns</c> runs out stops the presses there.
     /// </summary>
-    public IEnumerable<(string Name, string Value)> DescribeTurns()
+    public IEnumerable<(string Name, string Value)> DescribeTurns(int turnsPlayed)
     {
-        for (var turn = 1; turn <= EndTurns; turn++)
+        for (var turn = 1; turn <= Math.Min(EndTurns, turnsPlayed); turn++)
         {
             var orders = (Orders ?? []).Where(order => order.Turn == turn).ToArray();
             var hires = (Hires ?? []).Where(hire => hire.Turn == turn).ToArray();
@@ -249,6 +276,7 @@ internal sealed record ProbeTrace(
     List<SlideRecord>? Slides = null,
     List<CloseRecord>? Closes = null,
     List<SavedWriteRecord>? SavedWrites = null,
+    bool? EffectsEnabled = null,
     List<KeyEventRecord>? KeyEvents = null,
     List<NameEntryRecord>? NameEntries = null,
     List<NameShotRecord>? NameShots = null);
@@ -438,6 +466,7 @@ internal sealed partial class NewGameSession(
                 if (!CaptureFinance(window, panel))
                     return Finish(false, $"The Financial panel of turn {turn} for sector {panel.Sector} was not captured.", rollsBeforeBegin);
             _rollsAtDone.Add(_rolls.Count);
+            if (settings.Sounds) SampleEffectsEnabled();
             _turn = turn;
             var waits = settings.ExpireTurns?.Contains(turn) == true;
             // A turn left to run out takes its planning limit before the resolution even starts, so
@@ -669,21 +698,26 @@ internal sealed partial class NewGameSession(
         endgame.Kinds.Add(kind);
     }
 
-    // The player whose orders, hires, Search filter, Equip lists and Attack lists the probe writes and reads:
-    // the first --humans entry, or slot 0 when the option is left out.
-    private int FirstHuman => settings.Humans is { Count: > 0 } humans ? humans[0].Slot : 0;
+    // The player whose Equip lists and Attack lists the probe reads: the first --humans entry, or
+    // slot 0 when the option is left out. Orders, hires and Search writes name their own player.
+    private int FirstHuman => settings.FirstHuman;
+
+    // An order, hire or Search write's player, which NewGameSettings.WithActingPlayers fills in
+    // when the entry leaves it out; -1 here would write outside the player's records.
+    private static int Acting(int player) => player >= 0
+        ? player
+        : throw new InvalidOperationException("A write names no player: build the settings with WithActingPlayers.");
 
     private void WriteSearch(ProbeSearch write)
     {
-        var human = FirstHuman;
         foreach (var definition in write.Definitions)
             _process.Write(OriginalAddresses.SearchFilters
-                + (uint)(human * OriginalAddresses.SiteDefinitionCount + definition), [1]);
+                + (uint)(Acting(write.Player) * OriginalAddresses.SiteDefinitionCount + definition), [1]);
         _notes.Add($"search after roll {_rolls.Count}: {write}");
     }
 
     // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
-    // last complete redraw.
+    // last complete redraw, whichever human it was drawn for, with that viewer.
     private void OnCityRedraw(BreakContext context)
     {
         var redraw = new CityMarkers(context.Argument(0), []);
@@ -745,9 +779,8 @@ internal sealed partial class NewGameSession(
 
     private void WriteOrder(ProbeOrder order)
     {
-        var human = FirstHuman;
         var record = OriginalAddresses.GangRecords
-            + (uint)(human * OriginalAddresses.PlayerGangStride + order.Slot * OriginalAddresses.GangRecordSize);
+            + (uint)(Acting(order.Player) * OriginalAddresses.PlayerGangStride + order.Slot * OriginalAddresses.GangRecordSize);
         _process.Write(record + 7, [
             (byte)order.Action, (byte)order.Target, (byte)order.Target2,
             (byte)(order.Repeat ? order.Action : 0), (byte)(order.Repeat ? order.Target : 0)]);
@@ -756,8 +789,7 @@ internal sealed partial class NewGameSession(
 
     private void WriteHire(ProbeHire hire)
     {
-        var human = FirstHuman;
-        _process.Write(OriginalAddresses.HireOrders + (uint)(human * 3 + hire.OfferSlot), [(byte)hire.Sector]);
+        _process.Write(OriginalAddresses.HireOrders + (uint)(Acting(hire.Player) * 3 + hire.OfferSlot), [(byte)hire.Sector]);
         _notes.Add($"hire after roll {_rolls.Count}: {hire}");
     }
 
@@ -848,7 +880,9 @@ internal sealed partial class NewGameSession(
         if (call != 0xE8) _notes.Add($"The preference loader call starts with 0x{call:X2}, not a call.");
         _process.Write(OriginalAddresses.PrefFullScreen, [0]);
         _process.Write(OriginalAddresses.PrefFullScreenCopy, [0]);
-        if (!settings.Sound) Mute();
+        if (settings.Sound) Unmute();
+        else Mute();
+        _preferencesSet = true;
         if (settings.Comlink is not null) _process.Write(OriginalAddresses.PrefSlidePanels, BitConverter.GetBytes(0));
         if (settings.EndTurns == 0 && settings.Comlink is null) return;
         _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(0));
@@ -933,7 +967,7 @@ internal sealed partial class NewGameSession(
             settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
             settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
-            _savedWrites.Count == 0 ? null : _savedWrites,
+            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null,
             _keyEvents.Count == 0 ? null : _keyEvents, _nameEntries.Count == 0 ? null : _nameEntries,
             _nameShots.Count == 0 ? null : _nameShots);
     }

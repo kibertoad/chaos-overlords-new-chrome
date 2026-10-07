@@ -104,8 +104,20 @@ public sealed record ScreenCaptureRecord(
     /// <summary>FND-UI-052, FND-UI-053: the frame of the rotating item pictures a shot shows.</summary>
     public int? ItemFrame { get; init; }
 
+    /// <summary>FND-UI-054: the idle gang warning's ticks since its open, modulo 8, a shot shows.</summary>
+    public int? IdlePhase { get; init; }
+
+    /// <summary>FND-COMLINK-010: the Comlink Send caret's phase a shot shows, 3 inverse and 0 plain.</summary>
+    public int? CaretPhase { get; init; }
+
     /// <summary>FND-COMBAT-016: the tick of the Detailed Combat clip a shot shows.</summary>
     public int? ClipTick { get; init; }
+
+    /// <summary>
+    /// FND-COMBAT-011: the index within its presentation of the Detailed Combat clip a shot shows.
+    /// A shot recorded before the probe kept it has none; those shots all show a first clip.
+    /// </summary>
+    public int? ClipIndex { get; init; }
 
     /// <summary>
     /// The screens a run copies before its match (FND-UI-055): the fixture holds each as
@@ -248,8 +260,17 @@ public sealed record ScreenCaptureRecord(
             ItemFrame = capture.TryGetProperty("item_frame", out var item) && item.ValueKind == JsonValueKind.Number
                 ? item.GetInt32()
                 : null,
+            IdlePhase = capture.TryGetProperty("idle_phase", out var idle) && idle.ValueKind == JsonValueKind.Number
+                ? idle.GetInt32()
+                : null,
+            CaretPhase = capture.TryGetProperty("caret_phase", out var caret) && caret.ValueKind == JsonValueKind.Number
+                ? caret.GetInt32()
+                : null,
             ClipTick = capture.TryGetProperty("clip_tick", out var tick) && tick.ValueKind == JsonValueKind.Number
                 ? tick.GetInt32()
+                : null,
+            ClipIndex = capture.TryGetProperty("clip_index", out var clip) && clip.ValueKind == JsonValueKind.Number
+                ? clip.GetInt32()
                 : null,
         };
         // Without frame_counter the record keeps the pump's counter as its frame counter.
@@ -548,7 +569,7 @@ public static class RebuildFrame
     public static ScreenFrame Render(
         MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
         int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null,
-        string? screen = null, int? clipTick = null)
+        string? screen = null, int? clipTick = null, int? idlePhase = null, int? caretPhase = null, int? clipIndex = null)
     {
         var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -581,10 +602,25 @@ public static class RebuildFrame
                 start.ArgumentList.Add("--item-frame");
                 start.ArgumentList.Add(item.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
+            if (idlePhase is { } idle)
+            {
+                start.ArgumentList.Add("--idle-phase");
+                start.ArgumentList.Add(idle.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (caretPhase is { } caret)
+            {
+                start.ArgumentList.Add("--caret-phase");
+                start.ArgumentList.Add(caret.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
             if (clipTick is { } tick)
             {
                 start.ArgumentList.Add("--clip-tick");
                 start.ArgumentList.Add(tick.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            if (clipIndex is { } clip)
+            {
+                start.ArgumentList.Add("--clip-index");
+                start.ArgumentList.Add(clip.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
             if (pumpCounter is { } counter)
             {

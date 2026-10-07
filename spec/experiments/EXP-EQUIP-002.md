@@ -43,8 +43,8 @@ and -32 cash. The lists of the slot-2 gang hold one item or none.
 
 ## Results
 
-`TheEquipListOffersTheOriginalsItems` compares the lists as in
-EXP-EQUIP-001, and they are the same.
+A test of the rebuild compares the lists as in EXP-EQUIP-001, and they are the
+same.
 
 For the Tech Level 0 gang the rebuild's item table rules out, in each
 category, one or two items that are researched or need no research and whose Tech Level is above

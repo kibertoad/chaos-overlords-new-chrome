@@ -6,6 +6,7 @@ import {
   kickPlayerContract,
   leaveMatchContract,
   listLobbiesContract,
+  postChatMessageContract,
   rejoinMatchContract,
   startMatchContract,
   takeoverVoteContract,
@@ -44,7 +45,7 @@ export function registerPublicLobbyRoutes(api: Hono<AppEnv>): void {
   buildHonoRoute(api, createMatchContract, async (c) => {
     // Charged here, after the contract validator, so a body that was never going to store a lobby
     // does not spend the budget every host shares; `matchCreationRateLimited` only checks it.
-    c.get('spendMatchCreation')?.()
+    await c.get('spendMatchCreation')?.()
     const membership = await c.get('container').kernel.lobby.createMatch(c.req.valid('json'))
     return c.json(answering(c, membership), 201)
   })
@@ -107,6 +108,16 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
     await c
       .get('container')
       .kernel.lobby.updateProfile(
+        requireMember(c.get('principal'), c.req.valid('param').matchId),
+        c.req.valid('json'),
+      )
+    return c.body(null, 204)
+  })
+
+  buildHonoRoute(api, postChatMessageContract, async (c) => {
+    await c
+      .get('container')
+      .kernel.lobby.postChat(
         requireMember(c.get('principal'), c.req.valid('param').matchId),
         c.req.valid('json'),
       )

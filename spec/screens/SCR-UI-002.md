@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-007, FND-UI-008, FND-EXE-004, FND-UI-055, EXP-UI-015]
+evidence: [FND-UI-007, FND-UI-008, FND-EXE-004, FND-UI-055, EXP-UI-015, FND-UI-063]
 conflicting: []
 split_with: []
 related: [SCR-UI-009]
@@ -21,7 +21,7 @@ related: [SCR-UI-009]
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Whole screen | `(0,0,640,460)` | Always | A click closes the screen and returns to the screen it was opened from | FND-UI-007 |
+| Whole screen | `(0,0,640,460)` | Always | A press or a release of either button closes the screen and returns to the screen it was opened from | FND-UI-007, FND-UI-063 |
 
 ## Keyboard input
 

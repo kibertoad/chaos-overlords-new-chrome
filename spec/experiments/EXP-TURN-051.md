@@ -49,11 +49,11 @@ with target -1, and the row of sector 31 lists record 327 for player 4 with
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same state, and the records rebuilt from its attack and police events of the
-last resolution hold the same definition, Forces, items, opening and
-retaliation damage and police damage, and every combat result row matches.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same state, and the records rebuilt from
+its attack and police events of the last resolution hold the same definition,
+Forces, items, opening and retaliation damage and police damage, and every
+combat result row matches.
 
 ## Conclusion
 
