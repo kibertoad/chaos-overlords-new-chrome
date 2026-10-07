@@ -4,7 +4,7 @@ title: Chaos pays one cash per success, halved once per player and sector outsid
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CHAOS-001, FND-CHAOS-002, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-009, EXP-TURN-061, EXP-TURN-062, EXP-TURN-063, EXP-TURN-064]
+evidence: [FND-CHAOS-001, FND-CHAOS-002, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-009, EXP-TURN-061, EXP-TURN-062, EXP-TURN-063, EXP-TURN-064, FND-CONTROL-001, FND-EQUIP-006, FND-HIRE-002, FND-PLATFORM-003, FND-UI-035, FND-UI-036, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002]

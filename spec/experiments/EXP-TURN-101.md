@@ -51,7 +51,7 @@ written, is in sector 17.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run and
+A test of the rebuild replays the run and
 writes the same families before the same Done press. The rebuild makes the same
 calls with the same bounds and results and reaches the same state, the planning
 records included. Each written gang reaches the handler's Move write in the

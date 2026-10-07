@@ -56,7 +56,7 @@ turn 82 found no free roster slot.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run, with
+A test of the rebuild replays the run, with
 the same cash written before each Done press. The rebuild makes the same calls
 with the same bounds and results, reaches the same state, builds the same Last
 Turn reports for every player and shows the same panels at each planning entry.

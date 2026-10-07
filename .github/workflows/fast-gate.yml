@@ -14,9 +14,10 @@
 #
 # `Invoke-Validation.ps1` also checks the generated documentation indexes and the relative links
 # between documents (`tools/update-doc-indexes.mjs --check`), and the spec against the
-# documentation standard (`tools/check-spec.mjs --check`), on both legs, with the runner's own
-# Node.js. Windows checks out with CRLF, so that leg also covers the script's line-ending handling.
-# A stale index fails the leg only after the build and tests have run, so it never hides them.
+# documentation standard (`tools/check-documentation.mjs --check`, which runs the shared checker
+# the root package.json pins), on both legs. Windows checks out with CRLF, so that leg also covers
+# the script's line-ending handling. A stale index fails the leg only after the build and tests
+# have run, so it never hides them.
 name: Fast gate
 
 on:
@@ -53,7 +54,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # Full history, so `check-spec.mjs` can find where a pull request forked from its base
+          # Full history, so the documentation checker can find where a pull request forked from its base
           # branch and fail when it deletes a spec ID or area that exists there.
           fetch-depth: 0
 
@@ -62,8 +63,13 @@ jobs:
         with:
           dotnet-version: 10.0.400
 
-      # `check-spec.mjs` (run by Invoke-Validation.ps1) compiles the `.ksy` definitions with it, and
-      # fails when CI is set and no compiler is found.
+      # Invoke-Validation.ps1 runs the documentation standard's checker (tools/check-documentation.mjs),
+      # which the root package.json pins and `pnpm install` at the root installs.
+      - name: Install the documentation checker
+        uses: $/.github/actions/install-documentation-checker
+
+      # The checker compiles the `.ksy` definitions with it, and fails when CI is set and no
+      # compiler is found.
       - name: Install the Kaitai Struct compiler
         id: kaitai
         uses: $/.github/actions/install-kaitai

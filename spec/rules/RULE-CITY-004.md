@@ -4,7 +4,7 @@ title: Each player's Right Hands starts in roster slot 0 in its headquarters at 
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-CITY-003, FND-SETUP-004, FND-TURN-003, EXP-SETUP-001]
+evidence: [FND-CITY-003, FND-SETUP-004, FND-TURN-003, EXP-SETUP-001, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001]
