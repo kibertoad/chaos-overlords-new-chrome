@@ -82,8 +82,10 @@ used by the shared template. What the original does now lives only in
   open question found during the conversion, grouped by part of the game.
   Manual work waits for the maintainer to schedule a session with the original.
 - `tools/check-documentation.mjs` runs the toolkit's standard checker (pinned
-  in the root `package.json`) with this game's settings, and writes
-  `PARITY.md` and `spec/index/`. The fast gate runs it with `--check`. It
+  in the root `package.json`) with this game's settings. `PARITY.md` and
+  `spec/index/` are updated on main only, by the nightly workflow
+  `nightly-generated.yml`, and the check fails a branch that edits them. The
+  fast gate runs it with `--check`. It
   compiles the `.ksy` files when `kaitai-struct-compiler` (0.11) is on the
   path or named by `KSC`; it is installed for this user under
   `%LOCALAPPDATA%/Programs/kaitai-struct-compiler-0.11/bin`, and the CI

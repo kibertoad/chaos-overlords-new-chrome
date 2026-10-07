@@ -6,6 +6,11 @@
 # (tools/check-documentation.mjs passes --scheduled-generation, which fails a branch that changes
 # one), and this job keeps main's copies at most a day behind.
 #
+# A project whose spec has stopped changing can run the job on demand only: set the repository
+# variable GENERATED_FILES_SCHEDULE to "on-demand" (gh variable set GENERATED_FILES_SCHEDULE --body
+# on-demand) and the scheduled runs are skipped. Run it by hand after a change to the inputs with
+# gh workflow run nightly-generated.yml. Delete the variable to go back to nightly runs.
+#
 # main has no branch protection, so the job's token can push. If main ever requires pull requests,
 # let github-actions bypass the rule or give this job a token that may push.
 #
@@ -29,14 +34,17 @@ concurrency:
 jobs:
   regenerate:
     name: Regenerate and push to main
+    if: github.event_name != 'schedule' || vars.GENERATED_FILES_SCHEDULE != 'on-demand'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: write # Pushes the regenerated files to main.
     env:
       # Git pathspecs, separated by spaces, of everything the generators read. A scheduled run
-      # regenerates only when a commit on main touched one of them in the last 26 hours: scheduled
-      # runs start late, and a run whose window overlaps the previous one finds nothing to commit.
+      # regenerates only when a commit on main touched one of them after the last commit that
+      # touched GENERATED_OUTPUTS. A night whose run was dropped or failed is picked up by the next.
+      # An input change that leaves the outputs as they were keeps the gate open until an output
+      # changes, which costs one run that commits nothing per day.
       GENERATED_INPUTS: "spec parity deviations :(exclude)spec/index package.json"
       # The files the generators write, separated by spaces. Only these are committed.
       GENERATED_OUTPUTS: "spec/index PARITY.md"
@@ -51,7 +59,7 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-          # The full history of main, for the 26-hour window below and the checker's base.
+          # The full history of main, for the gate below and the checker's base.
           fetch-depth: 0
 
       - name: Decide whether to regenerate
@@ -67,14 +75,23 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # --first-parent follows main only, so a pull request's merge is the commit that counts
+          # and the dates of its own commits play no part.
           # shellcheck disable=SC2086
-          recent=$(git log --since='26 hours ago' --format=%H origin/main -- $GENERATED_INPUTS)
-          if [ -z "$recent" ]; then
-            echo "No commit on main touched $GENERATED_INPUTS in the last 26 hours; nothing to regenerate."
+          last=$(git log --first-parent -1 --format=%H origin/main -- $GENERATED_OUTPUTS)
+          if [ -z "$last" ]; then
+            echo "No commit on main has touched $GENERATED_OUTPUTS yet, so they are regenerated."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # shellcheck disable=SC2086
+          changed=$(git log --first-parent --format=%H "$last..origin/main" -- $GENERATED_INPUTS)
+          if [ -z "$changed" ]; then
+            echo "No commit on main touched $GENERATED_INPUTS after $last; nothing to regenerate."
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
-            echo "Commits on main in the last 26 hours touched the inputs:"
-            echo "$recent"
+            echo "Commits on main after $last touched the inputs:"
+            echo "$changed"
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -123,6 +140,9 @@ jobs:
             echo "The push was rejected (attempt $attempt of 3); starting again from the new main."
             git fetch --quiet "$remote" main
             git reset --hard FETCH_HEAD
+            # The new main may pin another checker, which check-documentation.mjs refuses to run
+            # with the one installed for the old main.
+            pnpm install --frozen-lockfile
           done
           echo "Could not push to main after 3 attempts." >&2
           exit 1

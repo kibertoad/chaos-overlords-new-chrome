@@ -33,7 +33,7 @@ environment: null
 `0x00458FA0` at `0x0045936F` and from `0x00409F47` at `0x0040A195`. Its body
 runs four parts in this order.
 
-1. `0x0040A1B0..0x0040A288`: for every observer 0 to 5 and every other player
+1. `0x0040A1B0..0x0040A293`: for every observer 0 to 5 and every other player
    0 to 5, it clears the 24-byte record at
    `0x0048F810 + observer * 0x90 + other * 0x18`: the 16-bit values at +0 and
    +2, the 32-bit values at +4, +8, +12 and +16, and the byte at +20. All 36
