@@ -68,3 +68,8 @@ None known.
 - The captures (EXP-UI-023, EXP-UI-034) show a human survivor in slot 0,
   opened before any press of a tab or of Done.
 - In 256-colour mode the game uses the `DATA/PX08` files of the same names.
+- No recorded run of the original reaches a computer survivor, other player
+  slots and other name lengths; Done, the Awards and Stats tabs and menu
+  command 9; the push cue (FND-AWARDS-003, FND-AWARDS-004, FND-AWARDS-005,
+  FND-AUDIO-010). These rest on the static findings named, so the entry stays
+  `supported`.

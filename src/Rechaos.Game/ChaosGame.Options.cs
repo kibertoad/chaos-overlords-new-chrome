@@ -443,10 +443,10 @@ public sealed partial class ChaosGame
 
     private Texture2D? ReturnScreenBackground(ClientScreen returnScreen) => returnScreen switch
     {
-        ClientScreen.Title => _titleBackground,
-        ClientScreen.Setup => _setupBackground,
-        ClientScreen.Endgame => _endgameBackground,
-        _ => _cityBackground
+        ClientScreen.Title => TitleBackground,
+        ClientScreen.Setup => SetupBackground,
+        ClientScreen.Endgame => EndgameBackground,
+        _ => CityBackground
     };
 
     private void DrawOptions(SpriteBatch batch, Texture2D pixel, PixelFont font)

@@ -6,21 +6,14 @@ Entries by status.
 
 ## supported
 
-3 entries.
+4 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-GANG-001](../../rules/RULE-GANG-001.md) | Each active gang's fourteen statistics are its definition's, plus its items', plus its owned sector's completed sites', and Combat also takes the skills that go with its weapon |
+| [RULE-GANG-002](../../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive |
 | [SCR-GANG-001](../../screens/SCR-GANG-001.md) | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels |
 | [SCR-GANG-002](../../screens/SCR-GANG-002.md) | Gang information panel for a hired gang |
-
-## established
-
-1 entries.
-
-| ID | Title |
-|---|---|
-| [RULE-GANG-002](../../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive |
 
 ## recorded
 
@@ -40,20 +33,12 @@ Entries by status.
 | [FND-GANG-010](../../findings/FND-GANG-010.md) | The compact gang panel places each value field in its 320-pixel frame, closes only on its face, Enter or Execute, and covers the base values with a black pattern |
 | [FND-GANG-011](../../findings/FND-GANG-011.md) | The compact gang panel dims its base values with black through bitmap 143, starting the pattern at each area's corner |
 
-## Established on unreproduced evidence
-
-Entries whose status is established and whose findings and experiments are all only recorded.
-
-| ID | Title |
-|---|---|
-| [RULE-GANG-002](../../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive |
-
 ## Open questions
 
 Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-GANG-002](../../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | established |
+| [RULE-GANG-002](../../rules/RULE-GANG-002.md) | A gang that dies or is terminated has only its sector byte set to inactive | supported |
 | [SCR-GANG-001](../../screens/SCR-GANG-001.md) | Compact gang information panel opened from the Attack, Equip, Research, Sell and Give panels | supported |
 | [SCR-GANG-002](../../screens/SCR-GANG-002.md) | Gang information panel for a hired gang | supported |

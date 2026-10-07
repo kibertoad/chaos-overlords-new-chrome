@@ -13,7 +13,7 @@ locations:
     address: 0x00435BD0..0x00435F12
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043A1D0..0x0043B280
+    address: 0x0043A1D0..0x0043B281
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -31,8 +31,8 @@ one of them reaches `0x00435EEA`:
 | Control | none | `JMP` at `0x00435E31` |
 | Move | `0x00435EE0`, -1 | falls through |
 
-The instructions at `0x00435EEA..0x00435F03` compute the auxiliary record of
-the gang (`0x0048C0BA + player * 0x46E + slot * 14`, FND-AI-044) and store
+The instructions at `0x00435EEA..0x00435F0D` compute the auxiliary record of
+the gang (`0x0048C0BA + player * 0x46E + slot * 14`, FND-AI-081) and store
 -1 in its `focus` at `0x00435F03`. The `JMP` at `0x00435F0D` then leaves the
 case for the handler's common tail at `0x00436B41`.
 

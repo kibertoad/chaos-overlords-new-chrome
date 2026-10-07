@@ -558,16 +558,21 @@ public static class RebuildFrame
         string screen, string? name = null, IReadOnlyList<ReferenceClick>? clicks = null) =>
         Render(null, null, clicks, name, screen: screen);
 
+    /// <summary>Why no frame can be drawn on this machine, or null when an asset pack is installed.</summary>
+    public static string? MissingAssetPack() =>
+        File.Exists(Path.Combine(AssetRoot(), "manifest.json")) ? null : $"No asset pack is installed at {AssetRoot()}.";
+
+    private static string AssetRoot() => AssetRootResolver.Resolve(AppContext.BaseDirectory,
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+
     public static ScreenFrame Render(
         MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
         int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null,
         string? screen = null, int? clipTick = null, int? idlePhase = null, int? caretPhase = null, int? clipIndex = null,
         bool entryPanels = false, bool idleGangWarning = true)
     {
-        var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
-        if (!File.Exists(Path.Combine(assets, "manifest.json")))
-            Assert.Skip($"No asset pack is installed at {assets}.");
+        if (MissingAssetPack() is { } missing) Assert.Skip(missing);
+        var assets = AssetRoot();
 
         var directory = Path.Combine(Path.GetTempPath(), "rechaos-screen-capture-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
@@ -636,6 +641,12 @@ public static class RebuildFrame
             var error = new System.Text.StringBuilder();
             process.ErrorDataReceived += (_, line) => { lock (error) error.AppendLine(line.Data); };
             process.BeginErrorReadLine();
+            // A worker can still be drawing a frame no row asked for when the test host exits.
+            using var stop = RowPrefetchWorkers.Stopping.Register(() =>
+            {
+                try { process.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) { }
+            });
             if (!process.WaitForExit(Timeout))
             {
                 process.Kill(entireProcessTree: true);

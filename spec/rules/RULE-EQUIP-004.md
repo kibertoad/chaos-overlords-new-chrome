@@ -4,7 +4,7 @@ title: The Equip list offers researched items of the chosen category within the 
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-008, EXP-EQUIP-001, EXP-EQUIP-002, EXP-EQUIP-003, SRC-MANUAL-GOG, FND-HIRE-006, FND-PLATFORM-003, FND-RESEARCH-001, FND-RESEARCH-002, FND-STATE-004]
+evidence: [FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-012, EXP-EQUIP-001, EXP-EQUIP-002, EXP-EQUIP-003, SRC-MANUAL-GOG, FND-HIRE-006, FND-PLATFORM-003, FND-RESEARCH-001, FND-RESEARCH-002, FND-STATE-004]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-003, FMT-STATE-001, FMT-DATA-002, FMT-DATA-003]
@@ -69,14 +69,14 @@ state and makes no random draw.
 ## Edge cases
 
 - Cash is not read: an item the player cannot afford is listed and can be
-  ordered, and fails later in RULE-EQUIP-001 [FND-EQUIP-008, EXP-EQUIP-002].
+  ordered, and fails later in RULE-EQUIP-001 [FND-EQUIP-012, EXP-EQUIP-002].
 - The Tech Level test allows equal values, and the gang's Tech Level is the
-  definition's, which items and sites do not change [FND-EQUIP-008,
+  definition's, which items and sites do not change [FND-EQUIP-012,
   EXP-EQUIP-001, EXP-EQUIP-002, EXP-EQUIP-003].
 - The research test reads the entry of `active_player`, the player at the
   computer, rather than the gang's player; the panel is only opened for the
-  active player's own gangs, so the two agree [FND-EQUIP-008].
-- The unused entries hold -1 and their rows are blank [FND-EQUIP-008].
+  active player's own gangs, so the two agree [FND-EQUIP-012].
+- The unused entries hold -1 and their rows are blank [FND-EQUIP-012].
 - The list has sixteen fixed rows; the shipped item table never fills more than
   fifteen in one category (FND-EQUIP-005). What happens with more than sixteen
   is not known.
@@ -96,4 +96,4 @@ None known.
 
 - What the builder does when more than sixteen items qualify is not known: its
   count has no bound and the list arrays hold sixteen entries
-  [FND-EQUIP-008].
+  [FND-EQUIP-012].

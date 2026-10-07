@@ -52,6 +52,26 @@ try
             AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
 
+    // macOS and Linux packages cannot import the assets while they install, so the first start
+    // does it (FirstLaunchImport). Windows Setup imports them, and an explicit --assets folder or a
+    // run under a test is never offered an import.
+    if (assetArgument < 0 && !platformSmokeTest && referenceFrame is null && !OperatingSystem.IsWindows())
+    {
+        var packState = FirstLaunchImport.Inspect(assetRoot);
+        if (packState != AssetPackState.Ready
+            && NativeDialogs.TryCreate() is { } dialogs
+            && FirstLaunchImport.FindExtractor(AppContext.BaseDirectory) is { } extractor
+            && FirstLaunchImport.Run(packState, assetRoot, dialogs,
+                source => FirstLaunchImport.RunExtractor(extractor, source, assetRoot))
+                == FirstLaunchImportResult.Declined)
+        {
+            // A dialog that could not be shown reads as a decline, so a start from a terminal
+            // still says why the game did not open.
+            Console.Error.WriteLine($"The original game assets were not imported into {assetRoot}.");
+            return 0;
+        }
+    }
+
     var game = new ChaosGame(
         assetRoot,
         new MatchDeviations(

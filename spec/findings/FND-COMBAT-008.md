@@ -19,7 +19,7 @@ locations:
     address: 0x00474255..0x00474895
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004A8888..0x004AAE07
+    address: 0x004A8888..0x004AAE08
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -90,7 +90,7 @@ An evaded attack skips steps 4 to 7: its opening damage stays -1, nothing is
 added to any damage total or to Damage Inflicted, and there is no
 retaliation. For bands other than 0, 1 and 2 no dice call is made.
 
-Row and police setup, `0x00473FE9..0x004740AB`: for each sector, player and
+Row and police setup, `0x00473FE9..0x004740B2`: for each sector, player and
 entry `k` from 0 to 5, the 16-bit word at `0x004A8888 + sector * 0x96 +
 player * 0x18 + k * 4` is set to -1 (`0x0047405D`); the second word of the
 entry is not cleared. The six bytes at `0x004A8918 + sector * 0x96 + player`
@@ -187,7 +187,7 @@ follows at `0x0047489A`.
 In `fn_00472775`, follow the scan that starts at `0x00473884` to the action
 test at `0x004738FB`, the calls at `0x00473ABC`, `0x00473BC1`,
 `0x00473BE3`, `0x00473C05`, `0x00473E18`, `0x00473E40` and `0x00473E68`, and
-the branch chain at `0x00473D1A..0x00473D91`. Then read the police scan from
+the branch chain at `0x00473D1A..0x00473D97`. Then read the police scan from
 `0x004740B7`, the cap at `0x004742B1`, the loop at `0x004742EC` with its
 stores into `0x004A8888` and `0x004A888A`, and the damage loop at
 `0x0047476F`. List the writes to the two local arrays that feed record bytes

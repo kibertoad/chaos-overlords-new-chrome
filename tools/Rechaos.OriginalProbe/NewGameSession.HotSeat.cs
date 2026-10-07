@@ -33,6 +33,14 @@ internal sealed record MenuRecord(int Turn, int PostedMs, int OpenMs, int Closin
 /// </summary>
 internal sealed record ClockCaptureRecord(int Player, int ElapsedTurns, string File, int LastWidth, int LastElapsed);
 
+/// <summary>
+/// The planning clock of one human planning turn (RULE-TIMER-002, RULE-TIMER-003): the limit in
+/// milliseconds when the clock started, each redraw of the bar as elapsed milliseconds, width and
+/// the effect slot it played (0 for none), the elapsed milliseconds of the last time-limit test
+/// that did not end the turn, and of the one that did.
+/// </summary>
+internal sealed record TimerRecord(int Turn, int LimitMs, List<int[]> Bars, int LastUnexpired, int Expired);
+
 // The local hot-seat match (RULE-SETUP-008, RULE-OBJECTIVE-005): hand-off cards, the later humans'
 // turns, elimination cards, the menu bar and the planning clock's start.
 internal sealed partial class NewGameSession

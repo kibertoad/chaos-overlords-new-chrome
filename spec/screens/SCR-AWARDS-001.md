@@ -82,3 +82,8 @@ None known.
 - What the screen around the frame shows when the endgame follows a screen
   other than the resolution or an elimination card was not captured.
 - In 256-colour mode the game uses the `DATA/PX08` files of the same names.
+- No recorded run of the original reaches eliminated rows; award icons at the
+  second and third positions; Done and the Left state; menu command 9; an
+  Awards press with one player left; the push cue (FND-AWARDS-001,
+  FND-AWARDS-003, FND-AWARDS-004, FND-AUDIO-010). These rest on the static
+  findings named, so the entry stays `supported`.
