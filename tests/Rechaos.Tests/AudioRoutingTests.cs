@@ -89,9 +89,11 @@ public sealed class AudioRoutingTests
     [InlineData(5, 32000)]
     [InlineData(6, 38400)]
     [InlineData(10, 64000)]
-    public void RecoveredEffectVolumeMatchesOriginalStereoChannelValue(
-        int level, int originalChannelValue) =>
-        Assert.Equal(originalChannelValue / (float)ushort.MaxValue,
+    // RULE-AUDIO-003, FND-AUDIO-007: scalar gain matches only the low 16-bit channel.
+    // The original right-channel borrow at levels 6 and above remains unimplemented.
+    public void RecoveredEffectVolumeMatchesOriginalLeftChannelValue(
+        int level, int originalLeftChannelValue) =>
+        Assert.Equal(originalLeftChannelValue / (float)ushort.MaxValue,
             AudioRouting.EffectVolumeForLevel(level));
 
     [Theory]
