@@ -112,7 +112,7 @@ internal static class SeatViewTooltipAssertions
             var parts = wholeLines.FindIndex(line => line.StartsWith($"TOLERANCE {sector.Tolerance}", StringComparison.Ordinal));
             var rule = wholeLines.FindIndex(line => line.StartsWith("BASE MOVES", StringComparison.Ordinal));
             Assert.Equal(wholeLines.Take(parts), viewLines.Take(parts));
-            Assert.Equal($"TOLERANCE {sector.Tolerance} = BASE + SITES. ONLY THE", viewLines[parts]);
+            Assert.Equal($"TOLERANCE {sector.Tolerance} = BASE + SITES. ONLY A", viewLines[parts]);
             var viewRule = viewLines.FindIndex(line => line.StartsWith("BASE MOVES", StringComparison.Ordinal));
             Assert.Equal(wholeLines.Skip(rule), viewLines.Skip(viewRule));
         }

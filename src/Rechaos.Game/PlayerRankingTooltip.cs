@@ -56,9 +56,8 @@ public static class PlayerRankingTooltip
         var lines = new List<string>
         {
             player.Setup.Name.ToUpperInvariant(),
-            state.ViewedBy is null
-                ? $"PLACE {entry.Standing + 1} OF {entries.Count}{(shared ? " (TIED)" : "")}"
-                : $"PLACE {ViewPlace(entry, entries)} OF {entries.Count}{(shared ? " (SAME HEIGHT)" : "")}",
+            $"PLACE {Place(state, entry, entries)} OF {entries.Count}"
+                + (!shared ? "" : state.ViewedBy is null ? " (TIED)" : " (SAME HEIGHT)"),
             $"{ScenarioCatalog.Get(state.Setup.Scenario).Name} RATES: {Basis(state.Setup.Scenario)}",
             SeatKnowledge.KnowsTotals(state, entry.Player)
                 ? ScoreLine(state, entry.Score)
@@ -68,10 +67,9 @@ public static class PlayerRankingTooltip
         lines.AddRange(Breakdown(state, player));
         lines.Add("");
         lines.Add("ALL SCORES:");
-        var places = entries.ToDictionary(candidate => candidate.Player, candidate => (state.ViewedBy is null
-            ? (candidate.Standing + 1).ToString(CultureInfo.InvariantCulture)
-            : ViewPlace(candidate, entries)) + ".");
-        var placeWidth = places.Values.Max(place => place.Length);
+        var places = entries.ToDictionary(
+            candidate => candidate.Player, candidate => Place(state, candidate, entries) + ".");
+        var placeWidth = places.Values.Select(place => place.Length).DefaultIfEmpty().Max();
         lines.AddRange(entries
             .OrderBy(candidate => candidate.Standing)
             .ThenBy(candidate => candidate.Player.Value)
@@ -97,8 +95,14 @@ public static class PlayerRankingTooltip
     /// <summary>What the tooltip says on a seat's view in place of a value the view does not hold.</summary>
     public const string NotShown = "NOT SHOWN";
 
-    // On a view the scores order the portraits only as the rail does, so a portrait that shares
-    // its height with others may hold any of their places: "2-3" for two level at second place.
+    // The whole match gives the standing. On a view the scores order the portraits only as the
+    // rail does, so a portrait that shares its height with others may hold any of their places:
+    // "2-3" for two level at second place.
+    private static string Place(MatchState state, PlayerRankingEntry entry, IReadOnlyList<PlayerRankingEntry> entries) =>
+        state.ViewedBy is null
+            ? (entry.Standing + 1).ToString(CultureInfo.InvariantCulture)
+            : ViewPlace(entry, entries);
+
     private static string ViewPlace(PlayerRankingEntry entry, IReadOnlyList<PlayerRankingEntry> entries)
     {
         var first = entries.Count(other => other.Score > entry.Score) + 1;
@@ -153,15 +157,16 @@ public static class PlayerRankingTooltip
             case ScenarioId.Acceptance:
                 yield return $"  SUPPORT: {(known ? Number(support) : NotShown)}";
                 break;
-            case ScenarioId.Dominance when !known:
-                var viewWeights = ScenarioCatalog.Weights(state.Setup.Duration);
-                yield return HiddenWeightedRow("CASH", viewWeights.Cash);
-                yield return HiddenWeightedRow("SUPPORT", viewWeights.Support);
-                yield return WeightedRow("SECTORS", Number(sectors), sectors, viewWeights.ControlledSector);
-                yield return $"  TOTAL {NotShown}";
-                break;
             case ScenarioId.Dominance:
                 var weights = ScenarioCatalog.Weights(state.Setup.Duration);
+                if (!known)
+                {
+                    yield return HiddenWeightedRow("CASH", weights.Cash);
+                    yield return HiddenWeightedRow("SUPPORT", weights.Support);
+                    yield return WeightedRow("SECTORS", Number(sectors), sectors, weights.ControlledSector);
+                    yield return $"  TOTAL {NotShown}";
+                    break;
+                }
                 yield return WeightedRow("CASH", Money(player.Cash), player.Cash, weights.Cash);
                 yield return WeightedRow("SUPPORT", Number(support), support, weights.Support);
                 yield return WeightedRow("SECTORS", Number(sectors), sectors, weights.ControlledSector);

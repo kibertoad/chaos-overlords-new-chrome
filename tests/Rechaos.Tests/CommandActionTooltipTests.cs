@@ -138,11 +138,11 @@ public sealed class CommandActionTooltipTests
         [
             "",
             $"THIS TURN'S CHAOS TEST USES {sector.Tolerance}; NORMAL BASE {normal}.",
-            "ONLY THE OWNER SEES THIS SECTOR'S SITES, SO THE SITES' PART,",
+            "ONLY A SECTOR'S OWNER SEES ITS SITES, SO THE SITES' PART,",
             "THE BASE AND ITS BRIBE/SNITCH SHIFT ARE NOT SHOWN TO YOU."
         ], lines.TakeLast(4));
         Assert.Equal(new StatusConsoleTooltip.ToleranceParts(null, null, normal), parts);
-        Assert.Contains($"TOLERANCE {sector.Tolerance} = BASE + SITES. ONLY THE", console);
+        Assert.Contains($"TOLERANCE {sector.Tolerance} = BASE + SITES. ONLY A", console);
         Assert.Contains("NEITHER PART IS SHOWN TO YOU.", console);
         Assert.Contains($"BASE MOVES 1 PER TURN TOWARD {normal}", console);
         Assert.DoesNotContain(console, line => line.Contains("CHANGES SINCE PLANNING", StringComparison.Ordinal));

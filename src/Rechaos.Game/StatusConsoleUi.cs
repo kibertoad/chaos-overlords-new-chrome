@@ -197,10 +197,10 @@ public static class StatusConsoleTooltip
                 lines.Add($"TOLERANCE {tolerance}: BASE {baseTolerance} + SITES {sites}.");
             else
             {
-                // SeatKnowledge.KnowsSites: only the owner sees the sites, so a seat's view of
-                // another's sector holds neither part.
-                lines.Add($"TOLERANCE {tolerance} = BASE + SITES. ONLY THE");
-                lines.Add("OWNER SEES THIS SECTOR'S SITES, SO");
+                // SeatKnowledge.KnowsSites: only the owner sees the sites, so a seat's view of a
+                // sector another seat owns, or a neutral one, holds neither part.
+                lines.Add($"TOLERANCE {tolerance} = BASE + SITES. ONLY A");
+                lines.Add("SECTOR'S OWNER SEES ITS SITES, SO");
                 lines.Add("NEITHER PART IS SHOWN TO YOU.");
             }
             lines.Add($"BASE MOVES 1 PER TURN TOWARD {toleranceParts.NormalBase}");

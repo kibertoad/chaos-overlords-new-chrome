@@ -763,7 +763,7 @@ hot-seat and lockstep matches show the tooltips unchanged.
   its sectors, headquarters and the seats still in the match, which the map and the Overlord bar
   show everybody. Another seat's score, cash and Support read NOT SHOWN, Dominance shows only the
   sectors' part of it, and a portrait that shares its height with others gets the range of places
-  they share ("PLACE 1-2 OF 4"), since the view's scores only reproduce the rail.
+  they share ("PLACE 1-2 OF 4 (SAME HEIGHT)"), since the view's scores only reproduce the rail.
 - The Bribe and Snitch tooltips, and the console's Tolerance tooltip (DEV-UI-007), give the
   Tolerance and the normal base, 17 less Income, in every sector. The base and the sites' part
   they give only in the seat's own sectors, where the seat sees the sites and the base is the

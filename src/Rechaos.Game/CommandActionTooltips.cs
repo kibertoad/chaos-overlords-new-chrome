@@ -49,7 +49,7 @@ public static class CommandActionTooltips
                 .. lines,
                 "",
                 $"THIS TURN'S CHAOS TEST USES {sector.Tolerance}; NORMAL BASE {normal}.",
-                "ONLY THE OWNER SEES THIS SECTOR'S SITES, SO THE SITES' PART,",
+                "ONLY A SECTOR'S OWNER SEES ITS SITES, SO THE SITES' PART,",
                 "THE BASE AND ITS BRIBE/SNITCH SHIFT ARE NOT SHOWN TO YOU."
             ];
         var shift = sector.BaseTolerance - normal;

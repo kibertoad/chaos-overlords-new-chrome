@@ -718,9 +718,8 @@ it.
 - Reason: Hover tooltips explain statistics, attributes, modifiers, modes, options and ranking
   scores, and a two-second rest on a command explains the order. On a seat's view of an online
   match (`docs/MULTIPLAYER.md`, "Planning on a view") they give only what that seat knows: the
-  rankings tooltip names the other seats' scores, cash and Support as not shown, and the
-  Tolerance, Bribe and Snitch tooltips give a sector's base and its sites' part only in the
-  seat's own sectors.
+  rankings tooltip names the other seats' scores, cash and Support as not shown, and the Bribe
+  and Snitch tooltips give a sector's base and its sites' part only in the seat's own sectors.
 - Setting: None
 - Default: mandatory
 - Justification: It adds information on hover and changes nothing else.
@@ -745,7 +744,9 @@ it.
 
 - Departs from: SCR-UI-003, SCR-UI-004, RULE-UI-011
 - Reason: Hovering the Tolerance value shows the range the player's queued Chaos can reach, and
-  the value turns orange when that range can set off a Crackdown.
+  the value turns orange when that range can set off a Crackdown. On a seat's view of an online
+  match (`docs/MULTIPLAYER.md`, "Planning on a view") the tooltip gives a sector's base and its
+  sites' part only in the seat's own sectors.
 - Setting: None
 - Default: mandatory
 - Justification: A quality-of-life improvement that is strictly better. A Crackdown follows from
