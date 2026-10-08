@@ -68,6 +68,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     private readonly Lock _disposalGate = new();
     private readonly Lock _seatGate = new();
     private MatchHandle? _handle;
+    private CachedLobbyView? _lobbyView;
     private Task _current = Task.CompletedTask;
     private Task _leaving = Task.CompletedTask;
     private Task? _disposal;
@@ -245,14 +246,38 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         await PublishLobbyAsync(handle, token).ConfigureAwait(false);
     });
 
+    /// <summary>
+    /// Reads the lobby and hands the interface the result, asking only for what changed.
+    /// </summary>
+    /// <remarks>
+    /// The poll names the tag of the last view it was given, and an unchanged lobby answers 304 with
+    /// no body, which costs the server the auth lookup and one read instead of the roster as well.
+    /// The view it held is then handed on again, so the interface sees one update per poll exactly
+    /// as it did when every poll read in full. The copy is kept against the handle it was read
+    /// through, so a new seat never reuses the view of the last one.
+    /// </remarks>
     private async Task PublishLobbyAsync(MatchHandle handle, CancellationToken token)
     {
-        var match = (await handle.GetAsync(token).ConfigureAwait(false)).Match;
-        _notices.Enqueue(new LobbyNotice.Updated(match));
-        if (match.Status != MatchStatus.Lobby || match.LastEventSeq <= _chatCursor) return;
+        var cached = Volatile.Read(ref _lobbyView);
+        var tag = cached is not null && ReferenceEquals(cached.Handle, handle) ? cached.EntityTag : null;
+        var read = await handle.GetIfChangedAsync(tag, token).ConfigureAwait(false);
+        MatchView view;
+        if (read.NotModified)
+        {
+            view = cached!.View;
+        }
+        else
+        {
+            view = read.Value!.Match;
+            Volatile.Write(
+                ref _lobbyView,
+                read.EntityTag is { } fresh ? new CachedLobbyView(handle, fresh, view) : null);
+        }
+        _notices.Enqueue(new LobbyNotice.Updated(view));
+        if (view.Status != MatchStatus.Lobby || view.LastEventSeq <= _chatCursor) return;
         try
         {
-            await ReadChatAsync(handle, match.LastEventSeq, token).ConfigureAwait(false);
+            await ReadChatAsync(handle, view.LastEventSeq, token).ConfigureAwait(false);
         }
         catch (Exception exception) when (IsServerOrNetworkFailure(exception))
         {
@@ -261,6 +286,9 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             // the next poll reads the rest.
         }
     }
+
+    /// <summary>The last lobby view read, with the tag the server gave it and the handle it came through.</summary>
+    private sealed record CachedLobbyView(MatchHandle Handle, string EntityTag, MatchView View);
 
     /// <summary>
     /// Reads the lobby's log from where the chat last stopped, and announces the messages in it.

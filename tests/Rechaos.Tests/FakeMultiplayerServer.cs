@@ -86,6 +86,15 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     }
 
     /// <summary>
+    /// What to answer every time this route is called, tagged: a request whose <c>If-None-Match</c>
+    /// names <paramref name="entityTag"/> is answered 304 with no body.
+    /// </summary>
+    internal void AnswerTagged(HttpMethod method, string pathSuffix, object? body, string entityTag)
+    {
+        lock (_gate) _standing[Key(method, pathSuffix)] = new Reply(HttpStatusCode.OK, Serialize(body), EntityTag: entityTag);
+    }
+
+    /// <summary>
     /// What to answer the next time this route is called, before the standing answer.
     /// </summary>
     /// <remarks>
@@ -190,10 +199,13 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         var lastEventId = request.Headers.TryGetValues("Last-Event-ID", out var values)
             ? values.SingleOrDefault()
             : null;
+        var ifNoneMatch = request.Headers.TryGetValues("If-None-Match", out var tags)
+            ? string.Join(", ", tags)
+            : null;
         lock (_gate)
         {
             _requests.Add(new Recorded(
-                request.Method, path, body, lastEventId, request.RequestUri.Query));
+                request.Method, path, body, lastEventId, request.RequestUri.Query, ifNoneMatch));
         }
 
         var block = NextBlock(request.Method, path);
@@ -205,10 +217,25 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         // path while the backend restarts, a tunnel that has gone stale. Those produce a status
         // with no error envelope, which is a different fact from the server refusing.
         var reply = Next(request.Method, path);
-        var response = reply is { Unbuffered: { } unbuffered } ? Unbuffered(reply, unbuffered)
-            : reply is not null ? Json(reply.Status, reply.Body)
-            : path.EndsWith("/stream", StringComparison.Ordinal) ? Streaming()
-            : Json(HttpStatusCode.NotFound, UnroutedEnvelope);
+        HttpResponseMessage response;
+        if (reply is { Unbuffered: { } unbuffered }) response = Unbuffered(reply, unbuffered);
+        else if (reply is { EntityTag: { } tag })
+        {
+            // A tagged answer is conditional, as the server's lobby read is: a request naming the
+            // current tag gets 304 and no body.
+            if (string.Equals(ifNoneMatch, tag, StringComparison.Ordinal))
+            {
+                response = new HttpResponseMessage(HttpStatusCode.NotModified);
+            }
+            else
+            {
+                response = Json(reply.Status, reply.Body);
+                response.Headers.TryAddWithoutValidation("ETag", tag);
+            }
+        }
+        else if (reply is not null) response = Json(reply.Status, reply.Body);
+        else if (path.EndsWith("/stream", StringComparison.Ordinal)) response = Streaming();
+        else response = Json(HttpStatusCode.NotFound, UnroutedEnvelope);
         if (ServerClockOffset is { } offset) response.Headers.Date = DateTimeOffset.UtcNow + offset;
         return response;
     }
@@ -321,16 +348,19 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         HttpStatusCode Status,
         string Body,
         PushStream? Unbuffered = null,
-        string? ContentType = null);
+        string? ContentType = null,
+        string? EntityTag = null);
 
     /// <summary>One request the client made.</summary>
     /// <param name="Query">The query string, with its leading <c>?</c>, or empty.</param>
+    /// <param name="IfNoneMatch">The <c>If-None-Match</c> header as sent, or null.</param>
     internal sealed record Recorded(
         HttpMethod Method,
         string Path,
         string Body,
         string? LastEventId,
-        string Query);
+        string Query,
+        string? IfNoneMatch = null);
 }
 
 /// <summary>

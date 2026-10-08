@@ -184,12 +184,42 @@ public sealed class MultiplayerClient
         string path,
         object? body,
         CancellationToken cancellationToken,
-        bool exactRoundTrip = false)
+        bool exactRoundTrip = false) =>
+        (await SendCoreAsync<T>(method, path, body, ifNoneMatch: null, cancellationToken, exactRoundTrip)
+            .ConfigureAwait(false)).Value!;
+
+    /// <summary>
+    /// A read that names the entity tag of the copy the caller holds.
+    /// </summary>
+    /// <remarks>
+    /// The server answers 304 with no body when that copy is still current, and then the result
+    /// carries no value and the caller keeps what it has. Otherwise the result carries the new
+    /// value and the tag to send next time, which is null when the server did not tag the answer.
+    /// </remarks>
+    /// <param name="path">The route to read.</param>
+    /// <param name="entityTag">The tag of the caller's copy, exactly as the server sent it; null for none.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    internal Task<ConditionalRead<T>> GetIfChangedAsync<T>(
+        string path,
+        string? entityTag,
+        CancellationToken cancellationToken) =>
+        SendCoreAsync<T>(HttpMethod.Get, path, body: null, entityTag, cancellationToken, exactRoundTrip: false);
+
+    private async Task<ConditionalRead<T>> SendCoreAsync<T>(
+        HttpMethod method,
+        string path,
+        object? body,
+        string? ifNoneMatch,
+        CancellationToken cancellationToken,
+        bool exactRoundTrip)
     {
         await EnsureHandshakeAsync(cancellationToken).ConfigureAwait(false);
         using var request = new HttpRequestMessage(method, Absolute(path));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         Authorize(request);
+        // Added unvalidated: the tag is the server's own text, handed back byte for byte, and a
+        // weak tag a proxy rewrote ("W/...") must round-trip as it is.
+        if (ifNoneMatch is not null) request.Headers.TryAddWithoutValidation("If-None-Match", ifNoneMatch);
         if (body is not null)
         {
             request.Content = new StringContent(
@@ -200,9 +230,12 @@ public sealed class MultiplayerClient
         using var response = await SendWithDeadlineAsync(request, timeout, cancellationToken)
             .ConfigureAwait(false);
         _handshake.ObserveServerDate(response.Headers.Date);
+        if (ifNoneMatch is not null && response.StatusCode == HttpStatusCode.NotModified)
+            return new ConditionalRead<T>(default, ifNoneMatch, NotModified: true);
         if (!response.IsSuccessStatusCode)
             throw await RefusalAsync(response, cancellationToken).ConfigureAwait(false);
-        if (typeof(T) == typeof(Unit)) return (T)(object)Unit.Value;
+        var entityTag = response.Headers.ETag?.ToString();
+        if (typeof(T) == typeof(Unit)) return new ConditionalRead<T>((T)(object)Unit.Value, entityTag, false);
         if (response.StatusCode == HttpStatusCode.NoContent)
         {
             throw new MultiplayerProtocolException(
@@ -210,7 +243,8 @@ public sealed class MultiplayerClient
         }
         var payload = await ReadPayloadAsync(response, timeout, cancellationToken)
             .ConfigureAwait(false);
-        return exactRoundTrip ? WireJson.ReadExact<T>(payload) : WireJson.Read<T>(payload);
+        var value = exactRoundTrip ? WireJson.ReadExact<T>(payload) : WireJson.Read<T>(payload);
+        return new ConditionalRead<T>(value, entityTag, NotModified: false);
     }
 
     /// <summary>
@@ -470,6 +504,12 @@ internal sealed class HandshakeState
         Interlocked.Exchange(ref _offsetTicks, blended);
     }
 }
+
+/// <summary>What a conditional read answered.</summary>
+/// <param name="Value">The new value; default when <paramref name="NotModified"/> is set.</param>
+/// <param name="EntityTag">The tag to send with the next read of the same thing; null when untagged.</param>
+/// <param name="NotModified">The server said the caller's copy is still current.</param>
+public readonly record struct ConditionalRead<T>(T? Value, string? EntityTag, bool NotModified);
 
 /// <summary>The absence of a body, for the calls that answer 204.</summary>
 public readonly record struct Unit

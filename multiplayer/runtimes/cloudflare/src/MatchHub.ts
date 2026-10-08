@@ -113,10 +113,12 @@ export class MatchHub {
           // reach. A bare status crosses back instead and the Worker rethrows it as the domain
           // error, so the envelope still has exactly one producer.
           if (!isDomainError(error)) throw error
-          return new Response(null, {
-            status: 429,
-            headers: { 'X-Stream-Refusal': String(error.details?.scope ?? 'match') },
-          })
+          const headers: Record<string, string> = {
+            'X-Stream-Refusal': String(error.details?.scope ?? 'match'),
+          }
+          const retryAfter = error.details?.retryAfterSeconds
+          if (typeof retryAfter === 'number') headers['Retry-After'] = String(retryAfter)
+          return new Response(null, { status: 429, headers })
         }
       }
       case HUB_PATHS.disconnect: {

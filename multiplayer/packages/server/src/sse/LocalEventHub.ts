@@ -95,6 +95,15 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
   private lobbyOpen_ = 0
   /** The share of `perProcess` lobby streams may hold; see `makeRoom`. */
   private readonly lobbyCap: number
+  /**
+   * The `Retry-After` of a stream-cap refusal.
+   *
+   * A slot frees when some other stream ends, and nothing can say when that will be. What the
+   * server can say is how soon it would notice a dead one: a stream whose peer has gone is found
+   * when its next heartbeat is written. So a retry before one heartbeat interval meets the same
+   * count, and a retry after it is the earliest that can find a slot that was held by a corpse.
+   */
+  private readonly streamRetryAfterSeconds: number
 
   constructor(
     private readonly events: EventRepository,
@@ -103,6 +112,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     private readonly observer: EventHubObserver = {},
   ) {
     this.lobbyCap = Math.max(1, Math.floor(limits.perProcess / 4))
+    this.streamRetryAfterSeconds = Math.max(1, Math.ceil(heartbeatMs / 1000))
   }
 
   async notify(event: PersistedEvent): Promise<void> {
@@ -319,6 +329,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
       throw new RateLimitedError('This server is holding as many event streams as it can', {
         reason: 'too_many_streams',
         scope: 'process',
+        retryAfterSeconds: this.streamRetryAfterSeconds,
       })
     }
     // Creating a lobby is unauthenticated. A caller can mint hundreds of host tokens and hold
@@ -329,12 +340,14 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
       throw new RateLimitedError('This server is holding as many lobby streams as it can', {
         reason: 'too_many_streams',
         scope: 'lobby',
+        retryAfterSeconds: this.streamRetryAfterSeconds,
       })
     }
     if ((this.listeners.get(matchId)?.size ?? 0) >= this.limits.perMatch) {
       throw new RateLimitedError('This match is holding as many event streams as it can', {
         reason: 'too_many_streams',
         scope: 'match',
+        retryAfterSeconds: this.streamRetryAfterSeconds,
       })
     }
   }

@@ -1,5 +1,6 @@
 import {
   GAME_BOUNDS,
+  MULTIPLAYER_PROTOCOL_VERSION,
   type LobbyListing,
   type MatchEventBody,
   type MatchView,
@@ -17,6 +18,7 @@ import {
   type Turn,
 } from '../domain/entities'
 import { ConflictError, NotFoundError } from '../domain/errors'
+import { sha256Hex } from '../logic/crypto'
 import type { MultiplayerStorage } from '../ports/storage'
 import { requireTurn } from './guards'
 
@@ -46,6 +48,9 @@ export function matchStartedEvent(
   }
 }
 
+/** How long a lobby tag may stand without a full read; see `MatchQueryService.lobbyTag`. */
+export const LOBBY_TAG_WINDOW_MS = 30_000
+
 /** Read models. Every view is assembled from list reads, never one query per player. */
 export class MatchQueryService {
   constructor(private readonly storage: MultiplayerStorage) {}
@@ -72,6 +77,60 @@ export class MatchQueryService {
       lastEventSeq,
       createdAt: match.createdAt.toISOString(),
     }
+  }
+
+  /**
+   * The entity tag of a member's read of a lobby, or null when the match has left the lobby.
+   *
+   * A lobby is polled once a second by every seated player, and an unchanged poll should cost the
+   * auth lookup and one `lastSeq` read rather than the roster as well. The tag is therefore built
+   * from what the caller already holds and that one read, and it has to move whenever anything the
+   * view shows could have moved:
+   *
+   * - the match row, whole but for the password hash (status, settings, host, seat and join
+   *   counters, `updatedAt`, join code).
+   *   The auth lookup read it, so it costs nothing, and it covers a settings change, which publishes
+   *   no event, and a join rolled back after its seat was claimed, which publishes none either but
+   *   gives the seat back;
+   * - the last event sequence. Every change to a lobby's roster (a join, a leave, a kick, a new name
+   *   or face, a new host) publishes an event after its write, so a read between the write and the
+   *   event is tagged with the older sequence, and the next poll after the event reads again;
+   * - the caller, because the detail names them (`you`);
+   * - the protocol version, so a deployment that changes what the view says invalidates every tag;
+   * - a thirty-second window of the server's clock, counted from the match's creation. A write
+   *   whose event was then lost (a crash between the two) would otherwise leave the tag where it was
+   *   and every client on the old view until the next event. The window bounds that to thirty
+   *   seconds at a cost of one full read per player per window. Counting from the creation gives
+   *   each lobby its own boundary, so the full reads of many open lobbies do not all land in the
+   *   same second.
+   *
+   * Only a lobby is tagged. A running match's view carries turn rows, readiness and reports, and
+   * reports in particular are written without an event, so a tag that covered it would need the
+   * reads it exists to save. The game polls only the lobby.
+   *
+   * The caller must take the tag BEFORE reading the view it answers with: a view newer than its
+   * tag costs one extra full read on the next poll, a tag newer than its view would keep a client
+   * on a stale view.
+   */
+  async lobbyTag(match: Match, playerId: string, now: Date): Promise<string | null> {
+    if (match.status !== 'lobby') return null
+    const lastEventSeq = await this.storage.events.lastSeq(match.id)
+    // The whole row but the password hash, which no view shows and no tag should be derived from,
+    // so a field added to the row later is covered without touching this. Plain `JSON.stringify`
+    // rather than `canonicalJson`: settings may hold values the canonical form refuses, and a tag
+    // only has to be stable for one stored row, which it is (dates serialise as ISO text). Two texts
+    // for the same content would cost an extra read, never a stale one.
+    const { passwordHash: _passwordHash, ...row } = match
+    const digest = await sha256Hex(
+      JSON.stringify({
+        protocol: MULTIPLAYER_PROTOCOL_VERSION,
+        window: Math.floor((now.getTime() - match.createdAt.getTime()) / LOBBY_TAG_WINDOW_MS),
+        you: playerId,
+        lastEventSeq,
+        match: row,
+      }),
+    )
+    return `"lobby-${digest.slice(0, 32)}"`
   }
 
   private async turnView(matchId: string, number: number): Promise<TurnView | null> {

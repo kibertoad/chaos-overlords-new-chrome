@@ -66,7 +66,7 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
  */
 async function chargeAnonymous(c: Context<AppEnv>): Promise<string> {
   const key = addressOf(c)
-  await enforce(c.get('container').rateLimiters, 'anonymous', key, c)
+  await enforce(c.get('container').rateLimiters, 'anonymous', key)
   return key
 }
 
@@ -88,7 +88,7 @@ export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
 export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
   const container = c.get('container')
   const key = addressOf(c)
-  await enforce(container.rateLimiters, 'bugReport', key, c)
+  await enforce(container.rateLimiters, 'bugReport', key)
   // The handler reserves one unit only for a validated report carrying a journal, then releases it
   // if the journal fails its digest check or is omitted by the storage budget.
   c.set('bugReportJournalBudget', () =>
@@ -110,8 +110,8 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
 export const matchCreationRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
   const limiters = c.get('container').rateLimiters
   const retryAfter = await limiters.matchCreation.peek(MATCH_CREATION_KEY)
-  if (retryAfter !== null) refuse(c, retryAfter)
-  c.set('spendMatchCreation', () => enforce(limiters, 'matchCreation', MATCH_CREATION_KEY, c))
+  if (retryAfter !== null) refuse(retryAfter)
+  c.set('spendMatchCreation', () => enforce(limiters, 'matchCreation', MATCH_CREATION_KEY))
   await next()
 }
 
@@ -122,7 +122,7 @@ export const matchCreationRateLimited: MiddlewareHandler<AppEnv> = async (c, nex
 export function memberRateLimited(tier: keyof RateLimiters = 'member'): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     const container = c.get('container')
-    await enforce(container.rateLimiters, tier, c.get('principal').player.id, c)
+    await enforce(container.rateLimiters, tier, c.get('principal').player.id)
     await next()
   }
 }
@@ -220,16 +220,15 @@ async function enforce(
   limiters: RateLimiters,
   tier: keyof RateLimiters,
   key: string,
-  c: Context<AppEnv>,
 ): Promise<void> {
   // No tier prefix: each tier has its own limiter, and a shared store already files a key under
   // its budget's name.
   const retryAfter = await limiters[tier].take(IDENTITY_TIERS.has(tier) ? key : rateLimitKey(key))
-  if (retryAfter !== null) refuse(c, retryAfter)
+  if (retryAfter !== null) refuse(retryAfter)
 }
 
-function refuse(c: Context<AppEnv>, retryAfter: number): never {
-  c.header('Retry-After', String(retryAfter))
+function refuse(retryAfter: number): never {
+  // The error handler turns `retryAfterSeconds` into the `Retry-After` header.
   throw new RateLimitedError('Too many attempts; slow down', {
     reason: 'rate_limited',
     retryAfterSeconds: retryAfter,

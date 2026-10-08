@@ -123,8 +123,10 @@ export const getMatchContract = defineApiContract({
   method: 'get',
   requestPathParamsSchema: matchParams,
   pathResolver: ({ matchId }) => `/matches/${matchId}`,
-  responsesByStatusCode: { 200: matchDetailSchema, ...REFUSALS },
-  summary: "A member's read of the match.",
+  responsesByStatusCode: { 200: matchDetailSchema, 304: noBodyResponse(), ...REFUSALS },
+  summary:
+    "A member's read of the match. In the lobby it carries an ETag, and a request whose " +
+    'If-None-Match names the current one is answered 304 with no body.',
 })
 
 export const startMatchContract = defineApiContract({

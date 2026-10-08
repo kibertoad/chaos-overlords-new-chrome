@@ -98,6 +98,13 @@ function expectRequestId(response: Response): void {
   expect(response.headers.get('x-request-id')).toMatch(/^[A-Za-z0-9_-]+$/)
 }
 
+/** A whole number of seconds no shorter than one, as every 429 must carry. */
+function expectRetryAfter(response: Response): void {
+  const value = response.headers.get('retry-after')
+  expect(value).toMatch(/^\d+$/)
+  expect(Number(value)).toBeGreaterThanOrEqual(1)
+}
+
 /**
  * Drives the whole protocol through the public client against a facade: every runtime runs it,
  * so a route only one facade mounts, or a container wired differently, fails the same test.
@@ -710,6 +717,7 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
         const refused = await openStream(host.match.id, late.token, { signal: controller.signal })
         expect(refused.status).toBe(429)
         expectRequestId(refused)
+        expectRetryAfter(refused)
         expect((await refused.json()).error).toMatchObject({
           code: 'rate_limited',
           details: { reason: 'too_many_streams', scope: 'match' },
@@ -738,7 +746,107 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
         }
       },
     )
+  })
 
+  describe('http conformance: when to ask again', () => {
+    /** A member's raw read of the match, so the status and the tag headers can be read. */
+    const readMatch = (matchId: string, token: string, ifNoneMatch?: string) =>
+      harness.fetch(`http://conformance/api/v1/matches/${matchId}`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+          accept: 'application/json',
+          ...(ifNoneMatch === undefined ? {} : { 'if-none-match': ifNoneMatch }),
+        },
+      })
+
+    it('answers an unchanged lobby read with 304 and a changed one with a new tag', async () => {
+      const { matchId, host, guest } = await lobbyOfTwo()
+      const first = await readMatch(matchId, host.token)
+      expect(first.status).toBe(200)
+      const tag = first.headers.get('etag') ?? ''
+      expect(tag).toMatch(/^"[^"]+"$/)
+      expect(first.headers.get('cache-control')).toMatch(/private/)
+      await first.json()
+
+      const unchanged = await readMatch(matchId, host.token, tag)
+      expect(unchanged.status).toBe(304)
+      expect(unchanged.headers.get('etag')).toBe(tag)
+      expect(await unchanged.text()).toBe('')
+      // A proxy may weaken the tag on the way out; the comparison is the weak one.
+      expect((await readMatch(matchId, host.token, `"other", W/${tag}`)).status).toBe(304)
+
+      // The detail names its reader, so one member's tag is never another's.
+      const asGuest = await readMatch(matchId, guest.token, tag)
+      expect(asGuest.status).toBe(200)
+      expect(asGuest.headers.get('etag')).not.toBe(tag)
+      await asGuest.json()
+
+      // A roster change publishes an event, a settings change moves the match row: both re-tag.
+      await guest.api.updateProfile({ displayName: 'Hopper', portraitId: 3 })
+      const renamed = await readMatch(matchId, host.token, tag)
+      expect(renamed.status).toBe(200)
+      const renamedTag = renamed.headers.get('etag') ?? ''
+      expect(renamedTag).not.toBe(tag)
+      const detail = (await renamed.json()) as { match: { players: { displayName: string }[] } }
+      expect(detail.match.players.map((p) => p.displayName)).toEqual(['Ada', 'Hopper'])
+
+      await host.api.updateSettings({ ...settings, name: 'Renamed city' })
+      const resettled = await readMatch(matchId, host.token, renamedTag)
+      expect(resettled.status).toBe(200)
+      const settled = (await resettled.json()) as { match: { settings: { name: string } } }
+      expect(settled.match.settings.name).toBe('Renamed city')
+    })
+
+    it('never answers a running match from a tag', async () => {
+      const { matchId, host } = await lobbyOfTwo()
+      const lobby = await readMatch(matchId, host.token)
+      const tag = lobby.headers.get('etag') ?? ''
+      await lobby.json()
+      await host.api.start()
+      const running = await readMatch(matchId, host.token, tag)
+      expect(running.status).toBe(200)
+      expect(running.headers.get('etag')).toBeNull()
+      expect(((await running.json()) as { match: { status: string } }).match.status).toBe('running')
+      // `*` names any current copy, and a running match has none a client may keep.
+      const starred = await readMatch(matchId, host.token, '*')
+      expect(starred.status).toBe(200)
+      await starred.json()
+    })
+
+    it('says when to come back after too many password attempts', async () => {
+      const host = await client().createMatch({
+        settings: { ...settings, name: 'Gated city' },
+        hostDisplayName: 'Ada',
+        password: 'opensesame',
+      })
+      let refused: Response | undefined
+      for (let attempt = 0; attempt < 20 && refused === undefined; attempt += 1) {
+        const response = await harness.fetch('http://conformance/api/v1/matches/join', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            joinCode: host.joinCode,
+            displayName: 'Mallory',
+            password: `guess-${attempt}-wrong`,
+          }),
+        })
+        if (response.status === 429) refused = response
+        else {
+          expect(response.status).toBe(401)
+          await response.json()
+        }
+      }
+      if (!refused) throw new Error('the password-attempt budget never ran out')
+      expectRetryAfter(refused)
+      const body = (await refused.json()) as {
+        error: { code: string; details: { retryAfterSeconds?: number } }
+      }
+      expect(body.error.code).toBe('rate_limited')
+      expect(String(body.error.details.retryAfterSeconds)).toBe(refused.headers.get('retry-after'))
+    })
+  })
+
+  describe('http conformance: oversized bodies', () => {
     // Last on purpose. The refusal goes out before the body is read, and the Node listener destroys
     // a connection whose unread body has not drained within half a second, which fails whatever
     // request the client queued on that connection next; docs/MULTIPLAYER-REVIEW.md tracks it.

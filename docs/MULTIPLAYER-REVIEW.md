@@ -17,8 +17,6 @@ earlier fix from regressing.
 
 <!-- doc-index:begin toc depth=3 -->
 - [Server](#server)
-  - [Lobby polling is the steadiest load a server sees](#lobby-polling-is-the-steadiest-load-a-server-sees)
-  - [Two kinds of 429 carry no Retry-After](#two-kinds-of-429-carry-no-retry-after)
   - [A connection that carried an oversized body is dropped under the next request](#a-connection-that-carried-an-oversized-body-is-dropped-under-the-next-request)
 - [Client](#client)
   - [Backoff jitter is not full jitter](#backoff-jitter-is-not-full-jitter)
@@ -28,28 +26,6 @@ earlier fix from regressing.
 <!-- doc-index:end -->
 
 ## Server
-
-### Lobby polling is the steadiest load a server sees
-
-The game polls the lobby once a second per player (`LobbyPollInterval`,
-`src/Rechaos.Game/ChaosGame.Multiplayer.cs`). Each poll is an authenticated request that runs
-several queries. The design doc calls this deliberate, but it is still the server's steadiest
-load. An `ETag` built from `(updatedAt, lastEventSeq)` and answered with `304` would cut an
-unchanged poll to the auth lookup and one `lastSeq` read. Alternatively, the lobby could long-poll
-`GET /events?after=`. Tracked in
-[#458](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/458).
-
-### Two kinds of 429 carry no `Retry-After`
-
-The rate limiters set `Retry-After` on their refusals (`refuse` in
-`multiplayer/packages/server/src/http/middleware.ts`), but two other refusals answer 429 without
-it. The stream caps (`LocalEventHub.makeRoom`, and the Durable Object's bare 429 that the Worker
-turns back into the same error) carry no wait at all, and the password-attempt budget
-(`LobbyService.tooManyPasswordAttempts`) puts `retryAfterSeconds` in the envelope's details but not
-in the header. The C# client honours the header (`RetryPolicy.DelayAfter`) and falls back to its own
-backoff without it. Setting the header from `details.retryAfterSeconds` in the error handler, and
-giving the stream caps a wait, changes what the server answers, so it goes with a protocol version
-bump. The conformance suite then needs a case that reaches each 429 and asserts the header.
 
 ### A connection that carried an oversized body is dropped under the next request
 
@@ -95,5 +71,3 @@ it sits, then `DeserializeAsync` straight from the stream.
   shorten the interval: in process (50 ms) and on the Node runtime (`sseHeartbeatMs`, 2 s). The
   Durable Object builds its hub with `DEFAULT_SERVER_CONFIG.sseHeartbeatMs`, twenty seconds, and
   nothing lets a test change it, so the worker pool skips the case rather than wait out a heartbeat.
-- **`Retry-After` on every 429.** See [the server item above](#two-kinds-of-429-carry-no-retry-after):
-  two of the three kinds do not carry it yet.

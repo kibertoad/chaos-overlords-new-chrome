@@ -272,7 +272,8 @@ public sealed partial class ChaosGame
     /// A lobby is the one place the client polls. The event stream carries these facts too, but it
     /// belongs to a session and a session belongs to a started match; a handful of reads a minute
     /// while people are still arriving is cheaper than opening one early and unwinding it if the
-    /// player backs out.
+    /// player backs out. The read is conditional, so an unchanged lobby is answered 304 and costs
+    /// the server one read; see <see cref="MultiplayerLobbySession.Refresh"/>.
     /// </remarks>
     private void PollLobby(GameTime gameTime)
     {

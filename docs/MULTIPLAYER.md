@@ -165,7 +165,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings, each match's `sessionVersion`, and available late-join seats with current gang, site, and sector counts. `?sessionVersion=N` narrows the list to matches stored under that session version before the page limit applies; the desktop client always sends its own, so a public match it could not play is never listed. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
 | `POST /matches/join` | anyone | Joins by code (and password), under the caller's chosen `portraitId`. Returns that player's token. Capacity is a single atomic seat claim. |
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected seat the AI plays: one no human held, or one every human who held it was voted out of (`409 seat_reserved` otherwise). Claiming a voted-out seat revokes its former player's token and closes their streams, so their `rejoin` stops working. Each claim is a new player row, so a slot can carry several rows, all but the newest computer controlled. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings` for a seat no human held; for one a human held, the server stores that human's face instead. The match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
-| `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
+| `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). In the lobby the answer carries an `ETag`, and a request whose `If-None-Match` names it is answered `304` with no body; see [the lobby poll](#the-lobby-poll). |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
 | `POST /matches/:id/chat` | member | Posts `{ text }` to the lobby chat before start (`409 match_not_in_lobby` after it). The text is 1 to 160 characters after trimming and NFC, with no control, format or private-use characters. Each player may post ten a minute (`429 rate_limited`), and a lobby whose log holds 1,000 events takes no more (`409 lobby_log_full`). Announced as `lobby.chatMessage`, which is the message's only store. |
@@ -174,6 +174,27 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `POST /matches/:id/rejoin` | former member | Reactivates the caller's durable seat, restores host authority when appropriate, and transfers an AI-controlled reserved seat back to its owner. |
 | `POST /matches/:id/players/:pid/kick` | host | Same as the target leaving. |
 | `POST /matches/:id/players/:pid/takeover-vote` | active member | `{ decision: "computer" | "wait" }`. The latest choice per voter counts. Computer control requires every currently active player to approve; one wait vote preserves the human controller. |
+
+#### The lobby poll
+
+Every seated player reads the lobby about once a second until the match starts, which makes it the
+steadiest load a server sees. So a lobby's view is tagged. The tag is a digest of the match row the
+token lookup has already read (status, settings, host, seat and join counters, `updatedAt`, join
+code), the match's last event sequence, the reader's player id, the protocol version, and a
+thirty-second window of the server clock counted from the match's creation, so each lobby's
+window ends at its own moment. A request whose `If-None-Match` names the current tag,
+by the weak comparison, gets `304` with no body after the token lookup and one `lastSeq` read; the
+roster is not read. The answer is `Cache-Control: private, no-cache`.
+
+Every roster change in a lobby publishes an event after its write, and a settings change, which
+publishes none, moves the match row, so either moves the tag. The tag is taken before the view is
+read, so a view is never older than the tag it is sent with. The thirty-second window bounds how long
+a write whose event was lost (a crash between the two) can go unseen. A running match is not tagged:
+its view carries turn rows and reports, and a report is written without an event, so a tag covering
+it would need the reads it exists to save.
+
+The game's lobby session sends the tag of the last view it was given and, on a `304`, hands the
+interface that view again.
 
 ### Turn barrier
 
@@ -447,7 +468,10 @@ guarantee sets `synchronous = FULL` or runs Postgres.
 - **Event streams are bounded.** A stream is not a request: it lives until the client closes it and
   every event published to its match costs it one read. So they are capped per player (the oldest
   goes to make room for a reconnect, before the match cap is read, so a reconnect into a full match
-  succeeds), per match, and per process, and the last two refuse with 429.
+  succeeds), per match, and per process, and the last two refuse with 429. The refusal's
+  `Retry-After` is one heartbeat interval: a slot frees when another stream ends, and a stream
+  whose peer has gone is found when its next heartbeat is written, so that is the soonest a retry
+  can find one.
   Without that one member could hold thousands of streams and turn every sealed turn into thousands
   of database reads for everybody.
 - **Secrecy of orders until the seal** is the property the design guarantees: nobody, the host
@@ -469,6 +493,10 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   binding), because Cloudflare's rate limiting binding counts per location and cannot express the
   day-long journal budget or `Retry-After`. A counter that fails lets the request through and logs,
   so an outage of the counter does not refuse every player.
+  Every 429 carries `Retry-After` in whole seconds, and the envelope's
+  `details.retryAfterSeconds` says the same: the time until the window that refused has room
+  again, for a limiter or the password-attempt budget, and one heartbeat interval for a stream
+  cap.
 - **A refused request is described, not echoed.** A validation failure names the field and the
   rule; the value the client sent (a mistyped password, an order document) is never written back
   into the response or, through it, into a proxy log.
@@ -895,9 +923,9 @@ dock a player plans against the dock the sealed turn grants.
   loser of a `rejoin` is told `seat_taken`.
 - **The lobby is polled, not streamed.** The game reads the match about once a second while the
   lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
-  facts too; opening it earlier would mean unwinding a session for every player who backs out.
-  Cutting the cost of an unchanged poll is
-  [#458](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/458).
+  facts too; opening it earlier would mean unwinding a session for every player who backs out. The
+  poll is conditional (see [the lobby poll](#the-lobby-poll)), so an unchanged lobby costs the
+  server the token lookup and one read.
 - **Chat is a lobby feature.** Seated players chat until the match starts, through
   `lobby.chatMessage` events the lobby poll reads when the log has grown; a player who arrives later
   reads what was said before them. Inside a match the Comlink is the channel, under its own rules.
