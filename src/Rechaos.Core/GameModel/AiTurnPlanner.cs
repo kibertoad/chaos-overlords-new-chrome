@@ -189,7 +189,7 @@ public static partial class AiTurnPlanner
     /// RULE-AI-031, FND-AI-062: families 13 and 14. On an objective the owner query does not give
     /// to the player, a gang fights on turns with an even number remaining and takes Control
     /// otherwise; on its own objective it fights anything visible, heals, buys or Influences.
-    /// Off the objectives it moves toward one.
+    /// Off the objectives it moves toward one, or, outside Big Man and Siege, to its planned target.
     /// </summary>
     private static void PrepareObjectiveFamilyCommand(
         MatchState state,
@@ -259,18 +259,22 @@ public static partial class AiTurnPlanner
         if (!OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
                 state.Setup.Scenario, gang.SectorId, plannedAction)) return;
 
-        var target = OriginalAiSectorSelectionRules.Select(
-            OriginalAiObjectiveFamilyRules.SelectionMode(state.Setup.Scenario, family),
-            gang.SectorId,
-            playerId,
-            family,
-            snapshot.SectorOwners,
-            snapshot.SectorDisabled,
-            snapshot.SectorGangCounts,
-            sectorId => CanSoloControl(state, playerId, gang, sectorId),
-            _ => false,
-            SelectorOwnerTests(state, playerId),
-            state.Random, planning: state.AiPlanning);
+        // RULE-AI-031: outside Big Man and Siege no selector is called, and the Move goes to the
+        // sector the planned target holds from the start of the pass (EXP-TURN-101).
+        var target = OriginalAiObjectiveFamilyRules.HasObjectives(state.Setup.Scenario)
+            ? OriginalAiSectorSelectionRules.Select(
+                OriginalAiObjectiveFamilyRules.SelectionMode(state.Setup.Scenario, family),
+                gang.SectorId,
+                playerId,
+                family,
+                snapshot.SectorOwners,
+                snapshot.SectorDisabled,
+                snapshot.SectorGangCounts,
+                sectorId => CanSoloControl(state, playerId, gang, sectorId),
+                _ => false,
+                SelectorOwnerTests(state, playerId),
+                state.Random, planning: state.AiPlanning)
+            : state.AiPlanning.PlannedTarget(playerId, gangSlot).First;
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
         state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }

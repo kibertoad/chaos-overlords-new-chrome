@@ -106,6 +106,8 @@ Entries by area.
 | [EXP-TURN-097](../../experiments/EXP-TURN-097.md) | Does the Move repair draw a random neighbour for a mover already sent back, and does a hire with 80 gangs report a full roster? | recorded |
 | [EXP-TURN-098](../../experiments/EXP-TURN-098.md) | Does the Move repair's neighbour draw from a corner in the last row draw again past sector 63? | recorded |
 | [EXP-TURN-099](../../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? | recorded |
+| [EXP-TURN-100](../../experiments/EXP-TURN-100.md) | Does the Move repair's neighbour draw from corner sector 56 draw again when only the test of the western edge refuses the result? | recorded |
+| [EXP-TURN-101](../../experiments/EXP-TURN-101.md) | Where does a family-13 or family-14 computer gang move in a scenario without objective sectors? | recorded |
 | [EXP-TURN-103](../../experiments/EXP-TURN-103.md) | Does the clamp after the instant phase bring a base Tolerance above 40 back to 40, after the later gangs have acted? | recorded |
 | [EXP-TURN-104](../../experiments/EXP-TURN-104.md) | Does a Research gang that acts after a site of its sector is completed in the same instant phase roll without the site's Research? | recorded |
 | [EXP-TURN-105](../../experiments/EXP-TURN-105.md) | Do the Greed Terminate branches of the family 1, 5, 6 and 12 handlers flag the record for a new family? | recorded |

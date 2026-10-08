@@ -33,6 +33,59 @@ public static class SetupPlayerCardArtLayout
         return new Point(origin.X + 45 - 3 * length, origin.Y + 58);
     }
 
+    /// <summary>
+    /// DEV-SETUP-003: the half-period of the name editor's caret blink. The edit control blinks
+    /// at the blink time the player set in Windows (SRC-WIN32-CARETS); the rebuild has no such
+    /// setting and takes 530 ms.
+    /// </summary>
+    public const int NameCaretBlinkMilliseconds = 530;
+
+    /// <summary>
+    /// DEV-SETUP-003: whether the caret shows <paramref name="sinceShown"/> after it was last
+    /// placed. It shows at once and then turns on and off every blink time.
+    /// </summary>
+    public static bool NameCaretShown(TimeSpan sinceShown) =>
+        sinceShown < TimeSpan.Zero
+        || (long)(sinceShown.TotalMilliseconds / NameCaretBlinkMilliseconds) % 2 == 0;
+
+    /// <summary>
+    /// DEV-SETUP-003: the name editor's caret before cell <paramref name="cell"/> of a shown name
+    /// <paramref name="length"/> characters long. The edit control's caret inverts the pixels of
+    /// a rectangle (SRC-WIN32-CARETS) whose size no entry records; on the card it is a line one
+    /// pixel wide in the pixel column left of the cell, from the row above the glyphs to the row
+    /// below them.
+    /// </summary>
+    public static Rectangle NameCaret(int player, int length, int cell)
+    {
+        var start = NameStart(player, length);
+        return new Rectangle(start.X + OriginalFontLayout.CellWidth * cell - 1, start.Y - 1, 1,
+            OriginalFontLayout.GlyphHeight + 2);
+    }
+
+    /// <summary>
+    /// DEV-SETUP-003: the cells <paramref name="first"/> to <paramref name="first"/> +
+    /// <paramref name="count"/> of a shown name, as the selection's highlight covers them.
+    /// </summary>
+    public static Rectangle NameCells(int player, int length, int first, int count)
+    {
+        var start = NameStart(player, length);
+        return new Rectangle(start.X + OriginalFontLayout.CellWidth * first, start.Y - 1,
+            OriginalFontLayout.CellWidth * count, OriginalFontLayout.GlyphHeight + 2);
+    }
+
+    /// <summary>
+    /// DEV-SETUP-003: the row the name editor draws in on slot <paramref name="player"/>'s card,
+    /// ten cells of a name centred as <see cref="NameStart"/> centres one, with the caret's column
+    /// on either side and its row above and below.
+    /// </summary>
+    public static Rectangle NameRow(int player)
+    {
+        var start = NameStart(player, LocalSetupPolicy.MaximumPlayerNameCharacters);
+        return new Rectangle(start.X - 1, start.Y - 1,
+            OriginalFontLayout.CellWidth * LocalSetupPolicy.MaximumPlayerNameCharacters + 2,
+            OriginalFontLayout.GlyphHeight + 2);
+    }
+
     public static Rectangle ArrowOverlaySource => new(220, 138, 64, 62);
 
     public static Rectangle PortraitDestination(int player)
