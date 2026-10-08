@@ -100,6 +100,8 @@ internal static class OriginalAddresses
     public const uint CursorHelper = 0x00465BC8;
     // RULE-AUDIO-006, FND-AUDIO-006: the play helper fn_0045851A(slot, priority).
     public const uint PlayHelper = 0x0045851A;
+    // FND-AUDIO-019: the level setup fn_004652A0, the only code that writes effects_enabled.
+    public const uint LevelSetup = 0x004652A0;
     // RULE-TIMER-004, FND-TIMER-002: the timer callback and the presentation wait.
     public const uint TimerCallback = 0x004327C0;
     public const uint PresentationWait = 0x00464CD9;
@@ -169,6 +171,10 @@ internal static class OriginalAddresses
     // Each waits until its Exit (137, 293, 49, 22) is pressed.
     public const uint CombatResults = 0x00451F80;
     public const uint LastTurnEvents = 0x0044F2FC;
+    // FND-UI-061: each handler calls the panel-open helper once, at these calls, only on the branch
+    // that shows its panel, and before it waits for input.
+    public const uint CombatResultsSlideIn = 0x00452146;
+    public const uint LastTurnEventsSlideIn = 0x0044F3D1;
     public const int PanelExitX = 137 + 24;
     public const int PanelExitY = 293 + 11;
 

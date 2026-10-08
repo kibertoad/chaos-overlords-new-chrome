@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-036, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-025, FND-UI-031, FND-UI-032, FND-UI-035, SRC-MANUAL-GOG, FND-UI-021, FND-EXE-004, FND-HIRE-008, FND-UI-038, EXP-TURN-095, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-063, EXP-UI-041]
+evidence: [FND-UI-036, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-025, FND-UI-031, FND-UI-032, FND-UI-035, SRC-MANUAL-GOG, FND-UI-021, FND-EXE-004, FND-HIRE-008, FND-UI-038, EXP-TURN-095, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-063, FND-UI-070, EXP-UI-045, EXP-UI-050, EXP-UI-041]
 conflicting: []
 split_with: []
 related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-UI-003, SCR-UI-007, SCR-HIRE-002, SCR-GANG-002]
@@ -15,7 +15,7 @@ related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-U
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| Console, Overlord bar and pressed tiles | As on SCR-UI-003 | As on SCR-UI-003; a portrait is drawn from the row at source y 594 when that player has no gang here the active player can see (`gangs_seen`), and the animated marker follows the viewed player | As on SCR-UI-003 | Always | FND-UI-017, FND-UI-032 |
+| Console, Overlord bar and pressed tiles | As on SCR-UI-003 | As on SCR-UI-003; a portrait is drawn from the row at source y 594 when that player has no gang here the active player can see (`gangs_seen`), and the animated marker follows the viewed player, with no marker when no player has a gang here the active player can see | As on SCR-UI-003 | Always | FND-UI-017, FND-UI-032, EXP-UI-045 |
 | Background | The 52-by-50 interior of the sector's cell in the unmarked copy of `DATA/PX16/PX10000` kept below y 416 of the city map surface, stretched, then filled with black through bitmap 143 (the pattern grey 0x8000 selects) laid from `(2,42)` | The selected sector's terrain, without ownership colour or markers | `(2,42,432,416)` | Always | FND-UI-018, FND-UI-025, FND-UI-038 |
 | Owner strip and back control | `DATA/PX16/PX00129` `(236 + 32*o, 67, 32, 207)` for owner `o + 1` (0 for none) and `(460,67,32,207)` | The sector's owner | `(4,43,32,207)` and `(4,250,32,207)` | Always | FND-UI-018 |
 | 9 Sector Display | The prepared city map (`DATA/PX16/PX10000` to `DATA/PX16/PX10006`) from map `(53*c - 49, 51*r - 48)`, and the frame `DATA/PX16/PX00129` `(0,15,162,156)` keyed on exact white | The selected sector at the centre of its 3-by-3 neighbourhood, with ownership and markers; the off-map row `(0,0,162,51)` or `(0,103,162,53)` and column `(0,0,53,156)` or `(107,0,55,156)` of the display are black | `(64,60,162,156)`; cell `(i, j)` at `(65 + 53*i, 61 + 51*j)` | Always | FND-UI-018, FND-UI-050, EXP-UI-007 |
@@ -23,7 +23,7 @@ related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-U
 | Display labels | Row tabs `PX00129` `(348,448,13,23)` with the glyph at `(1,8)`, column tabs `(325,448,23,13)` with the glyph at `(9,1)`, keyed on exact white | The centre's row number and column letter, and each neighbour's that is on the map | Rows at `(65,74)`, `(65,126)`, `(65,178)`; columns at `(79,61)`, `(133,61)`, `(187,61)` | Always (the switch at `0x00487848` is never cleared) | FND-UI-038 |
 | Gang-status markers | `DATA/PX16/PX00129` crop `(492, 67 + 20*f, 20, 20)`, keyed on exact white | The frame RULE-UI-006 picks for each visible sector | At the same offset in each cell as on SCR-UI-003, since the display is copied from the prepared map | When RULE-UI-006 returns a frame | FND-UI-017, FND-UI-031 |
 | Site portraits | `DATA/PX16/PX02000`, the 120-by-64 row of the site's definition | The sector's three sites, under the frame `DATA/PX16/PX00129` `(0,171,120,64)` keyed on exact white | `(86, 228 + 66*k, 120, 64)` for site slot `k` | Always | FND-UI-018 |
-| Site progress meter | `DATA/PX16/PX00129` green strip `(354,0,100,3)` over the red track of the site frame | `site_meter_length(progress, resistance)` pixels (RULE-UI-005) | Portrait offset `(10,59)`, 100 by 3 | For each site, when the sector's owner is the active player | FND-UI-018, FND-UI-036 |
+| Site progress meter | `DATA/PX16/PX00129` green strip `(354,0,100,3)` over the red track of the site frame | `site_meter_length(progress, resistance)` pixels (RULE-UI-005) | Portrait offset `(10,59)`, 100 by 3 | For each site whose length is above 0, when the sector's owner is the active player; never in a sector another player owns or no one owns, whoever the viewed player is | FND-UI-018, FND-UI-036, FND-UI-070, EXP-UI-045, EXP-UI-050 |
 | Gang card frame | `DATA/PX16/PX00129` `(162,15,74,110)` | None | `(254 + 76*(n % 2), 80 + 112*(n / 2), 74, 110)` for card `n` | For each gang RULE-UI-010 lists | FND-UI-036 |
 | Action strip | `DATA/PX16/PX00129` `(162, 125 + 9*action, 64, 9)` | The gang's `action` | On the card; offset not recorded | For each card | FND-UI-036 |
 | Gang portrait | `DATA/PX16/PX03000` 64-by-64 cell of the gang's definition | None | Card offset `(5,20)` | For each card | FND-UI-036 |
@@ -83,10 +83,13 @@ None known.
 
 - The offsets of the action strip and the Force meter on a card were measured
   from the art, not from the code (the card compositor is FND-UI-036's).
-- Whether the site progress meter is drawn for a player who does not own the
-  sector (the reading is that it is not).
+- No run shows the site progress meter in a sector no one owns, or while the
+  view shows another player's cards after a press on that player's Overlord
+  portrait. That the meter is left out there too rests on FND-UI-070 alone;
+  EXP-UI-045 and EXP-UI-050 cover only sectors a computer player owns
+  and the active player's own sector, with the view opened from the city.
 - No recorded run of the original reaches an edge sector in the nine-sector
-  display; owner strips of players 1 and 3 to 5; a site meter above 0;
+  display; owner strips of players 1 and 3 to 5;
   equipment icons not under a panel; cards 4 to 6; most action strips; another
   player's outline colour; the hidden group strip; the popup menus as pixels;
   neighbour and site double-clicks other than site slot 0; the own-card press
