@@ -4,7 +4,7 @@ title: A computer player picks a hire role from its scenario's turn schedule, th
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-050, FND-AI-068, FND-AI-003, FND-AI-009, FND-AI-013, FND-AI-014, FND-AI-017, FND-AI-064, FND-AI-065, FND-AI-042, FND-AI-044, FND-EXE-004, FND-OBJECTIVE-003, FND-SETUP-018, EXP-TURN-085, EXP-TURN-086]
+evidence: [FND-AI-050, FND-AI-068, FND-AI-003, FND-AI-009, FND-AI-013, FND-AI-014, FND-AI-017, FND-AI-064, FND-AI-065, FND-AI-042, FND-AI-081, FND-EXE-004, FND-OBJECTIVE-003, FND-SETUP-018, EXP-TURN-085, EXP-TURN-086, FND-AI-001, FND-AI-005, FND-AI-010, FND-AI-015, FND-AI-019, FND-AI-021, FND-AI-039, FND-AI-051, FND-EQUIP-006, FND-HIRE-001, FND-HIRE-002, FND-PLATFORM-003, FND-STATE-004, FND-STATE-006, FND-STATE-007, FND-UI-036, FND-UPKEEP-001, EXP-TURN-016]
 conflicting: []
 split_with: []
 related: [RULE-AI-001, RULE-AI-008, RULE-AI-009, RULE-AI-011, RULE-AI-012, RULE-AI-004, RULE-OBJECTIVE-002, FMT-STATE-001]
@@ -47,29 +47,10 @@ RULE-AI-011 and RULE-AI-012 read.
 or the cash to floating point.
 
 ```text
-# eleven cells per scenario, schedule slots 0 to 10; -1 where a scenario has no slot 10
-let modes = [
-    0, 4, 0, 2, 0, 3, 2, 0, 2, 3, -1,
-    0, 1, 0, 0, 4, 0, 3, 0, 3, 2, -1,
-    0, 4, 3, 0, 2, 3, 2, 0, 2, 0, -1,
-    0, 0, 2, 2, 4, 3, 2, 0, 2, 0, 3,
-    0, 1, 0, 0, 4, 0, 3, 0, 3, 2, -1,
-    0, 1, 0, 0, 4, 0, 3, 0, 3, 2, -1,
-    0, 1, 0, 1, 4, 1, 1, 0, 1, 2, -1,
-    0, 4, 0, 2, 0, 3, 2, 3, 2, 5, -1,
-    0, 1, 0, 1, 1, 2, 1, 0, 1, 1, -1,
-    0, 1, 0, 3, 0, 3, 0, 3, 0, 2, -1]
-let roles = [
-    1, 6, 1, 2, 1, 4, 2, 1, 2, 3, -1,
-    0, 1, 0, 0, 6, 0, 4, 0, 3, 5, -1,
-    1, 6, 4, 1, 2, 3, 2, 1, 2, 1, -1,
-    1, 1, 5, 2, 6, 3, 2, 1, 5, 1, 4,
-    0, 1, 0, 0, 6, 0, 4, 0, 3, 5, -1,
-    0, 1, 0, 0, 6, 0, 4, 0, 3, 5, -1,
-    0, 2, 0, 2, 6, 1, 2, 0, 1, 5, -1,
-    1, 6, 1, 2, 1, 4, 2, 4, 2, 3, -1,
-    0, 2, 0, 1, 1, 3, 2, 0, 1, 2, -1,
-    0, 1, 0, 3, 0, 4, 0, 3, 0, 5, -1]
+# eleven values per scenario, one per schedule slot 0 to 10, scenario by scenario; -1 where a
+# scenario has no slot 10
+table schedule_modes: INT32[110] from "RULE-AI-010.schedule_modes.csv"
+table schedule_roles: INT32[110] from "RULE-AI-010.schedule_roles.csv"
 # the slot the hunter test forces in each scenario; -1 where there is none
 let hunter_slots = [5, 6, 2, 10, 6, 6, -1, -1, -1, 5]
 
@@ -255,8 +236,8 @@ define schedule_slot(player):
 
 if hire_allowed(player):
     let k = schedule_slot(player)
-    let mode = modes[scenario * 11 + k]
-    hire_role[player] = roles[scenario * 11 + k]
+    let mode = schedule_modes[scenario * 11 + k]
+    hire_role[player] = schedule_roles[scenario * 11 + k]
     let offer = rank_offer(player, mode)
     if offer == -1:
         let j = offer_to_snub(player)

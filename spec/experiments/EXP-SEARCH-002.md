@@ -36,8 +36,8 @@ player 0 in EXP-SEARCH-001, and the bytes of the other five players stay 0.
 
 ## Results
 
-`TheSearchPanelChangesTheOriginalsFilters` compares the run as in
-EXP-SEARCH-001, and every table is the same.
+A test of the rebuild compares the run as in EXP-SEARCH-001, and every table is
+the same.
 
 ## Conclusion
 

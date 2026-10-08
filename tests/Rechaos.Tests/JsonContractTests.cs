@@ -1,5 +1,7 @@
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
@@ -111,6 +113,20 @@ public sealed class JsonContractTests
     }
 
     [Fact]
+    public void TheGeneratedDiscriminatorsAreEveryUnionsTag()
+    {
+        // The codegen reads these off the C# text; reflection over the attributes is the reference.
+        // Declared attributes only: a union's members inherit the attribute from their base.
+        var declared = typeof(PlayerView).Assembly.GetTypes()
+            .Select(type => type.GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false))
+            .Select(attribute => attribute?.TypeDiscriminatorPropertyName)
+            .OfType<string>()
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal);
+        Assert.Equal(declared, WireJsonContext.TypeDiscriminators.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void AWirePayloadIsWrittenAsReflectionWritesIt()
     {
         var replay = PlayedMatch(turns: 2);
@@ -122,8 +138,18 @@ public sealed class JsonContractTests
         Assert.Equal(
             JsonSerializer.Serialize(Roster, wireByReflection),
             WireJson.Write(Roster));
+        // The settings record goes through its own camelCase options, so compare the blob with that
+        // record written by reflection rather than the finished dictionary with itself.
+        var settingsByReflection = new JsonSerializerOptions(wireByReflection)
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        };
         Assert.Equal(
-            JsonSerializer.Serialize(Settings.ToWire(), wireByReflection),
+            JsonSerializer.Serialize(
+                new MultiplayerGameSettings.Wire(
+                    (int)Settings.Scenario, (int)Settings.Duration, (int)Settings.AiMentality,
+                    [.. Settings.Portraits], (int)Settings.AiPolicy, Settings.AllowLateJoin),
+                settingsByReflection),
             JsonSerializer.Serialize(Settings.ToWire(), WireJson.Options));
         Assert.Equal(
             JsonSerializer.Serialize(Settings.ToWire(), WireJson.Options),

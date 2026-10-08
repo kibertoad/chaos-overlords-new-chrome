@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-019
 title: Family-0 computer gangs heal, raise Chaos, probe weak enemies or wander, by previous action, and turn aggressive after two moves
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-072, FND-AI-048, FND-AI-046, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-044, FND-EXE-004, EXP-TURN-010, EXP-TURN-017, EXP-TURN-036, EXP-TURN-057, EXP-TURN-081, EXP-TURN-091]
+evidence: [FND-AI-072, FND-AI-048, FND-AI-080, FND-AI-046, FND-AI-033, FND-AI-021, FND-AI-015, FND-AI-028, FND-AI-081, FND-EXE-004, EXP-TURN-010, EXP-TURN-017, EXP-TURN-036, EXP-TURN-057, EXP-TURN-081, EXP-TURN-091, FND-AI-001, FND-AI-013, FND-AI-019, FND-AI-039, FND-AI-042, FND-CONTROL-001, FND-HIRE-002, FND-PLATFORM-003, FND-RESEARCH-002, FND-STATE-006, FND-STATE-007, FND-UI-035, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -31,7 +31,7 @@ From RULE-AI-002, for a gang whose family is 0.
 
 The gang's record in `gangs` (`sector`, `force`, `heal`) and in
 `planning_records` (`previous_action`, `older_action`, `weapon_cooldown`,
-`armor_cooldown`), `sector_weight`, `sectors` (`owner`), `scenario`,
+`armor_cooldown`), `sector_weight`, `sectors` (`owner` and `crackdown_turns`, through the owner query), `scenario`,
 `item_definitions` (`cost`), `rng_state` through `roll`, and what the
 functions it calls read.
 
@@ -90,7 +90,7 @@ else if prev == ACTION_CHAOS or prev == ACTION_EQUIP:
             # a weight of 10 has already produced an Attack above
             plan(idx, ACTION_MOVE, select_sector(player, 5, idx), 0)
 else if prev == ACTION_CONTROL:
-    if sectors[s].owner == player:
+    if owner_query(s) == player:
         plan(idx, ACTION_CHAOS, 0, 0)
     else:
         plan(idx, ACTION_MOVE, select_sector(player, 5, idx), 0)
@@ -107,7 +107,8 @@ else if prev == ACTION_HEAL or prev == ACTION_HIDE or prev == ACTION_MOVE:
             plan(idx, ACTION_NONE, 0, 0)
             aux_records[idx].focus = -1
             aux_records[idx].coverage_sector = -1
-    else if solo_control_ok(player, idx, s):
+    else if owner_query(s) != player and solo_control_ok(player, idx, s):
+        # solo_control_ok refuses a policed or own sector as well (RULE-AI-004)
         plan(idx, ACTION_CONTROL, 0, 0)
     else if previous_action_count(player, s, ACTION_CHAOS) == 0:
         plan(idx, ACTION_CHAOS, 0, 0)
@@ -146,7 +147,9 @@ sector (BUG-AI-007). The Chaos count
 includes the gang itself, so a gang that raised Chaos last turn moves on unless
 it is injured or sees an enemy, and after previous Chaos in its own sector it
 heals or raises Chaos again, unless police are present there: the owner query
-then reads -2 and the gang moves on. After Bribe, Give, Influence, Research or Sell the
+then reads -2 and the gang moves on. After Control the same query decides,
+so a gang in its own sector under police presence moves on instead of raising
+Chaos (FND-AI-080). After Bribe, Give, Influence, Research or Sell the
 gang plans nothing. The family change tests the older action, so Move, then
 anything, then Move is enough.
 
@@ -166,7 +169,7 @@ None known.
 
 - Whether the final family change reads the new action from the planning
   record or from a local value is not recorded; the effect is the same.
-- FND-AI-048 records the owner query (selector `0x21`) for the owned-sector
-  test after Chaos or Equip, but not which owner read the tests after Control
-  and after Heal, Hide or Move make; the procedure reads `sectors[s].owner`
-  there until a reading settles it.
+- No recorded run reaches, after an Attack, a failed draw falling through to
+  Control; after Chaos or Equip, all five draws failing; or a previous Hide.
+  These rest on FND-AI-072, FND-AI-048 and FND-AI-046. Until a run reaches
+  them, the entry stays `supported`.

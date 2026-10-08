@@ -36,7 +36,7 @@ press the upper and lower halves of the Comlink control (RULE-UI-002), press
 the card of player 1 on the Send panel and then Cancel, with a copy after each
 of the last three presses. For a copy of the Send panel the probe reads the
 caret's phase byte `0x00498110` before and after the copy (FND-COMLINK-010)
-and keeps it as the shot's item frame, 3 while it is 0 and 0 while it is set,
+and keeps it as the shot's `caret_phase`, 3 while it is 0 and 0 while it is set,
 when the two reads agree.
 
 ## Observations
@@ -59,14 +59,11 @@ other portraits and dim names. Between steps 5 and 7 the Send face at
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the captures with the
-presses before each replayed as reference clicks, the planning entry opening
-the hand-off card, and the Send panel's caret drawn in the recorded phase.
-Leaving out the cash row (DEV-UI-006) and the city's key line (DEV-UI-023),
-every element matches. `TheRebuildStartsTheSameMatch` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the 307 rolls
-before the dump.
+A test of the rebuild compares the captures with the presses before each
+replayed as reference clicks, the planning entry opening the hand-off card, and
+the Send panel's caret drawn in the recorded phase. Leaving out the cash row
+(DEV-UI-006) and the city's key line (DEV-UI-023), every element matches.
+Another test replays the 307 rolls before the dump.
 
 A first comparison found the rebuild's hand-off card 18 pixels lower, with a
 centred name, no colour bar and a larger portrait; its Send cards filled in

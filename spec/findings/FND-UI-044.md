@@ -16,10 +16,10 @@ locations:
     address: 0x0047154C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00415AD1..0x00415B24
+    address: 0x00415AD1..0x00415B2A
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00415B5E..0x00415C6A
+    address: 0x00415B5E..0x00415C70
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00415ECF..0x00415F94
@@ -50,7 +50,7 @@ them (FND-UI-020). Function extents are those of FND-EXE-004.
 - `fn_00414D8C` makes the point relative to the card's corner, `(254 + 76 *
   (card mod 2), 80 + 112 * (card / 2))`. After its action-strip menus
   (FND-UI-021), and for either kind, it tests the point against
-  `(5,20)-(69,84)` of the card, the 64-by-64 portrait (`0x00415AD1..0x00415B15`),
+  `(5,20)-(69,84)` of the card, the 64-by-64 portrait (`0x00415AD1..0x00415B1B`),
   and goes on only when the byte at `0x004ABC60` is 0 (`0x00415B1D`). Outside
   the portrait, or with that byte set, it skips to the double-click part at
   `0x00416714`.

@@ -26,7 +26,7 @@ public sealed class ComlinkAlertCadence
             return false;
         }
         if (!presentationActive) return false;
-        // RULE-AUDIO-008, FND-AUDIO-012: arrival and planning entry reset only the
+        // RULE-AUDIO-008, FND-AUDIO-018: arrival and planning entry reset only the
         // modulo-three repeat counter; the shared eight-step blink phase survives.
         var restart = enteringPlanning
             || deliverySequence is { } sequence && sequence != _deliverySequence;

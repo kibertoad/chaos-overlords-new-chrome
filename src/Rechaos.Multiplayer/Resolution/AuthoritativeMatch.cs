@@ -31,12 +31,22 @@ public sealed class AuthoritativeMatch
 {
     private readonly MatchHistory _history;
 
-    /// <summary>The last fingerprint taken, with the journal length it was taken at.</summary>
-    private (int Steps, string Value)? _hash;
+    /// <summary>The last fingerprint taken, with the mutation count it was taken at.</summary>
+    private (int Mutations, string Value)? _hash;
 
     private AuthoritativeMatch(MatchHistory history) => _history = history;
 
     private MatchReplayRecorder Replay => _history.Replay;
+
+    /// <summary>The recorder a resolver holds its match in.</summary>
+    /// <remarks>
+    /// It skips the check that the state did not move behind its back, which costs a whole
+    /// fingerprint per mutation: this class never hands its state out, so nothing else can move it.
+    /// It also keeps no journal: the server holds a match for its whole life in a memory-limited
+    /// runtime, and a journal and its initial snapshot would grow every turn without ever being
+    /// read. The hashes are unaffected.
+    /// </remarks>
+    private static MatchReplayRecorder NewRecorder(MatchState state) => MatchReplayRecorder.WithoutJournal(state);
 
     /// <summary>The session version this build resolves: see <see cref="MultiplayerSessionVersion"/>.</summary>
     /// <remarks>
@@ -58,15 +68,15 @@ public sealed class AuthoritativeMatch
     /// <remarks>
     /// Computed once per state. Most of a log's events (readiness, votes, deadlines) leave the state
     /// alone, and each fingerprint is a pass over the whole match. Every change to the state goes
-    /// through the recorder and adds a step to its journal, so the step count says when the
-    /// fingerprint is stale.
+    /// through the recorder, which counts it whether or not it keeps a journal, so the mutation
+    /// count says when the fingerprint is stale.
     /// </remarks>
     public string StateHash
     {
         get
         {
-            if (_hash is not { } hash || hash.Steps != Replay.StepCount)
-                _hash = hash = (Replay.StepCount, MatchStateHasher.ComputeFingerprint(Replay.State));
+            if (_hash is not { } hash || hash.Mutations != Replay.MutationCount)
+                _hash = hash = (Replay.MutationCount, MatchStateHasher.ComputeFingerprint(Replay.State));
             return hash.Value;
         }
     }
@@ -81,8 +91,7 @@ public sealed class AuthoritativeMatch
         MultiplayerGameSettings settings,
         IReadOnlyList<PlayerView> players)
     {
-        var state = MatchBootstrapFactory.Create(definitions, seed, settings, players);
-        var replay = new MatchReplayRecorder(state);
+        var replay = NewRecorder(MatchBootstrapFactory.Create(definitions, seed, settings, players));
         CommandPhase.Enter(replay);
         return new AuthoritativeMatch(new MatchHistory(replay, MatchHistory.SeatsOf(players), logTurn: 1));
     }
@@ -140,7 +149,7 @@ public sealed class AuthoritativeMatch
         if (!string.Equals(actual, stateHash, StringComparison.Ordinal))
             throw new MultiplayerProtocolException("the snapshot does not hash to the state it claims");
         var history = new MatchHistory(
-            new MatchReplayRecorder(state), MatchHistory.SeatsOf(players), logTurn ?? state.Coordinator.Turn);
+            NewRecorder(state), MatchHistory.SeatsOf(players), logTurn ?? state.Coordinator.Turn);
         return new AuthoritativeMatch(history);
     }
 
@@ -166,8 +175,6 @@ public sealed class AuthoritativeMatch
     {
         ArgumentNullException.ThrowIfNull(payload);
         ArgumentNullException.ThrowIfNull(stateHash);
-        if (payload.Length > NativeSaveSerializer.MaximumSaveBytes)
-            throw new MultiplayerProtocolException("the snapshot exceeds the save size limit");
         MatchState state;
         try
         {
@@ -195,6 +202,10 @@ public sealed class AuthoritativeMatch
     /// <c>match.playerReturned</c> that replaced the computer, <c>match.latePlayerJoined</c>,
     /// <c>turn.opened</c> and <c>turn.sealed</c>. Every other event is accepted and ignored, so the
     /// caller can feed the log as it is.
+    /// A set sealed after the match reached its outcome is passed over and the unchanged hash
+    /// returned, as every client passes over it. The server can seal a successor turn on its
+    /// deadline when a seat never reported the final one, and the finished state stops short of
+    /// Command, so applying the set would throw inside <see cref="SealedTurnApplier.Apply"/>.
     /// </remarks>
     /// <exception cref="MultiplayerProtocolException">
     /// A seal is for a turn ahead of the state, comes without its set, or the set is for another
@@ -212,7 +223,7 @@ public sealed class AuthoritativeMatch
                     $"the log sealed turn {seal.Turn}, and its sealed set was not given");
             }
             var stateHash = _history.ApplySealedSet(sealedOrders, seal.OrderSetHash);
-            _hash = (Replay.StepCount, stateHash);
+            _hash = (Replay.MutationCount, stateHash);
             return stateHash;
         }
         return StateHash;

@@ -61,17 +61,31 @@ public sealed class MatchReplayRecorder
     private readonly string _initialStateFingerprint;
     private readonly List<ReplayStep> _steps = [];
     private readonly bool _verifying;
+    private readonly bool _journaling;
     private string _currentStateFingerprint;
+    private int _mutationCount;
 
     public MatchReplayRecorder(MatchState state)
-        : this(state, verifying: true)
+        : this(state, verifying: true, journaling: true)
     {
     }
 
-    private MatchReplayRecorder(MatchState state, bool verifying)
+    private MatchReplayRecorder(MatchState state, bool verifying, bool journaling)
     {
         State = state ?? throw new ArgumentNullException(nameof(state));
         _verifying = verifying;
+        _journaling = journaling;
+        if (!journaling)
+        {
+            // Only WithoutJournal gets here, and it never verifies: no journal records the starting
+            // fingerprint and no check compares against it, so the whole-state hash and save are
+            // skipped.
+            System.Diagnostics.Debug.Assert(!verifying);
+            _initialStateFingerprint = string.Empty;
+            _currentStateFingerprint = string.Empty;
+            _initialSnapshot = [];
+            return;
+        }
         _initialStateFingerprint = MatchStateHasher.ComputeFingerprint(state);
         _currentStateFingerprint = _initialStateFingerprint;
         using var stream = new MemoryStream();
@@ -103,7 +117,22 @@ public sealed class MatchReplayRecorder
     /// recorder that kept no journal would quietly strip a report of its most useful field.
     /// </para>
     /// </remarks>
-    public static MatchReplayRecorder Unverified(MatchState state) => new(state, verifying: false);
+    public static MatchReplayRecorder Unverified(MatchState state) =>
+        new(state, verifying: false, journaling: true);
+
+    /// <summary>
+    /// An unverified recorder that keeps no journal: no initial snapshot and no steps.
+    /// </summary>
+    /// <remarks>
+    /// For a holder that only ever needs the state and its hash, such as a server resolving a long
+    /// match in a memory-limited runtime, where a journal would grow every turn and never be read.
+    /// <see cref="Steps"/> stays empty, and the recorder cannot be written as a replay.
+    /// </remarks>
+    public static MatchReplayRecorder WithoutJournal(MatchState state) =>
+        new(state, verifying: false, journaling: false);
+
+    /// <summary>Whether this recorder keeps a journal; see `WithoutJournal`.</summary>
+    public bool IsJournaling => _journaling;
 
     /// <summary>Whether this recorder re-hashes the state before each step; see `Unverified`.</summary>
     public bool IsVerifying => _verifying;
@@ -117,9 +146,11 @@ public sealed class MatchReplayRecorder
     {
         State = state;
         _verifying = true;
+        _journaling = true;
         _initialSnapshot = initialSnapshot;
         _initialStateFingerprint = initialStateFingerprint;
         _steps.AddRange(steps);
+        _mutationCount = steps.Count;
         _currentStateFingerprint = MatchReplaySerializer.EndingFingerprint(
             initialStateFingerprint, steps);
         // The state has to be the one the journal ends at, or the first mutation would append a
@@ -132,6 +163,15 @@ public sealed class MatchReplayRecorder
 
     /// <summary>How many mutations this journal holds; the cost of carrying it, at a glance.</summary>
     public int StepCount => _steps.Count;
+
+    /// <summary>
+    /// How many mutations this recorder has recorded, whether or not it keeps them in a journal.
+    /// </summary>
+    /// <remarks>
+    /// Equal to <see cref="StepCount"/> for a journaling recorder. A holder that caches something
+    /// derived from the state reads this to know when the cache is stale.
+    /// </remarks>
+    public int MutationCount => _mutationCount;
 
     /// <summary>
     /// Resumes recording into an existing journal.
@@ -321,6 +361,8 @@ public sealed class MatchReplayRecorder
 
     internal ReplayDocument Capture()
     {
+        if (!_journaling)
+            throw new InvalidOperationException("This recorder keeps no journal to write.");
         EnsureSynchronized();
         return new ReplayDocument(
             MatchReplaySerializer.CurrentFormatVersion,
@@ -346,7 +388,8 @@ public sealed class MatchReplayRecorder
     {
         if (step.Recipients is not null)
             step = step with { Recipients = Array.AsReadOnly(step.Recipients.ToArray()) };
-        _steps.Add(step);
+        if (_journaling) _steps.Add(step);
+        _mutationCount++;
         _currentStateFingerprint = step.ResultingStateFingerprint;
     }
 
@@ -484,7 +527,7 @@ public static class MatchReplaySerializer
     /// </summary>
     /// <remarks>
     /// The version has to be read before the members are bound, as the native save load does:
-    /// JsonOptions refuses unmapped members, so a journal from a newer build would otherwise fail as
+    /// the save options refuse unmapped members, so a journal from a newer build would otherwise fail as
     /// "JSON is invalid" on the very field that build added. That reads as damage, and
     /// <see cref="MatchReplayStore.LoadAndReplayRecoveringBackup"/> would then fall back to the
     /// backup generation and could overwrite the newer primary with it.
@@ -495,7 +538,7 @@ public static class MatchReplaySerializer
         {
             using var bounded = NativeSaveSerializer.ReadBounded(
                 source, MaximumReplayBytes, "Replay exceeds the size limit.");
-            if (NativeSaveSerializer.DeclaredFormatVersion(bounded) is { } declared
+            if (NativeSaveSerializer.DeclaredFormatVersion(bounded, CurrentFormatVersion) is { } declared
                 && declared != CurrentFormatVersion)
             {
                 declaredFormatVersion = declared;

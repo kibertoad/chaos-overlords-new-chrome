@@ -45,11 +45,10 @@ the gang in slot 0 held no item.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run,
-giving the hire as a hire of the gang offer slot 1 holds and the Give as one
-command for the recipient and the two items. The rebuild makes the same calls
-with the same bounds and results and reaches the same generator position and
-state.
+A test of the rebuild replays the run, giving the hire as a hire of the gang
+offer slot 1 holds and the Give as one command for the recipient and the two
+items. The rebuild makes the same calls with the same bounds and results and
+reaches the same generator position and state.
 
 ## Conclusion
 

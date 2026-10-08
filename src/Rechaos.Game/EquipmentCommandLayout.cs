@@ -111,14 +111,19 @@ public static class EquipmentCommandLayout
 
     /// <summary>
     /// The chosen row's text: the item name padded with spaces to the 30 characters of the
-    /// list builder's text rows (FND-EQUIP-010).
+    /// list builder's text rows (FND-EQUIP-010). The Equip list's builder writes the name into
+    /// the first 28 and the price into the last two, its tens digit only when it is not 0, as
+    /// the character <c>'0'</c> plus the digit (FND-EQUIP-011).
     /// </summary>
-    public static string ChosenRowText(string name)
+    public static string ChosenRowText(string name, int? price = null)
     {
         ArgumentNullException.ThrowIfNull(name);
-        return name.Length >= ChosenRowCharacters
-            ? name[..ChosenRowCharacters]
-            : name.PadRight(ChosenRowCharacters);
+        if (price is not { } cost)
+            return name.Length >= ChosenRowCharacters
+                ? name[..ChosenRowCharacters]
+                : name.PadRight(ChosenRowCharacters);
+        var text = (name.Length >= 28 ? name[..28] : name.PadRight(28)).ToCharArray();
+        return new string(text) + (cost / 10 != 0 ? (char)('0' + cost / 10) : ' ') + (char)('0' + cost % 10);
     }
 
     /// <summary>

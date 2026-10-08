@@ -92,6 +92,7 @@ public sealed partial class ChaosGame
         _batch.End();
 
         _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: fixedTransform);
+        DrawHeldPanelFace(_batch);
         if (_combatAnimationPlayer.IsPlaying)
             DrawCombatPanel(_batch, _pixel, _font, _state);
         DrawPlanningTimer(_batch, _pixel);

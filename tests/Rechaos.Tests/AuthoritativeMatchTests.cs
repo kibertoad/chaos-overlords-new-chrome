@@ -112,14 +112,16 @@ public sealed class AuthoritativeMatchTests
             if (turn == 2)
             {
                 SeatControl.HandOver(client, 1, PlayerController.Computer);
-                resolver.Apply(log.TakenOver("p2"));
+                // The handover changes the state between seals, so the hash must not be a cached one.
+                Assert.Equal(MatchStateHasher.ComputeFingerprint(client.State), resolver.Apply(log.TakenOver("p2")));
             }
             if (turn == 4)
             {
                 archive = resolver.Snapshot();
                 archiveHash = resolver.StateHash;
                 SeatControl.HandOver(client, 1, PlayerController.Human);
-                resolver.Apply(log.Returned("p2"));
+                // The handover changes the state between seals, so the hash must not be a cached one.
+                Assert.Equal(MatchStateHasher.ComputeFingerprint(client.State), resolver.Apply(log.Returned("p2")));
             }
             resolver.Apply(log.Ready(turn, "p1"));
             var set = Seal(client.State);
@@ -218,6 +220,57 @@ public sealed class AuthoritativeMatchTests
         Assert.Throws<MultiplayerProtocolException>(
             () => resolver.Apply(seal with { Payload = seal.Payload with { Turn = 2 } }, set with { Turn = 2 }));
         Assert.Equal(before, resolver.StateHash);
+    }
+
+    /// <summary>
+    /// A successor turn the server seals on its deadline after the match ended is ignored, as the
+    /// client session ignores it, instead of throwing inside the applier.
+    /// </summary>
+    [Fact]
+    public void IgnoresASetSealedAfterTheMatchFinished()
+    {
+        var resolver = NewResolver();
+        var log = new Log();
+        while (!resolver.IsFinished)
+        {
+            var set = EmptySeal(resolver.Turn);
+            resolver.Apply(log.Sealed(set), set);
+        }
+        var finished = resolver.StateHash;
+
+        var late = EmptySeal(resolver.Turn);
+        Assert.Equal(finished, resolver.Apply(log.Sealed(late), late));
+        Assert.Equal(finished, resolver.StateHash);
+    }
+
+    /// <summary>
+    /// The recorder the resolver holds its match in keeps no journal, so a long match does not grow
+    /// it turn after turn, and still reaches the hash a journaling client does.
+    /// </summary>
+    [Fact]
+    public void ARecorderWithoutAJournalReachesTheSameHashAndKeepsNoSteps()
+    {
+        var client = NewClient();
+        var server = MatchReplayRecorder.WithoutJournal(
+            MatchBootstrapFactory.Create(Definitions, Seed, Settings, Roster));
+        CommandPhase.Enter(server);
+
+        var sealedOrders = Seal(client.State);
+        Assert.Equal(SealedTurnApplier.Apply(client, sealedOrders), SealedTurnApplier.Apply(server, sealedOrders));
+
+        Assert.False(server.IsJournaling);
+        Assert.Equal(0, server.StepCount);
+        Assert.True(client.StepCount > 0);
+        Assert.Throws<InvalidOperationException>(() => MatchReplaySerializer.Save(new MemoryStream(), server));
+    }
+
+    private static SealedOrdersView EmptySeal(int turn)
+    {
+        var empty = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);
+        var entries = Roster
+            .Select(player => new SealedPlayerOrders(player.Id, player.Slot, empty, OrderDigest.OfDocument(empty)))
+            .ToArray();
+        return new SealedOrdersView(turn, OrderDigest.OfSet(entries), entries);
     }
 
     [Fact]

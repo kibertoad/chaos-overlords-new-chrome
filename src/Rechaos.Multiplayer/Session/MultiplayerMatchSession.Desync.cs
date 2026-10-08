@@ -30,6 +30,12 @@ public sealed partial class MultiplayerMatchSession
     /// <param name="Turn">The disputed turn.</param>
     /// <param name="Candidates">The hashes a repair may claim, as the announcement named them.</param>
     /// <param name="Details">Short hashes per player, for the interface and the diagnostics log.</param>
+    /// <param name="Reports">The hash each human seat reported, by player id.</param>
+    /// <param name="TieBreakerPlayerId">
+    /// Who may break a tie between the candidates, as the announcement named them. Null when there
+    /// is one candidate, and also on an announcement stored before the field existed, whose ties
+    /// only the host could break.
+    /// </param>
     /// <param name="SettledStateHash">
     /// The hash the log went on to confirm for the turn, when it did so while this client was
     /// already past it; see <see cref="SettlePendingDesync"/>. Null while the verdict is still open.
@@ -38,6 +44,8 @@ public sealed partial class MultiplayerMatchSession
         int Turn,
         IReadOnlyList<string> Candidates,
         string Details,
+        IReadOnlyDictionary<string, string> Reports,
+        string? TieBreakerPlayerId,
         string? SettledStateHash = null)
     {
         public static PendingDesync From(TurnDesyncedEvent desynced) => new(
@@ -45,8 +53,28 @@ public sealed partial class MultiplayerMatchSession
             desynced.Payload.CandidateStateHashes,
             string.Join(", ", desynced.Payload.Reports
                 .OrderBy(report => report.PlayerId, StringComparer.Ordinal)
-                .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}")));
+                .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}")),
+            desynced.Payload.Reports
+                .GroupBy(report => report.PlayerId, StringComparer.Ordinal)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Last().StateHash,
+                    StringComparer.Ordinal),
+            desynced.Payload.TieBreakerPlayerId);
     }
+
+    /// <summary>
+    /// The reports this client has finished checking against a rebuild, by disputed turn.
+    /// </summary>
+    /// <remarks>
+    /// A desync is announced again whenever its verdict changes, and a rebuild already compared
+    /// with a report would reach the same answer again: nothing it is built from has changed. Keyed
+    /// on the report as well as the turn, so a report this client changed since is checked afresh,
+    /// and an announcement that still carries the report a correction replaced is not corrected a
+    /// second time. A report is marked only once its check is over, so a check that a failed fetch
+    /// cut short is tried again rather than taken for one that agreed.
+    /// </remarks>
+    private readonly HashSet<(int Turn, string ReportedHash)> _selfChecked = [];
 
     /// <summary>
     /// The divergence this client is waiting on, or null.
@@ -117,6 +145,11 @@ public sealed partial class MultiplayerMatchSession
             _pendingDesync = null;
             return;
         }
+        // Before posting this client's state or waiting for somebody else's, make sure the report
+        // this client made is the one its rules reach from the server's own facts. A client whose
+        // live state went wrong outside the sealed sets corrects itself here and reports again, and
+        // when that makes the reports unanimous the turn settles with no snapshot at all.
+        if (await CorrectOwnReportAsync(pending, cancellationToken).ConfigureAwait(false)) return;
         // The state as it stood after the disputed turn, which is not necessarily the state this
         // client is on: reports for turn N can arrive after N+1 has sealed, and in a timed match
         // one slow seat is enough to make that the ordinary case rather than a corner.
@@ -124,10 +157,11 @@ public sealed partial class MultiplayerMatchSession
         var hash = ours is null ? null : MatchStateHasher.ComputeFingerprint(ours);
         var mayRepair = hash is not null
             && pending.Candidates.Contains(hash, StringComparer.Ordinal)
-            // The server takes a repair from whoever holds the SOLE most-reported hash, and leaves
-            // a tie to the host. Asking for one it would refuse only costs a round trip, but saying
-            // "automatic repair in progress" and then not repairing costs the player the truth.
-            && (IsHost || pending.Candidates.Count == 1);
+            // The server takes a repair from whoever holds the SOLE most-reported hash, and a tie
+            // from the one player the announcement designated. Asking for one it would refuse only
+            // costs a round trip, but saying "automatic repair in progress" and then not repairing
+            // costs the player the truth.
+            && (pending.Candidates.Count == 1 || IsTieBreaker(pending));
         _notices.Enqueue(new MultiplayerNotice.Desynced(
             pending.Turn,
             IsHost,
@@ -151,11 +185,87 @@ public sealed partial class MultiplayerMatchSession
         }
     }
 
+    /// <summary>Whether this client is the one designated to break the pending tie.</summary>
+    /// <remarks>
+    /// An announcement stored before the designation existed names nobody, and its tie was the
+    /// host's to break, which is also what a server of that age still enforces.
+    /// </remarks>
+    private bool IsTieBreaker(PendingDesync pending) => pending.TieBreakerPlayerId is { } designee
+        ? string.Equals(designee, PlayerId, StringComparison.Ordinal)
+        : IsHost;
+
     /// <summary>
-    /// Whether a refused repair upload was refused because the turn no longer needs one.
+    /// Whether a refused repair upload was refused because the turn no longer needs one, or no
+    /// longer needs it from this client.
     /// </summary>
+    /// <remarks>
+    /// <c>not_tie_breaker</c> means the roster moved after the announcement this client acted on.
+    /// The server then announces the desync again with the new designee, and that announcement
+    /// brings this client back here.
+    /// </remarks>
     private static bool IsRepairAlreadyPosted(MultiplayerApiException exception) =>
-        exception.Reason is "host_only" or "turn_not_desynced";
+        exception.Reason is "host_only" or "turn_not_desynced" or "not_tie_breaker";
+
+    /// <summary>
+    /// Rebuild the disputed turn from the server's facts and, when the result is not what this
+    /// client reported, adopt it and report again.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The rebuild starts from the newest snapshot below the turn and applies the sealed order
+    /// sets, the same facts every peer's state came from. What it cannot reproduce is whatever
+    /// made this client's live state differ from them, so a rebuild that disagrees with the report
+    /// is the better of the two: it is adopted the way a posted repair is, caught up to the turn
+    /// the live state is on, and every turn on the way is reported again. The server judges the
+    /// new reports like any other, and a match whose reports now agree confirms the turn and lifts
+    /// the pause with nobody uploading anything.
+    /// </para>
+    /// <para>
+    /// A rebuild that agrees with the report shows the divergence is in the rules every client
+    /// runs rather than in this client's history, and only a snapshot can settle that. Nothing is
+    /// changed, and the caller goes on to post or wait as before.
+    /// </para>
+    /// </remarks>
+    /// <returns>Whether this client adopted the rebuild and reported again.</returns>
+    private async Task<bool> CorrectOwnReportAsync(
+        PendingDesync pending,
+        CancellationToken cancellationToken)
+    {
+        if (!pending.Reports.TryGetValue(PlayerId, out var reported)) return false;
+        if (_selfChecked.Contains((pending.Turn, reported))) return false;
+        var liveTurn = Replay.State.Coordinator.Turn;
+        if (liveTurn <= pending.Turn) return false;
+        var baseline = await SnapshotBelowAsync(pending.Turn, cancellationToken).ConfigureAwait(false);
+        if (baseline is null) return false;
+        // One rebuild serves the check and the catch-up. The report it captures for the disputed
+        // turn is the hash taken right after that turn resolved, before any later turn or handover
+        // was applied, which is what this client reported for it.
+        var rebuilt = await RebuildAsync(
+                baseline,
+                throughTurn: liveTurn - 1,
+                handoversThroughTurn: liveTurn,
+                captureReports: true,
+                cancellationToken)
+            .ConfigureAwait(false);
+        var rebuiltHash = rebuilt.Reports
+            .Where(report => report.Turn == pending.Turn)
+            .Select(report => report.Request.StateHash)
+            .FirstOrDefault();
+        _selfChecked.Add((pending.Turn, reported));
+        // No hash for the turn means the rebuilt match finished before reaching it, and a rebuild
+        // that cannot speak for the turn has nothing to correct the report with.
+        if (rebuiltHash is null || string.Equals(rebuiltHash, reported, StringComparison.Ordinal))
+            return false;
+        _history.Adopt(rebuilt.Recorder);
+        _unreportedSeals.Clear();
+        _selfChecked.Add((pending.Turn, rebuiltHash));
+        var reports = Task.WhenAll(rebuilt.Reports.Select(QueueReportAsync).ToArray());
+        await AwaitRepairReportsAsync(reports, cancellationToken).ConfigureAwait(false);
+        var current = MatchStateHasher.ComputeFingerprint(Replay.State);
+        var (state, planning) = HandOver();
+        _notices.Enqueue(new MultiplayerNotice.Resynced(pending.Turn, state, current, planning));
+        return true;
+    }
 
     private Task UploadRepairAsync(
         int turn,
