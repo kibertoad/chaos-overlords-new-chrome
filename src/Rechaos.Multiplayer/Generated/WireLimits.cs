@@ -39,6 +39,8 @@ public static class WireLimits
     public const int SnapshotBase64Bytes = 1048576;
     /// <summary><c>LIMITS.eventsPageSize</c></summary>
     public const int EventsPageSize = 200;
+    /// <summary><c>LIMITS.comlinkMessageLength</c></summary>
+    public const int ComlinkMessageLength = 160;
     /// <summary><c>LIMITS.chatMessageLength</c></summary>
     public const int ChatMessageLength = 160;
     /// <summary><c>LIMITS.chatMessagesPerMinute</c></summary>
