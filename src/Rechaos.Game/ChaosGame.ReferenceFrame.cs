@@ -54,10 +54,20 @@ namespace Rechaos.Game;
 /// Whether the capture showed the Events and Comlink lamps drawn lit (FND-EVENT-006), which picks
 /// the blink phase of those lights in place of the clock's.
 /// </param>
+/// <param name="EntryPanels">
+/// Whether the frame stands where the probe's state dump stands, with Last Turn Events still open
+/// on its first page when the planning entry has reports to show (EXP-UI-036), in place of the
+/// city after the panel's Exit, where a shot step stands.
+/// </param>
+/// <param name="IdleGangWarning">
+/// Whether a Done click asks about idle gangs (RULE-OPTIONS-003). The probe switches the option off
+/// in a run that presses Done, unless a <c>warn</c> step switches it back on.
+/// </param>
 public sealed record ReferenceFrameRequest(
     string SavePath, string OutputPath, int? MarkerFrame = null, IReadOnlyList<ReferenceClick>? Clicks = null,
     int? PumpCounter = null, int? SelectedSector = null, ReferenceLamps? Lamps = null, int? ItemFrame = null,
-    int? ClipTick = null, int? IdlePhase = null, int? CaretPhase = null, int? ClipIndex = null)
+    int? ClipTick = null, int? IdlePhase = null, int? CaretPhase = null, int? ClipIndex = null,
+    bool EntryPanels = false, bool IdleGangWarning = true)
 {
     /// <summary>
     /// The operands that ask for a screen shown before a match in place of a save: the title
@@ -70,7 +80,7 @@ public sealed record ReferenceFrameRequest(
         "Usage: --reference-frame <save|title|credits|setup> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
         + " [--selected-sector <0-63>] [--lamps <0|1>,<0|1>] [--item-frame <0-14>] [--idle-phase <0-7>]"
         + " [--caret-phase <0-5>] [--clip-tick <0-21> [--clip-index <n>]]"
-        + " [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]";
+        + " [--entry-panels] [--no-idle-warning] [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]";
 
     // Keep captures independent of the player's preferences, recovery files and saves. The
     // directory sits beside the bitmap and is kept after exit, so a failed run can be diagnosed
@@ -95,8 +105,12 @@ public sealed record ReferenceFrameRequest(
         var idle = Array.IndexOf(args, "--idle-phase");
         var caret = Array.IndexOf(args, "--caret-phase");
         var clip = Array.IndexOf(args, "--clip-index");
+        var entry = Array.IndexOf(args, "--entry-panels");
+        var noWarning = Array.IndexOf(args, "--no-idle-warning");
         if (reference < 0)
         {
+            if (noWarning >= 0) throw new ArgumentException("--no-idle-warning requires --reference-frame.");
+            if (entry >= 0) throw new ArgumentException("--entry-panels requires --reference-frame.");
             if (tick >= 0) throw new ArgumentException("--clip-tick requires --reference-frame.");
             if (clip >= 0) throw new ArgumentException("--clip-index requires --reference-frame.");
             if (item >= 0) throw new ArgumentException("--item-frame requires --reference-frame.");
@@ -119,7 +133,9 @@ public sealed record ReferenceFrameRequest(
             || (tick >= 0 && Array.LastIndexOf(args, "--clip-tick") != tick)
             || (idle >= 0 && Array.LastIndexOf(args, "--idle-phase") != idle)
             || (caret >= 0 && Array.LastIndexOf(args, "--caret-phase") != caret)
-            || (clip >= 0 && Array.LastIndexOf(args, "--clip-index") != clip))
+            || (clip >= 0 && Array.LastIndexOf(args, "--clip-index") != clip)
+            || (entry >= 0 && Array.LastIndexOf(args, "--entry-panels") != entry)
+            || (noWarning >= 0 && Array.LastIndexOf(args, "--no-idle-warning") != noWarning))
             throw new ArgumentException("Capture options may only be supplied once.");
         static string Operand(string[] values, int index)
         {
@@ -131,13 +147,13 @@ public sealed record ReferenceFrameRequest(
         var source = Operand(args, reference + 1);
         var beforeMatch = ScreenOperands.Contains(source);
         var save = beforeMatch ? source : Path.GetFullPath(source);
-        // The marker, pump, selected sector, lamps, item frame, idle and caret phases and the clip
-        // belong to a match's screens, which a screen shown before a match does not draw.
+        // The marker, pump, selected sector, lamps, item frame, idle and caret phases, the clip and
+        // the entry panels belong to a match's screens, which a screen shown before a match does not draw.
         if (beforeMatch && (marker >= 0 || pump >= 0 || selected >= 0 || lamps >= 0 || item >= 0 || tick >= 0
-                            || idle >= 0 || caret >= 0 || clip >= 0))
+                            || idle >= 0 || caret >= 0 || clip >= 0 || entry >= 0))
             throw new ArgumentException(
                 "--marker-frame, --pump-counter, --selected-sector, --lamps, --item-frame, --idle-phase, --caret-phase,"
-                + " --clip-tick and --clip-index require a save.");
+                + " --clip-tick, --clip-index and --entry-panels require a save.");
         // A clip is drawn at a tick, so its index alone gives nothing to draw.
         if (clip >= 0 && tick < 0) throw new ArgumentException("--clip-index requires --clip-tick.");
         var output = Path.GetFullPath(Operand(args, reference + 2));
@@ -173,7 +189,7 @@ public sealed record ReferenceFrameRequest(
         return new ReferenceFrameRequest(save, output, frame,
             clicks >= 0 ? ReferenceClick.ParseList(Operand(args, clicks + 1)) : null, counter, sector,
             lamps >= 0 ? ReferenceLamps.Parse(Operand(args, lamps + 1)) : null, itemFrame, clipTick,
-            idlePhase, caretPhase, clipIndex);
+            idlePhase, caretPhase, clipIndex, entry >= 0, noWarning < 0);
     }
 }
 
@@ -509,10 +525,12 @@ public sealed partial class ChaosGame
     /// (SCR-AWARDS-001) when the save's match is decided. With several local
     /// humans the planning entry opens the hand-off card first, as the original's does
     /// (SCR-SETUP-002), and its Ready goes on as in play. Otherwise Combat Results and Last Turn
-    /// Events that the planning entry would open first are not drawn, because the comparison only
-    /// covers the city screen and its console, but Last Turn Events is closed as a press of its
-    /// Exit closes it: its first page counts as shown, so the Events light stays lit only while
-    /// another report is unseen (RULE-EVENT-005). Hire offers, the Comlink alert and the planning
+    /// Events that the planning entry would open first are not drawn, because a shot step stands
+    /// after their Exit, but Last Turn Events is closed as a press of its Exit closes it: its first
+    /// page counts as shown, so the Events light stays lit only while another report is unseen
+    /// (RULE-EVENT-005). With <see cref="ReferenceFrameRequest.EntryPanels"/>, for a capture taken
+    /// at the probe's state dump, Last Turn Events stays open on its first page, as the original's
+    /// frame shows it there (EXP-UI-036). Hire offers, the Comlink alert and the planning
     /// timer are prepared as the planning entry prepares them when it goes straight to the city.
     /// A save whose last resolution eliminated a local human opens that human's elimination card
     /// (SCR-OBJECTIVE-002), and a save of a decided match the endgame (SCR-AWARDS-001).
@@ -523,8 +541,9 @@ public sealed partial class ChaosGame
         // its card, at the place that player's planning would have come (RULE-OBJECTIVE-005). A
         // human eliminated in an earlier turn has had its card, as in play. A card whose slot comes
         // after the human whose planning the save stands at is not reached yet: play shows it only
-        // when the planning advance crosses that slot.
-        if (_state is not null)
+        // when the planning advance crosses that slot. A decided match stands at the awards, which
+        // come after every human's card (FND-OBJECTIVE-004, EXP-UI-034).
+        if (_state is { Outcome: null })
         {
             var viewer = PlanningViewer is { } active
                 && _state.FindPlayer(active) is { Status: PlayerStatus.Active } activePlayer
@@ -562,17 +581,44 @@ public sealed partial class ChaosGame
             PrepareCurrentHireOffers();
             _deferComlinkAlertUntilPlanningVisible = true;
             _managementReturnScreen = ClientScreen.City;
-            if (LastTurnReports(state, playerId).Count > 0)
-            {
-                BeginEventReview(ReviewableReports(state, playerId).Count);
-                CloseEvents();
-                return;
-            }
-            _screens.Show(ClientScreen.City);
-            CompletePlanningEntryPresentation();
+            PresentReferenceFrameEntryPanels(state, playerId);
             return;
         }
         _screens.Show(ClientScreen.City);
+    }
+
+    /// <summary>
+    /// With <see cref="ReferenceFrameRequest.EntryPanels"/> and reports to show, leaves Last Turn
+    /// Events open on its first page, where the probe's state dump stands (EXP-UI-036); otherwise
+    /// goes on to the city as a shot step does. Both the first planning entry and a hand-off
+    /// card's Ready click come here.
+    /// </summary>
+    private void PresentReferenceFrameEntryPanels(MatchState state, PlayerId playerId)
+    {
+        if (_referenceFrame?.EntryPanels == true && LastTurnReports(state, playerId).Count > 0)
+        {
+            BeginEventReview(ReviewableReports(state, playerId).Count);
+            _screens.Show(ClientScreen.Events);
+            return;
+        }
+        PresentReferenceFrameCity(state, playerId);
+    }
+
+    /// <summary>
+    /// The city after the planning entry's panels, as a shot step stands after their Exit presses:
+    /// Last Turn Events is closed as its Exit closes it (RULE-EVENT-005), and the rest of the entry
+    /// goes on. A Ready click on a hand-off card goes on the same way (SCR-SETUP-002).
+    /// </summary>
+    private void PresentReferenceFrameCity(MatchState state, PlayerId playerId)
+    {
+        if (LastTurnReports(state, playerId).Count > 0)
+        {
+            BeginEventReview(ReviewableReports(state, playerId).Count);
+            CloseEvents();
+            return;
+        }
+        _screens.Show(ClientScreen.City);
+        CompletePlanningEntryPresentation();
     }
 
     private void CaptureReferenceFrame()

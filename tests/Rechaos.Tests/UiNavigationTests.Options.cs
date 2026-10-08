@@ -36,6 +36,7 @@ public sealed partial class UiNavigationTests
             (OptionsLayout.EventSiteImagesRow, OptionsLayout.EventSiteImages),
             (OptionsLayout.AdvancedAiRow, OptionsLayout.AdvancedAi),
             (OptionsLayout.IntroOnlyOnceRow, OptionsLayout.IntroOnlyOnce),
+            (OptionsLayout.MenuStopsClockRow, OptionsLayout.MenuStopsClock),
             (OptionsLayout.ExportDiagnosticsRow, OptionsLayout.ExportDiagnostics),
             (OptionsLayout.OnlineLobbyPresentationRow, OptionsLayout.OnlineLobbyPresentation),
         ];
@@ -68,6 +69,7 @@ public sealed partial class UiNavigationTests
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.AdvancedAi));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.IntroOnlyOnce));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.MenuStopsClock));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ExportDiagnostics));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
@@ -88,6 +90,7 @@ public sealed partial class UiNavigationTests
             OptionsLayout.EventSiteImages,
             OptionsLayout.AdvancedAi,
             OptionsLayout.IntroOnlyOnce,
+            OptionsLayout.MenuStopsClock,
             OptionsLayout.ExportDiagnostics,
             OptionsLayout.ColorDepth,
             OptionsLayout.Done

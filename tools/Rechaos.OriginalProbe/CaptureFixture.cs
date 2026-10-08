@@ -177,6 +177,15 @@ internal static class CaptureFixture
         return record;
     }
 
+    /// <summary>
+    /// The record of a copy <c>--clock-captures</c> took at the start of a planning clock, with the
+    /// digest of the planning clock bar's rectangle only (SCR-UI-003, FND-TIMER-003). The game is
+    /// stopped while it is copied, so it has no marker frame of its own.
+    /// </summary>
+    public static JsonObject? ExtractClock(string runDirectory, string file) =>
+        Extract(Path.Combine(runDirectory, file), 0, null, null, null,
+            [new CaptureScreen("SCR-UI-003", [new CaptureElement("Planning clock bar", [520, 336, 60, 3])])]);
+
     private static JsonObject? Extract(
         string capture, int marker, int? pump, int[]? lamps, int? selected, IReadOnlyList<CaptureScreen> screens)
     {

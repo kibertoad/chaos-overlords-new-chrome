@@ -32,9 +32,10 @@ public static class OptionsLayout
     public const int EventSiteImagesRow = WarnIfIdleGangsRow + 1;
     public const int AdvancedAiRow = EventSiteImagesRow + 1;
     public const int IntroOnlyOnceRow = AdvancedAiRow + 1;
+    public const int MenuStopsClockRow = IntroOnlyOnceRow + 1;
 
     /// <summary>The cursor row of <see cref="ExportDiagnostics"/>.</summary>
-    public const int ExportDiagnosticsRow = IntroOnlyOnceRow + 1;
+    public const int ExportDiagnosticsRow = MenuStopsClockRow + 1;
 
     public const int OnlineLobbyPresentationRow = ExportDiagnosticsRow + 1;
 
@@ -49,18 +50,20 @@ public static class OptionsLayout
     public static Rectangle EventSiteImages => Toggle(EventSiteImagesRow);
     public static Rectangle AdvancedAi => Toggle(AdvancedAiRow);
     public static Rectangle IntroOnlyOnce => Toggle(IntroOnlyOnceRow);
+    public static Rectangle MenuStopsClock => Toggle(MenuStopsClockRow);
     public static Rectangle ExportDiagnostics => Toggle(ExportDiagnosticsRow);
     public static Rectangle ColorDepth => Toggle(OnlineLobbyPresentationRow) with { Height = 16 };
 
-    /// <summary>The toggle rows, 21 pixels apart below the volume sliders.</summary>
-    private static Rectangle Toggle(int row) => new(150, 174 + (row - FirstToggleRow) * 21, 340, 20);
+    /// <summary>The toggle rows, 20 pixels apart below the volume sliders, each 19 high, so the
+    /// last one ends above the status line.</summary>
+    private static Rectangle Toggle(int row) => new(150, 174 + (row - FirstToggleRow) * 20, 340, 19);
     public static Rectangle OnlineLobbyPresentation => ColorDepth;
 
     /// <summary>The toggle rows in cursor order, starting at <see cref="FirstToggleRow"/>.</summary>
     public static IReadOnlyList<Rectangle> ToggleRows { get; } =
     [
         BaseStatistics, DetailedCombat, SlidePanels, SteadyLights, WarnIfIdleGangs, EventSiteImages,
-        AdvancedAi, IntroOnlyOnce, ExportDiagnostics, OnlineLobbyPresentation
+        AdvancedAi, IntroOnlyOnce, MenuStopsClock, ExportDiagnostics, OnlineLobbyPresentation
     ];
 
     /// <summary>Whether Left and Right flip the setting on <paramref name="row"/>.</summary>
@@ -123,6 +126,13 @@ public static class OptionsTooltip
                 "ON PLAYS THE INTRO ON THE FIRST START ONLY.",
                 "OFF PLAYS IT AT EVERY START, AS THE ORIGINAL DOES.",
                 "INTRO ON THE TITLE SCREEN REPLAYS IT."
+            ];
+        if (OptionsLayout.MenuStopsClock.Contains(point))
+            return [
+                "MENU STOPS CLOCK",
+                "ON STOPS A TIMED TURN'S CLOCK WHILE THE GAME MENU IS OPEN.",
+                "OFF LETS IT RUN, AS THE ORIGINAL'S MENU BAR DOES:",
+                "A TURN CAN RUN OUT IN THE MENU AND ENDS WHEN IT CLOSES."
             ];
         if (OptionsLayout.ExportDiagnostics.Contains(point))
             return [
@@ -260,6 +270,7 @@ public sealed partial class ChaosGame
             case OptionsLayout.EventSiteImagesRow: ToggleEventSiteImageFilter(); break;
             case OptionsLayout.AdvancedAiRow: ToggleAdvancedAi(); break;
             case OptionsLayout.IntroOnlyOnceRow: ToggleIntroOnlyOnce(); break;
+            case OptionsLayout.MenuStopsClockRow: ToggleMenuStopsClock(); break;
             case OptionsLayout.ExportDiagnosticsRow: ExportDiagnostics(); break;
             case OptionsLayout.OnlineLobbyPresentationRow: ToggleOnlineLobbyPresentation(); break;
         }
@@ -358,6 +369,15 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
+    // DEV-TIMER-002: whether a timed turn's clock stops while the game menu is open.
+    private void ToggleMenuStopsClock()
+    {
+        _planningTimer.SetStopsInGameMenu(!_planningTimer.StopsInGameMenu, _inputTime);
+        SavePreferences();
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _message = string.Empty;
+    }
+
     /// <summary>The player's own Advanced AI default, which is what the option row shows and flips.</summary>
     /// <remarks>
     /// While a joiner sits in someone else's lobby or match, <see cref="_defaultAiPolicy"/> holds that
@@ -443,6 +463,7 @@ public sealed partial class ChaosGame
                 _onlineLobbyPresentation,
                 _introOnlyOnce,
                 _preferredScenario,
+                _planningTimer.StopsInGameMenu,
                 _steadyLights));
 
     private void ToggleFullscreen()
@@ -502,6 +523,8 @@ public sealed partial class ChaosGame
             $"ADVANCED AI: {(OwnAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", OptionsLayout.AdvancedAiRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.IntroOnlyOnce,
             $"INTRO ONLY ONCE: {(_introOnlyOnce ? "ON" : "OFF")}", OptionsLayout.IntroOnlyOnceRow);
+        DrawOptionToggle(batch, pixel, font, OptionsLayout.MenuStopsClock,
+            $"MENU STOPS CLOCK: {(_planningTimer.StopsInGameMenu ? "ON" : "OFF")}", OptionsLayout.MenuStopsClockRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ExportDiagnostics,
             "EXPORT DIAGNOSTICS", OptionsLayout.ExportDiagnosticsRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.OnlineLobbyPresentation,
@@ -511,7 +534,7 @@ public sealed partial class ChaosGame
             string.IsNullOrEmpty(_optionsStatus)
                 ? "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS"
                 : _optionsStatus,
-            388,
+            391,
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
         if (_hoverPoint is { } hover)

@@ -46,7 +46,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
             PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true,
             AiPolicyMode.Advanced, OnlineServiceMode.Custom, "https://games.example.test",
             OnlineLobbyPresentation.Classic, IntroOnlyOnce: false,
-            PreferredScenario: ScenarioId.Siege, SteadyLights: true);
+            PreferredScenario: ScenarioId.Siege, PlanningClockStopsInMenu: true, SteadyLights: true);
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -217,7 +217,8 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.True(preferences.IntroOnlyOnce);
     }
 
-    // DEV-UI-027: a file from before Steady Lights keeps its choices and takes the setting off.
+    // DEV-UI-027: a file from before Steady Lights keeps its choices, Menu Stops Clock (DEV-TIMER-002)
+    // among them, and takes the setting off.
     [Fact]
     public void VersionTwelvePreferencesMigrateWithSteadyLightsOff()
     {
@@ -228,7 +229,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
              "Fullscreen":true,"SmoothEventSiteImages":true,"IntroMoviesSeen":true,
              "DefaultAiPolicy":1,"OnlineService":1,
              "CustomMultiplayerServer":"https://games.example.test","LobbyPresentation":1,
-             "IntroOnlyOnce":false,"PreferredScenario":3}
+             "IntroOnlyOnce":false,"PreferredScenario":3,"PlanningClockStopsInMenu":true}
             """);
 
         var preferences = GamePreferencesStore.LoadOrDefault(Path());
@@ -238,6 +239,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal((ScenarioId)3, preferences.PreferredScenario);
         Assert.Equal(OnlineLobbyPresentation.Classic, preferences.LobbyPresentation);
         Assert.True(preferences.SlidePanels);
+        Assert.True(preferences.PlanningClockStopsInMenu);
         Assert.False(preferences.SteadyLights);
     }
 

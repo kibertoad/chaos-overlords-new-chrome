@@ -27,6 +27,10 @@ public static class OriginalOptionsPolicy
 
     /// <summary>DEV-UI-027: the lights, markers and caret blink and cycle as in the original.</summary>
     public const bool SteadyLightsByDefault = false;
+
+    /// <summary>DEV-TIMER-002: the planning clock keeps running in the game menu, as the original's
+    /// does in its menu bar.</summary>
+    public const bool PlanningClockStopsInMenuByDefault = false;
 }
 
 /// <summary>Which coordination service the Online screen uses.</summary>
@@ -61,6 +65,7 @@ public sealed record GamePreferences(
     OnlineLobbyPresentation LobbyPresentation = OnlineLobbyPresentation.Modern,
     bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault,
     ScenarioId PreferredScenario = ScenarioId.Greed,
+    bool PlanningClockStopsInMenu = OriginalOptionsPolicy.PlanningClockStopsInMenuByDefault,
     bool SteadyLights = OriginalOptionsPolicy.SteadyLightsByDefault)
 {
     public const int CurrentFormatVersion = 13;
@@ -413,7 +418,8 @@ public static class GamePreferencesStore
         string CustomMultiplayerServer,
         OnlineLobbyPresentation LobbyPresentation,
         bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault,
-        ScenarioId PreferredScenario = ScenarioId.Greed)
+        ScenarioId PreferredScenario = ScenarioId.Greed,
+        bool PlanningClockStopsInMenu = OriginalOptionsPolicy.PlanningClockStopsInMenuByDefault)
         : VersionElevenPreferences(
             FormatVersion, MusicVolumeLevel, SoundEffectVolumeLevel, WarnIfIdleGangs, PlanningTimeLimit,
             ShowBaseStatistics, DetailedCombat, SlidePanels, Fullscreen, SmoothEventSiteImages,
@@ -423,6 +429,11 @@ public static class GamePreferencesStore
             base.IsValid(formatVersion) && Enum.IsDefined(PreferredScenario);
 
         public override GamePreferences Upgrade() =>
-            base.Upgrade() with { IntroOnlyOnce = IntroOnlyOnce, PreferredScenario = PreferredScenario };
+            base.Upgrade() with
+            {
+                IntroOnlyOnce = IntroOnlyOnce,
+                PreferredScenario = PreferredScenario,
+                PlanningClockStopsInMenu = PlanningClockStopsInMenu
+            };
     }
 }

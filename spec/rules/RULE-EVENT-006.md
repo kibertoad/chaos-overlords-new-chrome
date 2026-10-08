@@ -4,7 +4,7 @@ title: A completed site is reported to the player whose Influence completed it
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG, EXP-TURN-010]
+evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG, EXP-TURN-010, EXP-TURN-107]
 conflicting: []
 split_with: []
 related: [RULE-EVENT-002]

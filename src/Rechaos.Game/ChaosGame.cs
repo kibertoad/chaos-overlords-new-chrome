@@ -319,7 +319,7 @@ public sealed partial class ChaosGame
         var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
         _musicVolumeLevel = preferences.MusicVolumeLevel;
         _soundEffectVolumeLevel = preferences.SoundEffectVolumeLevel;
-        _warnIfIdleGangs = preferences.WarnIfIdleGangs;
+        _warnIfIdleGangs = preferences.WarnIfIdleGangs && _referenceFrame?.IdleGangWarning != false;
         _selectedPlanningTimeLimit = preferences.PlanningTimeLimit;
         _showBaseStatistics = preferences.ShowBaseStatistics;
         _detailedCombat = preferences.DetailedCombat;
@@ -329,6 +329,7 @@ public sealed partial class ChaosGame
         _introMoviesSeen = preferences.IntroMoviesSeen;
         _introOnlyOnce = preferences.IntroOnlyOnce;
         _steadyLights = preferences.SteadyLights;
+        _planningTimer.StopsInGameMenu = preferences.PlanningClockStopsInMenu;
         _defaultAiPolicy = preferences.DefaultAiPolicy;
         _preferredScenario = preferences.PreferredScenario;
         _online.Service = preferences.OnlineService;
