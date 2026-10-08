@@ -98,7 +98,7 @@ Verdict: every field is `same` or `representation`, so this row can be `complete
 
 | Field | Offset | Rules | Rebuild state | Match | Notes |
 |---|---|---|---|---|---|
-| `occupied` | `0x00` | RULE-COMLINK-001, RULE-COMLINK-004, RULE-COMLINK-005, RULE-COMLINK-007 | Membership in `ComlinkInbox.Messages` | same | Same during play: 16 per player, the oldest dropped when full. A local load empties every inbox, as the original does when a match is entered (FND-COMLINK-006, FND-SEARCH-005), and the journal records it. Online matches never load this way and have no Comlink. |
+| `occupied` | `0x00` | RULE-COMLINK-001, RULE-COMLINK-004, RULE-COMLINK-005, RULE-COMLINK-007 | Membership in `ComlinkInbox.Messages` | same | Same during play: 16 per player, the oldest dropped when full. A local load empties every inbox, as the original does when a match is entered (FND-COMLINK-006, FND-SEARCH-005), and the journal records it. Online matches never load this way: every client rebuilds the inboxes from the server's snapshot and the sealed turns, which carry each message and read mark. |
 | `read` | `0x01` | RULE-COMLINK-004, RULE-COMLINK-005, RULE-COMLINK-007 | `ComlinkInbox.IsRead` (`ReadSequences`) | representation | Per message; an empty record has no entry. |
 | `turn` | `0x02` | RULE-COMLINK-003 (writes), RULE-COMLINK-005 | `ComlinkMessage.Turn` | representation | One-based; the View date subtracts 1 (`MatchDate` in `src/Rechaos.Game/ChaosGame.City.cs`). The 16-bit wrap is not reproduced; a match does not reach turn 32,768. |
 | `sender` | `0x04` | RULE-COMLINK-003 (writes), RULE-COMLINK-005 | `ComlinkMessage.Sender` | same | |

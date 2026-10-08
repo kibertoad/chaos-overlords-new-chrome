@@ -4,7 +4,7 @@ title: Drawing numbers in fixed glyph cells
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-006, FND-UI-004, FND-UI-023, FND-EXE-004, FND-UI-040, FND-UI-045, FND-UI-060, FND-COMBAT-007, EXP-UI-002, EXP-UI-027, EXP-UI-028]
+evidence: [FND-UI-006, FND-UI-004, FND-UI-023, FND-EXE-004, FND-UI-040, FND-UI-065, FND-UI-060, FND-COMBAT-007, EXP-UI-002, EXP-UI-027, EXP-UI-028, EXP-UI-038, EXP-UI-039, EXP-UI-040]
 conflicting: []
 split_with: []
 related: []
@@ -92,24 +92,31 @@ Results (FND-COMBAT-007). `modifier_cells` is the modifier helper.
 - A quotient above 42 addresses a glyph past `Z`, the strip's last character.
   The cell is still copied from source column `x`, at y 0, or y 8 when
   negative, where `x` is `6 * (16 + q)` cut to its low 16 bits and read as a
-  signed number (FND-UI-045). While `0 <= x <= 506` the cell shows whatever art
+  signed number (FND-UI-065). While `0 <= x <= 506` the cell shows whatever art
   of `PX00129` lies there: quotients 0 to 68, and quotients whose product wraps
   back into that range, first 10907 to 10991, at columns 2 to 506.
 - For any other `x` (a quotient of 69 or more outside those wrapped ranges, or
   a negative column) the source cell is wholly or partly outside the 512-by-646
   bitmap the sheet is held in. The copy then changes only the destination
   pixels whose source pixel lies inside the bitmap and leaves the others as
-  they were: at column 510 the cell's two left pixel columns take the sheet's
-  colour at columns 510 and 511, from either row, and a cell wholly outside,
-  such as column 516, changes nothing (EXP-UI-002, EXP-UI-027, EXP-UI-028).
-  The `StretchBlt` column 32766 left the black console black (EXP-UI-028).
-  What a cell leaves unchanged keeps whatever was drawn there before, an
-  earlier glyph included (EXP-UI-002). Since `6 * g` cut to 16 bits takes
-  every even value, a cell partly overlaps the bitmap at four columns: 508
-  and 510 on the right, with 4 and 2 pixel columns inside, and -4 and -2 on
-  the left (glyphs 10922 and 21845), with 2 and 4. At -4 and -2 the inside
-  part is sheet columns 0 and 1, or 0 to 3, within the space glyph's cell;
-  at -4 it drew black (EXP-UI-027).
+  they were. Since `6 * g` cut to 16 bits takes every even value, a cell
+  partly overlaps the bitmap at four columns (FND-UI-065): 508 and 510 on the
+  right, whose 4 and 2 inside pixel columns land at the cell's left edge, and
+  -4 and -2 on the left (glyphs 10922 and 21845), whose 2 and 4 inside pixel
+  columns, sheet columns 0 and 1 or 0 to 3 within the space glyph's cell,
+  land at the cell's right edge. Runs drew 510 and -2 from both rows and 508
+  from the green row over an earlier glyph or the console, and the clipped
+  copy shows (EXP-UI-002, EXP-UI-027, EXP-UI-038, EXP-UI-039, EXP-UI-040).
+  The one run at -4, from the green row, drew black over the black console,
+  which cannot tell a clipped copy from none (EXP-UI-027). A cell wholly
+  outside, such as column 516, changes nothing (EXP-UI-002, EXP-UI-028).
+- At the columns 32762, 32764 and 32766 the copy is a `StretchBlt` whose
+  source rectangle spans the whole bitmap (FND-UI-065). It changes nothing
+  either, over the black console and over a glyph drawn there before: 32766
+  from the green row, 32762 and 32764 from the red row (EXP-UI-028,
+  EXP-UI-038, EXP-UI-039, EXP-UI-040).
+- What a cell leaves unchanged keeps whatever was drawn there before, an
+  earlier glyph included (EXP-UI-002, EXP-UI-038, EXP-UI-039, EXP-UI-040).
 - -2147483648 stays negative when negated, so its quotients are negative: in
   two cells the first is -214748364, at column 13208, outside the bitmap, and
   the second -8, glyph 8, the character `(`, from the red row.
@@ -126,12 +133,9 @@ None known.
 
 - Which panels use which helper for which field is listed in FND-UI-006 and in
   each screen entry.
-- The runs are one system (EXP-UI-002, EXP-UI-027, EXP-UI-028). How GDI
+- The runs are one system (EXP-UI-002, EXP-UI-027, EXP-UI-028, EXP-UI-038,
+  EXP-UI-039, EXP-UI-040). How GDI
   treats a source rectangle outside its bitmap may differ on other versions
-  of Windows, which static reading of the game cannot settle (FND-UI-045).
-- No run has drawn a cell at the `StretchBlt` columns 32762 and 32764, or at
-  column 32766 over a cell that already held a glyph. The `StretchBlt` source
-  width of -65530 spans the whole bitmap, and a capture over the black
-  console cannot tell a copy that drew nothing at 32766 from one that drew
-  black.
-- No run has drawn a cell at column 508 or -2.
+  of Windows, which static reading of the game cannot settle (FND-UI-065).
+- No run has drawn a quotient in the wrapped ranges, such as 10907 to 10991,
+  or the value -2147483648; what those cells show rests on FND-UI-065 alone.

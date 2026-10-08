@@ -61,14 +61,12 @@ public sealed partial class ChaosGame
         if (_startupSavePath is not { } path || _referenceFrame is not null) return;
         AdoptLoadedMatch(
             () => SaveSlotCatalog.LoadForPlay(path, _definitions!),
-            match => MatchJournalStore.TryResumeOnto(MatchJournalStore.PathFor(path), match),
-            null);
+            match => MatchJournalStore.TryResumeOnto(MatchJournalStore.PathFor(path), match));
     }
 
     private bool LoadGameFromSlot(int slot) => AdoptLoadedMatch(
         () => SaveSlotCatalog.LoadForPlay(SaveSlotCatalog.SavePath(_saveDirectory, slot), _definitions!),
-        loaded => SaveSlotCatalog.LoadJournal(_saveDirectory, slot, loaded),
-        _saveSlots[slot]);
+        loaded => SaveSlotCatalog.LoadJournal(_saveDirectory, slot, loaded));
 
     /// <summary>
     /// Loads the browser's automatic row: the rolling autosave, or the crash-recovery save when
@@ -91,18 +89,17 @@ public sealed partial class ChaosGame
         var path = _automaticRowPath ?? _autoSavePath;
         return AdoptLoadedMatch(
             () => _autoSave.Load(() => SaveSlotCatalog.LoadForPlay(path, _definitions!)),
-            _ => null,
-            _saveSlots[SaveSlotCatalog.AutoSaveRow]);
+            _ => null);
     }
 
-    /// <param name="summary">
-    /// The browser's row for the file, whose recovery flags give the message; without one, as for
-    /// the save named on the command line, the load's own flags give it.
-    /// </param>
+    /// <remarks>
+    /// The load's own recovery flags give the message. The browser's row cannot: the browser reads
+    /// without repairing, so its row never reports a repair, and a row drawn from a sidecar never
+    /// reports a fallback that the load for play then makes.
+    /// </remarks>
     private bool AdoptLoadedMatch(
         Func<(NativeSaveLoadResult Loaded, IReadOnlyList<int>? SelectedSectors)> load,
-        Func<MatchState, MatchReplayRecorder?> journal,
-        SaveSlotSummary? summary)
+        Func<MatchState, MatchReplayRecorder?> journal)
     {
         if (_session is not null) return false;
         if (_definitions is null) return false;
@@ -112,8 +109,8 @@ public sealed partial class ChaosGame
         {
             var (result, selectedSectors) = load();
             var loaded = result.State;
-            var recovered = summary?.RecoveredFromBackup ?? result.RecoveredFromBackup;
-            var repaired = summary?.PrimaryRepaired ?? result.PrimaryRepaired;
+            var recovered = result.RecoveredFromBackup;
+            var repaired = result.PrimaryRepaired;
             // The save is the match; the companion journal, when the slot has one that belongs to
             // it, is only how it got there — the history from the first turn, which is what lets a
             // bug report filed after a load reproduce the whole session rather than the tail of it.
