@@ -1,10 +1,10 @@
 ---
 id: RULE-OPTIONS-003
 title: Warn if Idle Gangs asks before Done ends a turn with a gang left idle
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OPTIONS-002, FND-OPTIONS-001, FND-OPTIONS-003, FND-STATE-010, FND-EXE-004, SRC-MANUAL-GOG, EXP-UI-012]
+evidence: [FND-OPTIONS-002, FND-OPTIONS-001, FND-OPTIONS-003, FND-STATE-010, FND-EXE-004, SRC-MANUAL-GOG, EXP-UI-012, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, SCR-OPTIONS-001]
@@ -74,4 +74,9 @@ None known.
 
 ## Open questions
 
-None.
+- Only EXP-UI-012 runs with the setting on: an idle gang, the warning shown
+  and Cancel pressed. No recorded run reaches the setting on with no idle
+  gang, a recurring order not counting as idle, the time limit ending the
+  turn, `no_match_in_play` set, or OK. These rest on FND-OPTIONS-002,
+  FND-OPTIONS-003 and FND-STATE-010. Until a run reaches them, the entry stays
+  `supported`.

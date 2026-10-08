@@ -718,7 +718,7 @@ public sealed class BoardResolutionTests
             new(new PlayerId(2), "SECOND", PlayerController.Computer)
         ];
         var setup = new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setups[0], 500, [Gang(30, 0, 0, 1, weak)]),
@@ -769,7 +769,7 @@ public sealed class BoardResolutionTests
                 ]))
             .ToArray();
         return new MatchState(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original),
             players, sectors);
     }
 
@@ -790,7 +790,7 @@ public sealed class BoardResolutionTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setup.Players[0], 500, playerZeroGangs,

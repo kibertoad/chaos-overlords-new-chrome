@@ -50,7 +50,7 @@ public sealed partial class ChaosGame
         {
             _batch.Begin(samplerState: SamplerState.PointClamp,
                 transformMatrix: VirtualInput.Transform(viewport));
-            if (_uiSprites is not null) _batch.Draw(_uiSprites, area, source, Color.White);
+            if (UiSprites is not null) _batch.Draw(UiSprites, area, source, Color.White);
             else _batch.Draw(_pixel, area, new Color(90, 90, 90));
             _batch.End();
         }

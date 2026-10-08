@@ -125,7 +125,7 @@ public sealed class MatchOutcomeTests
             new(new PlayerId(1), "TWO", PlayerController.Computer),
             new(new PlayerId(2), "THREE", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Big40, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Big40, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setups[0], 500, [new MatchGangState(new GangId(10), new PlayerId(0), 0, 0, 0)]),
@@ -283,7 +283,7 @@ public sealed class MatchOutcomeTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", playerOneController)
         ];
-        var setup = new MatchSetup(scenario, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(scenario, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setups[0], 500,

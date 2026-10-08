@@ -791,7 +791,7 @@ describe('desync verdicts, snapshots and recovery', () => {
       await h.kernel.turns.sweep()
       expect(announcements()).toHaveLength(1)
 
-      // Bea leaves: Eve now holds the lowest tied seat.
+      // Bea leaves: HASH_A is now the sole most-reported hash, and nobody breaks a tie.
       await h.kernel.lobby.leave(await h.principalOf(bea.token))
       expect(announcements()).toHaveLength(2)
       expect(announcements()[1]?.payload).toMatchObject({
@@ -825,6 +825,82 @@ describe('desync verdicts, snapshots and recovery', () => {
         candidateStateHashes: [HASH_A, HASH_B],
         tieBreakerPlayerId: bea.player.id,
       })
+    })
+
+    /**
+     * With two turns desynced the latest announcement in the log is usually the other turn's, so
+     * it cannot tell whether this turn's verdict changed. Falling back to a key naming only the
+     * content dropped a verdict that returned to an earlier one, as above.
+     */
+    it('announces a returning verdict while another turn is desynced too', async () => {
+      const { host, bea, cal, dee, eve } = await startedMatchOfFive()
+      for (const member of [host, bea, cal, dee, eve]) {
+        await h.submit(await h.principalOf(member.token), 2, 1, true)
+      }
+      for (const turn of [1, 2]) {
+        const reports: [string, string][] = [
+          [host.token, HASH_C],
+          [bea.token, HASH_B],
+          [cal.token, HASH_A],
+          [dee.token, HASH_A],
+          [eve.token, HASH_B],
+        ]
+        for (const [token, stateHash] of reports) {
+          await h.kernel.turns.report(await h.principalOf(token), turn, {
+            stateHash,
+            finished: false,
+          })
+        }
+      }
+      expect((await h.storage.turns.get(host.match.id, 2))?.status).toBe('desynced')
+      await h.kernel.lobby.leave(await h.principalOf(bea.token))
+      await h.kernel.lobby.rejoin(await h.principalOf(bea.token))
+      const latestForTurn = (turn: number) =>
+        announcements()
+          .filter((event) => event.payload.turn === turn)
+          .at(-1)?.payload
+      for (const turn of [1, 2]) {
+        expect(latestForTurn(turn)).toMatchObject({
+          candidateStateHashes: [HASH_A, HASH_B],
+          tieBreakerPlayerId: bea.player.id,
+        })
+      }
+    })
+
+    /**
+     * A departure is committed before its verdict is announced again, so a publish that throws in
+     * between leaves clients on the old verdict with nothing on the request path to retry it. The
+     * sweep compares each desynced turn with its latest announcement and publishes the change.
+     */
+    it('announces from the sweep a changed verdict whose announcement failed', async () => {
+      const { host, bea, cal, dee, eve } = await startedMatchOfFive()
+      await reportAs(host.token, HASH_C)
+      await reportAs(bea.token, HASH_B)
+      await reportAs(cal.token, HASH_A)
+      await reportAs(dee.token, HASH_A)
+      await reportAs(eve.token, HASH_B)
+      expect(announcements()).toHaveLength(1)
+
+      const real = h.storage.events.appendOnce
+      let failed = false
+      h.storage.events.appendOnce = async (event, key) => {
+        if (!failed && event.type === 'turn.desynced') {
+          failed = true
+          throw new Error('append of turn.desynced failed')
+        }
+        return real(event, key)
+      }
+      await h.kernel.lobby.leave(await h.principalOf(bea.token)).catch(() => undefined)
+      expect(announcements()).toHaveLength(1)
+
+      await h.kernel.turns.sweep()
+      expect(announcements()).toHaveLength(2)
+      expect(announcements()[1]?.payload).toMatchObject({
+        candidateStateHashes: [HASH_A],
+        tieBreakerPlayerId: null,
+      })
+      await h.kernel.turns.sweep()
+      expect(announcements()).toHaveLength(2)
     })
   })
 })

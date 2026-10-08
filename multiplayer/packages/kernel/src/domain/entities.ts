@@ -256,7 +256,6 @@ export function humanParticipants(players: readonly Player[]): Player[] {
   return players.filter(isHumanParticipant)
 }
 
-/** A started match that has not ended. A desync pause counts: the match resumes from it. */
 /**
  * Whether a match played from views has ended, so that nothing in it is hidden any more: the seed,
  * every seat's sealed sets and the whole state are released to its members.
@@ -265,6 +264,7 @@ export function isConcluded(match: Pick<Match, 'status'>): boolean {
   return match.status === 'finished' || match.status === 'abandoned'
 }
 
+/** A started match that has not ended. A desync pause counts: the match resumes from it. */
 export function isInProgress(match: Pick<Match, 'status'>): boolean {
   return match.status === 'running' || match.status === 'desynced'
 }

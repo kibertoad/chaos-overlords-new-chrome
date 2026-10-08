@@ -55,10 +55,10 @@ two of player 2, with Force 8 and 9, stood in it too.
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays both runs.
-The rebuild makes the same calls with the same bounds and results and reaches
-the same generator position and state after the twenty-nine turns.
+Every result is the one RULE-RNG-002 computes from the recorded seed. A test of
+the rebuild replays both runs. The rebuild makes the same calls with the same
+bounds and results and reaches the same generator position and state after the
+twenty-nine turns.
 
 A reading of `solo_control_ok` in which the defence counted the owner's gangs
 alone, and the Support of the sites the owner influenced, first differed at

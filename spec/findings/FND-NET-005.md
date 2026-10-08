@@ -10,40 +10,40 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040299E..0x00402A06
+    address: 0x0040299E..0x00402A07
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041CEDD..0x0041CFC9
+    address: 0x0041CEDD..0x0041CFCA
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041D4CE..0x0041D51A
+    address: 0x0041D4CE..0x0041D51B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041DF77..0x0041E0AC
+    address: 0x0041DF77..0x0041E0AD
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041E104..0x0041E174
+    address: 0x0041E104..0x0041E175
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041E19F..0x0041E37A
+    address: 0x0041E19F..0x0041E37B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041E683..0x0041E8DE
+    address: 0x0041E683..0x0041E8DF
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041F063..0x0041F566
+    address: 0x0041F063..0x0041F567
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042306A..0x0042329B
+    address: 0x0042306A..0x0042329C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004236E5..0x00423748
+    address: 0x004236E5..0x00423749
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00424148..0x004243D9
+    address: 0x00424148..0x004243DA
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004245AC..0x00424A0C
+    address: 0x004245AC..0x00424A0D
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -88,7 +88,7 @@ Connection helpers next to the socket code:
 | `fn_0042306A(number, out)` | Rewrites a telephone number: when it holds only digits, spaces, `-` and parentheses and is 9 to 12 characters long, writes it as `+1 (`, the characters up to the first `-`, `) ` and the rest; a number starting with three zeros loses its first four characters; any other number is copied unchanged | none | dead |
 
 Offsets `+n` are into the 12 connection records of `0x350` bytes at
-`0x004906D0` (FND-STATE-008). For every function marked dead, no instruction
+`0x004906D0` (FND-STATE-012). For every function marked dead, no instruction
 calls or loads its address and no four-byte value in the file equals it.
 
 Every caller named in the two tables, other than the session setup

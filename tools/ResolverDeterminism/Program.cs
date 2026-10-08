@@ -116,10 +116,18 @@ while (client.State.Outcome is null && client.State.Coordinator.Turn <= turns)
         checkpoint = resolver.Snapshot();
         checkpointHash = resolver.StateHash;
         // Each human seat's view of turn 11, as the core projects it from the client's state: what a
-        // server playing the match from views serves that seat.
+        // server playing the match from views serves that seat. A seat that is out, or any seat of a
+        // finished match, has no view (AuthoritativeMatch.SeatViewPayload), and is written as null.
         var seatViews = new JsonObject();
         foreach (var player in players)
         {
+            if (client.State.Outcome is not null
+                || client.State.FindPlayer(new PlayerId(player.Slot)) is not { } seat
+                || seat.Status != Rechaos.Core.GameModel.PlayerStatus.Active)
+            {
+                seatViews[player.Slot.ToString(System.Globalization.CultureInfo.InvariantCulture)] = null;
+                continue;
+            }
             using var view = new MemoryStream();
             SeatView.Save(view, SeatView.Project(client.State, new PlayerId(player.Slot)));
             seatViews[player.Slot.ToString(System.Globalization.CultureInfo.InvariantCulture)] =

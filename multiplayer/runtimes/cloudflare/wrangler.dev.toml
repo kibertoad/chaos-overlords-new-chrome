@@ -74,6 +74,16 @@ bucket_name = "chaos-overlords-bug-reports-dev"
 name = "MATCH_HUB"
 class_name = "MatchHub"
 
+# One object per rate limit budget and caller, so the limits hold across every isolate and location
+# rather than per isolate. Unbound, the Worker counts in each isolate and logs a warning.
+[[durable_objects.bindings]]
+name = "RATE_LIMITS"
+class_name = "RateLimitCounter"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["MatchHub"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["RateLimitCounter"]

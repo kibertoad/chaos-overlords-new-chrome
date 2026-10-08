@@ -1,9 +1,9 @@
 ---
 id: FND-COMLINK-003
 title: Comlink Send offers only other human players as recipients and has six recipient cells, Cancel and Send
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-COMLINK-011]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

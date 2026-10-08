@@ -7,7 +7,15 @@ import {
 } from '@chaos-overlords/bug-reports'
 import { defineHttpConformance } from '@chaos-overlords/conformance'
 import { MULTIPLAYER_PROTOCOL_VERSION } from '@chaos-overlords/contracts'
-import { createKernel, RateLimiter, sha256Hex } from '@chaos-overlords/kernel'
+import {
+  createKernel,
+  MemoryRateLimiter,
+  MemoryRateLimitStore,
+  type RateLimitStore,
+  type RateLimiterFactory,
+  sha256Hex,
+  sharedRateLimiters,
+} from '@chaos-overlords/kernel'
 import {
   FakeTurnResolver,
   InMemoryStorage,
@@ -70,6 +78,8 @@ interface BuildLimits {
   /** A resolver to referee with, and whether matches are played from seat views. */
   resolver?: FakeTurnResolver
   seatViews?: boolean
+  /** Count every budget in this store, as a deployment of several instances does. */
+  sharedStore?: RateLimitStore
 }
 
 function build(overrides: Partial<ServerContainer['config']> = {}, limits: BuildLimits = {}) {
@@ -79,6 +89,11 @@ function build(overrides: Partial<ServerContainer['config']> = {}, limits: Build
   const storage = new InMemoryStorage()
   const clock = new ManualClock()
   const hub = new LocalEventHub(storage.events, 50)
+  const shared: RateLimiterFactory | undefined = limits.sharedStore
+    ? sharedRateLimiters(limits.sharedStore, clock, new RecordingLogger())
+    : undefined
+  const limiter = (options: LimitWindow & { name: string }) =>
+    shared ? shared(options.name, options) : new MemoryRateLimiter(clock, options)
   const kernel = createKernel({
     storage,
     notifier: hub,
@@ -87,6 +102,7 @@ function build(overrides: Partial<ServerContainer['config']> = {}, limits: Build
     clock,
     logger: new RecordingLogger(),
     ...(limits.resolver ? { resolver: limits.resolver, seatViews: limits.seatViews ?? false } : {}),
+    ...(shared ? { rateLimits: shared } : {}),
   })
   const reports = inMemoryBugReports()
   const bugReports: BugReportService | undefined =
@@ -108,18 +124,21 @@ function build(overrides: Partial<ServerContainer['config']> = {}, limits: Build
     ...(bugReports ? { bugReports } : {}),
     eventStream: hub,
     rateLimiters: {
-      anonymous: new RateLimiter(clock, rateLimit),
-      member: new RateLimiter(clock, memberRateLimit),
-      upload: new RateLimiter(clock, memberRateLimit),
-      bugReport: new RateLimiter(clock, {
+      anonymous: limiter({ name: 'anonymous', ...rateLimit }),
+      member: limiter({ name: 'member', ...memberRateLimit }),
+      upload: limiter({ name: 'upload', ...memberRateLimit }),
+      bugReport: limiter({
+        name: 'bugReport',
         limit: bugReportOptions.limit ?? 1000,
         windowMs: 60_000,
       }),
-      bugReportState: new RateLimiter(clock, {
+      bugReportState: limiter({
+        name: 'bugReportState',
         limit: bugReportOptions.statePerDay ?? 1000,
         windowMs: 24 * 60 * 60 * 1000,
       }),
-      matchCreation: new RateLimiter(clock, {
+      matchCreation: limiter({
+        name: 'matchCreation',
         limit: limits.matchCreationPerMinute ?? 1000,
         windowMs: 60_000,
       }),
@@ -135,6 +154,8 @@ describe('server app over in-memory storage', () => {
   defineHttpConformance({
     fetch: async (input, init) => app.request(input, init),
     publicListing: true,
+    // The hub `build` wires beats every 50 ms.
+    keepaliveMs: 50,
     expireDeadlines: async () => {
       clock.advance(60_000)
       await kernel.turns.sweep()
@@ -254,6 +275,25 @@ describe('server app over in-memory storage', () => {
       headers: { ...headers, 'x-forwarded-for': '198.51.100.1' },
     })
     expect(otherClient.status).toBe(404)
+  })
+
+  it('holds one budget across instances that share a rate limit store', async () => {
+    const store = new MemoryRateLimitStore()
+    const limits = { anonymous: { limit: 2, windowMs: 60_000 }, sharedStore: store }
+    const instances = [build({}, limits), build({}, limits)]
+    const join = (index: number) =>
+      (instances[index] as ReturnType<typeof build>).app.request('/api/v1/matches/join', {
+        method: 'POST',
+        body: JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'Mallory' }),
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.9' },
+      })
+    expect((await join(0)).status).toBe(404)
+    expect((await join(1)).status).toBe(404)
+    // Each instance has counted one call; the budget of two is spent between them.
+    const third = await join(0)
+    expect(third.status).toBe(429)
+    expect(third.headers.get('retry-after')).toBe('60')
+    expect((await join(1)).status).toBe(429)
   })
 
   /**
@@ -424,7 +464,7 @@ describe('server app over in-memory storage', () => {
           'content-type': 'application/json',
           ...(token ? { authorization: `Bearer ${token}` } : {}),
         },
-        body: body === undefined ? undefined : JSON.stringify(body),
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       })
     const created = await post('/matches', {
       settings: {
