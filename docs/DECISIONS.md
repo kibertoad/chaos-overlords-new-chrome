@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-07 | [Draw the game's own controls in place of the Windows controls](#2026-10-07--draw-the-games-own-controls-in-place-of-the-windows-controls) |
 | 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
 | 2026-10-06 | [Comlink in an online match travels in the sealed turn](#2026-10-06--comlink-in-an-online-match-travels-in-the-sealed-turn) |
 | 2026-10-06 | [Let a late joiner take a seat the vote handed to the computer](#2026-10-06--let-a-late-joiner-take-a-seat-the-vote-handed-to-the-computer) |
@@ -51,6 +52,26 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-07 — Draw the game's own controls in place of the Windows controls
+
+- Decision: the rebuild does not reproduce the original's Windows controls: the menu bar, the
+  popup menus, the common file dialogs, the dialog boxes with their edit controls, list boxes,
+  combo boxes and buttons, and the message boxes. It draws its own controls in the style of the
+  game's screens, offering the same choices with the same results. DEV-UI-029 records the
+  principle and lists every such control the spec records, with the entry that covers each
+  replacement where one already did (DEV-UI-011, DEV-UI-019, DEV-UI-021, DEV-NET-001 and others).
+- Reason: the controls do not match the game's art. Windows draws them in the style of the
+  Windows version that runs the game, so they show the platform the original was built for rather
+  than an art choice, and no single look of them is the original's. A setting that drew
+  Windows-looking controls in the rebuild would copy one Windows version's look, which is no more
+  the original's than any other version's.
+- Scope: only the look of a control changes. Where a replacement also changes what the player can
+  do, that change needs an entry of its own, as DEV-UI-021 is for the order menus. Behaviour that
+  belongs to a control, such as the setup name editor's caret and editing keys, is still the
+  original's to match. The window's own frame and the system dialogs the rebuild opens outside
+  its own drawing (the report of a failed start or a crash, and on macOS and Linux the question
+  that asks for the installation to import) stay the system's.
 
 ## 2026-10-07 — Import the assets on first start on macOS and Linux
 

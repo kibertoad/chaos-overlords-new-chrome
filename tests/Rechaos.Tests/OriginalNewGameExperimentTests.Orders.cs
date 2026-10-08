@@ -184,8 +184,8 @@ public sealed partial class OriginalNewGameExperimentTests
         foreach (var command in plan.Commands) Assert.True(match.Submit(command).Accepted);
     }
 
-    // FND-UI-021, DEV-UI-021: the orders the rebuild's panel offers where the original's menu
-    // leaves an item enabled.
+    // FND-UI-021, DEV-UI-021, DEV-UI-029: the orders the rebuild's drawn panel offers where the
+    // original's Windows popup menu leaves an item enabled.
     private static IReadOnlySet<GangAction> Offered(MatchState match, PlayerId human, int menu, IReadOnlyList<MatchGangState> gangs)
     {
         var recurring = menu is 2 or 5;

@@ -12,5 +12,6 @@
 - Justification: The rebuild draws the whole game in its own window without the Windows frame
   (DEV-GFX-001), where a native popup menu would appear outside the game's picture and ignore its
   scaling. The panel offers the orders the original's menus offer, for the same gangs, so the
-  player can do nothing new, and there is no original form to switch back to.
+  player can do nothing new, and there is no original form to switch back to. The rebuild draws
+  none of the original's Windows controls (DEV-UI-029).
 - Dropped: no

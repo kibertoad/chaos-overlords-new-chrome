@@ -161,8 +161,8 @@ public sealed partial class DeviationBehaviourTests
     [Fact]
     public void TheTitleButtonsStandInForTheMenuBar()
     {
-        // DEV-UI-019: the title screen's buttons stand in for the menu, and a press outside them
-        // does nothing.
+        // DEV-UI-019, DEV-UI-029: the title screen's drawn buttons stand in for the Windows menu
+        // bar, and a press outside them does nothing.
         Assert.Equal(ChaosGame.TitleAction.NewGame, ChaosGame.TitleActionAt(new Point(320, 300)));
         Assert.Equal(ChaosGame.TitleAction.LoadGame, ChaosGame.TitleActionAt(new Point(260, 350)));
         Assert.Equal(ChaosGame.TitleAction.Online, ChaosGame.TitleActionAt(new Point(370, 350)));

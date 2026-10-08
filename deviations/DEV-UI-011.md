@@ -6,6 +6,7 @@
 - Setting: None
 - Default: mandatory
 - Justification: Saving and loading stay available wherever the original allows them, and slots with
-  names replace a file dialog that the original's menu bar opens.
+  names replace a file dialog that the original's menu bar opens. The rebuild draws none of the
+  original's Windows controls (DEV-UI-029).
 - Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs, tests/Rechaos.Tests/SaveSlotCatalogTests.cs
 - Dropped: no
