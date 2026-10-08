@@ -4,10 +4,10 @@ title: Family-12 computer gangs equip and heal when unopposed, step toward their
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-073, EXP-TURN-013, FND-AI-070, FND-AI-033, FND-AI-069, FND-AI-040, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-042, FND-AI-075, EXP-TURN-053, EXP-TURN-057, EXP-TURN-080]
+evidence: [FND-AI-073, EXP-TURN-013, FND-AI-070, FND-AI-033, FND-AI-069, FND-AI-040, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-042, FND-AI-075, EXP-TURN-053, EXP-TURN-057, EXP-TURN-080, FND-AI-001, FND-AI-013, FND-AI-015, FND-AI-019, FND-AI-021, FND-AI-039, FND-AI-081, FND-EQUIP-006, FND-HIRE-002, FND-PLATFORM-003, FND-RESEARCH-002, FND-STATE-006, FND-STATE-007, FND-UI-036, FND-UPKEEP-001]
 conflicting: []
 split_with: []
-related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
+related: [RULE-AI-003, RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
 ---
 
 ## Summary
@@ -101,7 +101,9 @@ mode is the guard end marker `0x40 + 100`. In a sector owned by a hostile
 human where the first visible gang belongs to a computer player, the weight
 is 1 and the draw takes every visible gang (EXP-TURN-080). The human-only pool
 is drawn only at weight 10, which needs a visible gang of a human, so it is
-never empty. The attack loop attacks the
+never empty. Every other positive weight needs a visible gang too, and the
+weights are cached at the start of the same pass (RULE-AI-003), so the attack
+branch always has a target to draw and always plans an Attack. The attack loop attacks the
 last drawn target even when all five strength tests failed, and the strength
 test can be made on a different gang from the one attacked (BUG-AI-003).
 

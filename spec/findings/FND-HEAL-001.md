@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00472BF6..0x00472CF9
+    address: 0x00472BF6..0x00472CFA
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -18,7 +18,7 @@ environment: null
 ## Observation
 
 The Heal case of the instant-phase switch in `fn_00472775` is
-`0x00472BF6..0x00472CF9` (FND-TURN-007). It works on the local copy of the
+`0x00472BF6..0x00472CFA` (FND-TURN-007). It works on the local copy of the
 gang record.
 
 - It reads the player's dword at `0x004A2570 + player * 4` (`0x00472BFC`) and

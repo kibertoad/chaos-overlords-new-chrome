@@ -27,7 +27,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheCityKeepsTheOriginalsGangMarkers(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var sight = GangSightSnapshot.Capture(match, human);
         var map = new GangStatusMarkerMap();

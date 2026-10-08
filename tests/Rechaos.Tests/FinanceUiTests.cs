@@ -289,7 +289,7 @@ public sealed class FinanceUiTests
             ScenarioId.Greed,
             GameDuration.SixMonths,
             1996,
-            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]);
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original);
         var state = OriginalMatchFactory.Create(definitions, setup);
         GameplayTurnFlow.AdvanceToPlanning(new MatchReplayRecorder(state));
         return state;

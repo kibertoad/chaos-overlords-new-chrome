@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-012
 title: The AI hire destination helper writes an encoded sector directly, and has two random modes nobody reaches
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-016, FND-AI-017, FND-EXE-004, EXP-TURN-028, EXP-TURN-036, EXP-TURN-090]
+evidence: [FND-AI-016, FND-AI-017, FND-EXE-004, EXP-TURN-028, EXP-TURN-036, EXP-TURN-090, FND-CONTROL-001, FND-HIRE-001, FND-HIRE-002, FND-PLATFORM-003, FND-UI-035, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -104,3 +104,6 @@ None known.
 - In mode 0 the extremes are taken over the player's own gangs; the finding
   says "occupied gang records" without naming the player.
 - Modes 0 and 1 are not reached by any recorded call (FND-AI-017).
+- Besides modes 0 and 1, no recorded call passes a mode from 2 to 63, which
+  returns 99; only the encoded mode is called. These rest on FND-AI-016 and
+  FND-AI-017. Until a run reaches them, the entry stays `supported`.

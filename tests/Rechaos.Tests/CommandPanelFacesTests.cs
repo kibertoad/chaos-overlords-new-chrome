@@ -26,14 +26,17 @@ public sealed class CommandPanelFacesTests
     [Fact]
     public void FacesAreFiftyByTwentyThreeImagesOfPx00129()
     {
-        // FND-UI-019, FND-COMLINK-003.
+        // FND-UI-019, FND-COMLINK-011, FND-UI-062.
         Assert.Equal(new Rectangle(137, 261, 50, 23), CommandPanelFaces.Face(CommandPanelButton.Cancel));
         Assert.Equal(new Rectangle(137, 293, 50, 23), CommandPanelFaces.Face(CommandPanelButton.Confirm));
         Assert.Null(CommandPanelFaces.Source(CommandPanelFaceState.NotDrawn));
         Assert.Equal(new Rectangle(50, 386, 50, 23), CommandPanelFaces.Source(CommandPanelFaceState.Enabled));
         Assert.Equal(new Rectangle(100, 386, 50, 23), CommandPanelFaces.Source(CommandPanelFaceState.Disabled));
-        Assert.Equal(new Rectangle(50, 409, 50, 23), CommandPanelFaces.HeldSource(CommandPanelButton.Cancel));
-        Assert.Equal(new Rectangle(50, 386, 50, 23), CommandPanelFaces.HeldSource(CommandPanelButton.Confirm));
+        Assert.Equal(new Rectangle(0, 409, 50, 23), CommandPanelFaces.HeldSource(CommandPanelButton.Cancel));
+        Assert.Equal(new Rectangle(0, 386, 50, 23), CommandPanelFaces.HeldSource(CommandPanelButton.Confirm));
+        // FND-UI-062: the plain face the helper leaves after a release is the available face.
+        Assert.Equal(HeldButtonFaces.Plain(HeldButtonKind.Confirm), CommandPanelFaces.Source(CommandPanelFaceState.Enabled));
+        Assert.Equal(new Rectangle(50, 409, 50, 23), HeldButtonFaces.Plain(HeldButtonKind.Cancel));
     }
 
     [Fact]

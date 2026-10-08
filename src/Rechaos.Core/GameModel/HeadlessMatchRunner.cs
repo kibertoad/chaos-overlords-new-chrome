@@ -13,12 +13,11 @@ public sealed record HeadlessMatchOptions(
     ScenarioId Scenario,
     GameDuration Duration,
     int Seed,
-    AiPolicyMode AiPolicy = AiPolicyMode.Original,
+    MatchDeviations Deviations,
     int? ThroughTurn = null,
     bool VerifyReplay = false,
     int ProgressEveryTurns = 10,
-    IReadOnlyList<PlayerId>? SimulatedHumans = null,
-    bool ComputerHiresWhereHumansCan = true);
+    IReadOnlyList<PlayerId>? SimulatedHumans = null);
 
 /// <summary>A stable progress point emitted at an upkeep boundary.</summary>
 public sealed record HeadlessMatchProgress(
@@ -68,9 +67,7 @@ public static class HeadlessMatchRunner
                 : new MatchPlayerSetup(new PlayerId(slot), $"CPU {slot + 1}", PlayerController.Computer))
             .ToArray();
         var setup = new MatchSetup(
-            options.Scenario, options.Duration, options.Seed, players,
-            aiPolicy: options.AiPolicy,
-            computerHiresWhereHumansCan: options.ComputerHiresWhereHumansCan);
+            options.Scenario, options.Duration, options.Seed, players, options.Deviations);
         var initial = OriginalMatchFactory.Create(definitions, setup);
         foreach (var player in simulatedHumans) initial.SimulateHuman(player);
         var recorder = new MatchReplayRecorder(initial);

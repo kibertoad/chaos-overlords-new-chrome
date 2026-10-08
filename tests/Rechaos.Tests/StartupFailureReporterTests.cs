@@ -11,12 +11,26 @@ public sealed class StartupFailureReporterTests
         var message = StartupFailureReporter.BuildUserMessage(
             new FileNotFoundException("Original assets are not installed."),
             Path.Combine("installation", "Game", "Assets"),
-            Path.Combine("user", "Logs", "startup-error.log"));
+            Path.Combine("user", "Logs", "startup-error.log"),
+            StartupPlatform.Windows);
 
         Assert.Contains("could not start", message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Original assets are not installed", message, StringComparison.Ordinal);
         Assert.Contains("Import Assets from Original Chaos Overlords", message, StringComparison.Ordinal);
         Assert.Contains(Path.Combine("installation", "Game", "Assets"), message, StringComparison.Ordinal);
         Assert.Contains("startup-error.log", message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(StartupPlatform.MacOS, "Install Original Resources")]
+    [InlineData(StartupPlatform.Linux, "chaos-overlords-new-chrome-import")]
+    public void MacAndLinuxAreNotSentToTheStartMenu(StartupPlatform platform, string helper)
+    {
+        var message = StartupFailureReporter.BuildUserMessage(
+            new FileNotFoundException("Original assets are not installed."), "Assets", null, platform);
+
+        Assert.Contains("start the game again", message, StringComparison.Ordinal);
+        Assert.Contains(helper, message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Start menu", message, StringComparison.Ordinal);
     }
 }

@@ -9,7 +9,7 @@ public sealed partial class ChaosGame
     private void DrawCombatPanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         if (_combatAnimationPlayer.Active is not { } clip) return;
-        DrawPanelArtwork(batch, pixel, _combatBackground, CombatPanelLayout.Panel);
+        DrawPanelArtwork(batch, pixel, CombatBackground, CombatPanelLayout.Panel);
 
         var gameEvent = EventBySequence(state.Events, clip.EventSequence);
         // A reversed clip is an attack on the viewer's gang, which keeps the left side while its
@@ -45,8 +45,8 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawPressedCombatExit(SpriteBatch batch)
     {
-        if (!_combatExit.ShowsPressed || _uiSprites is null) return;
-        batch.Draw(_uiSprites, CombatPanelLayout.Exit, CombatPanelLayout.ExitPressedSource, Color.White);
+        if (!_combatExit.ShowsPressed || UiSprites is null) return;
+        batch.Draw(UiSprites, CombatPanelLayout.Exit, CombatPanelLayout.ExitPressedSource, Color.White);
     }
 
     // SCR-COMBAT-002, FND-COMBAT-017: the map cell without the owner's colour, framed in black.
@@ -75,15 +75,15 @@ public sealed partial class ChaosGame
         var player = state.FindPlayer(gang.Owner)!;
         batch.Draw(pixel, CombatPanelLayout.HeaderClear(rightSide), Color.Black);
         batch.Draw(pixel, CombatPanelLayout.HeaderColor(rightSide), PlayerColors[gang.Owner.Value]);
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites, CombatPanelLayout.HeaderPortrait(rightSide),
+        if (UiSprites is not null)
+            batch.Draw(UiSprites, CombatPanelLayout.HeaderPortrait(rightSide),
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         var name = player.Setup.Name.ToUpperInvariant();
         if (name.Length > 10) name = name[..10];
         font.Draw(batch, name, CombatPanelLayout.HeaderName(rightSide).ToVector2(), Color.Lime, 1);
 
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, CombatPanelLayout.GangPortrait(rightSide),
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, CombatPanelLayout.GangPortrait(rightSide),
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
         DrawDetailedCombatForce(batch, pixel, rightSide, start, force, damage);
 
@@ -101,14 +101,14 @@ public sealed partial class ChaosGame
     {
         batch.Draw(pixel, CombatPanelLayout.HeaderClear(rightSide), Color.Black);
         batch.Draw(pixel, CombatPanelLayout.GangPortrait(rightSide), Color.Black);
-        if (_policeSprites is not null)
+        if (PoliceSprites is not null)
         {
-            batch.Draw(_policeSprites, CombatPanelLayout.PoliceHeader,
+            batch.Draw(PoliceSprites, CombatPanelLayout.PoliceHeader,
                 CombatPanelLayout.PoliceHeaderSource, Color.White);
-            batch.Draw(_policeSprites, CombatPanelLayout.GangPortrait(rightSide),
+            batch.Draw(PoliceSprites, CombatPanelLayout.GangPortrait(rightSide),
                 CombatPanelLayout.PolicePortraitSource, Color.White);
             for (var slot = 0; slot < 3; slot++)
-                batch.Draw(_policeSprites, CombatPanelLayout.EquipmentItem(rightSide, slot),
+                batch.Draw(PoliceSprites, CombatPanelLayout.EquipmentItem(rightSide, slot),
                     CombatPanelLayout.PoliceItemSource(slot), Color.White);
         }
         // The police are drawn with Force 10 on both tracks (RULE-COMBAT-004).
@@ -125,15 +125,15 @@ public sealed partial class ChaosGame
             return;
         }
         var item = state.Definitions.Items[resolved];
-        if (resolved < _itemRotationTextures.Length && _itemRotationTextures[resolved] is { } rotation)
+        if (resolved < ItemRotationTextures.Length && ItemRotationTextures[resolved] is { } rotation)
         {
             batch.Draw(rotation, aperture,
                 ItemRotationPresentation.Frame(item.CombatPortraitFrame), Color.White);
             return;
         }
 
-        if (_itemPortraits is not null)
-            batch.Draw(_itemPortraits, new Rectangle(aperture.Center.X - 15, aperture.Center.Y - 15, 30, 30),
+        if (ItemPortraits is not null)
+            batch.Draw(ItemPortraits, new Rectangle(aperture.Center.X - 15, aperture.Center.Y - 15, 30, 30),
                 OriginalSpriteLayout.ItemPortrait(resolved), Color.White);
     }
 
@@ -182,12 +182,12 @@ public sealed partial class ChaosGame
     private void DrawForceTrack(SpriteBatch batch, Texture2D pixel, Rectangle bar, int fill)
     {
         fill = Math.Clamp(fill, 0, bar.Width);
-        if (_uiSprites is not null)
+        if (UiSprites is not null)
         {
             var red = CombatPanelLayout.RedTrackSource;
-            batch.Draw(_uiSprites, bar, red with { Width = bar.Width }, Color.White);
+            batch.Draw(UiSprites, bar, red with { Width = bar.Width }, Color.White);
             if (fill > 0)
-                batch.Draw(_uiSprites, bar with { Width = fill },
+                batch.Draw(UiSprites, bar with { Width = fill },
                     CombatPanelLayout.GreenTrackSource(fill), Color.White);
             return;
         }
@@ -227,10 +227,10 @@ public sealed partial class ChaosGame
         var hitDestination = CombatPanelLayout.Animation(right: !clip.Reversed);
         batch.Draw(pixel, attackDestination, Color.Black);
         batch.Draw(pixel, hitDestination, Color.Black);
-        if (clip.HitAnimation is { } hit && _combatAnimationTextures.TryGetValue(
+        if (clip.HitAnimation is { } hit && CombatAnimations.TryGetValue(
                 CombatAnimationRouting.HitFile(hit, clip.Reversed), out var hitTexture))
             batch.Draw(hitTexture, hitDestination, frame, Color.White);
-        if (_combatAnimationTextures.TryGetValue(
+        if (CombatAnimations.TryGetValue(
                 CombatAnimationRouting.AttackFile(clip.AttackAnimation, clip.Reversed), out var attackTexture))
             batch.Draw(attackTexture, attackDestination, frame, Color.White);
         if (!_combatAnimationPlayer.ShowsDimmedFrames) return;
