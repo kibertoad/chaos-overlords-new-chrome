@@ -15,5 +15,4 @@ Entries by area.
 | [FND-HELP-003](../../findings/FND-HELP-003.md) | Chaos.hlp is a WinHelp 3.1 container with an eleven-file directory at 0xE42 | recorded |
 | [FND-HELP-004](../../findings/FND-HELP-004.md) | CHAOS.CNT is a 75-line text contents file with 14 headings and 59 topic entries | recorded |
 | [FND-HELP-005](../../findings/FND-HELP-005.md) | The only call that opens the help file has no callers, so Help Topics does nothing in this build | recorded |
-| [FND-HELP-006](../../findings/FND-HELP-006.md) | The help text has 418 paragraph records and nine Times New Roman font descriptors in four sizes | recorded |
 | [RULE-HELP-001](../../rules/RULE-HELP-001.md) | Help Topics does nothing, and no key opens the help file | supported |

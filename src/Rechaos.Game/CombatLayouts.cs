@@ -40,8 +40,11 @@ public static class CombatPanelLayout
     /// </summary>
     public static Rectangle Exit => SharedPanelLayout.At(33, 169, 50, 23);
 
-    /// <summary>The pressed Exit face in <c>PX00129</c>, drawn over <see cref="Exit"/> (FND-EVENT-005).</summary>
-    public static Rectangle ExitPressedSource => new(50, 386, 50, 23);
+    /// <summary>
+    /// The held Exit face in <c>PX00129</c>, drawn over <see cref="Exit"/>: the helper takes it as
+    /// a Cancel face, and the panel's art shows CANCEL there (FND-UI-062).
+    /// </summary>
+    public static Rectangle ExitPressedSource => HeldButtonFaces.Lit(HeldButtonKind.Cancel);
 
     /// <summary>The 60-by-3 red track in <c>PX00129</c> (FND-COMBAT-009).</summary>
     public static Rectangle RedTrackSource => new(354, 3, ForceBarWidth, ForceBarHeight);

@@ -33,6 +33,7 @@ public sealed class ExecutableStringTableTests
     {
         // needs: GAME_DIR
         var file = ExecutableResources.RequireExecutable();
+        // FND-AWARDS-004: the caption's address in the executable.
         var bytes = Enumerable.Range(0, ExecutableStrings.ScoreCaption.Length + 1)
             .Select(offset => (byte)ExecutableResources.ImageInt32(file, 0x00487704u + (uint)offset))
             .ToArray();

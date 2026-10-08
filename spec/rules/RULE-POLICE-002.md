@@ -1,7 +1,7 @@
 ---
 id: RULE-POLICE-002
 title: A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [EXP-TURN-010, FND-CHAOS-002, FND-EVENT-004, FND-EXE-004, FND-POLICE-001, FND-POLICE-002, FND-POLICE-004, FND-RNG-003, FND-RNG-006, FND-SETUP-003, FND-TURN-006, SRC-MANUAL-GOG, FND-AI-009, FND-CONTROL-001, FND-EVENT-001, FND-PLATFORM-003, FND-UI-035]
@@ -94,4 +94,6 @@ None known.
 
 ## Open questions
 
-None known. The duration draw is the call at `0x004737A9` [FND-POLICE-004].
+- The duration draw is the call at `0x004737A9` [FND-POLICE-004].
+- No recorded run raises a permanent presence of 100 to 103 to 105. That rests
+  on FND-SETUP-003. Until a run reaches them, the entry stays `supported`.
