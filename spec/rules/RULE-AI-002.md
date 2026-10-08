@@ -31,6 +31,10 @@ roster slot order.
 `planning_records` (`needs_family`, `family`), `scenario`, `elapsed_turns`,
 `hire_role`, `gangs` (`sector`).
 
+The scenario values are 0 Greed, 1 Power, 2 Acceptance, 3 Dominance,
+4 Kill 'Em All, 5 Big 40, 6 Siege, 7 Eliminate, 8 Big Man and 9 Armageddon
+(FND-OBJECTIVE-003).
+
 ## Procedure
 
 ```text
@@ -123,10 +127,6 @@ SRC-MANUAL-GOG does not describe the computer players' strategies.
 None known.
 
 ## Open questions
-
-The scenario values are 0 Greed, 1 Power, 2 Acceptance, 3 Dominance,
-4 Kill 'Em All, 5 Big 40, 6 Siege, 7 Eliminate, 8 Big Man and 9 Armageddon
-(FND-OBJECTIVE-003).
 
 - Reach was measured over every replayed run (DECISIONS.md, 2026-10-06). The
   runs reach the reset of a flagged record and the gangs that keep their

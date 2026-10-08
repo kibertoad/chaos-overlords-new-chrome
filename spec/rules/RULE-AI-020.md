@@ -193,7 +193,7 @@ None known.
   crime gate, the Goon test passing for a human owner in slots 1 to 5, a
   sector of player 0 at Goon (BUG-AI-004), an owner query of -2 under police
   presence, and a neutral sector counted as human-owned; previous Hide; after
-  Attack, Hide or Move, the Snitch gate passing through Crime Lord alone and
-  passing with cash of 50 or less; and a previous Bribe, Give, Influence,
-  Research, Sell or Terminate, which family 1 never plans itself. Until runs
-  reach them, the entry stays `supported`.
+  Attack, Hide or Move, the Snitch gate passing through Crime Lord alone, and
+  a passing Snitch gate that cash of 50 or less turns into a Move; and a
+  previous Bribe, Give, Influence, Research, Sell or Terminate, which family
+  1 never plans itself. Until runs reach them, the entry stays `supported`.
