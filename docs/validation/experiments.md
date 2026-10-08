@@ -46,7 +46,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--deactivate <turn:player:slot>,...] [--pass-cards] [--delays <turn:ms>,...] [--menu <turn:after_ms:hold_ms>,...] [--clock-captures] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -151,6 +151,41 @@ rebuild's projection of the same panel.
 planning time runs out; the fixture lists each as a `wait` input and records
 the planning clock of each such turn as `timers` (RULE-TIMER-002,
 RULE-TIMER-003).
+With several `--humans` and `--end-turns` the run plays hot seat
+(RULE-SETUP-008). The first listed slot, which has to be the lowest, presses
+Ready on its hand-off card and takes the turn's inputs, and every later human
+presses Ready and Done with no orders. A turn ends at the first human's next
+hand-off card, before its offers are drawn, or at the end of the match, where
+the probe passes each human's final view with Done. The replay draws the offers
+of each human at its planning entry and finishes the command of every later
+human. `--deactivate` writes sector 100, `GANG_INACTIVE` (FMT-STATE-001), into
+the sector byte of the player's roster slot before the Done press of the given
+turn, which takes the gang out of the match as a fight does; in Eliminate a
+player whose slot 0 is gone loses everything at the end of the turn
+(RULE-TURN-006). The fixture lists it as a `planning` input, and the replay
+retires the gang with its Force. The probe breaks at the elimination card
+`0x0042C3F5` (FND-OBJECTIVE-002) and ends the run there; with `--pass-cards` it
+presses the card's Done and goes on, and the fixture holds the `active_player`
+of each card it passed as `elimination_cards`.
+`--delays` waits the given milliseconds in the given turn before its Done
+press, listed as a `wait` input. `--menu` needs a time limit of 1 to 3. When
+`after_ms` of the turn's planning clock have passed, `timeGetTime` less
+`planning_start_ms` (FND-TIMER-003), it posts `WM_SYSCOMMAND` with
+`SC_KEYMENU` to the game window, which opens the menu bar as the Alt key does,
+polls `GetGUIThreadInfo` until the game's thread is in menu mode, holds it until
+`hold_ms` after the posting and posts Escape until menu mode ends. The run fails
+when menu mode ends before that. The fixture lists each holding as a `key`
+input and holds it as `menus`: the times of the posting, of menu mode seen, of
+Escape and of menu mode left, the `GUITHREADINFO` flags, and as `ticks` the
+elapsed time of every call of the presentation timer's callback `fn_004327C0`
+for slot 0 (FND-TIMER-002) from the clock's start to its expiry or the turn's Done press
+(EXP-TURN-102). `--clock-captures` breaks at `0x0041B8C8` in the clock's start
+helper, after it stores the start time and before it draws the bar, copies the
+drawing area there, and keeps the player, `elapsed_turns` and the width and
+elapsed time of the last bar drawn before it, which the fixture holds as
+`clock_captures` with the digest of the bar's rectangle as an SCR-UI-003
+element (EXP-UI-035). The copy holds the game for a few milliseconds, which the
+first bar of each turn shows as elapsed time.
 `--equip-lists` reads the item lists of the Equip panel after the dump: at
 the next `PeekMessageA` call of the message pump (FND-UI-020) the probe saves
 the thread context and calls the list builder `fn_0043F136` (FND-EQUIP-012)

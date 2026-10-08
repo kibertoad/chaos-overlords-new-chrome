@@ -129,6 +129,10 @@ namespace Rechaos.Tests;
 /// reported (RULE-HIRE-001, RULE-EVENT-011).
 /// EXP-TURN-101 writes families 13 and 14 into computer gangs in Greed, where they move to the
 /// planned target, sector 0, with no selector call (RULE-AI-031).
+/// EXP-UI-032 and EXP-UI-034 play hot seat in Eliminate with a write that takes a human's Right
+/// Hands out of the match, which eliminates that human (RULE-TURN-006, RULE-OBJECTIVE-005).
+/// EXP-UI-035 plays timed hot-seat turns, one of them run out, and EXP-TURN-102 opens the menu bar
+/// in timed turns (RULE-TIMER-002, RULE-TIMER-003).
 /// In EXP-TURN-103 a Bribe every turn takes a base Tolerance to 41, where it stays while the later
 /// gangs of the phase act, and the clamp lowers it to 40 (RULE-TOLERANCE-002, RULE-TURN-003). In
 /// EXP-TURN-104 a Research gang acts after its sector's site is completed earlier in the same
@@ -152,6 +156,10 @@ namespace Rechaos.Tests;
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
 /// around the gang's sector, the centre included, which EXP-TURN-017 needs (RULE-AI-005).
+/// A slot refilled in the turn its gang died keeps the dead gang's family, which EXP-TURN-012 and
+/// EXP-TURN-099 need (RULE-AI-001), and in EXP-TURN-039 a computer player meets the trigger of
+/// BUG-AI-005 and keeps its families. Family-1 gangs buy armor while a weapon's cooldown runs
+/// (EXP-TURN-018, EXP-TURN-049) and fail a weight-10 strength test in EXP-TURN-091 (RULE-AI-020).
 /// In EXP-TURN-010's second run, EXP-TURN-039, EXP-TURN-043 and EXP-TURN-049's first run a family-7
 /// gang outside its best research sector holds a focus equal to that sector and researches in
 /// place, and in EXP-TURN-021 and EXP-TURN-049 one goes on from the site slot a rewritten Snitch

@@ -52,9 +52,14 @@ public sealed partial class OriginalNewGameExperimentTests
             ? new MatchReplayRecorder(match)
             : MatchReplayRecorder.Unverified(match);
         var human = new PlayerId(inputs.Humans[0].Slot);
+        // RULE-SETUP-008: in a hot-seat run the probe presses Ready on the first human's hand-off
+        // card, which draws its offers, before it writes the turn's inputs, and every later human
+        // presses Ready and Done with no orders; each round ends at the first human's next card.
+        var hotSeat = inputs.Humans.Count > 1;
         donePresses = 0;
         for (var turn = 0; turn < inputs.DoneCount; turn++)
         {
+            if (hotSeat) recorder.PrepareHireOffers(human);
             atPlanningEntry?.Invoke(match, human, turn + 1);
             // DEV-EQUIP-001: the rebuild resolves Equip and Sell in the order they are submitted.
             // Every recording lists a turn's orders in roster order, the original's scan order.
@@ -84,8 +89,11 @@ public sealed partial class OriginalNewGameExperimentTests
             // A force write sets a gang's Force after its order was taken (FMT-STATE-001), so a Heal
             // can act at Force 10 (RULE-HEAL-001), and a tolerance write a sector's base Tolerance
             // (FMT-STATE-002), so one Bribe can wrap the signed byte (RULE-BRIBE-001).
+            // A gang record whose sector byte the probe set to GANG_INACTIVE (FMT-STATE-001) is a
+            // gang gone as after a fight, its Force kept in the record.
             foreach (var write in inputs.Planning.Where(write => write.Turn == turn + 1))
-                if (write.Cash is { } cash) match.Players[write.Player].Cash = cash;
+                if (write.Deactivated) match.Players[write.Player].Gangs[write.Slot].Retire(match.Players[write.Player].Gangs[write.Slot].Force);
+                else if (write.Cash is { } cash) match.Players[write.Player].Cash = cash;
                 else if (write.Force is { } force) match.Players[write.Player].Gangs[write.Slot].Force = force;
                 else if (write.Tolerance is { } tolerance) match.Sectors[write.Slot].BaseTolerance = tolerance;
                 else if (write.Retired) match.Players[write.Player].Status = PlayerStatus.Eliminated;
@@ -102,10 +110,11 @@ public sealed partial class OriginalNewGameExperimentTests
                 afterDone(match);
             }
             donePresses++;
-            AdvanceToRecordedEndpoint(recorder, human, inputs.HumanController);
+            if (hotSeat) AdvanceHotSeatRound(recorder, human);
+            else AdvanceToRecordedEndpoint(recorder, human, inputs.HumanController);
             if (!IsActive(match, human) || match.Outcome is not null) break;
 
-            recorder.PrepareHireOffers(human);
+            if (!hotSeat) recorder.PrepareHireOffers(human);
         }
 
         return match;
