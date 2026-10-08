@@ -1,4 +1,5 @@
 import type { Clock, DeadlineScheduler, Kernel, Logger, TurnService } from '@chaos-overlords/kernel'
+import type { ClusterBus } from './cluster.js'
 import { startPeriodic } from './periodic.js'
 
 /**
@@ -49,9 +50,25 @@ export class TimerDeadlineScheduler implements DeadlineScheduler {
 /**
  * The periodic safety net: seals turns whose timer was lost to a restart and finishes seals that
  * were interrupted halfway. Returns the stop handle. Retention is the cleanup job's, not this one's.
+ *
+ * Instances that share a database take the passes in turn through `bus`: sealing is idempotent, so
+ * two concurrent passes would be safe, but each would read the same expired turns. The deadline
+ * timers stay on the instance that opened the turn; when it dies, the next pass on any instance
+ * seals what its timers would have.
  */
-export function startSweeper(kernel: Kernel, intervalMs: number, logger: Logger): () => void {
-  return startPeriodic(intervalMs, () => sweep(kernel, logger))
+export function startSweeper(
+  kernel: Kernel,
+  intervalMs: number,
+  logger: Logger,
+  bus: Pick<ClusterBus, 'exclusive'>,
+): () => void {
+  return startPeriodic(intervalMs, () =>
+    bus
+      .exclusive('sweep', () => sweep(kernel, logger))
+      .catch((error: unknown) => {
+        logger.warn('turn sweep could not take its turn', { error: String(error) })
+      }),
+  )
 }
 
 async function sweep(kernel: Kernel, logger: Logger): Promise<void> {

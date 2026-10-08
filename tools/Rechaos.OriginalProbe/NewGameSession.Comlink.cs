@@ -55,12 +55,6 @@ internal sealed partial class NewGameSession
 
     private void ArmComlink()
     {
-        _process.SetBreakpoint(OriginalAddresses.HandoffCard, context =>
-        {
-            _cardPlayer = context.Argument(0);
-            _cardOpen = true;
-            _process.SetBreakpoint(context.ReturnAddress, _ => _cardOpen = false, oneShot: true);
-        });
         _process.SetBreakpoint(OriginalAddresses.ComlinkSend, context =>
         {
             _sendOpen = true;
@@ -169,8 +163,8 @@ internal sealed partial class NewGameSession
         {
             var waited = _process.RunUntil(() =>
                 (_cardOpen && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(0.5))
-                || (_panelsOpen > 0 && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(0.5))
-                || (_planningLoopReached && !_cardOpen && _panelsOpen == 0
+                || (PanelsOpen > 0 && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(0.5))
+                || (_planningLoopReached && !_cardOpen && PanelsOpen == 0
                     && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(0.5)),
                 TimeSpan.FromSeconds(20));
             if (!waited)
@@ -196,7 +190,7 @@ internal sealed partial class NewGameSession
                 continue;
             }
 
-            if (_panelsOpen > 0)
+            if (PanelsOpen > 0)
             {
                 if (!ClosePanels(window)) return $"A planning entry panel of player {player} never closed.";
                 continue;

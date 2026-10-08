@@ -43,7 +43,14 @@ internal static class GameNotificationValidator
         IReadOnlyList<GameEvent> events)
     {
         var eventsBySequence = events.ToDictionary(gameEvent => gameEvent.Sequence);
-        if (values.Count > MatchLimits.NotificationsPerPlayer || nextSequence < 0)
+        if (nextSequence < 0) return false;
+        // NotificationQueue.Enqueue goes past its capacity only while every notification it holds
+        // belongs to the newest turn or the one before it, and it adds them in turn order, which its
+        // drop loop relies on when the history is restored.
+        if (values.Count > MatchLimits.NotificationsPerPlayer
+            && values.Where((value, index) =>
+                    value.Turn < values[^1].Turn - 1 || index > 0 && value.Turn < values[index - 1].Turn)
+                .Any())
             return false;
         if (values.Count > 0 && values.Where((value, index) =>
                 value.Sequence != nextSequence - values.Count + index).Any())
@@ -77,10 +84,17 @@ public sealed class NotificationQueue
     public int Count => _items.Count;
     public IReadOnlyList<GameNotification> Items => _items.ToArray();
 
+    /// <summary>
+    /// Adds a notification, dropping the oldest ones while the queue is full. RULE-EVENT-002: the
+    /// Last Turn reports are the first 32 of a resolution, taken from the notifications of the
+    /// turn just completed, so only notifications of earlier turns are dropped. A turn in which a
+    /// player gets more notifications than the capacity keeps all of them until the turn after
+    /// next has added its own.
+    /// </summary>
     public void Enqueue(GameNotification notification)
     {
         ArgumentNullException.ThrowIfNull(notification);
-        if (_items.Count == Capacity) _items.Dequeue();
+        while (_items.Count >= Capacity && _items.Peek().Turn < notification.Turn - 1) _items.Dequeue();
         _items.Enqueue(notification);
     }
 

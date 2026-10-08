@@ -104,6 +104,12 @@ public sealed record ScreenCaptureRecord(
     /// <summary>FND-UI-052, FND-UI-053: the frame of the rotating item pictures a shot shows.</summary>
     public int? ItemFrame { get; init; }
 
+    /// <summary>
+    /// RULE-OPTIONS-003: whether Warn if Idle Gangs was on for the shot's clicks. The probe switches it
+    /// off in a run that presses Done, and a <c>warn</c> step switches it back on.
+    /// </summary>
+    public bool IdleGangWarning { get; init; } = true;
+
     /// <summary>FND-UI-054: the idle gang warning's ticks since its open, modulo 8, a shot shows.</summary>
     public int? IdlePhase { get; init; }
 
@@ -157,15 +163,16 @@ public sealed record ScreenCaptureRecord(
             {
                 if (recorded.TryGetProperty("capture", out var capture))
                     records.Add(Parse(experiment, run, capture, whiteKeyed));
-                // --white-key sets its breakpoint before the title, so the screens copied before
+                // --white-key patches the key before the game runs, so the screens copied before
                 // the match are keyed as the match's are.
                 foreach (var (screen, step) in BeforeMatchScreens)
                     if (recorded.TryGetProperty(screen + "_capture", out var before))
                         records.Add(Parse(experiment, run, before, whiteKeyed) with { Step = step, BeforeMatch = screen });
                 if (recorded.TryGetProperty("setup_steps", out var setupSteps))
                     records.AddRange(SetupStepCaptures(experiment, run, setupSteps.EnumerateArray().ToArray(), whiteKeyed));
+                var pressesDone = recorded.TryGetProperty("done_at_roll", out var done) && done.GetArrayLength() > 0;
                 if (recorded.TryGetProperty("order_steps", out var steps))
-                    records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray(), whiteKeyed));
+                    records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray(), whiteKeyed, !pressesDone));
                 run++;
             }
         }
@@ -182,15 +189,32 @@ public sealed record ScreenCaptureRecord(
     private static IEnumerable<ScreenCaptureRecord> SetupStepCaptures(string experiment, int run, JsonElement[] steps, bool whiteKeyed)
     {
         var clicks = new List<ReferenceClick>();
+        var named = false;
         for (var index = 0; index < steps.Length; index++)
         {
             var step = steps[index];
+            if (named && step.TryGetProperty("capture", out _))
+                throw new InvalidDataException(
+                    $"{experiment} run {run} copies the setup screen after a name step, whose keys the rebuild does not replay.");
             var point = new Point(step.GetProperty("x").GetInt32(), step.GetProperty("y").GetInt32());
             if (step.GetProperty("kind").GetString() == "strip")
                 clicks.Add(new ReferenceClick(point));
             else if (step.GetProperty("kind").GetString() == "drag")
                 clicks.Add(new ReferenceClick(point,
                     Release: new Point(step.GetProperty("to_x").GetInt32(), step.GetProperty("to_y").GetInt32())));
+            else if (step.GetProperty("kind").GetString() == "name")
+            {
+                // The press on the name band opens the editor; the copy is taken with it open,
+                // before any key, so the keys a step types after it are not replayed. A copy after
+                // a name step that typed would need them.
+                clicks.Add(new ReferenceClick(point));
+                if (step.TryGetProperty("capture", out var underDialog))
+                    yield return Parse(experiment, run, underDialog, whiteKeyed) with
+                    {
+                        Step = SetupStepBase - index, BeforeMatch = "setup", Clicks = clicks.ToArray(),
+                    };
+                named = true;
+            }
             else if (step.TryGetProperty("capture", out var capture))
                 yield return Parse(experiment, run, capture, whiteKeyed) with
                 {
@@ -285,7 +309,7 @@ public sealed record ScreenCaptureRecord(
     }
 
     private static IEnumerable<ScreenCaptureRecord> StepCaptures(
-        string experiment, int run, JsonElement[] steps, bool whiteKeyed)
+        string experiment, int run, JsonElement[] steps, bool whiteKeyed, bool idleGangWarning)
     {
         var clicks = new List<ReferenceClick>();
         string? unreplayable = null;
@@ -328,6 +352,9 @@ public sealed record ScreenCaptureRecord(
                 case "back":
                     clicks.Add(new ReferenceClick(SectorDetailLayout.Back.Center));
                     break;
+                case "warn":
+                    idleGangWarning = true;
+                    break;
                 // A button pressed and kept down, the pointer moved with it, and its release, so a
                 // shot between them shows the held control.
                 case "down" or "move" or "up" or "rdown" or "rup" when step.GetProperty("kind").GetString() is { } edge:
@@ -354,6 +381,7 @@ public sealed record ScreenCaptureRecord(
                     yield return Parse(experiment, run, capture, whiteKeyed) with
                     {
                         Step = index, Clicks = clicks.ToArray(), Unreplayable = unreplayable,
+                        IdleGangWarning = idleGangWarning,
                     };
                     break;
             }
@@ -379,8 +407,10 @@ public static class ScreenCaptureMasks
                 new("DEV-UI-006", StatusConsoleLayout.Cash),
                 // DEV-UI-023: the key line along the bottom of the city map, one 7-pixel text row.
                 new("DEV-UI-023", new Rectangle(2, 439, 432, 7)),
-                // DEV-UI-007 turns Tolerance orange only while the queued Chaos can set off a
-                // Crackdown, which no city capture shows, so Tolerance is compared here.
+                // DEV-UI-007: the Tolerance value turns orange when the Chaos the player can raise
+                // there can set off a Crackdown, as at the endpoint of EXP-UI-036.
+                new("DEV-UI-007", new Rectangle(StatusConsoleLayout.SectorValueLeft, StatusConsoleLayout.SectorValueY(2),
+                    16, 7)),
             ],
             ["SCR-HIRE-002"] = [],
             // DEV-FINANCE-001 changes the Equipment field only while a Sell of several items is queued.
@@ -440,6 +470,10 @@ public static class ScreenCaptureMasks
             ],
             ["SCR-UI-002"] = [],
             ["SCR-SETUP-001"] = [],
+            // DEV-SETUP-003: while the name dialog is open the rebuild edits the name on card 0's
+            // name row, where the original still shows the name. The dialog itself is drawn by
+            // Windows, and the copy under it leaves it out.
+            ["SCR-SETUP-003"] = [new CaptureMask("DEV-SETUP-003", SetupPlayerCardArtLayout.NameRow(0))],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
@@ -575,7 +609,8 @@ public static class RebuildFrame
     public static ScreenFrame Render(
         MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
         int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null,
-        string? screen = null, int? clipTick = null, int? idlePhase = null, int? caretPhase = null, int? clipIndex = null)
+        string? screen = null, int? clipTick = null, int? idlePhase = null, int? caretPhase = null, int? clipIndex = null,
+        bool entryPanels = false, bool idleGangWarning = true)
     {
         if (MissingAssetPack() is { } missing) Assert.Skip(missing);
         var assets = AssetRoot();
@@ -626,6 +661,8 @@ public static class RebuildFrame
                 start.ArgumentList.Add("--clip-index");
                 start.ArgumentList.Add(clip.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
+            if (entryPanels) start.ArgumentList.Add("--entry-panels");
+            if (!idleGangWarning) start.ArgumentList.Add("--no-idle-warning");
             if (pumpCounter is { } counter)
             {
                 start.ArgumentList.Add("--pump-counter");

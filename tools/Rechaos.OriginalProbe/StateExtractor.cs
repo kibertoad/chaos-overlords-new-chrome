@@ -238,6 +238,18 @@ internal sealed class StateExtractor
                 ["slot"] = entry["Slot"]!.GetValue<int>(),
                 ["name"] = Integers(entry["Name"]),
             }).ToArray());
+        // SCR-SETUP-003: the name dialog's edit control at each {SHOT} of a name step, its text and
+        // selection, and the dialog's and the edit control's rectangles in drawing-area pixels.
+        if (trace["NameShots"] is JsonArray nameShots)
+            run["name_shots"] = new JsonArray(nameShots.Select(shot => (JsonNode)new JsonObject
+            {
+                ["entry"] = shot!["Entry"]!.GetValue<int>(),
+                ["shot"] = shot["Shot"]!.GetValue<int>(),
+                ["text"] = shot["Text"]!.GetValue<string>(),
+                ["selection"] = new JsonArray(shot["SelectionStart"]!.GetValue<int>(), shot["SelectionEnd"]!.GetValue<int>()),
+                ["dialog_rect"] = Integers(shot["DialogRect"]),
+                ["edit_rect"] = Integers(shot["EditRect"]),
+            }).ToArray());
         // RULE-TURN-005, SCR-UI-004: each order step after the dump, the popup it opened with its
         // items' commands and greyed states, the view, the card slots and the active player's orders.
         if (trace["OrderSteps"] is JsonArray orderSteps)
@@ -320,6 +332,42 @@ internal sealed class StateExtractor
             }
             run["timers"] = timers;
         }
+        // RULE-OBJECTIVE-005, --pass-cards: the active_player at each elimination card the turns
+        // passed with its Done.
+        if (trace["EliminationCards"] is JsonArray cards)
+            run["elimination_cards"] = Integers(cards);
+        // SCR-UI-009, RULE-TIMER-002: each holding of the menu bar, in elapsed milliseconds of the
+        // planning clock: the opening keys posted, the thread seen in menu mode, Escape posted and
+        // menu mode left, with the GUITHREADINFO flags seen while it was open and the presentation
+        // clock's ticks from the start of the planning clock to its expiry.
+        if (trace["Menus"] is JsonArray menus)
+            run["menus"] = new JsonArray(menus.Select(menu => (JsonNode)new JsonObject
+            {
+                ["turn"] = menu!["Turn"]!.GetValue<int>(),
+                ["posted_ms"] = menu["PostedMs"]!.GetValue<int>(),
+                ["open_ms"] = menu["OpenMs"]!.GetValue<int>(),
+                ["closing_ms"] = menu["ClosingMs"]!.GetValue<int>(),
+                ["closed_ms"] = menu["ClosedMs"]!.GetValue<int>(),
+                ["flags"] = menu["Flags"]!.GetValue<uint>(),
+                ["ticks"] = Integers(menu["Ticks"]),
+            }).ToArray());
+        // FND-TIMER-003, RULE-TIMER-002: the planning clock bar's rectangle at each start of a
+        // human's clock, before the start draws it, with the player, elapsed_turns and the last bar
+        // drawn before it.
+        if (trace["ClockCaptures"] is JsonArray clocks)
+            run["clock_captures"] = new JsonArray(clocks.Select(clock =>
+            {
+                var record = new JsonObject
+                {
+                    ["player"] = clock!["Player"]!.GetValue<int>(),
+                    ["elapsed_turns"] = clock["ElapsedTurns"]!.GetValue<int>(),
+                    ["last_width"] = clock["LastWidth"]!.GetValue<int>(),
+                    ["last_elapsed_ms"] = clock["LastElapsed"]!.GetValue<int>(),
+                };
+                if (CaptureFixture.ExtractClock(runDirectory, clock["File"]!.GetValue<string>()) is { } capture)
+                    record["capture"] = capture;
+                return (JsonNode)record;
+            }).ToArray());
         // --capture: the drawing area at the dump, with a digest of each screen element's rectangle
         // (CaptureFixture).
         if (CaptureFixture.Extract(runDirectory, trace, screens) is { } capture)
