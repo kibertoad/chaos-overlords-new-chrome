@@ -39,7 +39,7 @@ selector `0x5A` called at `0x00435A76` with the player, 0 and 0, plus `0x40`
 (`0x00435A7E`). Selector `0x5A` gives the sector byte of a gang record, and
 here it is asked for roster slot 0, not for the acting slot. The selector
 itself reads the acting slot's sector through selector `0x5A` with its third
-argument (`0x00408A6C..0x00408A78`) and searches from there. The result is
+argument (`0x00408A6C..0x00408A7D`) and searches from there. The result is
 stored as the planned target at `0x00435AA0`.
 
 With a visible opponent it makes up to five target draws: in a sector owned by
@@ -79,5 +79,3 @@ Disassemble `0x00435A34..0x00435A8B`: the stores of 10 at `0x0048A258` and
 `0x00498DAF`, the pushes `0x5A`, the player, 0 and 0 before `0x00402D70`, the
 `ADD EAX,0x40`, and the three pushes before `0x00408642`, the last of them the
 acting slot. Compare with the selector's own `0x5A` call at `0x00408A6C`.
-FND-AI-038 recorded the same handler with the acting gang's sector in the
-mode.

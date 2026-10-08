@@ -172,12 +172,17 @@ public sealed partial class ChaosGame
         _comlinkStatus = string.Empty;
     }
 
+    /// <summary>
+    /// SCR-COMLINK-001, FND-UI-067: a press outside the panel is refused, and the held Dismiss face
+    /// closes the panel on a release inside it.
+    /// </summary>
     private void HandleComlinkViewClick(Point point)
     {
-        if (ComlinkViewLayout.Previous.Contains(point)) MoveComlinkCursor(-1);
+        if (!ComlinkViewLayout.Panel.Contains(point)) PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+        else if (ComlinkViewLayout.Previous.Contains(point)) MoveComlinkCursor(-1);
         else if (ComlinkViewLayout.Next.Contains(point)) MoveComlinkCursor(1);
         else if (ComlinkViewLayout.Ok.Contains(point))
-            AcceptAndInvoke(CloseComlink);
+            HoldPanelFace(ComlinkViewLayout.Ok, HeldButtonKind.Confirm, CloseComlink);
     }
 
     private void HandleComlinkSendClick(Point point)
@@ -205,7 +210,7 @@ public sealed partial class ChaosGame
 
     private void BeginComlinkSendButton(ComlinkSendButton button)
     {
-        // Native Send handler 0x0045EAB1 (FND-COMLINK-003) rejects the face immediately when no
+        // Native Send handler 0x0045EAB1 (FND-COMLINK-011) rejects the face immediately when no
         // recipient is selected; it only enters shared held-button helper
         // 0x00418821 after that predicate passes.
         if (button == ComlinkSendButton.Send && !_comlinkRecipients.Any(selected => selected))
@@ -288,7 +293,7 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawBoard(batch, pixel, font, state);
-        DrawPanelArtwork(batch, pixel, _comlinkViewBackground, ComlinkViewLayout.Panel);
+        DrawPanelArtwork(batch, pixel, ComlinkViewBackground, ComlinkViewLayout.Panel);
         var playerId = ViewingPlayer(state);
         var messages = state.ComlinkFor(playerId).Messages;
         if (messages.Count == 0)
@@ -305,11 +310,11 @@ public sealed partial class ChaosGame
         // portrait stretched to 64 by 64, and the four rows of the message.
         DrawDigitCells(batch, pixel, font, $"{Math.Min(_comlinkCursor + 1, 99):00}", ComlinkViewLayout.PageNumber);
         DrawDigitCells(batch, pixel, font, $"{Math.Min(messages.Count, 99):00}", ComlinkViewLayout.PageCount);
-        if (_uiSprites is not null)
+        if (UiSprites is not null)
         {
-            batch.Draw(_uiSprites, ComlinkViewLayout.Previous,
+            batch.Draw(UiSprites, ComlinkViewLayout.Previous,
                 LastTurnEventsLayout.PreviousSource(firstPage: _comlinkCursor == 0), Color.White);
-            batch.Draw(_uiSprites, ComlinkViewLayout.Next,
+            batch.Draw(UiSprites, ComlinkViewLayout.Next,
                 LastTurnEventsLayout.NextSource(lastPage: _comlinkCursor == messages.Count - 1), Color.White);
         }
         var (year, week) = MatchCalendar.Of(Math.Max(0, message.Turn - 1));
@@ -321,8 +326,8 @@ public sealed partial class ChaosGame
             ComlinkViewLayout.SenderName.Location, OriginalFontLayout.PlainStrip);
         if (message.Sender.Value is >= 0 and < MatchLimits.PlayerCount)
             batch.Draw(pixel, ComlinkViewLayout.SenderColour, SetupPlayerCardArtLayout.Colours[message.Sender.Value]);
-        if (sender is not null && _uiSprites is not null)
-            batch.Draw(_uiSprites, ComlinkViewLayout.SenderPortrait,
+        if (sender is not null && UiSprites is not null)
+            batch.Draw(UiSprites, ComlinkViewLayout.SenderPortrait,
                 OriginalSpriteLayout.OverlordPortrait(sender.Setup.PortraitId), Color.White);
         DrawComlinkLines(batch, font, ComlinkTextEditor.DisplayLines(message.Text),
             ComlinkViewLayout.MessageOrigin, Color.Lime, ComlinkSendLayout.TextRowStride);
@@ -346,7 +351,7 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawBoard(batch, pixel, font, state);
-        DrawPanelArtwork(batch, pixel, _comlinkSendBackground, ComlinkSendLayout.Panel);
+        DrawPanelArtwork(batch, pixel, ComlinkSendBackground, ComlinkSendLayout.Panel);
         for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
             // FND-COMLINK-007: a one-pixel frame, green while the slot is selected and black
@@ -362,8 +367,8 @@ public sealed partial class ChaosGame
             var colour = SetupPlayerCardArtLayout.Colours[slot];
             batch.Draw(pixel, ComlinkSendLayout.RecipientAccent(slot),
                 eligible ? colour : new Color(colour.R / 4, colour.G / 4, colour.B / 4));
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, ComlinkSendLayout.RecipientPortrait(slot),
+            if (UiSprites is not null)
+                batch.Draw(UiSprites, ComlinkSendLayout.RecipientPortrait(slot),
                     ComlinkSendLayout.RecipientPortraitSource(player.Setup.PortraitId, eligible), Color.White);
             var name = player.Setup.Name.Length <= 10 ? player.Setup.Name : player.Setup.Name[..10];
             font.Copy(batch, name, ComlinkSendLayout.RecipientNameOrigin(slot),
@@ -372,11 +377,11 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, ComlinkSendLayout.Message, Color.Black);
         DrawComlinkLines(batch, font, _comlinkEditor.DisplayLines(),
             ComlinkSendLayout.TextOrigin, Color.Lime, ComlinkSendLayout.TextRowStride);
-        if (_uiSprites is not null && CommandPanelFaces.Source(_comlinkSendFace) is { } face)
-            batch.Draw(_uiSprites, ComlinkSendLayout.OkPressed, face, Color.White);
+        if (UiSprites is not null && CommandPanelFaces.Source(_comlinkSendFace) is { } face)
+            batch.Draw(UiSprites, ComlinkSendLayout.OkPressed, face, Color.White);
         DrawPressedComlinkSendButton(batch);
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites,
+        if (UiSprites is not null)
+            batch.Draw(UiSprites,
                 ComlinkSendLayout.CaretDestination(_comlinkEditor.Column, _comlinkEditor.Row),
                 ComlinkSendLayout.CaretSource(_comlinkEditor.CharacterAtCursor, ComlinkCaretInverse), Color.White);
         if (_comlinkStatus.Length > 0)
@@ -392,15 +397,15 @@ public sealed partial class ChaosGame
 
     private void DrawPressedComlinkSendButton(SpriteBatch batch)
     {
-        if (_uiSprites is null || _hoverPoint is not { } hover) return;
+        if (UiSprites is null || _hoverPoint is not { } hover) return;
         switch (_pressedComlinkSendButton)
         {
             case ComlinkSendButton.Cancel when ComlinkSendLayout.Cancel.Contains(hover):
-                batch.Draw(_uiSprites, ComlinkSendLayout.CancelPressed,
+                batch.Draw(UiSprites, ComlinkSendLayout.CancelPressed,
                     ComlinkSendLayout.CancelPressedSource, Color.White);
                 break;
             case ComlinkSendButton.Send when ComlinkSendLayout.Ok.Contains(hover):
-                batch.Draw(_uiSprites, ComlinkSendLayout.OkPressed,
+                batch.Draw(UiSprites, ComlinkSendLayout.OkPressed,
                     ComlinkSendLayout.OkPressedSource, Color.White);
                 break;
         }

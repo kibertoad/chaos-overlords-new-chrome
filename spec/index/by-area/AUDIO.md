@@ -21,12 +21,13 @@ Entries by area.
 | [FND-AUDIO-007](../../findings/FND-AUDIO-007.md) | CD music opens a shareable cdaudio device in TMSF format, a timer poll restarts a stopped program, and the MCI notification changes nothing | recorded |
 | [FND-AUDIO-010](../../findings/FND-AUDIO-010.md) | Slot 2 is the sound of pressing a push-button control, and setup plays slots 3 and 4 for accepted and refused choices | recorded |
 | [FND-AUDIO-011](../../findings/FND-AUDIO-011.md) | Panels play slot 3 for an accepted choice and slot 4 for a refused one, and the pagers stop at both ends | recorded |
-| [FND-AUDIO-012](../../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read | recorded |
+| [FND-AUDIO-012](../../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read | superseded |
 | [FND-AUDIO-013](../../findings/FND-AUDIO-013.md) | Detailed Combat loads each attack's sound into slot 5 and picks the attack and hit strips from the weapon, Martial Arts and outcome | recorded |
 | [FND-AUDIO-014](../../findings/FND-AUDIO-014.md) | The shipped GOG CD wrapper rejects MCI_PAUSE and treats MCI_PLAY without MCI_FROM as a successful no-op | recorded |
 | [FND-AUDIO-015](../../findings/FND-AUDIO-015.md) | Title music is requested after successful game entry and return, not after cancelled preparation or loading | recorded |
 | [FND-AUDIO-016](../../findings/FND-AUDIO-016.md) | The CD fade uses zero-based wait deadlines and dispatches window messages without handling game events | recorded |
 | [FND-AUDIO-017](../../findings/FND-AUDIO-017.md) | The CD fade runs inside the event pump's music poll and mute command, and never touches timer slot 0 | recorded |
+| [FND-AUDIO-018](../../findings/FND-AUDIO-018.md) | An unread Comlink message sounds slot 6 on arrival and once at planning entry, and repeats it every 24 timer ticks until read | recorded |
 | [RULE-AUDIO-001](../../rules/RULE-AUDIO-001.md) | Starting a music program | supported |
 | [RULE-AUDIO-002](../../rules/RULE-AUDIO-002.md) | Music repeats its program when it ends and pauses while the window is inactive | supported |
 | [RULE-AUDIO-003](../../rules/RULE-AUDIO-003.md) | Applying the music and effects levels | supported |
@@ -35,6 +36,5 @@ Entries by area.
 | [RULE-AUDIO-006](../../rules/RULE-AUDIO-006.md) | The turn-start sound | supported |
 | [RULE-AUDIO-007](../../rules/RULE-AUDIO-007.md) | The Comlink alert plays slot 6 through the effects gate | supported |
 | [RULE-AUDIO-008](../../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks | supported |
-| [RULE-AUDIO-009](../../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | established |
+| [RULE-AUDIO-009](../../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | supported |
 | [RULE-AUDIO-010](../../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc | supported |
-| [RULE-AUDIO-011](../../rules/RULE-AUDIO-011.md) | The shipped GOG CD wrapper rejects pause and ignores a play request without MCI_FROM | superseded |

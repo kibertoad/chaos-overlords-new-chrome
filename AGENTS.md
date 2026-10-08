@@ -19,8 +19,23 @@ The authorized canonical repository is
 Before every push, inspect the repository's configured push destination with
 `git remote get-url --push origin` (and `git remote -v` when additional context
 is useful), and verify that it resolves to this canonical repository. Push
-through the configured remote name and an explicit refspec, for example
-`git push origin HEAD:main`.
+through the configured remote name and an explicit refspec that names the
+destination branch: `git push origin HEAD:<branch>`, where `<branch>` is the
+pull request's head branch, or `main` where a push to `main` is allowed.
+
+Never run a bare `git push` or `git push origin`. A branch created from
+`origin/main`, as `git worktree add -b <branch> <path> origin/main` creates
+one, tracks `origin/main`, so a bare push goes to `main` or is refused, and
+`-q` hides the refusal. A branch checked out without `-b` may track nothing.
+Give `-u` on the first push (`git push -u origin HEAD:<branch>`) so the branch
+tracks its own remote branch from then on.
+
+After every push, confirm that it landed before reporting it or reading CI:
+`git ls-remote origin refs/heads/<branch>` must print what
+`git rev-parse HEAD` prints, and for a pull request
+`gh pr view <number> --json headRefOid` must name the same commit. CI results
+and mergeability belong to the pull request's head commit; until that is the
+local commit, they describe an older one.
 
 Never rewrite, replace, or temporarily override a remote URL in order to push.
 This prohibition includes `git remote set-url`, changing `remote.*.url` or
@@ -59,7 +74,7 @@ version 1 of the
 published at dinorefurb.com. This section summarizes them; where they differ,
 the published pages win. `docs/upstream/` holds a copy of the standard, the
 methodology and the work protocol as published at refurbished-dinosaurs
-`11dbbc5`, the revision this repository follows.
+`ef0d758`, the revision this repository follows.
 
 ### The spec
 
@@ -154,19 +169,31 @@ run `pnpm install` at the root first) with this game's settings: the
 executable image's extent and `multiplayer/` as a directory that may cite IDs.
 It runs the standard's checks over `spec/`, `parity/` and `deviations/`, checks
 that every spec and deviation ID cited in the code resolves and that every
-executable address a code comment gives (`0x…` inside the image, `fn_…` or
-`g_…`) is recorded in an entry the comment cites or in its evidence, and
-rewrites `PARITY.md` and the generated indexes in `spec/index/`; `--check`
-fails on a stale one instead of writing it. It compiles the Kaitai definitions
+executable address (`0x…` inside the image, `fn_…` or `g_…`) a code comment
+gives, or the code uses as a number or inside a string, is recorded in an
+entry that the comment on its line or the nearest comment above it cites, or
+in that entry's evidence.
+`PARITY.md` and the generated indexes in `spec/index/` are updated on main
+only, by the nightly workflow `nightly-generated.yml`: a branch leaves them
+as they were where it forked, and the check fails a change that edits one.
+`--regenerate` writes fresh copies to read; do not commit them on a branch,
+and restore them afterwards (`git checkout -- spec/index PARITY.md`, then
+`git clean -f -- spec/index`), since the check also fails on uncommitted
+edits to them. When the repository variable `GENERATED_FILES_SCHEDULE` is
+`on-demand`, the workflow skips its nightly runs; after a change to `spec/`,
+`parity/` or `deviations/` reaches main, run it with
+`gh workflow run nightly-generated.yml`.
+It compiles the Kaitai definitions
 when `kaitai-struct-compiler` (or the path in `KSC`) is available; in CI it
 requires the compiler, and the workflows install a pinned release.
-`node tools/check-rebuild-paths.mjs` fails a spec line that names a file of
-the rebuild, a path into `src/`, `tests/` or `multiplayer/` or a source file
-found there; until the shared checker's release carries that check, this
-script runs it.
-`node tools/spec-coverage.mjs` writes `docs/FUNCTION-INDEX.md`, which lists
-every game function of FND-EXE-004 with the entries that cite it (`--check`
-fails on a stale index); with `--inventory <file>` it also reports what the
+The same check fails a spec line that names a file of the rebuild, a path
+into `src/`, `tests/` or `multiplayer/` or a source file found there.
+`node tools/spec-coverage.mjs` writes `docs/FUNCTION-INDEX.md`, a local report
+that lists every game function of FND-EXE-004 with the entries that cite it.
+The report is not committed (`.gitignore` lists it); generate it when you want
+it. `--check` computes the index and prints the coverage line without writing
+anything, and fails when FND-EXE-004's function table is missing; the fast gate
+and the pre-commit hook run that mode. With `--inventory <file>` it also reports what the
 spec leaves uncovered, from an inventory written by
 `tools/ghidra/ReportFunctionInventory.java` (see `docs/GHIDRA.md`).
 
@@ -200,6 +227,32 @@ player can do or what the rules produce. Screens match the original pixel for
 pixel except where a documented interface change draws something new. When a
 bug cannot be told from a design decision, the original behaviour stays and any
 fix becomes a setting.
+
+## Runs of the original
+
+Running the original game is part of the normal work here and needs no
+approval beyond the task itself. When a change needs a dynamic finding, an
+experiment or a capture, run the original through
+`tools/Rechaos.OriginalProbe` (`docs/validation/experiments.md`) without
+asking first.
+That includes posting input to its window, capturing its screen, and reading
+or writing its process memory to set up a state a run needs, as long as the
+finding or experiment entry the run supports records every write.
+
+Run the staged copy of the executable that `docs/validation/experiments.md`
+describes,
+not the one in the installation at `C:\GOG Games\Chaos Overlords`, and leave
+the installation and the registry unchanged. Only one process may run the
+original on this machine at a time: the game holds a mutex named after its
+window title, and a second start brings the first window to the front and
+exits (FND-PLATFORM-009). Other agents working on this repository in parallel
+worktrees share the machine. The probe holds a machine-wide lock for its run
+and refuses to start while another probe holds it or while any
+`Chaos Overlords` process is running; when it refuses, wait and try again, and
+stop your own process when the runs are done. Never stop a `Chaos Overlords`
+process you did not start: it may be another agent's run or someone playing.
+If the original is still running after 30 minutes of waiting, report the runs
+as blocked instead of waiting longer.
 
 ## Multiplayer protocol version
 
@@ -275,7 +328,8 @@ reaches, then pin the new set.
 
 After every commit in this repository, inspect running processes for orphaned
 work created by this repository's tasks. Check at least PowerShell
-(`powershell` and `pwsh`), Ghidra/Java, .NET (`dotnet` and `testhost`), and any
+(`powershell` and `pwsh`), Ghidra/Java, .NET (`dotnet` and `testhost`), the
+original game (`Chaos Overlords`, including a staged copy), and any
 other process families that the agent launched while building, testing,
 validating, or analyzing this repository.
 

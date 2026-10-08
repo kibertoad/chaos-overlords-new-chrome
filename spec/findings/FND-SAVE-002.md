@@ -10,25 +10,25 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042AFDD..0x0042B60E
+    address: 0x0042AFDD..0x0042B60F
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00487640..0x004876B3
+    address: 0x00487640..0x004876B4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00487B3C..0x00487B3E
+    address: 0x00487B3C..0x00487B3F
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004637B8..0x00464107
+    address: 0x004637B8..0x00464108
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00458155..0x00458287
+    address: 0x00458155..0x00458288
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00478630..0x0047863B
+    address: 0x00478630..0x0047863C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00498330..0x0049833B
+    address: 0x00498330..0x0049833C
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -98,7 +98,7 @@ shows:
 `M10W`. The only instruction in the executable holding `0x5730314D` is the
 comparison in the load at `0x00463C4E`; the save writes `0x57303453` or
 `0x5730344E` only (`0x00463D53`, `0x00463D5F`). The 12-byte block an `M10W`
-file carries is read into `0x00498330..0x0049833B`, and the push of that
+file carries is read into `0x00498330..0x0049833C`, and the push of that
 address at `0x00463C64` is the only reference to the range. What `WinMain`
 does with the result 3 is in FND-PLATFORM-009: it calls routines that do
 nothing and ends the program.
@@ -126,4 +126,4 @@ in dialog 144 is not recorded here.
 
 Follow the callers of the thunks at `0x00478630` and `0x00478636`, then the
 callers of `fn_0042AFDD` and `fn_0042B27A`. Search the executable for the
-scalar `0x5730314D` and list the references to `0x00498330..0x0049833B`.
+scalar `0x5730314D` and list the references to `0x00498330..0x0049833C`.

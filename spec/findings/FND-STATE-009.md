@@ -10,16 +10,16 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00481000..0x00481047
+    address: 0x00481000..0x00481048
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00482180..0x00484E7F
+    address: 0x00482180..0x00484E80
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0045B777
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0045CF21..0x0045CF43
+    address: 0x0045CF21..0x0045CF49
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -65,9 +65,9 @@ references, 254 are the starts of strings (file names, registry and
 window-class names, format strings and texts). The others are variables with
 values in the image. Two of them are numeric tables:
 
-- `0x00482180..0x004837FF`: 720 doubles, the cosine of 0, 0.5, 1, ... 359.5
+- `0x00482180..0x00483800`: 720 doubles, the cosine of 0, 0.5, 1, ... 359.5
   degrees; the first entry is 1.0.
-- `0x00483800..0x00484E7F`: 720 doubles, the sine of the same angles; the first
+- `0x00483800..0x00484E80`: 720 doubles, the sine of the same angles; the first
   entry is 0.
 
 Only `fn_0045CF05` (four references) and `fn_0045D17E` (four references) read
@@ -87,12 +87,12 @@ that runs reads it.
 
 A constant loaded through a computed address would not show as a reference;
 none of the nine is next to data that looks like a table indexed at run time
-other than the float run `0x00481018..0x00481030`, whose every entry has a
+other than the float run `0x00481018..0x00481034`, whose every entry has a
 direct reference.
 
 ## How to reproduce
 
 List the references to `.rdata` and sort them by the function that holds the
 instruction; separate the functions below and above `0x004787E0`. For the
-tables, list the references to `0x00482180..0x00484E7F` and the callers of
+tables, list the references to `0x00482180..0x00484E80` and the callers of
 `fn_0045CF05`, `fn_0045CF99` and `fn_0045D17E`.

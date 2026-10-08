@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00418F16..0x00419021
+    address: 0x00418F16..0x00419022
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00464DF6
@@ -19,19 +19,19 @@ locations:
     address: 0x0046501C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00425E99..0x00425EDE
+    address: 0x00425E99..0x00425EDF
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00426575..0x004265FE
+    address: 0x00426575..0x00426604
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00453B73..0x00453B83
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043087E..0x00430C22
+    address: 0x0043087E..0x00430C23
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004945A8..0x0049470F
+    address: 0x004945A8..0x00494710
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -70,7 +70,7 @@ stores from `0x00430B66`), its element number at `0x00494780 + 2 * n`
 (`0x00430B0E`) and its target at `0x00494718 + 2 * n` (`0x00430B3B`), where
 `n` is the running count, with no test of `n` against a limit. It sets the 36
 words at `0x00494780` to -1 first. No instruction in the program refers to an
-address in `0x004945D0..0x0049470F`; the next global after the record area is
+address in `0x004945D0..0x00494710`; the next global after the record area is
 the list length at `0x00494710`, and the next after the target area is the
 byte `0x00494760`.
 
@@ -106,4 +106,4 @@ List the call sites of `0x00464108` with the pushes before each. Read
 `0x00425E99` and the start of `0x00426575` up to the `CreatePen` call, and
 the pushes at `0x00453B73`. In `0x0043087E`, read the indexed stores at
 `0x00430AD0`, `0x00430B0E` and `0x00430B3B`, and list the references to
-`0x004945D0..0x0049470F`.
+`0x004945D0..0x00494710`.

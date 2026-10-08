@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-036, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-025, FND-UI-031, FND-UI-032, FND-UI-035, SRC-MANUAL-GOG, FND-UI-021, FND-EXE-004, FND-HIRE-008, FND-UI-038, EXP-TURN-095, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-063]
+evidence: [FND-UI-036, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-025, FND-UI-031, FND-UI-032, FND-UI-035, SRC-MANUAL-GOG, FND-UI-021, FND-EXE-004, FND-HIRE-008, FND-UI-038, EXP-TURN-095, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-063, EXP-UI-041]
 conflicting: []
 split_with: []
 related: [RULE-UI-002, RULE-UI-005, RULE-UI-006, RULE-UI-010, RULE-UI-011, SCR-UI-003, SCR-UI-007, SCR-HIRE-002, SCR-GANG-002]
@@ -85,3 +85,13 @@ None known.
   from the art, not from the code (the card compositor is FND-UI-036's).
 - Whether the site progress meter is drawn for a player who does not own the
   sector (the reading is that it is not).
+- No recorded run of the original reaches an edge sector in the nine-sector
+  display; owner strips of players 1 and 3 to 5; a site meter above 0;
+  equipment icons not under a panel; cards 4 to 6; most action strips; another
+  player's outline colour; the hidden group strip; the popup menus as pixels;
+  neighbour and site double-clicks other than site slot 0; the own-card press
+  and double-click and another player's card; right-button presses and a back
+  release outside; an Overlord portrait press; the Hire dock here; the arrow
+  keys and Enter; any sound; leaving when planning ends. The cash row and
+  the Tolerance value are not compared with the captures (FND-UI-015, FND-UI-018, FND-UI-021, FND-UI-036). These rest
+  on the static findings named, so the entry stays `supported`.
