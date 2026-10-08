@@ -272,6 +272,7 @@ public sealed partial class MatchState
         Random = restore is null
             ? new DeterministicRandom(setup.InitialSeed)
             : new DeterministicRandom(restore.RandomState, restore.RandomConsumptionCount);
+        ViewedBy = restore?.ViewedBy;
         Commands = restore is null
             ? new TurnCommandQueue()
             : TurnCommandQueue.Restore(restore.Commands, restore.NextCommandSequence);
@@ -345,6 +346,23 @@ public sealed partial class MatchState
     public IReadOnlyList<HireResolutionResult> LastHireResolutions { get; private set; } = [];
     public MatchOutcome? Outcome { get; private set; }
 
+    /// <summary>
+    /// The seat this state is the view of (<see cref="SeatView"/>), or null for a whole match.
+    /// </summary>
+    /// <remarks>
+    /// A view leaves out what its seat may not know, the random state among it, so nothing that
+    /// draws or resolves runs on one: those calls throw instead of producing a state no other
+    /// party holds.
+    /// </remarks>
+    public PlayerId? ViewedBy { get; }
+
+    internal void RefuseOnView()
+    {
+        if (ViewedBy is { } seat)
+            throw new InvalidOperationException(
+                $"This is seat {seat.Value}'s view of the match; only the whole match resolves or draws.");
+    }
+
     private void RestoreRuntime(MatchRuntimeRestore restore)
     {
         ArgumentNullException.ThrowIfNull(restore);
@@ -416,6 +434,7 @@ public sealed partial class MatchState
 
     public TurnTransition FinishUpkeep()
     {
+        RefuseOnView();
         if (Outcome is not null)
             throw new InvalidOperationException("The match has ended and cannot advance another turn.");
         NormalizeRecurringCommands();
@@ -468,6 +487,7 @@ public sealed partial class MatchState
 
     public TurnTransition FinishCommand(PlayerId player)
     {
+        RefuseOnView();
         if (Coordinator.Phase == TurnPhase.Command && Coordinator.ActivePlayer == player)
             GetComlinkInbox(player).DropLeadingRead();
         var transition = Coordinator.FinishCommand(player);
@@ -478,6 +498,7 @@ public sealed partial class MatchState
     }
     public TurnTransition FinishExecutionPhase()
     {
+        RefuseOnView();
         if (Coordinator.Phase != TurnPhase.Execution)
             throw new InvalidOperationException($"Cannot complete Execution while in {Coordinator.Phase}.");
         var phase = Coordinator.ExecutionPhase
@@ -535,6 +556,7 @@ public sealed partial class MatchState
 
     public TurnTransition FinishHire(PlayerId player)
     {
+        RefuseOnView();
         if (Coordinator.Phase != TurnPhase.Hire || Coordinator.ActivePlayer != player)
             return CaptureBoundary(Coordinator.FinishHire(player));
         var state = FindPlayer(player) ?? throw new ArgumentOutOfRangeException(nameof(player));
@@ -545,6 +567,7 @@ public sealed partial class MatchState
 
     public TurnTransition FinishPlayerElimination()
     {
+        RefuseOnView();
         if (Coordinator.Phase != TurnPhase.PlayerElimination)
             return CaptureBoundary(Coordinator.FinishPlayerElimination());
         var humanActiveAtTurnStart = Players.Any(player =>
@@ -609,6 +632,7 @@ public sealed partial class MatchState
 
     public IReadOnlyList<short> PrepareHireOffers(PlayerId playerId)
     {
+        RefuseOnView();
         if (Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)
             || Coordinator.ActivePlayer != playerId)
             throw new InvalidOperationException("Hire offers can only be prepared for the active planning player.");

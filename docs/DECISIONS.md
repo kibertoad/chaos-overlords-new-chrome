@@ -18,6 +18,8 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | Date | Decision |
 |---|---|
 | 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
+| 2026-10-06 | [Send each seat only what the original shows it](#2026-10-06--send-each-seat-only-what-the-original-shows-it) |
+| 2026-10-06 | [Resolve online turns on the server with a WebAssembly build of the rules](#2026-10-06--resolve-online-turns-on-the-server-with-a-webassembly-build-of-the-rules) |
 | 2026-10-06 | [Comlink in an online match travels in the sealed turn](#2026-10-06--comlink-in-an-online-match-travels-in-the-sealed-turn) |
 | 2026-10-06 | [Let a late joiner take a seat the vote handed to the computer](#2026-10-06--let-a-late-joiner-take-a-seat-the-vote-handed-to-the-computer) |
 | 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
@@ -65,6 +67,145 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   README's Gatekeeper steps are the supported install. A Linux desktop with neither `zenity` nor
   `kdialog` gets no dialog and imports with `chaos-overlords-new-chrome-import`. An explicit
   `--assets` folder and test runs are never offered an import.
+
+## 2026-10-06 — Send each seat only what the original shows it
+
+- Decision: once the server resolves turns, an online match may send each seat a
+  view of the match instead of the whole state. A view is what the original
+  draws for that player at their planning entry, and nothing else: their own
+  gangs and orders, the other seats' gangs they detect, every sector's public
+  values, the fights and reports of the last resolution they would be shown,
+  and the rankings rail at the rail's own resolution. It is a `MatchState`
+  built by `SeatView.Project` from the match's save document with the hidden
+  parts removed or set to neutral values, and it refuses every call that draws
+  or resolves. The client plans on it with the code it plans with today and
+  sends the same order document; the server alone resolves, and the computer
+  seats plan only there. A server operator turns views on per deployment and
+  each match keeps the mode it was created with. What each seat may know, part
+  by part, and the design are in
+  [MULTIPLAYER.md](MULTIPLAYER.md#per-seat-views).
+- Reason: under lockstep every client holds the whole match, so a modified
+  client can read every hidden gang, every order once sealed, every site's
+  progress and the seed that draws every die. Between friends that is a matter
+  of trust; in a public match with strangers it decides the game, and the
+  rebuild has a public match list. The referee closes the other two gaps
+  of the security model and leaves this one. The original showed each player
+  only part of the city, and its strategy rests on that: hiding, detection,
+  Search and the Bribe and Snitch orders are about who knows what.
+- Options weighed:
+  - A view as a `MatchState` restored from a redacted save document (chosen).
+    The option catalog, the order validator, `SpeculativeTurn`, the screens and
+    the save format all work on it unchanged, so a view is checked by asking
+    the same code the same questions on the view and on the whole match, at
+    every planning entry of every recorded run of the original.
+  - A separate view document with its own client model. Every screen and the
+    validator would need a second input, and the two models would drift.
+    Refused.
+  - Lockstep with each seat's hidden parts encrypted for that seat. Resolution
+    needs every hidden part, so every client must be able to decrypt
+    everything, which hides nothing. Refused.
+  - The referee alone, keeping lockstep's whole state on each client. Enough
+    for friends, and the default for a server that does not turn views on.
+    Refused as the only mode, because of public matches.
+- Evidence:
+  - The visibility of each part of the state comes from the spec entries the
+    table in MULTIPLAYER.md cites; where the spec leaves it open the table says
+    so, and the view follows the reading the entries give.
+  - `OriginalNewGameExperimentTests.ASeatPlansTheSameTurnFromItsView` takes a
+    view at every planning entry of every recorded run (165 runs) and finds
+    that every order offered for each of the seat's gangs and every hire is
+    judged as on the whole match, that the city, console, rankings, sector,
+    finance and combat screens read the same, and that the recorded orders
+    build the same order document.
+  - Cost, at all 2,504 planning entries of the recorded runs, natively: 0.3 ms
+    to project a view at the median and 2.4 ms at most; 3 KB of Brotli-compressed
+    payload at the median and 9 KB at most, against up to 301 KB for the whole
+    match.
+- Rules out: resolving on the client in a match with views, and with it the
+  client's desync machinery and journals during the match; the computer
+  players planning anywhere but the server; and any rebuild addition that
+  shows a player more than the original does without a view-aware form
+  (the DEV-UI-005 tooltip and the Bribe and Snitch tooltips need one).
+- Status: `SeatView` and its tests are in `Rechaos.Core`, and the tooltips
+  read `SeatKnowledge` to give a view only what its seat knows. Serving views,
+  playing an online match from them and the journals of a match with views are
+  tracked from #515.
+
+## 2026-10-06 — Resolve online turns on the server with a WebAssembly build of the rules
+
+- Decision: the coordination server will resolve every sealed turn itself, with
+  `Rechaos.Core` and the client's sealed-turn path compiled for the .NET
+  `browser-wasm` runtime (`src/Rechaos.Resolver.Wasm`), called in-process from
+  the TypeScript server through a `TurnResolver` port. The first use is a
+  referee: the server's state hash decides every turn, a client that reports
+  another hash adopts the server's snapshot, and recovery no longer counts
+  reports. Per-seat views, where a client receives only what its seat may see,
+  are a later and separate step. The design is in
+  [MULTIPLAYER.md](MULTIPLAYER.md#resolving-turns-on-the-server).
+- Reason: three gaps in the security model have one cause, that nobody but the
+  clients knows the state. Recovery counts reports, and with no accounts one
+  person holding two of three seats outvotes the third. A client that diverges
+  on purpose pauses the match every turn. A modified client reads hidden state.
+  A server that knows the state settles the first two on its own word, and is
+  the precondition for the third.
+- Options weighed:
+  - WebAssembly build of the C# rules (chosen). One implementation of the
+    rules, one artifact for Node and for Cloudflare, nothing per platform for a
+    self-hoster to install.
+  - A .NET resolver process the server calls. Fastest (a turn in 20 to 120 ms
+    with the JIT), but a self-hosted server becomes two processes with a .NET
+    runtime or a native binary per OS and architecture, and Cloudflare would
+    need a container beside the Worker, with its own cold start, bill and
+    deployment.
+  - A TypeScript port of the rules. Two implementations of about 20,000 lines
+    whose bugs and rounding have to match the original's exactly, kept in step
+    by hand. Refused.
+  - A trusted resolver seat, such as the host's client. The host is the party
+    the multi-seat attack is about, so it closes nothing; a referee client the
+    operator runs is the resolver process above.
+  - Stronger corroboration with client resolution kept. Without accounts the
+    server cannot tell one person in three seats from three people, so no
+    counting rule closes the gap, and the read leak stays.
+- Evidence, measured on 2026-10-06 with .NET SDK 10.0.400 (runtime pack
+  10.0.11), Node 24.21 and workerd 1.20260918 through wrangler 4.135, on a
+  two-human, four-computer Greed match of six months (26 turns):
+  - Determinism: `tools/ResolverDeterminism` plays the match natively with
+    real orders, a takeover and a return, and the WebAssembly build reaches
+    the same hash after every step under Node and under workerd (50 checks,
+    no mismatch), including a match restored from the native build's
+    snapshot. The multiplayer workflow repeats this on every change.
+  - Speed: the build runs on the Mono interpreter, with no workload installed.
+    A turn takes 190 to 800 ms under Node and about 470 ms under workerd
+    (12.3 s for the match), against 20 to 120 ms natively. The runtime starts
+    in 120 to 145 ms.
+  - Memory: the WebAssembly heap is 46 MiB once the runtime has started, 80
+    MiB after a match and 96 MiB with two matches held, against a 128 MB
+    isolate on Cloudflare. Most of the start is the 21.7 MB of untrimmed
+    assemblies.
+  - Size: 21.7 MB of assemblies and a 3.0 MB runtime, under the 64 MiB a
+    Worker may upload. Trimming takes it to 6.7 MB, but the trimmer strips the
+    parameter names that Rechaos.Core's reflection-based JSON reads its data
+    and saves by, so a trimmed bundle needs source-generated JSON contracts
+    first.
+  - Platform findings: the browser-wasm runtime has no Brotli codec, so the
+    resolver exchanges uncompressed save payloads and its host compresses the
+    snapshot archive. workerd refuses to compile WebAssembly at run time
+    ("Wasm code generation disallowed by embedder"), leaves `import.meta.url`
+    undefined and has no dynamic import, so the runtime arrives as a module
+    compiled at upload, the loader's own modules are imported statically, and
+    the interpreter's trace compiler is switched off. Under `nodejs_compat`
+    the loader takes workerd for Node, so the resolver runs as a Worker of its
+    own without that flag.
+  - Cloudflare's published limits at the time: 128 MB per isolate, 30 s of
+    CPU per request by default on the paid plan (5 minutes at most) and 10 ms
+    on the free plan. Resolving on Cloudflare therefore needs the paid plan.
+- Rules out: a second implementation of the rules in TypeScript, and a
+  resolver anywhere outside the coordination server's own process or Worker.
+  NativeAOT-LLVM, which would cut both time and size, stays an experiment of
+  the .NET team and is not depended on.
+- Status: the C# side (`AuthoritativeMatch`), the WebAssembly build and the
+  determinism check are implemented. Packaging the bundle for the server, the
+  referee mode, a trimmed bundle and per-seat views are tracked from #453.
 
 ## 2026-10-06 — Comlink in an online match travels in the sealed turn
 

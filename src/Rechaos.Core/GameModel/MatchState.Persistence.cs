@@ -21,9 +21,12 @@ public sealed partial class MatchState
     /// repair snapshot. Ids are handed out above every id in the roster and a slot is only ever
     /// replaced, so everything ever issued is at or below the highest live id. Presentation already
     /// copes with a notice whose gang has gone.
+    /// A seat's view leaves out the gangs the seat cannot see (<see cref="SeatView"/>), so its own
+    /// reports may name a gang above every id its rosters hold; there any id the match could have
+    /// issued is accepted.
     /// </remarks>
     private bool WasGangIdIssued(GangId gang) =>
-        gang.Value >= 0 && gang.Value < NextGangId().Value;
+        gang.Value >= 0 && (ViewedBy is not null || gang.Value < NextGangId().Value);
 
     private void RestoreOutcome(MatchRuntimeRestore restore)
     {

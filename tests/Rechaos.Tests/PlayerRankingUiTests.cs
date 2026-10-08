@@ -145,6 +145,65 @@ public sealed class PlayerRankingUiTests
         ], lines);
     }
 
+    // docs/MULTIPLAYER.md, "Planning on a view": a seat knows its own score and cash, and of the
+    // others only where the rail places them, so two portraits at one height share their places.
+    [Fact]
+    public void OnASeatsViewTheTooltipShowsOnlyTheSeatsOwnScoreAndHoldings()
+    {
+        var whole = CreateMatch(ScenarioId.Greed, [100, 2_500, 2_500, 50]);
+        whole.Coordinator.FinishUpkeep();
+        var view = SeatView.Project(whole, new PlayerId(0));
+        var entries = PlayerRankingPresentation.Project(view);
+
+        Assert.Equal(
+        [
+            "PLAYER 2",
+            "PLACE 1-2 OF 4 (SAME HEIGHT)",
+            "GREED RATES: CASH ON HAND",
+            "SCORE: NOT SHOWN",
+            "NOW:",
+            "  CASH: NOT SHOWN",
+            "",
+            "ALL SCORES:",
+            "> 1-2. PLAYER 2          NOT SHOWN",
+            "  1-2. PLAYER 3          NOT SHOWN",
+            "  3.   PLAYER 1                100",
+            "  4.   PLAYER 4          NOT SHOWN",
+            "",
+            "THE LEADER TOPS ITS RAIL. EACH OTHER",
+            "PORTRAIT SITS LOWER BY HOW FAR ITS",
+            "SCORE TRAILS; EQUAL SCORES, EQUAL HEIGHT.",
+            "YOU SEE ONLY YOUR OWN SCORE. A RAIL",
+            "PLACES THE OTHERS TO 1/140 OF THE",
+            "SPREAD FROM HIGHEST TO LOWEST, SO",
+            "ONE HEIGHT MAY HOLD UNEQUAL SCORES."
+        ], PlayerRankingTooltip.Lines(view, entries[1], entries));
+        var own = PlayerRankingTooltip.Lines(view, entries[0], entries);
+        Assert.Equal(["PLAYER 1", "PLACE 3 OF 4"], own.Take(2));
+        Assert.Equal(["SCORE: 100 AT MATCH START", "NOW:", "  CASH: $100"], own.Skip(3).Take(3));
+    }
+
+    // On a view, Dominance shows another seat's sectors, which every seat sees on the map, and
+    // neither its cash nor its Support.
+    [Fact]
+    public void OnASeatsViewDominanceShowsOnlyTheOtherSeatsSectors()
+    {
+        var whole = CreateMatch(ScenarioId.Dominance, [400, 0], sectorOwners: [1, 1]);
+        foreach (var site in whole.Sectors[0].Sites) site.Resistance = 0;
+        OriginalAiScenarioStandingRules.Record(whole);
+        whole.Coordinator.FinishUpkeep();
+        var view = SeatView.Project(whole, new PlayerId(0));
+        var entries = PlayerRankingPresentation.Project(view);
+
+        var lines = PlayerRankingTooltip.Lines(view, entries[1], entries);
+
+        Assert.Equal("SCORE: NOT SHOWN", lines[3]);
+        Assert.Equal("  CASH     NOT SHOWN X 1", lines[5]);
+        Assert.Equal("  SUPPORT  NOT SHOWN X 10", lines[6]);
+        Assert.Equal("  SECTORS          2 X 30   = 60", lines[7]);
+        Assert.Equal("  TOTAL NOT SHOWN", lines[8]);
+    }
+
     // RULE-OBJECTIVE-002: after turn 1 the stored score is the one the last end evaluation wrote.
     [Fact]
     public void TooltipDatesTheScoreToTheLastTurnEndAfterTurnOne()

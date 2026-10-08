@@ -32,7 +32,8 @@ public static class CommandActionTooltips
     /// Adds the selected gang's sector figures to the two Tolerance-changing actions: the base
     /// Tolerance and how far Bribes and Snitches have moved it from 17 minus Income, the sites'
     /// part, and the Tolerance this turn's Chaos test compares with (RULE-TOLERANCE-001,
-    /// RULE-SITE-001).
+    /// RULE-SITE-001). On a seat's view of a sector the seat does not own, the sites' part and so
+    /// the base are not known (<see cref="SeatKnowledge.KnowsSites"/>), and the lines say so.
     /// </summary>
     public static IReadOnlyList<string> Lines(GangAction action, MatchState state, MatchGangState? gang)
     {
@@ -42,6 +43,15 @@ public static class CommandActionTooltips
 
         var sector = state.Sectors[gang.SectorId];
         var normal = ToleranceResolver.NormalBaseTolerance(sector);
+        if (!SeatKnowledge.KnowsSites(state, sector))
+            return
+            [
+                .. lines,
+                "",
+                $"THIS TURN'S CHAOS TEST USES {sector.Tolerance}; NORMAL BASE {normal}.",
+                "ONLY A SECTOR'S OWNER SEES ITS SITES, SO THE SITES' PART,",
+                "THE BASE AND ITS BRIBE/SNITCH SHIFT ARE NOT SHOWN TO YOU."
+            ];
         var shift = sector.BaseTolerance - normal;
         var shiftText = shift == 0 ? "NONE" : shift > 0 ? $"+{shift}" : shift.ToString();
         return

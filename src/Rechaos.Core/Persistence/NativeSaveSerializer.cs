@@ -161,7 +161,7 @@ public static class NativeSaveSerializer
         }
     }
 
-    private static MatchState RestoreDocument(
+    internal static MatchState RestoreDocument(
         NativeSaveDocument document, OriginalData definitions, bool verifyStateFingerprint)
     {
         if (document.FormatVersion != CurrentFormatVersion)
@@ -267,7 +267,12 @@ public static class NativeSaveSerializer
             document.Runtime.PhaseHashes,
             document.Runtime.Outcome,
             aiStrategy,
-            aiPlanning);
+            aiPlanning,
+            document.Runtime.ViewedBy is { } viewer
+                ? setup.Players.Any(player => player.Id.Value == viewer)
+                    ? new PlayerId(viewer)
+                    : throw new InvalidDataException("Native save names a viewing seat that is not in the match.")
+                : null);
         var state = new MatchState(definitions, setup, players, sectors, runtime);
         if (verifyStateFingerprint
             && !string.Equals(
@@ -294,10 +299,15 @@ public static class NativeSaveSerializer
                 : IncompatibleSaveReason.OlderFormat,
             $"Unsupported native save format {declared}.");
 
-    private static NativeSaveDocument Capture(MatchState state) => new(
+    /// <summary>
+    /// The document a save of <paramref name="state"/> holds. Without
+    /// <paramref name="fingerprint"/> its state fingerprint is left empty, for a caller that
+    /// rewrites the document before restoring it unverified.
+    /// </summary>
+    internal static NativeSaveDocument Capture(MatchState state, bool fingerprint = true) => new(
         CurrentFormatVersion,
         DefinitionFingerprint(state.Definitions),
-        MatchStateHasher.ComputeFingerprint(state),
+        fingerprint ? MatchStateHasher.ComputeFingerprint(state) : string.Empty,
         new MatchSetupDocument(
             state.Setup.Scenario,
             state.Setup.Duration,
@@ -330,33 +340,37 @@ public static class NativeSaveSerializer
             new AiStrategyDocument(
                 state.AiStrategy.CaptureReactions(),
                 state.AiStrategy.CaptureAttitudes()),
-            new AiPlanningDocument(
-                state.AiPlanning.CaptureCurrentHireRoles(),
-                state.AiPlanning.CapturePreviousHireRoles(),
-                state.AiPlanning.CaptureFamilies(),
-                state.AiPlanning.CaptureSectorAnchors(),
-                state.AiPlanning.CaptureOlderActions(),
-                state.AiPlanning.CapturePreviousActions(),
-                state.AiPlanning.CapturePlannedActions(),
-                state.AiPlanning.CaptureOlderTargets(),
-                state.AiPlanning.CapturePreviousTargets(),
-                state.AiPlanning.CapturePlannedTargets(),
-                state.AiPlanning.CaptureHasPlanned(),
-                state.AiPlanning.CaptureWeaponCooldowns(),
-                state.AiPlanning.CaptureArmorCooldowns(),
-                state.AiPlanning.CaptureFormationSectors(),
-                state.AiPlanning.CaptureCoverageSectors(),
-                state.AiPlanning.CaptureNeedsFamily(),
-                state.AiPlanning.CaptureRaiderMode(),
-                checked((byte)state.AiPlanning.FirstCombatRecordDefinition),
-                state.AiPlanning.CaptureSectorWeights(),
-                state.AiPlanning.CaptureSectorChoiceScores()),
+            CaptureAiPlanning(state.AiPlanning),
             state.Players.Select(player => new PlayerComlinkDocument(
                 player.Id.Value,
                 state.ComlinkFor(player.Id).NextSequence,
                 state.ComlinkFor(player.Id).LegacyReadThroughSequence,
                 state.ComlinkFor(player.Id).Messages,
-                state.ComlinkFor(player.Id).ReadSequences)).ToArray()));
+                state.ComlinkFor(player.Id).ReadSequences)).ToArray(),
+            state.ViewedBy?.Value));
+
+    /// <summary>The document <paramref name="planning"/> is saved as.</summary>
+    internal static AiPlanningDocument CaptureAiPlanning(AiPlanningState planning) => new(
+        planning.CaptureCurrentHireRoles(),
+        planning.CapturePreviousHireRoles(),
+        planning.CaptureFamilies(),
+        planning.CaptureSectorAnchors(),
+        planning.CaptureOlderActions(),
+        planning.CapturePreviousActions(),
+        planning.CapturePlannedActions(),
+        planning.CaptureOlderTargets(),
+        planning.CapturePreviousTargets(),
+        planning.CapturePlannedTargets(),
+        planning.CaptureHasPlanned(),
+        planning.CaptureWeaponCooldowns(),
+        planning.CaptureArmorCooldowns(),
+        planning.CaptureFormationSectors(),
+        planning.CaptureCoverageSectors(),
+        planning.CaptureNeedsFamily(),
+        planning.CaptureRaiderMode(),
+        checked((byte)planning.FirstCombatRecordDefinition),
+        planning.CaptureSectorWeights(),
+        planning.CaptureSectorChoiceScores());
 
     private static PlayerDocument CapturePlayer(MatchPlayerState player) => new(
         player.Id.Value,
@@ -659,7 +673,10 @@ internal sealed record RuntimeDocument(
     MatchOutcome? Outcome,
     AiStrategyDocument? AiStrategy = null,
     AiPlanningDocument? AiPlanning = null,
-    IReadOnlyList<PlayerComlinkDocument>? Comlink = null);
+    IReadOnlyList<PlayerComlinkDocument>? Comlink = null,
+    // The seat a SeatView payload was projected for. A whole match's save leaves it out, so its
+    // bytes are what they were before views existed.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ViewedBy = null);
 
 internal sealed record AiStrategyDocument(
     IReadOnlyList<int> Reactions,

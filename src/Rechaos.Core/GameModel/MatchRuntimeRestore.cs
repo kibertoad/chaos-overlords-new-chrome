@@ -17,7 +17,8 @@ internal sealed record MatchRuntimeRestore(
     IReadOnlyList<PhaseBoundaryHash> PhaseHashes,
     MatchOutcome? Outcome,
     AiStrategicState AiStrategy,
-    AiPlanningState AiPlanning);
+    AiPlanningState AiPlanning,
+    PlayerId? ViewedBy = null);
 
 internal sealed record ComlinkInboxRestore(
     IReadOnlyList<ComlinkMessage> Messages,

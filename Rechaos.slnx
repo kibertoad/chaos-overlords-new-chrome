@@ -7,5 +7,6 @@
   <Project Path="tools/OnlineSmoke/OnlineSmoke.csproj" />
   <Project Path="tools/Rechaos.OriginalProbe/Rechaos.OriginalProbe.csproj" />
   <Project Path="tools/Rechaos.SnapshotInspector/Rechaos.SnapshotInspector.csproj" />
+  <Project Path="tools/ResolverDeterminism/ResolverDeterminism.csproj" />
   <Project Path="tests/Rechaos.Tests/Rechaos.Tests.csproj" />
 </Solution>
