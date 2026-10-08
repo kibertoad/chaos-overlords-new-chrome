@@ -10,22 +10,22 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00482110..0x00482127
+    address: 0x00482110..0x00482128
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048DB48..0x0048E2DF
+    address: 0x0048DB48..0x0048E2E0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00482158..0x0048215D
+    address: 0x00482158..0x0048215E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00482140..0x00482157
+    address: 0x00482140..0x00482158
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004AB650..0x004AB667
+    address: 0x004AB650..0x004AB668
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004A2600..0x004A2605
+    address: 0x004A2600..0x004A2606
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -42,7 +42,7 @@ Block 16, `INT32LE[6]` at `0x00482110`, element `player`. `fn_0040AA65` writes
 `0x00459597`, `0x00459607`, `0x00459638` and `0x0045965B` with the four results
 FND-AI-012 gives for the hire limit, and then caps it at 80 (`0x00459665`,
 `0x00459676`). Each case of the scenario switch that follows compares the
-player's count of active gangs at `0x0048E2E0` (FND-AI-044) with it, at
+player's count of active gangs at `0x0048E2E0` (FND-AI-081) with it, at
 `0x004596C1`, `0x00459C11`, `0x0045A0D5`, `0x0045A5A5`, `0x0045AB47`,
 `0x0045AFC7`, `0x0045B447`, `0x0045B6BA` and `0x0045BC6C`, and goes on to hire
 only when the count is at most the value.

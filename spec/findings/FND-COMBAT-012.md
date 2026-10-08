@@ -10,10 +10,10 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00451F80..0x00453086
+    address: 0x00451F80..0x00453087
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00453A8D..0x00454250
+    address: 0x00453A8D..0x00454251
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -49,10 +49,10 @@ origin `(104,124)` on screen.
   slot `(x > 144) + 2 * (y > 78) + 2 * (y > 130)` (`0x00452995..0x004529BE`).
   When the viewer's entry in that slot is not -1 it becomes the focal gang, its
   second word the focal target, and the page is redrawn with the same opponent
-  (`0x004529E5..0x00452B09`).
+  (`0x004529E5..0x00452B0E`).
 - An opponent portrait is accepted only when that opponent's first entry in
   the sector is not -1 (`0x004525EB..0x00452821`); a change plays slot 3 and
-  redraws (`0x00452854..0x0045292D`).
+  redraws (`0x00452854..0x00452932`).
 
 `fn_00453A8D(player, origin)` draws one player's six entries for the page's
 sector, entry `k` at `origin + (44 * (k % 2), 52 * (k / 2))`:

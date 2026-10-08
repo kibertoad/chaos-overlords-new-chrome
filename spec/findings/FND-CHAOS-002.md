@@ -13,16 +13,16 @@ locations:
     address: 0x0047281C..0x004728E1
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00473188..0x004733CD
+    address: 0x00473188..0x004733D4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0047340D..0x004737D3
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00474E57..0x00475091
+    address: 0x00474E57..0x00475098
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00475E16..0x00475ECD
+    address: 0x00475E16..0x00475ED2
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -37,7 +37,7 @@ Presence table, `0x0047281C..0x004728E1`, at the start of resolution: a local
 byte array indexed `sector * 6 + player`, set to 0 and then to 1 for every
 sector that one of the player's 81 records names in its sector byte.
 
-Chaos rolls, `0x00473188..0x004733CD`. `0x00473188..0x004731DE` clears a
+Chaos rolls, `0x00473188..0x004733D4`. `0x00473188..0x004731DE` clears a
 local 6 by 64 array of 32-bit totals, one per player and sector. The scan
 `0x004731F3` visits player slots 0 to 5 and roster slots 0 to 80 and handles a
 record only when its sector byte is not 100 and its action byte is 3
@@ -73,7 +73,7 @@ the three site slots, and the type 3 report (`0x00473724`) is passed the
 owner byte as it stands, which the recorder drops when it is -1
 (`0x0047774E`).
 
-Payout, `0x00474E57..0x00475091`, after the transaction pass. The totals are
+Payout, `0x00474E57..0x00475098`, after the transaction pass. The totals are
 cleared (`0x00474E57..0x00474EAD`) and rebuilt by a scan of every player's
 81 records (`0x00474EC2..0x00474F73`) that adds a gang's stored successes to
 its player's total for the sector in its sector byte, only when that byte is

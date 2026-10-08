@@ -64,7 +64,7 @@ None known.
 
 ## How to reproduce
 
-List the references to `0x00487804` inside `0x00462579..0x004637B7`. At
+List the references to `0x00487804` inside `0x00462579..0x004637B8`. At
 `0x00463476` and `0x004635E5`, follow the arithmetic on the value read to the
 constants `0xEC`, `0x0F`, `0x122` and `0x43` pushed before the call of
 `0x00425EDF`, and find the test of `0x00487B88` at `0x004633F6` that chooses
