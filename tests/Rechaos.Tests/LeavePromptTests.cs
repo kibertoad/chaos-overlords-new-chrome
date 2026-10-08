@@ -36,6 +36,14 @@ public sealed class LeavePromptTests
     }
 
     [Fact]
+    public void TheWindowAsksTheGameBeforeItCloses()
+    {
+        var exiting = typeof(ChaosGameWindow).GetMethod("OnExiting", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        Assert.Contains(typeof(ChaosGame).GetMethod(nameof(ChaosGame.ConfirmExit), BindingFlags.Instance | BindingFlags.NonPublic)!,
+            DeviationBehaviourTests.Calls(exiting));
+    }
+
+    [Fact]
     public void ClosingASavedMatchIsNotHeldBack()
     {
         var game = GameWith(saved: true);
@@ -109,37 +117,19 @@ public sealed class LeavePromptTests
     }
 
     /// <summary>Closes the window of a headless game and says whether the close was held back.</summary>
-    internal static bool ClosingIsCancelled(ChaosGame game)
-    {
-        var args = new ExitingEventArgs();
-        typeof(ChaosGame).GetMethod("OnExiting", BindingFlags.Instance | BindingFlags.NonPublic,
-                [typeof(object), typeof(ExitingEventArgs)])!
-            .Invoke(game, [game, args]);
-        return args.Cancel;
-    }
+    internal static bool ClosingIsCancelled(ChaosGame game) => !game.ConfirmExit();
 
-    /// <summary>Gives the prompt's answer; a leave the game takes reaches Exit, which a headless game cannot run.</summary>
+    /// <summary>Gives the prompt's answer; a leave the game takes reaches the detached shell's Exit, which does nothing.</summary>
     internal static void Answer(ChaosGame game, LeaveAnswer answer) =>
-        IgnoringExit(() => DeviationBehaviourTests.Call(game, "AnswerLeavePrompt", answer));
+        DeviationBehaviourTests.Call(game, "AnswerLeavePrompt", answer);
 
     /// <summary>Reports the save Save First opened as written.</summary>
     internal static void SaveWritten(ChaosGame game) =>
-        IgnoringExit(() => DeviationBehaviourTests.Call(game, "LeaveAfterSave"));
+        DeviationBehaviourTests.Call(game, "LeaveAfterSave");
 
     /// <summary>Whether the game decided to close, which it marks before it calls Exit.</summary>
     internal static bool Left(ChaosGame game) =>
         (bool)DeviationBehaviourTests.Field("_exitConfirmed").GetValue(game)!;
-
-    private static void IgnoringExit(Action action)
-    {
-        try
-        {
-            action();
-        }
-        catch (TargetInvocationException exception) when (exception.InnerException is NullReferenceException)
-        {
-        }
-    }
 
     private static LeaveKind Prompt(ChaosGame game) =>
         (LeaveKind)DeviationBehaviourTests.Field("_leavePrompt").GetValue(game)!;

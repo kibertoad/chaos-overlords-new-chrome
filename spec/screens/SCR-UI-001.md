@@ -60,3 +60,9 @@ None known.
 
 - `DATA/PX16/PX00131`, a demo promotion of the same size, has a presenter that
   nothing calls (FND-UI-009), so it is not part of this screen.
+- No recorded run of the original reaches the menu bar as a pointer region;
+  the Open, Host and Join commands; a left press acting as New Game; Ctrl+N,
+  Ctrl+O, Ctrl+H and Ctrl+J; the title music; the returns to the title and the
+  skipped intro. Parts of the title art are not compared with the capture
+  (FND-PLATFORM-009, FND-UI-008, FND-UI-009, FND-UI-021, FND-AUDIO-001). These
+  rest on the static findings named, so the entry stays `supported`.

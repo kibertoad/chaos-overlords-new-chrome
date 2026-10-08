@@ -8,10 +8,13 @@
   game's screens. Each replacement offers the choices the original's control offers and leads to
   the same result; where a replacement also changes what the player does, an entry of its own
   records that, and the table below names it. Two things stay the system's: the frame and title
-  bar of the rebuild's window when it is not full screen, and, on Windows, the message box in which
-  the rebuild reports that it could not start or stopped unexpectedly, which stands where the
-  original shows dialogs 132 and 135 (RULE-UI-013) and is shown when the game's own drawing may not
-  be working. On other systems that report goes to the error output only.
+  bar of the rebuild's window when it is not full screen, and the dialogs the rebuild opens before
+  or outside its own drawing: the report that it could not start or stopped unexpectedly, which
+  stands where the original shows dialogs 132 and 135 (RULE-UI-013) and is shown when the game's
+  own drawing may not be working, and, on macOS and Linux, the question that asks for the original
+  installation when a start finds no current asset pack. Windows shows the report in a message
+  box; macOS and Linux show both through `osascript`, `zenity` or `kdialog`, and without any of
+  them the report goes to the error output only.
 - Setting: None
 - Default: mandatory
 - Justification: The Windows controls are not part of the game's art. Windows draws them in the
@@ -40,8 +43,8 @@ says None, no other entry records a difference there.
 | Dialog 129: save first, cancel, or go on without saving | RULE-UI-015, FND-UI-022 | A prompt in the Escape menu with the same three answers and results; an online match does not ask | DEV-NET-001 |
 | Dialog 139 with edit control 1007: the player's name | SCR-SETUP-001, FND-SETUP-005, FND-UI-022 | The name is edited in place on the setup card, and OK and Cancel are Enter and Escape | None |
 | Dialog 136: notice before Thousands of Colors or Full Screen is switched | RULE-UI-014, SCR-UI-009 | Nothing: full screen switches at once with F11, and Thousands of Colors does not exist | DEV-OPTIONS-003, DEV-UI-016 |
-| Dialogs 132, 135 and 20007 at start | RULE-UI-013, FND-UI-022 | The rebuild's own report, in a system message box on Windows; 20007 cannot arise | DEV-GFX-001 |
-| Dialog 137: an image file failed to load and play goes on | FND-UI-022 | Nothing: an image file that is missing is left undrawn and play goes on without a notice; an asset pack without its manifest, or of another format, ends the start with the rebuild's report | None |
+| Dialogs 132, 135 and 20007 at start | RULE-UI-013, FND-UI-022 | The rebuild's own report, in a system dialog; 20007 cannot arise | DEV-GFX-001 |
+| Dialog 137: an image file failed to load and play goes on | FND-UI-022 | Nothing: an image file that is missing is left undrawn and play goes on without a notice; an asset pack without its manifest, or of another format, ends the start with the rebuild's report, after a start on macOS or Linux has offered to import a current one | None |
 | Network dialogs 130, 131, 138, 140, 141, 143, 144 and 20004 to 20006, edit control 1007 of dialog 20000, list box 1003 of dialog 20002, the `DIALDIALOG` and `DIRECTDIALOG` dialogs with their combo box 1001, the Telephony dialogs of `lineTranslateDialog` and `lineConfigDialogEdit`, the serial port's `CommConfigDialogA`, the modem control panel, and the network message boxes | FND-UI-022, FND-NET-005, FND-PLATFORM-013 | The rebuild's Online screens | DEV-NET-001 |
 | The Windows help program, which Help Topics never starts | RULE-HELP-001 | The rebuild's help viewer | DEV-HELP-001 |
 

@@ -10,28 +10,28 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0045C33B..0x0045CD6F
+    address: 0x0045C33B..0x0045CD70
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0045C180..0x0045C2CC
+    address: 0x0045C180..0x0045C2CD
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0045C2CD..0x0045C33A
+    address: 0x0045C2CD..0x0045C33B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0045CD70..0x0045CDD2
+    address: 0x0045CD70..0x0045CDD3
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00462579..0x004637B7
+    address: 0x00462579..0x004637B8
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00449B78..0x00449CDD
+    address: 0x00449B78..0x00449CDE
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00465B27..0x00465CEB
+    address: 0x00465B27..0x00465CEC
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00498360..0x0049836F
+    address: 0x00498360..0x00498370
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004980A0..0x00498125
@@ -156,7 +156,7 @@ Helpers:
   loads and sets the stock cursor (FND-UI-034).
 
 The block `0x004980A0..0x00498125` holds several unrelated globals:
-`0x004980A0..0x004980BF` are MCI parameter blocks of the CD code
+`0x004980A0..0x004980C0` are MCI parameter blocks of the CD code
 (`fn_00458B43` and `fn_00458EA6`); `0x004980C0` is the
 `PAINTSTRUCT` that `fn_0045CD70` and `fn_0045CDA4` pass to `BeginPaint` and
 `EndPaint`, and `0x0049810C` the device context `BeginPaint` returns;

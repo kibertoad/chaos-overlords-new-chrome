@@ -1,7 +1,7 @@
 ---
 id: RULE-POLICE-001
 title: In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [EXP-TURN-010, FND-COMBAT-001, FND-COMBAT-008, FND-EXE-004, FND-POLICE-001, FND-POLICE-003, FND-RNG-003, FND-STATE-005, SRC-MANUAL-GOG, EXP-TURN-051, FND-AI-010, FND-AUDIO-002, FND-COMBAT-003, FND-COMBAT-004, FND-COMBAT-006, FND-COMBAT-011, FND-CONTROL-001, FND-HIRE-002, FND-PLATFORM-003, FND-UI-035, FND-UI-036]
@@ -102,5 +102,9 @@ None known.
 
 ## Open questions
 
-None known. The comparison is `<=`: the jump at `0x004741A3` skips the gang
-only when the chance is less than the draw [FND-COMBAT-008].
+- The comparison is `<=`: the jump at `0x004741A3` skips the gang
+  only when the chance is less than the draw [FND-COMBAT-008].
+- No recorded run checks a hidden gang (the 20-point penalty), or reaches a
+  chance of 0 or less, an empty pool, or a found gang taking 0 damage; the
+  last three need statistics the shipped tables do not give. These rest on
+  FND-COMBAT-008. Until a run reaches them, the entry stays `supported`.

@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00406753..0x004069D4
+    address: 0x00406753..0x004069D9
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004078B8
@@ -52,12 +52,8 @@ changes every turn. `0xFE` is -2 as a signed byte, the snub order in
 `hire_orders` (FND-HIRE-001), so the byte written is most likely that offer's
 element of `hire_orders`. Greed always snubs the first offer. The other
 scenarios snub the offer with the least useful statistics per cost, weighted
-by Tech Level; when every value is 5000 or more they snub slot 0.
-
-This corrects the field names of FND-AI-011, which named every field after
-Defense one slot off (see FND-AI-064): its Stealth multiplier is Tech Level,
-and its summed fields are the same twelve, its Control being Chaos and its
-Tech being Martial Arts. Tech Level is the multiplier and is not summed.
+by Tech Level; when every value is 5000 or more they snub slot 0. Tech Level
+is the multiplier and is not summed.
 
 ## Alternatives
 

@@ -6,22 +6,22 @@ Entries by status.
 
 ## supported
 
-3 entries.
+5 entries.
 
 | ID | Title |
 |---|---|
+| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
 | [RULE-EVENT-002](../../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution |
+| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
 | [RULE-EVENT-005](../../rules/RULE-EVENT-005.md) | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded |
 | [SCR-EVENT-001](../../screens/SCR-EVENT-001.md) | Last Turn Events panel |
 
 ## established
 
-12 entries.
+10 entries.
 
 | ID | Title |
 |---|---|
-| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
-| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
 | [RULE-EVENT-004](../../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
 | [RULE-EVENT-006](../../rules/RULE-EVENT-006.md) | A completed site is reported to the player whose Influence completed it |
 | [RULE-EVENT-007](../../rules/RULE-EVENT-007.md) | A completed item is reported to the player whose Research completed it |
@@ -52,8 +52,6 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
-| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
 | [RULE-EVENT-004](../../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
 | [RULE-EVENT-006](../../rules/RULE-EVENT-006.md) | A completed site is reported to the player whose Influence completed it |
 | [RULE-EVENT-007](../../rules/RULE-EVENT-007.md) | A completed item is reported to the player whose Research completed it |
@@ -71,9 +69,9 @@ Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | established |
+| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | supported |
 | [RULE-EVENT-002](../../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution | supported |
-| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | established |
+| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | supported |
 | [RULE-EVENT-012](../../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner | established |
 | [RULE-EVENT-014](../../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player | established |
 | [SCR-EVENT-001](../../screens/SCR-EVENT-001.md) | Last Turn Events panel | supported |

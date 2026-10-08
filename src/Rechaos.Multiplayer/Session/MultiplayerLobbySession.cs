@@ -29,7 +29,16 @@ public abstract record LobbyNotice
 
     /// <summary>A call was refused, with text a player can act on.</summary>
     public sealed record Failed(string Reason, Exception? Error = null, string? Operation = null) : LobbyNotice;
+
+    /// <summary>Chat messages the lobby's log gained, oldest first.</summary>
+    public sealed record Chatted(IReadOnlyList<LobbyChatLine> Lines) : LobbyNotice;
 }
+
+/// <summary>One lobby chat message, as the event log carries it.</summary>
+/// <param name="Seq">The event's sequence number, unique within the match.</param>
+/// <param name="PlayerId">Who posted it.</param>
+/// <param name="Text">What they wrote, as the server normalised it.</param>
+public sealed record LobbyChatLine(int Seq, string PlayerId, string Text);
 
 /// <summary>
 /// The lobby half of an online match: taking a seat, watching who else arrives, and starting.
@@ -65,6 +74,14 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     private int _busy;
     private int _leaveGeneration;
     private bool _stopped;
+
+    /// <summary>The last event of this lobby's log the chat has read through.</summary>
+    /// <remarks>Only the polling call touches it, and only one call runs at a time.</remarks>
+    private int _chatCursor;
+
+    /// <summary>The chat messages still being sent, in the order they were written.</summary>
+    private Task _chatTail = Task.CompletedTask;
+    private readonly Lock _chatGate = new();
 
     /// <summary>A session pointed at one server.</summary>
     /// <param name="http">Shared by every call; the game owns it.</param>
@@ -228,9 +245,95 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         await PublishLobbyAsync(handle, token).ConfigureAwait(false);
     });
 
-    private async Task PublishLobbyAsync(MatchHandle handle, CancellationToken token) =>
-        _notices.Enqueue(new LobbyNotice.Updated(
-            (await handle.GetAsync(token).ConfigureAwait(false)).Match));
+    private async Task PublishLobbyAsync(MatchHandle handle, CancellationToken token)
+    {
+        var match = (await handle.GetAsync(token).ConfigureAwait(false)).Match;
+        _notices.Enqueue(new LobbyNotice.Updated(match));
+        if (match.Status != MatchStatus.Lobby || match.LastEventSeq <= _chatCursor) return;
+        try
+        {
+            await ReadChatAsync(handle, match.LastEventSeq, token).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (IsServerOrNetworkFailure(exception))
+        {
+            // The call this read follows has already succeeded, and a profile change reported as
+            // failed would be drawn as refused. The cursor stops at the last page announced, so
+            // the next poll reads the rest.
+        }
+    }
+
+    /// <summary>
+    /// Reads the lobby's log from where the chat last stopped, and announces the messages in it.
+    /// </summary>
+    /// <remarks>
+    /// Asked only when the view says the log has grown, so a quiet lobby costs its poll nothing
+    /// more. The first read after taking a seat starts from the beginning, which is how a player
+    /// who arrives late sees what was said before them. The server refuses chat once the match
+    /// starts, so nothing past the lobby is ever read for it.
+    /// </remarks>
+    private async Task ReadChatAsync(MatchHandle handle, int throughSeq, CancellationToken token)
+    {
+        while (_chatCursor < throughSeq)
+        {
+            var page = await handle.EventsAsync(_chatCursor, ChatPageSize, token).ConfigureAwait(false);
+            var before = _chatCursor;
+            var lines = new List<LobbyChatLine>();
+            foreach (var matchEvent in page.Events)
+            {
+                if (matchEvent.Seq <= _chatCursor) continue;
+                _chatCursor = matchEvent.Seq;
+                if (matchEvent is LobbyChatMessageEvent chat)
+                    lines.Add(new LobbyChatLine(chat.Seq, chat.Payload.PlayerId, chat.Payload.Text));
+            }
+            // Announced page by page: the cursor has already moved past these, so a later page
+            // that fails must not take them down with it.
+            if (lines.Count > 0) _notices.Enqueue(new LobbyNotice.Chatted(lines));
+            // A page with nothing past the cursor would be asked for again forever.
+            if (_chatCursor == before) break;
+        }
+    }
+
+    /// <summary>The page size a chat read asks for: the server's own ceiling.</summary>
+    private const int ChatPageSize = 200;
+
+    /// <summary>
+    /// Posts a chat message to the lobby. The message comes back to every member, this one
+    /// included, through the next poll's read of the log.
+    /// </summary>
+    /// <remarks>
+    /// Outside the one-call-at-a-time rule, like <see cref="LeaveAsync"/>: the lobby is polled once
+    /// a second, so a message sent under that rule would be dropped whenever it met a poll. Messages
+    /// are sent one after another in the order they were written. A refusal (the rate limit, a
+    /// started match) is reported like any other failed call.
+    /// </remarks>
+    public void SendChat(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (_handle is not { } handle || _stopping.IsCancellationRequested) return;
+        // Read now: a send queued behind a slow one runs after the stop may have disposed the source.
+        var token = _stopping.Token;
+        lock (_chatGate) _chatTail = SendChatAfterAsync(_chatTail, handle, text, token);
+    }
+
+    private async Task SendChatAfterAsync(
+        Task previous, MatchHandle handle, string text, CancellationToken token)
+    {
+        // Each send reports its own failure; the next message is still worth sending.
+        await previous.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        try
+        {
+            await handle.PostChatAsync(new PostChatMessageRequest(text), token)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_stopping.IsCancellationRequested)
+        {
+            // The lobby is being left; there is nobody to tell.
+        }
+        catch (Exception exception) when (IsServerOrNetworkFailure(exception))
+        {
+            _notices.Enqueue(new LobbyNotice.Failed(Describe(exception), exception, nameof(SendChat)));
+        }
+    }
 
     /// <summary>
     /// Gives up the seat, and answers a task that completes when the server has been told.
@@ -298,6 +401,10 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         {
             // Stopping mid-call is how a lobby is left.
         }
+        Task chat;
+        lock (_chatGate) chat = _chatTail;
+        // Every send catches its own failures, and the token cancelled above ends the one in flight.
+        await chat.ConfigureAwait(false);
         try
         {
             // Bounded by the request deadline the client puts on every call, and waited for so
@@ -336,6 +443,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             {
                 OwnPlayerId = membership.Player.Id;
                 _handle = handle;
+                _chatCursor = 0;
                 _notices.Enqueue(new LobbyNotice.Seated(membership));
                 return;
             }
