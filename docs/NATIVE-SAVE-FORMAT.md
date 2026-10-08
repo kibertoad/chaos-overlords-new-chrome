@@ -1,6 +1,7 @@
 # Recreation-native save format
 
-Status: implemented format version 26
+Status: implemented save format version 40, replay format version 53, state
+fingerprint encoding version 15
 
 This format belongs to the recreation. It is deliberately separate from the
 original *Chaos Overlords* fixed-memory save envelopes and makes no claim of
@@ -14,14 +15,14 @@ original's address-shaped layout or partial-read behavior.
 
 <!-- doc-index:begin toc depth=2 -->
 - [Container and limits](#container-and-limits)
-- [Version 26 document](#version-26-document)
+- [Save document](#save-document)
 - [Compatibility policy](#compatibility-policy)
-- [Replay format version 30](#replay-format-version-30)
+- [Replay format](#replay-format)
 <!-- doc-index:end -->
 
 ## Container and limits
 
-- UTF-8 JSON with camel-case property names and `formatVersion: 26`.
+- UTF-8 JSON with camel-case property names and `formatVersion: 40`.
 - Maximum accepted size: 16 MiB.
 - Unknown properties, missing constructor fields, invalid identifiers, invalid
   enum/phase combinations, and inconsistent sequence counters are rejected.
@@ -40,13 +41,13 @@ serializer, then atomically promotes it. A valid previous primary becomes
 good backup. Recovery loads the backup only when the primary is missing,
 unreadable, or invalid.
 
-## Version 26 document
+## Save document
 
 The top-level members are:
 
 | Member | Contents |
 |---|---|
-| `formatVersion` | Schema discriminator; currently `26` |
+| `formatVersion` | Schema discriminator; currently `40` |
 | `definitionsSha256` | Gameplay-definition compatibility fingerprint |
 | `stateFingerprint` | Canonical authoritative-state fingerprint |
 | `setup` | Scenario, duration, initial seed, global AI mentality, Original/Advanced AI policy, and ordered player definitions including portrait IDs |
@@ -69,130 +70,150 @@ its nested collections are frozen after construction.
 
 ## Compatibility policy
 
-Only the current format version is read. A document declaring a newer version
-is refused as `NewerFormat`; one declaring an older version is refused as
-`OlderFormat`. Both are reported as incompatible rather than damaged, so the
-save browser leaves the file where it is instead of treating it as a corrupt
-slot to overwrite.
+The decision is recorded in `DECISIONS.md` under 2026-10-06. This section is
+what it requires of the code and of a release.
 
-Format 26 is where the migration ladder ends. Every earlier version was
+### Before 1.0.0
+
+Saves and replays are development formats. A build reads only the save format,
+replay format and gameplay definitions it was built with, and every change to a
+document's schema, to the meaning of a stored field or to the state-fingerprint
+encoding moves the format version (the coupling rule is in `AGENTS.md`, and
+`StateFingerprintVersionCouplingTests` pins the numbers together). No migration
+is written. A file from another build is refused as incompatible, as described
+below, and the player starts a new match.
+
+Format 26 ended the earlier migration ladder. Every version before it was
 verified through a preserved projection of the SHA-256 state hash of its day,
-and formats 21 and later also carry the whole phase-boundary history in that
-hash; once the fingerprint became XxHash128, none of those documents could be
-checked against their contents any more, and the game had not been released,
-so there was nobody whose saves a migration would have rescued. The decision is
-recorded in `DECISIONS.md` under 2026-09-21.
+and once the fingerprint became XxHash128 none of those documents could be
+checked against their contents any more; the game had not been released, so
+nobody's saves were lost. The decision is recorded in `DECISIONS.md` under
+2026-09-21. What each later development version changed is in the history of
+this file and of the serializers; none of those versions is read.
 
-Starting with 1.0.0, incompatible changes must increment `formatVersion` and
-provide either deterministic migration with fixtures or an explicitly
-documented safe rejection path; the bounded reader and the incompatibility
-marker are the structure that policy builds on.
+### From 1.0.0: saves
+
+The first 1.0.0 release fixes a stable baseline. For the whole 1.x line:
+
+- Every 1.x build loads every save, and every backup generation of a save,
+  written by an earlier public 1.x release. A save written by a later release
+  is refused as `NewerFormat`; nothing promises that an older build reads a
+  newer save. The companion journal beside a save is a replay, under the rules
+  for replays below.
+- A change that would stop an earlier 1.x save from loading moves
+  `formatVersion` and ships a migration: a pure function from the document of
+  version N to the document of version N + 1, applied in sequence from the
+  file's version to the current one before the members are bound, under the
+  same size limits. A migration never guesses a value the old document did not
+  hold; a new field gets the value the old rules implied.
+- The loader verifies a save before migrating it. If the state-fingerprint
+  encoding changes within 1.x, the build keeps the earlier encoding so that a
+  save from an earlier release is still checked against its own fingerprint;
+  the migrated state is then fingerprinted under the current encoding.
+- A change to the bundled gameplay definitions is a format change for this
+  purpose. An earlier 1.x save written against the earlier definition set must
+  still load, with a migration that maps it onto the new set.
+- Before a 1.x release ships, `tests/fixtures/stable-saves/` holds a save of
+  the format it writes, added in the change that moved the format (the 1.0.0
+  one is added while `version.txt` still names the last 0.x release).
+  `SaveCompatibilityPolicyTests` loads every fixture there with the current
+  build and, once `version.txt` reaches 1.0.0, fails while the current save
+  format has no fixture, so neither a format change without a fixture nor a
+  change that breaks an earlier fixture passes the release workflow's tests.
+- A change that cannot honour this needs a new major version. 2.0.0 may drop
+  1.x saves, and its release notes say so.
+
+### From 1.0.0: replays
+
+A replay is evidence as well as history: each step carries the fingerprint the
+build that recorded it computed, and playing it back means running the same
+rules again and arriving at the same fingerprints. Migrating the document cannot
+keep that promise when the rules or the encoding changed, because the steps
+would then be checked against rules that did not produce them. So:
+
+- A build plays the replay formats whose rules and fingerprint encoding it
+  still has. In practice that is its own replay format. A journal of an earlier
+  format is refused as `OlderFormat` and is never converted.
+- Every release whose replay format differs from the previous release's says
+  so in its release notes, so a player knows to keep the earlier build to watch
+  earlier replays. Release builds stay downloadable from the GitHub releases
+  page.
+- The companion journal beside a save follows the same rule. When it cannot be
+  continued, the save still loads, and the session's journal starts again at
+  that load, so a bug report filed afterwards carries the history from the
+  load on.
+
+### Files a build cannot read
+
+A file this build cannot read is never repaired, converted or overwritten in
+place, and an intact file from another build is never treated as damage.
+
+| File | Intact, from another build or another definition set | Damaged or unreadable |
+|---|---|---|
+| Save slot or autosave | The browser row says `SAVED BY ANOTHER BUILD  CANNOT BE LOADED HERE` and Load refuses it. The backup generation is not consulted. Saving into the slot keeps the file as the slot's backup (`<save>.bak`). | The valid backup generation loads in its place, and the row says `RECOVERED` or `BACKUP ONLY`. With no valid backup the row says `FILE CANNOT BE READ  NOT SAFE TO OVERWRITE`. |
+| Companion journal | The save loads with a new journal that starts at the load. | The same. |
+| F10 replay | The console says `REPLAY FROM A NEWER VERSION`, `REPLAY FROM AN OLDER VERSION` or `REPLAY USES OTHER GAME DATA`. The backup generation is not played. | The backup generation plays if it verifies, and the viewer says why the primary did not (`REPLAY FILE DAMAGED`, `REPLAY DIVERGED AT STEP N`). With no playable backup, the console names the primary's failure. Neither file is rewritten. |
+
+`IncompatibleSave` marks the intact case on the exception, and
+`ReplayDivergence` marks a replay whose step this build's rules do not
+reproduce; `ReplayFailure.Of` turns either into what the player is told.
 
 Original-save import/export is an explicit non-goal. Native snapshots must never
 be presented as converted original saves.
 
-## Replay format version 30
+## Replay format
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
-cancellation, hire selection and snubbing, all phase transitions, and
-notification dismissal, Comlink delivery, and Comlink read-state changes. Before recording or saving, it verifies that the match
-has not been mutated out of band.
+cancellation, hire selection and snubbing, all phase transitions, notification
+dismissal, Comlink delivery and read-state changes, online seat transfers, and
+the three moves a local load records (the random stream continuing from the
+run's sequence, the emptied Comlink inboxes and the refreshed AI sector
+records). Before recording or saving, it verifies that the match has not been
+mutated out of band.
 
-Version 8 added the deterministic post-command AI hiring-preparation operation,
-which updates the authoritative current hire role before offer selection.
-Version 9 embeds native snapshot version 8 and fingerprints fixed hire-slot and
-pending action-slot state.
-Version 10 embeds native snapshot version 9, fingerprints the pending-payment
-marker, and defers new hire payments until successful resolution.
-Version 11 embeds native snapshot version 10 and fingerprints the persistent
-maximum-hire-Force modifier.
-Version 12 embeds native snapshot version 11 and fingerprints all six encoded
-AI hire-placement anchors.
-Version 13 embeds native snapshot version 12 and fingerprints the older,
-immediately previous, and newly planned AI action bytes.
-Version 14 embeds native snapshot version 13 and fingerprints all six
-first-planning flags plus all three generations of command-dependent AI target
-bytes.
-Version 15 embeds native snapshot version 14 and fingerprints weapon and armor
-planning cooldowns. Version 16 embeds native snapshot version 15 and
-fingerprints all six-by-81 polymorphic family-2/7 focus/family-11 formation
-values. The JSON member remains named `formationSectors` in schema version 15.
-Version 17 embeds native snapshot version 16 and fingerprints all six-by-81
-family-6 coverage sectors. Version 18 embeds native snapshot version 17,
-fingerprints every bounded Comlink inbox, and records send/read operations.
-Version 19 embeds native snapshot version 18 and hash version 21, including
-tertiary command targets for multi-item Sell. Version 20 embeds native snapshot
-version 19 and hash version 22, including quaternary command targets for
-multi-item Give. Version 21 retains native snapshot version 19 and hash version
-22, and adds the ordered `PrepareSimultaneousHireOffers` operation required by
-simultaneous online turns. The operation is rejected when it is mislabeled as
-version 20 or earlier instead of being retroactively accepted by an older
-schema. Version 22 embeds native snapshot version 20 and canonical hash version
-23, authenticating the event history after every recorded mutation. Version 23
-embeds native snapshot version 21 and canonical hash version 24, authenticating
-phase-boundary history as well. Version 24 embeds native snapshot version 22
-and canonical hash version 25; every Comlink read operation names the one
-displayed message sequence it acknowledges. Versions 18 through 23 retain the
-legacy mark-all operation during playback.
-Version 25 embeds native snapshot version 23 and canonical hash version 26,
-authenticating the match's AI policy.
-Versions 26 and 27 add online controller-transfer operations. Version 28 embeds
-native snapshot version 24 and canonical hash version 27, removing synthetic
-sector Chaos from newly recorded state while retaining legacy verification.
-
-Version 30 embeds native snapshot version 26 and replaces every SHA-256 step
-fingerprint with the XxHash128 state fingerprint. Only version 30 is played
-back: a journal declaring another version is refused as `NewerFormat` or
-`OlderFormat`, for the reason the compatibility policy above gives, and the
-per-version operation and target boundaries the older schemas needed went with
-them. Journal members `initialStateFingerprint` and `resultingStateFingerprint`
-replace the `…Sha256` names.
-
-Each ordered replay step stores its operation payload, the expected validation
-result where applicable, and the canonical state fingerprint after the
-operation.
-The tagged operation union is exact: every kind requires its complete field set
-and rejects fields belonging to another operation, even though those names are
+The document holds `formatVersion`, `initialStateFingerprint`, the embedded
+native snapshot `initialSnapshot`, and the ordered `steps`. Each step stores its
+operation payload, the expected validation result where applicable, and the
+state fingerprint after the operation (`resultingStateFingerprint`). The tagged
+operation union is exact: every kind requires its complete field set and
+rejects fields belonging to another operation, even though those names are
 known to the shared JSON record. Nested recipient lists are frozen on record.
-`MatchReplaySerializer.LoadAndReplay` restores the initial snapshot, repeats the
-operations, checks validation outcomes, and rejects the file at the first hash
-divergence. Replay input is limited to 32 MiB and 1,000,000 operations. Unknown
-members, missing values, unknown versions, and malformed operations are rejected.
-`MatchReplayStore` applies the same read-back-before-promotion and
-last-valid-generation backup policy to replay files. The game client
-records all of its mutations and exposes atomic save plus verified primary or
-backup playback through F6 and F10.
+Replay input is limited to 32 MiB and 1,000,000 operations. Unknown members,
+missing values, unknown versions, and malformed operations are rejected.
 
-Replay version 3 embeds a native-save version 4 initial snapshot and records
-planning-time hire-offer preparation so opening the persistent Hire dock does
-not become an out-of-band RNG mutation. Replay version 4 embeds the version 5
-snapshot and includes global AI mentality and player portraits in the canonical
-state. Replay version 5 embeds the version 6 snapshot and includes AI reactions
-and attitudes. Replay version 7 embeds the version 7 snapshot and includes AI
-hire roles and planning families. Replay version 8 retained that native snapshot
-and recorded post-command AI hiring preparation. Replay version 9 embeds native
-version 8 with fixed hire slots. Replay version 10 embeds native version 9 and
-uses deferred payment while replay version 9 retains immediate payment and its
-single-action validation. Replay version 11 embeds native version 10, version
-12 embeds native version 11, version 13 embeds native version 12, version 14
-embeds native version 13, version 15 embeds native version 14, version 16
-embeds native version 15, version 17 embeds native version 16, version 18
-embeds native version 17, version 19 embeds native version 18, and version 20
-embeds native version 19. Version 21 retains native version 19, and version 22
-embeds native version 20, and version 23 embeds native version 21.
-Version 12 uses the version-14 hash and initializes action histories to `None`;
-version 11 uses the version-13 hash and
-derives placement anchors; version 10 uses the version-12 hash and migrates the
-new modifier to false; version 9 uses its version-11 hash, versions 7 and 8
-use version 10, and version 6 uses version 9. Version 2 through 5 replay
-documents remain accepted through their legacy hash paths. Replay versions 18
-and 19 retain their version-20 and version-21 hash projections respectively;
-replay versions 20 and 21 use the preserved canonical state hash version 22.
-Replay version 22 uses canonical state hash version 23; replay version 23 uses
-canonical state hash version 24.
-Initial-state migration is covered for
-replay version 8, and version 9 operation semantics are covered. Additional
-pre-1.0 legacy fixtures are not a release gate. The initial snapshot remains
-required until original seed selection and the complete setup context are
-verified.
+`MatchReplaySerializer.LoadAndReplay` restores the initial snapshot, repeats
+the operations, checks validation outcomes, and rejects the file at the first
+fingerprint divergence. `MatchReplayStore` applies the same
+read-back-before-promotion and last-valid-generation backup policy to replay
+files as `NativeSaveStore` does to saves.
+
+### Playback
+
+F6 saves the session's journal to `last-match.rchreplay` in the user data
+directory, and F10 opens it in the replay viewer (`DEV-UI-026`).
+`MatchReplaySerializer.OpenPlayback` replays the whole journal and checks every
+step's fingerprint before the first frame is shown, so the viewer can never show
+a state the journal does not vouch for. `MatchReplayPlayback` is the cursor the
+viewer moves:
+
+- On the opening pass it keeps compressed native snapshots at evenly spaced
+  positions, at most 64 of them and at least 32 steps apart, and a seek
+  starts from the nearest one at or before its target. A state larger than the
+  native save limit gets no snapshot, and a seek past it walks on from the last
+  one written.
+- Every step a seek applies is checked against its recorded fingerprint again.
+- Before it moves, the cursor checks that the shown state still has the
+  fingerprint of its position, and rebuilds it from a snapshot if the viewer
+  changed it, so drawing code can never make an intact journal look diverged.
+
+`MatchReplayStore.OpenPlaybackRecoveringBackup` opens the primary file, or its
+backup generation when the primary is missing, damaged or diverges, and reports
+why the primary could not be played. It reads only: neither file is repaired,
+renamed or rewritten. A primary from another build is reported and never
+passed over for the backup.
+
+A journal recorded across a save and load carries the steps before the save,
+the load's three recorded moves, and the play after it, and plays through all
+of them (`MatchReplayPlaybackTests`). An autosave writes no journal, so a match
+loaded from the autosave starts a new one.

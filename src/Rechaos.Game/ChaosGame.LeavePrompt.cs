@@ -45,6 +45,9 @@ public sealed partial class ChaosGame
     /// </summary>
     internal bool ConfirmExit()
     {
+        // DEV-UI-026: the question is about the live match, and the save-first prompt is drawn
+        // over it, so a replay shown at the time closes first.
+        CloseReplayPlayback();
         if (_exitConfirmed || !MatchUnsaved) return true;
         RequestLeave(LeaveKind.Exit);
         return false;

@@ -628,10 +628,11 @@ turn one; it is not an error.
   recovery copies the verified generation through a write-through temporary
   file, validates it again, promotes it as the new primary, and reports the result.
   All client mutations pass through `MatchActions`, which applies them to the match in
-  hot-seat play and to a speculative copy plus the turn's order document online; F6/F10 atomically
-  save and verify/play the current replay, recovering the previous verified
-  generation when the primary is missing or corrupt and self-healing that primary
-  when storage permits. New matches now use the
+  hot-seat play and to a speculative copy plus the turn's order document online. F6
+  atomically saves the session's replay; F10 verifies every step of it and opens the
+  read-only replay viewer (`MatchReplayPlayback`, `ReplayViewer`), playing the previous
+  verified generation when the primary is missing, damaged or diverges, and setting the
+  live match aside until the viewer closes. New matches now use the
   recovered density/site generator, fixed HQ
   candidates, Right Hands setup and deferred initial offers; omitted local slots
   are completed as Computers with the recovered pre-city portrait/name RNG, and

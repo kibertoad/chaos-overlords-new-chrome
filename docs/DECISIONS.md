@@ -23,6 +23,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
 | 2026-10-06 | [Chat in the online lobby, through the match's event log](#2026-10-06--chat-in-the-online-lobby-through-the-matchs-event-log) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
+| 2026-10-06 | [Keep 1.x saves loadable and play replays only under their own rules](#2026-10-06--keep-1x-saves-loadable-and-play-replays-only-under-their-own-rules) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
 | 2026-10-05 | [Take captures of the original without a DirectDraw wrapper](#2026-10-05--take-captures-of-the-original-without-a-directdraw-wrapper) |
@@ -281,6 +282,43 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 - Status: implemented and tested; protocol version 24, session version
   unchanged.
 
+## 2026-10-06 — Keep 1.x saves loadable and play replays only under their own rules
+
+- From the first 1.0.0 release, every 1.x build loads the saves, and their
+  backup generations, of every earlier public 1.x release, through bounded,
+  deterministic migrations covered by a saved fixture of each format. A change
+  that cannot keep that promise waits for 2.0.0. Bundled gameplay definitions
+  count as part of the format. `NATIVE-SAVE-FORMAT.md` under "Compatibility
+  policy" says what a migration must do, and `SaveCompatibilityPolicyTests`
+  fails a 1.x build that writes a save format with no fixture or no longer
+  loads an earlier one.
+- Replays carry no such promise. A build plays the replay format whose rules
+  and fingerprint encoding it has, which is its own; an earlier journal is
+  refused as an older format and never converted. A release whose replay format
+  changed says so in its release notes, and earlier release builds stay
+  downloadable for watching earlier replays.
+- A file a build cannot read is never repaired, converted or overwritten in
+  place. An intact file from another build is reported as such, never taken for
+  damage, and its backup generation is not used in its place.
+- F10 no longer loads a replay as the match. It opens the replay viewer
+  (DEV-UI-026): the journal is verified step by step before the first frame,
+  the viewer plays, pauses, steps, jumps by turn and to either end at six
+  speeds, and the live match is set aside untouched until it closes. The viewer
+  reads the replay files and never writes them.
+- Before 1.0.0 nothing changes: only the current formats are read, and every
+  schema or fingerprint-encoding change moves the format version as
+  `AGENTS.md` requires.
+- Reason: a save is the player's match in progress, and a player who updates
+  within a major version expects to carry on. A replay is evidence that a
+  sequence of orders produced a sequence of states under particular rules;
+  migrating its document cannot make different rules reproduce it, and a
+  converted replay that verified would prove nothing. Reporting an intact file
+  as incompatible, and leaving it alone, is what keeps a newer build's save
+  from being overwritten by an older build that took it for damage. F10's
+  former load gave every local match a quick save and quick load that kept the
+  luck (the open question of the 2026-09-26 entry below), and the viewer shows
+  the same history without changing the match.
+
 ## 2026-10-06 — Count a row its mandatory deviations replace as deviated
 
 - A `mandatory` deviation may name, in a Replaces item, the entries of its
@@ -382,6 +420,8 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 
 ## 2026-09-26 — Keep a replay load's random state and inboxes
 
+- Superseded on 2026-10-06: F10 opens the read-only replay viewer and no longer
+  loads a replay as the match, which settles the open question below.
 - Decision: F10 rebuilds the match from the F6 journal and plays on with the
   random state and Comlink inboxes the journal reached. It does not do what a
   save load does: draw on from the run's sequence (RULE-RNG-001) and empty every

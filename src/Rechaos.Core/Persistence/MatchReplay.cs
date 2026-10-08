@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
@@ -388,6 +389,24 @@ public static class MatchReplaySerializer
     }
 
     /// <summary>
+    /// Opens a journal for read-only playback. Every step is replayed and checked against its
+    /// recorded fingerprint before this returns, so no frame the cursor shows is unverified.
+    /// </summary>
+    /// <exception cref="InvalidDataException">
+    /// The journal is incompatible (<see cref="IncompatibleSave"/>), diverges
+    /// (<see cref="ReplayDivergence"/>) or is damaged; <see cref="ReplayFailure.Of"/> tells which.
+    /// </exception>
+    public static MatchReplayPlayback OpenPlayback(Stream source, OriginalData definitions)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(definitions);
+        if (!source.CanRead) throw new ArgumentException("Source stream is not readable.", nameof(source));
+        var document = ReadCurrentFormat(source, out var declared)
+            ?? throw UnsupportedFormat(declared);
+        return new MatchReplayPlayback(document, definitions);
+    }
+
+    /// <summary>
     /// Loads a journal and answers a recorder that continues it, or null when it cannot be continued.
     /// </summary>
     /// <remarks>
@@ -529,29 +548,59 @@ public static class MatchReplaySerializer
         {
             throw;
         }
-        catch (Exception exception) when (exception is ArgumentException
-            or InvalidOperationException or KeyNotFoundException or OverflowException)
+        catch (Exception exception) when (IsMalformedOperation(exception))
         {
             throw new InvalidDataException("Replay operation is invalid.", exception);
         }
     }
 
+    /// <summary>The ways a malformed recorded operation surfaces from the rules engine.</summary>
+    internal static bool IsMalformedOperation(Exception exception) =>
+        exception is ArgumentException or InvalidOperationException
+            or KeyNotFoundException or OverflowException;
+
+    /// <summary>Loads a journal's opening snapshot and checks it against its recorded fingerprint.</summary>
+    internal static MatchState LoadOpeningState(ReplayDocument document, OriginalData definitions)
+    {
+        using var snapshot = new MemoryStream(document.InitialSnapshot, writable: false);
+        var state = NativeSaveSerializer.Load(snapshot, definitions);
+        VerifyFingerprint(document.InitialStateFingerprint, state, -1);
+        return state;
+    }
+
     private static MatchState Apply(ReplayDocument document, OriginalData definitions)
+    {
+        ValidateDocument(document);
+        var state = LoadOpeningState(document, definitions);
+        for (var index = 0; index < document.Steps.Count; index++)
+            ApplyVerified(state, document.Steps[index], index);
+        return state;
+    }
+
+    /// <summary>The checks a journal passes before its opening snapshot is loaded.</summary>
+    internal static void ValidateDocument(ReplayDocument document)
     {
         if (document.FormatVersion != CurrentFormatVersion)
             throw UnsupportedFormat(document.FormatVersion);
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
-        using var snapshot = new MemoryStream(document.InitialSnapshot, writable: false);
-        var state = NativeSaveSerializer.Load(snapshot, definitions);
-        VerifyFingerprint(document.InitialStateFingerprint, state, -1);
-        for (var index = 0; index < document.Steps.Count; index++)
+    }
+
+    /// <summary>
+    /// Applies one recorded step and checks the state it reaches against the recorded fingerprint,
+    /// with every way a malformed operation surfaces from the rules engine reported as bad data.
+    /// </summary>
+    internal static void ApplyVerified(MatchState state, ReplayStep step, int index)
+    {
+        try
         {
-            var step = document.Steps[index];
             ApplyStep(state, step, index);
-            VerifyFingerprint(step.ResultingStateFingerprint, state, index);
         }
-        return state;
+        catch (Exception exception) when (IsMalformedOperation(exception))
+        {
+            throw new InvalidDataException("Replay operation is invalid.", exception);
+        }
+        VerifyFingerprint(step.ResultingStateFingerprint, state, index);
     }
 
     private static void ApplyStep(MatchState state, ReplayStep step, int index)
@@ -601,7 +650,8 @@ public static class MatchReplaySerializer
             {
                 var removed = state.TryDismissNotification(Required(step.Player, index), out _);
                 if (step.Accepted != removed)
-                    throw new InvalidDataException($"Replay step {index} produced a different notification result.");
+                    throw ReplayDivergence.Create(
+                        index, $"Replay step {index} produced a different notification result.");
                 break;
             }
             case ReplayOperationKind.PrepareHireOffers:
@@ -635,7 +685,8 @@ public static class MatchReplaySerializer
                         ?? throw new InvalidDataException(
                             $"Replay step {index} has no Comlink sequence."));
                 if (step.Accepted != changed)
-                    throw new InvalidDataException($"Replay step {index} produced a different Comlink read result.");
+                    throw ReplayDivergence.Create(
+                        index, $"Replay step {index} produced a different Comlink read result.");
                 break;
             }
             case ReplayOperationKind.TransferPlayerToComputer:
@@ -646,8 +697,8 @@ public static class MatchReplaySerializer
                     ? state.TransferPlayerToComputer(seat)
                     : state.TransferPlayerToHuman(seat);
                 if (step.Accepted != changed)
-                    throw new InvalidDataException(
-                        $"Replay step {index} produced a different control-transfer result.");
+                    throw ReplayDivergence.Create(
+                        index, $"Replay step {index} produced a different control-transfer result.");
                 break;
             }
             case ReplayOperationKind.ContinueRandomStream:
@@ -655,8 +706,8 @@ public static class MatchReplaySerializer
                 break;
             case ReplayOperationKind.EmptyComlinkInboxes:
                 if (step.Accepted != state.EmptyComlinkInboxes())
-                    throw new InvalidDataException(
-                        $"Replay step {index} produced a different Comlink clearing result.");
+                    throw ReplayDivergence.Create(
+                        index, $"Replay step {index} produced a different Comlink clearing result.");
                 break;
             case ReplayOperationKind.RefreshAiSectorRecords:
                 state.RefreshEveryPlayersAiSectorRecords();
@@ -719,7 +770,8 @@ public static class MatchReplaySerializer
     private static void VerifyResult(ReplayStep step, bool accepted, int validationCode, int index)
     {
         if (step.Accepted != accepted || step.ValidationCode != validationCode)
-            throw new InvalidDataException($"Replay step {index} produced a different validation result.");
+            throw ReplayDivergence.Create(
+                index, $"Replay step {index} produced a different validation result.");
     }
 
     private static T Required<T>(T? value, int index) where T : struct =>
@@ -729,12 +781,12 @@ public static class MatchReplaySerializer
         step.GangDefinitionId
             ?? throw new InvalidDataException($"Replay step {index} has no gang definition.");
 
-    private static void VerifyFingerprint(string expected, MatchState state, int index)
+    internal static void VerifyFingerprint(string expected, MatchState state, int index)
     {
         if (!MatchStateHasher.IsFingerprint(expected))
             throw new InvalidDataException($"Replay step {index} has an invalid state fingerprint.");
         if (!string.Equals(expected, MatchStateHasher.ComputeFingerprint(state), StringComparison.Ordinal))
-            throw new InvalidDataException($"Replay diverged after step {index}.");
+            throw ReplayDivergence.Create(index, $"Replay diverged after step {index}.");
     }
 
     [Flags]
@@ -796,6 +848,65 @@ public static class MatchReplayStore
         using var stream = new FileStream(
             Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
         return MatchReplaySerializer.LoadAndReplay(stream, definitions);
+    }
+
+    public static MatchReplayPlayback OpenPlayback(string path, OriginalData definitions)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        using var stream = new FileStream(
+            Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read);
+        return MatchReplaySerializer.OpenPlayback(stream, definitions);
+    }
+
+    /// <summary>
+    /// Opens the journal at <paramref name="path"/> for playback, or its backup generation when the
+    /// primary cannot be played, and says why the primary could not.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Playback only reads. Neither file is rewritten, renamed or repaired, so a viewer opened on a
+    /// damaged primary leaves it for the next replay save to replace, as that save does with any
+    /// damaged primary, and the backup it keeps stays the last good one.
+    /// </para>
+    /// <para>
+    /// A primary <see cref="IncompatibleSave"/> recognises is reported, never passed over for the
+    /// backup: it is intact, and playing the older generation beside it would show a different
+    /// session without saying so. Any other failure falls back to the backup when there is one;
+    /// when the backup fails too, or there is none, the primary's own failure is thrown, because
+    /// that is the file the player asked for.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="IOException">The primary is missing or unreadable and no backup plays.</exception>
+    /// <exception cref="InvalidDataException">
+    /// The primary is incompatible, diverges or is damaged, and no backup plays.
+    /// </exception>
+    public static MatchReplayPlaybackLoadResult OpenPlaybackRecoveringBackup(
+        string path, OriginalData definitions)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(definitions);
+        try
+        {
+            return new MatchReplayPlaybackLoadResult(OpenPlayback(path, definitions), null);
+        }
+        catch (Exception primaryFailure) when (
+            primaryFailure is IOException or InvalidDataException or UnauthorizedAccessException
+            && !IncompatibleSave.IsIncompatible(primaryFailure))
+        {
+            var backupPath = Path.GetFullPath(path) + BackupSuffix;
+            if (!File.Exists(backupPath)) throw;
+            try
+            {
+                return new MatchReplayPlaybackLoadResult(
+                    OpenPlayback(backupPath, definitions), ReplayFailure.Of(primaryFailure));
+            }
+            catch (Exception exception) when (
+                exception is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                ExceptionDispatchInfo.Capture(primaryFailure).Throw();
+                throw;
+            }
+        }
     }
 
     /// <summary>

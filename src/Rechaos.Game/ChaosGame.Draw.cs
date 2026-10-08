@@ -224,6 +224,12 @@ public sealed partial class ChaosGame
     /// <summary>What sits above every screen: combat playback, the timer, votes, menu, reconnect.</summary>
     private void DrawScreenOverlays(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
+        if (_replayViewer is not null)
+        {
+            DrawReplayControls(batch, pixel, font);
+            return;
+        }
+
         // FND-UI-062: the held-button helper's face, over the panel and under everything above it.
         DrawHeldPanelFace(batch);
         if (_state is not null && _combatAnimationPlayer.IsPlaying)

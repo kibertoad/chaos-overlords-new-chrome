@@ -44,10 +44,11 @@ Status: active at a validated local checkpoint
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v35, replays are v47, the state fingerprint encoding is v10, asset
-  manifests are v7, extracted help is v3, and client preferences are v12. Save
-  and replay compatibility may intentionally break before 1.0.0; retain the
-  migration/versioning machinery for post-1.0 compatibility.
+- Native saves are format v40, replays are v53, the state fingerprint encoding is v15 (the
+  status line of NATIVE-SAVE-FORMAT.md, which `SaveCompatibilityPolicyTests` holds to the
+  code), asset manifests are v7, extracted help is v3, and client preferences are v12. Save
+  and replay compatibility may break before 1.0.0; from 1.0.0 the policy in
+  NATIVE-SAVE-FORMAT.md under "Compatibility policy" applies.
 
 ## Documentation standard
 

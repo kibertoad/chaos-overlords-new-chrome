@@ -6,7 +6,7 @@
   opens the detailed sector screen, F the City Financial panel, R Player Ranking, T the item list,
   B Combat Results, X Search, H the Hire panel, M Comlink View, N Comlink Send and J Game
   Information; Space ends the player's planning; and in a local match F5 and F9 open the save
-  browser to save or load, and F6 and F10 save and load a replay.
+  browser to save or load. F6 and F10, the replay keys, are DEV-UI-026.
 - Setting: None
 - Default: mandatory
 - Justification: Each key reaches a panel or command the console already offers, so it adds

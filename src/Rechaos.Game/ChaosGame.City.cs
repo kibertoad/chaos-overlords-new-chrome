@@ -42,7 +42,7 @@ public sealed partial class ChaosGame
             if (Pressed(keyboard, Keys.F5)) OpenSaveBrowser(saving: true);
             if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false);
             if (Pressed(keyboard, Keys.F6)) SaveReplay();
-            if (Pressed(keyboard, Keys.F10)) LoadReplay();
+            if (Pressed(keyboard, Keys.F10)) OpenReplayPlayback();
         }
         else if (Pressed(keyboard, Keys.F6) || Pressed(keyboard, Keys.F10))
         {
@@ -248,7 +248,7 @@ public sealed partial class ChaosGame
             new Vector2(StatusConsoleLayout.WeekLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
         // FND-UI-040, FND-STATE-010: completion replaces the timed countdown in the final view.
         // FND-UI-019: string cells are copied opaquely, like the numeric cells.
-        if (_finalViewPlayer is not null)
+        if (ShownFinalViewPlayer is not null)
         {
             DrawOpaqueText(batch, pixel, font, ExecutableStrings.Get(StatusConsoleLayout.CompleteString),
                 StatusConsoleLayout.CompleteLeft, StatusConsoleLayout.DateY);
@@ -288,15 +288,16 @@ public sealed partial class ChaosGame
             && LampInLitPhase(_referenceFrame?.Lamps?.Comlink))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
-        if (_finalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))
+        if (ShownFinalViewPlayer is not null && PresentationClock.BlinkLit(PresentationDrawTime))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityDone);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition)
             DrawHireDragImage(batch, draggedDefinition);
         // Online, the footer says where the turn stands instead of which keys save: a match nobody
-        // can save is one where the only thing worth knowing is whether it is waiting on you.
-        var footer = _session is null
-            ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
+        // can save is one where the only thing worth knowing is whether it is waiting on you. Over
+        // a replay (DEV-UI-026) none of the city's keys act, so it says how to get back instead.
+        var footer = _replayViewer is not null ? "WATCHING A REPLAY  ESC RETURNS TO YOUR MATCH"
+            : _session is null ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
             : OnlineTurnStatus();
         font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
         DrawPressedCityConsole(batch);

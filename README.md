@@ -11,9 +11,8 @@ audio, music, video, help, and currently opaque resources. Compact gameplay
 tables are bundled in the open-source core; original art and media are not.
 
 Saves from the original game cannot be loaded, and the rebuild cannot write
-them. Its own saves and replays are development formats until 1.0.0 and may
-change incompatibly before then; the versioned migration machinery is retained
-for post-1.0 compatibility.
+them. See [Saves and replays across versions](#saves-and-replays-across-versions)
+for what an update does to the rebuild's own saves and replays.
 
 ## Quick start
 
@@ -267,8 +266,6 @@ validation plans list the open questions.
   ([#484](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/484)).
 - Key bindings cannot be changed
   ([#139](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139)).
-- Save and replay formats may change incompatibly before 1.0.0
-  ([#141](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141)).
 
 The technical documentation is cataloged in [docs/README.md](docs/README.md);
 [HANDOVER.md](docs/HANDOVER.md) describes each area of the rebuild in detail and
@@ -345,6 +342,11 @@ presentation-only conveniences that make the original systems easier to read:
   background; this changes presentation only.
 - Nine named save slots show when and how each match was played; Escape pauses
   into save/load controls before offering a confirmed return to the main menu.
+- F6 saves the match so far as a replay, and F10 plays it back over the city
+  map: play and pause at six speeds, step, jump a turn or to either end, click
+  the timeline, and select sectors to read their values in any frame. Every
+  step is checked against what was recorded before the first one is shown, and
+  the match in progress waits untouched until the replay closes.
 - Escape also offers Report Bug, which sends a written description and — unless
   the box is unticked — an anonymized, replayable journal of the whole match, so
   a deterministic bug arrives as something that can be reproduced rather than
@@ -395,10 +397,35 @@ presentation-only conveniences that make the original systems easier to read:
 | Credits | Shift+F1 | The original's Help > About screen; any key or click closes it |
 | Online play | Tab between enabled fields; Left/Right turn your overlord face; Enter creates or connects; F5 refreshes the browser | The form asks what you want to do, who you are, which session, and last which server: pick Host A New Game or Join With A Code, the arrows beside the face pick it, Paste fills the join code, Browse Games and Unfinished Sessions are the other ways in, and Copy copies the join code from the lobby |
 | Save / load | F5 / F9 | Use Save Game or Load Game in the Escape menu and choose one of nine slots |
-| Save / load replay | F6 / F10 | Local games only; records or verifies the recreation replay file |
+| Save / watch replay | F6 / F10 | Local games only. F6 saves the match so far as a replay; F10 plays the last one saved. In the replay, Space plays or pauses, Left/Right step, Page Up/Page Down jump a turn, Home/End go to either end, Up/Down change speed, W/A/S/D or a click select a sector, and Escape, Backspace or a right-click return to the match |
 | Finish planning | Space | Click the end-turn control |
 | Pause/game menu | Escape | Resume, save, load, adjust options, report a bug, or request a confirmed return to the main menu |
 | Report a bug | Escape, then Report Bug | Tab moves between the box, the checkbox and the buttons; Enter is a new paragraph in the box |
+
+## Saves and replays across versions
+
+Saves and replays are files of this rebuild, in its user data directory. Until
+1.0.0 they are development formats: an update may refuse saves and replays an
+earlier build made. From 1.0.0 on:
+
+- Every 1.x release loads the saves of every earlier 1.x release. Only a new
+  major version may stop loading them, and its release notes say so.
+- A replay plays only in a build with the same rules as the one that recorded
+  it, because playing it means checking every step against those rules. The
+  release notes of a version that cannot play earlier replays say so; earlier
+  releases stay downloadable for watching them.
+- A save or replay a build cannot read is left as it is. The save browser marks
+  a save from another version `SAVED BY ANOTHER BUILD` and will not load it;
+  F10 says `REPLAY FROM A NEWER VERSION` or `REPLAY FROM AN OLDER VERSION`.
+  Saving into that slot, or saving a replay, keeps the old file as the backup
+  generation (`.bak`) beside the new one.
+- When a save or replay is damaged, its last good backup loads or plays in its
+  place, and the save browser or the replay viewer says so. A replay whose
+  steps no longer reproduce reports `REPLAY DIVERGED AT STEP` and the step
+  number.
+
+The developer side of the policy is in
+[NATIVE-SAVE-FORMAT.md](docs/NATIVE-SAVE-FORMAT.md#compatibility-policy).
 
 ## Crash reports
 

@@ -33,6 +33,11 @@
     <!-- The deviations, for the check that a screen comparison masks only what a deviation of
          that screen draws (ScreenCaptureMasks). -->
     <None Include="../../deviations/DEV-*.md" LinkBase="deviations" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The save and replay compatibility policy: saves from stable releases that every later
+         build must load, and the format document whose stated versions must be the current ones
+         (SaveCompatibilityPolicyTests). -->
+    <None Include="../fixtures/stable-saves/*.rchsave" LinkBase="stable-saves" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../docs/NATIVE-SAVE-FORMAT.md" Link="docs/NATIVE-SAVE-FORMAT.md" CopyToOutputDirectory="PreserveNewest" />
     <!-- The capture coverage table, for the check that it names every compared capture. -->
     <None Include="../../docs/validation/screen-capture-coverage.md" Link="docs/validation/screen-capture-coverage.md" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
