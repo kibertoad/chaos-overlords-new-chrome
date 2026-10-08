@@ -44,7 +44,10 @@ public sealed partial class ChaosGame
         var control = keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl);
         foreach (var key in TitleShortcutKeys)
         {
-            if (Pressed(keyboard, key) && TitleShortcut(key, control) is { } action)
+            // The original's Ctrl accelerators stay on their physical keys; only the rebuild's
+            // single keys follow the bindings (DEV-UI-024).
+            var pressed = control ? RawPressed(keyboard, key) : Pressed(keyboard, key);
+            if (pressed && TitleShortcut(key, control) is { } action)
             {
                 RunTitleAction(action);
                 return;

@@ -10,7 +10,7 @@ namespace Rechaos.Game;
 /// </remarks>
 public static class OnlineHistoryPresentation
 {
-    public const string Hint = "UP/DOWN SELECT  ENTER REJOINS";
+    public const string Hint = "SELECT A ROW  CONFIRM TO REJOIN";
 
     /// <summary>
     /// Shown under the list when no keyring took the seats' tokens and the recovery file holds

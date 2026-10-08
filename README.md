@@ -265,7 +265,8 @@ validation plans list the open questions.
   ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)), and an online
   Comlink message can be read by a modified client at another seat
   ([#484](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/484)).
-- Key bindings cannot be changed
+- Only single-key shortcuts can be rebound, in Options > Keys; text editing
+  keys and key chords keep their defaults
   ([#139](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139)).
 - Save and replay formats may change incompatibly before 1.0.0
   ([#141](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141)).
@@ -374,6 +375,7 @@ presentation-only conveniences that make the original systems easier to read:
 
 | Action | Keyboard | Mouse |
 |---|---|---|
+| Default shortcut map | The keys below are defaults; use Options > Keys to change them | Mouse controls remain available |
 | Select a sector | Arrow keys or WASD | Click a sector |
 | Open or confirm | Enter | Double-click the selected sector or click a panel control |
 | Cycle gangs | G | Click a gang card |
@@ -388,6 +390,7 @@ presentation-only conveniences that make the original systems easier to read:
 | View/Send Comlink | M / N | Click the matching Comlink control |
 | Scenario information | J | Click Game Info |
 | Presentation and audio options | O | Click Options, then adjust the available gameplay-presentation, display, and audio choices |
+| Key bindings | K from Options | Click Keys in Options. Each row shows a shortcut's default key, its current key and what it does; the lines below the list say what the selected shortcut does on each screen. Select a shortcut with Up/Down, the mouse wheel, or a row click; then press Enter or Change and the new key. An occupied key swaps its other shortcut. Escape, right-click or Cancel stops key capture, so to put a shortcut on Escape, rebind the shortcut that holds Escape to that shortcut's key. Reset restores defaults. Text fields always read the printed keys. Choices are saved locally and carried over when an update adds shortcuts. |
 | Windowed/fullscreen display | F11 or Alt+Enter | Use either shortcut from any screen; the choice is remembered between launches |
 | Save a screenshot | F12 | Writes the finished native window backbuffer as a PNG to the game-local `screenshots` folder |
 | Planning timer (setup) | L | Click None, 30 Seconds, 2 Minutes, or 5 Minutes |

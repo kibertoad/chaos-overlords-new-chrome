@@ -39,6 +39,8 @@ public sealed partial class ChaosGame
     private readonly string _autoSavePath;
     private readonly string _replayPath;
     private readonly string _preferencesPath;
+    private readonly string _keyBindingsPath;
+    private KeyBindingMap _keyBindings;
     private readonly string _multiplayerRecoveryPath;
     private readonly bool _debugPhaseStepping;
     private readonly RuntimeDiagnostics? _diagnostics;
@@ -315,6 +317,10 @@ public sealed partial class ChaosGame
         _autoSave = new RollingAutoSave(_autoSavePath, ReportAutoSaveFailure);
         _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
         _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
+        _keyBindingsPath = Path.Combine(userDataRoot, "keybindings.json");
+        var keyBindings = KeyBindingStore.Load(_keyBindingsPath);
+        _keyBindings = keyBindings.Map;
+        _keyBindingSource = keyBindings.Source;
         _multiplayerRecoveryPath = Path.Combine(userDataRoot, "multiplayer-recovery.json");
         var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
         _musicVolumeLevel = preferences.MusicVolumeLevel;
@@ -424,10 +430,15 @@ public sealed partial class ChaosGame
         var keyboard = _shell.ReadKeyboard();
         var mouse = _shell.ReadMouse();
         // The rebuild's window shortcuts are not game events, so a fade does not swallow them.
-        if (Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
-        // Alt+Enter goes no further, so the Enter does not also act on the screen.
-        var altEnter = ShellWindow.AltEnter(keyboard, _previousKeyboard);
-        if (ShellWindow.TogglesFullscreen(keyboard, _previousKeyboard)) ToggleFullscreen();
+        // F11 and F12 are shortcuts like any other and follow the bindings; Alt+Enter is a chord on
+        // the physical Enter, whatever Enter is bound to (DEV-UI-024). The Keys panel captures every
+        // key, so none of them acts while it is open. Alt+Enter goes no further, so the Enter does
+        // not also act on the screen.
+        var editingKeyBindings = EditingKeyBindings;
+        if (!editingKeyBindings && Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
+        var altEnter = !editingKeyBindings && ShellWindow.AltEnter(keyboard, _previousKeyboard);
+        if (!editingKeyBindings && ShellWindow.TogglesFullscreen(keyboard, _previousKeyboard, _keyBindings))
+            ToggleFullscreen();
         // FND-AUDIO-016: the fade pumps window messages without game events.
         var soundtrackUpdated = _soundtrackFade is not null;
         if (soundtrackUpdated)
@@ -544,7 +555,7 @@ public sealed partial class ChaosGame
             // TextInput event can deliver that character to the field.
             if (!_idleGangWarningOpen && !TextInputHasFocus())
             {
-                var shortcut = ShellWindow.ShortcutFor(keyboard, _previousKeyboard);
+                var shortcut = ShellWindow.ShortcutFor(keyboard, _previousKeyboard, _keyBindings);
                 if (shortcut == ShellShortcut.Credits) OpenCredits();
                 else if (shortcut == ShellShortcut.Help) OpenHelp();
                 else if (shortcut == ShellShortcut.Options) OpenOptions();
@@ -757,6 +768,9 @@ public sealed partial class ChaosGame
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)
             HandleHelpScroll(virtualPoint, wheelDelta);
+        if (pointerMapped && EditingKeyBindings && KeyBindingsLayout.Panel.Contains(virtualPoint)
+            && wheelDelta != 0)
+            ScrollKeyBindings(wheelDelta);
         if (pointerMapped && mouse.LeftButton == ButtonState.Pressed)
         {
             _dragPoint = virtualPoint;
@@ -940,7 +954,4 @@ public sealed partial class ChaosGame
     }
 
     private static int Mod(int value, int divisor) => (value % divisor + divisor) % divisor;
-
-    private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
-
 }

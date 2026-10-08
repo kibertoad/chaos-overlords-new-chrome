@@ -67,14 +67,19 @@ public static class ShellWindow
     /// </summary>
     /// <param name="keyboard">The keys held this frame.</param>
     /// <param name="previous">The keys held the frame before.</param>
-    public static ShellShortcut ShortcutFor(KeyboardState keyboard, KeyboardState previous)
+    /// <param name="bindings">
+    /// The player's key bindings (DEV-UI-024); F1, O and Escape are read on the keys they are bound
+    /// to, and Shift is a chord on whichever key F1 is. Without a map the defaults apply.
+    /// </param>
+    public static ShellShortcut ShortcutFor(
+        KeyboardState keyboard, KeyboardState previous, KeyBindingMap? bindings = null)
     {
-        if (Pressed(keyboard, previous, Keys.F1))
+        if (Pressed(keyboard, previous, Bound(bindings, Keys.F1)))
             return keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift)
                 ? ShellShortcut.Credits
                 : ShellShortcut.Help;
-        if (Pressed(keyboard, previous, Keys.O)) return ShellShortcut.Options;
-        if (Pressed(keyboard, previous, Keys.Escape)) return ShellShortcut.Escape;
+        if (Pressed(keyboard, previous, Bound(bindings, Keys.O))) return ShellShortcut.Options;
+        if (Pressed(keyboard, previous, Bound(bindings, Keys.Escape))) return ShellShortcut.Escape;
         return ShellShortcut.None;
     }
 
@@ -84,8 +89,15 @@ public static class ShellWindow
         && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
 
     /// <summary>DEV-OPTIONS-003, DEV-UI-019: F11 or Alt+Enter switches full screen.</summary>
-    public static bool TogglesFullscreen(KeyboardState keyboard, KeyboardState previous) =>
-        Pressed(keyboard, previous, Keys.F11) || AltEnter(keyboard, previous);
+    /// <remarks>
+    /// F11 is read on the key it is bound to (DEV-UI-024). Alt+Enter is a chord and stays on the
+    /// physical Enter.
+    /// </remarks>
+    public static bool TogglesFullscreen(
+        KeyboardState keyboard, KeyboardState previous, KeyBindingMap? bindings = null) =>
+        Pressed(keyboard, previous, Bound(bindings, Keys.F11)) || AltEnter(keyboard, previous);
+
+    private static Keys Bound(KeyBindingMap? bindings, Keys key) => bindings?.Physical(key) ?? key;
 
     private static bool Pressed(KeyboardState keyboard, KeyboardState previous, Keys key) =>
         keyboard.IsKeyDown(key) && !previous.IsKeyDown(key);
