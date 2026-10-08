@@ -390,12 +390,10 @@ public sealed partial class MultiplayerMatchSession
                 _history.Apply(returned);
                 return;
             case MatchLatePlayerJoinedEvent joined:
-            {
-                var seated = _history.Seats.ContainsKey(joined.Payload.PlayerId);
-                _history.Apply(joined);
-                if (!seated) _awaitedSlots.Add(joined.Payload.Slot);
+                // What `MatchHistory.Apply` does with a late join, keeping whether it seated someone.
+                if (_history.AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot, _history.LogTurn))
+                    _awaitedSlots.Add(joined.Payload.Slot);
                 return;
-            }
             case TurnOpenedEvent opened:
                 _history.Apply(opened);
                 return;

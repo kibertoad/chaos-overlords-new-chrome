@@ -127,8 +127,15 @@ export class ResolverCore {
     const handle = this.use(matchId)
     const sealed =
       sealedOrders === undefined || sealedOrders === null ? null : JSON.stringify(sealedOrders)
-    this.refused(() => this.exports.ApplyEvent(handle, JSON.stringify(event), sealed))
-    const status = this.statusOf(handle)
+    const stateHash = this.refused(() =>
+      this.exports.ApplyEvent(handle, JSON.stringify(event), sealed),
+    )
+    // The hash it answers with is the one `StateHash` would read back.
+    const status: MatchStatus = {
+      stateHash,
+      turn: this.exports.Turn(handle),
+      finished: this.exports.IsFinished(handle),
+    }
     this.fit(matchId)
     return status
   }

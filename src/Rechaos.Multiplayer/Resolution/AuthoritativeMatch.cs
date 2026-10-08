@@ -31,6 +31,9 @@ public sealed class AuthoritativeMatch
 {
     private readonly MatchHistory _history;
 
+    /// <summary>The last fingerprint taken, with the journal length it was taken at.</summary>
+    private (int Steps, string Value)? _hash;
+
     private AuthoritativeMatch(MatchHistory history) => _history = history;
 
     private MatchReplayRecorder Replay => _history.Replay;
@@ -52,7 +55,21 @@ public sealed class AuthoritativeMatch
     public bool IsFinished => Replay.State.Outcome is not null;
 
     /// <summary>The fingerprint a client reports for the same state.</summary>
-    public string StateHash => MatchStateHasher.ComputeFingerprint(Replay.State);
+    /// <remarks>
+    /// Computed once per state. Most of a log's events (readiness, votes, deadlines) leave the state
+    /// alone, and each fingerprint is a pass over the whole match. Every change to the state goes
+    /// through the recorder and adds a step to its journal, so the step count says when the
+    /// fingerprint is stale.
+    /// </remarks>
+    public string StateHash
+    {
+        get
+        {
+            if (_hash is not { } hash || hash.Steps != Replay.StepCount)
+                _hash = hash = (Replay.StepCount, MatchStateHasher.ComputeFingerprint(Replay.State));
+            return hash.Value;
+        }
+    }
 
     /// <summary>
     /// The match as every client builds it on <c>match.started</c>: generated from the seed, the
@@ -194,7 +211,9 @@ public sealed class AuthoritativeMatch
                 throw new MultiplayerProtocolException(
                     $"the log sealed turn {seal.Turn}, and its sealed set was not given");
             }
-            return _history.ApplySealedSet(sealedOrders, seal.OrderSetHash);
+            var stateHash = _history.ApplySealedSet(sealedOrders, seal.OrderSetHash);
+            _hash = (Replay.StepCount, stateHash);
+            return stateHash;
         }
         return StateHash;
     }
