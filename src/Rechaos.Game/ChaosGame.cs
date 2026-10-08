@@ -125,6 +125,8 @@ public sealed partial class ChaosGame
     private int _selectedSetupPlayerSlot;
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
+    private bool _setupNameSelecting;
+    private TimeSpan _setupNameCaretShownAt;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.OneYear;
     // RULE-SETUP-002: the scenario a fresh local setup selects, Greed when nothing is stored.
@@ -323,7 +325,7 @@ public sealed partial class ChaosGame
         var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
         _musicVolumeLevel = preferences.MusicVolumeLevel;
         _soundEffectVolumeLevel = preferences.SoundEffectVolumeLevel;
-        _warnIfIdleGangs = preferences.WarnIfIdleGangs;
+        _warnIfIdleGangs = preferences.WarnIfIdleGangs && _referenceFrame?.IdleGangWarning != false;
         _selectedPlanningTimeLimit = preferences.PlanningTimeLimit;
         _showBaseStatistics = preferences.ShowBaseStatistics;
         _detailedCombat = preferences.DetailedCombat;
@@ -332,6 +334,7 @@ public sealed partial class ChaosGame
         _smoothEventSiteImages = preferences.SmoothEventSiteImages;
         _introMoviesSeen = preferences.IntroMoviesSeen;
         _introOnlyOnce = preferences.IntroOnlyOnce;
+        _planningTimer.StopsInGameMenu = preferences.PlanningClockStopsInMenu;
         _defaultAiPolicy = preferences.DefaultAiPolicy;
         _preferredScenario = preferences.PreferredScenario;
         _online.Service = preferences.OnlineService;
@@ -828,6 +831,7 @@ public sealed partial class ChaosGame
                 HandleLobbyClick(point);
                 break;
             case ClientScreen.Setup:
+                if (PressSetupName(point)) break;
                 var timed = ScenarioCatalog.Get(_selectedScenario).IsTimed;
                 var panelControl = SetupPanelLayout.HitTest(point, timed);
                 var durationRefused = !timed && SetupPanelLayout.DurationArea.Contains(point);
