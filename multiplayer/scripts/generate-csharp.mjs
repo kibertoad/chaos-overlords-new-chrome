@@ -177,7 +177,11 @@ function wireJsonContext(contracts) {
   const discriminators = [
     ...new Set(
       [
-        ...contracts.matchAll(/\[JsonPolymorphic\(TypeDiscriminatorPropertyName = ("\w+")\)\]/g),
+        // Any C# string literal, wherever the property sits among the attribute's arguments:
+        // a name this misses is a union whose tag `WireOrder` stops hoisting.
+        ...contracts.matchAll(
+          /\[JsonPolymorphic\([^\]]*?TypeDiscriminatorPropertyName = ("(?:[^"\\]|\\.)*")/g,
+        ),
       ].map((match) => match[1]),
     ),
   ]

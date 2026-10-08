@@ -49,12 +49,10 @@ step came 43 ms after the logos movie's last.
 
 ## Results
 
-`TheIntroPlaysEachMovieToTheStepAfterItsLastFrame` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Intro.cs` checks these
-observations and steps the rebuild's movie timeline for the same frame counts
-at 100 ms, at the original's steps: it decodes one frame at each of the first n
-steps and ends the movie at the last, 6 and 9 ms after the step before it, n + 1
-steps in all.
+A test of the rebuild checks these observations and steps the rebuild's movie
+timeline for the same frame counts at 100 ms, at the original's steps: it
+decodes one frame at each of the first n steps and ends the movie at the last, 6
+and 9 ms after the step before it, n + 1 steps in all.
 
 ## Conclusion
 

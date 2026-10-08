@@ -63,32 +63,33 @@ used by the shared template. What the original does now lives only in
 ### What exists
 
 - `spec/`: one build (BLD-GOG-EN-1.1, every file hashed with xxh3-128), three
-  sources, 334 findings (332 static and two dynamic from window captures;
-  FND-AI-030 and FND-AI-031 are superseded), no experiments, 24 formats (23 binary ones with Kaitai
+  sources, 334 findings (332 static and two dynamic from window captures),
+  no experiments, 24 formats (23 binary ones with Kaitai
   definitions that all compile), 159 rules in pseudocode, 16 bugs and 39
   screens across 47 areas, with the glossary and the generated indexes in
   `spec/index/`. All 464 game functions of FND-EXE-004 are cited. Only static
   evidence exists for nearly everything, so every rule, format and screen is
   `supported` and none is `established`; BUG-COMBAT-001, a reported freeze, is
   `unknown`.
-- [PARITY.md](../PARITY.md) and [DEVIATIONS.md](../DEVIATIONS.md) at the root.
+- [PARITY.md](../PARITY.md) at the root, generated from `parity/`, and `deviations/`.
   All 222 parity rows have `complete` code. Eleven are `validated` by tests
   against the shipped files (the data tables, image formats and palette,
   DATA.Z, the movies, the Help files and the Game Information texts); the
   other 211 are `implemented` and wait for experiments from the original.
-  DEVIATIONS.md holds 65 entries: 60 mandatory, 3 on and 2 off by default.
+  deviations/ holds 65 entries: 60 mandatory, 3 on and 2 off by default.
 - [static_validation_plan.md](../static_validation_plan.md) and
   [manual_validation_plan.md](../manual_validation_plan.md) at the root: every
   open question found during the conversion, grouped by part of the game.
   Manual work waits for the maintainer to schedule a session with the original.
-- `tools/check-spec.mjs` runs the standard's checks and writes `spec/index/`.
-  The fast gate runs it with `--check`. It compiles the `.ksy` files when
-  `kaitai-struct-compiler` (0.11) is on the path or named by `KSC`; it is
-  installed for this user under
-  `%LOCALAPPDATA%/Programs/kaitai-struct-compiler-0.11/bin`, and the CI fast
-  gate installs the pinned release (kibertoad/refurbished-dinosaurs-toolkit#1
-  moves that into a shared action). The script is meant to move into the
-  shared template.
+- `tools/check-documentation.mjs` runs the toolkit's standard checker (pinned
+  in the root `package.json`) with this game's settings. `PARITY.md` and
+  `spec/index/` are updated on main only, by the nightly workflow
+  `nightly-generated.yml`, and the check fails a branch that edits them. The
+  fast gate runs it with `--check`. It
+  compiles the `.ksy` files when `kaitai-struct-compiler` (0.11) is on the
+  path or named by `KSC`; it is installed for this user under
+  `%LOCALAPPDATA%/Programs/kaitai-struct-compiler-0.11/bin`, and the CI
+  workflows install the pinned release.
 - `tests/Rechaos.Tests/OriginalGameFiles.cs` resolves `GAME_DIR` as the standard
   lays it out and checks every file against its xxh3 hash, and `SpecHash.cs`
   computes the hash. `GAME_DIR` is not set on the maintainer's machine yet; tests
@@ -129,7 +130,7 @@ used by the shared template. What the original does now lives only in
 Read [AGENTS.md](../AGENTS.md#documentation) first. A static reading of the
 executable is a new `FND-*` entry; cite it from the rules, formats and screens
 it supports and raise their status. A change to the rebuild that departs from
-the spec is a `DEV-*` entry before it is code. Run `node tools/check-spec.mjs`
+the spec is a `DEV-*` entry before it is code. Run `node tools/check-documentation.mjs`
 until it reports nothing but the two option defaults above, then
 `node tools/update-doc-indexes.mjs`. Close items in the two plan files as the
 work lands.
@@ -864,7 +865,7 @@ same goal.
 `tools/Rechaos.OriginalProbe` runs the original under a debugger, records
 every `roll`, presses Done, can write orders for the human's gang, and dumps
 the state; `OriginalNewGameExperimentTests` replays each run and compares every
-roll and the end state. [VALIDATION.md](VALIDATION.md) gives the commands.
+roll and the end state. [experiments.md](validation/experiments.md) gives the commands.
 EXP-SETUP-001 to EXP-SETUP-004 and EXP-TURN-001 to EXP-TURN-011 are recorded,
 up to twenty-five turns, and every run replays exactly. The probe runs the
 original silent unless `--sound` is given.
@@ -903,7 +904,7 @@ original silent unless `--sound` is given.
   or `digest` records each element's digest in the fixture, and
   `ScreenCaptureTests` renders the replayed endpoint with `--reference-frame`
   and compares each element
-  ([VALIDATION.md](VALIDATION.md#screens-against-captures-of-the-original)).
+  ([screen-captures.md](validation/screen-captures.md)).
   The reference frame shows only the city at a planning entry with no panel
   open, and only SCR-UI-003 and SCR-HIRE-002 have element files. EXP-TURN-041's
   capture of the final view differs in the marker, the Done light and the

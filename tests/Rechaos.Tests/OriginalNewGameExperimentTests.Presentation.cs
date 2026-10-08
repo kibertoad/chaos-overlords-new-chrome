@@ -28,22 +28,23 @@ public sealed partial class OriginalNewGameExperimentTests
         return data;
     }
 
-    // RULE-SEARCH-002, FND-SEARCH-006: the probe writes the human's Search filter entries as the
+    // RULE-SEARCH-002, FND-SEARCH-006: the probe writes a human's Search filter entries as the
     // Search panel does and keeps every site marker of the last city redraw before the dump:
-    // definition, sector, ordinal and controlled flag, in drawing order. The rebuild's city shows
-    // the same markers for the same filter. EXP-TURN-045 selects every even site definition, so the
-    // ordinals skip the sites left out, and the human's Headquarters is drawn as controlled.
+    // definition, sector, ordinal and controlled flag, in drawing order, with the human it was
+    // drawn for. The rebuild's city shows that human the same markers for the filter the probe set
+    // for that human. EXP-TURN-045 selects every even site definition, so the ordinals skip the
+    // sites left out, and the human's Headquarters is drawn as controlled.
     [Theory]
     [MemberData(nameof(MarkerRuns))]
     public void TheCityShowsTheOriginalsSiteMarkers(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var drawn = recorded.CityMarkers!;
-        // The probe writes the first human's filter, so only that human's redraw is compared.
-        Assert.Equal(recorded.Humans[0].Value, drawn.Viewer);
-        var filter = recorded.SearchFilter.Select(definition => (short)definition).ToHashSet();
-        var markers = CitySiteMarkerProjection.Project(match, new PlayerId(drawn.Viewer), filter)
+        var viewer = new PlayerId(drawn.Viewer);
+        Assert.Contains(viewer, recorded.Humans);
+        var filter = recorded.SearchFilter(viewer).Select(definition => (short)definition).ToHashSet();
+        var markers = CitySiteMarkerProjection.Project(match, viewer, filter)
             .Select(marker => $"{marker.SiteDefinitionId},{marker.SectorId},{marker.VisibleSlot},{(marker.Controlled ? 1 : 0)}")
             .ToArray();
         Assert.Equal(drawn.Markers.Select(marker => string.Join(",", marker)), markers);
@@ -87,7 +88,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheHireDockSetsTheOriginalsOrders(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var player = match.FindPlayer(human)!;
         foreach (var step in recorded.HireSteps)
@@ -154,7 +155,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheSearchPanelChangesTheOriginalsFilters(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var rows = SiteSearchPanel.Rows(match.Definitions);
         Assert.Equal(Enumerable.Range(0, SiteSearchLayout.MaximumSites).Select(row => (short)row), rows);
@@ -177,7 +178,10 @@ public sealed partial class OriginalNewGameExperimentTests
             {
                 var handled = SiteSearchPanel.Press(selections, human, point, rows, doubleClicks, time);
                 Assert.False(handled.OpensDetails);
-                if (handled.Press.Control == SiteSearchControl.Done) open = false;
+                // The probe releases each press where it pressed, so ALL, NONE and Done act on
+                // that release (FND-UI-062).
+                if (handled.Press.Control is SiteSearchControl.All or SiteSearchControl.None or SiteSearchControl.Done)
+                    open = !SiteSearchPanel.Release(selections, human, handled.Press.Control, rows);
             }
             Assert.Equal(human.Value, click.ActivePlayer);
             Assert.Equal(click.PanelOpen, open);
@@ -198,7 +202,7 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // RULE-EQUIP-004: at the endpoint the probe called the original's Equip list builder for every
-    // category of every living gang of the human (FND-EQUIP-008). The rebuild offers the same items,
+    // category of every living gang of the human (FND-EQUIP-012). The rebuild offers the same items,
     // in item record order, as its legal Equip commands of the gang in that category, and gives the
     // gang the Tech Level the builder was passed.
     [Theory]
@@ -206,7 +210,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheEquipListOffersTheOriginalsItems(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var gangs = match.Players[human.Value].Gangs;
         // The probe builds lists for every living gang, so the recorded slots are the living ones.
@@ -252,7 +256,7 @@ public sealed partial class OriginalNewGameExperimentTests
     public void TheAttackPickerOffersTheOriginalsTargets(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var human = recorded.Humans[0];
         var gangs = match.Players[human.Value].Gangs;
         // The probe builds a list for every other player and every living gang, so the recorded
@@ -294,18 +298,25 @@ public sealed partial class OriginalNewGameExperimentTests
     // splash. The rebuild's endgame lists the same players in the same order and places.
     // EXP-TURN-038 has two players tied at standing 0 and EXP-TURN-039 two tied at standing 1,
     // listed in slot order. EXP-UI-023 ends with one player active and draws only its splash.
+    // TheRebuildStartsTheSameMatch requires these rows of every run that ends after the awards.
     [Theory]
     [MemberData(nameof(EndgameRuns))]
     public void TheEndgameListsThePlayersInTheOriginalsOrder(string experiment, int run)
     {
         var recorded = Run(experiment, run);
-        var match = StartMatch(recorded, out _);
+        var match = Replayed(recorded).Match;
         var drawn = recorded.EndgameRows!;
-        if (drawn.Kinds is ["splash"])
+        Assert.Equal(3, drawn.Arguments.Count);
+        // The mode comes from the renderer's arguments, so a drawing whose names the probe missed
+        // fails on the names it lacks and is not taken for the other mode.
+        if (drawn.DrawsSplash)
         {
-            Assert.Equal(drawn.Players[0], EndgameNoticePresentation.Survivor(match)?.Player.Value);
+            Assert.True(drawn.Kinds.SequenceEqual(["splash"]) && drawn.Players.SequenceEqual([drawn.Arguments[2]]),
+                $"the splash of player {drawn.Arguments[2]} listed [{string.Join(", ", drawn.Players)}] as [{string.Join(", ", drawn.Kinds)}]");
+            Assert.Equal(drawn.Arguments[2], EndgameNoticePresentation.Survivor(match)?.Player.Value);
             return;
         }
+        Assert.DoesNotContain("splash", drawn.Kinds);
         Assert.Null(EndgameNoticePresentation.Survivor(match));
         var rows = EndgamePresentation.Rows(match);
         Assert.Equal(drawn.Players, rows.Select(row => row.Player.Value));

@@ -8,7 +8,7 @@ corruption.
 
 A capture that a test compares with the rebuild pixel for pixel is taken by
 the original probe instead, at a known experiment state; see
-[Screens against captures of the original](VALIDATION.md#screens-against-captures-of-the-original).
+[Screens against captures of the original](validation/screen-captures.md).
 
 For the original game's exclusive compatibility mode, start the helper before
 launching the game. Open PowerShell as Administrator and run:

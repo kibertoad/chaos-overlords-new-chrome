@@ -10,16 +10,16 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00475FE1..0x004764B5
+    address: 0x00475FE1..0x004764B6
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004782C5..0x0047862F
+    address: 0x004782C5..0x00478630
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00472A50..0x0047317B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004127D4..0x00412856
+    address: 0x004127D4..0x0041285E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0044398E
@@ -134,4 +134,4 @@ List the references to `0x004A08E9`, `0x004A08EA`, `0x004A08EC`,
 read the stores to `[EBP+0x0F]`, `[EBP+0x10]`, `[EBP+0x11]`, `[EBP+0x12]`,
 `[EBP+0x19]`, `[EBP+0x1A]` and `[EBP+0x22..0x2F]` (record offset = `EBP`
 offset - `0x0C`), the compare at `0x0047835B`, and the switch on the special
-field at `0x004785EE..0x00478606`.
+field at `0x004785EE..0x0047860C`.

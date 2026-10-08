@@ -43,12 +43,12 @@ and the human had 26 cash.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state. In its replay the sector's base Tolerance
-at the planning of turns 1 to 7 is 11, 8, 6, 4, 2, 1 and 1: each resolution
-moves it one point up toward 17 - 6 = 11 (RULE-TOLERANCE-001) and the Snitch
-takes 3 off. In turn 5 that makes 0 and in turn 6 -1, and both end at 1.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same generator position and state. In
+its replay the sector's base Tolerance at the planning of turns 1 to 7 is 11, 8,
+6, 4, 2, 1 and 1: each resolution moves it one point up toward 17 - 6 = 11
+(RULE-TOLERANCE-001) and the Snitch takes 3 off. In turn 5 that makes 0 and in
+turn 6 -1, and both end at 1.
 
 ## Conclusion
 

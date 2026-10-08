@@ -12,8 +12,8 @@ public sealed partial class ChaosGame
         var playerId = ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
         var background = _financeScope == FinanceScope.City
-            ? _cityFinanceBackground
-            : _sectorFinanceBackground;
+            ? CityFinanceBackground
+            : SectorFinanceBackground;
         if (background is not null)
             batch.Draw(background, FinanceLayout.Panel, FinanceLayout.BackgroundSource, Color.White);
         else
@@ -25,8 +25,8 @@ public sealed partial class ChaosGame
         // from the unmarked copy of the city map, as Gangs in Sector does, and frames it in black.
         if (sectorId is { } tileSector)
             DrawUnmarkedSectorCell(batch, pixel, tileSector, FinanceLayout.SectorTile);
-        else if (_uiSprites is not null)
-            batch.Draw(_uiSprites, FinanceLayout.Portrait,
+        else if (UiSprites is not null)
+            batch.Draw(UiSprites, FinanceLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         int[] rows =
         [
@@ -67,7 +67,7 @@ public sealed partial class ChaosGame
     private void DrawSearch(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         DrawMapBackdrop(batch, pixel, font, state, _managementReturnScreen);
-        DrawPanelArtwork(batch, pixel, _siteSearchBackground, SiteSearchLayout.Panel);
+        DrawPanelArtwork(batch, pixel, SiteSearchBackground, SiteSearchLayout.Panel);
 
         var sites = state.Definitions.Sites.OrderBy(site => site.Id)
             .Take(SiteSearchLayout.MaximumSites).ToArray();
@@ -83,8 +83,8 @@ public sealed partial class ChaosGame
             // characters of its name, from the plain font when selected and the row at (152,274)
             // when not.
             var icon = SiteSearchLayout.Icon(index);
-            if (_siteMarkerSprites is not null)
-                batch.Draw(_siteMarkerSprites, icon, SiteSearchLayout.IconSource(sites[index].Id), Color.White);
+            if (SiteMarkerSprites is not null)
+                batch.Draw(SiteMarkerSprites, icon, SiteSearchLayout.IconSource(sites[index].Id), Color.White);
             var name = sites[index].Name;
             font.Copy(batch, name[..Math.Min(name.Length, SiteSearchLayout.NameCharacters)],
                 new Point(icon.X + 24, icon.Y + 3),
@@ -171,16 +171,26 @@ public sealed partial class ChaosGame
         {
             case SiteSearchControl.All:
             case SiteSearchControl.None:
-                AcceptInput();
-                break;
             case SiteSearchControl.Done:
-                ApplySiteSearch();
+                // FND-UI-062: the face is held until the button comes up and acts only on a
+                // release inside it.
+                var held = click.Press.Control;
+                PressPanelFace(point, SiteSearchLayout.Panel, SiteSearchLayout.Target(held),
+                    () => ReleaseSiteSearchControl(held), SiteSearchLayout.HeldKind(held));
                 break;
             case SiteSearchControl.Row:
                 _siteSearchCursor = click.Press.Row;
                 if (click.OpensDetails) OpenSiteDefinitionDetails(rows[click.Press.Row], ClientScreen.Search);
                 break;
         }
+    }
+
+    /// <summary>A release inside the held ALL, NONE or Done, the only release the panel face hold acts on.</summary>
+    private void ReleaseSiteSearchControl(SiteSearchControl held)
+    {
+        if (!SiteSearchPanel.Release(_siteSearchSelections, SiteSearchPlayer(), held, SiteSearchRows())) return;
+        _message = string.Empty;
+        CloseSiteSearch();
     }
 
     private PlayerId SiteSearchPlayer() =>
@@ -194,17 +204,17 @@ public sealed partial class ChaosGame
 
     private void DrawRankingPanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawPanelArtwork(batch, pixel, _rankingBackground, PlayerRankingLayout.Panel);
-        if (_uiSprites is null) return;
+        DrawPanelArtwork(batch, pixel, RankingBackground, PlayerRankingLayout.Panel);
+        if (UiSprites is null) return;
         var entries = PlayerRankingPresentation.Project(state);
         foreach (var entry in entries)
         {
             var player = state.FindPlayer(entry.Player)!;
-            batch.Draw(_uiSprites,
+            batch.Draw(UiSprites,
                 PlayerRankingLayout.Portrait(entry),
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         }
-        if (_hoverPoint is { } hover)
+        if (TooltipHoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, PlayerRankingTooltip.At(hover, state, entries));
     }
 }

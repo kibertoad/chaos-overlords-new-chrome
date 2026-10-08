@@ -38,7 +38,7 @@
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 26"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 27"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 28"},
-    {"tick":null,"name":"order","value":"turn 29: gang slot 0 action 1 target 4 target_2 10 repeat 0"},
+    {"tick":null,"name":"order","value":"turn 29: player 0 gang slot 0 action 1 target 4 target_2 10 repeat 0"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 29"},
     {"tick":null,"name":"left_click","value":"(524, 218), command 0 after the dump"},
     {"tick":null,"name":"left_click","value":"(161, 304), command 0 after the dump"}
