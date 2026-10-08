@@ -90,6 +90,7 @@
     "spec/experiments/EXP-UI-011.json",
     "spec/experiments/EXP-UI-012.json",
     "spec/experiments/EXP-UI-018.json",
+    "spec/experiments/EXP-UI-045.json",
     "spec/experiments/EXP-UI-046.json",
     "spec/experiments/EXP-UI-030.json"
   ]
