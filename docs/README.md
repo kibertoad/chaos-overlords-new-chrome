@@ -100,7 +100,7 @@ are. Git history provides change dates.
 | [spec/](../spec/README.md) | The original game: builds, sources, findings, experiments, formats with their Kaitai definitions, rules, bugs, screens, the glossary, and the generated indexes |
 | [PARITY.md](../PARITY.md) | Generated from `parity/<AREA>.md`, which holds one row per rule, format and screen entry: how much of it the rebuild does, the tests that compare it with the original, and the deviations from it |
 | `deviations/` | Every deliberate departure from the spec, one `DEV-*` entry per file with its setting |
-| [validation/](../validation/) | One file per run of the test files that check a validated row against the original's files, with the SHA-256 of each as it was when its tests passed there |
+| `validation/` | One file per run of the test files that check a validated row against the original's files, with the SHA-256 of each as it was when its tests passed there |
 | [static_validation_plan.md](../static_validation_plan.md) | Open questions that a reading of the executable or the data files can settle |
 | [manual_validation_plan.md](../manual_validation_plan.md) | Open questions that need a person to run the original |
 | [parity-achievement-plan.md](../parity-achievement-plan.md) | The steps, in order, that take every row of PARITY.md to complete and then to validated |

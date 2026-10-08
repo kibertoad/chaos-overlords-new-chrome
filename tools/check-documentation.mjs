@@ -24,9 +24,10 @@
 // --allow-unrecorded-validation (this script's own option) passes a run whose only problems are
 // test files of validated rows that no run in validation/ records yet or records only at an earlier
 // version, and run files that no longer record any of them as they are now, which the next record
-// deletes. The pre-commit hook uses it: the record can only be written after the tests ran on the
-// committed tree, so the commit that changes such a test has to go in before its record. CI runs
-// without it.
+// deletes. When no validated row has a marked test file left to record, no record will delete such
+// a run file, so it blocks as it does in CI. The pre-commit hook uses the option: the record can
+// only be written after the tests ran on the committed tree, so the commit that changes such a test
+// has to go in before its record. CI runs without it.
 //
 // STANDARD_CHECKER_ROOT names the directory whose node_modules holds the checker, for a run over a
 // copy of the tree (the pre-commit hook checks the staged files in a temporary directory). It
@@ -170,8 +171,12 @@ if (run.status === 0) {
   process.stderr.write(run.stderr);
   process.exit(0);
 }
-const unrecorded =
-  /: (?:\S+ is in no run in validation\/, so the row cannot be validated|\S+ has changed since a run in validation\/ recorded it|records no marked test file of a validated row as it is now)/;
+const unrecordedTest =
+  /: \S+ (?:is in no run in validation\/, so the row cannot be validated|has changed since a run in validation\/ recorded it)/;
+// The checker adds the parenthesis only while there is a marked test file to record. Without one,
+// --record-validation refuses to run, so nothing would ever delete the stale run file.
+const staleRun = /: records no marked test file of a validated row as it is now; delete it \(--record-validation deletes such runs\)/;
+const allowed = (line) => unrecordedTest.test(line) || staleRun.test(line);
 // The checker prints one problem per line, then a blank line and its summary. Every line before
 // that blank line is a problem, whatever its shape, so an unexpected line blocks the commit.
 const lines = run.stderr.split(/\r?\n/);
@@ -179,13 +184,21 @@ const summaryAt = lines.indexOf("");
 const problems = (summaryAt < 0 ? lines : lines.slice(0, summaryAt)).filter(
   (line) => line && !/^Skipped: /.test(line),
 );
-if (run.status === 1 && problems.length > 0 && problems.every((line) => unrecorded.test(line))) {
+if (run.status === 1 && problems.length > 0 && problems.every(allowed)) {
   for (const line of problems) console.error(`warning: ${line}`);
-  console.error(
-    "check-documentation: only validation runs are missing or stale; after this commit, run " +
-      "the listed tests against the original's files and record them with " +
-      "node tools/check-documentation.mjs --record-validation BLD-GOG-EN-1.1.",
-  );
+  if (problems.some((line) => unrecordedTest.test(line))) {
+    console.error(
+      "check-documentation: only validation runs are missing or stale; after this commit, run " +
+        "the listed tests against the original's files and record them with " +
+        "node tools/check-documentation.mjs --record-validation BLD-GOG-EN-1.1, which also " +
+        "deletes any run file listed here.",
+    );
+  } else {
+    console.error(
+      "check-documentation: only run files that no longer match any marked test file are listed; " +
+        "delete them, which needs no run of the original.",
+    );
+  }
   process.exit(0);
 }
 process.stderr.write(run.stderr);
