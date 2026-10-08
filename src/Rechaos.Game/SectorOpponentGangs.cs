@@ -60,6 +60,17 @@ public static class SectorOpponentGangs
     }
 
     /// <summary>
+    /// FND-UI-017: the seat whose portrait the sector view's Overlord bar marks. The compositor
+    /// marks <paramref name="viewed"/>, and the bar's redraw drops the marker when no seat has a
+    /// gang in the sector that the viewer sees (<paramref name="seenSeats"/>, EXP-UI-045).
+    /// </summary>
+    public static PlayerId? MarkedSeat(PlayerId viewed, IReadOnlyList<bool> seenSeats)
+    {
+        ArgumentNullException.ThrowIfNull(seenSeats);
+        return seenSeats.Contains(true) ? viewed : null;
+    }
+
+    /// <summary>
     /// The overlord whose portrait on the Overlord bar covers the point, when one does
     /// (FND-UI-015: <c>(12 + 70n, 5, 62, 32)</c>).
     /// </summary>
