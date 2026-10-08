@@ -118,6 +118,16 @@ point `(x, y)` as `open` does (FND-UI-020), `strip:x:y:0` presses a point,
 control and `exit` the Exit of the panel the planning entry left open.
 EXP-UI-006 to EXP-UI-014 are taken this way.
 
+Animated parts of a screen that no state chooses, the Overlord bar's marker
+(FND-UI-038) and the selected sector's outline (FND-UI-017), are compared frame
+by frame with shots alone: `shot:SCR-UI-003` and `wait:37` in turn, with
+nothing pressed, let both counters move on between copies, and each shot keeps
+the marker frame and the pump's counter it shows, at which the rebuild draws
+its frame. Thirty shots at the first planning entry show all twelve marker
+frames and both outline frames (EXP-UI-031). Exact-white pixels need no
+special handling in such a comparison once `--white-key` is given
+(EXP-UI-003).
+
 A shot can also show a control while a button holds it. `down:x:y` presses the
 left button at `(x, y)` and keeps it down, `move:x:y` moves the pointer there
 with the button down, and `up:x:y` releases it there; `rdown:x:y` and
