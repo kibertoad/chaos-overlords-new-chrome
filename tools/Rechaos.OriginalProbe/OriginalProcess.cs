@@ -29,7 +29,10 @@ internal sealed class OriginalProcess : IDisposable
     public int ExitCode { get; private set; }
     public DateTime LastBreakpointUtc { get; private set; } = DateTime.UtcNow;
 
-    /// <summary>Exceptions the probe did not handle itself, with their code and address.</summary>
+    /// <summary>
+    /// Exceptions the probe did not handle itself, with their code and address, and the patches
+    /// skipped because their bytes did not match.
+    /// </summary>
     public List<string> Log { get; } = [];
 
     public static OriginalProcess Start(string executable, string workingDirectory)
