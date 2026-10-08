@@ -336,8 +336,8 @@ votes) can see one.
 | Call | Who | Effect |
 |---|---|---|
 | `POST /spectate` | anyone | `{ joinCode, displayName, password? }`. Admits a spectator to a match whose host allows it, whatever its status. Answers the spectator view, the spectator's row and its token. Refusals: `404 unknown_join_code`, `401 password_required` or `wrong_password`, `403 spectating_disabled`, `409 spectators_full`. |
-| `GET /spectate/:id` | spectator | The match as a spectator may see it: status, settings without `seatSummaries`, roster, `currentTurn`, `delayTurns`, `releasedTurn`, and the seed once `releasedTurn` is at least 1. |
-| `GET /spectate/:id/events?after=&limit=` | spectator | The released part of the log, filtered to `match.started`, `match.playerTakenOver`, `match.playerReturned`, `match.latePlayerJoined`, `turn.opened` and `turn.sealed`, with a `cursor` to continue from. It stops at the seal of the first turn not yet released. |
+| `GET /spectate/:id` | spectator | The match as a spectator may see it: status (`desynced` reads as `running`), settings without `seatSummaries`, roster (the one the match started with while it runs), `currentTurn`, `delayTurns`, `releasedTurn`, and the seed once `releasedTurn` is at least 1. |
+| `GET /spectate/:id/events?after=&limit=` | spectator | The released part of the log, filtered to `match.started`, `match.playerTakenOver`, `match.playerReturned`, `match.latePlayerJoined`, `turn.opened` and `turn.sealed`, with a `cursor` to continue from. While the match runs it ends at the seal of the released turn, or at `match.started` while no turn is released. |
 | `GET /spectate/:id/turns/:turn/orders` | spectator | A released turn's sealed set. A later turn answers `409 turn_not_released` with the released turn. |
 | `GET /spectate/:id/snapshots/latest` | spectator | The newest snapshot at or below the released turn (`404 no_snapshot` before the host's bootstrap upload, and until the bootstrap is the delay old). |
 | `POST /spectate/:id/leave` | spectator | Stops watching and revokes the token. |
@@ -351,6 +351,20 @@ are held back until `currentTurn - 1 - delay` reaches 0: with a delay of 2, unti
 Once the match is finished or abandoned, every sealed turn is. In the lobby nothing is.
 Every spectator read is checked against that number on the server, so a client cannot ask past it.
 
+**Where a spectator's knowledge ends.** A spectator learns nothing logged after the released turn's
+seal while the match runs. The event log is read up to and including the `turn.sealed` of the
+released turn (`match.started` once the start is released and no turn is yet, nothing before),
+found by the key the seal was announced under, and nothing after it is returned or skipped by the cursor. A client applies whatever it meets
+after a turn's seal to the next turn, so a takeover, a return or a late join logged there, even
+before the next `turn.opened`, describes a turn the players are still playing or have played less
+than `delay` turns ago. It reaches the spectator with the turn it belongs to. The state shown for
+turn N is therefore the city as turn N's seal left it, with no seat handed over for turn N+1. The
+spectator view follows the same rule: its roster is the one `match.started` announced, every seat
+`active`, rather than the live roster with its departures, computer seats and late joiners, and a
+match paused on a desync reads as `running`. Only the open turn number, which the delay is counted
+from, is live. Once the match is finished or abandoned every event of those types and the live
+roster are released.
+
 **What a spectator sees.** The whole city as every client holds it, on the released turn: every
 seat's gangs, cash and holdings, the fog the players cannot see through, and every order each seat
 sealed. That is hidden information to the players, and the delay is what keeps it from being an
@@ -360,8 +374,8 @@ spectator reads is about a turn a player could still act on. If the Comlink is c
 sealed sets, its messages are released to spectators on the same terms.
 
 **What a spectator does not see.** Order submissions, readiness, state-hash reports, desync
-verdicts, takeover votes, lobby chat, the live `seatSummaries`, and every event after the seal of
-the first unreleased turn. Spectators do not get the event stream; they poll.
+verdicts, takeover votes, lobby chat, the live `seatSummaries`, the live roster, and every event
+after the seal of the released turn. Spectators do not get the event stream; they poll.
 
 **Limits.** A match admits 64 spectators over its whole life, counted in the same statement that
 admits one, and a spectator who leaves or is removed still counts. That bounds how many

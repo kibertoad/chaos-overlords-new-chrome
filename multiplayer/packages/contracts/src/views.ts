@@ -116,8 +116,14 @@ export const spectatorMatchViewSchema = strictObject({
   id: resourceIdSchema,
   protocolVersion: protocolVersionSchema,
   sessionVersion: sessionVersionSchema,
+  /** The match's status, with `desynced` reported as `running`: a desync is the players' own. */
   status: matchStatusSchema,
   settings: matchSettingsSchema,
+  /**
+   * While the match runs, the roster it started with, every seat `active`: who has left, joined
+   * late or been handed to the computer since reaches a spectator through the released events. In
+   * the lobby and once the match is over, the roster as it stands.
+   */
   players: array(playerViewSchema),
   /** The turn the players have open, or 0 in the lobby. */
   currentTurn: turnNumberSchema,

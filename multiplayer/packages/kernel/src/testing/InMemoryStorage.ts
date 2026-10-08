@@ -43,7 +43,7 @@ export class InMemoryStorage implements MultiplayerStorage {
     { matchId: string; playerId: string; turn: number; openedAt: Date; announcedAt: Date | null }
   >()
   /** `matchId` + dedupe key of every event appended with `appendOnce`, as the unique index holds. */
-  private readonly eventKeys = new Set<string>()
+  private readonly eventKeys = new Map<string, number>()
   private readonly voteRows = new Map<string, TakeoverVote>()
   private readonly spectatorRows = new Map<string, Spectator>()
 
@@ -588,10 +588,13 @@ export class InMemoryStorage implements MultiplayerStorage {
     appendOnce: async (event, dedupeKey) => {
       const key = `${event.matchId}\u0000${dedupeKey}`
       if (this.eventKeys.has(key)) return null
-      // Taken before the first await, as the unique index takes it inside the insert.
-      this.eventKeys.add(key)
+      // Taken before the first await, as the unique index takes it inside the insert. The
+      // sequence number is filled in once the append has allocated it.
+      this.eventKeys.set(key, 0)
       try {
-        return await this.events.append(event)
+        const persisted = await this.events.append(event)
+        this.eventKeys.set(key, persisted.seq)
+        return persisted
       } catch (error) {
         // A failed insert rolls its key back with it, so a retry of the announcement can log it.
         this.eventKeys.delete(key)
@@ -611,6 +614,10 @@ export class InMemoryStorage implements MultiplayerStorage {
       }
       return null
     },
+    seqOfKey: async (matchId, dedupeKey) => {
+      const seq = this.eventKeys.get(`${matchId}\u0000${dedupeKey}`)
+      return seq === undefined || seq === 0 ? null : seq
+    },
     lastSeq: async (matchId) => this.eventRows.get(matchId)?.at(-1)?.seq ?? 0,
   }
 
@@ -618,7 +625,7 @@ export class InMemoryStorage implements MultiplayerStorage {
   private deleteMatch(matchId: string): void {
     this.matchRows.delete(matchId)
     this.eventRows.delete(matchId)
-    for (const key of this.eventKeys) {
+    for (const key of this.eventKeys.keys()) {
       if (key.startsWith(`${matchId}\u0000`)) this.eventKeys.delete(key)
     }
     for (const [id, player] of this.playerRows) {

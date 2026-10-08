@@ -1584,5 +1584,26 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       })
       expect(await storage.events.latestOfType(match.id, 'turn.desynced')).toBeNull()
     })
+
+    it('finds where an announcement logged under a key landed, for its own match only', async () => {
+      const match = matchFixture()
+      const other = matchFixture()
+      for (const row of [match, other]) await storage.matches.create(row)
+      const sealed = (matchId: string, turn: number) =>
+        ({
+          matchId,
+          type: 'turn.sealed',
+          payload: { turn, orderSetHash: 'a'.repeat(64) },
+          createdAt: '2026-03-01T16:00:00.000Z',
+        }) as const
+      await storage.events.append(sealed(match.id, 1))
+      await storage.events.appendOnce(sealed(match.id, 2), 'turn.sealed:2')
+      await storage.events.appendOnce(sealed(match.id, 2), 'turn.sealed:2')
+      await storage.events.appendOnce(sealed(other.id, 3), 'turn.sealed:3')
+
+      expect(await storage.events.seqOfKey(match.id, 'turn.sealed:2')).toBe(2)
+      expect(await storage.events.seqOfKey(match.id, 'turn.sealed:3')).toBeNull()
+      expect(await storage.events.seqOfKey(other.id, 'turn.sealed:3')).toBe(1)
+    })
   })
 }

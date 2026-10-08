@@ -2,6 +2,7 @@ import {
   LIMITS,
   type MatchEventType,
   type MatchSettings,
+  type PlayerView,
   type SealedOrdersView,
   type SnapshotView,
   type SpectateRequest,
@@ -15,6 +16,7 @@ import type { Match, PersistedEvent, Spectator } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../domain/errors'
 import { generateSpectatorToken, hashToken, SPECTATOR_TOKEN_PREFIX } from '../logic/crypto'
 import { spectatorDelay, startReleased } from '../logic/spectating'
+import { sealAnnouncementKey } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
@@ -122,17 +124,15 @@ export class SpectatorService {
   async view(principal: SpectatorPrincipal): Promise<SpectatorMatchView> {
     const { match } = principal
     const delay = requireSpectating(match)
-    const [released, players] = await Promise.all([
-      this.released(match),
-      this.deps.storage.players.listByMatch(match.id),
-    ])
+    const [released, players] = await Promise.all([this.released(match), this.roster(match)])
     return {
       id: match.id,
       protocolVersion: match.protocolVersion,
       sessionVersion: match.sessionVersion,
-      status: match.status,
+      // A desync is the players' verdict about a turn the delay has not released.
+      status: match.status === 'desynced' ? 'running' : match.status,
       settings: withoutLiveSummaries(match.settings),
-      players: players.map((player) => toPlayerView(player, match.hostPlayerId)),
+      players,
       currentTurn: match.currentTurn,
       delayTurns: delay,
       releasedTurn: released,
@@ -144,10 +144,12 @@ export class SpectatorService {
   /**
    * The released events that decide who controls each seat, from `after`.
    *
-   * The log is read up to the seal of the first turn not released, which is where a spectator's
-   * knowledge ends; a takeover logged after that seal is about a turn they may not see yet. The
-   * cursor the answer carries moves past the events left out, so a quiet stretch of readiness and
-   * chat is examined once rather than on every poll.
+   * While the match runs the log is read up to and including the seal of the released turn (the
+   * start announcement while no turn is released), and nothing after it. Whatever a player's
+   * client meets after that seal it applies to the next turn, so a handover logged there, even
+   * before that turn's `turn.opened`, is about a turn a spectator may not see yet. Once the match
+   * is over the whole log is released. The cursor the answer carries moves past the events left
+   * out, so a quiet stretch of readiness and chat is examined once rather than on every poll.
    */
   async events(
     principal: SpectatorPrincipal,
@@ -156,26 +158,20 @@ export class SpectatorService {
   ): Promise<SpectatorEventPage> {
     const { match } = principal
     requireSpectating(match)
-    // Before the start is released, a takeover during turn 1 is news about the open turn.
-    if (!startReleased(match)) return { events: [], cursor: after }
-    const released = await this.released(match)
-    const ended = match.status === 'finished' || match.status === 'abandoned'
+    const lastReleasedSeq = await this.lastReleasedSeq(match)
     const events: PersistedEvent[] = []
     let cursor = after
     let scanned = 0
-    while (events.length < limit && scanned < SPECTATOR_EVENT_SCAN) {
+    while (events.length < limit && scanned < SPECTATOR_EVENT_SCAN && cursor < lastReleasedSeq) {
+      // The sequence is gapless, so a page never needs to reach past the cut.
       const page = await this.deps.storage.events.listAfter(
         match.id,
         cursor,
-        Math.min(LIMITS.eventsPageSize, SPECTATOR_EVENT_SCAN - scanned),
+        Math.min(LIMITS.eventsPageSize, SPECTATOR_EVENT_SCAN - scanned, lastReleasedSeq - cursor),
       )
       if (page.length === 0) break
-      let reachedCutoff = false
       for (const event of page) {
-        if (!ended && event.type === 'turn.sealed' && event.payload.turn > released) {
-          reachedCutoff = true
-          break
-        }
+        if (event.seq > lastReleasedSeq) break
         scanned++
         cursor = event.seq
         if (SPECTATOR_EVENT_TYPES.has(event.type)) {
@@ -183,9 +179,28 @@ export class SpectatorService {
           if (events.length >= limit) break
         }
       }
-      if (reachedCutoff || page.length < LIMITS.eventsPageSize) break
+      if (page.length < LIMITS.eventsPageSize) break
     }
     return { events, cursor }
+  }
+
+  /**
+   * The roster a spectator is shown: the one the match started with while it runs, and the live
+   * one in the lobby and once it is over.
+   *
+   * A running match's live roster says who left, who the computer stands in for and who joined
+   * late as of the open turn, which is newer than anything released. The released events carry
+   * those changes to a spectator on the turn they reach. The start announcement is the roster as
+   * every client bootstrapped from it; a start that has not announced itself yet has changed
+   * nothing since, so the live roster stands in for it.
+   */
+  private async roster(match: Match): Promise<PlayerView[]> {
+    if (match.status === 'running' || match.status === 'desynced') {
+      const started = await this.deps.storage.events.latestOfType(match.id, 'match.started')
+      if (started?.type === 'match.started') return started.payload.players
+    }
+    const players = await this.deps.storage.players.listByMatch(match.id)
+    return players.map((player) => toPlayerView(player, match.hostPlayerId))
   }
 
   /** A released turn's sealed set. */
@@ -244,6 +259,25 @@ export class SpectatorService {
       type: 'spectator.left',
       payload: { spectatorId, removed },
     })
+  }
+
+  /**
+   * The sequence number of the last event a spectator may read: the seal of the released turn,
+   * or `match.started` while none is. 0 when that announcement is not in the log yet, which
+   * releases nothing; unbounded once the match is over.
+   */
+  private async lastReleasedSeq(match: Match): Promise<number> {
+    if (match.status === 'finished' || match.status === 'abandoned') {
+      return Number.POSITIVE_INFINITY
+    }
+    // Before the start is released, even the start announcement is news about the open turn 1.
+    if (!startReleased(match)) return 0
+    const released = await this.released(match)
+    const seq =
+      released >= 1
+        ? await this.deps.storage.events.seqOfKey(match.id, sealAnnouncementKey(released))
+        : ((await this.deps.storage.events.latestOfType(match.id, 'match.started'))?.seq ?? null)
+    return seq ?? 0
   }
 
   private released(match: Match): Promise<number> {

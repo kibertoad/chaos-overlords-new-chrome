@@ -92,8 +92,9 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   to the member rate limit, keyed by spectator id.
 - The delay is enforced by the server. While the match runs, the released
   turn is the newest sealed turn minus the delay, and a spectator may read:
-  - the spectator view: status, settings without the live `seatSummaries`,
-    the roster, the open turn number, the delay and the released turn;
+  - the spectator view: status (a desync reads as running), settings without
+    the live `seatSummaries`, the roster the match started with, the open
+    turn number, the delay and the released turn;
   - the seed, once at least turn 1 is released;
   - the sealed order set of any released turn;
   - the newest snapshot at or below the released turn. Snapshot pruning keeps
@@ -103,11 +104,14 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
     back until `currentTurn - 1 - delay` reaches 0, and the events below with
     it;
   - the events that change who controls a seat (start, turn opened and
-    sealed, takeover, return, late join) logged before the seal of the first
-    unreleased turn. A rebuild from sealed sets needs them; see
-    the control handovers in the match session.
-  Once the match has finished or been abandoned every sealed turn is
-  released. A request for anything later answers `409 turn_not_released`.
+    sealed, takeover, return, late join) logged up to and including the seal
+    of the released turn. A rebuild from sealed sets needs them; see the
+    control handovers in the match session. A handover logged after that
+    seal belongs to the next turn and waits for it, so a spectator learns
+    nothing newer than the released turn.
+  Once the match has finished or been abandoned every sealed turn, every
+  one of those events and the live roster are released. A request for
+  anything later answers `409 turn_not_released`.
   A spectator never reads the event stream, readiness, deadlines, hash
   reports, desync announcements, takeover votes or lobby chat. Chat is
   between the people at the table, and the players wrote it without an

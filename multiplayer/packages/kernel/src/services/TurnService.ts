@@ -21,6 +21,7 @@ import {
   awaitedSeats,
   evaluateConsensus,
   tieBreaker,
+  sealAnnouncementKey,
   sealedByDeadline,
   turnDeadline,
 } from '../logic/turn-logic'
@@ -1149,9 +1150,9 @@ export class TurnService {
 /*
  * Dedupe keys of the announcements that follow a compare-and-swap (`EventPublisher.publishOnce`).
  * Each names the one fact it announces, so a repeat of the announcement is recognised as the same
- * fact and never logged twice. They are server-side only and never reach a client.
+ * fact and never logged twice. They are server-side only and never reach a client. The seal's
+ * key lives with the turn logic, because the spectator log finds its cut by it.
  */
-const sealAnnouncementKey = (turn: number): string => `turn.sealed:${turn}`
 const confirmationKey = (turn: number): string => `turn.confirmed:${turn}`
 
 /** A `turn.desynced` payload as this build writes it: the tie-breaker is always named. */

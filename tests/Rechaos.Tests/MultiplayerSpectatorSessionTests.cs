@@ -103,7 +103,8 @@ public sealed class MultiplayerSpectatorSessionTests
         using var _ = http;
         server.Answer(HttpMethod.Get, $"/spectate/{MatchId}", ViewOf(MatchStatus.Running, 3, 0));
         server.Answer(HttpMethod.Get, "/snapshots/latest", SnapshotOf(0, Bootstrap().State));
-        server.AnswerOnce(HttpMethod.Get, "/events", Page(1, Opened(1, 1)));
+        // Nothing released: the log ends at the start announcement, which a spectator ignores.
+        server.AnswerOnce(HttpMethod.Get, "/events", Page(1));
         server.Answer(HttpMethod.Get, "/events", Page(1));
 
         var session = await MultiplayerSpectatorSession.StartAsync(handle, Definitions, TestContext.Current.CancellationToken);
@@ -111,10 +112,11 @@ public sealed class MultiplayerSpectatorSessionTests
         Assert.False(await session.PollAsync(TestContext.Current.CancellationToken));
 
         server.Answer(HttpMethod.Get, $"/spectate/{MatchId}", ViewOf(MatchStatus.Running, 4, 1));
-        // A page whose events the server filtered out still moves the cursor.
-        server.AnswerOnce(HttpMethod.Get, "/events", Page(6, Sealed(4, 1)));
-        server.AnswerOnce(HttpMethod.Get, "/events", Page(9));
-        server.Answer(HttpMethod.Get, "/events", Page(9));
+        // A page whose events the server filtered out still moves the cursor, never past the seal
+        // of the released turn.
+        server.AnswerOnce(HttpMethod.Get, "/events", Page(3, Opened(2, 1)));
+        server.AnswerOnce(HttpMethod.Get, "/events", Page(4, Sealed(4, 1)));
+        server.Answer(HttpMethod.Get, "/events", Page(4));
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
 
         Assert.True(await session.PollAsync(TestContext.Current.CancellationToken));
@@ -124,7 +126,10 @@ public sealed class MultiplayerSpectatorSessionTests
             .Select(request => request.Query)
             .ToArray();
         Assert.Equal(
-            ["?after=0&limit=200", "?after=1&limit=200", "?after=1&limit=200", "?after=1&limit=200", "?after=6&limit=200", "?after=9&limit=200"],
+            [
+                "?after=0&limit=200", "?after=1&limit=200", "?after=1&limit=200",
+                "?after=1&limit=200", "?after=3&limit=200", "?after=4&limit=200",
+            ],
             after);
     }
 
@@ -211,7 +216,7 @@ public sealed class MultiplayerSpectatorSessionTests
         using var _ = http;
         server.Answer(
             HttpMethod.Get, $"/spectate/{MatchId}",
-            ViewOf(MatchStatus.Running, 6, 3) with { Players = RetakenRoster });
+            ViewOf(MatchStatus.Running, 6, 3));
         server.Answer(HttpMethod.Get, "/snapshots/latest", bootstrap);
         server.AnswerOnce(
             HttpMethod.Get,
@@ -243,7 +248,8 @@ public sealed class MultiplayerSpectatorSessionTests
 
     /// <summary>
     /// A spectator who starts from a snapshot taken after a seat was retaken learns the newcomer's
-    /// seat from a roster with two rows in that slot, and follows the newcomer's own handover.
+    /// seat from the late join in the log, since the view of a running match carries the roster it
+    /// started with, and follows the newcomer's own handover.
     /// </summary>
     [Fact]
     public async Task StartsAfterARetakenSeatAndFollowsTheNewcomersHandover()
@@ -263,7 +269,7 @@ public sealed class MultiplayerSpectatorSessionTests
         using var _ = http;
         server.Answer(
             HttpMethod.Get, $"/spectate/{MatchId}",
-            ViewOf(MatchStatus.Running, 7, 4) with { Players = RetakenRoster });
+            ViewOf(MatchStatus.Running, 7, 4));
         server.Answer(HttpMethod.Get, "/snapshots/latest", snapshot);
         server.AnswerOnce(
             HttpMethod.Get,
@@ -410,17 +416,6 @@ public sealed class MultiplayerSpectatorSessionTests
             .ToArray();
         return new SealedOrdersView(turn, OrderDigest.OfSet(players), players);
     }
-
-    /// <summary>
-    /// The roster once a late joiner has taken the seat the vote handed to the computer: the slot
-    /// keeps its first holder's row, now computer controlled, beside the newcomer's.
-    /// </summary>
-    private static readonly IReadOnlyList<PlayerView> RetakenRoster =
-    [
-        new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
-        new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false),
-        new("late-2", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
-    ];
 
     private static MatchLatePlayerJoinedEvent LateJoined(int seq, string playerId, int slot) =>
         new(seq, MatchId, CreatedAt, new MatchLatePlayerJoinedEventPayload(playerId, slot));

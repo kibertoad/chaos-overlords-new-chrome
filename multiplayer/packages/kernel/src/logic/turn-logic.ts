@@ -193,3 +193,11 @@ export function assignSlots(
 export function turnDeadline(openedAt: Date, turnTimerSeconds: number): Date | null {
   return turnTimerSeconds > 0 ? new Date(openedAt.getTime() + turnTimerSeconds * 1000) : null
 }
+
+/**
+ * The dedupe key a turn's `turn.sealed` announcement is logged under (`EventPublisher.publishOnce`),
+ * so a repeated seal step never logs the seal twice and the log can be asked where it landed.
+ */
+export function sealAnnouncementKey(turn: number): string {
+  return `turn.sealed:${turn}`
+}

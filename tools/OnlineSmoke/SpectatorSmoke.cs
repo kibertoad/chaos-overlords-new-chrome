@@ -149,9 +149,9 @@ internal static class SpectatorSmoke
 
         var hostState = hostSession.Bootstrap.State;
         var guestState = guestSession.Bootstrap.State;
-        // By turn, the fingerprint of the city the players plan the next turn from: what every
-        // player's client reached on that turn, with any seat that changed hands before the next
-        // one handed over. A spectator shows a turn the same way, from the log up to the next seal.
+        // By turn, the fingerprint of the city every player's client reached on that turn. A
+        // spectator shows a turn the same way: from the log up to that turn's seal, without a seat
+        // that changed hands after it, which the server releases with the next turn.
         var fingerprints = new List<string> { MatchStateHasher.ComputeFingerprint(hostState) };
 
         // The bound only ever rises as the players submit, so a notice drained late is still
@@ -241,7 +241,6 @@ internal static class SpectatorSmoke
                     new TakeoverVoteRequest(TakeoverVoteRequestDecision.Computer),
                     CancellationToken.None);
                 await Program.WaitForPlayer(hostMatch, guest.Player.Id, WirePlayerStatus.Computer);
-                fingerprints[turn] = HandedOver(hostState, definitions, guestSession.Slot, toComputer: true);
                 Console.WriteLine($"spectators: GRACE left after turn {turn} and the computer took the seat");
             }
             if (turn == ReturnAfterTurn)
@@ -251,7 +250,9 @@ internal static class SpectatorSmoke
                 var seated = await Program.Seated(lobby);
                 Program.Require(seated.Membership.Player.Status == WirePlayerStatus.Active,
                     "the returning guest's seat was not made active");
-                fingerprints[turn] = HandedOver(hostState, definitions, guestSession.Slot, toComputer: false);
+                // The city the host plans the next turn from has the seat back. A spectator only
+                // sees the return with that turn, so this is not the fingerprint of the turn just played.
+                var plannedFrom = HandedOver(hostState, definitions, guestSession.Slot, toComputer: false);
 
                 // The session that saw the seat go to the computer never reports a state hash
                 // for it again, so the guest plays on from a new session restored from the
@@ -262,7 +263,7 @@ internal static class SpectatorSmoke
                     guestMatch, definitions, rejoined, guest.Player.Id, rejoined.LastEventSeq,
                     JoinedInProgress: true, StreamOutageBudget: smokeBudget));
                 guestState = (await Restored(guestSession)).State;
-                Program.Require(MatchStateHasher.ComputeFingerprint(guestState) == fingerprints[turn],
+                Program.Require(MatchStateHasher.ComputeFingerprint(guestState) == plannedFrom,
                     $"the returning guest restored another city than the one the host plans turn {turn + 1} on");
                 Console.WriteLine($"spectators: GRACE took the seat back after turn {turn}");
             }
@@ -372,6 +373,10 @@ internal static class SpectatorSmoke
             + $"expected {released} on {currentTurn}");
         Program.Require((view.Seed is null) == (released < 1),
             $"the seed was {(view.Seed is null ? "withheld" : "given")} with turn {released} released");
+        // The roster as the match started: who left or was handed to the computer since is told
+        // through the released log, on the turn it reaches.
+        Program.Require(view.Players.All(player => player.Status == WirePlayerStatus.Active),
+            "the spectator view's roster carried a seat's live status");
 
         if (StartReleased(currentTurn))
         {
@@ -394,12 +399,17 @@ internal static class SpectatorSmoke
             Program.Require(orders.Turn == released, $"turn {released}'s sealed set came back as {orders.Turn}");
         }
 
+        // The log ends at the seal of the released turn (the start while none is, and nothing
+        // while the start is held back): a seat that changed hands after it, even before the next
+        // turn opened, belongs to an unreleased turn.
         var cursor = 0;
+        MatchEvent? last = null;
         while (true)
         {
             var page = await door.EventsAsync(cursor, 200, CancellationToken.None);
             foreach (var @event in page.Events)
             {
+                last = @event;
                 switch (@event)
                 {
                     case TurnSealedEvent sealedTurn:
@@ -407,7 +417,7 @@ internal static class SpectatorSmoke
                             $"the spectator log announced turn {sealedTurn.Payload.Turn}'s seal with {released} released");
                         break;
                     case TurnOpenedEvent opened:
-                        Program.Require(opened.Payload.Turn <= released + 1,
+                        Program.Require(opened.Payload.Turn <= released,
                             $"the spectator log opened turn {opened.Payload.Turn} with {released} released");
                         break;
                     case MatchStartedEvent or MatchPlayerTakenOverEvent or MatchPlayerReturnedEvent
@@ -421,6 +431,13 @@ internal static class SpectatorSmoke
             if (page.Cursor <= cursor) break;
             cursor = page.Cursor;
         }
+        var endsAtTheCut = !StartReleased(currentTurn)
+            ? last is null
+            : released == 0
+            ? last is MatchStartedEvent
+            : last is TurnSealedEvent { Payload.Turn: var lastSealed } && lastSealed == released;
+        Program.Require(endsAtTheCut,
+            $"the spectator log ended on {last?.GetType().Name ?? "nothing"} with turn {released} released");
     }
 
     private static async Task RequireRefused(

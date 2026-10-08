@@ -22,9 +22,12 @@ namespace Rechaos.Multiplayer.Session;
 /// </para>
 /// <para>
 /// A seat changing hands lives in the event log and nowhere in a sealed set. The spectator log
-/// carries those events and the turn markers between them, cut off at the seal of the first turn not
-/// yet released, and this session replays them in log order exactly as a reconnecting player does:
-/// a handover takes effect before the turn the log was on when it was announced.
+/// carries those events and the turn markers between them, up to and including the seal of the
+/// released turn, and this session replays them in log order exactly as a reconnecting player does:
+/// a handover takes effect before the turn the log was on when it was announced. A handover
+/// announced after the released turn's seal belongs to the next turn, so the server holds it back
+/// until that turn is released, and the state shown for a turn is the one its seal left: what the
+/// players resolved that turn to, before any seat changed hands for the next.
 /// </para>
 /// <para>
 /// Nothing here writes to the match. The session is driven by its caller, one call at a time:
@@ -214,7 +217,7 @@ public sealed class MultiplayerSpectatorSession
     /// <para>
     /// The server pages by its own scan and returns where the next page starts; a page can be empty
     /// and still move the cursor past events a spectator does not see. It stops moving at the seal
-    /// of the first turn not yet released, which is where this stops too.
+    /// of the released turn, which is where this stops too.
     /// </para>
     /// <para>
     /// Only an empty page that leaves the cursor where it was says the log is drained. A page that
