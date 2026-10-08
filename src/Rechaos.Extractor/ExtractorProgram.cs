@@ -254,7 +254,8 @@ public static class ExtractorProgram
                 Path.Combine(source.HelpDirectory, "Chaos.hlp"));
             var legacyContents = OriginalDataReader.FindCaseInsensitive(
                 Path.Combine(source.HelpDirectory, "CHAOS.CNT"));
-            var modernHelp = WinHelpDecoder.Decode(legacyHelp, legacyContents);
+            var modernHelp = WinHelpDecoder.Decode(legacyHelp, legacyContents,
+                message => Console.Error.WriteLine($"Warning: {message}"));
             var modernHelpPath = Path.Combine(output, "help", "contents.json");
             await File.WriteAllTextAsync(modernHelpPath,
                 JsonSerializer.Serialize(modernHelp, jsonOptions));

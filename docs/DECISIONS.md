@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | Date | Decision |
 |---|---|
 | 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
+| 2026-10-06 | [Lay out WinHelp paragraphs from the format's meaning instead of native captures](#2026-10-06--lay-out-winhelp-paragraphs-from-the-formats-meaning-instead-of-native-captures) |
 | 2026-10-06 | [Comlink in an online match travels in the sealed turn](#2026-10-06--comlink-in-an-online-match-travels-in-the-sealed-turn) |
 | 2026-10-06 | [Let a late joiner take a seat the vote handed to the computer](#2026-10-06--let-a-late-joiner-take-a-seat-the-vote-handed-to-the-computer) |
 | 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
@@ -65,6 +66,27 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   README's Gatekeeper steps are the supported install. A Linux desktop with neither `zenity` nor
   `kdialog` gets no dialog and imports with `chaos-overlords-new-chrome-import`. An explicit
   `--assets` folder and test runs are never offered an import.
+
+## 2026-10-06 — Lay out WinHelp paragraphs from the format's meaning instead of native captures
+
+**Decision.** The help viewer lays out the help file's paragraphs by what the
+format's fields mean, converted to the pixel-font grid by the fixed rules of
+DEV-HELP-003, and no comparison with captures of the Windows help program is
+planned. Extracted-help format 4 stores each topic once, as its paragraphs, and
+asset-pack format 8 makes players regenerate their pack to get it. A damaged
+font descriptor costs its face name, not the help file.
+
+**Reasoning.** The original never opens its help file (RULE-HELP-001), so
+there is no screen of the game to match, and the help program it would have
+started is not part of Windows 10 or 11, so a native capture cannot be made on
+a current system. Wine's viewer and helpdeco agree on the units of the
+paragraph fields and RTF defines what each field means (SRC-WINHLP32-WINE,
+SRC-HELPDECO, SRC-RTF-15), which is enough to draw every recorded distance in
+proportion. The one question no source answers, whether the space after one
+paragraph and the space before the next add up, is answered in DEV-HELP-003
+and stated there as unverified. Storing the text once leaves a single copy for
+the extractor, the rebuild's notes and the store to keep right, and the format
+had not shipped, so the change cost players no extra regeneration.
 
 ## 2026-10-06 — Comlink in an online match travels in the sealed turn
 

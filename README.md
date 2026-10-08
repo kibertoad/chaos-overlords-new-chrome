@@ -258,9 +258,11 @@ validation plans list the open questions.
   of the original, but some states of most, such as pressed faces, selections
   and drags, have not been captured yet; [the capture coverage table](docs/validation/screen-capture-coverage.md)
   lists them ([#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
-- Help is drawn by a cross-platform viewer, so its typography and paragraph
-  layout approximate WinHelp's
-  ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
+- Help is drawn by a cross-platform viewer in one pixel font, with the help
+  file's indents, centering and paragraph spacing converted to its grid
+  ([DEV-HELP-003](deviations/DEV-HELP-003.md)). The original never shows its
+  help, and its layout has not been compared with the Windows help program,
+  which current Windows lacks.
 - Online play has no spectating
   ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)), and an online
   Comlink message can be read by a modified client at another seat
