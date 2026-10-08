@@ -210,7 +210,8 @@ A document holds at most `LIMITS.ordersMaxOps` (512) ops, and the server answers
 422, which would lose the seat every order of its turn. The client keeps well inside that bound
 (DEV-NET-002). Its document leaves out the ops a later one makes moot: a gang's later order replaces
 its earlier op, cancelling an order given this turn removes it, and the hire dock keeps only the op
-that leaves it in its final state. A turn then holds at most one op per gang, one for the dock and
+that leaves it in its final state when it starts the turn clear, as hire resolution leaves it every
+turn (a dock that starts with a hire or snub keeps every hire op). A turn then holds at most one op per gang, one for the dock and
 one per dismissed notification, 145 at most. An action that would still grow a full document is
 refused on the planning copy before the copy changes, with "TOO MANY ORDERS THIS TURN.", so the copy
 never shows an order the document lacks. The generated `WireLimits` class carries the bound to the

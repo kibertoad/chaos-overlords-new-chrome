@@ -14,8 +14,8 @@ import { fileURLToPath } from 'node:url'
  * needs Node and CI's .NET job never needs this script.
  *
  * ```sh
- * pnpm codegen        # rewrite src/Rechaos.Multiplayer/Generated/WireContracts.cs
- * pnpm codegen:check  # fail if the committed file no longer matches the schemas
+ * pnpm codegen        # rewrite WireContracts.cs, RouteTemplates.cs and WireLimits.cs in src/Rechaos.Multiplayer/Generated/
+ * pnpm codegen:check  # fail if a committed file no longer matches the contracts
  * ```
  *
  * The generator is a pinned devDependency of this workspace rather than something fetched when the

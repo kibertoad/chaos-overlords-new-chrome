@@ -1152,8 +1152,9 @@ Decided 2026-09-10 ("Networking scope").
 - Reason: In an online match, the orders a player gives in one turn travel to the server as one
   document of at most 512 operations, the coordination server's limit. The document leaves out
   what a later order makes moot: a gang's later order replaces its earlier one (RULE-TURN-005), an
-  order given and cancelled in the same turn is not sent, and the hire dock sends only the hire or
-  snub it ends the turn with. An action that would take the document past the limit is refused
+  order given and cancelled in the same turn is not sent, and the hire dock, which hire
+  resolution leaves with no hire or snub at the end of every turn, sends only the hire or snub it
+  ends the turn with. A dock that starts a turn holding one keeps every hire op. An action that would take the document past the limit is refused
   with "TOO MANY ORDERS THIS TURN." before it changes anything. The original takes any number of
   orders in a turn. Hot-seat and single-player matches have no limit.
 - Setting: None

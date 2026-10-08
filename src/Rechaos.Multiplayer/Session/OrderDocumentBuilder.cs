@@ -13,10 +13,10 @@ namespace Rechaos.Multiplayer.Session;
 /// every client and are refused over the wire, so they are absent here by construction.
 /// </para>
 /// <para>
-/// The document is a log, not a diff: the client submits it whole on every change and the server
-/// replaces what it held. Submitting the accumulated intent rather than the resulting state is what
-/// lets every client replay a turn through the same validator the replay reader uses, and see the
-/// same acceptances and refusals.
+/// The document records the player's intents in the order they were given: the client submits it
+/// whole on every change and the server replaces what it held. Submitting intents rather than the
+/// resulting state is what lets every client replay a turn through the same validator the replay
+/// reader uses, and see the same acceptances and refusals.
 /// </para>
 /// <para>
 /// A builder made by <see cref="ForTurn"/> leaves out the entries a later one makes moot, so a turn
@@ -119,20 +119,29 @@ public sealed class OrderDocumentBuilder
     public bool HasRoom => _ops.Count < Limit;
 
     /// <summary>
-    /// Whether an order or a cancellation for <paramref name="gang"/> fits: always when the
-    /// document already holds an op for that gang, which the new one replaces.
+    /// Whether an order or a cancellation for <paramref name="gang"/> fits: on a compacting builder,
+    /// always when the document already holds an op for that gang, which the new one replaces.
     /// </summary>
     public bool HasRoomFor(GangId gang) => HasRoom || (_start is not null && IndexOfGang(gang.Value) >= 0);
 
     /// <summary>
-    /// Whether a hire or a snub fits: always when the document already holds the dock's op, which
-    /// the new one replaces.
+    /// Whether a hire or a snub fits: on a compacting builder whose dock started the turn clear,
+    /// always when the document already holds the dock's op, which the new one replaces.
     /// </summary>
     public bool HasRoomForHireAction => HasRoom || (_start is { HireClear: true } && IndexOfHireAction() >= 0);
 
     /// <summary>Forgets everything recorded, for the start of a new turn.</summary>
+    /// <exception cref="InvalidOperationException">
+    /// The builder compacts. What it read at the start of its turn (the carried orders and the
+    /// dock) is wrong for the next one, which needs its own <see cref="ForTurn(MatchState, PlayerId)"/>.
+    /// </exception>
     public void Clear()
     {
+        if (_start is not null)
+        {
+            throw new InvalidOperationException(
+                "A compacting builder belongs to one turn; make a new one with ForTurn for the next.");
+        }
         _ops.Clear();
         Version++;
     }

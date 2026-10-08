@@ -204,6 +204,19 @@ public sealed class MultiplayerOrderCompactionTests
     }
 
     /// <summary>
+    /// DEV-NET-002: a compacting builder read the carried orders and the dock at the start of its
+    /// turn, so it cannot be cleared and reused for the next one.
+    /// </summary>
+    [Fact]
+    public void ACompactingBuilderCannotBeClearedForAnotherTurn()
+    {
+        var (authoritative, definitions) = NewClient();
+        var turn = SpeculativeTurn.For(authoritative.State, definitions, Local.Value);
+
+        Assert.Throws<InvalidOperationException>(() => turn.Orders.Clear());
+    }
+
+    /// <summary>
     /// Orders, re-orders, cancellations, Moves and hire changes over every gang the seat has,
     /// recorded in <paramref name="log"/> exactly as the planning copy accepted them.
     /// </summary>
