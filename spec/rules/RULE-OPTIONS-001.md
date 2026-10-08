@@ -4,7 +4,7 @@ title: Reading the options from the registry at startup
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OPTIONS-001, FND-OPTIONS-003, FND-RNG-001, FND-EXE-004, SRC-MANUAL-GOG, FND-AI-004, FND-AUDIO-001, FND-AUDIO-002, FND-OPTIONS-002, FND-TIMER-001, FND-UI-011]
+evidence: [FND-OPTIONS-001, SRC-INSTALLER-GOG, FND-OPTIONS-003, FND-RNG-001, FND-EXE-004, SRC-MANUAL-GOG, FND-AI-004, FND-AUDIO-001, FND-AUDIO-002, FND-OPTIONS-002, FND-TIMER-001, FND-UI-011]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002]
@@ -113,7 +113,11 @@ to a second byte the display code reads.
   it (BUG-OPTIONS-002). When every value from the first is missing, the options
   take 0, the value the buffer is set to before the first query.
 - Without the key the options keep the initialized values of the table and
-  `serial_number` stays 0 for the session, with no draws.
+  `serial_number` stays 0 for the session, with no draws. GOG's installer
+  creates the key with all thirteen values (SRC-INSTALLER-GOG), so after a GOG
+  installation every option takes the installer's data: the initialized
+  values, except `comm_type` 1, `mentality` 0 (Goon) and `objective_choice` 4
+  (Kill 'Em All), and a nonzero `serial_number`, so no draws are made.
 - A value above 255 keeps only its low byte, above 65535 for `comm_type`.
 - Since the serial number can never be written (BUG-OPTIONS-001), a key without
   `serialNum` makes the draws at every start, unless the value read before it,
@@ -126,7 +130,8 @@ SRC-MANUAL-GOG, pages 9 and 10, gives the defaults of the Options menu:
 Thousands of Colors checked, Music and Sound Effects Medium, Base Statistics not
 checked, Detailed Combat checked, Slide Panels checked, Warn If Idle Gangs
 checked. These agree with the initialized values. It does not say where the
-options are kept.
+options are kept. SRC-INSTALLER-GOG gives the data GOG's installer writes for
+each value.
 
 ## Differences between builds
 

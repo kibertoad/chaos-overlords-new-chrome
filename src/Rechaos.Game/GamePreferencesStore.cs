@@ -4,11 +4,13 @@ using Rechaos.Core.GameModel;
 namespace Rechaos.Game;
 
 /// <summary>
-/// The options a fresh start has. RULE-OPTIONS-001 gives the original's initialized values; the
-/// rebuild reads them from its own preferences file (DEV-OPTIONS-001), starts Slide Panels off
-/// (DEV-OPTIONS-002) and starts in a window (DEV-OPTIONS-003). The original saves nothing
-/// (RULE-OPTIONS-002), so its Mentality starts at the initialized value at every start, and so
-/// does the rebuild's, which never stores it.
+/// The options a fresh start has: the values GOG's installer writes to the registry
+/// (SRC-INSTALLER-GOG), which the original reads at every start (RULE-OPTIONS-001). They are the
+/// executable's initialized values except Mentality, Goon in place of Criminal, and the scenario,
+/// Kill 'Em All in place of Greed. The rebuild reads them from its own preferences file
+/// (DEV-OPTIONS-001), starts Slide Panels off (DEV-OPTIONS-002) and starts in a window
+/// (DEV-OPTIONS-003). The original saves nothing (RULE-OPTIONS-002), so its Mentality starts at
+/// the installer's value at every start, and so does the rebuild's, which never stores it.
 /// </summary>
 public static class OriginalOptionsPolicy
 {
@@ -19,7 +21,10 @@ public static class OriginalOptionsPolicy
     public const bool FullscreenByDefault = false;
     public const bool SmoothEventSiteImagesByDefault = false;
     public const AiPolicyMode AiPolicyByDefault = AiPolicyMode.Original;
-    public const AiDifficulty MentalityByDefault = AiDifficulty.Criminal;
+    public const AiDifficulty MentalityByDefault = AiDifficulty.Goon;
+
+    /// <summary>RULE-SETUP-002: the scenario a fresh local setup selects.</summary>
+    public const ScenarioId ScenarioByDefault = ScenarioId.KillEmAll;
 
     /// <summary>DEV-VIDEO-003: the intro plays on the first start only. The original plays it at
     /// every start.</summary>
@@ -61,7 +66,7 @@ public sealed record GamePreferences(
     string CustomMultiplayerServer,
     OnlineLobbyPresentation LobbyPresentation = OnlineLobbyPresentation.Modern,
     bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault,
-    ScenarioId PreferredScenario = ScenarioId.Greed,
+    ScenarioId PreferredScenario = OriginalOptionsPolicy.ScenarioByDefault,
     bool PlanningClockStopsInMenu = OriginalOptionsPolicy.PlanningClockStopsInMenuByDefault)
 {
     public const int CurrentFormatVersion = 12;

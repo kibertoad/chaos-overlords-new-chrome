@@ -148,12 +148,19 @@ gives the run a `title_capture` object, compared at SCR-UI-001, with marker
 frame 0. `--credits-capture` then posts Help, About, copies the credits once
 the breakpoint after their load (FND-UI-055) has been hit, and closes them with
 the space bar; `extract` gives the run a `credits_capture` object, compared at
-SCR-UI-002. `--setup-capture` writes the initialized values of the objective,
-Mentality and planning limit options (FND-OPTIONS-001) before New Game, so the
-setup screen opens as it does when the registry key holds none, and copies the
-setup screen two seconds after it opens, before the run writes its own
-settings; `extract` gives the run a `setup_capture` object, compared at
-SCR-SETUP-001. `--setup-steps` then posts presses on the setup screen, as
+SCR-UI-002. `--setup-capture` copies the setup screen two seconds after it
+opens, before the run writes its own settings; `extract` gives the run a
+`setup_capture` object, compared at SCR-SETUP-001. A run with `--setup-capture`
+or `--setup-steps` writes the objective, Mentality and planning limit options
+(RULE-OPTIONS-001) once the preference loader returns, so the setup screen opens
+with them whatever the machine's registry holds: by default 4, 0 and 0, what
+GOG's installer stores (SRC-INSTALLER-GOG), or the values of
+`--setup-preferences <objective>:<mentality>:<planning limit>`. `extract` lists
+them as the setup input `preferences 4:0:0`, and the rebuild draws its setup
+screen for the comparison with `--reference-frame setup --setup-preferences`
+and the same values. Runs taken before the option existed list
+`preferences 0:1:0`, the initialized values (FND-OPTIONS-001), which
+`--setup-capture` wrote then and which the registry gave the runs without it. `--setup-steps` then posts presses on the setup screen, as
 `strip:x:y`, drags as `drag:x:y:x2:y2` and copies as `shot`, each copy
 compared at SCR-SETUP-001; `extract` lists them as the run's `setup_steps` and
 as `setup` inputs. A drag writes the two pointer points of FND-UI-020 at the

@@ -41,6 +41,13 @@ keyboard state for the time of the key, so the dialog's own message loop
 translates the key with Shift held. The step then sends OK and reads the
 12-byte name record of slot 0 at `0x004A2588`.
 
+The probe wrote none of the objective, Mentality and planning limit options.
+The setup screen took the values this machine's registry gave an unelevated
+process, 0, 1 and 0, which the fixture lists as the setup input
+`preferences 0:1:0`; EXP-UI-051's copies of the setup screen show them. A run
+with `--setup-steps` now writes these options, 4, 0 and 0 unless told
+otherwise, so a repeat of this run adds `--setup-preferences 0:1:0`.
+
 ## Observations
 
 `a` gave the name `A`, and `_` a single space. After the `A`:

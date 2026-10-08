@@ -1,3 +1,4 @@
+using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
 
@@ -147,6 +148,30 @@ public sealed class ReferenceFrameRequestTests
         Assert.Equal("600:58,137:301:2,639:459", string.Join(",", request.Clicks!));
         Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.Clicks);
     }
+
+    // RULE-OPTIONS-001, RULE-SETUP-002: the setup screen opens with the objective, Mentality and
+    // planning limit the probe wrote, given in the original's numbering.
+    [Fact]
+    public void SetupPreferencesAreReadInTheOriginalsNumbering()
+    {
+        var request = ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "setup", "frame.bmp", "--setup-preferences", "6:3:2"])!;
+        // The original numbers Siege 6 (RULE-SETUP-002).
+        Assert.Equal(new ReferenceSetupPreferences(ScenarioId.Siege, AiDifficulty.HomicidalManiac,
+            PlanningTimeLimit.TwoMinutes), request.SetupPreferences);
+        Assert.Equal("6:3:2", request.SetupPreferences!.ToString());
+        Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "setup", "frame.bmp"])!.SetupPreferences);
+    }
+
+    [Theory]
+    [InlineData("setup", "10:0:0")]
+    [InlineData("setup", "4:4:0")]
+    [InlineData("setup", "4:0")]
+    [InlineData("title", "4:0:0")]
+    [InlineData("planning.rchsave", "4:0:0")]
+    public void SetupPreferencesOutsideTheirRangeOrScreenAreRefused(string source, string value) =>
+        Assert.Throws<ArgumentException>(() => ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", source, "frame.bmp", "--setup-preferences", value]));
 
     [Fact]
     public void ADragIsReadWithItsReleasePoint()

@@ -32,8 +32,11 @@ As EXP-TURN-001.
 `Rechaos.OriginalProbe new-game --scenario 6 --mentality 1 --time-limit 0
 --seed 3 --end-turns 0 --white-key --setup-capture --setup-steps <steps>`,
 three times, then `extract --experiment EXP-UI-030` over the three run
-directories. The steps are posted on the setup screen before the run writes
-its own settings:
+directories. As in EXP-UI-015, the probe writes 0 to the objective, 1 to the
+Mentality and 0 to the planning limit before New Game, which the fixture lists
+as the setup input `preferences 0:1:0`; a repeat of this run adds
+`--setup-preferences 0:1:0`, without which the probe writes 4, 0 and 0. The
+steps are posted on the setup screen before the run writes its own settings:
 
 | Steps | Presses |
 |---|---|
@@ -66,7 +69,8 @@ run then made 325 calls of `roll`.
 
 ## Results
 
-A test of the rebuild replays the steps, each drag as a press, a move to the
+A test of the rebuild opens its setup screen with the same objective,
+Mentality and planning limit, replays the steps, each drag as a press, a move to the
 release point and a release, and compares the setup screen after each with the
 copies of every run. No element differs. A replay of each run's match from
 the same seed and settings makes the same 325 rolls and reaches the same end

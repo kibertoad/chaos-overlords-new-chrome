@@ -6,6 +6,7 @@
   "clock": "roll",
   "inputs": [
     {"tick":0,"name":"command","value":"File, New Game (0x8101)"},
+    {"tick":0,"name":"setup","value":"preferences 0:1:0"},
     {"tick":0,"name":"setup","value":"scenario 0"},
     {"tick":0,"name":"setup","value":"setup step 0: name {SHOT}"},
     {"tick":0,"name":"setup","value":"setup step 1: name {CHAR61}{CHAR62}{CHAR63}{CHAR44}{CHAR45}{CHAR46}{CHAR47}{CHAR48}{CHAR49}{CHAR4A}{SHOT}{VK24}{SHOT}{VK27}{VK27}{VK27}{SHOT}{CHAR58}{SHOT}{SHIFT}{VK27}{VK27}{PLAIN}{SHOT}{VK25}{SHOT}{SHIFT}{VK27}{VK27}{PLAIN}{VK27}{SHOT}{SHIFT}{VK25}{VK25}{VK25}{PLAIN}{SHOT}{VK2E}{SHOT}{VK08}{SHOT}{SHIFT}{VK24}{PLAIN}{SHOT}{CHAR71}{SHOT}"},

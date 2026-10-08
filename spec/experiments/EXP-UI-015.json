@@ -6,6 +6,7 @@
   "clock": "roll",
   "inputs": [
     {"tick":0,"name":"command","value":"File, New Game (0x8101)"},
+    {"tick":0,"name":"setup","value":"preferences 0:1:0"},
     {"tick":0,"name":"setup","value":"scenario 6"},
     {"tick":0,"name":"setup","value":"mentality 1"},
     {"tick":0,"name":"setup","value":"planning_limit_choice 0"},

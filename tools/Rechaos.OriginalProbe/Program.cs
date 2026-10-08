@@ -43,6 +43,7 @@ static int Usage()
               [--hire-steps <drag:slot:sector|reject:slot|exit>,...]
               [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|dbl:x:y|back|exit|warn|wait:ms|type:TEXT|keys:TOKENS|shot:SCR-ID+...>,...] [--gang-markers]
               [--title-capture] [--credits-capture] [--setup-capture] [--setup-steps <strip:x:y|drag:x:y:x2:y2|name:TOKENS|shot>,...]
+              [--setup-preferences <scenario>:<mentality>:<planning limit>]
               [--detailed-combat] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
               Modifiers: right_hands, visibility, hire_force, elite, islands, cash.
               An order, hire or Search write without a player acts for the first --humans slot.
@@ -114,7 +115,14 @@ static int NewGame(string[] args)
         args.Contains("--pass-cards"),
         Option(args, "--delays") is { } delays ? ParseDelays(delays) : null,
         Option(args, "--menu") is { } menus ? ParseMenus(menus) : null,
-        args.Contains("--clock-captures")).WithActingPlayers();
+        args.Contains("--clock-captures"),
+        Option(args, "--setup-preferences") is { } setupPreferences ? ProbeSetupPreferences.Parse(setupPreferences) : null)
+        .WithActingPlayers();
+    if (settings.SetupPreferences is not null && !settings.SetupCopied)
+        throw new ArgumentException("--setup-preferences needs --setup-capture or --setup-steps.");
+    // A run that copies the setup screen writes GOG's installer's values unless told otherwise.
+    if (settings.SetupCopied && settings.SetupPreferences is null)
+        settings = settings with { SetupPreferences = ProbeSetupPreferences.GogInstallation };
     // An order, hire or Search write acts for a human of the run: the probe writes it into that
     // player's records, and the fixture names the player in the input.
     foreach (var write in settings.Search ?? [])
