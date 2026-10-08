@@ -21,6 +21,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-10-06 | [Comlink in an online match travels in the sealed turn](#2026-10-06--comlink-in-an-online-match-travels-in-the-sealed-turn) |
 | 2026-10-06 | [Let a late joiner take a seat the vote handed to the computer](#2026-10-06--let-a-late-joiner-take-a-seat-the-vote-handed-to-the-computer) |
 | 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
+| 2026-10-06 | [Show other players' gang cards as the original does](#2026-10-06--show-other-players-gang-cards-as-the-original-does) |
 | 2026-10-06 | [Chat in the online lobby, through the match's event log](#2026-10-06--chat-in-the-online-lobby-through-the-matchs-event-log) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
@@ -195,6 +196,26 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   raising, on one agreeing run while some of their cases had never been
   observed, and entries kept at `supported` with no written bar. One stated
   bar applies the same way to every entry.
+
+## 2026-10-06 — Show other players' gang cards as the original does
+
+- Decision: this supersedes the 2026-09-18 decision on the Sector workspace's
+  opponent gang view. A press on an overlord's portrait lists that overlord's
+  gangs the viewer detects, as the original does (RULE-UI-010). Their cards
+  draw no action strip, and the card of every gang, the viewer's own
+  included, draws none in the final view after the match has ended
+  (FND-UI-069). DEV-UI-008's target highlight appears only on a card that
+  draws the strip, so nothing on the screen shows another player's order,
+  and the final view shows no target of an order the match will not run.
+- Reason: the 2026-09-18 entry gave as evidence that the original listed only
+  the viewing overlord's gangs and had no way to read another's. FND-UI-015
+  and EXP-TURN-096 show the portrait press, and DEV-UI-013 was dropped for
+  that reason. FND-UI-069 shows that the original's card compositor copies
+  the action strip only when the card's player is the active player and a
+  match is in play, so the strip stays off another player's cards because the
+  original leaves it off, not to keep orders private.
+- Online play: to draw these cards a seat needs each detected opponent gang's
+  definition, Force and equipment. It needs no other player's orders.
 
 ## 2026-10-06 — Chat in the online lobby, through the match's event log
 
@@ -723,6 +744,8 @@ reason, as [AGENTS.md](../AGENTS.md) requires when a state hash changes.
 
 ## 2026-09-18 — Scope the Sector workspace's opponent gang view to detection
 
+- Superseded by the 2026-10-06 decision "Show other players' gang cards as the
+  original does". Its evidence is wrong: the original has the portrait press.
 - Decision: the detailed-sector portrait strip marks an opponent with a red
   `GANGS` banner and lends the gang cards to that opponent's roster only for
   gangs the viewer already detects. The borrowed roster is per-visit state: the

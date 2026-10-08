@@ -81,6 +81,14 @@ public sealed partial class ChaosGame
         && cards.Count >= 2
         && cards[0].Owner == viewer;
 
+    /// <summary>
+    /// SCR-UI-004, FND-UI-069: a card carries its gang's action strip only when the gang is the
+    /// active player's and the match is still in play. Another player's card, and every card of
+    /// the final view after the match has ended, keeps the blank band of the card frame there.
+    /// </summary>
+    internal static bool ShowsActionStrip(PlayerId viewer, PlayerId owner, bool matchOver) =>
+        owner == viewer && !matchOver;
+
     /// <summary>The gangs the Sector workspace lists (<see cref="SectorOpponentGangs.Cards"/>).</summary>
     private IReadOnlyList<MatchGangState> SectorCardGangs(MatchState state, PlayerId viewer) =>
         SectorOpponentGangs.Cards(state, viewer, _sectorGangCardOwner, _cursor);
@@ -232,6 +240,9 @@ public sealed partial class ChaosGame
         var repeat = SectorGangCardLayout.ActionRepeatAt(index, point);
         if (repeat is { } selectedRepeat)
         {
+            // FND-UI-021: the strip opens no menu once the match has ended, where FND-UI-069 leaves
+            // the strip undrawn.
+            if (state.Outcome is not null) return;
             if (IsSelectedForBulkCommand(gang)) OpenBulkCommands(selectedRepeat);
             else OpenCommands(selectedRepeat, ClientScreen.Sector);
         }
@@ -320,7 +331,7 @@ public sealed partial class ChaosGame
         if (UiSprites is not null && showsGroupOrderStrip)
             batch.Draw(UiSprites, SectorDetailLayout.GroupOrderStrip,
                 OriginalSpriteLayout.GroupOrderStrip, Color.White);
-        DrawQueuedCommandTargetHighlight(batch, pixel, viewer, visibleGangs);
+        DrawQueuedCommandTargetHighlight(batch, pixel, viewer, state.Outcome is not null, visibleGangs);
         DrawGangMoveDrag(batch, pixel, state);
         DrawSectorHireDrag(batch);
         // The Sector workspace covers the left side of right-edge tooltips drawn by
@@ -377,15 +388,18 @@ public sealed partial class ChaosGame
         SpriteBatch batch,
         Texture2D pixel,
         PlayerId viewer,
+        bool matchOver,
         IReadOnlyList<MatchGangState> visibleGangs)
     {
         if (_hoverPoint is not { } point) return;
         // The card a press here would take (FND-UI-015), gaps between the cards included.
         var hoveredSlot = SectorGangCardLayout.CardAt(point);
-        // An opponent's orders stay their own business: the cards hide their action strip, so the
-        // workspace must not betray the same order by highlighting what it targets.
+        // DEV-UI-008 highlights the target of the order a card's action strip shows, and only on a
+        // card that draws the strip: the original draws none on another player's card or in the
+        // final view (FND-UI-069), so the workspace shows no other player's order and no order the
+        // match will no longer run.
         if (hoveredSlot < 0 || hoveredSlot >= Math.Min(visibleGangs.Count, SectorGangCardLayout.VisibleCards)
-            || visibleGangs[hoveredSlot].Owner != viewer
+            || !ShowsActionStrip(viewer, visibleGangs[hoveredSlot].Owner, matchOver)
             || visibleGangs[hoveredSlot].QueuedCommand is not { } queued) return;
 
         switch (queued.Command.Action)
@@ -644,12 +658,13 @@ public sealed partial class ChaosGame
             new Color(0, 247, 0));
 
         var action = gang.QueuedCommand?.Command.Action ?? GangAction.None;
-        if (UiSprites is not null && gang.Owner == viewer)
+        var showsAction = ShowsActionStrip(viewer, gang.Owner, state.Outcome is not null);
+        if (showsAction && UiSprites is not null)
         {
             batch.Draw(UiSprites, SectorGangCardLayout.ActionStrip(slot),
                 OriginalSpriteLayout.GangActionStrip(action), Color.White);
         }
-        else if (UiSprites is null)
+        else if (showsAction)
         {
             var strip = SectorGangCardLayout.ActionStrip(slot);
             batch.Draw(pixel, strip, Color.Black);
