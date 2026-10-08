@@ -31,15 +31,14 @@ public sealed partial class ChaosGame
             UpdateIdleGangWarning(keyboard);
             return;
         }
-        var column = _cursor % 8;
-        var row = _cursor / 8;
         var previousCursor = _cursor;
-        if (Pressed(keyboard, Keys.Left) && column > 0) _cursor--;
-        if (Pressed(keyboard, Keys.Right) && column < 7) _cursor++;
-        if (Pressed(keyboard, Keys.Up) && row > 0) _cursor -= 8;
-        if (Pressed(keyboard, Keys.Down) && row < 7) _cursor += 8;
+        if (Pressed(keyboard, Keys.Left)) MoveCursor(-1, 0);
+        if (Pressed(keyboard, Keys.Right)) MoveCursor(1, 0);
+        if (Pressed(keyboard, Keys.Up)) MoveCursor(0, -1);
+        if (Pressed(keyboard, Keys.Down)) MoveCursor(0, 1);
         if (_cursor != previousCursor) _sectorGangCardOwner = null;
         _gangSelection.KeepOnly(_cursor);
+        HireDockOffersByKey(keyboard);
         if (Pressed(keyboard, Keys.Back))
             _screens.Show(ClientScreen.City);
         // FND-UI-015: Enter and Execute show the back control pressed for one tick of the
@@ -338,6 +337,7 @@ public sealed partial class ChaosGame
         // The Sector workspace covers the left side of right-edge tooltips drawn by
         // DrawBoard, so composite the tooltip again after the workspace is complete.
         DrawStatusConsoleTooltip(batch, pixel, font);
+        DrawSectorOwnerTooltip(batch, pixel, font);
         // RULE-TURN-005: what the group order strip does, as FND-TURN-009 records it.
         if (_hoverPoint is { } stripHover && showsGroupOrderStrip
             && SectorDetailLayout.GroupOrderStrip.Contains(stripHover))

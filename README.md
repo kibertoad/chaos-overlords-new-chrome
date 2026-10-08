@@ -378,7 +378,8 @@ presentation-only conveniences that make the original systems easier to read:
 | Open or confirm | Enter | Double-click the selected sector or click a panel control |
 | Cycle gangs | G | Click a gang card |
 | Commands | C | Click the command control |
-| Hire | H | Click Hire; drag an offer onto a controlled sector |
+| Hire | H opens the Hire panel; 1, 2 or 3 hires that offer into the selected sector | Click Hire; drag an offer onto a controlled sector |
+| Sector owner | Moving the selection with the arrow keys names its owner on the message line | Rest the pointer on a sector of the city map or the sector view |
 | Detailed sector | I | Double-click a sector |
 | Finances | F | Click Finance |
 | Ranking | R | Click Ranking |
