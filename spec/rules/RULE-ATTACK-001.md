@@ -180,10 +180,3 @@ None known.
   sector, which the procedure does not check, or a bare-handed attacker with
   negative Martial Arts. These rest on FND-COMBAT-006, FND-COMBAT-008 and
   FND-COMBAT-003. Until a run reaches them, the entry stays `supported`.
-- 2026-10-06: in the last resolution of EXP-TURN-112 the original rolls 9
-  more dice at `0x00475FBB` than the rebuild before the first Hide test.
-  Every one is `roll(6)`, so the replay does not show which step rolls them.
-  They add to no player's `damage_inflicted`, and the 40 dice this procedure
-  gives the combat phase before that test account for the damage the end
-  state shows, so they may be a retaliation this procedure does not give.
-  Which gang or step rolls them is not recorded.

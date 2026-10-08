@@ -46,16 +46,16 @@ gang-turns, controlled and retained sectors, survival, and scenario progress;
 large combined tournaments supplement these cases but cannot substitute for
 them because one improvement could otherwise conceal another regression.
 The aggregate gates run 12 identical seeds for 15 turns per isolated feature:
-Crime Lord expansion on Power and Criminal idle recovery on Kill 'Em All. Each
+Crime Lord expansion on Power and Criminal idle recovery on Siege. Each
 gate requires Advanced to control at least as many sector-turns, to end with at
 least as many sectors, and to hold at least as many defended sector-turns as
 Original. The expansion gate also requires more outward moves, the idle gate
 fewer idle gang-turns. In the current samples expansion raises outward moves
 from 632 to 840, controlled-sector turns from 3,707 to 4,255, final controlled
 sectors from 542 to 615 and defended controlled-sector turns from 3,676 to
-4,134. Idle recovery removes all 114 idle gang-turns and raises controlled-sector
-turns from 3,972 to 4,003, final controlled sectors from 540 to 553 and defended
-controlled-sector turns from 3,917 to 3,940. Seed pairs execute independently
+4,134. Idle recovery lowers idle gang-turns from 362 to 3 and raises controlled-sector
+turns from 3,215 to 3,292, final controlled sectors from 360 to 386 and defended
+controlled-sector turns from 3,200 to 3,278. Seed pairs execute independently
 with a maximum of two workers.
 
 These transformations consume no RNG and add no cash, statistics, discounts,
@@ -69,8 +69,8 @@ native saves, replays, canonical hashes, and online game settings.
 - It reads authoritative `MatchState` and returns at most one command per active
   gang without mutating state or consuming simulation RNG.
 - Each gang submits the one command its planning record describes, and only
-  when the authoritative command validator accepts it and it fits the shared
-  budget. A record whose action needs a target it does not hold plans nothing.
+  when the authoritative command validator accepts it. A record whose action
+  needs a target it does not hold plans nothing.
 - An Attack is additionally restricted by the same cooperative sector detection
   query exposed to players, so the planner does not target gangs it cannot
   observe.
@@ -112,9 +112,11 @@ native saves, replays, canonical hashes, and online game settings.
   50 or more, and exactly Goon Mentality. Crime is Chaos through Tolerance 3
   and Snitch from 4; every failed gate chooses mode-5 Move. The complete branch,
   including exact item and Move targets, is live and replay-recorded.
-- A shared nonnegative spending budget prevents the planner from intentionally
-  queuing more Bribe/Equip cost than the player currently holds while still
-  allowing validator-approved free actions from a negative balance.
+- No cash is set aside at planning: every planned Bribe and Equip is queued,
+  even when together they cost more than the player holds, and each one is
+  tested against the cash left when it resolves (RULE-EQUIP-001,
+  RULE-BRIBE-001, FND-AI-082). Advanced fallback commands spend only the cash
+  the Original plan's prices leave, floored at 0.
 - `ChooseHire` considers only authoritative `HireRules.Validate` successes in
   controlled sectors and does not mutate state.
 - The client submits every selected command/hire and phase transition through
