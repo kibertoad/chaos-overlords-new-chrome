@@ -10,37 +10,37 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004329C0..0x00432D9F
+    address: 0x004329C0..0x00432DA0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040DAB9..0x0040DAD4
+    address: 0x0040DAB9..0x0040DAD5
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040DAE0..0x0040DBBF
+    address: 0x0040DAE0..0x0040DBC0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040DBC0..0x0040DD7A
+    address: 0x0040DBC0..0x0040DD7B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040DD7B..0x0040DDFE
+    address: 0x0040DD7B..0x0040DDFF
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040DDFF..0x0040DFFD
+    address: 0x0040DDFF..0x0040DFFE
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0040DFFE..0x0040E091
+    address: 0x0040DFFE..0x0040E092
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004905C0..0x0049062B
+    address: 0x004905C0..0x0049062C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00490598..0x004905B7
+    address: 0x00490598..0x004905B8
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0048770C..0x0048772B
+    address: 0x0048770C..0x0048772C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004614B6..0x004614C3
+    address: 0x004614B6..0x004614C8
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -146,5 +146,5 @@ before it. In `0x004329C0`, find the two copies from `0x0048770C` and
 `0x0048771C` to `0x00498762`, the rectangle constants `0x66`, `0x50`, `0x166`
 and `0x230`, the calls to `0x004328BE` with 1, and the calls to
 `SetThreadPriority`. In `0x0040DBC0`, find the constant `0xFE000` passed to
-`SmackOpen`. List the references to `0x00490598..0x004905BF` and to
-`0x004905C0..0x0049062B`.
+`SmackOpen`. List the references to `0x00490598..0x004905C0` and to
+`0x004905C0..0x0049062C`.

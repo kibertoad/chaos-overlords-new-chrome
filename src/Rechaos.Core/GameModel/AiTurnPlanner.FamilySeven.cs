@@ -15,8 +15,8 @@ public static partial class AiTurnPlanner
 
         if (visibleWeight == 10)
             TryPrepareFamilySevenAttack(state, playerId, gang, gangSlot, visible);
-        // The handler's Equip leaves the focus as it was, so a research item number stored there
-        // stays for the next pass's comparison with the best research sector.
+        // The handler's Equip leaves the focus as it was (FND-AI-074), so a research item number
+        // stored there stays for the next pass's comparison with the best research sector.
         else if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                      state, player, gang, gangSlot) is { } upgrade)
             SetRecoveredReplacementEquipmentAction(
@@ -71,6 +71,10 @@ public static partial class AiTurnPlanner
             return;
         }
 
+        // RULE-AI-026, FND-AI-078: a focus equal to the best research sector goes straight to item
+        // Research, skipping both the Move toward that sector and the Influence of its sites. The
+        // handler also takes this branch for a best sector of -1, which the selection never
+        // returns for an active gang.
         var bestSector = OriginalAiFamilySevenRules.SelectBestOwnedResearchSector(
             state, playerId, gang.SectorId);
         if (state.AiPlanning.FocusValue(playerId, gangSlot) == bestSector)
@@ -120,6 +124,8 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var playerId = player.Id;
+        // FND-AI-078: the continuation reads the previous target byte whatever the previous action
+        // was; the fallback scans run only when it finds no item.
         var previousItem = state.AiPlanning.PreviousTarget(playerId, gangSlot).First;
         var itemId = OriginalAiFamilySevenRules.SelectContinuationResearchItem(
                 state, player, gang, previousItem)

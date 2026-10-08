@@ -4,17 +4,9 @@
 
 Entries by status.
 
-## established
+## supported
 
 1 entries.
-
-| ID | Title |
-|---|---|
-| [RULE-SITE-001](../../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there |
-
-## Established on unreproduced evidence
-
-Entries whose status is established and whose findings and experiments are all only recorded.
 
 | ID | Title |
 |---|---|
@@ -26,4 +18,4 @@ Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-SITE-001](../../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | established |
+| [RULE-SITE-001](../../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | supported |

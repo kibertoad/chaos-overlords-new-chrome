@@ -4,7 +4,7 @@ title: After the instant phase every sector's base Tolerance is clamped to 1..40
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TOLERANCE-001, FND-SNITCH-001, FND-STATE-001, FND-TURN-008, FND-TURN-001, FND-CONTROL-001, FND-EXE-004, EXP-TURN-032]
+evidence: [FND-TOLERANCE-001, FND-SNITCH-001, FND-STATE-001, FND-TURN-008, FND-TURN-001, FND-CONTROL-001, FND-EXE-004, EXP-TURN-032, EXP-TURN-103, EXP-TURN-111, EXP-TURN-114, EXP-TURN-117]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, RULE-TOLERANCE-001, RULE-BRIBE-001, RULE-SNITCH-001]
@@ -72,4 +72,9 @@ None known.
 
 ## Open questions
 
-None known.
+None known. The runs reach every edge case: EXP-TURN-032 the lower bound and
+EXP-TURN-103 the upper one, each with the sector out of range while later
+gangs act; EXP-TURN-117 a Snitch and a Bribe netting out in one sector and two
+sectors out of range in which no gang acted; EXP-TURN-111 and EXP-TURN-114 a
+base that one Bribe or one Snitch wraps, clamped to 1 and to 40. The last
+three write the base Tolerance into the original's memory before the phase.

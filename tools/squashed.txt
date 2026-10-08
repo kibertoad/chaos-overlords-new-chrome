@@ -1,0 +1,20 @@
+# Superseded entries squashed into their replacements before the spec had readers outside this
+# repository (documentation standard, IDENTIFIERS-7). tools/check-documentation.mjs passes them to
+# the checker as --squashed. Once main has the squash, the checker reports each as not at the
+# base, and this file can be deleted.
+FND-AI-008=FND-AI-064
+FND-AI-011=FND-AI-065
+FND-AI-025=FND-AI-069
+FND-AI-027=FND-AI-069
+FND-AI-030=FND-AI-048
+FND-AI-031=FND-AI-049
+FND-AI-037=FND-AI-071
+FND-AI-038=FND-AI-070
+FND-AI-044=FND-AI-081
+FND-AI-059=FND-AI-068
+FND-AI-067=FND-AI-069
+FND-COMLINK-005=FND-COMLINK-010
+FND-PLATFORM-008=FND-PLATFORM-015
+RULE-AUDIO-011=RULE-AUDIO-002
+FND-EQUIP-008=FND-EQUIP-012
+FND-STATE-008=FND-STATE-012

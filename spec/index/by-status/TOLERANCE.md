@@ -29,3 +29,12 @@ Entries whose status is established and whose findings and experiments are all o
 |---|---|
 | [RULE-TOLERANCE-001](../../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income |
 | [RULE-TOLERANCE-002](../../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 |
+
+## Open questions
+
+Entries whose Open questions section says more than None known.
+
+| ID | Title | Status |
+|---|---|---|
+| [RULE-TOLERANCE-001](../../rules/RULE-TOLERANCE-001.md) | At the start of each resolution a sector's base Tolerance moves one point toward 17 minus its base Income | established |
+| [RULE-TOLERANCE-002](../../rules/RULE-TOLERANCE-002.md) | After the instant phase every sector's base Tolerance is clamped to 1..40 | established |

@@ -6,27 +6,27 @@ Entries by status.
 
 ## supported
 
-3 entries.
+4 entries.
 
 | ID | Title |
 |---|---|
+| [RULE-HIRE-001](../../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot |
 | [RULE-HIRE-003](../../rules/RULE-HIRE-003.md) | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject |
 | [SCR-HIRE-001](../../screens/SCR-HIRE-001.md) | Hire comparison panel showing the three offers side by side |
 | [SCR-HIRE-002](../../screens/SCR-HIRE-002.md) | Hire offers on the main console, with drag-to-hire and Reject |
 
 ## established
 
-3 entries.
+2 entries.
 
 | ID | Title |
 |---|---|
-| [RULE-HIRE-001](../../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot |
 | [RULE-HIRE-002](../../rules/RULE-HIRE-002.md) | Vacant hire offers are refilled in place at the player's planning entry |
 | [RULE-HIRE-004](../../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order |
 
 ## recorded
 
-11 entries.
+12 entries.
 
 | ID | Title |
 |---|---|
@@ -41,6 +41,7 @@ Entries by status.
 | [FND-HIRE-007](../../findings/FND-HIRE-007.md) | The offer refill rejects a draw only when it equals a slot's current value or the gang just removed, and the same function draws the three offers on the console |
 | [FND-HIRE-008](../../findings/FND-HIRE-008.md) | The console hire handler takes a drop only on a sector the player owns or has a gang in, opens the live-gang panel on a double-click, and 0x004078B8 is the computer players' snub |
 | [FND-HIRE-009](../../findings/FND-HIRE-009.md) | The Hire comparison panel loads resource 5016, draws three 32-by-32 portraits and sixteen value rows per offer, and closes on its one control or Enter |
+| [FND-HIRE-010](../../findings/FND-HIRE-010.md) | The dragged hire offer is its 64-by-64 portrait shrunk to 40 by 40 under the setup drag frame, copied opaquely centred on the clamped pointer |
 
 ## Established on unreproduced evidence
 
@@ -48,7 +49,6 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [RULE-HIRE-001](../../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot |
 | [RULE-HIRE-002](../../rules/RULE-HIRE-002.md) | Vacant hire offers are refilled in place at the player's planning entry |
 | [RULE-HIRE-004](../../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order |
 
@@ -58,7 +58,7 @@ Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-HIRE-001](../../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | established |
+| [RULE-HIRE-001](../../rules/RULE-HIRE-001.md) | Hires and snubs are carried out player by player and offer slot by offer slot | supported |
 | [RULE-HIRE-002](../../rules/RULE-HIRE-002.md) | Vacant hire offers are refilled in place at the player's planning entry | established |
 | [RULE-HIRE-003](../../rules/RULE-HIRE-003.md) | A human player holds at most one hire or snub order, set by dragging an offer or pressing Reject | supported |
 | [RULE-HIRE-004](../../rules/RULE-HIRE-004.md) | A new match starts with every hire offer vacant and no hire order | established |
