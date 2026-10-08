@@ -16,7 +16,7 @@ public sealed class ComlinkAlertCadenceTests
     [InlineData(7, 17)]
     public void ArrivalPreservesEightStepBlinkPhase(int phase, int delay)
     {
-        // FND-AUDIO-012, RULE-AUDIO-008: reset repeat counter, retain blink step.
+        // FND-AUDIO-018, RULE-AUDIO-008: reset repeat counter, retain blink step.
         var cadence = new ComlinkAlertCadence();
         var start = PresentationClock.Period * phase + TimeSpan.FromMilliseconds(50);
         Assert.True(cadence.Advance(true, true, start));
@@ -32,7 +32,7 @@ public sealed class ComlinkAlertCadenceTests
     [InlineData(false)]
     public void PlanningEntryAndNewDeliveryResetRepeatWhileAlreadyUnread(bool planning)
     {
-        // FND-AUDIO-012: both entry and a new message sound immediately and reset repeat.
+        // FND-AUDIO-018: both entry and a new message sound immediately and reset repeat.
         var cadence = new ComlinkAlertCadence();
         Assert.True(cadence.Advance(true, true, TimeSpan.Zero, deliverySequence: 1));
         Assert.True(cadence.Advance(true, true, PresentationClock.Period * 15,

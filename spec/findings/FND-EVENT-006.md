@@ -69,7 +69,7 @@ lamp goes out within two ticks. When a flag is set during a dark phase, the
 lamp lights on the next lit step.
 
 The counter `0x00487804` is the one that paces the Comlink alert repeat
-(FND-AUDIO-012) and the selected-sector frame (FND-UI-017); it wraps at 8
+(FND-AUDIO-018) and the selected-sector frame (FND-UI-017); it wraps at 8
 exactly as stored. The third lamp, at (592, 282), follows `0x0048780C`, which
 the match function sets while it runs the planning loop for a surviving player
 at the end of the match (FND-OBJECTIVE-004). That lamp sits in the top right
