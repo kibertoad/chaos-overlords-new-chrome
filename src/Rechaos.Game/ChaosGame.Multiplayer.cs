@@ -357,10 +357,14 @@ public sealed partial class ChaosGame
         }
         _online.Match = view;
         _online.SelfPlayerId = _session.PlayerId;
-        _online.DeadlineAt = _session.Bootstrap.Deadline;
         _online.AwaitedSlots = AwaitedSeats(view.Players);
-        ResetMatchPresentation(_session.Bootstrap.State);
-        if (_session.IsRestoring)
+        // A match played from views has no bootstrap: the session restores from the first view.
+        if (_session.Bootstrap is { } bootstrap)
+        {
+            _online.DeadlineAt = bootstrap.Deadline;
+            ResetMatchPresentation(bootstrap.State);
+        }
+        if (_session.IsRestoring || _session.Bootstrap is null)
         {
             _online.Status = "RESTORING THE MATCH";
             return;

@@ -26,6 +26,11 @@ export const matches = sqliteTable(
     seatCount: integer('seat_count').notNull().default(1),
     /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */
     joinCounter: integer('join_counter').notNull().default(1),
+    /**
+     * Whether the match is played from per-seat views: the server resolves every turn and sends
+     * each seat only its own view. Stamped when the match is created and never changed.
+     */
+    seatViews: integer('seat_views', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
   },
@@ -87,6 +92,14 @@ export const turns = sqliteTable(
      * question without visiting the settled history.
      */
     settledAt: integer('settled_at', { mode: 'timestamp_ms' }),
+    /**
+     * What the server's own resolver reached for the sealed turn: the state hash, whether it ended
+     * the match, and the sequence number of the `turn.sealed` event it was fed through. Null when
+     * the server did not resolve the turn; written once, and when set it decides the turn.
+     */
+    resolvedHash: text('resolved_hash'),
+    resolvedFinished: integer('resolved_finished', { mode: 'boolean' }),
+    resolvedSeq: integer('resolved_seq'),
   },
   (table) => [
     primaryKey({ columns: [table.matchId, table.number] }),

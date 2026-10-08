@@ -429,6 +429,18 @@ public sealed partial class ChaosGame
                 }
                 CompleteOnlineRecovery();
                 return;
+            case MultiplayerNotice.SeatOut:
+                // A match played from views shows an eliminated seat nothing more until it ends,
+                // when the final state arrives for the endgame screen. The session passes each turn
+                // for the seat meanwhile, so there is nothing for the player to do.
+                _online.Stage = MultiplayerStage.Finished;
+                _online.DeadlineAt = null;
+                _online.ResolutionExpectedSince = null;
+                CloseOnlinePlanning();
+                _message = "YOUR EMPIRE IS OUT OF THE MATCH  THE RESULTS FOLLOW WHEN IT ENDS";
+                _online.Status = _message;
+                if (_state is null) _screens.Show(ClientScreen.Online);
+                return;
             case MultiplayerNotice.MatchAbandoned:
                 _online.ConcludeMatch();
                 EndOnlineMatch("THE MATCH WAS ABANDONED");

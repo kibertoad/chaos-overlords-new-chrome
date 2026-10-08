@@ -41,6 +41,11 @@ export const matches = pgTable(
     seatCount: integer('seat_count').notNull().default(1),
     /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */
     joinCounter: integer('join_counter').notNull().default(1),
+    /**
+     * Whether the match is played from per-seat views: the server resolves every turn and sends
+     * each seat only its own view. Stamped when the match is created and never changed.
+     */
+    seatViews: boolean('seat_views').notNull().default(false),
     createdAt: stamp('created_at').notNull(),
     updatedAt: stamp('updated_at').notNull(),
   },
@@ -102,6 +107,14 @@ export const turns = pgTable(
      * question without visiting the settled history.
      */
     settledAt: stamp('settled_at'),
+    /**
+     * What the server's own resolver reached for the sealed turn: the state hash, whether it ended
+     * the match, and the sequence number of the `turn.sealed` event it was fed through. Null when
+     * the server did not resolve the turn; written once, and when set it decides the turn.
+     */
+    resolvedHash: text('resolved_hash'),
+    resolvedFinished: boolean('resolved_finished'),
+    resolvedSeq: integer('resolved_seq'),
   },
   (table) => [
     primaryKey({ columns: [table.matchId, table.number] }),

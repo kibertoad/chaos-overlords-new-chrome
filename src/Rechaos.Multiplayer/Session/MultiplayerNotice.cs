@@ -164,6 +164,17 @@ public abstract record MultiplayerNotice
     public sealed record MatchFinished : MultiplayerNotice;
 
     /// <summary>
+    /// In a match played from views, this client's seat was eliminated and has no view to plan on.
+    /// </summary>
+    /// <remarks>
+    /// The rest of the match is hidden from it like from any seat, so there is nothing to show until
+    /// the match ends, when the final state arrives as a <see cref="TurnResolved"/> with no planning
+    /// copy. Until then the session passes each turn for the seat, so the table is not kept waiting.
+    /// </remarks>
+    /// <param name="Turn">The first turn the seat has no view of.</param>
+    public sealed record SeatOut(int Turn) : MultiplayerNotice;
+
+    /// <summary>
     /// The server gave up on the match.
     /// </summary>
     /// <remarks>

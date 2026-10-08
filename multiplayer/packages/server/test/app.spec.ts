@@ -17,10 +17,12 @@ import {
   sharedRateLimiters,
 } from '@chaos-overlords/kernel'
 import {
+  FakeTurnResolver,
   InMemoryStorage,
   ManualClock,
   RecordingLogger,
   RecordingScheduler,
+  readFakeSeatView,
 } from '@chaos-overlords/kernel/testing'
 import { describe, expect, it } from 'vitest'
 import {
@@ -73,6 +75,9 @@ interface BuildLimits {
   member?: LimitWindow
   bugReports?: { enabled?: boolean; limit?: number; statePerDay?: number; dailyStateBytes?: number }
   matchCreationPerMinute?: number
+  /** A resolver to referee with, and whether matches are played from seat views. */
+  resolver?: FakeTurnResolver
+  seatViews?: boolean
   /** Count every budget in this store, as a deployment of several instances does. */
   sharedStore?: RateLimitStore
 }
@@ -96,6 +101,7 @@ function build(overrides: Partial<ServerContainer['config']> = {}, limits: Build
     scheduler: new RecordingScheduler(),
     clock,
     logger: new RecordingLogger(),
+    ...(limits.resolver ? { resolver: limits.resolver, seatViews: limits.seatViews ?? false } : {}),
     ...(shared ? { rateLimits: shared } : {}),
   })
   const reports = inMemoryBugReports()
@@ -447,6 +453,72 @@ describe('server app over in-memory storage', () => {
       headers: { authorization: `Bearer ${guest.token}` },
     })
     expect(guestRead.status).toBe(200)
+  })
+
+  it("serves a seat its own view and withholds the other seats' orders until the end", async () => {
+    const served = build({}, { resolver: new FakeTurnResolver(), seatViews: true })
+    const post = (path: string, body: unknown, token?: string) =>
+      served.app.request(`/api/v1${path}`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      })
+    const created = await post('/matches', {
+      settings: {
+        name: 'x',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'h',
+      sessionVersion: 1,
+    })
+    const host = (await created.json()) as {
+      token: string
+      match: { id: string }
+      joinCode: string
+    }
+    const guest = (await (
+      await post('/matches/join', { joinCode: host.joinCode, displayName: 'g' })
+    ).json()) as {
+      token: string
+    }
+    expect((await post(`/matches/${host.match.id}/start`, undefined, host.token)).status).toBe(204)
+    const get = (path: string, token: string) =>
+      served.app.request(`/api/v1/matches/${host.match.id}${path}`, {
+        headers: { authorization: `Bearer ${token}` },
+      })
+
+    const detail = (await (await get('', host.token)).json()) as {
+      match: { seed: number | null; seatViews?: boolean }
+    }
+    expect(detail.match).toMatchObject({ seed: null, seatViews: true })
+    const response = await get('/view', guest.token)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    const view = (await response.json()) as { turn: number; slot: number; body: string }
+    expect(view).toMatchObject({ turn: 1, slot: 1 })
+    expect(readFakeSeatView(view.body)).toMatchObject({ slot: 1, turn: 1 })
+
+    for (const token of [host.token, guest.token]) {
+      const put = await served.app.request(`/api/v1/matches/${host.match.id}/turns/1/orders`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orders: { schemaVersion: 1, ops: [] }, ready: true }),
+      })
+      expect(put.status).toBe(200)
+    }
+    const sealed = await get('/turns/1/orders', host.token)
+    expect(sealed.status).toBe(409)
+    expect(await sealed.json()).toMatchObject({
+      error: { details: { reason: 'withheld_until_end' } },
+    })
+    expect((await get('/snapshots/latest', host.token)).status).toBe(409)
+    expect(((await (await get('/view', host.token)).json()) as { turn: number }).turn).toBe(2)
   })
 
   /**

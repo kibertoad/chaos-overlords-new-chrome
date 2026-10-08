@@ -38,6 +38,7 @@ it('discards an orphan vote before a later prompt reuses the seat', async () => 
       currentTurn: 0,
       seatCount: 1,
       joinCounter: 1,
+      seatViews: false,
       createdAt: now,
       updatedAt: now,
     }

@@ -291,7 +291,7 @@ public sealed partial class MultiplayerSessionTests
         int catchUpThroughTurn)
     {
         var replay = new MatchReplayRecorder(
-            MatchStateClone.Of(session.Bootstrap.State, BundledOriginalData.Load()));
+            MatchStateClone.Of(session.Bootstrap!.State, BundledOriginalData.Load()));
         CommandPhase.Enter(replay);
         SealedTurnApplier.Apply(replay, SealedOrders(1));
         replay.State.Players[0].Cash++;

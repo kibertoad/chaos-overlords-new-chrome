@@ -13,8 +13,10 @@ import {
   memoryRateLimiters,
   type RateLimiterFactory,
   retentionPolicyFromDays,
+  type TurnResolver,
   sharedRateLimiters,
 } from '@chaos-overlords/kernel'
+import { startNodeMatchResolver } from '@chaos-overlords/resolver/node'
 import {
   type AppEnv,
   createApp,
@@ -62,6 +64,11 @@ export interface NodeRuntimeOptions {
    * facade with it; nothing else has a reason to.
    */
   clock?: Clock
+  /**
+   * The turn resolver, in place of the one `RESOLVE_TURNS` starts. Tests referee with a resolver
+   * whose rules are a digest chain; a server has no other reason to pass one.
+   */
+  resolver?: TurnResolver
   /**
    * Overrides the interval between event stream keepalive frames. Tests shorten it so the frame can
    * be seen over the real listener without waiting out the production interval.
@@ -123,6 +130,8 @@ export async function buildNodeRuntime(
     config.retentionBatchSize ?? (opened.dialect === 'sqlite' ? 10 : 50),
   )
 
+  const resolver = await startResolver(config, options, logger)
+
   // Instances sharing a Postgres database announce their appends and kicks to each other and take
   // the background jobs in turn; a SQLite file has one process and nobody to tell. See `ClusterBus`.
   // The Postgres bus is started last, after everything that can still throw, so a failed start
@@ -159,6 +168,7 @@ export async function buildNodeRuntime(
       clock,
       logger,
       scheduler: { schedule: (input) => (scheduler as TimerDeadlineScheduler).schedule(input) },
+      ...(resolver ? { resolver: resolver.resolver, seatViews: config.seatViews } : {}),
       rateLimits,
     },
     {
@@ -210,6 +220,7 @@ export async function buildNodeRuntime(
     } catch (error) {
       await opened.close()
       await bugReports?.close()
+      await resolver?.close()
       throw error
     }
   }
@@ -233,6 +244,8 @@ export async function buildNodeRuntime(
       intervalMs: config.retentionIntervalMs,
     },
     bugReports: bugReports ? 'on' : 'off',
+    resolveTurns: resolver ? 'on' : 'off',
+    seatViews: resolver && config.seatViews ? 'on' : 'off',
     // Where the budgets are counted: in the database every instance shares, or in this process.
     rateLimits: opened.rateLimits ? 'database' : 'process',
   })
@@ -252,14 +265,18 @@ export async function buildNodeRuntime(
     closeStreams,
     close: async () => {
       closeStreams()
-      // A bus that fails to close must not keep the databases open behind it.
+      // A bus that fails to close must not keep the databases or the resolver open behind it.
       try {
         await bus.close()
       } finally {
         try {
           await opened.close()
         } finally {
-          await bugReports?.close()
+          try {
+            await bugReports?.close()
+          } finally {
+            await resolver?.close()
+          }
         }
       }
     },
@@ -336,4 +353,28 @@ function redactUrl(url: string): string {
   } catch {
     return '(unparseable url)'
   }
+}
+
+/**
+ * The turn resolver `RESOLVE_TURNS` asks for, in a worker thread of its own, or the one the caller
+ * passed. A server told to resolve turns that cannot start the resolver refuses to start rather
+ * than quietly running without it; a resolver that fails later only hands the turns it cannot
+ * resolve back to the reports.
+ */
+async function startResolver(
+  config: NodeConfig,
+  options: NodeRuntimeOptions,
+  logger: Logger,
+): Promise<{ resolver: TurnResolver; close(): Promise<void> } | undefined> {
+  if (options.resolver) return { resolver: options.resolver, close: async () => {} }
+  if (!config.resolveTurns) return undefined
+  const resolver = await startNodeMatchResolver({
+    ...(config.resolverMaxMatches === undefined ? {} : { maxMatches: config.resolverMaxMatches }),
+    ...(config.resolverManagedHeapMib === undefined
+      ? {}
+      : { managedHeapBudgetBytes: config.resolverManagedHeapMib * 1024 * 1024 }),
+  })
+  const { sessionVersion } = await resolver.describe()
+  logger.info('turn resolver started', { sessionVersion })
+  return { resolver, close: () => resolver.close() }
 }

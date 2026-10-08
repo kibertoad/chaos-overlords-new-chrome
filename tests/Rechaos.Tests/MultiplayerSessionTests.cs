@@ -878,7 +878,7 @@ public sealed partial class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
-        var gang = session.Bootstrap.State.Players[0].Gangs[0].Id;
+        var gang = session.Bootstrap!.State.Players[0].Gangs[0].Id;
         var builder = new OrderDocumentBuilder(new PlayerId(0));
         builder.Cancel(new PlayerId(0), gang);
 
@@ -946,7 +946,7 @@ public sealed partial class MultiplayerSessionTests
 
         Assert.Equal(
             DateTimeOffset.Parse("2026-09-10T12:05:00.000Z", System.Globalization.CultureInfo.InvariantCulture),
-            session.Bootstrap.Deadline);
+            session.Bootstrap!.Deadline);
     }
 
     /// <summary>A match with no turn timer has no deadline, rather than a nonsense one.</summary>
@@ -957,7 +957,7 @@ public sealed partial class MultiplayerSessionTests
         using var _unused = http;
         await using var __ = session;
 
-        Assert.Null(session.Bootstrap.Deadline);
+        Assert.Null(session.Bootstrap!.Deadline);
     }
 
 }

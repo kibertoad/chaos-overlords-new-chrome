@@ -24,6 +24,7 @@ This file is the operator and contributor manual.
 | `packages/server` | The Hono app: routes, bearer auth, error envelope, the SSE response builder, the in-process event hub. |
 | `packages/client` | TypeScript client (REST + resumable SSE iterator). The conformance suite drives every runtime through it; the game's C# client in `src/Rechaos.Multiplayer` mirrors it. |
 | `scripts/generate-csharp.mjs` | Regenerates the game's C# mirror of the contracts. See "Generating the C# client" below. |
+| `packages/resolver` | The game's turn resolver, the C# rules compiled to WebAssembly (`src/Rechaos.Resolver.Wasm`), with a Node host (a worker thread) and a Cloudflare host (a Worker of its own, a Durable Object per match). See its [README](packages/resolver/README.md). |
 | `packages/conformance` | Storage and HTTP behaviour suites every implementation and runtime runs. |
 | `runtimes/node` | Node facade: `@hono/node-server`, SQLite or Postgres, timer-based deadlines plus a sweeper. |
 | `runtimes/cloudflare` | Worker facade: D1, a `MatchHub` Durable Object per match for SSE fan-out and deadline alarms, a cron sweeper. |
@@ -90,6 +91,10 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `HTTP_REQUEST_TIMEOUT_MS` | `120000` | How long a client may take to send a whole request, body included. Sized for an 8 MiB bug report on a slow uplink. Event streams are unaffected: their request is complete once the headers arrive. |
 | `MAX_EVENT_STREAMS` | `512` | Event streams this process holds at once, across every match; further opens answer 429. At most one quarter of this cap may be occupied by lobby streams, leaving capacity for running matches even if unauthenticated lobby creation is abused. A lobby stream stops using that share when its match starts. Raise the cap and the file descriptor limit together. |
 | `CORS_ORIGINS` | *(none)* | Comma-separated browser origins allowed to call the API. The game is not a browser and needs none; a web front end using `@chaos-overlords/client` lists its origin here, which also permits the preflighted `Authorization` and `Last-Event-ID` headers. |
+| `RESOLVE_TURNS` | `false` | Resolve every sealed turn on the server and decide it on the server's state (docs/MULTIPLAYER.md, "Running the referee"). Starts the WebAssembly resolver in a worker thread; the server refuses to start if it cannot. Off, turns are settled by counting reports. |
+| `SEAT_VIEWS` | `false` | With `RESOLVE_TURNS` on, play the matches created from then on from per-seat views: the server resolves every turn alone, serves each seat its own view and withholds the seed, the other seats' orders and the snapshots until the match ends (docs/MULTIPLAYER.md, "Serving the views"). Ignored without a resolver. |
+| `RESOLVER_MAX_MATCHES` | `64` | Matches the resolver holds in memory at once; the least recently used beyond it is released and rebuilt from its checkpoint when next needed. |
+| `RESOLVER_MANAGED_HEAP_MIB` | `512` | Live managed heap, in MiB, past which the resolver releases matches. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 
 Put TLS in front of it (Caddy, nginx, a tunnel): player tokens are bearer credentials.
@@ -179,14 +184,15 @@ deployment has to satisfy:
 | `BUG_DB` | D1 | Bug reports, from `packages/bug-reports/migrations/sqlite`. Its own database; see "Bug reports" below. Leave it unbound and `POST /api/v1/bug-reports` answers 404. |
 | `BUG_BLOBS` | R2 | Compressed match journals. Leave it unbound and only journals under 256 KiB are kept. |
 | `MATCH_HUB` | Durable Object | `MatchHub`, one per match: SSE fan-out and the turn deadline alarm. Its migration lineage starts at tag `v1`, `new_sqlite_classes = ["MatchHub"]`. |
+| `RESOLVER` | Service | The resolver Worker (`packages/resolver/README.md`), used only with `RESOLVE_TURNS` set. It needs the Workers Paid plan. Leave it unbound and keep `RESOLVE_TURNS` off on the free plan; with the flag set and no binding the Worker warns once per isolate and counts reports. |
 | `RATE_LIMITS` | Durable Object | `RateLimitCounter`, one per budget and caller: the rate limit windows, counted once for the whole deployment. Added at migration tag `v2`, `new_sqlite_classes = ["RateLimitCounter"]`. Leave it unbound and every isolate counts on its own, and the Worker logs `RATE_LIMITS is not bound` once per isolate. |
 
 `PUBLIC_LISTING`, `CORS_ORIGINS`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
 `UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`,
 `MATCH_CREATION_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
 `LOBBY_RETENTION_DAYS`, `ABANDONED_RETENTION_DAYS`, `SILENT_RETENTION_DAYS`, `RETENTION_BATCH_SIZE`
-(`50`), `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars, with the same meanings
-and defaults as the Node environment variables above. A deployment also wants the cron trigger the
+(`50`), `BUG_REPORT_RETENTION_DAYS`, `BUG_REPORT_DAILY_STATE_MB`, `RESOLVE_TURNS` and `SEAT_VIEWS` are vars, with
+the same meanings and defaults as the Node environment variables above. A deployment also wants the cron trigger the
 `scheduled` handler expects: `wrangler.dev.toml` declares `crons = ["*/5 * * * *"]`, the interval
 the sweeper and the retention sweeps are written for.
 
@@ -203,7 +209,8 @@ longer than two seconds lets the request through and logs `rate limit store fail
 minute. Cloudflare WAF rate limiting rules in front of the Worker remain a sensible extra layer
 against volumetric floods, but nothing here depends on them.
 
-For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all of these to throwaway local resources.
+For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all of these but `RESOLVER` to
+throwaway local resources, and leaves `RESOLVER` unbound.
 It is a development and test fixture, not a deployment.
 
 ```sh
@@ -259,7 +266,7 @@ deployment consumes `@chaos-overlords/worker` and the two migration lineages as 
 dependencies rather than as a checkout of this repository.
 
 They share one release version. `workspace:*` is what the packages depend on each other by, and pnpm
-rewrites it to that exact version as it packs, so every package must be bumped together. The nine
+rewrites it to that exact version as it packs, so every package must be bumped together. The ten
 manifests are also where the released version is written down — what `version.txt` is for the
 installers — and `pnpm check-versions` holds them to one number before anything is packed.
 
@@ -281,7 +288,7 @@ branch protection forced the bump to be landed by hand — so the workflow publi
 rather than a number past it, and the release kind is ignored for that run; the log says so. And a
 set of manifests that has fallen behind a version already tagged stops the release outright, because
 counting on from it would land on a number that is taken: correct the manifests on `main` first, with
-`pnpm set-version <version>` if it is quicker than nine edits.
+`pnpm set-version <version>` if it is quicker than ten edits.
 
 Release from *Actions → Publish multiplayer packages → Run workflow*, which runs
 [`.github/workflows/multiplayer-publish.yml`](../.github/workflows/multiplayer-publish.yml). Choose
@@ -290,7 +297,7 @@ how far the version advances and pick a mode:
 | Mode | What it does |
 | --- | --- |
 | `rehearse` (default) | Lints, builds, typechecks, tests, checks the C# codegen, and packs every tarball, then stops without contacting either the registry or `main`. A rehearsal never advances the recorded version, so it keeps naming the same one. |
-| `release` | Records the version in the nine manifests on `main`, runs the same checks, publishes all nine packages, then tags the commit it published `multiplayer-v0.2.0`. |
+| `release` | Records the version in the ten manifests on `main`, runs the same checks, publishes all ten packages, then tags the commit it published `multiplayer-v0.2.0`. |
 
 Both cut from the tip of main and pin that commit, so the checks, tarballs, and tag describe one
 commit even if someone pushes to main mid-run; releases also run one at a time, since two started

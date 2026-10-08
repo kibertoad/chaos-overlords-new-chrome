@@ -59,6 +59,7 @@ describe('API_CONTRACTS', () => {
         'PUT /matches/:matchId/turns/:turn/orders',
         'GET /matches/:matchId/turns/:turn/orders/mine',
         'GET /matches/:matchId/turns/:turn/orders',
+        'GET /matches/:matchId/view',
         'POST /matches/:matchId/turns/:turn/report',
         'POST /matches/:matchId/snapshots',
         'GET /matches/:matchId/snapshots/latest',

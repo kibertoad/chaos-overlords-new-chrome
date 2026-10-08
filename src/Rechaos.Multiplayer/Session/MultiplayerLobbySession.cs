@@ -210,8 +210,11 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             // race another request from this same host, even though the match did start. The match
             // read is authoritative: treat that state as success rather than leaving the host on a
             // misleading error solely because the original transition was no longer available.
+            // A match played from views withholds its seed until it ends, so a missing seed says
+            // the match has not started only in a lockstep match.
             var detail = await handle.GetAsync(token).ConfigureAwait(false);
-            if (detail.Match.Seed is null || !MultiplayerMatchSession.HasFinishedStarting(detail.Match))
+            var seedMissing = detail.Match.Seed is null && detail.Match.SeatViews != true;
+            if (seedMissing || !MultiplayerMatchSession.HasFinishedStarting(detail.Match))
                 throw;
             _notices.Enqueue(new LobbyNotice.Updated(detail.Match));
             return;

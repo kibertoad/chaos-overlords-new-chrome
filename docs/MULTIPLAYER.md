@@ -33,6 +33,21 @@ characters without disturbing the player-name field.
 - [Retention](#retention)
 - [Security model](#security-model)
 - [What the server does and does not defend against](#what-the-server-does-and-does-not-defend-against)
+- [Resolving turns on the server](#resolving-turns-on-the-server)
+  - [Pieces](#pieces)
+  - [What the resolver is fed](#what-the-resolver-is-fed)
+  - [Versions](#versions)
+  - [Running the referee](#running-the-referee)
+  - [Cost](#cost)
+- [Per-seat views](#per-seat-views)
+  - [What a seat may know](#what-a-seat-may-know)
+  - [The view](#the-view)
+  - [Serving the views](#serving-the-views)
+  - [Planning on a view](#planning-on-a-view)
+  - [Computer seats](#computer-seats)
+  - [Saves, journals and spectators](#saves-journals-and-spectators)
+  - [Versions](#versions-1)
+  - [Cost](#cost-1)
 - [Two languages, one contract](#two-languages-one-contract)
 - [Client integration contract](#client-integration-contract)
   - [What a hot-seat core does not say](#what-a-hot-seat-core-does-not-say)
@@ -165,7 +180,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings, each match's `sessionVersion`, and available late-join seats with current gang, site, and sector counts. `?sessionVersion=N` narrows the list to matches stored under that session version before the page limit applies; the desktop client always sends its own, so a public match it could not play is never listed. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
 | `POST /matches/join` | anyone | Joins by code (and password), under the caller's chosen `portraitId`. Returns that player's token. Capacity is a single atomic seat claim. |
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected seat the AI plays: one no human held, or one every human who held it was voted out of (`409 seat_reserved` otherwise). Claiming a voted-out seat revokes its former player's token and closes their streams, so their `rejoin` stops working. Each claim is a new player row, so a slot can carry several rows, all but the newest computer controlled. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings` for a seat no human held; for one a human held, the server stores that human's face instead. The match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
-| `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
+| `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed (null in a match played from views until it ends), and `seatViews: true` in such a match. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
 | `POST /matches/:id/chat` | member | Posts `{ text }` to the lobby chat before start (`409 match_not_in_lobby` after it). The text is 1 to 160 characters after trimming and NFC, with no control, format or private-use characters. Each player may post ten a minute (`429 rate_limited`), and a lobby whose log holds 1,000 events takes no more (`409 lobby_log_full`). Announced as `lobby.chatMessage`, which is the message's only store. |
@@ -181,10 +196,11 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 |---|---|---|
 | `PUT /matches/:id/turns/:n/orders` | member | Replaces the caller's order document for the open turn and sets `ready`. The write is one statement conditional on the turn still being open, so a new order landing after the seal is refused (`409 turn_not_open`), never silently folded in. An exact retry of the persisted document is acknowledged even after the turn advances, covering a lost success response. Readiness is never taken back: a `ready: false` document for a seat that is already ready is a draft that arrived after the final one, so the same statement leaves the row alone and the call answers with the document that stands. When `ready` completes the roster, the turn seals in the same call. |
 | `GET /matches/:id/turns/:n/orders/mine` | member | The caller's own submission (for a reconnecting client). |
-| `GET /matches/:id/turns/:n/orders` | member | The sealed set: the documents of the players the seal froze, in slot order, plus `orderSetHash`. Refused while open (`409 turn_open`). |
-| `POST /matches/:id/turns/:n/report` | member | `{ stateHash, finished }` after applying the sealed turn locally. |
-| `POST /matches/:id/snapshots` | host | A base64 native snapshot for a sealed turn, with its `stateHash`. |
-| `GET /matches/:id/snapshots/latest`, `/:turn` | member | Snapshot bodies for resync or reconnect. |
+| `GET /matches/:id/turns/:n/orders` | member | The sealed set: the documents of the players the seal froze, in slot order, plus `orderSetHash`. Refused while open (`409 turn_open`), and in a match played from views until it ends (`409 withheld_until_end`). |
+| `GET /matches/:id/view` | member | In a match played from views, the caller's view of the open turn: `{ turn, slot, formatVersion, sessionVersion, body }`, where `body` is the snapshot archive of the view's save payload. Sent with `Cache-Control: private, no-store`. Refused with 409 `not_a_view_match`, `match_finished`, `match_not_running` (the match was abandoned), `seat_out` (the seat is out of the match), or `view_not_ready` (the server has not resolved the turn before; ask again). See [Serving the views](#serving-the-views). |
+| `POST /matches/:id/turns/:n/report` | member | `{ stateHash, finished }` after applying the sealed turn locally. Refused in a match played from views (`409 reports_not_taken`). |
+| `POST /matches/:id/snapshots` | host | A base64 native snapshot for a sealed turn, with its `stateHash`. Refused in a match played from views (`409 snapshot_not_required`). |
+| `GET /matches/:id/snapshots/latest`, `/:turn` | member | Snapshot bodies for resync or reconnect. Refused in a match played from views until it ends (`409 withheld_until_end`). |
 | `GET /matches/:id/events?after=N` | member | The log, paged. |
 | `GET /matches/:id/stream` | member | The same log as SSE; `Last-Event-ID` or `?after=` resumes. Every frame is `id:` the sequence number, `event: message`, and `data:` the event JSON — one event name for the whole stream, so a browser's stock `EventSource` reads it from `onmessage` and branches on the `type` inside the payload. A `: keepalive` comment every 20 seconds is the only other frame. |
 
@@ -312,6 +328,11 @@ never seals a turn before its deadline, and a seal that fails there is logged an
 and the sweep rather than failing the read.
 Sealing on the deadline includes whatever each player last submitted; a player who submitted
 nothing contributes no orders.
+
+In a match played from views, every turn after the first opens with no deadline: nobody can plan it
+until the server has resolved the turn before and served the views. The clock starts when that turn
+is confirmed, announced as `turn.deadlineExtended`, so a slow resolution does not eat into the
+planning time.
 
 ## Bug reports: the same deployment, a different database
 
@@ -489,17 +510,18 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   client that *changes* the outcome, not one that merely reads. Nor does it attribute blame: a
   client that diverges deliberately can grief a match by desyncing it every turn, and the remedy is
   social — `turn.desynced` names every player's hash and the candidates, so the host can see who is
-  the odd one out and kick them. Moving resolution server-side (a WebAssembly build of
-  `Rechaos.Core` behind a `TurnResolver` port) would close both gaps and is the one design change
-  this layout leaves room for; the wire protocol would not change. Tracked in
-  [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
+  the odd one out and kick them. In a match the server referees, a client that diverges is told so
+  and put back on the server's state, and nobody else is paused. [Per-seat views](#per-seat-views)
+  close the read leak in the second step; see
+  [Resolving turns on the server](#resolving-turns-on-the-server).
 - **Corroboration assumes one human per seat.** There are no accounts, so nothing stops one person
   holding several seats in a public lobby. A host with two of three seats can report a doctored
   hash twice and then upload a snapshot claiming it, and the honest third player is told to
   converge. Counting reports is a defence against one client, not against one person wearing three
   hats, and the server has no way to tell the two apart. It is sound among people who found each
-  other elsewhere and it is not a guarantee to strangers; the real fix is the `TurnResolver` port
-  above ([#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453)).
+  other elsewhere and it is not a guarantee to strangers. In a match the server referees, its own
+  hash decides the turn and the host's start must be the one it built, so no number of seats can
+  outvote it; see [Resolving turns on the server](#resolving-turns-on-the-server).
 - **Which join codes exist is observable to somebody already scanning the code space.** An unknown
   code and a match that has already started answer the same 404, but a code-gated lobby answers 401
   rather than 404, so a caller who guesses a live code learns that it is live. The space is about
@@ -575,6 +597,393 @@ value outside the atlas stops the bootstrap (`MatchBootstrapFactory`) instead of
 something drawable: a client that quietly substituted one would be playing a city no peer agrees
 with.
 
+## Resolving turns on the server
+
+Status: decided (`docs/DECISIONS.md`, 2026-10-06). The referee step is implemented: the C# resolver,
+its WebAssembly build, the Node and Cloudflare hosts (`@chaos-overlords/resolver`) and the kernel's
+`Referee`. A deployment turns it on; see [Running the referee](#running-the-referee). The server serves
+per-seat views when a deployment also turns those on; see [Serving the views](#serving-the-views).
+
+Lockstep leaves three gaps that the security model above names: recovery counts reports, so one
+person in several seats outvotes the rest; a client that diverges on purpose pauses the match every
+turn; and every client holds hidden state it can read. All three exist because only the clients
+know the state. The server will therefore resolve each sealed turn itself, with the game's own
+rules compiled to WebAssembly, in two steps.
+
+**Referee.** The server resolves every sealed turn as it seals and its hash decides the turn. A
+report that matches confirms that seat; a report that differs is that client's divergence alone:
+the server tells it so and serves its own snapshot of the turn, which the client adopts as it adopts
+a repair today. Nobody votes, the host uploads nothing, and the other players are not paused. This
+closes multi-seat corroboration and desync griefing: a doctored hash, reported from any number of
+seats, only puts those seats on the server's state. The order wire does not change. Clients still
+resolve, so the read leak stays.
+
+**Per-seat views.** Second, and decided separately (`docs/DECISIONS.md`, 2026-10-06, "Send each
+seat only what the original shows it"): the server sends each seat the part of the state the
+original shows that player, and the client plans against it instead of resolving. That closes the
+read leak. [Per-seat views](#per-seat-views) has what each seat may know, the view, and how the
+client, the computer seats, journals and spectators work with it.
+
+### Pieces
+
+| Piece | Where | What it does |
+|---|---|---|
+| `AuthoritativeMatch` | `src/Rechaos.Multiplayer/Resolution` | The match as the server holds it. Bootstrap, sealed turn, handover and snapshot each call the code a client calls for the same fact (`MatchBootstrapFactory` and `CommandPhase`, `SealedTurnApplier`, `SeatControl`, `MatchStateClone`), so the two cannot drift apart. `AuthoritativeMatchTests` holds it to a client's hashes. |
+| `Rechaos.Resolver.Wasm` | `src/Rechaos.Resolver.Wasm` | `AuthoritativeMatch` behind `[JSExport]` functions that take the wire's JSON: the stored `gameSettings` blob, the roster, a sealed set as `GET /turns/:n/orders` answers it. A match lives in the runtime under an integer handle between calls. |
+| `TurnResolver` port | `multiplayer/packages/kernel` (`ports/resolver.ts`) | What the kernel calls. A runtime supplies it; a server without one keeps report counting. `FakeTurnResolver` (`kernel/testing`) stands in for it in the kernel, conformance and runtime tests, with the rules replaced by a digest chain. |
+| `Referee` | `multiplayer/packages/kernel` (`services/Referee.ts`) | Keeps the resolver's copy of each refereed match level with the event log, records what each sealed turn resolved to on its turn row, judges the reports against it and writes the server's snapshots. |
+| Node host | `multiplayer/packages/resolver` (`./node`) | Loads the bundle in a worker thread, because a turn costs hundreds of milliseconds of CPU that must not stall the event loop and every stream on it. A thread that dies is started again on the next call, holding nothing. |
+| Cloudflare host | `multiplayer/packages/resolver` (`./worker`, `./cloudflare`) | A Worker of its own without `nodejs_compat`, holding matches in a Durable Object per match and called over a service binding; `./cloudflare` is the coordination Worker's side of that binding. It needs the paid plan: a turn takes about half a second of CPU against the free plan's 10 ms. |
+| Snapshot archive | `multiplayer/packages/resolver` | Both hosts take and hand out the archive clients upload, which the package writes and reads around the bare payload with `node:zlib` Brotli, in Node and in the coordination Worker. |
+| Determinism check | `tools/ResolverDeterminism` | Plays a match natively and holds the WebAssembly build to every hash in both hosts, and has the native client read each host's own snapshot. The multiplayer workflow runs it. |
+
+### What the resolver is fed
+
+The resolver is fed the event log in order and folds it through `MatchHistory`
+(`src/Rechaos.Multiplayer/Session`), the class a reconnecting client's session folds it with, so the
+two cannot rebuild a match differently. The facts that change the state:
+
+- `match.started`: bootstrap from the seed, the stored `gameSettings` and the seated roster.
+- `match.playerTakenOver`: the seat goes to the computer. `match.playerReturned` that replaced the
+  computer, and `match.latePlayerJoined`: the seat goes to a human. A handover on a finished match is
+  ignored, as on every client.
+- `turn.opened`: moves the log's turn, which dates the handovers after it.
+- `turn.sealed`: the frozen set, checked against the digest the event announced and its own, then
+  resolved.
+
+Every other event is accepted and changes nothing. A seal for a turn the state already holds, or one
+on a finished match, is passed over; a handover is dated by the turn the log was on when it
+happened, so a walk of the whole log over a newer snapshot leaves out the handovers the snapshot
+already reflects. A match picked up from a snapshot takes the roster as the server holds it, so that
+late joins before the snapshot are known seats.
+
+It keeps the state in memory, under a handle per match. The server checkpoints it every ten turns,
+when the match finishes, and for every turn a seat diverged on, so that seat has the turn to adopt.
+A checkpoint is the snapshot archive clients already read, stored with `server` as its uploader.
+A host that lost its runtime restores the newest checkpoint whose hash the server recorded for its
+turn, or bootstraps from `match.started` when there is none, and replays the facts after it. The browser-wasm runtime has no Brotli codec, so the resolver hands
+out and takes the uncompressed save payload, and its host writes and reads the archive's header and
+compression.
+
+A host holds a bounded number of matches and releases the least recently used beyond it, or once the
+runtime's live managed heap passes a budget (forcing a collection before it releases anything). A
+call for a match the host no longer holds fails with `MatchNotHeldError`, and the caller rebuilds the
+match from its newest checkpoint and the facts after it. A call whose input the build refuses (a
+seal ahead of the match, a snapshot that does not hash to what it is stored under) fails with
+`ResolverRefusedError`, and rebuilding does not help.
+
+### Versions
+
+A resolver plays one session version, the one its build was compiled with, because that number is
+what names the rules, the order schema and the state hashing. A match stored under another session
+version is not refereed: the server falls back to report counting for it. A deployment that wants to
+referee a session version runs the resolver built for it, so the bundle is versioned and published
+with the session version it plays. A server whose hash differs from every client's on the same turn
+is most likely running rules that changed without a session version bump. It still decides the turn,
+which keeps the match consistent, and logs the disagreement for the operator.
+
+The referee adds the `turn.diverged` event and the match view's `refereed` field, and refuses a host
+start it did not build, so it moved the protocol version to 33. It does not move the session version:
+nothing stored changes meaning. The turn rows gain three columns (`resolved_hash`,
+`resolved_finished`, `resolved_seq`), which stay empty on a server that does not referee.
+
+### Running the referee
+
+A deployment turns the referee on with `RESOLVE_TURNS=true`. Off, which is the default, the server
+settles turns by counting reports.
+
+- **Node** starts the WebAssembly host in a worker thread at startup and refuses to start if it
+  cannot. `RESOLVER_MAX_MATCHES` (64) and `RESOLVER_MANAGED_HEAP_MIB` (512) bound what it holds.
+- **Cloudflare** needs the resolver Worker deployed and bound to the coordination Worker as the
+  service `RESOLVER` (see `multiplayer/packages/resolver/README.md`), which needs the Workers Paid
+  plan. With `RESOLVE_TURNS` set and no `RESOLVER` binding the Worker logs a warning once per isolate
+  and counts reports, so a deployment on the free plan leaves the flag off and loses nothing it had.
+- **`SEAT_VIEWS=true`**, on either runtime and only beside a working resolver, makes the matches
+  created from then on [played from views](#serving-the-views). Off, which is the default, matches
+  are refereed lockstep matches.
+
+What a refereed match does:
+
+1. When a turn seals, the server feeds the resolver the log since the last turn it resolved,
+   records the hash and whether the match finished on the turn row, and confirms the turn on that
+   state. The reports play no part in the verdict. A match whose session version is not the
+   resolver's is not refereed, and the match view says which: `refereed: true`.
+2. A report that matches changes nothing. A report that differs is that seat's divergence alone:
+   the server stores its own snapshot of the turn and then publishes `turn.diverged`, naming the
+   seat, the server's hash and the hash it reported, once per seat and reported hash. Nobody is
+   paused. The client named adopts the snapshot and replays the turns after it, as it adopts a
+   repair, and reports again from there.
+3. The host's turn-0 upload must hash to the start the server built. Anything else is refused with
+   409 `uncorroborated_state_hash`, and the server stores its own start in its place.
+4. A client that restarts and finds, in the history, a confirmation its own replay does not reach
+   adopts the server's snapshot of that turn instead of ending the session.
+
+The resolver's copy of a match is fed in batches that end on a seal and carry the turn they start
+on, and the resolver applies a batch only when the match is still on that turn, so two seals or
+reports feeding the same match at once apply each event once. When the resolver fails or cannot be
+reached, the turn falls back to report counting, desync pause included. The next seal or report
+that reaches a working resolver resolves the turn and confirms it on the server's state, which
+lifts the pause.
+
+### Cost
+
+Measured for the decision on a 26-turn match: under the Mono interpreter a turn takes 190 to 800 ms
+on Node and about 470 ms under workerd, against 20 to 120 ms natively, and the runtime starts in
+under 150 ms.
+
+The bundle is the trimmed publish of `Rechaos.Resolver.Wasm`: 3.2 MB of assemblies and a 3.0 MB
+runtime. Trimming strips the constructor parameter names that reflection-based System.Text.Json
+binds records by, so `Rechaos.Core` reads and writes its definitions, saves and replays through
+`CoreJsonContext`, and `WireJson` reads and writes the wire through `WireJsonContext` (generated with
+the C# contracts by `pnpm codegen`). Both assemblies are marked AOT-compatible, so a JSON call that
+would fall back to reflection fails the build. `JsonContractTests` holds the contracts to the bytes
+the reflection-based serializer wrote and pins the definition fingerprint saves are checked against.
+Trimmed, the WebAssembly heap is 32 MiB after start and 55 MiB with one to four 26-turn matches held
+(46 MiB and 80 to 96 MiB untrimmed), against a 128 MB Cloudflare isolate.
+
+The managed heap is about 4 MiB after start; a 26-turn match adds about 1.5 MiB of it and a 104-turn
+match about 8 MiB, and the WebAssembly memory, which only grows, follows at two to three times the
+live heap. Durable Objects of one class share isolates, so the Cloudflare host holds at most four
+matches and 24 MiB of managed heap per isolate by default (`RESOLVER_MAX_MATCHES`,
+`RESOLVER_MANAGED_HEAP_MIB`): three 104-turn matches take the memory to about 96 MiB. The Node host
+defaults to 64 matches and 512 MiB. A four-year match outgrows the 16 MiB save limit before it ends,
+so it cannot be checkpointed late in its life; this is a limit of the native save, which a client
+uploading a snapshot meets in the same place.
+
+Speed is a separate lever, left alone while a turn costs about half a second: Mono AOT (which needs
+the `wasm-tools` workload in CI) or NativeAOT-LLVM once it leaves the experimental feed. Either is
+measured against the interpreter's 470 ms per turn under workerd before it is adopted.
+
+## Per-seat views
+
+Status: decided (`docs/DECISIONS.md`, 2026-10-06, "Send each seat only what the original shows
+it"). The view is implemented in `Rechaos.Core` (`SeatView`) and checked against every recorded
+run of the original. The server serves views where a deployment turns them on
+([Serving the views](#serving-the-views)), and the game client plays such a match from them
+([Planning on a view](#planning-on-a-view)).
+
+A seat's view is the match as that player may know it at their planning entry. The server resolves
+the whole match and projects each seat's view of the open turn when that seat asks for it. The
+client plans on its view and resolves nothing, so a modified client holds nothing it could reveal.
+
+### What a seat may know
+
+The rule is what the original draws for that player. The original takes its picture of the city at
+the planning entry: RULE-DETECT-001 writes every gang's `visible_to` there, the console's totals are
+drawn there (FND-UI-040), and nothing a player orders during planning changes what they see of
+anybody else. So a view is taken at the planning entry and holds until the next one. Between the
+seal and the next planning entry a seat learns nothing new.
+
+Every part of the match state, with who may know it:
+
+| Part of the state | Who may know it | Evidence |
+|---|---|---|
+| Scenario, length, Mentality, planning time limit; each seat's name, portrait, and whether it is a human, a computer or out of the match | Every seat | SCR-UI-008, RULE-UI-009, SCR-UI-003 (Overlord bar) |
+| Turn, calendar and turns remaining | Every seat | SCR-UI-003, FND-UI-040 |
+| Which human seats still have orders to give | Every seat | SCR-UI-003 (planning lights), FND-UI-043 |
+| Owner of each sector | Every seat | SCR-UI-003 (owned interiors), SCR-UI-004 (owner strip) |
+| Income and Tolerance of each sector | Every seat | RULE-UI-011 |
+| Police in a sector (`crackdown_turns` above 0) | Every seat. The number of turns left is drawn nowhere, and a Crackdown raises it by a die roll | SCR-UI-003 (police badge), FND-UI-050, RULE-POLICE-002 |
+| Objective sectors: every headquarters in Siege, the centre in Big Man | Every seat | RULE-UI-012 |
+| The type of every site in every sector, and its definition's values | Every seat | RULE-SEARCH-002 (markers by type anywhere), SCR-UI-004 (site portraits), SCR-UI-007 |
+| A site's progress, whether it is complete and who influenced it; a sector's Support and Cash | The sector's owner | SCR-UI-004 (progress meter), SCR-UI-007 (Resistance less progress), RULE-SEARCH-002 (controlled marker), RULE-UI-011 |
+| A sector's base Tolerance and its crackdown history | No seat: no screen draws them | RULE-UI-011, RULE-POLICE-002 |
+| The seat's own gangs, all of them, with every order it has given | The seat | SCR-UI-004, SCR-UI-005, RULE-UI-010 |
+| Another seat's gang in play that the seat detects: its definition, sector, Force, equipment and statistics | The seat, from the planning entry where RULE-DETECT-001 finds it | RULE-DETECT-001, RULE-UI-010, SCR-UI-004 (cards), SCR-GANG-002, SCR-ATTACK-001, RULE-ATTACK-002 |
+| Another seat's gang the seat does not detect, or that is gone; how many gangs a seat has | No other seat | RULE-DETECT-001, RULE-UI-006 (no marker for an enemy not seen) |
+| Which seats detect a gang | No seat beyond its own detection | RULE-DETECT-001 (`visible_to` is kept per observer, and no screen draws another's) |
+| Another seat's orders, recurring or not | No other seat (see the open questions) | RULE-TURN-004, RULE-TURN-005, SCR-UI-004 |
+| The fights and police attacks of the last resolution in each sector where the seat fought or has a gang now, with every seat's row there: each gang's definition, Force before and after, and equipment | The seat, including rows of gangs it does not detect | FND-COMBAT-012, FND-COMBAT-007, SCR-COMBAT-001, RULE-COMBAT-002 |
+| The fights its own gangs were in, attack by attack | The seat | RULE-COMBAT-004, SCR-COMBAT-002 |
+| Last Turn reports | The seat each was written for; an elimination goes to every seat | RULE-EVENT-001 to RULE-EVENT-014, RULE-POLICE-004, SCR-EVENT-001 |
+| Cash and scenario score | The seat, on the console | SCR-UI-003 (player totals), FND-UI-040 |
+| Where every seat's portrait stands on the rankings rail | Every seat. The rail is 140 pixels long, so it shows how far apart the scores are only to that resolution | SCR-OBJECTIVE-001, RULE-OBJECTIVE-002 |
+| Hire offers, and the hire or snub order | The seat | SCR-UI-003 (hire dock), SCR-HIRE-001, SCR-HIRE-002, RULE-HIRE-003 |
+| Research progress and the items researched | The seat | SCR-RESEARCH-001, RULE-EQUIP-004 |
+| The Financial panel's figures and equipment prices | The seat | RULE-FINANCE-001, RULE-EQUIP-003 |
+| Comlink messages | Their recipient. Any seat may know which seats are human and can be written to | RULE-COMLINK-002 to RULE-COMLINK-005, SCR-COMLINK-001 |
+| Cash earned and spent, damage, casualties, overthrows, hides | No seat during play; every seat at the end | SCR-AWARDS-001 |
+| Final standings and awards | Every seat at the end | SCR-AWARDS-001, SCR-AWARDS-002 |
+| The computer players' attitudes, reactions, families and planning records | No seat | RULE-AI-014 to RULE-AI-017, FMT-STATE-007 |
+| The seed, the generator state and every die rolled | No seat | RULE-RNG-001; no screen draws a roll |
+
+What the spec does not settle:
+
+- **Orders on another seat's cards.** The original's detailed sector screen lets a player page
+  through another seat's cards for the gangs they detect (SCR-UI-004, RULE-UI-010), and every card
+  draws the gang's `action`. At a planning entry that is the gang's recurring order or None
+  (RULE-TURN-004), and in a hot-seat match a seat that plans later also sees the orders an earlier
+  seat has just given (RULE-TURN-005). The rebuild draws no action strip on another seat's cards
+  (`docs/DECISIONS.md`, 2026-09-18), so views carry no order of another seat. If the rebuild comes
+  to draw it, a view carries the recurring order of each detected gang, and still no order given in
+  the turn being planned, which simultaneous play has no equivalent for.
+- **Site progress in a sector the seat does not own.** SCR-UI-004 reads the progress meter as drawn
+  for the owner only, and leaves open whether it is drawn for anybody else. Views follow the
+  reading.
+- **Combat Results rows for gangs the seat does not detect.** FND-COMBAT-012 and FND-COMBAT-007
+  read the page as showing every player's row in the sector, with no detection test, so views keep
+  those rows. No recorded run shows such a page with a gang the viewer cannot see.
+- **The original's own network play.** What the original sent each machine (SCR-NET-005) is not
+  recorded, so it is no precedent either way.
+
+### The view
+
+`SeatView.Project(match, seat)` is a pure function from the whole match to a `MatchState`: the
+match's own save document, with every part the seat may not know removed or set to a neutral value,
+restored as that seat's view. `MatchState.ViewedBy` names the seat, and every call that draws or
+resolves (`FinishCommand`, the execution phases, hire offer draws, the computer players' planning)
+throws on a view. A copy of a view through `MatchStateClone` is still a view.
+
+| What the view does | Parts |
+|---|---|
+| Keeps | The setup without the seed; every sector's owner, Income, Tolerance, police, objective flag and site types; the seat's own player record, gangs, orders, reports and Comlink inbox; eliminations |
+| Keeps, for the gangs of other seats it detected at the planning entry | Definition, sector, Force, equipment and statistics |
+| Leaves out | Every other gang of the other seats; their orders, hire offers and hire orders, research, inventory, reports and Comlink inboxes; the phase hashes; every event outside the table above |
+| Sets to a neutral value | Other seats' cash, Support, Big Man points and statistics (0); site progress in sectors the seat does not own (none), with Support 0, Cash 1 and the base Tolerance equal to the Tolerance; `crackdown_turns` (its sign, which every test the rules make of it reads the same); the crackdown history (empty); the random state and the seed (0); the computer players' state (as at a new match); every die in the events (none) |
+| Renumbers | The seat's orders and the events kept, from 0, because the sequence numbers of the whole match count every seat's orders and events |
+| Coarsens | Other seats' scenario scores, to the narrowest scores that place every portrait on the rankings rail where the true scores do, with the seat's own score exact |
+
+Gang ids are left as they are: an order names the gang it targets by id, and the server reads the
+order against the whole match. Ids come from one counter for the whole city, so the ids a seat sees
+tell it roughly how many gangs have been hired before them. Giving each seat its own ids would need
+the server to translate every order, and is not worth that.
+
+Two tests hold the view to the table. `SeatViewTests.EveryPartOfTheSaveHasAVisibilityDecision`
+lists every member of the save document with what the view does with it, so state added to a save
+without a decision fails it. `OriginalNewGameExperimentTests.ASeatPlansTheSameTurnFromItsView` takes
+a view at every planning entry of every recorded run of the original and checks that it hides what
+the table hides; that every order the option catalog offers each of the seat's gangs, and every
+hire, is judged the same on it as on the whole match; that the city's markers, the console values,
+the rankings rail, the sector cards and Overlord bar, the Financial panel and the combat pages read
+the same; and that the human's recorded orders and hires, given through `SpeculativeTurn` on each,
+build the same order document.
+
+### Serving the views
+
+A match is played from views when the deployment sets `SEAT_VIEWS` and its resolver plays the
+session version the match is created under. The server decides that once, at creation, and stores
+it on the match (`seat_views`), so a match keeps one mode for its life; the match view says
+`seatViews: true`.
+
+`GET /matches/:id/view` answers the caller's view of the open turn. The server does not store views:
+it projects one from the resolver's copy of the match on each request (`AuthoritativeMatch` calls
+`SeatView.Project` and `SeatView.Save`), and the resolver host wraps the payload in the snapshot
+archive. A resolver that lost the match rebuilds it from the turn rows first, as for any feed.
+
+`turn.confirmed` for turn n is the signal that the views of turn n+1 can be read; no other event
+announces them. The server confirms a turn of a view match only on its own resolution, never on
+reports, and it takes none: there is no client state to compare. When the resolver fails at the
+seal, the turn stays sealed and the next turn waits with no clock. A view request is then the retry:
+it asks the resolver to resolve the turn before and confirms it on success, and otherwise answers
+409 `view_not_ready`. The match stalls while the resolver is down rather than falling back to report
+counting, which a view match has no means for.
+
+While the match runs the server withholds everything that would show more than a view: the seed
+(`match.started` carries `seed: null`, as does the match view), other seats' documents in a sealed
+set, and every snapshot, which the server alone writes. A seat still reads its own submitted
+document and the events, whose sealed-turn digests name the set. Once the match is finished or
+abandoned these reads are answered as in any match, so a client can rebuild the whole match from the
+seed and the sealed sets, or load the final snapshot.
+
+A late joiner needs no snapshot to take a computer seat: its view is served like any other at the
+next request. The public listing therefore offers a view match's free seats from its start. The
+listing carries no seat summaries for a view match, because they are written back from host reports
+and snapshot uploads, which a view match does not take.
+
+### Planning on a view
+
+The client plans on a `SpeculativeTurn` copy as today and sends the same order document. The copy
+is made from the view, which already has the seat as the active player. It resolves nothing and
+reports no hash. When the turn seals, the server resolves it, opens the next turn, draws every
+seat's hire offers (`PrepareSimultaneousHireOffers`), and serves each seat its new view. The client
+shows the last resolution (Last Turn Events, Combat Results, Detailed Combat) from the events the
+view keeps, which are the ones those screens read.
+
+Two things the client does today stop: replaying sealed sets, which it can no longer do without the
+other seats' orders and the random state, and the desync machinery, since there is no client state
+to diverge. The view arrives from the server over the same authenticated channel as everything
+else. Its save payload carries the fingerprint of the view, which catches damage in transit and
+nothing more.
+
+`MultiplayerMatchSession` plays a match whose view says `seatViews: true` this way. It has no
+bootstrap state: it starts by restoring, reads its view of the open turn, and replays its own held
+draft (`GET orders/mine`) on the planning copy. At each `turn.confirmed` it reads the next view and
+hands it to the game as the resolved turn, with the turn's events from the view. A
+`view_not_ready` answer is asked again with a growing pause of up to five seconds, and the match's
+status is read between attempts so a match that ended meanwhile stops the loop. Whether the seat's
+own orders were part of the sealed set is judged from its held document, since the set is withheld.
+Votes and takeovers come from the event history as in lockstep.
+
+The server does not know which seats the rules have eliminated, so it answers `seat_out` for an
+eliminated seat's view (`SeatView.Project` refuses one). The client then tells the game the seat is
+out of the match (`SeatOut`) and, for every turn that opens until the end, submits an empty ready
+document so the match does not wait on its clock for a seat that has nothing to order.
+
+When the match ends the client reads the latest snapshot, which the server releases then, and hands
+the game its final state for the awards screen. When that snapshot does not carry the outcome, it
+rebuilds the whole match from the released seed and sealed sets with `AuthoritativeMatch`, checking
+each turn against the hash the server confirmed.
+
+Some of the rebuild's own additions read values a view sets to neutral: the rankings tooltip
+(DEV-UI-005) shows every seat's exact score and holdings, and the Bribe and Snitch tooltips show the
+base Tolerance and the sites' part of any sector the gang stands in. On a view they would show the
+neutral values as if they were true, so they have to say what the seat does not know instead.
+
+### Computer seats
+
+The computer players plan from the whole match, as they do in the original: their handlers read
+every gang, the attitudes and the generator (RULE-AI-001 to RULE-AI-031), not a player's view. In a
+match with views they run only in the server's resolver, which plans each computer seat at the point
+every client plans it today. A seat handed to the computer is planned there from that turn on, and a
+player who takes it back, or a late joiner who takes a computer seat, receives a view at the next
+planning entry.
+
+### Saves, journals and spectators
+
+- An online match is not saved on the client, so nothing changes there.
+- A bug report filed during a match carries the reporter's view and the turn's order document. That
+  is enough for an interface fault and cannot be replayed as a match. Once the match has ended
+  nothing is hidden: the server releases the seed and every seat's sealed sets to the match's
+  members, and the client rebuilds the whole journal from them.
+
+  The journal a client records while it plans on a view is the view at the planning entry and the
+  seat's planning on it, and it names the seat (`viewedBy`, replay format 55). The report replays
+  as that view with the planning on it, and `LoadAndReplay` refuses it as a match with the reason
+  (`SeatViewJournal`). Once the match has ended, `MultiplayerMatchSession.ReleasedJournal` holds the
+  whole match, folded from the released seed and sealed sets through `AuthoritativeMatch` with every
+  confirmed hash checked, and a report filed then attaches it and replays to the server's final
+  state. The session builds it after handing the game the final state; if the rebuild fails, a
+  report goes out without a journal.
+- When the match ends the server sends the whole state, since the awards screen shows every seat's
+  statistics (SCR-AWARDS-001) and nothing is left to protect.
+- Spectators (#496) read the whole match a fixed number of turns behind. A player can open a
+  spectator session on their own match under another name, so the spectator delay bounds how old
+  the hidden facts are that a player can learn that way. A host who plays strangers and wants none
+  of it turns spectating off.
+
+### Versions
+
+A server with the resolver on decides per deployment whether its matches use views (`SEAT_VIEWS`),
+and stamps the mode on each match when it is created, so a match keeps one mode for its life. In a
+view match the server withholds what lockstep has to publish: the seed in the bootstrap, other
+seats' documents in a sealed set (a seat reads its own and the set's digest), and snapshots of the
+whole match. Those changes, the view route and the refusals of reports and uploads moved the
+protocol version to 34. The session version stays: the sealed sets, order documents and snapshots a
+match stores are the same, and the mode is a new column on the match (`seat_views`, migration
+`0008_seat_views` on SQLite and `0009_seat_views` on Postgres), false for every match created before it.
+Journals record the seat they were recorded on, which moved the replay format to 55; the state
+fingerprint encoding, the native save format and the session version stay.
+
+### Cost
+
+Measured at all 2,504 planning entries of the recorded runs, natively in a Debug build: a view
+takes 0.3 ms to project at the median and 2.4 ms at most. A view's save payload is 87 KB at the
+median and 161 KB at most, and 3 KB and 9 KB with Brotli, against 23 KB and 301 KB for the whole
+match's (the largest at turn 82 of EXP-TURN-099, with 262 gangs in the save). The resolver runs
+about ten times slower under the WebAssembly interpreter than natively, so a view there costs a
+few milliseconds per seat per turn and at most a few tens, beside a turn's hundreds. The server
+compresses it, as it does snapshots.
+
 ## Two languages, one contract
 
 The server is TypeScript and the game is .NET, so one of the two mirrors of every wire type has to
@@ -582,9 +991,12 @@ be derived from the other rather than typed twice. `pnpm codegen` in `multiplaye
 derivation: [`@game-infra/valibot-to-csharp`](https://www.npmjs.com/package/@game-infra/valibot-to-csharp)
 walks the valibot schemas and emits `src/Rechaos.Multiplayer/Generated/WireContracts.cs`, whose
 records deserialize the same JSON; a second pass reads the endpoint contracts and emits
-`RouteTemplates.cs`, which `MultiplayerApiRouteTests` holds the C# client's paths to. Both files are
-committed, so building the game never needs Node, and CI runs `pnpm codegen:check` to fail if either
-has drifted from the schemas.
+`RouteTemplates.cs`, which `MultiplayerApiRouteTests` holds the C# client's paths to. A third
+file, `WireJsonContext.cs`, is the source-generated JSON contract of every record and enum in
+`WireContracts.cs`, which `WireJson` reads and writes through instead of reflection; the script also
+gives the string enums the generic `JsonStringEnumConverter<TEnum>` those contracts need. The files
+are committed, so building the game never needs Node, and CI runs `pnpm codegen:check` to fail if
+any has drifted from the schemas.
 
 Four things the schemas say exist for that crossing:
 
@@ -907,7 +1319,8 @@ dock a player plans against the dock the sealed turn grants.
   interface mutation.
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
   that follows a desync pause or the closing of an absence vote.
-- **Desync recovery is decided by a count of reports.** A client that finds its own report wrong
+- **Desync recovery is decided by a count of reports** in a match the server does not referee
+  (see [Running the referee](#running-the-referee)). A client that finds its own report wrong
   against a rebuild from the server's facts corrects it, which settles a divergence of its own
   making with no snapshot. Otherwise the snapshot a client uploads becomes the state every other
   client must match, so it may only claim a hash more active players reported than any other, and

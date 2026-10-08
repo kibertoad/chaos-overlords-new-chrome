@@ -60,12 +60,12 @@ public sealed partial class MultiplayerMatchSession
     /// Captures and queues a report for the live state in turn order.
     /// </summary>
     /// <remarks>
-    /// The request is built here, before the next sealed turn can move <see cref="_replay"/>, so
+    /// The request is built here, before the next sealed turn can move <see cref="Replay"/>, so
     /// what is queued is a fact about one turn rather than a promise to describe the state later.
     /// </remarks>
     /// <returns>See <see cref="QueueReportAsync(TurnReport)"/>.</returns>
     private Task QueueReportAsync(int turn, string stateHash) =>
-        QueueReportAsync(CaptureReport(turn, stateHash, _replay.State));
+        QueueReportAsync(CaptureReport(turn, stateHash, Replay.State));
 
     /// <summary>
     /// The report for one turn, taken from the state that turn's resolution produced.

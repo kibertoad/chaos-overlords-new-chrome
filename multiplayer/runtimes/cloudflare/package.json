@@ -60,6 +60,7 @@
     "@chaos-overlords/bug-reports": "workspace:*",
     "@chaos-overlords/contracts": "workspace:*",
     "@chaos-overlords/kernel": "workspace:*",
+    "@chaos-overlords/resolver": "workspace:*",
     "@chaos-overlords/server": "workspace:*",
     "@chaos-overlords/storage": "workspace:*",
     "drizzle-orm": "^0.45.3",

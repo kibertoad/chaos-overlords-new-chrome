@@ -1,6 +1,5 @@
 import {
   foreignOps,
-  type MatchEventBody,
   type OwnSubmissionView,
   type SubmitOrdersRequest,
   type TurnReportRequest,
@@ -20,21 +19,30 @@ import {
   assignSlots,
   awaitedSeats,
   evaluateConsensus,
+  FIRST_TURN,
   tieBreaker,
   sealedByDeadline,
   turnDeadline,
 } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
+import { desyncAnnouncementKey, reannounceDesync } from './desyncAnnouncements'
 import type { EventPublisher } from './EventPublisher'
-import { requireInProgress, requireParticipant, requireTurn } from './guards'
+import {
+  previousTurnConfirmed,
+  requireInProgress,
+  requireLockstep,
+  requireParticipant,
+  requireRunning,
+  requireTurn,
+} from './guards'
 import { matchStartedEvent } from './MatchQueryService'
+import type { Referee, ResolveOutcome } from './Referee'
 import { publishSeatSummaries } from './SnapshotService'
 
 export type SealTrigger = 'ready' | 'deadline'
 
-/** Turns are numbered from 1; 0 is the lobby's `currentTurn`, before any turn exists. */
-export const FIRST_TURN = 1
+export { FIRST_TURN }
 
 /**
  * The soonest an early deadline timer is retried; see `rearmEarlyDeadline`. Exported so a runtime
@@ -77,6 +85,7 @@ export class TurnService {
   constructor(
     private readonly deps: KernelDeps,
     private readonly publisher: EventPublisher,
+    private readonly referee?: Referee,
   ) {}
 
   async submitOrders(
@@ -184,7 +193,17 @@ export class TurnService {
     const match = await this.claimSeal(matchId, number, trigger)
     if (!match) return false
     await this.completeSeal(match, number)
+    await this.resolveOnServer(match, number)
     return true
+  }
+
+  /**
+   * Resolve a refereed match on the server through turn `number` and settle every turn that
+   * decided; see `Referee.settleThrough`.
+   */
+  async resolveOnServer(match: Match, number: number): Promise<ResolveOutcome['kind']> {
+    if (!this.referee) return 'unavailable'
+    return this.referee.settleThrough(match, number, (turn) => this.settle(match.id, turn))
   }
 
   /**
@@ -459,10 +478,8 @@ export class TurnService {
     if (await this.hasEvent(match.id, 'match.started')) return
     const seated = await this.deps.storage.players.listByMatch(match.id)
     this.deps.logger.warn('finished an interrupted start', { matchId: match.id })
-    await this.publisher.publish(
-      match.id,
-      matchStartedEvent(match.seed, seated, match.hostPlayerId),
-    )
+    const started = matchStartedEvent({ ...match, seed: match.seed }, seated)
+    await this.publisher.publish(match.id, started)
   }
 
   /**
@@ -500,8 +517,12 @@ export class TurnService {
     // clock behind that modal would spend planning time nobody can use, so an open vote opens the
     // turn paused. The clock is restarted when the last absent seat returns or becomes computer
     // controlled.
-    const deadlineAt =
-      openPrompts.length > 0 ? null : turnDeadline(openedAt, match.settings.turnTimerSeconds)
+    //
+    // In a match played from views nobody can plan the turn before the server has resolved the one
+    // before it, so its clock starts at that confirmation instead (see `finishConfirmation`). A
+    // resolver that is down then stops the match rather than sealing one empty turn after another.
+    const paused = openPrompts.length > 0 || (match.seatViews && number > FIRST_TURN)
+    const deadlineAt = paused ? null : turnDeadline(openedAt, match.settings.turnTimerSeconds)
     const turn = {
       matchId: match.id,
       number,
@@ -514,6 +535,9 @@ export class TurnService {
       stateHash: null,
       desyncedAt: null,
       settledAt: null,
+      resolvedHash: null,
+      resolvedFinished: null,
+      resolvedSeq: null,
     }
     const created = await this.deps.storage.turns.open(
       turn,
@@ -642,6 +666,10 @@ export class TurnService {
 
   async report(principal: Principal, number: number, request: TurnReportRequest): Promise<void> {
     const { match, player } = principal
+    // No client of a match played from views resolves anything, so there is nothing to report.
+    requireLockstep(match, 'reports_not_taken')
+    // A turn the server confirmed on its own state takes a report only to check it against that.
+    if (await this.referee?.judgeDecided(match, player, number, request.stateHash)) return
     requireInProgress(match)
     requireParticipant(player)
     const turn = await requireTurn(this.deps.storage.turns, match.id, number)
@@ -670,6 +698,7 @@ export class TurnService {
         reportedAt: this.deps.clock.now(),
       }))
     ) {
+      if (await this.referee?.judgeDecided(match, player, number, request.stateHash)) return
       throw new ConflictError('That turn is already confirmed', { reason: 'turn_confirmed' })
     }
     // The order set is the turn increment the server retains. Publishing these few derived counters
@@ -687,7 +716,17 @@ export class TurnService {
         })
       }
     }
+    // A refereed turn is decided by the server's state, not by this report. It is resolved here as
+    // well as at the seal, so a resolution the seal could not finish is retried by every report.
+    const resolved = await this.resolveOnServer(match, number)
+    // Another caller is feeding the match and records the turn; its verdict judges this report.
+    if (resolved === 'pending') return
     await this.settle(match.id, number)
+    // The verdict judged the reports it read when it confirmed the turn, and this one may have
+    // landed after that read. The announcement is keyed, so a report judged twice is told once.
+    if (resolved === 'resolved') {
+      await this.referee?.judgeDecided(match, player, number, request.stateHash)
+    }
   }
 
   /** Authenticated turn activity wins the race with an AI vote and restores the human seat. */
@@ -797,6 +836,8 @@ export class TurnService {
     const match = await this.deps.storage.matches.get(matchId)
     if (!match || match.status !== 'running' || match.settings.turnTimerSeconds === 0) return
     if (await this.deps.storage.takeovers.hasOpenPrompts(matchId)) return
+    // A turn of a match played from views has no clock until its predecessor is resolved.
+    if (!(await previousTurnConfirmed(this.deps.storage.turns, match))) return
     const turn = await this.deps.storage.turns.get(matchId, match.currentTurn)
     if (turn?.status !== 'open' || turn.deadlineAt !== null) return
     const deadlineAt = turnDeadline(this.deps.clock.now(), match.settings.turnTimerSeconds)
@@ -860,12 +901,14 @@ export class TurnService {
       // finished match `running` for good, since nothing else revisits a confirmed turn.
       // `settledAt` says whether the follow-ups completed, and they are all safe to repeat.
       if (turn.settledAt === null && turn.stateHash !== null) {
-        const reports = await this.deps.storage.turns.listReports(matchId, number)
-        const verdict = {
-          stateHash: turn.stateHash,
-          finished: confirmedFinished(reports, turn.stateHash),
-        }
-        return this.finishConfirmation(match, number, verdict, true)
+        const finished =
+          turn.resolvedHash === turn.stateHash
+            ? turn.resolvedFinished === true
+            : confirmedFinished(
+                await this.deps.storage.turns.listReports(matchId, number),
+                turn.stateHash,
+              )
+        return this.finishConfirmation(match, number, { stateHash: turn.stateHash, finished }, true)
       }
       // A desync pause lifted by this verdict whose lift was cut short: `resumeAfterDesync` is
       // private and `reevaluate` only visits sealed and desynced turns, so this is the way back.
@@ -874,6 +917,14 @@ export class TurnService {
       }
       return false
     }
+    if (turn.resolvedHash !== null && this.referee) {
+      const finish = (verdict: { stateHash: string; finished: boolean }) =>
+        this.finishConfirmation(match, number, verdict, false)
+      return this.referee.confirm(match, turn, finish)
+    }
+    // A match played from views has no reports to fall back on: its turn waits for the resolver,
+    // which the next seal or view request asks again.
+    if (match.seatViews) return false
     const [players, reports, snapshot] = await Promise.all([
       this.deps.storage.players.listByMatch(matchId),
       this.deps.storage.turns.listReports(matchId, number),
@@ -945,7 +996,12 @@ export class TurnService {
         // and who breaks a tie, and a client acts on the announcement it last saw, so a changed
         // verdict is announced again. The sweep runs this too, quietly, as the retry for a
         // re-announcement whose publish threw after the change it follows was already committed.
-        await this.reannounceDesync(matchId, payload, options.reannounce !== false)
+        await reannounceDesync(
+          { storage: this.deps.storage, publisher: this.publisher },
+          matchId,
+          payload,
+          options.reannounce !== false,
+        )
       }
       // Not behind the receipt above: a turn stamped by an older build that died before pausing
       // the match is paused only now, and its pause is still owed to clients.
@@ -969,56 +1025,6 @@ export class TurnService {
     if ((await this.deps.storage.matches.get(matchId))?.status === 'running') {
       await this.announceStatus(matchId, 'running')
     }
-  }
-
-  /**
-   * Announce a desync verdict again when it differs from what clients were last told about the
-   * turn. A verdict can return to an earlier one (a seat that left and rejoined restores the tie
-   * its departure broke), and a key naming only the content would find that earlier announcement
-   * in the log and drop the new one, leaving every client acting on the departure's verdict while
-   * the server enforces the tie: the designated player never learned it was named, and everybody
-   * else was refused with `not_tie_breaker`. So the verdict is compared with the latest
-   * announcement and, like a status change, keyed by the event it follows.
-   *
-   * When the latest announcement is of another turn (two turns desynced at once), the turn's own
-   * last word is not at hand. A loud call then announces anyway, keyed by that event, because a
-   * repeat of an unchanged verdict costs a duplicate clients already tolerate and a dropped change
-   * costs the match. A quiet call (the sweep) publishes only a change it can see, so a paused
-   * match costs one indexed read per desynced turn and no writes while nothing changes.
-   */
-  private async reannounceDesync(
-    matchId: string,
-    payload: DesyncPayload,
-    loud: boolean,
-  ): Promise<void> {
-    const last = await this.deps.storage.events.latestOfType(matchId, 'turn.desynced')
-    const lastPayload = last?.type === 'turn.desynced' ? last.payload : null
-    if (!last || !lastPayload) {
-      if (loud)
-        await this.publisher.publishOnce(matchId, desyncAnnouncementKey(payload), {
-          type: 'turn.desynced',
-          payload,
-        })
-      return
-    }
-    if (lastPayload.turn === payload.turn) {
-      if (
-        (lastPayload.tieBreakerPlayerId ?? null) === payload.tieBreakerPlayerId &&
-        lastPayload.candidateStateHashes.join(',') === payload.candidateStateHashes.join(',')
-      ) {
-        return
-      }
-    } else if (!loud) {
-      return
-    }
-    await this.publisher.publishOnce(
-      matchId,
-      `${desyncAnnouncementKey(payload)}:after:${last.seq}`,
-      {
-        type: 'turn.desynced',
-        payload,
-      },
-    )
   }
 
   /**
@@ -1088,6 +1094,9 @@ export class TurnService {
         if (announced) worked = true
       }
     }
+    // The views of the next turn can be read from here on, so its clock starts now (see
+    // `openTurn`). A repeat finds the clock running and leaves it.
+    if (match.seatViews && !finished) await this.resumeAfterTakeoverVotes(matchId)
     await this.deps.storage.turns.markSettled(matchId, number, now)
     return worked
   }
@@ -1154,20 +1163,6 @@ export class TurnService {
 const sealAnnouncementKey = (turn: number): string => `turn.sealed:${turn}`
 const confirmationKey = (turn: number): string => `turn.confirmed:${turn}`
 
-/** A `turn.desynced` payload as this build writes it: the tie-breaker is always named. */
-type DesyncPayload = Extract<MatchEventBody, { type: 'turn.desynced' }>['payload'] & {
-  tieBreakerPlayerId: string | null
-}
-
-/**
- * The dedupe key of a desync announcement: the turn and everything a client acts on, so a verdict
- * announced again with the same content is logged once. The reports themselves are left out,
- * because a report that changes without changing the candidates or the tie-breaker asks nothing
- * new of anybody.
- */
-const desyncAnnouncementKey = (payload: DesyncPayload): string =>
-  `turn.desynced:${payload.turn}:${payload.candidateStateHashes.join(',')}:${payload.tieBreakerPlayerId ?? ''}`
-
 export interface SettleOptions {
   /**
    * Whether a desync whose announcement is already out is announced again whenever its verdict may
@@ -1220,15 +1215,4 @@ function assertOwnOps(request: SubmitOrdersRequest, slot: number): void {
     slot,
     ops: foreign.slice(0, 8).map((op) => ({ op: op.op, player: op.player })),
   })
-}
-
-function requireRunning(match: Match): void {
-  if (match.status === 'desynced') {
-    throw new ConflictError('The match is paused until the host uploads a snapshot', {
-      reason: 'match_desynced',
-    })
-  }
-  if (match.status !== 'running') {
-    throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
-  }
 }
