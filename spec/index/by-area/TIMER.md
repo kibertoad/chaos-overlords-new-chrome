@@ -11,7 +11,7 @@ Entries by area.
 | [FND-TIMER-001](../../findings/FND-TIMER-001.md) | A human's planning turn ends by itself after 30 seconds, 2 minutes or 5 minutes, with a shrinking bar and two warning sounds | recorded |
 | [FND-TIMER-002](../../findings/FND-TIMER-002.md) | Four multimedia timer slots set flags that the event step polls; waits are counted in ticks of the six-per-second slot, and the floating-point helpers are reachable only from dead code | recorded |
 | [FND-TIMER-003](../../findings/FND-TIMER-003.md) | The planning limit is a table of four values applied at every match entry, the expiry test skips an unlimited turn, and the bar is redrawn every sixth presentation tick | recorded |
-| [RULE-TIMER-001](../../rules/RULE-TIMER-001.md) | Planning time limit chosen for a match | established |
+| [RULE-TIMER-001](../../rules/RULE-TIMER-001.md) | Planning time limit chosen for a match | supported |
 | [RULE-TIMER-002](../../rules/RULE-TIMER-002.md) | A human planning turn ends when its time limit passes | supported |
 | [RULE-TIMER-003](../../rules/RULE-TIMER-003.md) | The planning clock bar and its warning sounds | supported |
 | [RULE-TIMER-004](../../rules/RULE-TIMER-004.md) | Presentation waits last until the next tick of the six-per-second clock, and only the panel slide step depends on the machine's speed | supported |

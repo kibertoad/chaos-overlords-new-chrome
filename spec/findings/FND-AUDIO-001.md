@@ -103,7 +103,7 @@ asks for CD tracks.
 ## How to reproduce
 
 Follow the references to `mciSendCommandA` in the `WINMM.dll` imports
-(FND-PLATFORM-006) to the helpers at `0x00458B43..0x00458F3E`. The selector at
+(FND-PLATFORM-006) to the helpers at `0x00458B43..0x00458F95`. The selector at
 `0x004642BD` compares its argument with `g_00487878`; list its callers for the
 eleven call sites. The Options helper at `0x004652A0` reads `0x00487868` and
 multiplies by 25.

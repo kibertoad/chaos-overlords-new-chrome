@@ -1,6 +1,6 @@
 ---
 id: FND-EXE-004
-title: Game code occupies 0x00401000..0x0047862F as 464 functions, followed by import thunks and the C runtime
+title: Game code occupies 0x00401000..0x00478630 as 464 functions, followed by import thunks and the C runtime
 status: recorded
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
@@ -10,13 +10,13 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00401000..0x0047862F
+    address: 0x00401000..0x00478630
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00478630..0x004787DF
+    address: 0x00478630..0x004787E0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004787E0..0x00480AC1
+    address: 0x004787E0..0x00480AC2
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -29,9 +29,9 @@ three consecutive ranges:
 
 | Range | Functions | Contents |
 |---|---|---|
-| `0x00401000..0x0047862F` | 464 | Game code, 480,397 bytes of function bodies |
-| `0x00478630..0x004787DF` | 64 | Six-byte jump thunks through the import address table, starting with `GetOpenFileNameA` at `0x00478630` |
-| `0x004787E0..0x00480AC1` | 166 | The statically linked C runtime, 27,166 bytes; Ghidra's function ID names its members (`_memcpy` at `0x004787E0`, `_rand` at `0x00478CD0`, the program entry point at `0x00478D00`, `_strlen`, `__ftol` and others) |
+| `0x00401000..0x00478630` | 464 | Game code, 480,397 bytes of function bodies |
+| `0x00478630..0x004787E0` | 64 | Six-byte jump thunks through the import address table, starting with `GetOpenFileNameA` at `0x00478630` |
+| `0x004787E0..0x00480AC2` | 166 | The statically linked C runtime, 27,166 bytes; Ghidra's function ID names its members (`_memcpy` at `0x004787E0`, `_rand` at `0x00478CD0`, the program entry point at `0x00478D00`, `_strlen`, `__ftol` and others) |
 
 Inside the game code range only 309 bytes lie outside every function body, in
 gaps of at most 15 bytes between functions (alignment padding). Some bodies are
@@ -520,7 +520,9 @@ rule depends on a runtime function's behaviour (the random number generator
 `_rand`, RULE-RNG-001, and the float-to-integer conversion `__ftol`). The table
 is the fixed denominator for "every function of the game" and gives the full
 address range of any function the spec cites by entry address alone: a
-function's range is its entry through its last byte in this table.
+function's range is its entry through its last byte in this table, written
+with the end one past the last byte: `0x0045E04D..0x0045E7CE` for the function
+whose last byte is `0x0045E7CD`.
 
 ## Alternatives
 

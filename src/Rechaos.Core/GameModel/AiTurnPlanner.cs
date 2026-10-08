@@ -58,6 +58,22 @@ public static partial class AiTurnPlanner
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
+        int gangSlot) =>
+        PlannedCommand(state, playerId, gang, gangSlot) is { } command
+        && CommandValidator.Validate(state, command).IsValid
+        && IsDetectableAttack(state, playerId, command)
+            ? command
+            : null;
+
+    /// <summary>
+    /// The command the gang's record describes (RULE-AI-002), before validation: null when the
+    /// record holds no action, an action whose command needs more than the record holds, or no
+    /// target the action needs.
+    /// </summary>
+    internal static GameCommand? PlannedCommand(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
         int gangSlot)
     {
         var action = state.AiPlanning.PlannedAction(playerId, gangSlot);
@@ -71,11 +87,7 @@ public static partial class AiTurnPlanner
         if (targetId is not { } id
             || !CommandTarget.TryCreate(rule.PrimaryTarget, id, out var target))
             return null;
-        var command = new GameCommand(playerId, gang.Id, action, target);
-        return CommandValidator.Validate(state, command).IsValid
-            && IsDetectableAttack(state, playerId, command)
-                ? command
-                : null;
+        return new GameCommand(playerId, gang.Id, action, target);
     }
 
     private static void PrepareFamilyElevenCommand(
@@ -178,7 +190,7 @@ public static partial class AiTurnPlanner
     /// RULE-AI-031, FND-AI-062: families 13 and 14. On an objective the owner query does not give
     /// to the player, a gang fights on turns with an even number remaining and takes Control
     /// otherwise; on its own objective it fights anything visible, heals, buys or Influences.
-    /// Off the objectives it moves toward one.
+    /// Off the objectives it moves toward one, or, outside Big Man and Siege, to its planned target.
     /// </summary>
     private static void PrepareObjectiveFamilyCommand(
         MatchState state,
@@ -248,18 +260,22 @@ public static partial class AiTurnPlanner
         if (!OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
                 state.Setup.Scenario, gang.SectorId, plannedAction)) return;
 
-        var target = OriginalAiSectorSelectionRules.Select(
-            OriginalAiObjectiveFamilyRules.SelectionMode(state.Setup.Scenario, family),
-            gang.SectorId,
-            playerId,
-            family,
-            snapshot.SectorOwners,
-            snapshot.SectorDisabled,
-            snapshot.SectorGangCounts,
-            sectorId => CanSoloControl(state, playerId, gang, sectorId),
-            _ => false,
-            SelectorOwnerTests(state, playerId),
-            state.Random, planning: state.AiPlanning);
+        // RULE-AI-031: outside Big Man and Siege no selector is called, and the Move goes to the
+        // sector the planned target holds from the start of the pass (EXP-TURN-101).
+        var target = OriginalAiObjectiveFamilyRules.HasObjectives(state.Setup.Scenario)
+            ? OriginalAiSectorSelectionRules.Select(
+                OriginalAiObjectiveFamilyRules.SelectionMode(state.Setup.Scenario, family),
+                gang.SectorId,
+                playerId,
+                family,
+                snapshot.SectorOwners,
+                snapshot.SectorDisabled,
+                snapshot.SectorGangCounts,
+                sectorId => CanSoloControl(state, playerId, gang, sectorId),
+                _ => false,
+                SelectorOwnerTests(state, playerId),
+                state.Random, planning: state.AiPlanning)
+            : state.AiPlanning.PlannedTarget(playerId, gangSlot).First;
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
         state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }

@@ -1,23 +1,29 @@
 #!/usr/bin/env node
 // Measures how much of the executable the spec describes, and writes the function index
-// docs/FUNCTION-INDEX.md. It lives outside spec/index/, which holds only what the documentation
-// standard's check writes.
+// docs/FUNCTION-INDEX.md, a local report of every game function with the entries that cite it. The
+// report is not committed (.gitignore lists it); run the script to see it.
 //
 // Usage:
-//   node tools/spec-coverage.mjs                      rewrite docs/FUNCTION-INDEX.md when stale
-//   node tools/spec-coverage.mjs --check              fail when docs/FUNCTION-INDEX.md is stale
+//   node tools/spec-coverage.mjs                      write docs/FUNCTION-INDEX.md
+//   node tools/spec-coverage.mjs --check              compute the index and print the coverage line
+//                                                     without writing anything; fails, like every
+//                                                     mode, when FND-EXE-004 or its function table
+//                                                     is missing or when an entry writes a range
+//                                                     whose end is a game function's last byte
 //   node tools/spec-coverage.mjs --inventory <file>   also report coverage against a function
 //                                                     inventory from tools/ghidra/ReportFunctionInventory.java
 //
 // The list of game functions and their extents comes from the table in FND-EXE-004. An entry
 // describes a function when it names it (`fn_0046E766`), writes an eight-digit address inside its
-// body, or writes a range `0x...A..0x...B` of game code that overlaps its body. A range counts as
-// game code when both its ends lie inside game functions; a wider extent, such as the whole image,
-// cites nothing. A function that begins exactly at a range's end is not counted, since such a range
-// stops where the function starts. A constant written as an eight-digit hexadecimal number is read
-// as an address. FND-EXE-004 itself is left out, since it lists every function, and so is an entry
-// whose locations all name another file, such as a library the game ships, since its addresses
-// are that file's.
+// body, or writes a range `0x...A..0x...B` of game code that overlaps its body. Ranges are
+// half-open, so B is one past the range's last byte. A range counts as game code when its first
+// byte lies inside a game function and its last byte inside the game code, the alignment padding
+// between functions included; a wider extent, such as the whole image, cites nothing. A function
+// that begins at B is not counted, since the range stops where it starts. A range whose end B is a
+// game function's last byte was written with its last byte as its end, and fails the script. A constant
+// written as an eight-digit hexadecimal number is read as an address. FND-EXE-004 itself is left
+// out, since it lists every function, and so is an entry whose locations all name another file,
+// such as a library the game ships, since its addresses are that file's.
 //
 // The inventory is a tab-separated file with the columns entry, end, bytes, callers, callees,
 // imports (LIBRARY::name), reads and writes. It stays outside the repository like every other
@@ -25,7 +31,7 @@
 //
 // No dependencies.
 
-import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -69,8 +75,14 @@ const functions = [];
 for (const m of mapEntry.text.matchAll(/^\| `0x([0-9A-F]{8})` \| `0x([0-9A-F]{8})` \| (\d+) \| (\d+) \|$/gm)) {
   functions.push({ entry: parseInt(m[1], 16), end: parseInt(m[2], 16), bytes: Number(m[3]), callers: Number(m[4]), citedBy: new Set() });
 }
+if (functions.length === 0) {
+  console.error(`${MAP_ID} has no function table rows`);
+  process.exit(1);
+}
 functions.sort((a, b) => a.entry - b.entry);
 const byEntry = new Map(functions.map((f) => [f.entry, f]));
+const lastBytes = new Set(functions.map((f) => f.end));
+const lastGameByte = functions[functions.length - 1].end;
 function containing(addr) {
   let lo = 0;
   let hi = functions.length - 1;
@@ -86,6 +98,7 @@ function containing(addr) {
 
 // Cited code and data addresses per entry.
 const citedData = new Map(); // address -> Set of entry IDs
+const lastByteEnds = []; // ranges written with a function's last byte as their end
 const EXE_FILE = "Chaos Overlords.exe";
 function readsAnotherFile(text) {
   const front = text.startsWith("---\n") ? text.slice(4, text.indexOf("\n---", 4)) : "";
@@ -98,14 +111,14 @@ for (const e of entries) {
     const f = byEntry.get(parseInt(m[1], 16)) ?? containing(parseInt(m[1], 16));
     if (f) f.citedBy.add(e.id);
   }
-  // A range of game code cites every function it overlaps, except one that begins exactly at its
-  // end; a range whose ends are not both in game functions cites nothing.
+  // A half-open range of game code cites every function it overlaps; a range that starts outside
+  // the game functions or ends past the game code cites nothing. f.end is a function's last byte.
   for (const m of e.text.matchAll(/\b0x([0-9A-Fa-f]{8})`?\s*\.\.\s*`?0x([0-9A-Fa-f]{8})\b/g)) {
     const start = parseInt(m[1], 16);
     const end = parseInt(m[2], 16);
-    if (!containing(start) || !containing(end)) continue;
-    for (const f of functions)
-      if (f.entry <= end && f.end >= start && !(f.entry === end && start < end)) f.citedBy.add(e.id);
+    if (lastBytes.has(end) && !byEntry.has(end)) lastByteEnds.push(`${e.id}: ${m[0]}`);
+    if (end <= start || !containing(start) || end - 1 > lastGameByte) continue;
+    for (const f of functions) if (f.entry < end && f.end >= start) f.citedBy.add(e.id);
   }
   // A range's end is handled above; every other address cites the function it lies in.
   for (const m of e.text.matchAll(/(?<!\.\.`?\s*)\b(?:0x|g_)([0-9A-Fa-f]{8})\b/g)) {
@@ -125,12 +138,13 @@ const lines = [
   "# Function index",
   "",
   `Generated by \`node tools/spec-coverage.mjs\` from the function table of ${MAP_ID} and the`,
-  "names and addresses the entries cite. Do not edit by hand.",
+  "names and addresses the entries cite. A local report: it is not committed, and running the",
+  "script again overwrites it.",
   "",
   "An entry is listed against a function when it names the function, gives an address inside its",
-  "body, or gives a range `0x...A..0x...B` of game code that overlaps its body. A range whose ends are",
-  "not both inside game functions is not listed, and a range whose end is the entry of a function is",
-  "not listed against that function.",
+  "body, or gives a range `0x...A..0x...B` of game code that overlaps its body. Ranges are half-open:",
+  "B is one past the last byte. A range that starts outside the game functions or ends past the game",
+  "code is not listed.",
   "",
 ];
 const cited = functions.filter((f) => f.citedBy.size > 0);
@@ -140,22 +154,21 @@ lines.push("| Function | Range | Bytes | Callers | Cited by |");
 lines.push("|---|---|---|---|---|");
 for (const f of functions) {
   const by = [...f.citedBy].sort(idOrder).join(", ");
-  lines.push(`| \`${fnName(f.entry)}\` | \`${hex(f.entry)}..${hex(f.end)}\` | ${f.bytes} | ${f.callers} | ${by || "None"} |`);
+  lines.push(`| \`${fnName(f.entry)}\` | \`${hex(f.entry)}..${hex(f.end + 1)}\` | ${f.bytes} | ${f.callers} | ${by || "None"} |`);
 }
 lines.push("");
 const index = lines.join("\n");
-const current = existsSync(indexPath) ? readFileSync(indexPath, "utf8").replace(/\r\n/g, "\n") : null;
-let failed = false;
-if (current !== index) {
-  if (checkOnly) {
-    console.error("docs/FUNCTION-INDEX.md is stale; run node tools/spec-coverage.mjs");
-    failed = true;
-  } else {
-    writeFileSync(indexPath, index);
-    console.log("wrote docs/FUNCTION-INDEX.md");
-  }
+if (!checkOnly) {
+  mkdirSync(dirname(indexPath), { recursive: true });
+  writeFileSync(indexPath, index);
+  console.log("wrote docs/FUNCTION-INDEX.md");
 }
 console.log(`function index: ${cited.length} of ${functions.length} game functions cited`);
+if (lastByteEnds.length > 0) {
+  console.error(`${lastByteEnds.length} ranges end on a game function's last byte; write the end one past it:`);
+  for (const r of lastByteEnds) console.error(`  ${r}`);
+  process.exitCode = 1;
+}
 
 // Coverage against an inventory.
 if (inventoryPath) {
@@ -255,4 +268,3 @@ if (inventoryPath) {
   for (const u of regions) console.log(`    ${u.block} ${hex(u.addr)} used by ${u.users.size} functions`);
 }
 
-if (failed) process.exit(1);

@@ -144,6 +144,7 @@ public sealed class MatchReplayRecorder
     {
         State = state;
         _verifying = true;
+        _journaling = true;
         _initialSnapshot = initialSnapshot;
         _initialStateFingerprint = initialStateFingerprint;
         _steps.AddRange(steps);
@@ -523,7 +524,7 @@ public static class MatchReplaySerializer
         {
             using var bounded = NativeSaveSerializer.ReadBounded(
                 source, MaximumReplayBytes, "Replay exceeds the size limit.");
-            if (NativeSaveSerializer.DeclaredFormatVersion(bounded) is { } declared
+            if (NativeSaveSerializer.DeclaredFormatVersion(bounded, CurrentFormatVersion) is { } declared
                 && declared != CurrentFormatVersion)
             {
                 declaredFormatVersion = declared;

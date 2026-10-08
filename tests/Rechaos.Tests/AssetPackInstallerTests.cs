@@ -50,9 +50,11 @@ public sealed class AssetPackInstallerTests : IDisposable
         var oldPath = Path.Combine(output, "old.txt");
         await File.WriteAllTextAsync(oldPath, "old", TestContext.Current.CancellationToken);
 
-        await Assert.ThrowsAsync<IOException>(() => AssetPackInstaller.InstallAsync(
+        var exception = await Assert.ThrowsAsync<OutputNotWritableException>(() => AssetPackInstaller.InstallAsync(
             output, ExtractorProgram.FormatVersion, expectedFileCount: 1,
             _ => throw new IOException("synthetic extraction failure")));
+
+        Assert.Contains("synthetic extraction failure", exception.Message, StringComparison.Ordinal);
 
         Assert.Equal("old", await File.ReadAllTextAsync(oldPath, TestContext.Current.CancellationToken));
         Assert.Empty(TemporaryDirectories());
@@ -77,6 +79,30 @@ public sealed class AssetPackInstallerTests : IDisposable
 
         Assert.Equal("old", await File.ReadAllTextAsync(oldPath, TestContext.Current.CancellationToken));
         Assert.Empty(TemporaryDirectories());
+    }
+
+    [Fact]
+    public void AnOutputThatCannotBeCreatedIsReportedBeforeAnyExtraction()
+    {
+        Directory.CreateDirectory(_parent);
+        var blocker = Path.Combine(_parent, "blocker");
+        File.WriteAllText(blocker, "a file where the output's parent folder would go");
+
+        var exception = Assert.Throws<OutputNotWritableException>(
+            () => AssetPackInstaller.EnsureWritable(Path.Combine(blocker, "assets")));
+
+        Assert.Contains(blocker, exception.Message, StringComparison.Ordinal);
+        Assert.Equal(["blocker"], Directory.EnumerateFileSystemEntries(_parent).Select(Path.GetFileName));
+    }
+
+    [Fact]
+    public void AWritableOutputLeavesNoProbeBehind()
+    {
+        var output = Path.Combine(_parent, "assets");
+
+        AssetPackInstaller.EnsureWritable(output);
+
+        Assert.Empty(Directory.EnumerateFileSystemEntries(_parent));
     }
 
     private static async Task<AssetManifest> WriteValidPackAsync(string staging)
