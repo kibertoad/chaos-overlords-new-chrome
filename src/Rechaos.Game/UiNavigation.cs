@@ -124,6 +124,8 @@ public enum ClientScreen
     Setup,
     Online,
     Lobby,
+    /// <summary>A match watched some turns behind its players; see <c>ChaosGame.Spectating.cs</c>.</summary>
+    Spectate,
     City,
     GameInfo,
     Commands,

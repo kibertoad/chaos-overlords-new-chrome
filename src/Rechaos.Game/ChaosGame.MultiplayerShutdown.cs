@@ -19,15 +19,21 @@ public sealed partial class ChaosGame
         {
             UpdateOnlineRecovery(recovery with { CleanExit = true });
         }
+        if (_spectatorWatch is not null && _spectatorRecovery is { Completed: false } watching)
+            UpdateSpectatorRecovery(watching with { CleanExit = true });
         CancelServerProbe();
         // The leave a player asked for on the way out is waited for too, within the same grace:
         // disposing the client under it would cut off the one request that stops the match waiting
         // on this seat.
-        var stopping = new[] { _session?.StopAsync(), _lobby?.StopAsync(), _pendingLeave }
+        var stopping = new[]
+            {
+                _session?.StopAsync(), _lobby?.StopAsync(), _spectatorWatch?.StopAsync(), _pendingLeave,
+            }
             .OfType<Task>()
             .ToArray();
         _session = null;
         _lobby = null;
+        _spectatorWatch = null;
         _pendingLeave = null;
         var settled = false;
         try

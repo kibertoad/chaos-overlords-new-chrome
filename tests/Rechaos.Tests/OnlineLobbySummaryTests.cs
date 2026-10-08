@@ -7,18 +7,62 @@ namespace Rechaos.Tests;
 public sealed class OnlineLobbySummaryTests
 {
     [Fact]
-    public void ItNamesTheScenarioItsLengthTheOpponentsAndTheClock()
+    public void ItNamesTheScenarioItsLengthTheOpponentsTheClockAndWhoMayWatch()
     {
         var rows = OnlineLobbySummary.Rows(
             ScenarioId.KillEmAll, GameDuration.TwoYears,
-            AiDifficulty.CrimeLord, PlanningTimeLimit.TwoMinutes);
+            AiDifficulty.CrimeLord, PlanningTimeLimit.TwoMinutes, spectatorDelayTurns: 3);
 
         Assert.Equal(
-            ["SCENARIO", "LENGTH", "OPPONENTS", "TURN TIMER"],
+            ["SCENARIO", "LENGTH", "OPPONENTS", "TURN TIMER", "SPECTATORS"],
             rows.Select(row => row.Label));
         Assert.Equal(
-            [ExecutableStrings.ScenarioTitle(ScenarioId.KillEmAll), "2 YEARS", "CRIME LORD", "2 MINUTES"],
+            [
+                ExecutableStrings.ScenarioTitle(ScenarioId.KillEmAll), "2 YEARS", "CRIME LORD", "2 MINUTES",
+                "3 TURNS BEHIND",
+            ],
             rows.Select(row => row.Value));
+        Assert.Equal(OnlineLobbySummary.RowCount, rows.Count);
+        Assert.Equal("SPECTATORS", rows[OnlineLobbySummary.SpectatorRow].Label);
+    }
+
+    [Fact]
+    public void AMatchNobodyMayWatchSaysSo()
+    {
+        var rows = OnlineLobbySummary.Rows(
+            ScenarioId.KillEmAll, GameDuration.TwoYears,
+            AiDifficulty.CrimeLord, PlanningTimeLimit.None, spectatorDelayTurns: null);
+
+        Assert.Equal("NOT ALLOWED", rows[OnlineLobbySummary.SpectatorRow].Value);
+    }
+
+    /// <summary>
+    /// The host's arrows hold every value between them, clear of the label, and the summary's
+    /// fifth row still ends above the button under it.
+    /// </summary>
+    [Fact]
+    public void TheHostsSpectatorControlFitsItsRow()
+    {
+        var row = OnlineLobbyLayout.SummaryRow(OnlineLobbySummary.SpectatorRow);
+        var earlier = OnlineLobbyLayout.SpectatorDelayEarlier;
+        var later = OnlineLobbyLayout.SpectatorDelayLater;
+        Assert.True(row.X + "SPECTATORS".Length * OriginalFontLayout.CellWidth < earlier.X);
+        Assert.Equal(row.Right, later.Right);
+        var choices = Enumerable.Range(
+                SpectatorDelayChoice.Minimum,
+                SpectatorDelayChoice.Maximum - SpectatorDelayChoice.Minimum + 1)
+            .Select(turns => (int?)turns)
+            .Prepend(null);
+        foreach (var delay in choices)
+        {
+            var width = SpectatorDelayChoice.Label(delay).Length * OriginalFontLayout.CellWidth;
+            Assert.True(OnlineLobbyLayout.SpectatorValueRight - width >= earlier.Right,
+                $"{SpectatorDelayChoice.Label(delay)} runs into the left arrow");
+        }
+        Assert.True(later.Bottom <= OnlineLobbyLayout.Setup.Y);
+        Assert.True(
+            OnlineLobbyLayout.SummaryRow(OnlineLobbySummary.RowCount - 1).Bottom
+                <= OnlineLobbyLayout.Setup.Y);
     }
 
     /// <summary>
@@ -34,7 +78,8 @@ public sealed class OnlineLobbySummaryTests
         ScenarioId scenario, GameDuration duration, AiDifficulty mentality, PlanningTimeLimit timer)
     {
         var row = OnlineLobbyLayout.SummaryRow(0);
-        foreach (var (label, value) in OnlineLobbySummary.Rows(scenario, duration, mentality, timer))
+        foreach (var (label, value) in OnlineLobbySummary.Rows(
+                     scenario, duration, mentality, timer, SpectatorDelayChoice.Maximum))
         {
             var used = (label.Length + value.Length + 2) * OriginalFontLayout.CellWidth;
             Assert.True(used <= row.Width, $"{label} {value} needs {used} of {row.Width}");
@@ -46,14 +91,14 @@ public sealed class OnlineLobbySummaryTests
     /// </summary>
     /// <remarks>
     /// It is drawn from the left of a summary row, one line per row, so a line too wide for the
-    /// column would run out through the panel's border. There are four rows to spend.
+    /// column would run out through the panel's border. There are five rows to spend.
     /// </remarks>
     [Fact]
     public void TheUnreadableNoticeFitsTheRowsItStandsIn()
     {
         var row = OnlineLobbySummary.Rows(
             ScenarioId.KillEmAll, GameDuration.TwoYears,
-            AiDifficulty.CrimeLord, PlanningTimeLimit.None).Count;
+            AiDifficulty.CrimeLord, PlanningTimeLimit.None, spectatorDelayTurns: null).Count;
         Assert.InRange(OnlineLobbySummary.Unreadable.Count, 1, row);
         foreach (var line in OnlineLobbySummary.Unreadable)
         {

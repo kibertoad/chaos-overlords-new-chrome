@@ -68,7 +68,7 @@ public sealed partial class ChaosGame
             SelectedOnlineTurnTimerSeconds,
             _online.PublicListing ? MatchVisibility.Public : MatchVisibility.Private,
             game.ToWire(),
-            match.Settings.SpectatorDelayTurns));
+            _online.SpectatorDelayTurns));
         _online.Status = "SAVING SESSION SETTINGS";
     }
 
@@ -87,6 +87,7 @@ public sealed partial class ChaosGame
         RememberLocalSetup();
         _online.SessionName.Set(match.Settings.Name);
         _online.PublicListing = match.Settings.Visibility == MatchVisibility.Public;
+        _online.SpectatorDelayTurns = match.Settings.SpectatorDelayTurns;
         _selectedPlanningTimeLimit = OnlinePlanningLimit(match.Settings.TurnTimerSeconds);
         MultiplayerGameSettings settings;
         try
@@ -177,6 +178,21 @@ public sealed partial class ChaosGame
         if (!CanConfigureOnlineLobby()) return;
         if (_online.AllowLateJoin == allowed) return;
         _online.AllowLateJoin = allowed;
+        PushLobbySettings();
+    }
+
+    /// <summary>
+    /// Changes whether the match can be watched, and how far behind, and sends it.
+    /// </summary>
+    /// <remarks>
+    /// Only in the lobby, like every other setting here: the server refuses the change once the
+    /// match has started, so the players who sat down know whether they are being watched.
+    /// </remarks>
+    private void ChangeLobbySpectating(int? delay)
+    {
+        if (!CanConfigureOnlineLobby()) return;
+        if (_online.SpectatorDelayTurns == delay) return;
+        _online.SpectatorDelayTurns = delay;
         PushLobbySettings();
     }
 

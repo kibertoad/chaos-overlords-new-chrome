@@ -17,9 +17,16 @@ public static class OnlineConnectLayout
     // The form, group by group. Each group's caption is drawn CaptionOffset above the first control
     // in it, so the numbers below are also the gaps between the groups.
 
-    /// <summary>Hosting or joining, which decides what the rest of the form asks for.</summary>
-    public static Rectangle HostRole => OnlineScreenLayout.Half(0, 84, 26);
-    public static Rectangle JoinRole => OnlineScreenLayout.Half(1, 84, 26);
+    /// <summary>
+    /// Hosting, joining or watching, which decides what the rest of the form asks for.
+    /// </summary>
+    /// <remarks>
+    /// Watching sits beside the other two because it is reached the same way, by a join code, and
+    /// asks for the same things apart from a face: a spectator has no seat to wear one in.
+    /// </remarks>
+    public static Rectangle HostRole => OnlineScreenLayout.Third(0, 84, 26);
+    public static Rectangle JoinRole => OnlineScreenLayout.Third(1, 84, 26);
+    public static Rectangle WatchRole => OnlineScreenLayout.Third(2, 84, 26);
 
     /// <summary>The name and the face this player takes to the table.</summary>
     public static Rectangle Name => new(120, 132, 330, 24);
@@ -100,7 +107,7 @@ public static class OnlineConnectLayout
     public static Rectangle HistoryRejoin => OnlineScreenLayout.Action(0);
     public static Rectangle HistoryBack => OnlineScreenLayout.Action(1);
 
-    /// <summary>The browser: three filters, a list, and three buttons on the filters' own columns.</summary>
+    /// <summary>The browser: three filters, a list, and four buttons under them.</summary>
     public static Rectangle DiscoveryStatus => OnlineScreenLayout.Third(0, 84, 26);
     public static Rectangle DiscoveryScenario => OnlineScreenLayout.Third(1, 84, 26);
     public static Rectangle DiscoveryAi => OnlineScreenLayout.Third(2, 84, 26);
@@ -109,9 +116,14 @@ public static class OnlineConnectLayout
     public static Rectangle DiscoveryRow(int index) =>
         OnlineScreenLayout.ListRow(DiscoveryTop, index);
 
-    public static Rectangle DiscoveryJoin => OnlineScreenLayout.ThirdAction(0);
-    public static Rectangle DiscoveryRefresh => OnlineScreenLayout.ThirdAction(1);
-    public static Rectangle DiscoveryBack => OnlineScreenLayout.ThirdAction(2);
+    /// <remarks>
+    /// Four actions on the browser: joining and watching are both things done to the selected
+    /// row, and refreshing and going back are not.
+    /// </remarks>
+    public static Rectangle DiscoveryJoin => OnlineScreenLayout.QuarterAction(0);
+    public static Rectangle DiscoveryWatch => OnlineScreenLayout.QuarterAction(1);
+    public static Rectangle DiscoveryRefresh => OnlineScreenLayout.QuarterAction(2);
+    public static Rectangle DiscoveryBack => OnlineScreenLayout.QuarterAction(3);
 
     public static Rectangle ErrorPanel => new(60, 72, 520, 316);
     public static Rectangle CopyError => new(104, 338, 204, 30);

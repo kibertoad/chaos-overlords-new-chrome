@@ -29,6 +29,7 @@ public sealed partial class ChaosGame
     private void UpdateOnlineSession()
     {
         PumpOnlineNotices();
+        PumpSpectatorNotices();
         if (_online.UpdateReconnectPopup(MonotonicClock.Now)) _message = ReconnectingMessage();
         SendOnlineDraft();
         UpdateOnlineDeadlineWarnings();
@@ -110,6 +111,17 @@ public sealed partial class ChaosGame
                 return;
             case LobbyNotice.Chatted chatted:
                 _online.RecordChat(chatted.Lines);
+                // Kept for the match, whose stream starts after these and names a departure by id.
+                foreach (var line in chatted.Lines)
+                    if (line.Arrived is { } spectator) _online.SpectatorNames[spectator.Id] = spectator.DisplayName;
+                return;
+            case LobbyNotice.Spectators spectators:
+                _online.Spectators = spectators.Watching;
+                _online.SpectatorListLoading = false;
+                _online.SpectatorSelection = Math.Clamp(
+                    _online.SpectatorSelection, 0, Math.Max(0, spectators.Watching.Count - 1));
+                foreach (var spectator in spectators.Watching)
+                    _online.SpectatorNames[spectator.Id] = spectator.DisplayName;
                 return;
             case LobbyNotice.Listed listed:
                 _online.Listings = Describe(listed.Matches);
@@ -142,6 +154,14 @@ public sealed partial class ChaosGame
                 if (failed.Operation == nameof(MultiplayerLobbySession.UpdateProfile))
                 {
                     RejectLobbyProfile(failed);
+                    return;
+                }
+                // The list of who is watching says its own refusals; the seat is untouched.
+                if (failed.Operation is nameof(MultiplayerLobbySession.ListSpectators)
+                    or nameof(MultiplayerLobbySession.RemoveSpectator))
+                {
+                    _online.SpectatorListLoading = false;
+                    _online.SpectatorListStatus = failed.Reason.ToUpperInvariant();
                     return;
                 }
                 // A refused chat message (the rate limit, a match that has just started) leaves the
@@ -306,6 +326,12 @@ public sealed partial class ChaosGame
                 return;
             case MultiplayerNotice.MatchUpdated updated:
                 _online.Match = updated.Match;
+                return;
+            case MultiplayerNotice.SpectatorArrived arrived:
+                AnnounceSpectator(arrived.Spectator, departedId: null, removed: false);
+                return;
+            case MultiplayerNotice.SpectatorDeparted departed:
+                AnnounceSpectator(arrived: null, departed.SpectatorId, departed.Removed);
                 return;
             case MultiplayerNotice.TakeoverVoteChanged changed:
                 var name = _online.Match?.Players

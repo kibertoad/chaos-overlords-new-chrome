@@ -19,7 +19,19 @@ public static class ClassicOnlineLobbyLayout
     public static Rectangle PrivateChoice => new(193, 143, 108, 27);
     public static Rectangle LateJoinAllowed => new(80, 174, 108, 27);
     public static Rectangle LateJoinRefused => new(193, 174, 108, 27);
+    /// <summary>
+    /// Whether the match can be watched, on the sheet's next pair of faces under the late-join
+    /// choice, and the delay on the pair under that.
+    /// </summary>
+    public static Rectangle WatchRefused => new(80, 209, 108, 27);
+    public static Rectangle WatchAllowed => new(193, 209, 108, 27);
+    public static Rectangle WatchSooner => new(80, 244, 108, 27);
+    public static Rectangle WatchLater => new(193, 244, 108, 27);
+
     public static Rectangle Setup => new(359, 252, 102, 26);
+
+    /// <summary>Who is watching, on the face beside RULES that the sheet labels REMOVE.</summary>
+    public static Rectangle Spectators => new(466, 252, 102, 26);
     public static Rectangle Start => new(359, 370, 102, 48);
     public static Rectangle Leave => new(466, 370, 102, 48);
 

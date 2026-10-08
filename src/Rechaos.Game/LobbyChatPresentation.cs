@@ -7,7 +7,7 @@ namespace Rechaos.Game;
 /// </summary>
 /// <remarks>
 /// The font has fixed-width cells, so a panel is a number of columns and rows. Each message is
-/// drawn as its author's name, a colon and the text, wrapped at spaces where a word fits and cut
+/// drawn as its author's name, a colon and the text (a notice as an asterisk and the text), wrapped at spaces where a word fits and cut
 /// where one does not. The panel shows the newest rows, so the conversation reads downwards and
 /// scrolls up as it grows.
 /// </remarks>
@@ -53,10 +53,18 @@ internal static class LobbyChatPresentation
         var message = new List<string>();
         for (var index = messages.Count - 1; index >= 0 && wrapped.Count < rows; index--)
         {
-            var name = authorName(messages[index].PlayerId).Trim();
-            if (name.Length > NameColumns) name = name[..NameColumns];
             message.Clear();
-            Wrap($"{name}: {messages[index].Text}", columns, message);
+            // A notice the session wrote, such as a spectator arriving, has no author to label.
+            if (messages[index].IsNotice)
+            {
+                Wrap($"* {messages[index].Text}", columns, message);
+            }
+            else
+            {
+                var name = authorName(messages[index].PlayerId).Trim();
+                if (name.Length > NameColumns) name = name[..NameColumns];
+                Wrap($"{name}: {messages[index].Text}", columns, message);
+            }
             wrapped.InsertRange(0, message);
         }
         return wrapped.Count <= rows ? wrapped : wrapped.GetRange(wrapped.Count - rows, rows);

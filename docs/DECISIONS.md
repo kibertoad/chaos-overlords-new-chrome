@@ -135,12 +135,25 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   setting is a new optional field and the spectators a new table, and nothing
   a stored match already holds changes meaning. A match created before has no
   delay, which means it cannot be watched.
-- Status: the server on both runtimes, the contracts and the client session
-  that follows a match are implemented and tested. The game keeps the setting
-  when the host changes the lobby's settings, but has no control for it yet,
-  so a match the game creates cannot be watched. The desktop screens for
-  turning spectating on, showing it in the lobby summary, joining as a
-  spectator and watching are tracked in #495.
+- Desktop screens: the lobby summary has a SPECTATORS row that every seat
+  reads; for the host it is also the control, whose arrows step from off
+  through 2 to 20 turns. The classic lobby puts the same choice on WATCH: NO
+  and WATCH: YES faces with FEWER TURNS and MORE TURNS beside them. Every seat
+  can open the list of spectators, from the lobby and from the online match's
+  menu, and only the host's copy can remove one; arrivals and departures are
+  lines in the lobby chat and on the city's message line. The connect form
+  has a third role, WATCH A GAME, which asks for the join code, a name and
+  the password, and the browser lists how far behind a watchable session is
+  shown and offers WATCH beside JOIN. The spectator view is the city screen
+  drawn from the released state for one seat at a time (Tab, the arrows on
+  the panel or a click on a portrait changes the seat), with a panel over the
+  command buttons that gives the turn shown, the turn the players are on and
+  the delay; before there is a state it waits on the online frame. No input
+  on it reaches the match. The spectator's token is kept in
+  `multiplayer-spectating.json`, apart from the seats, so an older build never
+  reads it as one, and the unfinished sessions list offers it as WATCHING.
+- Status: the server on both runtimes, the contracts, the client session
+  that follows a match and the desktop screens are implemented and tested.
 
 ## 2026-10-06 — Comlink in an online match travels in the sealed turn
 

@@ -76,11 +76,18 @@ public static class OnlineScreenLayout
     public static Rectangle Third(int index, int y, int height) =>
         new(ContentLeft + index * 137, y, 126, height);
 
+    /// <summary>One quarter of a row split in four across the content column.</summary>
+    public static Rectangle Quarter(int index, int y, int height) =>
+        new(ContentLeft + index * 103, y, 91, height);
+
     /// <summary>The left and right halves of the row of actions that closes a screen.</summary>
     public static Rectangle Action(int index) => Half(index, ActionY, ActionHeight);
 
     /// <summary>The same row, split in three, for a screen with one action more than two.</summary>
     public static Rectangle ThirdAction(int index) => Third(index, ActionY, ActionHeight);
+
+    /// <summary>The same row, split in four.</summary>
+    public static Rectangle QuarterAction(int index) => Quarter(index, ActionY, ActionHeight);
 
     /// <summary>The row above the footer, for browsing away from a screen rather than acting on it.</summary>
     public static Rectangle Nav(int index) => Half(index, NavY, NavHeight);

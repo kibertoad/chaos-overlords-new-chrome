@@ -379,7 +379,7 @@ public static class HelpNavigation
         ClientScreen.Setup => "SSCP",
         ClientScreen.Options => "OPTMENU",
         ClientScreen.Online or ClientScreen.Lobby => "SETMPG",
-        ClientScreen.City => "CITYVIEW",
+        ClientScreen.City or ClientScreen.Spectate => "CITYVIEW",
         ClientScreen.Commands => "COMMAND",
         ClientScreen.Hire => "CONTHIRE",
         ClientScreen.Sector => "SECTVIEW",

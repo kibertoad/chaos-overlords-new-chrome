@@ -40,7 +40,10 @@ internal enum MultiplayerStage
 internal enum OnlineConnectRole
 {
     Host,
-    Join
+    Join,
+
+    /// <summary>Watching a match by its join code, without a seat.</summary>
+    Watch
 }
 
 /// <summary>
@@ -156,6 +159,37 @@ internal sealed class MultiplayerUiState
     /// </remarks>
     internal bool PublicListing { get; set; } = true;
     internal bool AllowLateJoin { get; set; }
+
+    /// <summary>
+    /// How many turns behind the players a spectator watches, or null when the match cannot be
+    /// watched: the lobby's setting as the screens have it.
+    /// </summary>
+    /// <remarks>
+    /// Off by default, as on the server: being watched, even late, shows a stranger every seat's
+    /// position and orders, so it is the host's choice to make and every seat is shown it.
+    /// </remarks>
+    internal int? SpectatorDelayTurns { get; set; }
+
+    /// <summary>Whether the list of who is watching is open over the lobby or the match.</summary>
+    internal bool SpectatorListOpen { get; set; }
+
+    /// <summary>Whether the list is waiting for the server's answer.</summary>
+    internal bool SpectatorListLoading { get; set; }
+
+    /// <summary>Who is watching, as the server last listed them.</summary>
+    internal IReadOnlyList<SpectatorView> Spectators { get; set; } = [];
+
+    /// <summary>The row of the list the host would remove.</summary>
+    internal int SpectatorSelection { get; set; }
+
+    /// <summary>What the list says under its rows: a refusal, or nothing.</summary>
+    internal string SpectatorListStatus { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The spectators this client has been told of during the match, by id, so a departure, which
+    /// carries only the id, can be named.
+    /// </summary>
+    internal Dictionary<string, string> SpectatorNames { get; } = new(StringComparer.Ordinal);
 
     /// <summary>
     /// The overlord face this player takes into the session they create or join.
@@ -415,6 +449,13 @@ internal sealed class MultiplayerUiState
         // Back to being discoverable: a lobby this client joined may have been code-only, and its
         // choice was adopted onto the screens that host the next one.
         PublicListing = true;
+        SpectatorDelayTurns = null;
+        SpectatorListOpen = false;
+        SpectatorListLoading = false;
+        Spectators = [];
+        SpectatorSelection = 0;
+        SpectatorListStatus = string.Empty;
+        SpectatorNames.Clear();
         Role = OnlineConnectRole.Host;
         Portrait = 0;
         ProfilePending = false;

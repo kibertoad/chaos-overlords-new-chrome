@@ -468,6 +468,68 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         Assert.Equal([expected], LoadAll(Path()));
     }
 
+    /// <summary>A spectator's membership keeps the mark that says its token is a spectator's.</summary>
+    [Fact]
+    public void ASpectatorsMembershipRoundTripsAsOne()
+    {
+        var watching = Recovery(CleanExit: false, Completed: false) with
+        {
+            PlayerId = "spectator-1",
+            Token = "cos_secret",
+            IsHost = false,
+            Spectating = true,
+        };
+        var seat = Recovery(CleanExit: false, Completed: false);
+
+        Assert.True(MultiplayerRecoveryStore.TrySaveAll(Path(), [watching, seat]));
+
+        var loaded = MultiplayerRecoveryStore.LoadAll(Path());
+        Assert.Equal([watching, seat], loaded);
+        Assert.True(loaded[0].Spectating);
+        Assert.False(loaded[1].Spectating);
+    }
+
+    /// <summary>A spectator's token that the server no longer answers is retired like a seat's.</summary>
+    [Fact]
+    public async Task ReconciliationAsksTheSpectatorDoorAboutASpectatorsMembership()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        var removed = Recovery(CleanExit: true, Completed: false) with
+        {
+            MatchId = "removed", PlayerId = "spectator-1", Spectating = true,
+        };
+        var closed = Recovery(CleanExit: true, Completed: false) with
+        {
+            MatchId = "closed", PlayerId = "spectator-2", Spectating = true,
+        };
+        var watching = Recovery(CleanExit: true, Completed: false) with
+        {
+            MatchId = "watching", PlayerId = "spectator-3", Spectating = true,
+        };
+        server.Answer(
+            HttpMethod.Get, "/spectate/removed",
+            new ErrorEnvelope(new ErrorEnvelopeError(
+                ErrorCode.Unauthorized, "Invalid or expired spectator token",
+                new ErrorEnvelopeErrorDetails("invalid_token"), RequestId: null)),
+            System.Net.HttpStatusCode.Unauthorized);
+        // The host turned spectating off after this spectator joined.
+        server.Answer(
+            HttpMethod.Get, "/spectate/closed",
+            new ErrorEnvelope(new ErrorEnvelopeError(
+                ErrorCode.Forbidden, "Spectating is off",
+                new ErrorEnvelopeErrorDetails("spectating_disabled"), RequestId: null)),
+            System.Net.HttpStatusCode.Forbidden);
+        server.Answer(HttpMethod.Get, "/spectate/watching",
+            MultiplayerSpectatorSessionTests.ViewOf(MatchStatus.Running, 4, 1) with { Id = "watching" });
+
+        var unavailable = await MultiplayerRecoveryReconciliation.FindUnavailableAsync(
+            http, [removed, closed, watching], TestContext.Current.CancellationToken);
+
+        Assert.Equal([removed, closed], unavailable);
+        Assert.Equal(0, server.CallsTo(HttpMethod.Get, "/matches/removed"));
+    }
+
     public void Dispose() => _directory.Delete(recursive: true);
 
     private readonly FakeSecretStore _store = new();

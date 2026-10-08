@@ -20,6 +20,21 @@ public sealed class LobbyChatPresentationTests
     }
 
     [Fact]
+    public void ANoticeIsDrawnWithoutAnAuthor()
+    {
+        var rows = LobbyChatPresentation.Rows(
+            [
+                new LobbyChatLine(1, "p1", "HI"),
+                new LobbyChatLine(2, string.Empty, SpectatorAnnouncement.Joined("EVE"), IsNotice: true),
+            ],
+            _ => "ANNA",
+            columns: 40,
+            rows: 10);
+
+        Assert.Equal(["ANNA: HI", $"* {SpectatorAnnouncement.Joined("EVE")}"], rows);
+    }
+
+    [Fact]
     public void CutsAWordLongerThanARow()
     {
         var rows = LobbyChatPresentation.Rows(
@@ -109,7 +124,12 @@ public sealed class LobbyChatPresentationTests
             ClassicOnlineLobbyLayout.PrivateChoice,
             ClassicOnlineLobbyLayout.LateJoinAllowed,
             ClassicOnlineLobbyLayout.LateJoinRefused,
+            ClassicOnlineLobbyLayout.WatchRefused,
+            ClassicOnlineLobbyLayout.WatchAllowed,
+            ClassicOnlineLobbyLayout.WatchSooner,
+            ClassicOnlineLobbyLayout.WatchLater,
             ClassicOnlineLobbyLayout.Setup,
+            ClassicOnlineLobbyLayout.Spectators,
             ClassicOnlineLobbyLayout.Start,
             ClassicOnlineLobbyLayout.Leave,
             ClassicOnlineLobbyLayout.Roster,

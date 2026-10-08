@@ -495,6 +495,14 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             case LobbyPlayerJoinedEvent or LobbyPlayerUpdatedEvent or LobbyHostChangedEvent:
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
+            // Told to the players and changing nothing they play: a spectator has no seat.
+            case SpectatorJoinedEvent spectatorJoined:
+                _notices.Enqueue(new MultiplayerNotice.SpectatorArrived(spectatorJoined.Payload.Spectator));
+                return;
+            case SpectatorLeftEvent spectatorLeft:
+                _notices.Enqueue(new MultiplayerNotice.SpectatorDeparted(
+                    spectatorLeft.Payload.SpectatorId, spectatorLeft.Payload.Removed));
+                return;
             default:
                 // A turn this client has applied needs nothing more said about it, and confirmation
                 // is a fact the match view already carries.

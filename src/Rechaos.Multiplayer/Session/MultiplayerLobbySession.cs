@@ -32,13 +32,25 @@ public abstract record LobbyNotice
 
     /// <summary>Chat messages the lobby's log gained, oldest first.</summary>
     public sealed record Chatted(IReadOnlyList<LobbyChatLine> Lines) : LobbyNotice;
+
+    /// <summary>Who is watching the match, as the server listed them.</summary>
+    public sealed record Spectators(IReadOnlyList<SpectatorView> Watching) : LobbyNotice;
 }
 
 /// <summary>One lobby chat message, as the event log carries it.</summary>
 /// <param name="Seq">The event's sequence number, unique within the match.</param>
-/// <param name="PlayerId">Who posted it.</param>
-/// <param name="Text">What they wrote, as the server normalised it.</param>
-public sealed record LobbyChatLine(int Seq, string PlayerId, string Text);
+/// <param name="PlayerId">Who posted it; empty for a notice.</param>
+/// <param name="Text">What they wrote, as the server normalised it, or what the notice says.</param>
+/// <param name="IsNotice">
+/// Whether the line is the log announcing something rather than a member writing: a spectator
+/// arriving or leaving, which every seat is told of in the order it happened among the messages.
+/// </param>
+/// <param name="Arrived">
+/// The spectator a notice says arrived, so the match can name them when they leave later: a
+/// departure carries only the id, and the match's own stream starts after the lobby's events.
+/// </param>
+public sealed record LobbyChatLine(
+    int Seq, string PlayerId, string Text, bool IsNotice = false, SpectatorView? Arrived = null);
 
 /// <summary>
 /// The lobby half of an online match: taking a seat, watching who else arrives, and starting.
@@ -284,6 +296,8 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
                 _chatCursor = matchEvent.Seq;
                 if (matchEvent is LobbyChatMessageEvent chat)
                     lines.Add(new LobbyChatLine(chat.Seq, chat.Payload.PlayerId, chat.Payload.Text));
+                else if (SpectatorLine(matchEvent) is { } notice)
+                    lines.Add(notice);
             }
             // Announced page by page: the cursor has already moved past these, so a later page
             // that fails must not take them down with it.
@@ -295,6 +309,94 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
 
     /// <summary>The page size a chat read asks for: the server's own ceiling.</summary>
     private const int ChatPageSize = 200;
+
+    /// <summary>
+    /// The names of the spectators the log has announced, by id, so a departure can be named.
+    /// </summary>
+    /// <remarks>
+    /// A departure carries only the id. The chat read starts from the beginning of the log, so the
+    /// arrival is always read before its departure. Only the polling call touches it.
+    /// </remarks>
+    private readonly Dictionary<string, string> _spectatorNames = new(StringComparer.Ordinal);
+
+    /// <summary>The line the lobby chat shows for a spectator arriving or leaving, if this is one.</summary>
+    private LobbyChatLine? SpectatorLine(MatchEvent matchEvent)
+    {
+        switch (matchEvent)
+        {
+            case SpectatorJoinedEvent joined:
+                var spectator = joined.Payload.Spectator;
+                _spectatorNames[spectator.Id] = spectator.DisplayName;
+                return new LobbyChatLine(joined.Seq, string.Empty,
+                    SpectatorAnnouncement.Joined(spectator.DisplayName), IsNotice: true, Arrived: spectator);
+            case SpectatorLeftEvent left:
+                var name = _spectatorNames.GetValueOrDefault(left.Payload.SpectatorId)
+                    ?? SpectatorAnnouncement.UnknownName;
+                return new LobbyChatLine(left.Seq, string.Empty,
+                    SpectatorAnnouncement.Left(name, left.Payload.Removed), IsNotice: true);
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>
+    /// Asks the server who is watching, and announces the answer.
+    /// </summary>
+    /// <remarks>
+    /// Outside the one-call-at-a-time rule, like the chat: the lobby is polled once a second, and
+    /// a list asked for by a player opening it must not be dropped because it met a poll. Every
+    /// seat may read the list; only the host may remove anyone from it.
+    /// </remarks>
+    public void ListSpectators()
+    {
+        if (_handle is not { } handle || _stopping.IsCancellationRequested) return;
+        lock (_chatGate) _chatTail = SpectatorCallAfterAsync(_chatTail, handle, spectatorId: null);
+    }
+
+    /// <summary>Host only: removes a spectator, whose token stops working, and lists the rest.</summary>
+    public void RemoveSpectator(string spectatorId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spectatorId);
+        if (_handle is not { } handle || _stopping.IsCancellationRequested) return;
+        lock (_chatGate) _chatTail = SpectatorCallAfterAsync(_chatTail, handle, spectatorId);
+    }
+
+    /// <summary>
+    /// Runs a spectator call after the chat sends queued before it, so the two lanes never put two
+    /// requests on the wire at once.
+    /// </summary>
+    private async Task SpectatorCallAfterAsync(Task previous, MatchHandle handle, string? spectatorId)
+    {
+        try
+        {
+            await previous.ConfigureAwait(false);
+        }
+        catch (Exception exception) when (IsServerOrNetworkFailure(exception)
+            || exception is OperationCanceledException)
+        {
+            // Reported when it happened.
+        }
+        var operation = spectatorId is null ? nameof(ListSpectators) : nameof(RemoveSpectator);
+        try
+        {
+            if (spectatorId is not null)
+            {
+                await handle.RemoveSpectatorAsync(spectatorId, _stopping.Token).ConfigureAwait(false);
+                // The removal is done; a failure from here on is the list read's, not the removal's.
+                operation = nameof(ListSpectators);
+            }
+            var list = await handle.SpectatorsAsync(_stopping.Token).ConfigureAwait(false);
+            _notices.Enqueue(new LobbyNotice.Spectators(list.Spectators));
+        }
+        catch (OperationCanceledException) when (_stopping.IsCancellationRequested)
+        {
+            // The lobby is being left; there is nobody to tell.
+        }
+        catch (Exception exception) when (IsServerOrNetworkFailure(exception))
+        {
+            _notices.Enqueue(new LobbyNotice.Failed(Describe(exception), exception, operation));
+        }
+    }
 
     /// <summary>
     /// Posts a chat message to the lobby. The message comes back to every member, this one

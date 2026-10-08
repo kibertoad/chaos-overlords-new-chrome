@@ -35,6 +35,12 @@ public abstract record MultiplayerNotice
     /// <summary>The player returned or the vote transferred their seat, closing the prompt.</summary>
     public sealed record TakeoverVoteClosed(string PlayerId, bool ComputerControl) : MultiplayerNotice;
 
+    /// <summary>Somebody started watching the match.</summary>
+    public sealed record SpectatorArrived(SpectatorView Spectator) : MultiplayerNotice;
+
+    /// <summary>A spectator stopped watching: they left, or the host removed them.</summary>
+    public sealed record SpectatorDeparted(string SpectatorId, bool Removed) : MultiplayerNotice;
+
     /// <summary>
     /// The session reconstructed the authoritative state — at startup, or after the live stream
     /// proved to have skipped something — and recovered this seat's current whole-document

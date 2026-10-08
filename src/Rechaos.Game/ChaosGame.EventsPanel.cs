@@ -152,8 +152,8 @@ public sealed partial class ChaosGame
         var presentationActive = !_deferComlinkAlertUntilPlanningVisible
             && (enteringPlanning || _screens.Current is not (
             ClientScreen.Title or ClientScreen.Setup or ClientScreen.Online
-            or ClientScreen.Lobby or ClientScreen.Handoff or ClientScreen.Elimination
-            or ClientScreen.Endgame));
+            or ClientScreen.Lobby or ClientScreen.Spectate or ClientScreen.Handoff
+            or ClientScreen.Elimination or ClientScreen.Endgame));
         if (_comlinkAlertCadence.Advance(hasUnread, presentationActive, now,
                 enteringPlanning, PlanningViewer is { } viewer && _state is not null
                     ? _state.ComlinkFor(viewer).NextSequence : null)

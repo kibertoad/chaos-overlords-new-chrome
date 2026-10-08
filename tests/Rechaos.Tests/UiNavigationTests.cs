@@ -178,7 +178,7 @@ public sealed partial class UiNavigationTests
         Assert.StartsWith($"{title} RATES:", StatusConsoleTooltip.ScoreLines(ScenarioId.Big40)[1]);
         Assert.Equal(title, DiscoveryFilters.Label(DiscoveryFilters.Scenario, (int)ScenarioId.Big40 + 1));
         Assert.Equal(("SCENARIO", title), OnlineLobbySummary.Rows(ScenarioId.Big40, GameDuration.OneYear,
-            AiDifficulty.CrimeLord, PlanningTimeLimit.TwoMinutes)[0]);
+            AiDifficulty.CrimeLord, PlanningTimeLimit.TwoMinutes, spectatorDelayTurns: null)[0]);
 
         var state = OriginalMatchFactory.Create(Rechaos.Core.Assets.BundledOriginalData.Load(),new MatchSetup(
             ScenarioId.Big40, GameDuration.OneYear, 1996,

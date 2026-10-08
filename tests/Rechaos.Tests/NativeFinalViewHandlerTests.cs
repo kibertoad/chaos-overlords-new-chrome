@@ -138,6 +138,8 @@ public sealed class NativeFinalViewHandlerTests
     private static bool LocalPlanningLight(MatchState state, MatchPlayerState player)
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
+        // The light reads the current screen, which the uninitialized game leaves unset.
+        Field("_screens").SetValue(game, new ScreenRouter());
         var method = typeof(ChaosGame).GetMethod("PlanningLightLit", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new MissingMethodException(nameof(ChaosGame), "PlanningLightLit");
         return (bool)method.Invoke(game, [state, player])!;

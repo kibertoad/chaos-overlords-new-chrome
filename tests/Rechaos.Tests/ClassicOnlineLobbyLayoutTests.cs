@@ -16,7 +16,12 @@ public sealed class ClassicOnlineLobbyLayoutTests
             ClassicOnlineLobbyLayout.PrivateChoice,
             ClassicOnlineLobbyLayout.LateJoinAllowed,
             ClassicOnlineLobbyLayout.LateJoinRefused,
+            ClassicOnlineLobbyLayout.WatchRefused,
+            ClassicOnlineLobbyLayout.WatchAllowed,
+            ClassicOnlineLobbyLayout.WatchSooner,
+            ClassicOnlineLobbyLayout.WatchLater,
             ClassicOnlineLobbyLayout.Setup,
+            ClassicOnlineLobbyLayout.Spectators,
             ClassicOnlineLobbyLayout.Start,
             ClassicOnlineLobbyLayout.Leave
         ];
@@ -27,6 +32,14 @@ public sealed class ClassicOnlineLobbyLayoutTests
         Assert.False(ClassicOnlineLobbyLayout.Start.Intersects(ClassicOnlineLobbyLayout.Leave));
         Assert.False(ClassicOnlineLobbyLayout.PublicChoice.Intersects(ClassicOnlineLobbyLayout.PrivateChoice));
         Assert.False(ClassicOnlineLobbyLayout.LateJoinAllowed.Intersects(ClassicOnlineLobbyLayout.LateJoinRefused));
+        // Every face is its own: no two controls share a pixel, so a click reaches exactly one.
+        for (var first = 0; first < controls.Length; first++)
+            for (var second = first + 1; second < controls.Length; second++)
+                Assert.False(controls[first].Intersects(controls[second]),
+                    $"{controls[first]} overlaps {controls[second]}");
+        // The longest label the watch face takes fits it.
+        Assert.True($"WATCH: {SpectatorDelayChoice.Maximum} LATE".Length * OriginalFontLayout.CellWidth
+            <= ClassicOnlineLobbyLayout.WatchAllowed.Width);
     }
 
     [Fact]
