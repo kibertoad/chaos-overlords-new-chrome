@@ -69,13 +69,17 @@ export interface EventHubObserver {
 interface Subscription {
   playerId: string
   lobby: boolean
-  wake: () => void
+  wake: (force?: boolean) => void
   close: (reason: HubCloseReason) => void
 }
 
 /**
  * In-process fan-out: notifies every open stream of a match within this process. It is both the
  * notifier and the stream opener on Node, and the fan-out inside a Cloudflare Durable Object.
+ *
+ * Node instances that share a Postgres database pass each other's appends and revocations in
+ * through `announce` and `close`; the runtime's cluster bus carries them. The stream caps stay per
+ * process: each instance counts only the streams it holds.
  */
 export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCloser {
   /** Insertion-ordered, which is what makes "close this player's oldest" a first match. */
@@ -124,6 +128,42 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     // without reading anything. See `MatchLog`.
     this.logs.get(event.matchId)?.record(event)
     this.wake(event.matchId)
+  }
+
+  /**
+   * An event another process appended to a match, announced by sequence and type only.
+   *
+   * Several Node instances can share one Postgres database, and each holds its own streams. The
+   * row is durable before the announcement is sent, so a stream woken here reads it from the log.
+   * Without this, such a stream learned of the event only at its periodic catch-up read.
+   */
+  announce(matchId: string, seq: number, type: string): void {
+    const log = this.logs.get(matchId)
+    if (!log) return
+    if (type === 'match.started') {
+      for (const subscription of this.listeners.get(matchId) ?? []) {
+        this.releaseLobby(subscription)
+      }
+    }
+    log.heard(seq, type)
+    this.wake(matchId)
+  }
+
+  /**
+   * Make every stream read the log again, after a span in which announcements from other
+   * processes may have been lost (the connection that carries them dropped and came back).
+   */
+  resync(): void {
+    // One forced read per stream, as at the periodic catch-up. Lowering what each `MatchLog` was
+    // told instead would leave every stream of an idle match reading the log at every heartbeat
+    // until that match's next event. Every append after the gap is announced, and a stream opened
+    // later reads the log when it opens, so one read is enough.
+    // Snapshot deliberately: waking a stream can close it, which mutates the sets being walked.
+    // oxlint-disable-next-line unicorn/no-useless-spread
+    for (const subscriptions of [...this.listeners.values()]) {
+      // oxlint-disable-next-line unicorn/no-useless-spread
+      for (const subscription of [...subscriptions]) subscription.wake(true)
+    }
   }
 
   /** Wake every stream of a match; used when the notification arrives without the event body. */

@@ -71,7 +71,3 @@ it sits, then `DeserializeAsync` straight from the stream.
   shorten the interval: in process (50 ms) and on the Node runtime (`sseHeartbeatMs`, 2 s). The
   Durable Object builds its hub with `DEFAULT_SERVER_CONFIG.sseHeartbeatMs`, twenty seconds, and
   nothing lets a test change it, so the worker pool skips the case rather than wait out a heartbeat.
-- **End to end on a schedule.** `tools/OnlineSmoke` plays a match against the Node server and
-  against the Worker under `wrangler dev` whenever the multiplayer workflow runs, but nothing runs
-  it on a schedule to catch drift on a branch nobody touched. Running it on a schedule is tracked in
-  [#459](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/459).

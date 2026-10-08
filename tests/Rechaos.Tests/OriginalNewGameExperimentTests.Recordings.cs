@@ -172,7 +172,8 @@ public sealed partial class OriginalNewGameExperimentTests
         bool CityView, IReadOnlyList<int> Cards, IReadOnlyList<IReadOnlyList<int>> Gangs, int Viewed);
 
     // A call of a planning entry panel: its name, the roll count when it was called and whether it
-    // stayed open until Exit was pressed (RULE-SETUP-008).
+    // showed its panel, which it does when it reaches the panel-open helper (RULE-SETUP-008,
+    // FND-UI-061).
     private sealed record RecordedPanel(string Panel, int AfterRoll, bool Shown);
 
     // The planning clock of a turn that ran out: the limit, each redraw of the bar as elapsed
