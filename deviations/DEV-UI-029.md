@@ -1,6 +1,6 @@
 # DEV-UI-029
 
-- Departs from: SCR-UI-004, SCR-UI-009, SCR-SETUP-001, RULE-UI-015
+- Departs from: SCR-UI-004, SCR-UI-009, SCR-SETUP-003, RULE-UI-015
 - Reason: The rebuild draws none of the Windows controls the original uses. Where the original
   hands a choice to a control Windows draws (the menu bar, popup menus, the common file dialogs,
   dialog boxes with their edit controls, list boxes, combo boxes and buttons, and message boxes),
@@ -41,17 +41,11 @@ says None, no other entry records a difference there.
 | Common Open and Save As file dialogs | FND-PLATFORM-003, FND-SAVE-002 | The save browser's nine named slots | DEV-UI-011 |
 | Message box when a saved game cannot be loaded | FND-SAVE-002 | A line in the save browser; the original's save files are not read | DEV-SAVE-001 |
 | Dialog 129: save first, cancel, or go on without saving | RULE-UI-015, FND-UI-022 | A prompt in the Escape menu with the same three answers and results; an online match does not ask | DEV-NET-001 |
-| Dialog 139 with edit control 1007: the player's name | SCR-SETUP-001, FND-SETUP-005, FND-UI-022 | The name is edited in place on the setup card, and OK and Cancel are Enter and Escape | None |
+| Dialog 139 with edit control 1007: the player's name | SCR-SETUP-003, FND-UI-068, FND-UI-022 | The name is edited in place on the setup card, and OK and Cancel are Enter and Escape | DEV-SETUP-003 |
 | Dialog 136: notice before Thousands of Colors or Full Screen is switched | RULE-UI-014, SCR-UI-009 | Nothing: full screen switches at once with F11, and Thousands of Colors does not exist | DEV-OPTIONS-003, DEV-UI-016 |
 | Dialogs 132, 135 and 20007 at start | RULE-UI-013, FND-UI-022 | The rebuild's own report, in a system dialog; 20007 cannot arise | DEV-GFX-001 |
 | Dialog 137: an image file failed to load and play goes on | FND-UI-022 | Nothing: an image file that is missing is left undrawn and play goes on without a notice; an asset pack without its manifest, or of another format, ends the start with the rebuild's report, after a start on macOS or Linux has offered to import a current one | None |
 | Network dialogs 130, 131, 138, 140, 141, 143, 144 and 20004 to 20006, edit control 1007 of dialog 20000, list box 1003 of dialog 20002, the `DIALDIALOG` and `DIRECTDIALOG` dialogs with their combo box 1001, the Telephony dialogs of `lineTranslateDialog` and `lineConfigDialogEdit`, the serial port's `CommConfigDialogA`, the modem control panel, and the network message boxes | FND-UI-022, FND-NET-005, FND-PLATFORM-013 | The rebuild's Online screens | DEV-NET-001 |
 | The Windows help program, which Help Topics never starts | RULE-HELP-001 | The rebuild's help viewer | DEV-HELP-001 |
-
-The name editor's look is this entry's, and its editing is the original's: what the player can
-type and where the caret goes follow the edit control, and the ten characters OK keeps, with
-every character outside space to `Z` made a space, follow the game's copy of the text after the
-dialog closes (FND-UI-022). The card editor does not yet have the control's caret and editing
-keys; that gap is one of editing behaviour, which this entry does not cover.
 
 Decided 2026-10-07 ("Draw the game's own controls in place of the Windows controls").

@@ -40,10 +40,10 @@ Entries by status.
 | [FND-STATE-005](../../findings/FND-STATE-005.md) | Each resolution sets byte 9 of all 486 combat records to -1 and rewrites bytes 0 to 8 only for gangs that took part in a fight |
 | [FND-STATE-006](../../findings/FND-STATE-006.md) | In the computer players' 16-byte planning record, byte 1 is a flag only selector 0x48 reads, byte 11 is never referenced, and byte 15 is the high byte of the 16-bit field at 14 |
 | [FND-STATE-007](../../findings/FND-STATE-007.md) | Map of the match and computer-player state in .data, with each region's element, writers, readers and identity |
-| [FND-STATE-008](../../findings/FND-STATE-008.md) | Map of the interface, platform and network globals in .data, with each region's element, writers, readers and identity |
 | [FND-STATE-009](../../findings/FND-STATE-009.md) | Game code reads nine .rdata constants, all but one in the computer players' planning pass; two initialized .data tables of sines and cosines are used only by uncalled helpers |
 | [FND-STATE-010](../../findings/FND-STATE-010.md) | The byte at 0x004ABC9C is set while no match is in play, from startup and again once a match has ended |
 | [FND-STATE-011](../../findings/FND-STATE-011.md) | The most used .data addresses the data map left unnamed are fields of known records, the modem and socket handles, and a per-connection flag array |
+| [FND-STATE-012](../../findings/FND-STATE-012.md) | Map of the interface, platform and network globals in .data, with each region's element, writers, readers and identity |
 
 ## Established on unreproduced evidence
 

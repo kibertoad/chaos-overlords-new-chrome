@@ -113,12 +113,20 @@ public sealed partial class OriginalNewGameExperimentTests
         "EXP-TURN-097",
         "EXP-TURN-098",
         "EXP-TURN-099",
+        "EXP-TURN-100",
+        "EXP-TURN-101",
+        "EXP-TURN-102",
         "EXP-TURN-103",
         "EXP-TURN-104",
         "EXP-TURN-105",
+        "EXP-TURN-106",
+        "EXP-TURN-107",
+        "EXP-TURN-108",
         "EXP-TURN-109",
         "EXP-TURN-110",
         "EXP-TURN-111",
+        "EXP-TURN-112",
+        "EXP-TURN-113",
         "EXP-TURN-114",
         "EXP-TURN-115",
         "EXP-TURN-116",
@@ -149,6 +157,11 @@ public sealed partial class OriginalNewGameExperimentTests
         "EXP-UI-025",
         "EXP-UI-026",
         "EXP-UI-029",
+        "EXP-UI-030",
+        "EXP-UI-032",
+        "EXP-UI-034",
+        "EXP-UI-035",
+        "EXP-UI-036",
         "EXP-UI-041",
         "EXP-UI-042",
         "EXP-UI-043",
@@ -198,6 +211,12 @@ public sealed partial class OriginalNewGameExperimentTests
     private static readonly Dictionary<(string Experiment, int Run), int> KnownDivergences = new()
     {
         [("EXP-TURN-083", 0)] = 1420,
+        // EXP-TURN-112: in the last resolution the original rolls 9 more dice than the rebuild
+        // before the first Hide test, which RULE-ATTACK-001 may not give (#517).
+        [("EXP-TURN-112", 0)] = 52029,
+        // EXP-TURN-113: a computer player hires in the original's 116th turn, and in the rebuild
+        // every computer player rejects an offer (#518).
+        [("EXP-TURN-113", 0)] = 96038,
     };
 
     public static TheoryData<string, int> MatchingRuns()
