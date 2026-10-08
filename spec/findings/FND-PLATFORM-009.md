@@ -10,19 +10,19 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00460CCF..0x004622D3
+    address: 0x00460CCF..0x004622D4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00465620..0x00465A94
+    address: 0x00465620..0x00465A95
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00465A95..0x00465B26
+    address: 0x00465A95..0x00465B27
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004622D4..0x00462522
+    address: 0x004622D4..0x00462523
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00462523..0x00462578
+    address: 0x00462523..0x00462579
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -58,7 +58,7 @@ Instance and window class, in `fn_00465620` (called at `0x00460CF7`):
 - It loads accelerator table 102 into `0x00487B18` and tries to load menu
   resources 0 to 15 into the sixteen handles at `0x00498870`; of these only 1,
   2, 3 and 5 exist (FND-EXE-005). It clears the pointer state at
-  `0x00498598..0x004985A7` (FND-UI-020).
+  `0x00498598..0x004985A8` (FND-UI-020).
 
 Image set and display, in `WinMain`:
 
@@ -106,7 +106,7 @@ When the surfaces exist and the CD test `fn_0046638E` returns nonzero
   surface 1 filled black, the one-second copy benchmark `fn_00432954` from
   surface 1 to the window over that rectangle (its count goes to
   `0x004981F8`), the pointer shown again and set to the arrow;
-- six player colours built at `0x004ABC18..0x004ABC3B`, the default player names
+- six player colours built at `0x004ABC18..0x004ABC3C`, the default player names
   `fn_00410016`, `0x00498350` and `0x004ABC9C` set to 1;
 - the intro `fn_004329C0` when `loaded_game_kind` (`0x0048788C`) is 0;
 - the window's 640-by-460 area filled black, the palette applied again,

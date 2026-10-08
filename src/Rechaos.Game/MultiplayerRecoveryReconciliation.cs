@@ -79,10 +79,9 @@ public static class MultiplayerRecoveryReconciliation
     /// match session now asks the same question of: this file and a live session must not disagree
     /// about whether a seat still exists.
     ///
-    /// A watch is also gone when the host has stopped letting anyone watch, which a match can only
-    /// do while it is in its lobby: the token outlives the setting, but nothing it opens answers.
+    /// A watch is also gone when the host has stopped letting anyone watch; see
+    /// <see cref="MultiplayerFailureText.IsWatchGone"/>, which a live watch asks too.
     /// </remarks>
     private static bool IsMembershipGone(MultiplayerApiException exception) =>
-        MultiplayerFailureText.IsMembershipRevoked(exception)
-        || exception is { FromEnvelope: true, Reason: "spectating_disabled" };
+        MultiplayerFailureText.IsWatchGone(exception);
 }

@@ -128,9 +128,36 @@ public sealed class MultiplayerSpectatorSessionTests
         Assert.Equal(
             [
                 "?after=0&limit=200", "?after=1&limit=200", "?after=1&limit=200",
-                "?after=1&limit=200", "?after=3&limit=200",
+                "?after=1&limit=200", "?after=3&limit=200", "?after=4&limit=200",
             ],
             after);
+    }
+
+    [Fact]
+    public async Task ReadsOnPastAPageThatEndsOnAnEventItReturned()
+    {
+        var reference = Bootstrap();
+        var bootstrap = SnapshotOf(0, reference.State);
+        SealedTurnApplier.Apply(reference, SealedOrders(1));
+        SealedTurnApplier.Apply(reference, SealedOrders(2));
+
+        var (handle, server, http) = Watching();
+        using var _ = http;
+        server.Answer(HttpMethod.Get, $"/spectate/{MatchId}", ViewOf(MatchStatus.Running, 5, 2));
+        server.Answer(HttpMethod.Get, "/snapshots/latest", bootstrap);
+        // A full page, or one cut short by the server's scan, ends with the cursor on its last event.
+        server.AnswerOnce(HttpMethod.Get, "/events", Page(2, Opened(1, 1), Sealed(2, 1)));
+        server.AnswerOnce(HttpMethod.Get, "/events", Page(4, Opened(3, 2), Sealed(4, 2)));
+        server.Answer(HttpMethod.Get, "/events", Page(4));
+        server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+        server.Answer(HttpMethod.Get, "/turns/2/orders", SealedOrders(2));
+
+        var session = await MultiplayerSpectatorSession.StartAsync(handle, Definitions, TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, session.ShownTurn);
+        Assert.Equal(
+            MatchStateHasher.ComputeFingerprint(reference.State),
+            MatchStateHasher.ComputeFingerprint(session.CloneState()!));
     }
 
     [Fact]
@@ -311,7 +338,8 @@ public sealed class MultiplayerSpectatorSessionTests
         using var _ = http;
         server.Answer(HttpMethod.Get, $"/spectate/{MatchId}", ViewOf(MatchStatus.Abandoned, 2, 1));
         server.Answer(HttpMethod.Get, "/snapshots/latest", SnapshotOf(0, Bootstrap().State));
-        server.Answer(HttpMethod.Get, "/events", Page(2, Opened(1, 1), Sealed(2, 1)));
+        server.AnswerOnce(HttpMethod.Get, "/events", Page(2, Opened(1, 1), Sealed(2, 1)));
+        server.Answer(HttpMethod.Get, "/events", Page(2));
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
 
         var session = await MultiplayerSpectatorSession.StartAsync(handle, Definitions, TestContext.Current.CancellationToken);

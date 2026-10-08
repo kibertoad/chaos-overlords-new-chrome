@@ -6,7 +6,7 @@ At that point 117 rows were `complete`, 85 `partial` and 20 `missing`, no row li
 compares the rebuild with the original, and `spec/experiments/` held no `EXP-` entry.
 
 Each step names the spec entries it closes. A step is done when the code cites those IDs, the
-`PARITY.md` rows are updated, `node tools/check-spec.mjs --check` passes and the fast gate
+`parity/` rows are updated, `node tools/check-documentation.mjs --check` passes and the fast gate
 (`tools/Invoke-Validation.ps1`) is green. Delete a step from this file when it is done, as the
 validation plans do with their items.
 
@@ -77,7 +77,7 @@ needs static reads or captures of the original:
 ## Step 13: From complete to validated
 
 A row is `validated` only when its Tests column lists a test that compares the rebuild with
-evidence from the original (see [docs/VALIDATION.md](docs/VALIDATION.md#tests-against-the-original)).
+evidence from the original (see [docs/validation/tests-against-the-original.md](docs/validation/tests-against-the-original.md)).
 
 - Formats: FMT-DATA-001 to 003, FMT-GFX-001 to 003, FMT-VIDEO-001 and FMT-HELP-001 to 002 are
   validated against every shipped file. FMT-AUDIO-001 and 002 have file tests too, but the

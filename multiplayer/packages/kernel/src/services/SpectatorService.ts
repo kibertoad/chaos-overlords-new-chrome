@@ -15,7 +15,7 @@ import {
 import type { Match, PersistedEvent, Spectator } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../domain/errors'
 import { generateSpectatorToken, hashToken, SPECTATOR_TOKEN_PREFIX } from '../logic/crypto'
-import { spectatorDelay } from '../logic/spectating'
+import { spectatorDelay, startReleased } from '../logic/spectating'
 import { sealAnnouncementKey } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
@@ -215,8 +215,14 @@ export class SpectatorService {
   async latestSnapshot(principal: SpectatorPrincipal): Promise<SnapshotView> {
     const { match } = principal
     requireSpectating(match)
-    const released = await this.released(match)
-    const summary = await this.deps.storage.snapshots.getLatestSummaryAtOrBelow(match.id, released)
+    // `released` is 0 both before the start is released and once it is; only the second may read
+    // the bootstrap, which until then is the board the players are planning on.
+    const summary = startReleased(match)
+      ? await this.deps.storage.snapshots.getLatestSummaryAtOrBelow(
+          match.id,
+          await this.released(match),
+        )
+      : null
     const snapshot = summary && (await this.deps.storage.snapshots.get(match.id, summary.turn))
     if (!snapshot) {
       throw new NotFoundError('No snapshot has been released yet', { reason: 'no_snapshot' })
@@ -264,7 +270,8 @@ export class SpectatorService {
     if (match.status === 'finished' || match.status === 'abandoned') {
       return Number.POSITIVE_INFINITY
     }
-    if (match.status === 'lobby') return 0
+    // Before the start is released, even the start announcement is news about the open turn 1.
+    if (!startReleased(match)) return 0
     const released = await this.released(match)
     const seq =
       released >= 1

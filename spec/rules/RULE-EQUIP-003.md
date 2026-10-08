@@ -4,7 +4,7 @@ title: An item's price is its Cost, less a third of it rounded down when the buy
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-FINANCE-002, FND-STATE-001, SRC-MANUAL-GOG, EXP-TURN-062, EXP-TURN-053, EXP-TURN-072]
+evidence: [FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-012, FND-FINANCE-002, FND-STATE-001, SRC-MANUAL-GOG, EXP-TURN-062, EXP-TURN-053, EXP-TURN-072, FND-CONTROL-001, FND-PLATFORM-003, FND-UI-035]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, FMT-DATA-003]
@@ -59,7 +59,7 @@ Returns the price, an `INT32`. Changes no state and makes no random draw.
   before planning (FND-GANG-001, FND-STATE-001, RULE-SITE-001).
 - The transaction pass, the Equip list and the City Financial panel all pass
   the buying gang's current sector and the gang's player, and compute the
-  same `Cost - Cost / 3` [FND-EQUIP-007, FND-EQUIP-008, FND-FINANCE-002]. The
+  same `Cost - Cost / 3` [FND-EQUIP-007, FND-EQUIP-012, FND-FINANCE-002]. The
   Sector Financial panel passes the panel's sector, which is the sector the
   counted gangs stand in.
 - A gang ordered to Move is priced with the sector it stands in when the

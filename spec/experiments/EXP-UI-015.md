@@ -89,27 +89,26 @@ nothing. A drag posted this way is not reliable, so the run leaves them out. The
 posted the moves as `WM_MOUSEMOVE` and did not write the two pointer points of
 FND-UI-020, one of which the window procedure takes from the desktop cursor, so
 the unreliable drags may come from the probe rather than the game, and this run
-does not settle card-face drags. Its data dump holds the six colour records
-at `0x004ABC18` as (255,0,0), (0,255,0), (0,0,255), (255,255,0), (255,0,255)
-and (0,255,255). Earlier runs that took only the title copy, and the title and
+does not settle card-face drags. EXP-UI-030 repeats them with a probe that
+writes both points, and they act as FND-SETUP-005 reads in every run. This
+run's data dump holds the six colour records at `0x004ABC18` as (255,0,0),
+(0,255,0), (0,0,255), (255,255,0), (255,0,255) and (0,255,255). Earlier runs that took only the title copy, and the title and
 the credits, gave the same captures of them. One that did not write the options
 showed the objective the registry held, Kill 'Em All.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the copies with the
-rebuild's title screen, credits and setup screen, which the game draws with
-`--reference-frame title`, `credits` and `setup`. Leaving out the rebuild's
-buttons, line under the logo and credit line (DEV-UI-019), its Intro button
-(DEV-VIDEO-003) and its version (DEV-UI-012), the title screen matches. The
-credits and the setup screen match everywhere, the setup screen also after
-each of the eleven setup copies, with the presses before it made in the
-rebuild as `--reference-clicks` and the drag as a press, a move and a release.
-A first comparison of the setup
-screen found the rebuild without the scenario's title and description, with
-the background's dim bar on the card and with the name in the player's colour
-nine pixels left of the original's.
+A test of the rebuild compares the copies with the rebuild's title screen,
+credits and setup screen, which the game draws with `--reference-frame title`,
+`credits` and `setup`. Leaving out the rebuild's buttons, line under the logo
+and credit line (DEV-UI-019), its Intro button (DEV-VIDEO-003) and its version
+(DEV-UI-012), the title screen matches. The credits and the setup screen match
+everywhere, the setup screen also after each of the eleven setup copies, with
+the presses before it made in the rebuild as `--reference-clicks` and the drag
+as a press, a move and a release. A first comparison of the setup screen found
+the rebuild without the scenario's title and description, with the background's
+dim bar on the card and with the name in the player's colour nine pixels left of
+the original's.
 
 ## Conclusion
 

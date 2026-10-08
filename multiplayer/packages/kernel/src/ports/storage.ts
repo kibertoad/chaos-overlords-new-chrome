@@ -369,10 +369,12 @@ export interface SnapshotRepository {
    * went. Retention collects whole terminated matches; this bounds what a single LIVE match holds,
    * which is otherwise a megabyte per desynced turn with nothing to stop it.
    *
-   * `retainTurn`, when given, names one more turn whose snapshot stays whatever its age: the one a
-   * spectator starts from, which may be older than every turn `keep` covers.
+   * `retainFrom`, when given, names the turn a spectator starts from, which may be older than every
+   * turn `keep` covers. That snapshot and every later one stay, so the start can move forward to
+   * each of them as turns are released. While a match runs they cover at most the spectator delay
+   * plus `keep` turns.
    */
-  prune(matchId: string, keep: number, retainTurn?: number): Promise<number>
+  prune(matchId: string, keep: number, retainFrom?: number): Promise<number>
 }
 
 /** Spectators: people watching a match from behind its delay, with no seat. */

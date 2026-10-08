@@ -38,7 +38,7 @@ public sealed partial class ChaosGame
         if (_state is null || PlanningViewer is not { } viewer) return;
         var clips = CombatAnimationRouting.ForPresentation(
             _state, VisibleCombatEvents(_state, viewer), viewer);
-        if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
+        if (CombatAnimations.Count == 0 || clips.Count == 0)
         {
             RejectInput("COMBAT DETAIL UNAVAILABLE");
             return;
@@ -50,10 +50,16 @@ public sealed partial class ChaosGame
 
     private void HandleCombatSummaryClick(Point point)
     {
+        // SCR-COMBAT-001, FND-UI-067: a press outside the panel is refused, and the held Exit face
+        // closes the panel on a release inside it.
+        if (!CombatResultsLayout.Panel.Contains(point))
+        {
+            PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+            return;
+        }
         if (CombatResultsLayout.Ok.Contains(point))
         {
-            AcceptInput();
-            CloseCombatResults();
+            HoldPanelFace(CombatResultsLayout.Ok, HeldButtonKind.Confirm, CloseCombatResults);
             return;
         }
         if (CombatResultsLayout.Previous.Contains(point)) MoveCombatSummary(-1);
@@ -98,7 +104,7 @@ public sealed partial class ChaosGame
             .Where(clip => clip.EventSequence == gameEvent.Sequence)
             .Select(clip => clip with { HandsOff = false })
             .ToList();
-        if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
+        if (CombatAnimations.Count == 0 || clips.Count == 0)
         {
             RejectInput("COMBAT DETAIL UNAVAILABLE");
             return;
@@ -151,7 +157,7 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        DrawPanelArtwork(batch, pixel, _combatResultsBackground, CombatResultsLayout.Panel);
+        DrawPanelArtwork(batch, pixel, CombatResultsBackground, CombatResultsLayout.Panel);
         var viewer = ViewingPlayer(state);
         var pages = CombatResultPages(state, viewer);
         if (pages.Count == 0)
@@ -190,10 +196,10 @@ public sealed partial class ChaosGame
             CombatResultsLayout.PageNumber.Location.ToVector2(), Color.Lime, 1);
         font.Draw(batch, $"{Math.Min(count, 99):00}",
             CombatResultsLayout.PageCount.Location.ToVector2(), Color.Lime, 1);
-        if (_uiSprites is null) return;
-        batch.Draw(_uiSprites, CombatResultsLayout.Previous,
+        if (UiSprites is null) return;
+        batch.Draw(UiSprites, CombatResultsLayout.Previous,
             CombatResultsLayout.PreviousSource(firstPage: cursor == 0), Color.White);
-        batch.Draw(_uiSprites, CombatResultsLayout.Next,
+        batch.Draw(UiSprites, CombatResultsLayout.Next,
             CombatResultsLayout.NextSource(lastPage: cursor == count - 1), Color.White);
     }
 
@@ -232,12 +238,12 @@ public sealed partial class ChaosGame
     {
         var sectorId = page.SectorId;
         var sector = state.Sectors[sectorId];
-        var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
+        var layer = CityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
         if (layer is not null)
             batch.Draw(layer, CombatResultsLayout.Sector, CityMapLayout.Source(sectorId), Color.White);
         DrawBorder(batch, pixel, CombatResultsLayout.Sector, Color.Black, 1);
-        if (page.HasPolice && _uiSprites is not null)
-            batch.Draw(_uiSprites, CombatResultsLayout.PoliceStrip,
+        if (page.HasPolice && UiSprites is not null)
+            batch.Draw(UiSprites, CombatResultsLayout.PoliceStrip,
                 CombatResultsLayout.PoliceStripSource, Color.White);
         font.Draw(batch, SectorCode(sectorId),
             CombatResultsLayout.SectorCodeText.ToVector2(), Color.Lime, 1);
@@ -270,11 +276,11 @@ public sealed partial class ChaosGame
                 DrawBorder(batch, pixel, outline, CombatResultFocus.TargetColor, 1);
             if (marks.HasFlag(CombatResultOutline.Attacker))
                 DrawBorder(batch, pixel, outline, CombatResultFocus.AttackerColor, 1);
-            if (marks.HasFlag(CombatResultOutline.Mutual) && _uiKeyedSprites is not null)
-                batch.Draw(_uiKeyedSprites, outline, CombatResultsLayout.MutualFocusSource, Color.White);
+            if (marks.HasFlag(CombatResultOutline.Mutual) && UiKeyedSprites is not null)
+                batch.Draw(UiKeyedSprites, outline, CombatResultsLayout.MutualFocusSource, Color.White);
             // EXP-UI-008: scaled to 40 by 40 from the source pixel under each pixel's centre.
-            if (_gangPortraits is not null)
-                _scaledGangPortraits.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(gang.DefinitionId), cell);
+            if (GangPortraits is not null)
+                _scaledGangPortraits.Draw(batch, GangPortraits, OriginalSpriteLayout.GangPortrait(gang.DefinitionId), cell);
             DrawForceTrack(batch, pixel, CombatResultsLayout.ForceTrack(cell, 0),
                 CombatResultsLayout.ForceTrackFill(timeline.PhaseStartForce(force.Gang)));
             DrawForceTrack(batch, pixel, CombatResultsLayout.ForceTrack(cell, 1),
@@ -297,12 +303,12 @@ public sealed partial class ChaosGame
         {
             var player = state.FindPlayer(owners[slot])!;
             var available = page.ForcesFor(player.Id).Count > 0;
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, CombatResultsLayout.Opponent(slot),
+            if (UiSprites is not null)
+                batch.Draw(UiSprites, CombatResultsLayout.Opponent(slot),
                     CombatResultsLayout.OpponentPortraitSource(player.Setup.PortraitId, available),
                     Color.White);
-            if (player.Id == _combatSummaryOpponent && _uiKeyedSprites is not null)
-                batch.Draw(_uiKeyedSprites, CombatResultsLayout.OpponentFrame(slot),
+            if (player.Id == _combatSummaryOpponent && UiKeyedSprites is not null)
+                batch.Draw(UiKeyedSprites, CombatResultsLayout.OpponentFrame(slot),
                     CombatResultsLayout.OpponentFrameSource, Color.White);
         }
     }

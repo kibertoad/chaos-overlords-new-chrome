@@ -64,14 +64,17 @@ public sealed partial class MultiplayerMatchSession
     }
 
     /// <summary>
-    /// The disputed turn and the report this client last checked against a rebuild, or null.
+    /// The reports this client has finished checking against a rebuild, by disputed turn.
     /// </summary>
     /// <remarks>
-    /// A desync is announced again whenever its verdict changes, and a rebuild that already agreed
-    /// with this client's report would agree again: nothing it is built from has changed. Keyed on
-    /// the report as well as the turn, so a report this client changed since is checked afresh.
+    /// A desync is announced again whenever its verdict changes, and a rebuild already compared
+    /// with a report would reach the same answer again: nothing it is built from has changed. Keyed
+    /// on the report as well as the turn, so a report this client changed since is checked afresh,
+    /// and an announcement that still carries the report a correction replaced is not corrected a
+    /// second time. A report is marked only once its check is over, so a check that a failed fetch
+    /// cut short is tried again rather than taken for one that agreed.
     /// </remarks>
-    private (int Turn, string ReportedHash)? _selfChecked;
+    private readonly HashSet<(int Turn, string ReportedHash)> _selfChecked = [];
 
     /// <summary>
     /// The divergence this client is waiting on, or null.
@@ -229,21 +232,14 @@ public sealed partial class MultiplayerMatchSession
         CancellationToken cancellationToken)
     {
         if (!pending.Reports.TryGetValue(PlayerId, out var reported)) return false;
-        if (_selfChecked == (pending.Turn, reported)) return false;
+        if (_selfChecked.Contains((pending.Turn, reported))) return false;
         var liveTurn = _replay.State.Coordinator.Turn;
         if (liveTurn <= pending.Turn) return false;
         var baseline = await SnapshotBelowAsync(pending.Turn, cancellationToken).ConfigureAwait(false);
         if (baseline is null) return false;
-        var checkedTurn = await RebuildAsync(
-                baseline,
-                throughTurn: pending.Turn,
-                handoversThroughTurn: pending.Turn,
-                captureReports: false,
-                cancellationToken)
-            .ConfigureAwait(false);
-        var rebuiltHash = MatchStateHasher.ComputeFingerprint(checkedTurn.Recorder.State);
-        _selfChecked = (pending.Turn, reported);
-        if (string.Equals(rebuiltHash, reported, StringComparison.Ordinal)) return false;
+        // One rebuild serves the check and the catch-up. The report it captures for the disputed
+        // turn is the hash taken right after that turn resolved, before any later turn or handover
+        // was applied, which is what this client reported for it.
         var rebuilt = await RebuildAsync(
                 baseline,
                 throughTurn: liveTurn - 1,
@@ -251,9 +247,18 @@ public sealed partial class MultiplayerMatchSession
                 captureReports: true,
                 cancellationToken)
             .ConfigureAwait(false);
+        var rebuiltHash = rebuilt.Reports
+            .Where(report => report.Turn == pending.Turn)
+            .Select(report => report.Request.StateHash)
+            .FirstOrDefault();
+        _selfChecked.Add((pending.Turn, reported));
+        // No hash for the turn means the rebuilt match finished before reaching it, and a rebuild
+        // that cannot speak for the turn has nothing to correct the report with.
+        if (rebuiltHash is null || string.Equals(rebuiltHash, reported, StringComparison.Ordinal))
+            return false;
         _replay = rebuilt.Recorder;
         _unreportedSeals.Clear();
-        _selfChecked = (pending.Turn, rebuiltHash);
+        _selfChecked.Add((pending.Turn, rebuiltHash));
         var reports = Task.WhenAll(rebuilt.Reports.Select(QueueReportAsync).ToArray());
         await AwaitRepairReportsAsync(reports, cancellationToken).ConfigureAwait(false);
         var current = MatchStateHasher.ComputeFingerprint(_replay.State);
@@ -479,7 +484,7 @@ public sealed partial class MultiplayerMatchSession
         bool captureReports,
         CancellationToken cancellationToken)
     {
-        var recorder = new MatchReplayRecorder(ReadVerifiedSnapshot(baseline));
+        var recorder = new MatchReplayRecorder(ReadVerifiedSnapshot(baseline, _definitions));
         var reports = new List<TurnReport>();
         if (captureReports) reports.Add(CaptureReport(baseline.Turn, baseline.StateHash, recorder.State));
         var fetches = new Queue<Task<SealedOrdersView>>();

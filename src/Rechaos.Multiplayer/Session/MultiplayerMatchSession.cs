@@ -637,25 +637,26 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// was written by a newer build of the game, and no amount of retrying will make these bytes
     /// readable. Base64 and the native reader each have their own way of refusing a malformed
     /// body, and neither is a failure of the connection, so they are named as what they are too.
+    /// <see cref="MultiplayerSpectatorSession"/> reads its starting snapshot through this too.
     /// </remarks>
-    private MatchState ReadVerifiedSnapshot(SnapshotView snapshot)
+    internal static MatchState ReadVerifiedSnapshot(SnapshotView snapshot, OriginalData definitions)
     {
         RequireResumableSession(snapshot.SessionVersion, "snapshot");
         if (snapshot.FormatVersion > NativeSaveSerializer.CurrentFormatVersion)
         {
             throw new MultiplayerProtocolException(
-                $"the repair for turn {snapshot.Turn} is save format {snapshot.FormatVersion}, and this build "
+                $"the snapshot for turn {snapshot.Turn} is save format {snapshot.FormatVersion}, and this build "
                 + $"reads up to {NativeSaveSerializer.CurrentFormatVersion}");
         }
         MatchState restored;
         try
         {
-            restored = MatchStateClone.FromBase64(snapshot.Body, _definitions);
+            restored = MatchStateClone.FromBase64(snapshot.Body, definitions);
         }
         catch (Exception exception) when (exception is FormatException or InvalidDataException)
         {
             throw new MultiplayerProtocolException(
-                $"the repair for turn {snapshot.Turn} is not a match this build can read: {exception.Message}",
+                $"the snapshot for turn {snapshot.Turn} is not a match this build can read: {exception.Message}",
                 exception);
         }
         var stateHash = MatchStateHasher.ComputeFingerprint(restored);
@@ -665,6 +666,22 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 $"the snapshot for turn {snapshot.Turn} does not hash to the state it claims");
         }
         return restored;
+    }
+
+    /// <summary>
+    /// Refuses a snapshot that does not stand at the start of the turn after its own, unless the
+    /// match it holds is over.
+    /// </summary>
+    internal static void RequireResumesAfter(MatchState restored, int snapshotTurn)
+    {
+        if (restored.Outcome is null
+            && (restored.Coordinator.Phase != TurnPhase.Command
+                || restored.Coordinator.Turn != snapshotTurn + 1))
+        {
+            throw new MultiplayerProtocolException(
+                $"the snapshot for turn {snapshotTurn} resumes at "
+                + $"{restored.Coordinator.Phase} turn {restored.Coordinator.Turn}");
+        }
     }
 
     /// <summary>

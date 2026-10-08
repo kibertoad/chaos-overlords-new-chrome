@@ -13,7 +13,7 @@ finding or experiment is in the spec.
 
 ## Executable, platform and file formats
 
-- FND-PLATFORM-008, FMT-GFX-001: do the two white-keyed images show the
+- FND-PLATFORM-015, FMT-GFX-001: do the two white-keyed images show the
   exact-white pixels as transparent and near-white pixels as opaque? Start a
   match in 16-bit colour, open the screens that draw those two images, capture
   the window and compare the pixels at the key boundary with the file data.

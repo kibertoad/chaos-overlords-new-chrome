@@ -48,13 +48,12 @@ so it does not show which gang was ordered to move.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches
-the same state. In the rebuild's resolution of turn 24, player 2's Moves
-would put seven of its gangs in sector 62. The mover comes from sector 54,
-which counts fewer than six, so the repair's first choice takes it and
-rewrites its destination to sector 54, its own sector, and every gang's
-sector then agrees with the original's.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same state. In the rebuild's resolution
+of turn 24, player 2's Moves would put seven of its gangs in sector 62. The
+mover comes from sector 54, which counts fewer than six, so the repair's first
+choice takes it and rewrites its destination to sector 54, its own sector, and
+every gang's sector then agrees with the original's.
 
 ## Conclusion
 

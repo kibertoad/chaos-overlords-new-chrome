@@ -157,8 +157,8 @@ internal static class SpectatorSmoke
         // The bound only ever rises as the players submit, so a notice drained late is still
         // checked against a bound that held when it was published.
         follower.Bound = 0;
-        await follower.ShowsAsync(watch, 0, currentTurn: 1, fingerprints);
-        Console.WriteLine($"spectators: EVE shows the starting city {fingerprints[0][..12]}");
+        await follower.HeldBackAsync(watch, currentTurn: 1);
+        Console.WriteLine("spectators: EVE has no city while the players plan turn 1");
 
         await RequireSpectatorCannotAct(spectatorClient.Match(matchId), "while the match runs");
 
@@ -198,15 +198,21 @@ internal static class SpectatorSmoke
             fingerprints.Add(MatchStateHasher.ComputeFingerprint(hostState));
 
             var released = Math.Max(0, turn - Delay);
-            if (watch is not null)
+            var startReleased = StartReleased(currentTurn: turn + 1);
+            if (watch is null)
+            {
+                Console.WriteLine($"spectators: turn {turn} sealed with nobody watching");
+            }
+            else if (!startReleased)
+            {
+                await follower.HeldBackAsync(watch, currentTurn: turn + 1);
+                Console.WriteLine($"spectators: turn {turn} sealed, EVE still has no city");
+            }
+            else
             {
                 await follower.ShowsAsync(watch, released, currentTurn: turn + 1, fingerprints);
                 Console.WriteLine(
                     $"spectators: turn {turn} sealed, EVE shows turn {released} on {fingerprints[released][..12]}");
-            }
-            else
-            {
-                Console.WriteLine($"spectators: turn {turn} sealed with nobody watching");
             }
             await RequireHeldBack(spectatorClient.Spectator(matchId), released, turn + 1);
 
@@ -318,6 +324,12 @@ internal static class SpectatorSmoke
             + "handovers, reconnected with its token and was removed");
     }
 
+    /// <summary>
+    /// Whether a running match on <paramref name="currentTurn"/> has released its starting city:
+    /// once the players are the delay past it, when `currentTurn - 1 - delay` reaches 0.
+    /// </summary>
+    private static bool StartReleased(int currentTurn) => currentTurn - 1 - Delay >= 0;
+
     /// <summary>The fingerprint of a copy of <paramref name="state"/> with one seat handed over.</summary>
     private static string HandedOver(MatchState state, OriginalData definitions, int slot, bool toComputer)
     {
@@ -366,9 +378,18 @@ internal static class SpectatorSmoke
         Program.Require(view.Players.All(player => player.Status == WirePlayerStatus.Active),
             "the spectator view's roster carried a seat's live status");
 
-        var snapshot = await door.LatestSnapshotAsync(CancellationToken.None);
-        Program.Require(snapshot.Turn <= released,
-            $"the server offered the snapshot for turn {snapshot.Turn} with turn {released} released");
+        if (StartReleased(currentTurn))
+        {
+            var snapshot = await door.LatestSnapshotAsync(CancellationToken.None);
+            Program.Require(snapshot.Turn <= released,
+                $"the server offered the snapshot for turn {snapshot.Turn} with turn {released} released");
+        }
+        else
+        {
+            // The starting city is the board the players plan turn 1 on, so it waits for the delay.
+            await RequireRefused(() => door.LatestSnapshotAsync(CancellationToken.None),
+                HttpStatusCode.NotFound, "no_snapshot", $"the starting city on turn {currentTurn}");
+        }
 
         await RequireRefused(() => door.SealedOrdersAsync(released + 1, CancellationToken.None),
             HttpStatusCode.Conflict, "turn_not_released", $"turn {released + 1}'s sealed set");
@@ -378,8 +399,9 @@ internal static class SpectatorSmoke
             Program.Require(orders.Turn == released, $"turn {released}'s sealed set came back as {orders.Turn}");
         }
 
-        // The log ends at the seal of the released turn (the start while none is): a seat that
-        // changed hands after it, even before the next turn opened, belongs to an unreleased turn.
+        // The log ends at the seal of the released turn (the start while none is, and nothing
+        // while the start is held back): a seat that changed hands after it, even before the next
+        // turn opened, belongs to an unreleased turn.
         var cursor = 0;
         MatchEvent? last = null;
         while (true)
@@ -409,7 +431,9 @@ internal static class SpectatorSmoke
             if (page.Cursor <= cursor) break;
             cursor = page.Cursor;
         }
-        var endsAtTheCut = released == 0
+        var endsAtTheCut = !StartReleased(currentTurn)
+            ? last is null
+            : released == 0
             ? last is MatchStartedEvent
             : last is TurnSealedEvent { Payload.Turn: var lastSealed } && lastSealed == released;
         Program.Require(endsAtTheCut,
@@ -525,6 +549,20 @@ internal static class SpectatorSmoke
                 $"{name} shows turn {turn} as {shown[..12]}, the players had {fingerprints[turn][..12]}");
             Program.Require(_state!.Coordinator.Turn == turn + 1,
                 $"{name}'s city is planning turn {_state.Coordinator.Turn} after showing turn {turn}");
+        }
+
+        /// <summary>
+        /// Waits until the watch has seen the running match on <paramref name="currentTurn"/>, and
+        /// checks it still has no city because the start is not released yet.
+        /// </summary>
+        public async Task HeldBackAsync(MultiplayerSpectatorWatch watch, int currentTurn)
+        {
+            var progress = await WaitAsync(watch, $"the match on turn {currentTurn}", progress =>
+                progress.View.Status == MatchStatus.Running && progress.View.CurrentTurn == currentTurn);
+            Program.Require(!progress.HasState,
+                $"{name} shows turn {progress.ShownTurn} on turn {currentTurn}, before the start is released");
+            Program.Require(progress.View.ReleasedTurn == 0,
+                $"{name} was told turn {progress.View.ReleasedTurn} is released on turn {currentTurn}");
         }
 
         public async Task<SpectatorNotice.Ended> EndedAsync(MultiplayerSpectatorWatch watch)

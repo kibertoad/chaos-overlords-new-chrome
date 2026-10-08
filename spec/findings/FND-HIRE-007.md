@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0047170D..0x004717A4
+    address: 0x0047170D..0x004717AB
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004717AB..0x004718DF
@@ -23,7 +23,7 @@ environment: null
 `fn_004716EB` (range in FND-EXE-004) loops over offer slots 0 to 2 of the
 player in the global at `0x004ABC84`.
 
-- Refill, `0x0047170D..0x004717A4`. When the slot's offer byte at
+- Refill, `0x0047170D..0x004717AB`. When the slot's offer byte at
   `0x004ABBC0 + player * 3 + slot` is negative (`JGE` at `0x00471722` skips
   0 and positive values), it draws `fn_0045D227(0x59)` and draws again while
   the result equals the signed byte of slot 0 (`0x00471742`), of slot 1

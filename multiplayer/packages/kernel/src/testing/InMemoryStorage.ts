@@ -431,13 +431,15 @@ export class InMemoryStorage implements MultiplayerStorage {
       const { body: _body, ...summary } = row
       return structuredClone(summary)
     },
-    prune: async (matchId, keep, retainTurn) => {
+    prune: async (matchId, keep, retainFrom) => {
       const turns = [...this.snapshotRows.values()]
         .filter((snapshot) => snapshot.matchId === matchId)
         .map((snapshot) => snapshot.turn)
         .sort((a, b) => b - a)
       if (turns.length <= keep) return 0
-      const dropped = turns.slice(keep).filter((turn) => turn !== retainTurn)
+      const dropped = turns
+        .slice(keep)
+        .filter((turn) => retainFrom === undefined || turn < retainFrom)
       for (const turn of dropped) this.snapshotRows.delete(turnKey(matchId, turn))
       return dropped.length
     },

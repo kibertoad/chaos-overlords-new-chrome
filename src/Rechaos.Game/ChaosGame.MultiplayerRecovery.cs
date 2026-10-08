@@ -30,7 +30,7 @@ public sealed partial class ChaosGame
         _activeMultiplayerRecovery = recovery;
         _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
         _multiplayerRecoveries.Insert(0, recovery);
-        SaveOnlineRecoveries();
+        SaveOnlineRecoveries(watches: false);
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public sealed partial class ChaosGame
         if (index >= 0) _multiplayerRecoveries[index] = recovery;
         else _multiplayerRecoveries.Insert(0, recovery);
         _activeMultiplayerRecovery = recovery;
-        SaveOnlineRecoveries(durable);
+        SaveOnlineRecoveries(durable, watches: false);
     }
 
     /// <summary>
@@ -82,14 +82,33 @@ public sealed partial class ChaosGame
     /// version lives in this one place rather than beside each mutation: a caller cannot add a
     /// membership and forget to say so.
     /// </remarks>
-    private void SaveOnlineRecoveries(bool durable = true)
+    /// <param name="durable">Whether the write has to survive losing power.</param>
+    /// <param name="seats">Whether the seats' file is written.</param>
+    /// <param name="watches">Whether the spectators' file is written.</param>
+    /// <remarks>
+    /// A change to one kind of membership writes only that kind's file, so the stamp every resolved
+    /// turn makes on a seat does not also rewrite, and back up, the spectators' file.
+    /// </remarks>
+    private void SaveOnlineRecoveries(bool durable = true, bool seats = true, bool watches = true)
     {
         _multiplayerRecoveryVersion++;
-        MultiplayerRecoveryStore.TrySaveAll(_multiplayerRecoveryPath,
-            _multiplayerRecoveries.Where(recovery => !recovery.Spectating), durable);
-        MultiplayerRecoveryStore.TrySaveAll(SpectatorRecoveryPath,
-            _multiplayerRecoveries.Where(recovery => recovery.Spectating), durable);
+        if (seats)
+        {
+            MultiplayerRecoveryStore.TrySaveAll(_multiplayerRecoveryPath,
+                _multiplayerRecoveries.Where(recovery => !recovery.Spectating), durable);
+        }
+        if (watches)
+        {
+            MultiplayerRecoveryStore.TrySaveAll(SpectatorRecoveryPath,
+                _multiplayerRecoveries.Where(recovery => recovery.Spectating), durable);
+        }
+        _onlineTokensInClear = OnlineTokensInClear();
     }
+
+    /// <summary>Whether either history holds a token in clear, because no keyring took it.</summary>
+    private bool OnlineTokensInClear() =>
+        MultiplayerRecoveryStore.KeepsTokensInClear(_multiplayerRecoveryPath)
+        || MultiplayerRecoveryStore.KeepsTokensInClear(SpectatorRecoveryPath);
 
     private static bool SameMembership(MultiplayerRecovery left, MultiplayerRecovery right) =>
         string.Equals(left.Server, right.Server, StringComparison.OrdinalIgnoreCase)
