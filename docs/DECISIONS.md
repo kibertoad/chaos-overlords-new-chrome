@@ -58,13 +58,13 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 - Reason: the controls do not match the game's art. Windows draws them in the style of the
   Windows version that runs the game, so they show the platform the original was built for rather
   than an art choice, and no single look of them is the original's. A setting that drew
-  Windows-looking controls in the rebuild would be an imitation of one Windows version, not a
-  reproduction.
+  Windows-looking controls in the rebuild would copy one Windows version's look, which is no more
+  the original's than any other version's.
 - Scope: only the look of a control changes. Where a replacement also changes what the player can
   do, that change needs an entry of its own, as DEV-UI-021 is for the order menus. Behaviour that
   belongs to a control, such as the setup name editor's caret and editing keys, is still the
-  original's to match. The window's own frame and the rebuild's message box for a failed start or
-  a crash stay the system's.
+  original's to match. The window's own frame and, on Windows, the rebuild's message box for a
+  failed start or a crash stay the system's.
 
 ## 2026-10-06 — Recover from a desync without waiting on the host
 

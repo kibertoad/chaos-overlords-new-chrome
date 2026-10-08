@@ -8,9 +8,10 @@
   game's screens. Each replacement offers the choices the original's control offers and leads to
   the same result; where a replacement also changes what the player does, an entry of its own
   records that, and the table below names it. Two things stay the system's: the frame and title
-  bar of the rebuild's window, and the message box in which the rebuild reports that it could not
-  start or stopped unexpectedly, which stands where the original shows dialogs 132 and 135
-  (RULE-UI-013) and is shown when the game's own drawing may not be working.
+  bar of the rebuild's window when it is not full screen, and, on Windows, the message box in which
+  the rebuild reports that it could not start or stopped unexpectedly, which stands where the
+  original shows dialogs 132 and 135 (RULE-UI-013) and is shown when the game's own drawing may not
+  be working. On other systems that report goes to the error output only.
 - Setting: None
 - Default: mandatory
 - Justification: The Windows controls are not part of the game's art. Windows draws them in the
@@ -19,9 +20,10 @@
   of the original to reproduce. A setting could only make the rebuild draw imitations of one
   Windows version's controls, which would be no closer to the original than the rebuild's own
   controls and would clash with the screens around them. Real native controls do not fit the
-  rebuild's window either: it scales the drawing area and draws it without the Windows frame
-  (DEV-GFX-001), where a native menu or dialog would open at the desktop's scale outside the
-  picture. The choices and their results are the original's, so a player loses nothing.
+  rebuild's window either: it scales and letterboxes the drawing area in a resizable window or a
+  borderless full screen, with no menu bar above it (DEV-GFX-001), where a native menu or dialog
+  would open at the desktop's scale outside the picture. The choices and their results are the
+  original's, so a player loses nothing.
 - Tests: tests/Rechaos.Tests/OriginalNewGameExperimentTests.Orders.cs, tests/Rechaos.Tests/OriginalNewGameExperimentTests.Closes.cs, tests/Rechaos.Tests/LeavePromptTests.cs, tests/Rechaos.Tests/DeviationBehaviourTests.cs
 - Dropped: no
 
@@ -35,15 +37,18 @@ says None, no other entry records a difference there.
 | Popup order menus 1 and 2 of a gang card and 3 and 5 of the group order strip | SCR-UI-004, FND-UI-021, FND-UI-057 | A drawn order panel listing the same orders | DEV-UI-021 |
 | Common Open and Save As file dialogs | FND-PLATFORM-003, FND-SAVE-002 | The save browser's nine named slots | DEV-UI-011 |
 | Message box when a saved game cannot be loaded | FND-SAVE-002 | A line in the save browser; the original's save files are not read | DEV-SAVE-001 |
-| Dialog 129: save first, cancel, or go on without saving | RULE-UI-015, FND-UI-022 | A prompt in the Escape menu with the same three answers and results | None |
+| Dialog 129: save first, cancel, or go on without saving | RULE-UI-015, FND-UI-022 | A prompt in the Escape menu with the same three answers and results; an online match does not ask | DEV-NET-001 |
 | Dialog 139 with edit control 1007: the player's name | SCR-SETUP-001, FND-SETUP-005, FND-UI-022 | The name is edited in place on the setup card, and OK and Cancel are Enter and Escape | None |
 | Dialog 136: notice before Thousands of Colors or Full Screen is switched | RULE-UI-014, SCR-UI-009 | Nothing: full screen switches at once with F11, and Thousands of Colors does not exist | DEV-OPTIONS-003, DEV-UI-016 |
-| Dialogs 132, 135 and 20007 at start | RULE-UI-013, FND-UI-022 | The rebuild's own report in a system message box; 20007 cannot arise | DEV-GFX-001 |
-| Dialog 137: an image file failed to load and play goes on | FND-UI-022 | Nothing: the asset pack is checked as a whole at start, and one the rebuild cannot use ends the start with its report | None |
-| Network dialogs 130, 131, 138, 140, 141, 143, 144 and 20004 to 20006, edit control 1007 of dialog 20000, list box 1003 of dialog 20002, combo box 1001 of `DIALDIALOG` and `DIRECTDIALOG`, and the network message boxes | FND-UI-022, FND-NET-005, FND-PLATFORM-013 | The rebuild's Online screens | DEV-NET-001 |
+| Dialogs 132, 135 and 20007 at start | RULE-UI-013, FND-UI-022 | The rebuild's own report, in a system message box on Windows; 20007 cannot arise | DEV-GFX-001 |
+| Dialog 137: an image file failed to load and play goes on | FND-UI-022 | Nothing: an image file that is missing is left undrawn and play goes on without a notice; an asset pack without its manifest, or of another format, ends the start with the rebuild's report | None |
+| Network dialogs 130, 131, 138, 140, 141, 143, 144 and 20004 to 20006, edit control 1007 of dialog 20000, list box 1003 of dialog 20002, the `DIALDIALOG` and `DIRECTDIALOG` dialogs with their combo box 1001, the Telephony dialogs of `lineTranslateDialog` and `lineConfigDialogEdit`, the serial port's `CommConfigDialogA`, the modem control panel, and the network message boxes | FND-UI-022, FND-NET-005, FND-PLATFORM-013 | The rebuild's Online screens | DEV-NET-001 |
 | The Windows help program, which Help Topics never starts | RULE-HELP-001 | The rebuild's help viewer | DEV-HELP-001 |
 
-The name editor's look is this entry's, and its editing is the edit control's: what the player
-can type, where the caret goes and which ten characters OK keeps follow the control. The card
-editor does not yet have the control's caret and editing keys; that gap is one of editing
-behaviour, which this entry does not cover. Decided 2026-10-07.
+The name editor's look is this entry's, and its editing is the original's: what the player can
+type and where the caret goes follow the edit control, and the ten characters OK keeps, with
+every character outside space to `Z` made a space, follow the game's copy of the text after the
+dialog closes (FND-UI-022). The card editor does not yet have the control's caret and editing
+keys; that gap is one of editing behaviour, which this entry does not cover.
+
+Decided 2026-10-07 ("Draw the game's own controls in place of the Windows controls").
