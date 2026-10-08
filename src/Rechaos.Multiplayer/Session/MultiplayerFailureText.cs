@@ -141,4 +141,17 @@ public static class MultiplayerFailureText
     public static bool IsMembershipRevoked(Exception exception) =>
         exception is MultiplayerApiException { FromEnvelope: true, Reason: { } reason }
         && Array.IndexOf(MembershipReasons, reason) >= 0;
+
+    /// <summary>
+    /// Whether the refusal says a spectator's watch is gone for good: the membership is revoked, or
+    /// the host has stopped letting anyone watch.
+    /// </summary>
+    /// <remarks>
+    /// The host can only turn watching off while the match is in its lobby, and the token outlives
+    /// the setting, but nothing it opens answers again. The live watch and the recovery file ask
+    /// this one question, so they agree about whether a watch can be resumed.
+    /// </remarks>
+    public static bool IsWatchGone(Exception exception) =>
+        IsMembershipRevoked(exception)
+        || exception is MultiplayerApiException { FromEnvelope: true, Reason: "spectating_disabled" };
 }

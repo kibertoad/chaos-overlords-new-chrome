@@ -1290,11 +1290,16 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         'body',
       )
 
-      expect(await storage.snapshots.prune(match.id, 3, 2)).toBe(2)
+      // Turn 2 is the spectator start: it and every later turn stay, so the start can move to 5
+      // once turn 5 is released even though 5 is older than the three newest.
+      expect(await storage.snapshots.prune(match.id, 3, 2)).toBe(1)
       expect(await storage.snapshots.get(match.id, 2)).not.toBeNull()
       expect(await storage.snapshots.get(match.id, 0)).toBeNull()
-      expect(await storage.snapshots.get(match.id, 5)).toBeNull()
+      expect(await storage.snapshots.get(match.id, 5)).not.toBeNull()
       expect((await storage.snapshots.getLatestSummaryAtOrBelow(match.id, 4))?.turn).toBe(2)
+      expect(await storage.snapshots.prune(match.id, 3, 5)).toBe(1)
+      expect(await storage.snapshots.get(match.id, 2)).toBeNull()
+      expect((await storage.snapshots.getLatestSummaryAtOrBelow(match.id, 5))?.turn).toBe(5)
     })
 
     it('admits spectators up to a cap counted with the insert, and revokes them once', async () => {

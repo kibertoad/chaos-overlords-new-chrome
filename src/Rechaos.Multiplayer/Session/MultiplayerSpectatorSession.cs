@@ -196,43 +196,8 @@ public sealed class MultiplayerSpectatorSession
             throw new MultiplayerProtocolException(
                 $"the server offered the snapshot for turn {snapshot.Turn} with turn {releasedTurn} released");
         }
-        if (snapshot.SessionVersion != MultiplayerSessionVersion.Current)
-        {
-            throw new MultiplayerProtocolException(
-                $"the snapshot is session version {snapshot.SessionVersion}, but this build plays "
-                + MultiplayerSessionVersion.Current);
-        }
-        if (snapshot.FormatVersion > NativeSaveSerializer.CurrentFormatVersion)
-        {
-            throw new MultiplayerProtocolException(
-                $"the snapshot for turn {snapshot.Turn} is save format {snapshot.FormatVersion}, and "
-                + $"this build reads up to {NativeSaveSerializer.CurrentFormatVersion}");
-        }
-        MatchState restored;
-        try
-        {
-            restored = MatchStateClone.FromBase64(snapshot.Body, _definitions);
-        }
-        catch (Exception exception) when (exception is FormatException or InvalidDataException)
-        {
-            throw new MultiplayerProtocolException(
-                $"the snapshot for turn {snapshot.Turn} is not a match this build can read: {exception.Message}",
-                exception);
-        }
-        if (!string.Equals(
-                MatchStateHasher.ComputeFingerprint(restored), snapshot.StateHash, StringComparison.Ordinal))
-        {
-            throw new MultiplayerProtocolException(
-                $"the snapshot for turn {snapshot.Turn} does not hash to the state it claims");
-        }
-        if (restored.Outcome is null
-            && (restored.Coordinator.Phase != TurnPhase.Command
-                || restored.Coordinator.Turn != snapshot.Turn + 1))
-        {
-            throw new MultiplayerProtocolException(
-                $"the snapshot for turn {snapshot.Turn} resumes at "
-                + $"{restored.Coordinator.Phase} turn {restored.Coordinator.Turn}");
-        }
+        var restored = MultiplayerMatchSession.ReadVerifiedSnapshot(snapshot, _definitions);
+        MultiplayerMatchSession.RequireResumesAfter(restored, snapshot.Turn);
         _replay = new MatchReplayRecorder(restored);
         LastAppliedTurn = snapshot.Turn;
         foreach (var player in View.Players)
@@ -246,9 +211,16 @@ public sealed class MultiplayerSpectatorSession
     /// more to give.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The server pages by its own scan and returns where the next page starts; a page can be empty
     /// and still move the cursor past events a spectator does not see. It stops moving at the seal
     /// of the first turn not yet released, which is where this stops too.
+    /// </para>
+    /// <para>
+    /// Only an empty page that leaves the cursor where it was says the log is drained. A page that
+    /// filled its limit, or ran out of the server's scan, ends on an event it returned, so its cursor
+    /// is that event's and says nothing about whether more follow.
+    /// </para>
     /// </remarks>
     private async Task ReplayReleasedEventsAsync(CancellationToken cancellationToken)
     {
@@ -266,8 +238,8 @@ public sealed class MultiplayerSpectatorSession
                 await ApplyEventAsync(@event, cancellationToken).ConfigureAwait(false);
                 _cursor = @event.Seq;
             }
-            if (page.Cursor <= _cursor) return;
-            _cursor = page.Cursor;
+            if (page.Events.Count == 0 && page.Cursor <= _cursor) return;
+            _cursor = Math.Max(_cursor, page.Cursor);
         }
     }
 
@@ -310,13 +282,8 @@ public sealed class MultiplayerSpectatorSession
     {
         var replay = _replay!;
         if (!_slotsByPlayerId.TryGetValue(playerId, out var slot)) return;
-        if (_historyTurn < replay.State.Coordinator.Turn || replay.State.Outcome is not null) return;
-        var player = replay.State.FindPlayer(new PlayerId(slot));
-        if (player is null || player.Setup.Controller == controller) return;
-        if (controller == PlayerController.Computer)
-            replay.TransferPlayerToComputer(player.Id);
-        else
-            replay.TransferPlayerToHuman(player.Id);
+        if (_historyTurn < replay.State.Coordinator.Turn) return;
+        MultiplayerMatchSession.ApplyHandover(replay, slot, controller);
     }
 
     /// <summary>Fetches, verifies and applies a released turn, unless the state already holds it.</summary>

@@ -185,7 +185,7 @@ public sealed class EconomyResolutionTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setups[0], playerZeroCash,
@@ -251,7 +251,7 @@ public sealed class EconomyResolutionTests
             })
             .ToArray();
         return new MatchState(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original),
             players, sectors);
     }
 }

@@ -10,14 +10,14 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00443BBD..0x00445654
+    address: 0x00443BBD..0x00445655
 tool: Ghidra 12.1.3
 environment: null
 ---
 
 ## Observation
 
-`fn_00443BBD` occupies `0x00443BBD..0x00445654` (6,766 bytes, FND-EXE-004). Its
+`fn_00443BBD` occupies `0x00443BBD..0x00445655` (6,766 bytes, FND-EXE-004). Its
 only caller is the gang command handler `fn_00414D8C` at `0x0041586C`, which
 calls it when the chosen action is 12 and cancels the action when it returns
 0. It takes a player slot and a roster slot and returns 1 when it stored an

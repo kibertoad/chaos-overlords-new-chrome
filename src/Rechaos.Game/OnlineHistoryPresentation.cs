@@ -12,6 +12,12 @@ public static class OnlineHistoryPresentation
 {
     public const string Hint = "UP/DOWN SELECT  ENTER REJOINS";
 
+    /// <summary>
+    /// Shown under the list when no keyring took the seats' tokens and the recovery file holds
+    /// them in clear; see <see cref="MultiplayerRecoveryStore.KeepsTokensInClear"/>.
+    /// </summary>
+    public const string TokensInClearNote = "NO KEYRING FOUND  SEATS ARE SAVED UNENCRYPTED";
+
     public static string Row(MultiplayerRecovery recovery)
     {
         ArgumentNullException.ThrowIfNull(recovery);

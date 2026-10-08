@@ -69,4 +69,5 @@ the point of the call.
 `tools/OnlineSmoke` plays a short match against a running server with two clients in one process,
 which is the end-to-end check the .NET test suite cannot make on its own. It then plays a second
 match with a spectator following it through `MultiplayerSpectatorWatch`, two turns behind, and checks
-the spectator's city against the players' hashes on every released turn.
+the spectator's city against the players' hashes on every released turn. The multiplayer workflow
+runs it against the Node server and against the Worker under `wrangler dev`.

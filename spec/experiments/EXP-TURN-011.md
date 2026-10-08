@@ -65,14 +65,14 @@ called before that. The fixture holds this run.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run, giving
-the Attack as a command for player 4's roster slot 18. The rebuild makes the
-same calls with the same bounds and results, reaches the same generator
-position and state, and builds the same Last Turn reports for every player. In
-it the human's gang, Force 10 and Combat 1 against Defense 9, rolls two dice
-and hits with none, so it does no damage; the target, Force 9 and Combat 7
-against Defense 1, strikes back with fifteen dice, nine of them hits, for four
-damage, which leaves the human's gang at Force 6 when the combat phase ends.
+A test of the rebuild replays the run, giving the Attack as a command for player
+4's roster slot 18. The rebuild makes the same calls with the same bounds and
+results, reaches the same generator position and state, and builds the same Last
+Turn reports for every player. In it the human's gang, Force 10 and Combat 1
+against Defense 9, rolls two dice and hits with none, so it does no damage; the
+target, Force 9 and Combat 7 against Defense 1, strikes back with fifteen dice,
+nine of them hits, for four damage, which leaves the human's gang at Force 6
+when the combat phase ends.
 
 ## Conclusion
 

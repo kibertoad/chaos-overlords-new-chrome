@@ -111,6 +111,9 @@ public sealed partial class ChaosGame
                 return;
             case LobbyNotice.Chatted chatted:
                 _online.RecordChat(chatted.Lines);
+                // Kept for the match, whose stream starts after these and names a departure by id.
+                foreach (var line in chatted.Lines)
+                    if (line.Arrived is { } spectator) _online.SpectatorNames[spectator.Id] = spectator.DisplayName;
                 return;
             case LobbyNotice.Spectators spectators:
                 _online.Spectators = spectators.Watching;
@@ -159,6 +162,14 @@ public sealed partial class ChaosGame
                 {
                     _online.SpectatorListLoading = false;
                     _online.SpectatorListStatus = failed.Reason.ToUpperInvariant();
+                    return;
+                }
+                // A refused chat message (the rate limit, a match that has just started) leaves the
+                // seat as it was too. The connection error is drawn only on the connect form, so
+                // taking that path here told the player nothing.
+                if (failed.Operation == nameof(MultiplayerLobbySession.SendChat))
+                {
+                    _online.Status = failed.Reason;
                     return;
                 }
                 RememberOnlineFailure(failed.Error, failed.Operation, lastEventSequence: null);

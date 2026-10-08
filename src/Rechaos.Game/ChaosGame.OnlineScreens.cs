@@ -140,9 +140,9 @@ public sealed partial class ChaosGame
         var bounds = OnlineConnectLayout.Portrait;
         font.Draw(batch, "FACE", OnlineScreenLayout.CaptionAt(bounds), OnlineSecondaryText, 1);
         batch.Draw(pixel, bounds, OnlineInsetFill);
-        if (_uiSprites is not null)
+        if (UiSprites is not null)
         {
-            batch.Draw(_uiSprites, bounds,
+            batch.Draw(UiSprites, bounds,
                 OriginalSpriteLayout.OverlordPortrait(_online.Portrait), Color.White);
         }
         DrawBorder(batch, pixel, bounds, OnlineOutline, 1);
@@ -256,7 +256,7 @@ public sealed partial class ChaosGame
         // so rather than naming a scenario and a mentality that were never read.
         font.Draw(batch,
             Fitted(settings is { } known
-                ? $"{ScenarioCatalog.Get(known.Scenario).Name}  " +
+                ? $"{ExecutableStrings.ScenarioTitle(known.Scenario)}  " +
                     $"{DifficultyPresentation.Label(known.AiMentality)}"
                 : "SETTINGS THIS VERSION OF THE GAME CANNOT READ", RowRoom(bounds, watch)),
             new Vector2(bounds.X + 7, bounds.Y + 21), OnlineSecondaryText, 1);
@@ -317,6 +317,11 @@ public sealed partial class ChaosGame
         }
         DrawCentered(font, batch, OnlineHistoryPresentation.Hint,
             OnlineConnectLayout.HistoryNoteY, OnlineSecondaryText, 1);
+        if (_onlineTokensInClear && sessions.Count > 0)
+        {
+            DrawCentered(font, batch, OnlineHistoryPresentation.TokensInClearNote,
+                OnlineConnectLayout.HistoryStorageNoteY, OnlineMutedText, 1);
+        }
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN",
             selected is not null ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK",
@@ -485,8 +490,8 @@ public sealed partial class ChaosGame
         {
             var face = ClassicOnlineLobbyLayout.RosterPortrait(row);
             var (displayName, portrait) = LobbyRosterEntry(player);
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, face,
+            if (UiSprites is not null)
+                batch.Draw(UiSprites, face,
                     OriginalSpriteLayout.OverlordPortrait(portrait), Color.White);
             var colour = player.Slot >= 0 && player.Slot < PlayerColors.Length
                 ? PlayerColors[player.Slot]
@@ -570,9 +575,9 @@ public sealed partial class ChaosGame
             // The face each player chose, so the roster says who is who by more than a name: it is
             // the face their overlord wears on every screen once the match runs.
             var face = OnlineLobbyLayout.RosterPortrait(row);
-            if (_uiSprites is not null)
+            if (UiSprites is not null)
             {
-                batch.Draw(_uiSprites, face,
+                batch.Draw(UiSprites, face,
                     OriginalSpriteLayout.OverlordPortrait(portrait), Color.White);
             }
             if (EditingLobbyName && player.Id == _lobby?.OwnPlayerId)

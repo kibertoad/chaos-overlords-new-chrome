@@ -1,8 +1,4 @@
-import {
-  RateLimitedError,
-  type SpectatorPrincipal,
-  UnauthorizedError,
-} from '@chaos-overlords/kernel'
+import { RateLimitedError, UnauthorizedError } from '@chaos-overlords/kernel'
 import type { Context, MiddlewareHandler } from 'hono'
 import type { RateLimiters } from '../container'
 import type { AppEnv } from './types'
@@ -43,20 +39,11 @@ function safeRequestId(raw: string | undefined): string | null {
  * 256-bit token is not the concern; the database reads are.
  */
 export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const header = c.req.header('authorization') ?? ''
-  const [scheme, token] = header.split(' ', 2)
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    chargeAnonymous(c)
-    throw new UnauthorizedError('Send the player token as a Bearer credential', {
-      reason: 'missing_token',
-    })
-  }
-  try {
-    c.set('principal', await c.get('container').kernel.auth.authenticate(token))
-  } catch (error) {
-    if (error instanceof UnauthorizedError) chargeAnonymous(c)
-    throw error
-  }
+  const token = await bearerToken(c, 'player')
+  c.set(
+    'principal',
+    await chargingRefusals(c, () => c.get('container').kernel.auth.authenticate(token)),
+  )
   await next()
 }
 
@@ -69,24 +56,36 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
  * cannot spend anybody else's.
  */
 export const spectatorAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const token = await bearerToken(c, 'spectator')
+  const principal = await chargingRefusals(c, () =>
+    c.get('container').kernel.spectators.authenticate(token),
+  )
+  c.set('spectator', principal)
+  await enforce(c.get('container').rateLimiters, 'member', `spectator:${principal.spectator.id}`, c)
+  await next()
+}
+
+/** The Bearer credential of a request, or a 401 charged to the caller's address. */
+async function bearerToken(c: Context<AppEnv>, holder: 'player' | 'spectator'): Promise<string> {
   const header = c.req.header('authorization') ?? ''
   const [scheme, token] = header.split(' ', 2)
   if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    chargeAnonymous(c)
-    throw new UnauthorizedError('Send the spectator token as a Bearer credential', {
+    await chargeAnonymous(c)
+    throw new UnauthorizedError(`Send the ${holder} token as a Bearer credential`, {
       reason: 'missing_token',
     })
   }
-  let principal: SpectatorPrincipal
+  return token
+}
+
+/** Runs a token lookup, charging a refused token to the caller's address; see `bearerAuth`. */
+async function chargingRefusals<T>(c: Context<AppEnv>, authenticate: () => Promise<T>): Promise<T> {
   try {
-    principal = await c.get('container').kernel.spectators.authenticate(token)
+    return await authenticate()
   } catch (error) {
-    if (error instanceof UnauthorizedError) chargeAnonymous(c)
+    if (error instanceof UnauthorizedError) await chargeAnonymous(c)
     throw error
   }
-  c.set('spectator', principal)
-  enforce(c.get('container').rateLimiters, 'member', `spectator:${principal.spectator.id}`, c)
-  await next()
 }
 
 /**
@@ -97,15 +96,15 @@ export const spectatorAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
  * a second thing to size. A caller who is over budget is told so (429) instead of being told the
  * token was wrong, which is the right order of refusals for a caller who has proved nothing.
  */
-function chargeAnonymous(c: Context<AppEnv>): string {
+async function chargeAnonymous(c: Context<AppEnv>): Promise<string> {
   const key = addressOf(c)
-  enforce(c.get('container').rateLimiters, 'anonymous', key, c)
+  await enforce(c.get('container').rateLimiters, 'anonymous', key, c)
   return key
 }
 
 /** Fixed-window limiter on the unauthenticated doors, keyed by client address. */
 export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const key = chargeAnonymous(c)
+  const key = await chargeAnonymous(c)
   // The join doors charge a per-caller budget of their own in front of PBKDF2, in the kernel,
   // where there is no request to work an address out from. Normalised here so that one client is
   // one key there too; see `rateLimitKey`.
@@ -121,17 +120,17 @@ export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
 export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
   const container = c.get('container')
   const key = addressOf(c)
-  enforce(container.rateLimiters, 'bugReport', key, c)
+  await enforce(container.rateLimiters, 'bugReport', key, c)
   // The handler reserves one unit only for a validated report carrying a journal, then releases it
   // if the journal fails its digest check or is omitted by the storage budget.
   c.set('bugReportJournalBudget', () =>
-    container.rateLimiters.bugReportState.reserve(`bugReportState:${rateLimitKey(key)}`),
+    container.rateLimiters.bugReportState.reserve(rateLimitKey(key)),
   )
   await next()
 }
 
 /**
- * The process-wide budget on creating a match, checked here and spent by the create handler.
+ * The deployment-wide budget on creating a match, checked here and spent by the create handler.
  *
  * Mounted for `POST /matches` alone, because the same path also serves the public listing, which
  * must not spend it. It runs after `rateLimited`, so a single address over its own budget is
@@ -142,7 +141,7 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
  */
 export const matchCreationRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
   const limiters = c.get('container').rateLimiters
-  const retryAfter = limiters.matchCreation.peek(`matchCreation:${MATCH_CREATION_KEY}`)
+  const retryAfter = await limiters.matchCreation.peek(MATCH_CREATION_KEY)
   if (retryAfter !== null) refuse(c, retryAfter)
   c.set('spendMatchCreation', () => enforce(limiters, 'matchCreation', MATCH_CREATION_KEY, c))
   await next()
@@ -155,7 +154,7 @@ export const matchCreationRateLimited: MiddlewareHandler<AppEnv> = async (c, nex
 export function memberRateLimited(tier: keyof RateLimiters = 'member'): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     const container = c.get('container')
-    enforce(container.rateLimiters, tier, c.get('principal').player.id, c)
+    await enforce(container.rateLimiters, tier, c.get('principal').player.id, c)
     await next()
   }
 }
@@ -246,18 +245,18 @@ function ipv6Prefix64(address: string): string {
  */
 const IDENTITY_TIERS: ReadonlySet<string> = new Set(['member', 'upload', 'matchCreation'])
 
-/** The one key the match-creation tier counts under; it is a process-wide budget, not a per-caller one. */
+/** The one key the match-creation tier counts under; it is one budget for the whole deployment. */
 const MATCH_CREATION_KEY = 'all'
 
-function enforce(
+async function enforce(
   limiters: RateLimiters,
   tier: keyof RateLimiters,
   key: string,
   c: Context<AppEnv>,
-): void {
-  const retryAfter = limiters[tier].take(
-    `${tier}:${IDENTITY_TIERS.has(tier) ? key : rateLimitKey(key)}`,
-  )
+): Promise<void> {
+  // No tier prefix: each tier has its own limiter, and a shared store already files a key under
+  // its budget's name.
+  const retryAfter = await limiters[tier].take(IDENTITY_TIERS.has(tier) ? key : rateLimitKey(key))
   if (retryAfter !== null) refuse(c, retryAfter)
 }
 

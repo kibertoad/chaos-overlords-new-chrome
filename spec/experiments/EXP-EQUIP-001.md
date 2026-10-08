@@ -30,7 +30,7 @@ As EXP-TURN-030, with `--equip-lists` added
 
 After the end state is dumped, the probe stops the original at the next
 `PeekMessageA` call of the message pump (FND-UI-020), saves the thread
-context and calls the list builder `fn_0043F136` of FND-EQUIP-008 once for
+context and calls the list builder `fn_0043F136` of FND-EQUIP-012 once for
 each category 0 to 3 of each living gang of the human, passing the category,
 the Tech Level field of the gang's definition, the player and the roster slot,
 as the Equip panel does. After each call it reads the sixteen entries at
@@ -49,11 +49,10 @@ lists holds one or two items.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Presentation.cs`
-(`TheEquipListOffersTheOriginalsItems`) replays the run and, for each list,
-compares the rebuild's legal Equip orders of the gang in that category with
-the recorded items. They are the same items in the same order, and the gang's
-Tech Level is the one the builder was passed.
+A test of the rebuild replays the run and, for each list, compares the rebuild's
+legal Equip orders of the gang in that category with the recorded items. They
+are the same items in the same order, and the gang's Tech Level is the one the
+builder was passed.
 
 Within each category the rebuild's item table rules out items by research
 alone (up to eleven in one list), by research and Tech Level together, and,

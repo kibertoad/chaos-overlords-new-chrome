@@ -18,7 +18,7 @@ public sealed class OnlineLobbySummaryTests
             rows.Select(row => row.Label));
         Assert.Equal(
             [
-                ScenarioCatalog.Get(ScenarioId.KillEmAll).Name, "2 YEARS", "CRIME LORD", "2 MINUTES",
+                ExecutableStrings.ScenarioTitle(ScenarioId.KillEmAll), "2 YEARS", "CRIME LORD", "2 MINUTES",
                 "3 TURNS BEHIND",
             ],
             rows.Select(row => row.Value));

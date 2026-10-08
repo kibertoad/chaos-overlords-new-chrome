@@ -371,6 +371,32 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Throws<InvalidDataException>(() => NativeSaveSerializer.Load(stream, changedDefinitions));
     }
 
+    // The format version is read from the first member when it is the current one, so a cut-off
+    // save of the current format has to stay damage, and one of another format, whose envelope is
+    // still parsed whole, has to stay damage as well rather than an intact save of another build.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ACutOffSaveIsDamageWhateverItsFormatVersion(bool otherVersion)
+    {
+        var match = CreateMatch();
+        using var stream = new MemoryStream();
+        NativeSaveSerializer.Save(stream, match);
+        var json = Encoding.UTF8.GetString(stream.ToArray());
+        // The shortcut only applies when the writer puts the version first.
+        Assert.StartsWith(
+            $"{{\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion},", json, StringComparison.Ordinal);
+        if (otherVersion)
+            json = json.Replace(
+                $"\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion}",
+                "\"formatVersion\":999", StringComparison.Ordinal);
+        var cut = Encoding.UTF8.GetBytes(json[..(json.Length / 2)]);
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(new MemoryStream(cut), match.Definitions));
+        Assert.Null(IncompatibleSave.ReasonOf(exception));
+    }
+
 
 
 
@@ -611,7 +637,8 @@ public sealed partial class NativeSaveSerializerTests
                 PortraitId: 7)
         ];
         var setup = new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, AiDifficulty.CrimeLord);
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups,
+            MatchDeviations.Original, AiDifficulty.CrimeLord);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
