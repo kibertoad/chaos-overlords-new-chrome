@@ -46,16 +46,16 @@ gang-turns, controlled and retained sectors, survival, and scenario progress;
 large combined tournaments supplement these cases but cannot substitute for
 them because one improvement could otherwise conceal another regression.
 The aggregate gates run 12 identical seeds for 15 turns per isolated feature:
-Crime Lord expansion on Power and Criminal idle recovery on Kill 'Em All. Each
+Crime Lord expansion on Power and Criminal idle recovery on Siege. Each
 gate requires Advanced to control at least as many sector-turns, to end with at
 least as many sectors, and to hold at least as many defended sector-turns as
 Original. The expansion gate also requires more outward moves, the idle gate
 fewer idle gang-turns. In the current samples expansion raises outward moves
 from 632 to 840, controlled-sector turns from 3,707 to 4,255, final controlled
 sectors from 542 to 615 and defended controlled-sector turns from 3,676 to
-4,134. Idle recovery removes all 114 idle gang-turns and raises controlled-sector
-turns from 3,972 to 4,003, final controlled sectors from 540 to 553 and defended
-controlled-sector turns from 3,917 to 3,940. Seed pairs execute independently
+4,134. Idle recovery lowers idle gang-turns from 362 to 3 and raises controlled-sector
+turns from 3,215 to 3,292, final controlled sectors from 360 to 386 and defended
+controlled-sector turns from 3,200 to 3,278. Seed pairs execute independently
 with a maximum of two workers.
 
 These transformations consume no RNG and add no cash, statistics, discounts,

@@ -17,10 +17,12 @@
   sector the player already controls or one under police presence. The original resolves it:
   under police presence the Control adds the gang to the pool and takes nothing
   (RULE-CONTROL-001), and in the player's own sector it counts the gang twice, as an attacker
-  and as a defender, if another player tries to take the sector in the same turn. In 120 matches
-  of six computer players, every scenario at every Mentality played for up to 208 turns, the
-  rebuild dropped 1,360 Influences, 1,944 Researches and 14 Controls,
-  and no other planned action. `AiTournamentTests` fails on any kind this entry does not list.
+  and as a defender, if another player tries to take the sector in the same turn. In 120
+  four-year matches of six computer players, every scenario at every Mentality with seeds 4241,
+  7717 and 1977, each played until it ended or for 208 turns, the rebuild dropped 1,421
+  Influences, 1,507 Researches and 3 Controls (2 in a sector the player controlled, 1 under
+  police presence), all of family 7 or family 2, and no other planned action.
+  `AiTournamentTests` fails on any kind this entry does not list.
   The gang's planning history is the same; its resolved action can differ.
 - Setting: None
 - Default: mandatory
