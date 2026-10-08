@@ -105,7 +105,7 @@ are. Git history provides change dates.
 | [manual_validation_plan.md](../manual_validation_plan.md) | Open questions that need a person to run the original |
 | [parity-achievement-plan.md](../parity-achievement-plan.md) | The steps, in order, that take every row of PARITY.md to complete and then to validated |
 | [README.md](../README.md) | Player-facing overview, quick start, controls, acknowledgements, licence |
-| [AGENTS.md](../AGENTS.md) | Working rules: push destination, validation scope, documentation, fidelity, version rules, orphan-process audit |
+| [AGENTS.md](../AGENTS.md) | Working rules: push destination, validation scope, documentation, fidelity, runs of the original, version rules, orphan-process audit |
 | [multiplayer/README.md](../multiplayer/README.md) | Operator and contributor manual for the coordination server |
 | [src/Rechaos.Multiplayer/README.md](../src/Rechaos.Multiplayer/README.md) | The game's C# client for the coordination server |
 

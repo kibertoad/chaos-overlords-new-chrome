@@ -4,10 +4,10 @@ title: A press on a setup player card selects it first, then works its portrait 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-015, FND-AI-004, FND-OBJECTIVE-004, FND-PLATFORM-003, FND-SETUP-002, FND-SETUP-017, FND-STATE-004, FND-STATE-012, FND-TURN-005, FND-UI-003, FND-UI-022, FND-UI-064, EXP-UI-053, EXP-UI-030]
+evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-015, FND-AI-004, FND-OBJECTIVE-004, FND-PLATFORM-003, FND-SETUP-002, FND-SETUP-017, FND-STATE-004, FND-STATE-012, FND-TURN-005, FND-UI-003, FND-UI-022, FND-UI-064, EXP-UI-053, EXP-UI-030, EXP-UI-051]
 conflicting: []
 split_with: []
-related: [SCR-SETUP-001]
+related: [SCR-SETUP-001, SCR-SETUP-003]
 ---
 
 ## Summary
@@ -84,10 +84,11 @@ if offset_y < 58:
         # fn_00468CFC: one step up, skipping portraits any slot holds
         step_portrait(card, 1)
 else:
-    # the name editor: dialog Chaos Overlords.exe#DIALOG/139, whose edit
-    # control types the keyboard layout's character and upper-cases letters
-    # (FND-UI-064); OK copies at most ten characters, each outside space to
-    # Z as a space (FND-UI-022); accepting an empty editor keeps the old name
+    # the name editor: dialog Chaos Overlords.exe#DIALOG/139 (SCR-SETUP-003),
+    # whose edit control types the keyboard layout's character and
+    # upper-cases letters (FND-UI-064); OK copies the first ten characters of
+    # its text, each outside space to Z as a space (FND-UI-022); accepting an
+    # empty editor keeps the old name
     fn_0040F63D(card)
 ```
 
@@ -122,7 +123,8 @@ None known.
 
 ## Open questions
 
-- `fn_0040F63D` is the name editor; its dialog's layout is not described.
+- `fn_0040F63D` keeps its neutral name; it opens the name dialog SCR-SETUP-003
+  describes and copies the name from it.
 - What a press or a drag that starts on an empty card does is not recorded.
 - No run releases a drag outside every card, so that branch rests on
   FND-SETUP-005 alone and the status stays `supported`.

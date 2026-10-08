@@ -152,6 +152,10 @@ namespace Rechaos.Tests;
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
 /// around the gang's sector, the centre included, which EXP-TURN-017 needs (RULE-AI-005).
+/// A slot refilled in the turn its gang died keeps the dead gang's family, which EXP-TURN-012 and
+/// EXP-TURN-099 need (RULE-AI-001), and in EXP-TURN-039 a computer player meets the trigger of
+/// BUG-AI-005 and keeps its families. Family-1 gangs buy armor while a weapon's cooldown runs
+/// (EXP-TURN-018, EXP-TURN-049) and fail a weight-10 strength test in EXP-TURN-091 (RULE-AI-020).
 /// In EXP-TURN-010's second run, EXP-TURN-039, EXP-TURN-043 and EXP-TURN-049's first run a family-7
 /// gang outside its best research sector holds a focus equal to that sector and researches in
 /// place, and in EXP-TURN-021 and EXP-TURN-049 one goes on from the site slot a rewritten Snitch
