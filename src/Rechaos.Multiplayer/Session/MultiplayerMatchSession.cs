@@ -451,6 +451,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             case MatchStatusChangedEvent status:
                 HandleStatus(status.Payload.Status);
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                if (status.Payload.Status == MatchStatus.Running)
+                    await LiftPauseAsync(cancellationToken).ConfigureAwait(false);
                 return;
             case LobbyPlayerLeftEvent:
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
@@ -539,7 +541,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         // frame it arrived still flushes the hash the rest of the table is waiting for.
         Forget(QueueReportAsync(turn, stateHash));
         var (state, planning) = HandOver();
-        _notices.Enqueue(new MultiplayerNotice.TurnResolved(
+        ReopenPlanning(new MultiplayerNotice.TurnResolved(
             turn, state, stateHash, includedOwnOrders, planning));
     }
 
@@ -884,9 +886,13 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 $"a running match has a {turn.Status} current turn instead of an open one");
 
         var seated = view.Players.Where(MatchBootstrapFactory.IsSeated).ToArray();
+        // A slot may carry several rows once late joiners have taken over seats the vote handed to
+        // the computer, but every row before the newest is the computer's: two rows a human could
+        // still play in one slot is a roster that contradicts itself.
         if (seated.Length == 0
             || seated.Select(player => player.Id).Distinct(StringComparer.Ordinal).Count() != seated.Length
-            || seated.Select(player => player.Slot).Distinct().Count() != seated.Length)
+            || seated.GroupBy(player => player.Slot).Any(slot =>
+                slot.Count(player => player.Status != WirePlayerStatus.Computer) > 1))
         {
             throw new MultiplayerProtocolException("the match roster has duplicate or missing seats");
         }

@@ -9,7 +9,13 @@ import {
   type SealedPlayerOrders,
   type TurnView,
 } from '@chaos-overlords/contracts'
-import { activePlayers, type Match, type Player, type Turn } from '../domain/entities'
+import {
+  activePlayers,
+  type Match,
+  type MatchSeat,
+  type Player,
+  type Turn,
+} from '../domain/entities'
 import { ConflictError, NotFoundError } from '../domain/errors'
 import type { MultiplayerStorage } from '../ports/storage'
 import { requireTurn } from './guards'
@@ -113,23 +119,27 @@ export class MatchQueryService {
         row.settings.gameSettings.allowLateJoin === true &&
         row.hasSnapshot,
     )
-    const seatsByMatch = new Map<string, number[]>()
+    const seatsByMatch = new Map<string, MatchSeat[]>()
     for (const seat of await this.storage.players.listSeats(lateJoinable.map((row) => row.id))) {
       const seats = seatsByMatch.get(seat.matchId)
-      if (seats) seats.push(seat.slot)
-      else seatsByMatch.set(seat.matchId, [seat.slot])
+      if (seats) seats.push(seat)
+      else seatsByMatch.set(seat.matchId, [seat])
     }
     return rows.map(({ hasSnapshot: _hasSnapshot, ...listing }) => {
       const seats = seatsByMatch.get(listing.id)
       if (seats === undefined) return listing
-      // `joinRunning` counts every seat a human has ever held against the host's own limit, so a
-      // listing that ignored it advertised seats that every join answers `match_full` for.
-      if (seats.length >= listing.settings.maxPlayers) return listing
-      const reserved = new Set(seats)
+      // The same test `joinRunning` makes. A seat is open when the computer plays every row that
+      // ever held it, and the claims left once it is taken must stay under the host's limit; a
+      // listing that ignored either advertised seats every join refuses.
       const availableSlots = Array.from(
         { length: GAME_BOUNDS.playerCount },
         (_, slot) => slot,
-      ).filter((slot) => !reserved.has(slot))
+      ).filter((slot) => {
+        if (seats.some((seat) => seat.slot === slot && !seat.computer)) return false
+        const claims = seats.filter((seat) => seat.slot !== slot && !seat.vacated).length
+        return claims < listing.settings.maxPlayers
+      })
+      if (availableSlots.length === 0) return listing
       const summaries = Array.isArray(listing.settings.gameSettings.seatSummaries)
         ? listing.settings.gameSettings.seatSummaries.filter(isSeatSummary)
         : []

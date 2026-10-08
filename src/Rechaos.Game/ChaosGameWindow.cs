@@ -50,6 +50,8 @@ public sealed class ChaosGameWindow : Microsoft.Xna.Framework.Game, IGameShell
         // The only text the game takes: a server address, a name and a join code. The platform has
         // already decoded the keystroke, so a non-US layout types what it should.
         Window.TextInput += (_, args) => game.HandleTextInput(args.Character);
+        // The setup name editor's editing keys repeat while held, as the edit control's do.
+        Window.KeyDown += (_, args) => game.HandleKeyDown(args.Key);
         game.Attach(this);
     }
 

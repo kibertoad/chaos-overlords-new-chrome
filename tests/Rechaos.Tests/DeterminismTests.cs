@@ -66,14 +66,53 @@ public sealed class DeterminismTests
     public void NotificationQueueDropsOldestAtItsExplicitBound()
     {
         var queue = new NotificationQueue(capacity: 2);
-        queue.Enqueue(Notification(0));
-        queue.Enqueue(Notification(1));
-        queue.Enqueue(Notification(2));
+        queue.Enqueue(Notification(0, turn: 1));
+        queue.Enqueue(Notification(1, turn: 2));
+        queue.Enqueue(Notification(2, turn: 3));
 
         Assert.Equal([1L, 2L], queue.Items.Select(item => item.Sequence));
         Assert.True(queue.TryDequeue(out var first));
         Assert.Equal(1, first!.Sequence);
+    }
 
+    // RULE-EVENT-002: the Last Turn reports come from the notifications of the turn just
+    // completed, so a full queue keeps every notification of that turn and of the current one.
+    [Fact]
+    public void NotificationQueueKeepsTheCompletedAndCurrentTurnsPastItsBound()
+    {
+        var queue = new NotificationQueue(capacity: 2);
+        queue.Enqueue(Notification(0, turn: 1));
+        queue.Enqueue(Notification(1, turn: 3));
+        queue.Enqueue(Notification(2, turn: 3));
+        queue.Enqueue(Notification(3, turn: 3));
+        Assert.Equal([1L, 2L, 3L], queue.Items.Select(item => item.Sequence));
+
+        queue.Enqueue(Notification(4, turn: 4));
+        Assert.Equal([1L, 2L, 3L, 4L], queue.Items.Select(item => item.Sequence));
+
+        queue.Enqueue(Notification(5, turn: 5));
+        Assert.Equal([4L, 5L], queue.Items.Select(item => item.Sequence));
+    }
+
+    // RULE-EVENT-002: a stored history past the bound is valid only in the shape
+    // NotificationQueue.Enqueue leaves it, every notification of the newest turn or the one before.
+    [Fact]
+    public void NotificationHistoryPastItsBoundHoldsOnlyTheNewestTwoTurns()
+    {
+        static bool IsValid(int count, int firstTurn) => GameNotificationValidator.IsValidHistory(
+            Enumerable.Range(0, count)
+                .Select(index => Notification(index, turn: index == 0 ? firstTurn : 3)).ToArray(),
+            count, currentTurn: 3, events: []);
+
+        Assert.True(IsValid(MatchLimits.NotificationsPerPlayer, firstTurn: 1));
+        Assert.True(IsValid(MatchLimits.NotificationsPerPlayer + 1, firstTurn: 2));
+        Assert.False(IsValid(MatchLimits.NotificationsPerPlayer + 1, firstTurn: 1));
+
+        var outOfOrder = Enumerable.Range(0, MatchLimits.NotificationsPerPlayer + 1)
+            .Select(index => Notification(index, turn: index == MatchLimits.NotificationsPerPlayer ? 2 : 3))
+            .ToArray();
+        Assert.False(GameNotificationValidator.IsValidHistory(
+            outOfOrder, outOfOrder.Length, currentTurn: 3, events: []));
     }
 
     [Fact]
@@ -198,8 +237,8 @@ public sealed class DeterminismTests
         Assert.Throws<NotSupportedException>(() => boundaries[0] = boundary with { Turn = 2 });
     }
 
-    private static GameNotification Notification(long sequence) =>
-        new(sequence, 1, TurnPhase.Command, null, GameNotificationKind.Information);
+    private static GameNotification Notification(long sequence, int turn = 1) =>
+        new(sequence, turn, TurnPhase.Command, null, GameNotificationKind.Information);
 
     private static MatchState CreateMatch()
     {

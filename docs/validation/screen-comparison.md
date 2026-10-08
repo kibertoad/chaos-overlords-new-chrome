@@ -116,17 +116,31 @@ SCR-HIRE-002) of the player whose planning entry the run ends at, with no
 pointer, and then makes the scripted presses. With several local humans it
 starts at the hand-off card (SCR-SETUP-002) and a press of its Ready goes on as
 in play; for a run whose match ended it starts at the endgame (SCR-AWARDS-001),
-and for one whose last resolution eliminated a local human at that player's elimination card
+where every human's card has already been shown (EXP-UI-034), and for one whose
+last resolution eliminated a local human at that player's elimination card
 (SCR-OBJECTIVE-002). A run stops at the elimination card as it stops at the
-endgame.
-It does not draw Combat Results or Last Turn Events that the planning entry
-would open first, but it closes Last Turn Events as a press of its Exit after
-the first page would: the Events light stays on only while the player has another report
-to see (RULE-EVENT-005). EXP-UI-007's capture, after the original's planning
-entry showed its one report and the Exit closed the panel, has the light's
-flag clear. A capture taken with Combat Results or Last Turn Events open, at
-the final view, during a drag or with a popup menu open cannot be compared; a
-shot step holds a drag or a pressed control with the button steps above.
+endgame, unless `--pass-cards` lets it go on.
+A shot step comes after the Exit of every panel the planning entry opened, so
+for a shot the frame does not draw Combat Results or Last Turn Events that the
+planning entry would open first, but it closes Last Turn Events as a press of
+its Exit after the first page would: the Events light stays on only while the
+player has another report to see (RULE-EVENT-005). A Ready press on a hand-off
+card goes on the same way, and the shot's clicks leave out the probe's Exit
+presses. EXP-UI-007's capture, after the original's planning entry showed its
+one report and the Exit closed the panel, has the light's flag clear.
+A capture taken at the state dump with `--capture` stands before those Exit
+presses: when the planning entry has a report, Last Turn Events is still open
+on its first page (EXP-UI-036). The test draws such a capture with
+`--entry-panels`, which leaves the panel open there. The selection frame behind
+the panel is the one it held when it came in (FND-UI-051), which the capture
+does not record, so `ScreenCaptureTests` reports the elements holding it
+without asserting them. A capture taken with Combat Results open, at the final
+view, during a drag or with a popup menu open cannot be compared; a shot step
+holds a drag or a pressed control with the button steps above.
+The probe switches Warn if Idle Gangs off in a run that presses Done, and a
+`warn` step switches it back on; the test passes `--no-idle-warning` for a shot
+that no `warn` step precedes in such a run, so a Done click in its steps does
+not open the warning (RULE-OPTIONS-003).
 
 The selected-sector outline cycles through two frames on the pump's counter
 (FND-UI-017), and the reference frame draws the one the capture's

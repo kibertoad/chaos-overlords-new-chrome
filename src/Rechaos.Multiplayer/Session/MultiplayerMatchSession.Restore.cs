@@ -157,7 +157,7 @@ public sealed partial class MultiplayerMatchSession
                 : SpeculativeTurn.For(state, _definitions, Slot)
             : null;
         _resumeAfterSeq = view.LastEventSeq;
-        _notices.Enqueue(new MultiplayerNotice.Resumed(view, state, submission, turn));
+        ReopenPlanning(new MultiplayerNotice.Resumed(view, state, submission, turn));
         foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
             PublishTakeoverVote(vote);
         // The interface counts the seats from the roster alone, which cannot see a departed seat the

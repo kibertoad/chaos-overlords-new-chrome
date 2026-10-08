@@ -4,7 +4,7 @@ title: A human planning turn ends when its time limit passes
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-STATE-010, FND-EXE-004, FND-UI-044, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052, FND-RNG-001]
+evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-002, FND-STATE-010, FND-EXE-004, FND-UI-044, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052, EXP-TURN-102, EXP-UI-035, FND-RNG-001]
 conflicting: []
 split_with: []
 related: [RULE-OPTIONS-003]
@@ -80,7 +80,15 @@ player's planning ends; RULE-OPTIONS-003 does not run for that ending.
   the release, after the order of the drop has been given. Those loops do not
   call the event pump, so the bar is not redrawn and the warnings of
   RULE-TIMER-003 do not sound while the gang is held.
-- When planning ends the flag is cleared and the bar is left as last drawn.
+- The menu bar runs a loop of its own while it is open, so the planning loop
+  does not test the limit then, but `timer_ms` runs on. A turn whose limit
+  passes while the menu bar is open ends on the loop's first pass after it
+  closes (EXP-TURN-102).
+- When planning ends the flag is cleared and the bar is left as last drawn. The
+  next planning entry redraws the console before the clock starts, which puts
+  back the full bar of the console's art: the panels that entry opens, and the
+  next human's in hot seat, show that bar and not the one the turn before left
+  (EXP-UI-035).
 
 ## What the sources say
 
