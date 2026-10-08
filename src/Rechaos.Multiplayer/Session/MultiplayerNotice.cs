@@ -101,11 +101,40 @@ public abstract record MultiplayerNotice
     /// False means waiting for somebody who does, which is not a failure and never ends a session.
     /// </param>
     /// <param name="Details">Short hashes reported by each client, suitable for diagnostics.</param>
+    /// <param name="CorrectedState">
+    /// The state this client moved to when it found its own report wrong and rebuilt the turn from
+    /// the server's facts, or null when its state did not change. The match stays paused either way:
+    /// the corrected report is one more report for the server to judge, and planning reopens on
+    /// <see cref="PauseLifted"/> once the server lifts the pause.
+    /// </param>
     public sealed record Desynced(
         int Turn,
         bool IsHost,
         bool IsRepairing,
-        string Details) : MultiplayerNotice;
+        string Details,
+        MatchState? CorrectedState = null) : MultiplayerNotice;
+
+    /// <summary>
+    /// The server lifted the desync pause this client was shown, and nothing this client adopted
+    /// has reopened planning since.
+    /// </summary>
+    /// <remarks>
+    /// Sent for the pauses that end without a <see cref="Resynced"/>: the client that posted the
+    /// repair, every client that already held it, and a match whose re-reported hashes agreed
+    /// with no snapshot at all.
+    /// </remarks>
+    /// <param name="Turn">The open turn planning reopens on.</param>
+    /// <param name="State">A copy of the state; the interface owns it outright.</param>
+    /// <param name="Submission">What the server holds for this seat on the open turn.</param>
+    /// <param name="Planning">
+    /// The planning copy for the open turn, with the held draft replayed onto it, or null when there
+    /// is no turn left to plan.
+    /// </param>
+    public sealed record PauseLifted(
+        int Turn,
+        MatchState State,
+        OwnSubmissionView? Submission,
+        SpeculativeTurn? Planning) : MultiplayerNotice;
 
     /// <summary>
     /// A vote this client cast did not reach the server, so the question is still open.

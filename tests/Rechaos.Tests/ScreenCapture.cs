@@ -163,7 +163,7 @@ public sealed record ScreenCaptureRecord(
             {
                 if (recorded.TryGetProperty("capture", out var capture))
                     records.Add(Parse(experiment, run, capture, whiteKeyed));
-                // --white-key sets its breakpoint before the title, so the screens copied before
+                // --white-key patches the key before the game runs, so the screens copied before
                 // the match are keyed as the match's are.
                 foreach (var (screen, step) in BeforeMatchScreens)
                     if (recorded.TryGetProperty(screen + "_capture", out var before))

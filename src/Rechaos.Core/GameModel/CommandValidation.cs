@@ -30,7 +30,13 @@ public enum CommandValidationCode
     SectorAlreadyControlled,
     GangAtFullForce,
     ActionCannotRepeat,
-    TargetUndetected
+    TargetUndetected,
+
+    /// <summary>
+    /// DEV-NET-002: the order document of an online turn has no room for another order. The core
+    /// never produces it; the online planning copy does.
+    /// </summary>
+    OrderLimitReached
 }
 
 public readonly record struct CommandValidation(CommandValidationCode Code, string Message)
@@ -431,7 +437,8 @@ internal static class CommandValidationMessages
             [CommandValidationCode.SectorAlreadyControlled] = "Player already controls sector.",
             [CommandValidationCode.GangAtFullForce] = "Gang already at full Force.",
             [CommandValidationCode.ActionCannotRepeat] = "Action cannot be recurring.",
-            [CommandValidationCode.TargetUndetected] = "Attack target is hidden."
+            [CommandValidationCode.TargetUndetected] = "Attack target is hidden.",
+            [CommandValidationCode.OrderLimitReached] = "Too many orders this turn."
         };
 
     public static string For(CommandValidationCode code) => Messages.GetValueOrDefault(code, string.Empty);
