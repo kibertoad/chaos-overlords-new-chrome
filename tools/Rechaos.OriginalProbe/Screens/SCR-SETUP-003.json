@@ -1,0 +1,7 @@
+{
+  "screen": "SCR-SETUP-003",
+  "state": "The local setup screen the game drew under the name dialog, copied from the game window's own device context, which leaves the dialog out",
+  "elements": [
+    {"element": "Setup screen under the dialog", "rect": [0, 0, 640, 460]}
+  ]
+}

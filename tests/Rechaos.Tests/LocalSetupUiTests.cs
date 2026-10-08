@@ -64,23 +64,6 @@ public sealed class LocalSetupUiTests
     }
 
     [Fact]
-    public void NameEditorUsesOriginalTenCharacterUppercaseField()
-    {
-        var editor = new SetupPlayerNameEditor();
-        editor.Begin("Player#1");
-
-        Assert.Equal("PLAYER#1", editor.Text);
-        Assert.True(editor.TryAppend('a'));
-        Assert.True(editor.TryAppend('b'));
-        Assert.True(editor.IsFull);
-        Assert.False(editor.TryAppend('C'));
-        Assert.False(editor.TryAppend('~'));
-        Assert.True(editor.Backspace());
-        Assert.Equal("PLAYER#1A", editor.Text);
-        Assert.Throws<ArgumentException>(() => editor.Begin("ELEVEN CHARS"));
-    }
-
-    [Fact]
     public void EmptyAcceptedModalNameKeepsTheExistingNativeRecord()
     {
         Assert.Equal("ORIGINAL", LocalSetupPolicy.NameAfterModalEntry("ORIGINAL", string.Empty));

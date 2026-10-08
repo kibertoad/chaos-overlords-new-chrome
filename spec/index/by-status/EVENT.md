@@ -6,22 +6,22 @@ Entries by status.
 
 ## supported
 
-3 entries.
+5 entries.
 
 | ID | Title |
 |---|---|
+| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
 | [RULE-EVENT-002](../../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution |
+| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
 | [RULE-EVENT-005](../../rules/RULE-EVENT-005.md) | The Last Turn Events panel shows the viewer's recorded reports in the order they were recorded |
 | [SCR-EVENT-001](../../screens/SCR-EVENT-001.md) | Last Turn Events panel |
 
 ## established
 
-12 entries.
+10 entries.
 
 | ID | Title |
 |---|---|
-| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
-| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
 | [RULE-EVENT-004](../../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
 | [RULE-EVENT-006](../../rules/RULE-EVENT-006.md) | A completed site is reported to the player whose Influence completed it |
 | [RULE-EVENT-007](../../rules/RULE-EVENT-007.md) | A completed item is reported to the player whose Research completed it |
@@ -33,6 +33,14 @@ Entries by status.
 | [RULE-EVENT-013](../../rules/RULE-EVENT-013.md) | Losing control of a sector is reported to the previous owner |
 | [RULE-EVENT-014](../../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player |
 
+## superseded
+
+1 entries.
+
+| ID | Title |
+|---|---|
+| [FND-EVENT-005](../../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item |
+
 ## recorded
 
 6 entries.
@@ -43,8 +51,8 @@ Entries by status.
 | [FND-EVENT-002](../../findings/FND-EVENT-002.md) | The Last Turn Events handler tests only Previous, Next and one exit control, and has no Delete branch |
 | [FND-EVENT-003](../../findings/FND-EVENT-003.md) | Last Turn reports other than Influence and Research load the illustration numbered 6000 plus the report type |
 | [FND-EVENT-004](../../findings/FND-EVENT-004.md) | A Last Turn report record holds an occupied byte at +0, a padding byte at +1 and four 16-bit fields from +2, and the resolver's twelve recorder calls pass fixed arguments |
-| [FND-EVENT-005](../../findings/FND-EVENT-005.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item |
 | [FND-EVENT-006](../../findings/FND-EVENT-006.md) | The event pump blinks the Events, Comlink and Done lights together, lit for two timer-0 ticks and dark for two |
+| [FND-EVENT-007](../../findings/FND-EVENT-007.md) | The Last Turn Events panel refuses an empty table, captions each report from strings 33 to 44 by type and cash-failure argument, and animates the researched item |
 
 ## Established on unreproduced evidence
 
@@ -52,8 +60,6 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution |
-| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots |
 | [RULE-EVENT-004](../../rules/RULE-EVENT-004.md) | A Crackdown is reported to each player who had a gang in its sector |
 | [RULE-EVENT-006](../../rules/RULE-EVENT-006.md) | A completed site is reported to the player whose Influence completed it |
 | [RULE-EVENT-007](../../rules/RULE-EVENT-007.md) | A completed item is reported to the player whose Research completed it |
@@ -71,9 +77,9 @@ Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | established |
+| [RULE-EVENT-001](../../rules/RULE-EVENT-001.md) | The Last Turn reports are cleared just before each resolution | supported |
 | [RULE-EVENT-002](../../rules/RULE-EVENT-002.md) | Recording a Last Turn report keeps the first 32 reports of a resolution | supported |
-| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | established |
+| [RULE-EVENT-003](../../rules/RULE-EVENT-003.md) | An elimination is reported to all six player slots | supported |
 | [RULE-EVENT-012](../../rules/RULE-EVENT-012.md) | Taking control of a sector is reported to the new owner | established |
 | [RULE-EVENT-014](../../rules/RULE-EVENT-014.md) | An Equip that fails for lack of cash is reported to its player | established |
 | [SCR-EVENT-001](../../screens/SCR-EVENT-001.md) | Last Turn Events panel | supported |

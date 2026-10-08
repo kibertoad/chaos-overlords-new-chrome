@@ -52,6 +52,6 @@ and state.
 
 In the run with seed 25081 a computer player with a mode 0 hire role hired,
 in turn 1, an offer whose Chaos is at least 0 and whose Control is below 0.
-A ranking that tested Control, as FND-AI-008 gave it, refuses that offer and
-leads to a snub instead; the ranking that tests Chaos, as FND-AI-064 reads it,
+A ranking that tested Control would refuse that offer and lead to a snub
+instead; the ranking that tests Chaos, as FND-AI-064 reads it,
 hires it. The three runs agree with RULE-AI-008 as FND-AI-064 gives it.

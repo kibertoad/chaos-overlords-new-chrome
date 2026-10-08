@@ -70,7 +70,7 @@ internal sealed class StateExtractor
                 });
             run["finance"] = panels;
         }
-        // RULE-EQUIP-004, FND-EQUIP-008: the list the Equip panel's builder filled for each category
+        // RULE-EQUIP-004, FND-EQUIP-012: the list the Equip panel's builder filled for each category
         // of each of the first human's living gangs, with the Tech Level it was passed.
         if (trace["EquipLists"] is JsonArray equipLists)
             run["equip_lists"] = new JsonArray(equipLists.Select(list => (JsonNode)new JsonObject
@@ -220,6 +220,18 @@ internal sealed class StateExtractor
                 ["slot"] = entry["Slot"]!.GetValue<int>(),
                 ["name"] = Integers(entry["Name"]),
             }).ToArray());
+        // SCR-SETUP-003: the name dialog's edit control at each {SHOT} of a name step, its text and
+        // selection, and the dialog's and the edit control's rectangles in drawing-area pixels.
+        if (trace["NameShots"] is JsonArray nameShots)
+            run["name_shots"] = new JsonArray(nameShots.Select(shot => (JsonNode)new JsonObject
+            {
+                ["entry"] = shot!["Entry"]!.GetValue<int>(),
+                ["shot"] = shot["Shot"]!.GetValue<int>(),
+                ["text"] = shot["Text"]!.GetValue<string>(),
+                ["selection"] = new JsonArray(shot["SelectionStart"]!.GetValue<int>(), shot["SelectionEnd"]!.GetValue<int>()),
+                ["dialog_rect"] = Integers(shot["DialogRect"]),
+                ["edit_rect"] = Integers(shot["EditRect"]),
+            }).ToArray());
         // RULE-TURN-005, SCR-UI-004: each order step after the dump, the popup it opened with its
         // items' commands and greyed states, the view, the card slots and the active player's orders.
         if (trace["OrderSteps"] is JsonArray orderSteps)
@@ -242,6 +254,9 @@ internal sealed class StateExtractor
                 if (step["Viewed"] is JsonNode viewed) record["viewed"] = viewed.GetValue<int>();
                 record["cards"] = Integers(step["Cards"]);
                 record["gangs"] = new JsonArray(step["Gangs"]!.AsArray().Select(Integers).ToArray());
+                // FND-UI-047: the ticks of timer slot 0 the panel loops took during the step.
+                if (step["SlotZeroClears"] is JsonArray clears && clears.Count > 0)
+                    record["slot_zero_clears"] = Integers(clears);
                 // A shot keeps its capture with the screens it is compared at.
                 if (probeStep["Screens"] is JsonNode screens)
                 {
@@ -299,6 +314,42 @@ internal sealed class StateExtractor
             }
             run["timers"] = timers;
         }
+        // RULE-OBJECTIVE-005, --pass-cards: the active_player at each elimination card the turns
+        // passed with its Done.
+        if (trace["EliminationCards"] is JsonArray cards)
+            run["elimination_cards"] = Integers(cards);
+        // SCR-UI-009, RULE-TIMER-002: each holding of the menu bar, in elapsed milliseconds of the
+        // planning clock: the opening keys posted, the thread seen in menu mode, Escape posted and
+        // menu mode left, with the GUITHREADINFO flags seen while it was open and the presentation
+        // clock's ticks from the start of the planning clock to its expiry.
+        if (trace["Menus"] is JsonArray menus)
+            run["menus"] = new JsonArray(menus.Select(menu => (JsonNode)new JsonObject
+            {
+                ["turn"] = menu!["Turn"]!.GetValue<int>(),
+                ["posted_ms"] = menu["PostedMs"]!.GetValue<int>(),
+                ["open_ms"] = menu["OpenMs"]!.GetValue<int>(),
+                ["closing_ms"] = menu["ClosingMs"]!.GetValue<int>(),
+                ["closed_ms"] = menu["ClosedMs"]!.GetValue<int>(),
+                ["flags"] = menu["Flags"]!.GetValue<uint>(),
+                ["ticks"] = Integers(menu["Ticks"]),
+            }).ToArray());
+        // FND-TIMER-003, RULE-TIMER-002: the planning clock bar's rectangle at each start of a
+        // human's clock, before the start draws it, with the player, elapsed_turns and the last bar
+        // drawn before it.
+        if (trace["ClockCaptures"] is JsonArray clocks)
+            run["clock_captures"] = new JsonArray(clocks.Select(clock =>
+            {
+                var record = new JsonObject
+                {
+                    ["player"] = clock!["Player"]!.GetValue<int>(),
+                    ["elapsed_turns"] = clock["ElapsedTurns"]!.GetValue<int>(),
+                    ["last_width"] = clock["LastWidth"]!.GetValue<int>(),
+                    ["last_elapsed_ms"] = clock["LastElapsed"]!.GetValue<int>(),
+                };
+                if (CaptureFixture.ExtractClock(runDirectory, clock["File"]!.GetValue<string>()) is { } capture)
+                    record["capture"] = capture;
+                return (JsonNode)record;
+            }).ToArray());
         // --capture: the drawing area at the dump, with a digest of each screen element's rectangle
         // (CaptureFixture).
         if (CaptureFixture.Extract(runDirectory, trace, screens) is { } capture)
@@ -382,8 +433,9 @@ internal sealed class StateExtractor
     private JsonArray EndState()
     {
         var rows = new JsonArray();
+        // FND-STATE-007 maps each of these globals.
         Term(rows, "scenario", 0x004ABBE8, 1, 4);
-        Term(rows, "mentality", 0x00487850, 1, 1);
+        Term(rows, "mentality", 0x00487850, 1, 1); // the prefsDiff option, FND-OPTIONS-001
         Term(rows, "turn_limit", 0x004A5EF8, 1, 4);
         Term(rows, "elapsed_turns", 0x0049CA68, 1, 4);
         Term(rows, "controller", 0x004AB638, 6, 4);
@@ -414,7 +466,8 @@ internal sealed class StateExtractor
         Term(rows, "scenario_score", 0x004A2790, 6, 4);
         Term(rows, "scenario_standing", 0x004ABC08, 6, 1, signed: false);
         // A run that ends the match stops at the endgame: its awards are given (RULE-AWARDS-001),
-        // and only the first three entries of each player's list are written.
+        // and only the first three entries of each player's list are written. match_over is in
+        // FND-STATE-007.
         if (ReadByte(0x004ABBD4, signed: false) != 0)
         {
             Term(rows, "match_over", 0x004ABBD4, 1, 1, signed: false);
@@ -436,6 +489,7 @@ internal sealed class StateExtractor
             "site_heal", "site_influence", "site_research", "site_strength", "site_blade", "site_ranged",
             "site_fighting", "site_martial_arts",
         ];
+        // FND-STATE-007: the 64 sector records.
         for (var sector = 0; sector < 64; sector++)
         {
             var at = 0x004A08E8u + (uint)sector * 0x24;
@@ -453,6 +507,7 @@ internal sealed class StateExtractor
             "chaos", "control", "heal", "influence", "research", "strength", "blade", "ranged", "fighting",
             "martial_arts",
         ];
+        // FND-STATE-007: the 486 gang records.
         for (var record = 0; record < 486; record++)
         {
             var at = 0x00498DA8u + (uint)record * 0x20;
@@ -545,7 +600,7 @@ internal sealed class StateExtractor
                 rows.Add(Field("FMT-STATE-007", record, "armor_cooldown", armor));
         }
 
-        // The computer players' other planning state (FND-AI-019, FND-AI-044, FND-AI-045): ai_started at
+        // The computer players' other planning state (FND-AI-019, FND-AI-081, FND-AI-045): ai_started at
         // 0x00482108, raider_mode at 0x00482158, placement_anchor at 0x0048E2F8, the two 16-bit values of
         // aux_records (14-byte records at 0x0048C0B0, focus at +0x0A and coverage_sector at +0x0C)
         // and sector_weight, the 16-bit value at +2 of the 14-byte records at

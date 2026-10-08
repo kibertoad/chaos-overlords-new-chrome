@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 using Rechaos.OriginalProbe;
 
 // Runs the original game under a debugger to record what it does, for experiments and dynamic
-// findings (docs/VALIDATION.md, "The probe"). A run's output holds the original's memory, so it is written
+// findings (docs/validation/experiments.md, "The probe"). A run's output holds the original's memory, so it is written
 // outside the repository; `extract` takes only sanitized numbers from it for a fixture.
 if (!OperatingSystem.IsWindows())
 {
@@ -31,9 +31,12 @@ static int Usage()
               [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>]
               [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer_slot:sector>,...] [--sound]
               [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...]
+              [--cash <turn[-turn]:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...]
               [--search <turn[:player]:definition+definition...>,...]
               [--finance <turn:sector>,...]
-              [--time-limit <0-3>] [--expire-turns <turn>,...] [--capture] [--white-key]
+              [--deactivate <turn:player:slot>,...] [--pass-cards]
+              [--time-limit <0-3>] [--expire-turns <turn>,...] [--delays <turn:ms>,...] [--menu <turn:after_ms:hold_ms>,...]
+              [--clock-captures] [--capture] [--white-key]
               [--comlink <script file>]
               [--draw-values <hex address>=<int32>[/<int32>...],...]
               [--equip-lists] [--attack-lists] [--search-clicks <x:y>,...]
@@ -79,7 +82,8 @@ static int NewGame(string[] args)
         Option(args, "--orders") is { } orders ? ParseOrders(orders) : null,
         args.Contains("--sound"),
         Option(args, "--hires") is { } hires ? ParseHires(hires) : null,
-        ParsePlanning(Option(args, "--families"), Option(args, "--raiders"), Option(args, "--retire"), Option(args, "--cash")),
+        ParsePlanning(Option(args, "--families"), Option(args, "--raiders"), Option(args, "--retire"), Option(args, "--cash"),
+            Option(args, "--force"), Option(args, "--tolerance"), Option(args, "--deactivate")),
         Option(args, "--finance") is { } finance ? ParseFinance(finance) : null,
         Option(args, "--search") is { } search ? ParseSearch(search) : null,
         IntOption(args, "--time-limit"),
@@ -106,20 +110,31 @@ static int NewGame(string[] args)
         args.Contains("--waits"),
         args.Contains("--slides"),
         Option(args, "--saved") is { } saved ? ParseSavedWrites(saved) : null,
-        Option(args, "--closes") is { } closes ? ParseCloses(closes) : null).WithActingPlayers();
+        Option(args, "--closes") is { } closes ? ParseCloses(closes) : null,
+        args.Contains("--pass-cards"),
+        Option(args, "--delays") is { } delays ? ParseDelays(delays) : null,
+        Option(args, "--menu") is { } menus ? ParseMenus(menus) : null,
+        args.Contains("--clock-captures")).WithActingPlayers();
     // An order, hire or Search write acts for a human of the run: the probe writes it into that
     // player's records, and the fixture names the player in the input.
     foreach (var write in settings.Search ?? [])
         if (!settings.HumanSlots.Contains(write.Player))
             throw new ArgumentException($"Player {write.Player} of a Search write is not a --humans slot.");
-    // RULE-SETUP-008: the probe presses Done only in the first --humans slot's planning. Another
-    // human plans behind a Ready card the probe does not press, and that press refills the human's
-    // offers, so an order or hire written for that human before then may not be what it plans with.
+    // RULE-SETUP-008: the probe plays inputs only in the first --humans slot's planning. Another
+    // human plans behind a Ready card, which a hot-seat run presses before a bare Done, and that
+    // press refills the human's offers, so an order or hire written for that human before then may
+    // not be what it plans with.
     foreach (var player in (settings.Orders ?? []).Select(order => order.Player)
                  .Concat((settings.Hires ?? []).Select(hire => hire.Player)))
         if (player != settings.FirstHuman)
             throw new ArgumentException(
                 $"Player {player} of an order or hire is not the first --humans slot, the only human whose planning the probe plays.");
+    // RULE-SETUP-008: a hot-seat run writes the first --humans slot's orders and ends each round
+    // at that slot's hand-off card, which is the round's first only when it is the lowest slot.
+    if (settings.HotSeat && settings.Humans![0].Slot != settings.Humans.Min(human => human.Slot))
+        throw new ArgumentException("A run with several humans and --end-turns plays the first --humans slot; list the lowest slot first.");
+    if (settings.Menus is not null && settings.TimeLimit is not (>= 1 and <= 3))
+        throw new ArgumentException("--menu times the menu bar on the planning clock, which needs --time-limit 1, 2 or 3.");
     // RULE-EQUIP-004, RULE-ATTACK-002: the probe builds the lists of the first --humans slot, and
     // the fixture does not say whose they are, so the replay reads them as the lowest human slot's.
     // A first slot that is not the lowest would compare one player's lists with another player's
@@ -129,7 +144,7 @@ static int NewGame(string[] args)
         throw new ArgumentException("--equip-lists and --attack-lists record the first --humans slot; list the lowest slot first.");
 
     // --executable runs a copy from another path in the game directory, which escapes the
-    // compatibility layers the registry ties to the installed path (docs/VALIDATION.md).
+    // compatibility layers the registry ties to the installed path (docs/validation/experiments.md).
     var executable = Option(args, "--executable") ?? Path.Combine(game, "Chaos Overlords.exe");
     var hash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(executable)));
     if (hash != OriginalAddresses.ExecutableSha256)
@@ -352,8 +367,10 @@ static IReadOnlyList<ProbeOrderStep> ParseOrderSteps(string value) =>
             "dbl" when numbers is [>= 0 and < 640, >= 0 and < 480] =>
                 new ProbeOrderStep("dbl", -1, numbers[0], numbers[1], 0),
             "back" or "exit" or "warn" when numbers is [] => new ProbeOrderStep(parts[0], -1, 0, 0, 0),
+            "down" or "move" or "up" or "rdown" or "rup" when numbers is [>= 0 and < 640, >= 0 and < 480] =>
+                new ProbeOrderStep(parts[0], -1, numbers[0], numbers[1], 0),
             "wait" when numbers is [> 0] => new ProbeOrderStep("wait", -1, 0, 0, numbers[0]),
-            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn, wait:ms, type:TEXT, keys:TOKENS or shot:SCR-ID+...: {entry}"),
+            _ => throw new FormatException($"An order step is open:sector, card:n:x:y:command, strip:x:y:command, dbl:x:y, back, exit, warn, wait:ms, type:TEXT, keys:TOKENS, down:x:y, move:x:y, up:x:y, rdown:x:y, rup:x:y or shot:SCR-ID+...: {entry}"),
         };
     }).ToArray();
 
@@ -426,8 +443,10 @@ static string? DrawValuesProblem(IReadOnlyList<ProbeDrawValue> values, IReadOnly
 // --families turn:player:slot:family,... writes a planning record's family; --raiders
 // turn:player,... sets a player's raider_mode; --retire turn:player,... clears a player's
 // player_active; --cash turns:player:value,... sets a player's cash before the Done press of each
-// turn, turns being one turn or a range first-last (ProbePlanning).
-static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired, string? cash)
+// turn, turns being one turn or a range first-last; --force turn:player:slot:force,... sets a gang's
+// force; --tolerance turn:sector:value,... sets a sector's base_tolerance (ProbePlanning).
+static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? raiders, string? retired, string? cash,
+    string? force, string? tolerance, string? deactivated)
 {
     static int[] Numbers(string entry) =>
         entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
@@ -463,8 +482,49 @@ static IReadOnlyList<ProbePlanning>? ParsePlanning(string? families, string? rai
         for (var turn = turns[0]; turn <= turns[^1]; turn++)
             writes.Add(new ProbePlanning(turn, parts[0], 0, ProbePlanning.Cash, parts[1]));
     }
+    foreach (var entry in (force ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var parts = Numbers(entry);
+        if (parts.Length != 4 || parts[0] < 1 || parts[1] is < 0 or > 5 || parts[2] is < 0 or > 80 || parts[3] is < -128 or > 127)
+            throw new FormatException($"A force write needs a turn from 1, a player 0 to 5, a slot 0 to 80 and a value -128 to 127: {entry}");
+        writes.Add(new ProbePlanning(parts[0], parts[1], parts[2], ProbePlanning.Force, parts[3]));
+    }
+    foreach (var entry in (tolerance ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var parts = Numbers(entry);
+        if (parts.Length != 3 || parts[0] < 1 || parts[1] is < 0 or > 63 || parts[2] is < -128 or > 127)
+            throw new FormatException($"A tolerance write needs a turn from 1, a sector 0 to 63 and a value -128 to 127: {entry}");
+        writes.Add(new ProbePlanning(parts[0], 0, parts[1], ProbePlanning.Tolerance, parts[2]));
+    }
+    foreach (var entry in (deactivated ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var parts = Numbers(entry);
+        if (parts.Length != 3 || parts[0] < 1 || parts[1] is < 0 or > 5 || parts[2] is < 0 or > 80)
+            throw new FormatException($"A deactivated gang needs a turn from 1, a player 0 to 5 and a roster slot 0 to 80: {entry}");
+        writes.Add(new ProbePlanning(parts[0], parts[1], parts[2], ProbePlanning.Deactivated));
+    }
     return writes.Count == 0 ? null : writes;
 }
+
+// --delays turn:ms,... waits that long before the Done press of the turn (ProbeDelay).
+static IReadOnlyList<ProbeDelay> ParseDelays(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        return parts is [>= 1, > 0]
+            ? new ProbeDelay(parts[0], parts[1])
+            : throw new FormatException($"A delay needs a turn from 1 and milliseconds above 0: {entry}");
+    }).ToArray();
+
+// --menu turn:after_ms:hold_ms,... holds the menu bar open during the turn's planning (ProbeMenu).
+static IReadOnlyList<ProbeMenu> ParseMenus(string value) =>
+    value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
+    {
+        var parts = entry.Split(':').Select(part => int.Parse(part, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        return parts is [>= 1, >= 0, > 0]
+            ? new ProbeMenu(parts[0], parts[1], parts[2])
+            : throw new FormatException($"A menu hold needs a turn from 1, an opening time and a hold in milliseconds: {entry}");
+    }).ToArray();
 
 static uint? HexOption(string[] args, string name) =>
     Option(args, name) is { } value

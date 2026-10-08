@@ -4,7 +4,7 @@ title: A local human's planning opens with the Ready card when several humans sh
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-010, FND-SETUP-015, FND-OBJECTIVE-004, FND-AUDIO-002, FND-AUDIO-012, FND-EXE-004, EXP-TURN-011, EXP-TURN-031, SRC-MANUAL-GOG, FND-COMLINK-001, FND-COMLINK-004, FND-COMLINK-006, FND-STATE-008, FND-UI-023, FND-UI-024, FND-UI-036]
+evidence: [FND-SETUP-010, FND-SETUP-015, FND-OBJECTIVE-004, FND-AUDIO-002, FND-AUDIO-018, FND-EXE-004, EXP-TURN-011, EXP-TURN-031, SRC-MANUAL-GOG, FND-COMLINK-001, FND-COMLINK-004, FND-COMLINK-006, FND-STATE-012, FND-UI-023, FND-UI-024, FND-UI-036]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-002, SCR-UI-008, SCR-COMBAT-001, RULE-COMBAT-004, RULE-EVENT-005]
@@ -59,15 +59,15 @@ for i in 0..16:
         comlink_pending = 1
 if comlink_pending:
     emit ComlinkAlert()
-comlink_alert_repeat = 0
+    comlink_alert_repeat = 0
 ```
 
 ## Outputs
 
-No return value. Sets `active_player`, `comlink_pending` and
-`comlink_alert_repeat`, and shows, one after another, the screens named above.
-Each of them blocks until the player closes it. Emits `ComlinkAlert` when the
-player has an unread message. Makes no draws.
+No return value. Sets `active_player` and `comlink_pending`, and shows, one
+after another, the screens named above. Each of them blocks until the player
+closes it. When the player has an unread message, emits `ComlinkAlert` and sets
+`comlink_alert_repeat` to 0. Makes no draws.
 
 ## Edge cases
 

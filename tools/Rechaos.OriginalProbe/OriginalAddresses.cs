@@ -7,6 +7,14 @@ internal static class OriginalAddresses
     public const uint GangRecords = 0x00498DA8;
     public const int PlayerGangStride = 0xA20;
     public const int GangRecordSize = 0x20;
+    public const int GangForceOffset = 3;
+    // FMT-STATE-001: the sector byte at offset 2 holds GANG_INACTIVE once the gang is gone.
+    public const byte GangInactive = 100;
+
+    // FMT-STATE-002: 64 sector records of 0x24 bytes, base_tolerance at +2.
+    public const uint SectorRecords = 0x004A08E8;
+    public const int SectorRecordSize = 0x24;
+    public const int SectorBaseToleranceOffset = 2;
 
     public const string ExecutableSha256 = "a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89";
 
@@ -51,7 +59,7 @@ internal static class OriginalAddresses
     // planning loop in fn_0046FD80.
     public const uint PlanningTimeCheck = 0x0041BDD5;
 
-    // FND-EQUIP-008: the Equip panel's list builder, called as (category, tech_level, player,
+    // FND-EQUIP-012: the Equip panel's list builder, called as (category, tech_level, player,
     // roster slot), the sixteen INT32 entries it fills, the 16-bit Tech Level of the gang
     // definition records, 156 bytes apart, and the panel's own instruction that loads the Tech
     // Level for the call, which the probe uses as the return address of every call it makes.
@@ -80,6 +88,7 @@ internal static class OriginalAddresses
     // fn_00464290 plays an effect slot.
     public const uint PlanningLimitChoice = 0x00487854;
     public const uint PlanningLimitMs = 0x0049069C;
+    public const uint PlanningStartMs = 0x004906A0;
     public const uint PlanningTimerStarted = 0x0041B8C8;
     public const uint PlanningBarWidth = 0x0041B96D;
     public const uint PlanningBarDrawStart = 0x0041B8FC;
@@ -118,17 +127,17 @@ internal static class OriginalAddresses
     public const uint DetailedCombatEnd = 0x0042EE45;
     public const uint CombatClip = 0x00430C23;
     public const uint CombatClipEnd = 0x00431C53;
-    // FND-COMBAT-016: the clip player's tick, the local at ebp - CombatClipTick, which the clip sets
-    // to 0 at CombatClipTickSet; the screen shows the passes up to tick local - 1.
-    public const uint CombatClipTickSet = 0x00430C2F;
-    public const uint CombatClipTick = 0x20;
     public const uint CombatFocal = 0x004945A0;
     public const uint CombatOther = 0x00494584;
     public const uint CombatFocalBarRight = 0x0049476E;
     public const uint CombatOtherBarRight = 0x004947FE;
     public const uint SoundLoader = 0x0045867C;
+    // FND-COMBAT-016: the clip player's tick, the local at ebp - CombatClipTick, which the clip sets
+    // to 0 at CombatClipTickSet; the screen shows the passes up to tick local - 1.
+    public const uint CombatClipTickSet = 0x00430C2F;
+    public const uint CombatClipTick = 0x20;
 
-    // elapsed_turns: 0 through the first turn, up by one after each resolution.
+    // elapsed_turns (FND-STATE-007): 0 through the first turn, up by one after each resolution.
     public const uint ElapsedTurns = 0x0049CA68;
 
     // FND-AWARDS-001: the endgame's row painter, which reads the awards the builder has given.
@@ -136,6 +145,9 @@ internal static class OriginalAddresses
 
     // FND-OBJECTIVE-002: the elimination card of a local human, which blocks until its Done.
     public const uint EliminationCard = 0x0042C3F5;
+    // FND-OBJECTIVE-002: the card's Done, from (428, 377) up to but not including (528, 425).
+    public const int CardDoneX = 428 + 50;
+    public const int CardDoneY = 377 + 24;
 
     // FND-AWARDS-005: the renderer draws each listed player's name with fn_00413FD5, whose third
     // argument is the name at 0x004A2589 + 12 * player: the splash's at 0x0042D1A4, the ranked rows'
@@ -147,7 +159,7 @@ internal static class OriginalAddresses
     public const uint PlayerNames = 0x004A2589;
     public const int PlayerNameStride = 12;
 
-    // match_over: set by the end-of-turn evaluation when the match is finished.
+    // match_over (FND-STATE-007): set by the end-of-turn evaluation when the match is finished.
     public const uint MatchOver = 0x004ABBD4;
 
     // SCR-UI-003: the Done control, (500, 282) with size 100 by 48.
@@ -165,6 +177,8 @@ internal static class OriginalAddresses
     // and site definition, element player * 22 + definition, at 0x004A24E8 (FND-SEARCH-001).
     public const uint CityRedraw = 0x004123CC;
     public const uint SiteMarker = 0x00412AC4;
+    public const uint SearchFilters = 0x004A24E8;
+    public const int SiteDefinitionCount = 22;
 
     // FND-UI-024, EXP-UI-004: the three copies of the gang-status marker function fn_00412BF7, and
     // the sector whose cell it saved under the last incoming mark.
@@ -172,8 +186,6 @@ internal static class OriginalAddresses
     public const uint GangMarkerRestore = 0x00412EB5;
     public const uint GangMarkerIncoming = 0x00412FF8;
     public const uint GangMarkerSavedSector = 0x004906A4;
-    public const uint SearchFilters = 0x004A24E8;
-    public const int SiteDefinitionCount = 22;
 
     // FND-SEARCH-002: fn_00448E32, the Search panel's handler, which runs while the panel is open.
     public const uint SearchPanel = 0x00448E32;
@@ -233,7 +245,7 @@ internal static class OriginalAddresses
     public const uint PopupMenuTracked = 0x0042571B;
     public const int PopupMenuTrackArguments = 7;
 
-    // FND-UI-015, FND-UI-018, FND-STATE-008: the view byte, 1 while the city is shown and 0 in the
+    // FND-UI-015, FND-UI-018, FND-STATE-012: the view byte, 1 while the city is shown and 0 in the
     // sector view, the player whose gangs the sector view lists, and its six card slots, a roster
     // slot or -1 each.
     public const uint CityViewShown = 0x00487B88;
@@ -279,6 +291,13 @@ internal static class OriginalAddresses
     public const uint SelectionFrameHeld = 0x004854C8;
     public const uint PanelHoldsSelectionFrame = 0x004196E4;
 
+    // FND-UI-047: the calls of fn_004328F8(0) by which each panel loop that holds a face through
+    // the held-button helper takes a tick of timer slot 0 for its animation: Item Information,
+    // Last Turn Events, Sell, Give, gang information, Comlink Send, Detailed Combat and the
+    // idle-gang warning.
+    public static readonly uint[] PanelSlotZeroClears =
+        [0x0044C34D, 0x0044FC61, 0x004451C7, 0x0044764D, 0x0044B415, 0x0045FD63, 0x00431100, 0x00448C6B];
+
     // FND-UI-052, FND-UI-053: where Item Information, Sell and Give set their frame local to 0,
     // the local's offset below ebp, and where each handler returns. FND-UI-054: the idle gang
     // warning's countdown of ticks, whose phase also needs its shown flag; ShownLocal is 0 for
@@ -290,6 +309,7 @@ internal static class OriginalAddresses
         (0x00445A63, 0x2C, 0x00447ADA, 0),
         (0x00448730, 0x2C, 0x00448E30, 0xC),
     ];
+    // cash, one INT32 per player (FND-STATE-007).
     public const uint Cash = 0x004A25E8;
 
     // FND-OPTIONS-001: Slide Panels, read by the panel helpers that slide a panel in and out.
@@ -318,6 +338,7 @@ internal static class OriginalAddresses
     public const uint ComlinkSelected = 0x00498114;
     // FND-COMLINK-010: set while the Send panel's caret cell is drawn plain.
     public const uint ComlinkCaretPlain = 0x00498110;
+    // active_player (FND-STATE-012).
     public const uint ActivePlayer = 0x004ABC84;
     // FND-STATE-004: player_active, one byte per player slot.
     public const uint PlayerActive = 0x004ABBE0;
@@ -337,10 +358,11 @@ internal static class OriginalAddresses
     public static readonly uint[] ExitQuitStores = [0x00470586, 0x004705A8, 0x004705FB];
     public const uint ExitQuitStoreLength = 7;
 
-    // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-003: the Send handler
+    // FND-COMLINK-002: the View handler fn_0045D61A; FND-COMLINK-011: the Send handler
     // fn_0045EAB1; FND-COMLINK-004: the helper fn_0045E04D(player, count) that marks and draws one
     // message; FND-COMLINK-006: fn_00460391(player), which drops the leading read messages when the
-    // player's planning ends. FND-COMLINK-007 gives the ranges of all four.
+    // player's planning ends. FND-COMLINK-007 gives the ranges of all four, and FND-EXE-004 the
+    // last byte of fn_0045E04D.
     public const uint ComlinkView = 0x0045D61A;
     public const uint ComlinkSend = 0x0045EAB1;
     public const uint ComlinkShow = 0x0045E04D;
@@ -354,7 +376,7 @@ internal static class OriginalAddresses
     public const int ComlinkSendX = 552 + 24;
     public const int ComlinkSendY = 159 + 7;
 
-    // FND-COMLINK-002, FND-COMLINK-003, FND-COMLINK-007: the panels' controls on the screen, the
+    // FND-COMLINK-002, FND-COMLINK-011, FND-COMLINK-007: the panels' controls on the screen, the
     // panel at (104, 124). View: Previous (135, 157, 26, 23), Next (163, 157, 26, 23) and Dismiss
     // (137, 293, 49, 22). Send: the card of slot p at (202 + 121 * (p / 3), 144 + 34 * (p % 3)),
     // 100 by 32, Cancel (137, 261, 49, 22) and Send (137, 293, 49, 22).
@@ -396,7 +418,7 @@ internal static class OriginalAddresses
 
     // FND-UI-064: in the window procedure's WM_KEYDOWN branch, the instruction after the call of
     // GetAsyncKeyState(VK_SHIFT), and the jump both translations take once the event is stored.
-    // FND-STATE-008: the input event record, type then the character and the key.
+    // FND-STATE-012: the input event record, type then the character and the key.
     public const uint ShiftTested = 0x0045CA62;
     public const uint KeyEventStored = 0x0045CC35;
     public const uint InputEvent = 0x00498360;

@@ -15,7 +15,6 @@ Entries by area.
 | [FND-PLATFORM-005](../../findings/FND-PLATFORM-005.md) | Preferences live under the Stick Man Games registry key, and an App Paths key locates the installation | recorded |
 | [FND-PLATFORM-006](../../findings/FND-PLATFORM-006.md) | Sound, CD music, timers and Smacker video come from WINMM and smackw32.dll | recorded |
 | [FND-PLATFORM-007](../../findings/FND-PLATFORM-007.md) | The palette loader fills entries 10 to 245 of a 256-entry palette from a CLT file | recorded |
-| [FND-PLATFORM-008](../../findings/FND-PLATFORM-008.md) | Image copies are opaque except for a pattern mask and an exact-white colour key used by two images | superseded |
 | [FND-PLATFORM-009](../../findings/FND-PLATFORM-009.md) | The program entry allows one instance, picks the image set, sets up the display, sound and menus, runs the title loop, and undoes it all on the way out | recorded |
 | [FND-PLATFORM-010](../../findings/FND-PLATFORM-010.md) | Data files are named by the App Paths install directory and length-prefixed names, and four file slots open them with no message on failure | recorded |
 | [FND-PLATFORM-011](../../findings/FND-PLATFORM-011.md) | At 8 bits the palette comes from data/CLT00002, read as red, green, blue, and PX08 pictures are mapped to it through their own colour tables | recorded |

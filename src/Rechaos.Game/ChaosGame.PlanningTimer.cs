@@ -130,15 +130,23 @@ public enum PlanningTimerSignal
 /// The bar is drawn when the clock starts and then on every sixth tick of the presentation clock,
 /// and it keeps the width of its last redraw in between. The redraw countdown runs on the ticks of
 /// untimed turns too and is not reset when a turn starts, so the first redraw after the start comes
-/// one to six ticks later. While a timed turn is paused (the game menu open) the countdown stops,
-/// and <see cref="Resume"/> drops the ticks that passed. Each redraw plays the warning its
-/// remaining time calls for.
+/// one to six ticks later. Each redraw plays the warning its remaining time calls for.
+/// </para>
+/// <para>
+/// <see cref="Pause"/> and <see cref="Resume"/> bracket the game menu, which stands in for the
+/// original's menu bar (DEV-UI-011). The menu bar's modal loop keeps the event pump from running,
+/// so the countdown stops, and the flag of the presentation timer keeps one tick for the first pass
+/// after it closes (EXP-TURN-102). The elapsed time is read from the system clock and keeps running,
+/// so a turn can run out in the menu and ends on the first pass of the planning loop after it
+/// closes. With <see cref="StopsInGameMenu"/> set the elapsed time stops as well (DEV-TIMER-002).
 /// </para>
 /// <para>
 /// The clock only reports expiry; the caller decides when to test it, because the original tests
 /// it only on a pass of the planning loop. Until then a timed turn past its limit keeps redrawing
 /// the empty bar. <see cref="Stop"/> leaves the bar as last drawn, and <see cref="ShowsBar"/> stays
-/// set until the next start or <see cref="Clear"/> (RULE-TIMER-002).
+/// set until the next planning entry, the next start or <see cref="Clear"/>; the original redraws
+/// the console at each planning entry, which puts back the full bar of the console's art
+/// (RULE-TIMER-002, EXP-UI-035).
 /// </para>
 /// </remarks>
 public sealed class PlanningTimer
@@ -147,12 +155,43 @@ public sealed class PlanningTimer
     private TimeSpan _start;
     private int _redrawCountdown = PlanningTimerPolicy.RefreshCountdown;
     private long? _lastTick;
+    private bool _paused;
     private TimeSpan? _pausedElapsed;
 
     public bool IsActive { get; private set; }
 
+    /// <summary>
+    /// DEV-TIMER-002: whether the elapsed time of a timed turn stops while the game menu is open.
+    /// Off, it runs on as the original's does.
+    /// </summary>
+    public bool StopsInGameMenu { get; set; }
+
+    /// <summary>
+    /// Switches <see cref="StopsInGameMenu"/> at <paramref name="now"/>. When the game menu holds
+    /// the clock, as it does while Options is open from it, the change takes effect at once: on,
+    /// the elapsed time stops here; off, it runs on from here.
+    /// </summary>
+    public void SetStopsInGameMenu(bool value, TimeSpan now)
+    {
+        if (StopsInGameMenu == value) return;
+        StopsInGameMenu = value;
+        if (!_paused || !IsActive) return;
+        if (value)
+        {
+            _pausedElapsed = now - _start;
+        }
+        else if (_pausedElapsed is { } elapsed)
+        {
+            _start = now - elapsed;
+            _pausedElapsed = null;
+        }
+    }
+
     /// <summary>The width the bar was last drawn with, 0 to 60.</summary>
     public int VisibleBarWidth { get; private set; } = PlanningTimerPolicy.BarWidth;
+
+    /// <summary>The presentation ticks left until the next redraw, 1 to 6.</summary>
+    internal int RedrawCountdown => _redrawCountdown;
 
     /// <summary>Whether a timed turn has drawn the bar since the last untimed start or clear.</summary>
     public bool ShowsBar { get; private set; }
@@ -181,7 +220,10 @@ public sealed class PlanningTimer
         _pausedElapsed = null;
     }
 
-    /// <summary>Ends the timed turn and forgets the bar, for leaving the match.</summary>
+    /// <summary>
+    /// Ends the timed turn and forgets the bar, for a planning entry, which redraws the console,
+    /// and for leaving the match (RULE-TIMER-002).
+    /// </summary>
     public void Clear()
     {
         Stop();
@@ -191,29 +233,39 @@ public sealed class PlanningTimer
 
     /// <summary>
     /// RULE-TIMER-002: whether the running turn's elapsed whole milliseconds exceed its limit. A
-    /// paused turn has not expired.
+    /// turn whose elapsed time stopped in the game menu (DEV-TIMER-002) has not expired.
     /// </summary>
     public bool HasExpired(TimeSpan now) =>
         IsActive && _pausedElapsed is null && PlanningTimerPolicy.Expired(_limit, Elapsed(now));
 
+    /// <summary>
+    /// The game menu opened: the redraw countdown stops, timed or not, and with
+    /// <see cref="StopsInGameMenu"/> the elapsed time of a timed turn stops too.
+    /// </summary>
     public void Pause(TimeSpan now)
     {
-        if (!IsActive || _pausedElapsed is not null) return;
-        _pausedElapsed = now - _start;
+        if (_paused) return;
+        _paused = true;
+        if (IsActive && StopsInGameMenu) _pausedElapsed = now - _start;
     }
 
     public void Resume(TimeSpan now) => Resume(now, PresentationClock.Ticks(now));
 
     /// <summary>
-    /// Resumes a paused turn, dropping the presentation ticks up to <paramref name="tick"/>, the
-    /// count the caller advances the clock with.
+    /// The game menu closed at presentation tick <paramref name="tick"/>, the count the caller
+    /// advances the clock with. Of the ticks that fell while it was open the countdown takes one,
+    /// the tick the original's timer flag kept (RULE-TIMER-003, EXP-TURN-102).
     /// </summary>
     public void Resume(TimeSpan now, long tick)
     {
-        if (!IsActive || _pausedElapsed is not { } elapsed) return;
-        _start = now - elapsed;
-        _pausedElapsed = null;
-        _lastTick = tick;
+        if (!_paused) return;
+        _paused = false;
+        if (_lastTick is { } last && tick > last) _lastTick = tick - 1;
+        if (_pausedElapsed is { } elapsed)
+        {
+            _start = now - elapsed;
+            _pausedElapsed = null;
+        }
     }
 
     public PlanningTimerSignal Advance(TimeSpan now) => Advance(now, PresentationClock.Ticks(now));
@@ -227,7 +279,7 @@ public sealed class PlanningTimer
     /// </summary>
     internal PlanningTimerSignal Advance(TimeSpan now, long tick)
     {
-        if (_pausedElapsed is not null) return PlanningTimerSignal.None;
+        if (_paused) return PlanningTimerSignal.None;
         var signal = PlanningTimerSignal.None;
         var pending = _lastTick is { } last ? tick - last : 0;
         _lastTick = tick;
@@ -411,11 +463,12 @@ public sealed partial class ChaosGame
     /// without calling the event pump, so the steps the pump drives stop (<see cref="EventPumpClock"/>).
     /// They are the Hire handler's two loops for an offer and its reject cross (FND-HIRE-008), the
     /// individual command handler's loops for a gang card's portrait (FND-UI-044), the console tile
-    /// helper (FND-UI-032), the Last Turn Events page arrows (FND-EVENT-005) and the held-button
+    /// helper (FND-UI-032), the Last Turn Events page arrows (FND-EVENT-007) and the held-button
     /// helper behind the faces of the panels, the Comlink Send panel, the attack picker, the
-    /// idle-gang warning, Detailed Combat's Exit face and the sector view's back control
-    /// (FND-UI-046, FND-UI-047). Each loop runs until the button that pressed it comes up: the left
-    /// one, or the right one for a console tile pressed with it (FND-UI-063).
+    /// idle-gang warning, the Search panel's ALL, NONE and Done, Detailed Combat's Exit face and
+    /// the sector view's back control (FND-UI-046, FND-UI-047). Each loop runs until the button
+    /// that pressed it comes up: the left one, or the right one for a console tile pressed with it
+    /// (FND-UI-063).
     /// </summary>
     private bool HoldsPointerOutsideEventPump() =>
         HoldsCityPointer()
