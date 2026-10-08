@@ -133,14 +133,14 @@ internal sealed partial class NewGameSession
             {
                 var quiet = DateTime.UtcNow - _process.LastBreakpointUtc;
                 return _eliminationCardOpen
-                    || (_panelsOpen > 0 && quiet > TimeSpan.FromSeconds(0.5))
-                    || (_planningLoopReached && _panelsOpen == 0 && quiet > TimeSpan.FromSeconds(0.5))
-                    || (_process.Read(OriginalAddresses.MatchOver, 1)[0] != 0 && _panelsOpen == 0
+                    || (PanelsOpen > 0 && quiet > TimeSpan.FromSeconds(0.5))
+                    || (_planningLoopReached && PanelsOpen == 0 && quiet > TimeSpan.FromSeconds(0.5))
+                    || (_process.Read(OriginalAddresses.MatchOver, 1)[0] != 0 && PanelsOpen == 0
                         && quiet > TimeSpan.FromSeconds(3));
             }, timeout);
             if (!waited) return $"Player {player}'s planning never came after Ready.";
             if (_eliminationCardOpen) return null;
-            if (_panelsOpen > 0)
+            if (PanelsOpen > 0)
             {
                 if (!ClosePanels(window)) return $"A planning entry panel of player {player} never closed.";
                 continue;
@@ -267,7 +267,7 @@ internal sealed partial class NewGameSession
             }, deadline - DateTime.UtcNow);
             if (!next)
                 return $"Turn {turn} never reached the next planning phase (match_over "
-                    + $"{_process.Read(OriginalAddresses.MatchOver, 1)[0]}, {_panelsOpen} panel(s) open, elapsed_turns "
+                    + $"{_process.Read(OriginalAddresses.MatchOver, 1)[0]}, {PanelsOpen} panel(s) open, elapsed_turns "
                     + $"{_process.ReadInt32(OriginalAddresses.ElapsedTurns)}).";
             if (_awardsReached || _eliminationCardReached) return null;
             if (_eliminationCardOpen)

@@ -336,6 +336,8 @@ public sealed record ItemTarget(
 [JsonDerivedType(typeof(QueueHireOp), "queueHire")]
 [JsonDerivedType(typeof(SnubHireOfferOp), "snubHireOffer")]
 [JsonDerivedType(typeof(DismissNotificationOp), "dismissNotification")]
+[JsonDerivedType(typeof(SendComlinkMessageOp), "sendComlinkMessage")]
+[JsonDerivedType(typeof(MarkComlinkReadOp), "markComlinkRead")]
 public abstract record OrderOp(
     [property: JsonPropertyName("player")] int Player,
     [property: JsonIgnore] string Op
@@ -371,6 +373,17 @@ public sealed record SnubHireOfferOp(
 public sealed record DismissNotificationOp(
     int Player
 ) : OrderOp(Player, "dismissNotification");
+
+public sealed record SendComlinkMessageOp(
+    int Player,
+    [property: JsonPropertyName("recipients")] IReadOnlyList<int> Recipients,
+    [property: JsonPropertyName("text")] string Text
+) : OrderOp(Player, "sendComlinkMessage");
+
+public sealed record MarkComlinkReadOp(
+    int Player,
+    [property: JsonPropertyName("sequence")] int Sequence
+) : OrderOp(Player, "markComlinkRead");
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum BugReportCodec

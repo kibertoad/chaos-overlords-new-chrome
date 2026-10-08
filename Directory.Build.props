@@ -14,6 +14,13 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);**/bin/**;**/obj/**</DefaultItemExcludes>
   </PropertyGroup>
 
+  <!-- The toolkit releases all of its RefurbishedDinosaurs packages under one version. Every
+       project references them with this property, so Core and Game cannot drift onto different
+       versions of the same package. -->
+  <PropertyGroup>
+    <RefurbishedDinosaursVersion>11.0.0</RefurbishedDinosaursVersion>
+  </PropertyGroup>
+
   <!-- Validation creates this per-run root outside the checkout. Keeping every project's
        intermediates and binaries there prevents stale or access-controlled local obj files
        from participating in the build. -->

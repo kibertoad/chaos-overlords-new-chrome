@@ -13,7 +13,7 @@ internal sealed partial class NewGameSession
         IntPtr window, string file)
     {
         const int width = CaptureFixture.Width, height = CaptureFixture.Height;
-        if (!ClientAreaHoldsDrawingArea(window)) return null;
+        if (!ClientAreaHoldsDrawingArea(window) || WhiteKeyMissing()) return null;
         // FND-UI-038: the counter increments after drawing. Require two agreeing window copies
         // and a stable counter; a repainting capture cannot use this frame relationship. The
         // pump's counter, which picks the selected-sector frame and the lights' blink phase
@@ -42,8 +42,25 @@ internal sealed partial class NewGameSession
         return null;
     }
 
+    // FND-PLATFORM-015: when --white-key found other bytes than the 16-bit key, the patch was
+    // skipped and the keyed copies keep that key, but the fixture still lists the key_colour input.
+    // Such a run takes no captures, so none is compared as white-keyed.
+    private bool WhiteKeyMissing()
+    {
+        if (!settings.WhiteKey
+            || _process.ReadInt32(OriginalAddresses.SixteenBitKeyImmediate) == OriginalAddresses.ThirtyTwoBitWhite)
+            return false;
+        if (!_whiteKeyMissingNoted)
+            _notes.Add("Captures refused: the --white-key patch was skipped, so the keyed copies keep the 16-bit key (FND-PLATFORM-015).");
+        _whiteKeyMissingNoted = true;
+        return true;
+    }
+
+    private bool _whiteKeyMissingNoted;
+
     private bool CaptureDrawingArea(IntPtr window, string file, int width, int height)
     {
+        if (WhiteKeyMissing()) return false;
         byte[]? firstCopy = null;
         var copiesAgree = false;
         foreach (var name in new[] { file + ".bmp", file + "-repeat.bmp" })
@@ -69,7 +86,7 @@ internal sealed partial class NewGameSession
                     _notes.Add($"Capture depths: original records {gameDepth}; probe window DC reports {hostDepth}.");
                     if (gameDepth != hostDepth)
                         _notes.Add(settings.WhiteKey
-                            ? "Capture depth mismatch: --white-key passed RGB(255,255,255) for the 16-bit key (FND-PLATFORM-014)."
+                            ? "Capture depth mismatch: --white-key made RGB(255,255,255) the 16-bit key (FND-PLATFORM-014, FND-PLATFORM-015)."
                             : "Capture depth mismatch: evaluate colour-key conversion before accepting presentation evidence.");
                 }
                 memory = Native.CreateCompatibleDC(screen);

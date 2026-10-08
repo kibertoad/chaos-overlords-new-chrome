@@ -62,7 +62,7 @@ Attack target can therefore point at gangs the cards do not show.
 ## Alternatives
 
 - The site meter is read as drawn only when the sector's owner is the active
-  player; the branch that decides it has not been given an address.
+  player; FND-UI-070 gives the branch that decides it its address.
 - What a Force above 10, or progress above the Resistance, draws has not been
   read.
 

@@ -51,11 +51,15 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// What one draw of the sector view reads more than once, taken once: the cards it lists, the
-    /// player they belong to, whom the Overlord bar's marker follows (FND-UI-018:
+    /// player they belong to, which the compositor makes the viewed player (FND-UI-018:
     /// <c>0x00487B8C</c>), and for each seat whether the viewer sees one of its gangs here.
     /// </summary>
     private readonly record struct SectorViewFrame(
-        IReadOnlyList<MatchGangState> Cards, PlayerId Viewed, IReadOnlyList<bool> SeatsSeen);
+        IReadOnlyList<MatchGangState> Cards, PlayerId Viewed, IReadOnlyList<bool> SeatsSeen)
+    {
+        /// <summary>The seat the Overlord bar's marker turns beside, if any (FND-UI-017).</summary>
+        public PlayerId? Marked => SectorOpponentGangs.MarkedSeat(Viewed, SeatsSeen);
+    }
 
     private SectorViewFrame ComposeSectorView(MatchState state, PlayerId viewer)
     {
@@ -292,8 +296,8 @@ public sealed partial class ChaosGame
             && _hoverPoint is { } backHover && SectorDetailLayout.Back.Contains(backHover))
             DrawPressedSectorBack(batch);
         DrawSectorNeighborhood(batch, pixel, font, state);
-        // FND-UI-018: each site is its portrait under the keyed frame, with the progress meter
-        // when the sector's owner is the active player.
+        // FND-UI-018, FND-UI-070: each site is its portrait under the keyed frame, with the progress
+        // meter only when the sector's owner is the active player, whoever the viewed player is.
         foreach (var site in sector.Sites)
         {
             var definition = state.Definitions.Site(site.DefinitionId);

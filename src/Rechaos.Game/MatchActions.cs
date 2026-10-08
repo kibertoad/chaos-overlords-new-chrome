@@ -132,14 +132,11 @@ internal sealed class MatchActions
             : _turn.DismissNotification();
 
     /// <summary>
-    /// Sends a Comlink message, in a hot-seat match.
+    /// Sends a Comlink message.
     /// </summary>
     /// <remarks>
-    /// Online it is refused. A message lands in another player's inbox, and an inbox is hashed
-    /// state, so a send every client did not apply at the same point in the sealed log is a desync
-    /// rather than a lost message. Carrying one needs an order kind on the wire the server relays
-    /// with the rest of the turn; until there is one, the door stays shut where it cannot be
-    /// honoured.
+    /// Online the message goes into the turn's order document and reaches the real inboxes when the
+    /// turn seals, because an inbox is hashed state every client must change at the same point.
     /// </remarks>
     internal ComlinkSendResult SendComlinkMessage(
         PlayerId sender,
@@ -147,23 +144,19 @@ internal sealed class MatchActions
         string message) =>
         _turn is null
             ? _replay.SendComlinkMessage(sender, recipients, message)
-            : new ComlinkSendResult(
-                false,
-                ComlinkValidationCode.WrongPhase,
-                [],
-                "Comlink unavailable online.");
+            : _turn.SendComlinkMessage(recipients, message);
 
     /// <summary>
-    /// Marks one displayed Comlink message read, in a hot-seat match.
+    /// Marks one displayed Comlink message read.
     /// </summary>
     /// <remarks>
-    /// Online it does nothing, for the same reason: the read mark is hashed, so one client clearing
-    /// its own badge would put it on a different state from every other. Nothing online can fill an
-    /// inbox yet, so there is nothing to mark.
+    /// Online the copy the player plans on is marked at once, so the panel and the alert behave as
+    /// in hot-seat play, and the mark goes into the order document for the seal.
     /// </remarks>
     internal void MarkComlinkRead(PlayerId player, long sequence)
     {
         if (_turn is null) _replay.MarkComlinkRead(player, sequence);
+        else _turn.MarkComlinkRead(sequence);
     }
 
     /// <summary>

@@ -31,8 +31,8 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // RULE-SETUP-008, RULE-EVENT-005: the probe records each call of the Combat Results and Last
-    // Turn Events panels at the human's planning entries, and whether the panel stayed open until
-    // Exit was pressed; Combat Results returns at once when no fight qualifies. At each planning
+    // Turn Events panels at the human's planning entries, and whether the call showed its panel
+    // (FND-UI-061); Combat Results returns at once when no fight qualifies. At each planning
     // entry the rebuild shows Combat Results when the viewer has combat results and then Last Turn
     // Events when the viewer has reports, or the city when neither applies, and the panels it
     // shows match the original's at that entry, in the same order.
@@ -70,12 +70,19 @@ public sealed partial class OriginalNewGameExperimentTests
             Assert.True(combatCalled[donePresses], $"planning entry {donePresses + 1}: the recording holds no call of Combat Results");
             lastEntryFailure?.Throw();
             // The run stops at the last entry while its first panel is open, so only that panel is seen.
-            if (expected[donePresses].Count > 0) shown[donePresses] = shown[donePresses].Take(1).ToList();
+            if (expected[donePresses].Count > 0 && shown[donePresses] is { } last)
+                shown[donePresses] = last.Take(1).ToList();
             compared++;
         }
+        // An entry whose match is over the save size limit cannot be put on screen as a copy
+        // (EXP-TURN-108's last turns, #570) and is left out; the entries before it are compared.
         for (var entry = 0; entry < compared; entry++)
-            Assert.True(expected[entry].SequenceEqual(shown[entry]),
-                $"planning entry {entry + 1}: the original showed [{string.Join(", ", expected[entry])}], the rebuild [{string.Join(", ", shown[entry])}]");
+        {
+            if (shown[entry] is not { } panels) continue;
+            Assert.True(expected[entry].SequenceEqual(panels),
+                $"planning entry {entry + 1}: the original showed [{string.Join(", ", expected[entry])}], the rebuild [{string.Join(", ", panels)}]");
+        }
+        Assert.Contains(shown.Take(compared), entry => entry is not null);
     }
 
     // The panels the rebuild shows at each planning entry of a run, the Done presses its replay
@@ -83,14 +90,14 @@ public sealed partial class OriginalNewGameExperimentTests
     // is played again with its own game, so the rows replay theirs ahead on a few workers, in CI
     // the longest matches first.
     private sealed record PanelReplay(
-        List<string>[] Shown, int DonePresses, bool EndsAtPlanningEntry, ExceptionDispatchInfo? LastEntryFailure);
+        List<string>?[] Shown, int DonePresses, bool EndsAtPlanningEntry, ExceptionDispatchInfo? LastEntryFailure);
 
     private static readonly RowPrefetch<(string Experiment, int Run), PanelReplay> PanelReplays =
         new(PanelRunKeys, key => ReplayPanels(Run(key.Experiment, key.Run)), ReplayCost);
 
     private static PanelReplay ReplayPanels(RecordedRun recorded)
     {
-        var shown = new List<string>[recorded.DoneCount + 1];
+        var shown = new List<string>?[recorded.DoneCount + 1];
         using var game = new HeadlessGame(HeadlessGame.DefaultPreferences with { DetailedCombat = false });
         // The panels are read at each planning entry, before any of that turn's recorded orders,
         // hires or planning writes reach the state, as the original showed them.
@@ -118,12 +125,22 @@ public sealed partial class OriginalNewGameExperimentTests
     /// <summary>
     /// The panels the rebuild shows at <paramref name="match"/>'s planning entry, in order: a copy of
     /// the match is put on screen in <paramref name="game"/> as a hot-seat planning entry, and each
-    /// panel it opens is closed with Enter until the city shows.
+    /// panel it opens is closed with Enter until the city shows. Null when the match is over the
+    /// save size limit, which the copy and the game's own replay recorder both refuse.
     /// </summary>
-    private static List<string> PlanningEntryPanels(HeadlessGame game, MatchState match, PlayerId human)
+    private static List<string>? PlanningEntryPanels(HeadlessGame game, MatchState match, PlayerId human)
     {
         using var copy = new MemoryStream();
-        NativeSaveSerializer.Save(copy, match);
+        try
+        {
+            NativeSaveSerializer.Save(copy, match);
+        }
+        catch (InvalidDataException)
+        {
+            // NativeSaveSerializer.Save refuses a save over its size limit with this exception and
+            // has no other reason to throw it.
+            return null;
+        }
         copy.Position = 0;
         game.Game.EnterPlanningEntry(NativeSaveSerializer.Load(copy, match.Definitions));
         Assert.Equal(human, game.Game.Match!.Coordinator.ActivePlayer);

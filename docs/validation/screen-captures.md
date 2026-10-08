@@ -33,10 +33,10 @@ out, which is where the solid white areas of Windows 11 come from
 writes `RGB(255,255,255)`, the white a 32-bit surface holds, over that operand
 once, before the game runs. A run with the option stops no more often than one
 without it, so the timer records of a run with `--time-limit` are not moved.
-When the operand does not hold the expected bytes, the write is skipped and the
-run's notes say so. The fixture lists the option as the setup input
-`key_colour RGB(255,255,255)`. The rolls and the state of a run do not depend
-on it.
+When the operand does not hold the expected bytes, the write is skipped, the
+run's notes say so, and the run takes no captures. The fixture lists the
+option as the setup input `key_colour RGB(255,255,255)`. The rolls and the
+state of a run do not depend on it.
 
 `extract --screens SCR-UI-003,SCR-HIRE-002` adds a `capture` object to each
 run whose two copies agree:
@@ -117,6 +117,16 @@ point `(x, y)` as `open` does (FND-UI-020), `strip:x:y:0` presses a point,
 `card` a sector card's point, `back` the detailed sector screen's back
 control and `exit` the Exit of the panel the planning entry left open.
 EXP-UI-006 to EXP-UI-014 are taken this way.
+
+Animated parts of a screen that no state chooses, the Overlord bar's marker
+(FND-UI-038) and the selected sector's outline (FND-UI-017), are compared frame
+by frame with shots alone: `shot:SCR-UI-003` and `wait:37` in turn, with
+nothing pressed, let both counters move on between copies, and each shot keeps
+the marker frame and the pump's counter it shows, at which the rebuild draws
+its frame. Thirty shots at the first planning entry show all twelve marker
+frames and both outline frames (EXP-UI-031). Exact-white pixels need no
+special handling in such a comparison once `--white-key` is given
+(EXP-UI-003).
 
 A shot can also show a control while a button holds it. `down:x:y` presses the
 left button at `(x, y)` and keeps it down, `move:x:y` moves the pointer there

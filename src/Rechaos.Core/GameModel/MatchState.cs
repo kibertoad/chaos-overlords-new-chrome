@@ -380,7 +380,7 @@ public sealed partial class MatchState
             _nextNotificationSequences[player.Id] = next;
             var inbox = restore.ComlinkInboxes[player.Id];
             if (inbox.Messages.Any(message => message.Turn > restore.Turn
-                    || FindPlayer(message.Sender)?.Setup.Controller != PlayerController.Human))
+                    || !CouldHaveSentComlink(message.Sender)))
                 throw new ArgumentException("Restored Comlink senders are invalid.", nameof(restore));
             _comlinkInboxes[player.Id] = ComlinkInbox.Restore(
                 inbox.Messages, inbox.NextSequence, inbox.ReadSequences,
@@ -410,6 +410,7 @@ public sealed partial class MatchState
             EffectiveStatisticsCalculator.ForGang(this, target).Stealth);
     }
     public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
+    public int NotificationCountFor(PlayerId player) => GetNotificationQueue(player).Count;
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
         GetNotificationQueue(player).TryDequeue(out notification);
 
