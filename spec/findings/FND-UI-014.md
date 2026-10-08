@@ -10,14 +10,14 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0044E6ED..0x0044F2FB
+    address: 0x0044E6ED..0x0044F2FC
 tool: Ghidra 12.1.3
 environment: null
 ---
 
 ## Observation
 
-`fn_0044E6ED` occupies `0x0044E6ED..0x0044F2FB` (3,045 bytes, FND-EXE-004). Its
+`fn_0044E6ED` occupies `0x0044E6ED..0x0044F2FC` (3,045 bytes, FND-EXE-004). Its
 only caller is the main-console dispatcher `fn_004718EE` at `0x00471CAB`. It
 takes a player slot and a sector.
 

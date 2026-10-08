@@ -343,7 +343,7 @@ public sealed class AiFamilyTwoTurnPlannerTests
                 income: id == 0 ? sourceIncome : 0))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            scenario, GameDuration.SixMonths, 41, setups, mentality), players, sectors);
+            scenario, GameDuration.SixMonths, 41, setups, MatchDeviations.Original, mentality), players, sectors);
     }
 
     private static MatchState CreateSparseThreePlayerMatch(
@@ -381,7 +381,7 @@ public sealed class AiFamilyTwoTurnPlannerTests
                 income: id == 0 ? 100 : 0))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.SixMonths, 41, setups, mentality),
+            ScenarioId.Power, GameDuration.SixMonths, 41, setups, MatchDeviations.Original, mentality),
             players, sectors);
     }
 }

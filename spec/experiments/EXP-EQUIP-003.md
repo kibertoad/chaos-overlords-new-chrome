@@ -39,8 +39,8 @@ The human has one gang, of Tech Level 7, and 520 cash. Its four lists hold 9,
 
 ## Results
 
-`TheEquipListOffersTheOriginalsItems` compares the lists as in
-EXP-EQUIP-001, and they are the same.
+A test of the rebuild compares the lists as in EXP-EQUIP-001, and they are the
+same.
 
 Every item of the four categories is researched here. The rebuild's item
 table rules out two to four items per category, all by Tech Level, and each

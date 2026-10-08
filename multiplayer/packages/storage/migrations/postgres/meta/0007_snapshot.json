@@ -1,5 +1,5 @@
 {
-  "id": "cc097a97-ada2-404d-8a16-df48e6d5b3aa",
+  "id": "26b7d700-72fa-466e-9e44-f54bc03d4b15",
   "prevId": "57a5f971-553d-4d2d-99f7-8a77f192ecfe",
   "version": "7",
   "dialect": "postgresql",
@@ -405,6 +405,65 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.rate_limit_windows": {
+      "name": "rate_limit_windows",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "window_start": {
+          "name": "window_start",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reset_at": {
+          "name": "reset_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "count": {
+          "name": "count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "allowed": {
+          "name": "allowed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "rate_limit_windows_reset_idx": {
+          "name": "rate_limit_windows_reset_idx",
+          "columns": [
+            {
+              "expression": "reset_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -850,24 +909,6 @@
         "settled_at": {
           "name": "settled_at",
           "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resolved_hash": {
-          "name": "resolved_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resolved_finished": {
-          "name": "resolved_finished",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resolved_seq": {
-          "name": "resolved_seq",
-          "type": "integer",
           "primaryKey": false,
           "notNull": false
         }

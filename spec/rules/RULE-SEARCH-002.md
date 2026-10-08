@@ -4,7 +4,7 @@ title: The city shows a marker for each site the viewer controls and for each ot
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SEARCH-003, FND-SEARCH-001, FND-SEARCH-004, FND-SEARCH-006, FND-UI-036, FND-GANG-001, FND-EXE-004, EXP-TURN-045]
+evidence: [FND-SEARCH-003, FND-SEARCH-001, FND-SEARCH-004, FND-SEARCH-006, FND-UI-036, FND-GANG-001, FND-EXE-004, EXP-TURN-045, FND-COMLINK-006, FND-CONTROL-001, FND-PLATFORM-003, FND-STATE-012, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, FMT-STATE-004, FMT-DATA-001]

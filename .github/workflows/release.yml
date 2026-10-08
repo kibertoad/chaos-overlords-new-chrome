@@ -140,7 +140,7 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.commit }}
           persist-credentials: false
-          # Full history, so `check-spec.mjs` can find where this commit forked from main (or its
+          # Full history, so the documentation checker can find where this commit forked from main (or its
           # parent on main) and fail when a spec ID, area or deviation that existed there is gone.
           fetch-depth: 0
 
@@ -149,8 +149,17 @@ jobs:
         with:
           dotnet-version: 10.0.400
 
-      # `check-spec.mjs` (run by Invoke-Validation.ps1) compiles the `.ksy` definitions with it, and
-      # fails when CI is set and no compiler is found.
+      # Invoke-Validation.ps1 runs the documentation standard's checker (tools/check-documentation.mjs),
+      # which the root package.json pins and `pnpm install` at the root installs.
+      - name: Install the documentation checker
+        uses: $/.github/actions/install-documentation-checker
+        # No dependency cache, as in the other release jobs: a poisoned cache entry would be
+        # restored into the checker that gates the release (zizmor's cache-poisoning audit).
+        with:
+          cache: "false"
+
+      # The checker compiles the `.ksy` definitions with it, and fails when CI is set and no
+      # compiler is found.
       - name: Install the Kaitai Struct compiler
         id: kaitai
         uses: $/.github/actions/install-kaitai
@@ -439,9 +448,8 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # macOS installers are never signed. Apple signing needs a Developer ID Application identity for
-  # the bundle, a Developer ID Installer identity for the .pkg, and notarization; none of those are
-  # configured, and the packaging would have to change first (see docs/RELEASING.md).
+  # macOS installers are never signed, and there are no plans to sign them: Apple signing needs a
+  # Apple Developer membership, and we do not have Apple Developer membership (see docs/RELEASING.md).
   build-macos:
     name: Build macOS ${{ matrix.arch }} installer
     needs: [prepare, test]

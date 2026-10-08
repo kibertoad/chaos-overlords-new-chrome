@@ -9,9 +9,9 @@ import type { ResolverService } from '@chaos-overlords/resolver/cloudflare'
 import { createApp } from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import { drizzle } from 'drizzle-orm/d1'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildContainer, containerFor } from '../src/index'
-import { buildKernel, resolverFor, retentionPolicyFor } from '../src/kernel'
+import { buildKernel, HUB_PATHS, resolverFor, retentionPolicyFor, tellHub } from '../src/kernel'
 
 describe('D1', () => {
   defineStorageConformance({
@@ -187,6 +187,39 @@ describe('isolate state', () => {
     expect(containerFor(env).container.rateLimiters.anonymous).toBe(
       first.container.rateLimiters.anonymous,
     )
+  })
+})
+
+describe('calls into the match hub', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  /**
+   * The hub answering with an error status throws nothing, so without its own warning a hub that
+   * refuses every call would pass as one that took them.
+   */
+  it('warns when the hub answers with an error status', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await tellHub(env, { matchId: 'hub-refusal', path: '/no-such-route', body: {} })
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(String(warn.mock.calls[0]?.[0]))).toMatchObject({
+      level: 'warn',
+      msg: 'the match hub refused a call',
+      matchId: 'hub-refusal',
+      path: '/no-such-route',
+      status: 404,
+    })
+  })
+
+  it('stays quiet when the hub takes the call', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await tellHub(env, {
+      matchId: 'hub-accepts',
+      path: HUB_PATHS.disconnect,
+      body: { matchId: 'hub-accepts', playerId: 'nobody' },
+    })
+    expect(warn).not.toHaveBeenCalled()
   })
 })
 

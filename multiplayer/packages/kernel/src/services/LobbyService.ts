@@ -7,6 +7,7 @@ import {
   LIMITS,
   type MatchSettings,
   type MembershipView,
+  type PostChatMessageRequest,
   type TakeoverVoteRequest,
   type UpdatePlayerProfileRequest,
 } from '@chaos-overlords/contracts'
@@ -34,7 +35,7 @@ import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
 import { requireInProgress } from './guards'
 import { MatchQueryService, matchStartedEvent, toPlayerView } from './MatchQueryService'
-import { RateLimiter } from './RateLimiter'
+import { memoryRateLimiters, type RateLimiter } from './RateLimiter'
 import { FIRST_TURN, type TurnService } from './TurnService'
 
 const JOIN_CODE_LENGTH = LIMITS.joinCodeLength
@@ -74,6 +75,7 @@ const PASSWORD_ATTEMPTS_PER_CALLER = 10
  */
 const PASSWORD_FAILURES_PER_MATCH = 30
 const PASSWORD_ATTEMPT_WINDOW_MS = 60_000
+const CHAT_WINDOW_MS = 60_000
 
 export interface LobbyServiceOptions {
   /** Generates the player/match ids; defaults to `crypto.randomUUID`. */
@@ -96,6 +98,7 @@ export class LobbyService {
   private readonly passwordAttempts: RateLimiter
   private readonly passwordFailures: RateLimiter
   private readonly seatViewsFor: SeatViewsPolicy
+  private readonly chatMessages: RateLimiter
 
   constructor(
     private readonly deps: KernelDeps,
@@ -106,13 +109,18 @@ export class LobbyService {
     this.seatViewsFor = options.seatViewsFor ?? (async () => false)
     this.query = new MatchQueryService(deps.storage)
     this.newId = options.newId ?? (() => crypto.randomUUID())
-    this.passwordAttempts = new RateLimiter(deps.clock, {
+    const limiters = deps.rateLimits ?? memoryRateLimiters(deps.clock)
+    this.passwordAttempts = limiters('passwordAttempts', {
       limit: PASSWORD_ATTEMPTS_PER_CALLER,
       windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
     })
-    this.passwordFailures = new RateLimiter(deps.clock, {
+    this.passwordFailures = limiters('passwordFailures', {
       limit: PASSWORD_FAILURES_PER_MATCH,
       windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
+    })
+    this.chatMessages = limiters('chatMessages', {
+      limit: LIMITS.chatMessagesPerMinute,
+      windowMs: CHAT_WINDOW_MS,
     })
   }
 
@@ -141,14 +149,14 @@ export class LobbyService {
       throw new UnauthorizedError('This match needs a password', { reason: 'password_required' })
     }
     const callerKey = `${match.id}:${caller ?? 'unattributed'}`
-    const retry = this.passwordAttempts.take(callerKey)
+    const retry = await this.passwordAttempts.take(callerKey)
     if (retry !== null) throw this.tooManyPasswordAttempts(retry)
-    if (this.passwordAttempts.spent(callerKey) > 1) {
-      const underAttack = this.passwordFailures.peek(match.id)
+    if ((await this.passwordAttempts.spent(callerKey)) > 1) {
+      const underAttack = await this.passwordFailures.peek(match.id)
       if (underAttack !== null) throw this.tooManyPasswordAttempts(underAttack)
     }
     if (!(await verifyPassword(password, match.passwordHash))) {
-      this.passwordFailures.take(match.id)
+      await this.passwordFailures.take(match.id)
       throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
     }
   }
@@ -455,6 +463,41 @@ export class LobbyService {
     await this.publisher.publish(match.id, {
       type: 'lobby.playerUpdated',
       payload: { player: toPlayerView({ ...player, ...profile }, match.hostPlayerId) },
+    })
+  }
+
+  /**
+   * Post a chat message to the lobby, announced to every member as `lobby.chatMessage`.
+   *
+   * The log is the message's only store, so it is the log that is bounded: a lobby whose log has
+   * reached `LIMITS.lobbyChatLogEvents` takes no more chat. The per-player budget is in memory, like
+   * every other limiter here, and spares the log from one member's flood long before that. The
+   * length check and the publish are separate steps, so posts that arrive together can each pass
+   * the check and carry the log a few events past the cap; it bounds the log without being exact.
+   * The budget is spent before the length check so a flood never reaches storage. Refused
+   * once the match has started, because inside a match the original's Comlink is the channel
+   * between players and its rules say who may write to whom.
+   */
+  async postChat(principal: Principal, request: PostChatMessageRequest): Promise<void> {
+    const { match, player } = principal
+    if (match.status !== 'lobby') {
+      throw new ConflictError('Chat is open only in the lobby', { reason: 'match_not_in_lobby' })
+    }
+    const retryAfterSeconds = await this.chatMessages.take(`${match.id}:${player.id}`)
+    if (retryAfterSeconds !== null) {
+      throw new RateLimitedError('Too many chat messages', {
+        reason: 'rate_limited',
+        retryAfterSeconds,
+      })
+    }
+    if ((await this.deps.storage.events.lastSeq(match.id)) >= LIMITS.lobbyChatLogEvents) {
+      throw new ConflictError('This lobby has no room for more chat', {
+        reason: 'lobby_log_full',
+      })
+    }
+    await this.publisher.publish(match.id, {
+      type: 'lobby.chatMessage',
+      payload: { playerId: player.id, text: request.text },
     })
   }
 

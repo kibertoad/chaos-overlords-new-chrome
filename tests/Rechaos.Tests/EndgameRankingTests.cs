@@ -75,7 +75,7 @@ public sealed class EndgameRankingTests
         var data = BundledOriginalData.Load();
         var setups = cash.Select((_, id) =>
             new MatchPlayerSetup(new PlayerId(id), $"PLAYER {id + 1}", PlayerController.Human)).ToArray();
-        var setup = new MatchSetup(scenario, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(scenario, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         var players = setups.Select((player, id) => new MatchPlayerState(player, cash[id])).ToArray();
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,

@@ -55,10 +55,10 @@ held 0, and so did all 0x510 bytes of player 0's planning records from
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the three
-turns of each run, and the rebuild makes the same calls with the same bounds
-and results and reaches the same generator position and state.
+Every result is the one RULE-RNG-002 computes from the recorded seed. A test of
+the rebuild replays the three turns of each run, and the rebuild makes the same
+calls with the same bounds and results and reaches the same generator position
+and state.
 
 ## Conclusion
 

@@ -31,6 +31,7 @@ public sealed class MultiplayerApiRouteTests
         (RouteTemplates.RejoinMatch, $"POST {ApiRoutes.RejoinMatch(MatchId)}"),
         (RouteTemplates.UpdateMatchSettings, $"PUT {ApiRoutes.UpdateMatchSettings(MatchId)}"),
         (RouteTemplates.UpdatePlayerProfile, $"PUT {ApiRoutes.UpdatePlayerProfile(MatchId)}"),
+        (RouteTemplates.PostChatMessage, $"POST {ApiRoutes.PostChatMessage(MatchId)}"),
         (RouteTemplates.KickPlayer, $"POST {ApiRoutes.KickPlayer(MatchId, PlayerId)}"),
         (RouteTemplates.TakeoverVote, $"POST {ApiRoutes.TakeoverVote(MatchId, PlayerId)}"),
         (RouteTemplates.SubmitOrders, $"PUT {ApiRoutes.Orders(MatchId, 7)}"),

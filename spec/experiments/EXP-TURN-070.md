@@ -51,14 +51,13 @@ gangs, both in sector 26: roster slot 0 with `action` and `repeat_action` 3
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state, and at the end each human gang's
-recurring order matches the original's `repeat_action`. The Control of roster
-slot 1 fails each turn until the Chaos of the other two brings a Crackdown to
-sector 26 in turn 6, in which the police kill roster slot 2. The start of turn
-7 drops the Control of roster slot 1, which is still active, and keeps the
-Chaos of roster slot 0.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state, and at the end each human gang's recurring order matches the original's
+`repeat_action`. The Control of roster slot 1 fails each turn until the Chaos of
+the other two brings a Crackdown to sector 26 in turn 6, in which the police
+kill roster slot 2. The start of turn 7 drops the Control of roster slot 1,
+which is still active, and keeps the Chaos of roster slot 0.
 
 A rebuild that kept the Control at that turn start would hold Control as the
 gang's recurring order and fail the comparison of `repeat_action`.

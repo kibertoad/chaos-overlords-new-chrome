@@ -1,7 +1,7 @@
 ---
 id: RULE-TIMER-001
 title: Planning time limit chosen for a match
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-TIMER-001, FND-TIMER-003, FND-OPTIONS-001, FND-UI-003, FND-EXE-004, SRC-MANUAL-GOG, SRC-HELP-GOG, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052]
@@ -63,4 +63,6 @@ None known.
 
 ## Open questions
 
-None.
+- No recorded run records the stored -1 of choice 0, a choice outside 0 to 3,
+  or a loaded game. These rest on FND-TIMER-001 and FND-TIMER-003. Until a run
+  reaches them, the entry stays `supported`.

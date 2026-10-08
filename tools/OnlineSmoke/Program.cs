@@ -85,8 +85,11 @@ public static class Program
             guestMatch, definitions, started, guest.Player.Id, started.LastEventSeq,
             StreamOutageBudget: smokeBudget));
 
-        var hostState = hostSession.Bootstrap.State;
-        var guestState = guestSession.Bootstrap.State;
+        // The smoke match is not played from views, so both clients bootstrap the city themselves.
+        var hostState = (hostSession.Bootstrap
+            ?? throw new InvalidOperationException("the host session started without a bootstrap")).State;
+        var guestState = (guestSession.Bootstrap
+            ?? throw new InvalidOperationException("the guest session started without a bootstrap")).State;
         Require(
             MatchStateHasher.ComputeFingerprint(hostState) == MatchStateHasher.ComputeFingerprint(guestState),
             "the two clients bootstrapped different cities");
