@@ -182,15 +182,32 @@ public sealed record ScreenCaptureRecord(
     private static IEnumerable<ScreenCaptureRecord> SetupStepCaptures(string experiment, int run, JsonElement[] steps, bool whiteKeyed)
     {
         var clicks = new List<ReferenceClick>();
+        var named = false;
         for (var index = 0; index < steps.Length; index++)
         {
             var step = steps[index];
+            if (named && step.TryGetProperty("capture", out _))
+                throw new InvalidDataException(
+                    $"{experiment} run {run} copies the setup screen after a name step, whose keys the rebuild does not replay.");
             var point = new Point(step.GetProperty("x").GetInt32(), step.GetProperty("y").GetInt32());
             if (step.GetProperty("kind").GetString() == "strip")
                 clicks.Add(new ReferenceClick(point));
             else if (step.GetProperty("kind").GetString() == "drag")
                 clicks.Add(new ReferenceClick(point,
                     Release: new Point(step.GetProperty("to_x").GetInt32(), step.GetProperty("to_y").GetInt32())));
+            else if (step.GetProperty("kind").GetString() == "name")
+            {
+                // The press on the name band opens the editor; the copy is taken with it open,
+                // before any key, so the keys a step types after it are not replayed. A copy after
+                // a name step that typed would need them.
+                clicks.Add(new ReferenceClick(point));
+                if (step.TryGetProperty("capture", out var underDialog))
+                    yield return Parse(experiment, run, underDialog, whiteKeyed) with
+                    {
+                        Step = SetupStepBase - index, BeforeMatch = "setup", Clicks = clicks.ToArray(),
+                    };
+                named = true;
+            }
             else if (step.TryGetProperty("capture", out var capture))
                 yield return Parse(experiment, run, capture, whiteKeyed) with
                 {
@@ -299,6 +316,11 @@ public sealed record ScreenCaptureRecord(
                 : null;
             if (menu > 0 && pickerRow is null)
                 unreplayable ??= $"step {index} opened popup menu {step.GetProperty("menu").GetInt32()}, which the rebuild draws as a panel (DEV-UI-021)";
+            // EXP-UI-043: the original presses a console tile with the right button and leaves
+            // the sector view at a right press on Back; the replay has no right presses until #525
+            // compares these shots.
+            if (step.GetProperty("kind").GetString() is "rdown" or "rup")
+                unreplayable ??= $"step {index} presses the right button, which the replay does not press yet (#525)";
             switch (step.GetProperty("kind").GetString())
             {
                 case "open":
@@ -322,6 +344,21 @@ public sealed record ScreenCaptureRecord(
                     break;
                 case "back":
                     clicks.Add(new ReferenceClick(SectorDetailLayout.Back.Center));
+                    break;
+                // A button pressed and kept down, the pointer moved with it, and its release, so a
+                // shot between them shows the held control.
+                case "down" or "move" or "up" or "rdown" or "rup" when step.GetProperty("kind").GetString() is { } edge:
+                    clicks.Add(new ReferenceClick(new Point(Number("x"), Number("y")))
+                    {
+                        Edge = edge switch
+                        {
+                            "down" => ReferenceButtonEdge.Down,
+                            "move" => ReferenceButtonEdge.Move,
+                            "up" => ReferenceButtonEdge.Up,
+                            "rdown" => ReferenceButtonEdge.RightDown,
+                            _ => ReferenceButtonEdge.RightUp,
+                        },
+                    });
                     break;
                 case "type":
                     clicks.Add(new ReferenceClick(Point.Zero)
@@ -420,6 +457,10 @@ public static class ScreenCaptureMasks
             ],
             ["SCR-UI-002"] = [],
             ["SCR-SETUP-001"] = [],
+            // DEV-SETUP-003: while the name dialog is open the rebuild edits the name on card 0's
+            // name row, where the original still shows the name. The dialog itself is drawn by
+            // Windows, and the copy under it leaves it out.
+            ["SCR-SETUP-003"] = [new CaptureMask("DEV-SETUP-003", SetupPlayerCardArtLayout.NameRow(0))],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
@@ -545,15 +586,20 @@ public static class RebuildFrame
         string screen, string? name = null, IReadOnlyList<ReferenceClick>? clicks = null) =>
         Render(null, null, clicks, name, screen: screen);
 
+    /// <summary>Why no frame can be drawn on this machine, or null when an asset pack is installed.</summary>
+    public static string? MissingAssetPack() =>
+        File.Exists(Path.Combine(AssetRoot(), "manifest.json")) ? null : $"No asset pack is installed at {AssetRoot()}.";
+
+    private static string AssetRoot() => AssetRootResolver.Resolve(AppContext.BaseDirectory,
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+
     public static ScreenFrame Render(
         MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
         int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null,
         string? screen = null, int? clipTick = null, int? idlePhase = null, int? caretPhase = null, int? clipIndex = null)
     {
-        var assets = AssetRootResolver.Resolve(AppContext.BaseDirectory,
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
-        if (!File.Exists(Path.Combine(assets, "manifest.json")))
-            Assert.Skip($"No asset pack is installed at {assets}.");
+        if (MissingAssetPack() is { } missing) Assert.Skip(missing);
+        var assets = AssetRoot();
 
         var directory = Path.Combine(Path.GetTempPath(), "rechaos-screen-capture-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
@@ -620,6 +666,12 @@ public static class RebuildFrame
             var error = new System.Text.StringBuilder();
             process.ErrorDataReceived += (_, line) => { lock (error) error.AppendLine(line.Data); };
             process.BeginErrorReadLine();
+            // A worker can still be drawing a frame no row asked for when the test host exits.
+            using var stop = RowPrefetchWorkers.Stopping.Register(() =>
+            {
+                try { process.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) { }
+            });
             if (!process.WaitForExit(Timeout))
             {
                 process.Kill(entireProcessTree: true);

@@ -22,7 +22,7 @@ environment: Windows 11 with a 32-bit desktop, an unelevated copy of the executa
 
 On 2026-10-05 the hash-verified BLD-GOG-EN-1.1 executable ran EXP-SETUP-001's
 setup with seed 52421 to the first planning entry, and the probe took a
-capture there as docs/VALIDATION.md describes. The original's display depth
+capture there as docs/validation/screen-captures.md describes. The original's display depth
 `0x0048787C` (FND-PLATFORM-009) held 16; the probe's window device context
 reported 32.
 
@@ -31,7 +31,7 @@ reported 32.
   solid white interior where the owned-sector interior of `PX10001` belongs
   (SCR-UI-003, FND-UI-033), and the edge tabs of the grid were white
   triangles without their letters and digits.
-- The keyed mask compositor `0x00427A09` (FND-PLATFORM-008) reached both of its
+- The keyed mask compositor `0x00427A09` (FND-PLATFORM-015) reached both of its
   `SetBkColor` calls during the run. The call at `0x00427C84` passed
   `RGB(255,252,255)` (`0x00FFFCFF`) and the call at `0x00427CB8` passed
   `RGB(255,255,255)`.
@@ -61,7 +61,7 @@ reported 32.
 The surfaces are bitmaps compatible with the window's device context
 (FND-GFX-004), so on a 32-bit desktop they hold 32-bit pixels, and the RGB555
 white `0x7FFF` of a `PX16` image is held there as `RGB(255,255,255)`. The
-16-bit key `RGB(255,252,255)` of FND-PLATFORM-008 matches no pixel of such a
+16-bit key `RGB(255,252,255)` of FND-PLATFORM-015 matches no pixel of such a
 surface, so every mode-1 copy is opaque and draws the white it should leave
 out. The solid white areas the original leaves on Windows 11, such as those
 FND-UI-041 mentions, are these copies; in the captured planning entry they are
@@ -70,20 +70,17 @@ reaches the drawing.
 
 ## Alternatives
 
-The second call at `0x00427CB8` already passes `RGB(255,255,255)`; what it sets
-the colour for was not read. FND-PLATFORM-008 reads a single `SetBkColor` call
-in the drawing code and takes `RGB(255,255,255)` for the 8-bit key; this run,
-at 16-bit depth, reached two calls, so that `RGB(255,255,255)` may come from the
-second call and not be a key, and the 8-bit key needs a new static reading. On
+The second call at `0x00427CB8` passes `RGB(255,255,255)`, the colour the first
+call returned, which FND-PLATFORM-015 reads as restoring it. On
 a real 16-bit display the key names `0x7FFF` and the copies leave it out as
 RULE-GFX-003 describes; no run on such a display was made, and how a driver
-expands 5-bit channels there is still the open question of FND-PLATFORM-008.
+expands 5-bit channels there is still the open question of FND-PLATFORM-015.
 What draws the exact-white pixel left at `(250,16)` with the write was not
 examined. The planning entry is the only capture with the write recorded here.
 
 ## How to reproduce
 
-Stage the executable as docs/VALIDATION.md describes and run the probe's
+Stage the executable as docs/validation/experiments.md describes and run the probe's
 `new-game --seed 52421 --capture`, then the same with `--white-key`, which
 makes the write above. Count the exact-white pixels of each `capture-blt.bmp`
 and extract both runs with `extract --experiment EXP-SETUP-001` to compare

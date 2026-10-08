@@ -6,7 +6,7 @@ Entries by status.
 
 ## supported
 
-8 entries.
+7 entries.
 
 | ID | Title |
 |---|---|
@@ -15,17 +15,17 @@ Entries by status.
 | [FMT-STATE-003](../../formats/FMT-STATE-003.md) | Per-gang combat record of the last resolution |
 | [FMT-STATE-004](../../formats/FMT-STATE-004.md) | Site slot in a sector record |
 | [FMT-STATE-006](../../formats/FMT-STATE-006.md) | Last Turn report record |
-| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot |
 | [FMT-STATE-008](../../formats/FMT-STATE-008.md) | Combat result row of one sector |
 | [FMT-STATE-009](../../formats/FMT-STATE-009.md) | Input event record |
 
 ## established
 
-1 entries.
+2 entries.
 
 | ID | Title |
 |---|---|
 | [FMT-STATE-005](../../formats/FMT-STATE-005.md) | Comlink message record |
+| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot |
 
 ## recorded
 
@@ -40,10 +40,10 @@ Entries by status.
 | [FND-STATE-005](../../findings/FND-STATE-005.md) | Each resolution sets byte 9 of all 486 combat records to -1 and rewrites bytes 0 to 8 only for gangs that took part in a fight |
 | [FND-STATE-006](../../findings/FND-STATE-006.md) | In the computer players' 16-byte planning record, byte 1 is a flag only selector 0x48 reads, byte 11 is never referenced, and byte 15 is the high byte of the 16-bit field at 14 |
 | [FND-STATE-007](../../findings/FND-STATE-007.md) | Map of the match and computer-player state in .data, with each region's element, writers, readers and identity |
-| [FND-STATE-008](../../findings/FND-STATE-008.md) | Map of the interface, platform and network globals in .data, with each region's element, writers, readers and identity |
 | [FND-STATE-009](../../findings/FND-STATE-009.md) | Game code reads nine .rdata constants, all but one in the computer players' planning pass; two initialized .data tables of sines and cosines are used only by uncalled helpers |
 | [FND-STATE-010](../../findings/FND-STATE-010.md) | The byte at 0x004ABC9C is set while no match is in play, from startup and again once a match has ended |
 | [FND-STATE-011](../../findings/FND-STATE-011.md) | The most used .data addresses the data map left unnamed are fields of known records, the modem and socket handles, and a per-connection flag array |
+| [FND-STATE-012](../../findings/FND-STATE-012.md) | Map of the interface, platform and network globals in .data, with each region's element, writers, readers and identity |
 
 ## Established on unreproduced evidence
 
@@ -52,6 +52,7 @@ Entries whose status is established and whose findings and experiments are all o
 | ID | Title |
 |---|---|
 | [FMT-STATE-005](../../formats/FMT-STATE-005.md) | Comlink message record |
+| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot |
 
 ## Open questions
 
@@ -64,5 +65,5 @@ Entries whose Open questions section says more than None known.
 | [FMT-STATE-003](../../formats/FMT-STATE-003.md) | Per-gang combat record of the last resolution | supported |
 | [FMT-STATE-004](../../formats/FMT-STATE-004.md) | Site slot in a sector record | supported |
 | [FMT-STATE-006](../../formats/FMT-STATE-006.md) | Last Turn report record | supported |
-| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | supported |
+| [FMT-STATE-007](../../formats/FMT-STATE-007.md) | Computer player planning record, one per player and roster slot | established |
 | [FMT-STATE-008](../../formats/FMT-STATE-008.md) | Combat result row of one sector | supported |

@@ -63,6 +63,8 @@ internal sealed partial class NewGameSession
             }
             else if (step.Kind == "drag")
                 Drag(window, step.X, step.Y, step.Target, step.Choice);
+            else if (step.Kind == "name")
+                EnterName(window, step.Text!, index);
             else if (ClientAreaHoldsDrawingArea(window)
                      && CaptureDrawingArea(window, $"setup-step-{index}", CaptureFixture.Width, CaptureFixture.Height))
                 _notes.Add(CaptureFixture.SetupStepNote(index));

@@ -35,21 +35,28 @@ internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector, int Player
 /// or less writes the <c>family</c> of a computer player's planning record in the slot
 /// (FMT-STATE-007), <see cref="Raider"/> sets a computer player's byte of <c>raider_mode</c>, which
 /// a takeover of a network seat sets (RULE-AI-027), <see cref="Retired"/> clears the player's
-/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006), and
+/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006),
 /// <see cref="Cash"/> sets the player's <c>cash</c> to <paramref name="Value"/>, so a human can pay
-/// for a hire every turn.
+/// for a hire every turn, <see cref="Force"/> sets the <c>force</c> of the player's gang in the slot
+/// (FMT-STATE-001), so a gang ordered to Heal can be at Force 10 when it acts (RULE-HEAL-001), and
+/// <see cref="Tolerance"/> sets the <c>base_tolerance</c> of sector <paramref name="Slot"/>
+/// (FMT-STATE-002), so one Bribe can wrap the signed byte (RULE-BRIBE-001).
 /// </summary>
 internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family, int Value = 0)
 {
     public const int Raider = -1;
     public const int Retired = -2;
     public const int Cash = -3;
+    public const int Force = -4;
+    public const int Tolerance = -5;
 
     public override string ToString() => Family switch
     {
         Raider => $"turn {Turn}: player {Player} raider_mode 1",
         Retired => $"turn {Turn}: player {Player} player_active 0",
         Cash => $"turn {Turn}: player {Player} cash {Value}",
+        Force => $"turn {Turn}: player {Player} gang slot {Slot} force {Value}",
+        Tolerance => $"turn {Turn}: sector {Slot} base_tolerance {Value}",
         _ => $"turn {Turn}: player {Player} gang slot {Slot} family {Family}",
     };
 }
@@ -65,12 +72,6 @@ internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions, int
     public override string ToString() => $"turn {Turn}: player {Player} search filter {string.Join(" ", Definitions)}";
 }
 
-/// <summary>
-/// One city redraw (FND-SEARCH-006): the viewing player and each site marker it drew as
-/// definition, sector, ordinal and controlled flag.
-/// </summary>
-internal sealed record CityMarkers(int Viewer, List<int[]> Markers);
-
 /// A Financial panel the probe opens before the Done press of <paramref name="Turn"/>, after that
 /// turn's orders and hires are written: the City variant for sector -1, otherwise the Sector variant
 /// of that sector, which the probe selects on the map first (FND-FINANCE-002).
@@ -81,42 +82,6 @@ internal sealed record ProbeFinance(int Turn, int Sector)
         ? $"Financial, City ({OriginalAddresses.FinanceCityX}, {OriginalAddresses.FinanceCityY}), turn {Turn}"
         : $"Financial, Sector ({OriginalAddresses.FinanceSectorX}, {OriginalAddresses.FinanceSectorY}) with sector {Sector} selected, turn {Turn}";
 }
-
-/// <summary>
-/// 32-bit values the probe writes at <paramref name="Address"/> when the planning-entry function
-/// starts to draw the console (FND-UI-040): the first at its first call, the second at its second,
-/// and the last at every later call. The console then draws a number the match would not reach,
-/// such as a score whose first glyph cell lies outside the glyph sheet (RULE-UI-004), over what an
-/// earlier call drew. The write changes the match from then on, so a run that uses it is not
-/// replayed. The calls are counted over every human's entries, so the probe takes it with one
-/// human only.
-/// </summary>
-internal sealed record ProbeDrawValue(uint Address, IReadOnlyList<int> Values)
-{
-    public override string ToString() => $"draw_value 0x{Address:X8} {string.Join("/", Values)}";
-}
-
-/// <summary>
-/// A left-button press and release the probe posts at a client point once the dump is taken
-/// (<c>--search-clicks</c>, SearchClickRecord).
-/// </summary>
-internal sealed record ProbeClick(int X, int Y)
-{
-    public override string ToString() => $"({X}, {Y}) after the dump";
-}
-
-/// <summary>
-/// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
-/// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
-/// Combat Results function returns at once when no fight qualifies.
-/// </summary>
-internal sealed record PanelRecord(string Panel, int AfterRoll, bool Shown);
-
-/// <summary>
-/// The values one Financial panel drew, in the order it drew them (FND-FINANCE-003), with the sector
-/// the probe asked for and the sector the panel function was passed, -2 when it was not called.
-/// </summary>
-internal sealed record FinanceRecord(int Turn, int Sector, int PanelSector, List<int> Values);
 
 /// <summary>
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
@@ -181,6 +146,7 @@ internal sealed record NewGameSettings(
     {
         "strip" => $"press ({step.X}, {step.Y})",
         "drag" => $"drag ({step.X}, {step.Y}) to ({step.Target}, {step.Choice})",
+        "name" => $"name {step.Text}",
         _ => $"capture for {step.Screens}",
     };
 
@@ -224,8 +190,12 @@ internal sealed record NewGameSettings(
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
         foreach (var step in OrderSteps ?? [])
-            yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", "type" => "key", _ => "left_click" },
-                $"{step} after the dump");
+            yield return (step.Kind switch
+                {
+                    "open" => "double_click", "wait" => "wait", "type" or "keys" => "key", "down" => "left_press",
+                    "move" => "pointer_move", "up" => "left_release", "rdown" => "right_press",
+                    "rup" => "right_release", _ => "left_click",
+                }, $"{step} after the dump");
         foreach (var close in Closes ?? []) yield return ("close", $"{close} after the dump");
     }
 }
@@ -275,7 +245,10 @@ internal sealed record ProbeTrace(
     List<SlideRecord>? Slides = null,
     List<CloseRecord>? Closes = null,
     List<SavedWriteRecord>? SavedWrites = null,
-    bool? EffectsEnabled = null);
+    bool? EffectsEnabled = null,
+    List<KeyEventRecord>? KeyEvents = null,
+    List<NameEntryRecord>? NameEntries = null,
+    List<NameShotRecord>? NameShots = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -303,8 +276,6 @@ internal sealed partial class NewGameSession(
     private bool _eliminationCardReached;
     private EndgameDrawing? _endgame;
     private bool _endgameDrawn;
-    private CityMarkers? _redraw;
-    private CityMarkers? _lastRedraw;
     private readonly List<FinanceRecord> _finance = [];
     private FinanceRecord? _financeCapture;
     private int _financePanelSector = -2;
@@ -716,22 +687,6 @@ internal sealed partial class NewGameSession(
         _notes.Add($"search after roll {_rolls.Count}: {write}");
     }
 
-    // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
-    // last complete redraw, whichever human it was drawn for, with that viewer.
-    private void OnCityRedraw(BreakContext context)
-    {
-        var redraw = new CityMarkers(context.Argument(0), []);
-        _redraw = redraw;
-        _process.SetBreakpoint(context.ReturnAddress, _ =>
-        {
-            if (_redraw == redraw) _lastRedraw = redraw;
-            _redraw = null;
-        }, oneShot: true);
-    }
-
-    private void OnSiteMarker(BreakContext context) =>
-        _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3) & 0xFF]);
-
     // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
     // of the Financial control that opens the variant, keeps the nine numbers the panel draws, and
     // presses its close control until the panel function has returned. A capture counts only when
@@ -801,6 +756,14 @@ internal sealed partial class NewGameSession(
             _process.Write(OriginalAddresses.PlayerActive + (uint)write.Player, [0]);
         else if (write.Family == ProbePlanning.Cash)
             _process.Write(OriginalAddresses.Cash + (uint)(write.Player * 4), BitConverter.GetBytes(write.Value));
+        else if (write.Family == ProbePlanning.Force)
+            _process.Write(OriginalAddresses.GangRecords
+                + (uint)(write.Player * OriginalAddresses.PlayerGangStride + write.Slot * OriginalAddresses.GangRecordSize
+                    + OriginalAddresses.GangForceOffset), [(byte)(sbyte)write.Value]);
+        else if (write.Family == ProbePlanning.Tolerance)
+            _process.Write(OriginalAddresses.SectorRecords
+                + (uint)(write.Slot * OriginalAddresses.SectorRecordSize + OriginalAddresses.SectorBaseToleranceOffset),
+                [(byte)(sbyte)write.Value]);
         else
             _process.Write(OriginalAddresses.PlanningRecords
                 + (uint)(write.Player * OriginalAddresses.PlanningPlayerStride
@@ -960,7 +923,9 @@ internal sealed partial class NewGameSession(
             settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
             settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
-            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null);
+            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null,
+            _keyEvents.Count == 0 ? null : _keyEvents, _nameEntries.Count == 0 ? null : _nameEntries,
+            _nameShots.Count == 0 ? null : _nameShots);
     }
 
     private static void Click(IntPtr window, int x, int y)

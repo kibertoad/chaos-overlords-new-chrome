@@ -45,7 +45,7 @@ action bytes and 1 in `needs_family` (`0x0048A251`) and nothing else. Family
 focus and no target.
 
 The focus value of the auxiliary record (`0x0048C0BA + player * 0x46E +
-slot * 14`, FND-AI-044) is stored by families 3 (`0x00435BD0`) and 5
+slot * 14`, FND-AI-081) is stored by families 3 (`0x00435BD0`) and 5
 (`0x0043A1D0`) after each action they plan:
 
 | Action | Family 3 stores | Family 5 stores | Value |
