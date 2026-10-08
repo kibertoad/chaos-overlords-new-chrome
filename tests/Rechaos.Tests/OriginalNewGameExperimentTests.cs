@@ -113,6 +113,8 @@ public sealed partial class OriginalNewGameExperimentTests
         "EXP-TURN-097",
         "EXP-TURN-098",
         "EXP-TURN-099",
+        "EXP-TURN-100",
+        "EXP-TURN-101",
         "EXP-TURN-103",
         "EXP-TURN-104",
         "EXP-TURN-105",

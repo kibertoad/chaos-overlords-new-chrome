@@ -123,10 +123,12 @@ namespace Rechaos.Tests;
 /// and a Search close and log every gang-status marker the original draws (RULE-UI-006).
 /// EXP-TURN-096 presses each Overlord portrait of a sector view at the endpoint of EXP-TURN-026
 /// and records whose gangs the cards list after each press (RULE-UI-010).
-/// EXP-TURN-097 to EXP-TURN-099 write the human's cash before every Done press, hire a gang a
+/// EXP-TURN-097 to EXP-TURN-100 write the human's cash before every Done press, hire a gang a
 /// turn and order Moves that the Move repair sends back and then gives a random neighbour from a
 /// corner of the city (RULE-MOVE-002, RULE-AI-007), until a hire with 80 gangs is refused and
 /// reported (RULE-HIRE-001, RULE-EVENT-011).
+/// EXP-TURN-101 writes families 13 and 14 into computer gangs in Greed, where they move to the
+/// planned target, sector 0, with no selector call (RULE-AI-031).
 /// In EXP-TURN-103 a Bribe every turn takes a base Tolerance to 41, where it stays while the later
 /// gangs of the phase act, and the clamp lowers it to 40 (RULE-TOLERANCE-002, RULE-TURN-003). In
 /// EXP-TURN-104 a Research gang acts after its sector's site is completed earlier in the same
