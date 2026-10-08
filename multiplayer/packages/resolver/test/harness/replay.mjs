@@ -35,6 +35,8 @@ export async function replayTranscript(resolver, transcript, prefix = '') {
   let matches = [live]
   let snapshot
   let resolveMs = 0
+  /** This host's own snapshot of the live match at the snapshot step. */
+  let ownSnapshot
   for (const step of transcript.steps) {
     if (step.kind === 'event') {
       for (const id of matches) {
@@ -64,6 +66,7 @@ export async function replayTranscript(resolver, transcript, prefix = '') {
       await resolver.release(`${prefix}bare`)
       // And this host's own archive restores to the hash it was taken at.
       const own = await resolver.snapshot(live)
+      ownSnapshot = own
       check('own snapshot hash', step.hash, own.stateHash)
       const roundTrip = await resolver.restore(`${prefix}own`, own, { players })
       check('own snapshot round trip', step.hash, roundTrip.stateHash)
@@ -97,5 +100,5 @@ export async function replayTranscript(resolver, transcript, prefix = '') {
     check(`finished (${id})`, transcript.finished, status?.finished)
     await resolver.release(id)
   }
-  return { checks, mismatches, resolveMs }
+  return { checks, mismatches, resolveMs, ownSnapshot }
 }

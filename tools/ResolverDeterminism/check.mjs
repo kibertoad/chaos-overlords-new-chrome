@@ -36,7 +36,7 @@ async function onNode() {
   const bootMs = Math.round(performance.now() - started)
   try {
     const result = await replayTranscript(resolver, transcript, 'check-')
-    const snapshot = await snapshotAtStep(resolver)
+    const snapshot = result.ownSnapshot ?? (await snapshotAtStep(resolver))
     return { ...result, bootMs, memoryBytes: (await resolver.info()).memoryBytes, snapshot }
   } finally {
     await resolver.close()
@@ -51,14 +51,14 @@ async function onWorkerd() {
     await resolver.describe()
     const bootMs = Math.round(performance.now() - started)
     const result = await replayTranscript(resolver, transcript, 'check-')
-    const snapshot = await snapshotAtStep(resolver)
+    const snapshot = result.ownSnapshot ?? (await snapshotAtStep(resolver))
     return { ...result, bootMs, memoryBytes: (await resolver.info('check-own')).memoryBytes, snapshot }
   } finally {
     await dispose()
   }
 }
 
-/** The host's own snapshot of the match at the transcript's snapshot step. */
+/** The host's own snapshot at the end of a transcript that has no snapshot step. */
 async function snapshotAtStep(resolver) {
   const id = 'check-own'
   await resolver.bootstrap(id, {

@@ -85,10 +85,11 @@ export async function startNodeResolverHost(
     pending.clear()
   }
 
-  const start = (): Promise<Worker> =>
-    new Promise((resolve, reject) => {
+  const start = (): Promise<Worker> => {
+    const started = new Promise<Worker>((resolve, reject) => {
       const worker = new Worker(threadUrl, { workerData: { bundleDir, limits } })
       let ready = false
+      let gone = false
       worker.on('message', (message: ThreadStartup | ThreadReply) => {
         if ('ready' in message) {
           if (message.ready) {
@@ -106,14 +107,22 @@ export async function startNodeResolverHost(
         if (message.ok) waiter.resolve(message.value)
         else waiter.reject(decodeResolverError(message.error, waiter.matchId))
       })
+      // A thread that fails emits 'error' and then 'exit'. Only the first counts, and only while the
+      // thread is still the current one: by the 'exit', a caller may have started its replacement,
+      // whose reference and waiters this thread must not take with it.
       const lost = (reason: string) => {
-        thread = undefined
+        if (gone) return
+        gone = true
         if (!ready) reject(new Error(`resolver: the runtime did not start: ${reason}`))
+        if (thread !== started) return
+        thread = undefined
         failAll(new Error(`resolver: the runtime thread stopped: ${reason}`))
       }
       worker.on('error', (error: Error) => lost(String(error.stack ?? error)))
       worker.on('exit', (code) => lost(`exit code ${code}`))
     })
+    return started
+  }
 
   const call = async <T>(method: ThreadMethod, args: unknown[], matchId = ''): Promise<T> => {
     if (closed) throw new Error('resolver: the host is closed')
