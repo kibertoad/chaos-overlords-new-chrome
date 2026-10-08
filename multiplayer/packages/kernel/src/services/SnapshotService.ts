@@ -313,6 +313,31 @@ export async function publishSeatSummaries(
 }
 
 /**
+ * The seat summaries a turn report carries, when the host sent it. The order set is the turn
+ * increment the server retains, and these few derived counters keep late-join selection current
+ * without uploading another full save.
+ */
+export async function publishReportedSeatSummaries(
+  deps: Pick<KernelDeps, 'storage' | 'clock' | 'logger'>,
+  match: Principal['match'],
+  report: { playerId: string; turn: number; seatSummaries?: readonly AiSeatSummary[] | undefined },
+): Promise<void> {
+  const { playerId, turn, seatSummaries } = report
+  if (playerId !== match.hostPlayerId || seatSummaries === undefined) return
+  try {
+    await publishSeatSummaries(deps, match.id, seatSummaries)
+  } catch (error) {
+    // Late-join hints are optional metadata. A full settings blob or a transient metadata write
+    // must not discard the authoritative hash report and strand every player at the barrier.
+    deps.logger.warn('could not publish seat summaries', {
+      matchId: match.id,
+      turn,
+      error: String(error),
+    })
+  }
+}
+
+/**
  * The settings blob with the seat summaries merged in, or a refusal when it would not fit.
  *
  * `createMatch` holds `gameSettings` to 8 KiB and to a nesting depth; the summaries go in through

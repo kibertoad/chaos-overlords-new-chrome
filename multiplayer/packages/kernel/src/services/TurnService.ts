@@ -30,7 +30,7 @@ import type { EventPublisher } from './EventPublisher'
 import { requireInProgress, requireParticipant, requireTurn } from './guards'
 import { matchStartedEvent } from './MatchQueryService'
 import type { Referee, ResolveOutcome } from './Referee'
-import { publishSeatSummaries } from './SnapshotService'
+import { publishReportedSeatSummaries } from './SnapshotService'
 
 export type SealTrigger = 'ready' | 'deadline'
 
@@ -654,8 +654,17 @@ export class TurnService {
 
   async report(principal: Principal, number: number, request: TurnReportRequest): Promise<void> {
     const { match, player } = principal
+    const reported = { ...request, playerId: player.id, turn: number }
     // A turn the server confirmed on its own state takes a report only to check it against that.
-    if (await this.referee?.judgeDecided(match, player, number, request.stateHash)) return
+    // A refereed turn is confirmed at its seal, so this is where every report of a live refereed
+    // match lands, and it is still the seat's activity and the host's seat summaries.
+    if (await this.referee?.judgeDecided(match, player, number, request.stateHash)) {
+      if (isInProgress(match)) {
+        await this.restorePendingPlayer(player.id, match.id)
+        await publishReportedSeatSummaries(this.deps, match, reported)
+      }
+      return
+    }
     requireInProgress(match)
     requireParticipant(player)
     const turn = await requireTurn(this.deps.storage.turns, match.id, number)
@@ -687,21 +696,7 @@ export class TurnService {
       if (await this.referee?.judgeDecided(match, player, number, request.stateHash)) return
       throw new ConflictError('That turn is already confirmed', { reason: 'turn_confirmed' })
     }
-    // The order set is the turn increment the server retains. Publishing these few derived counters
-    // with the host's report keeps late-join selection current without uploading another full save.
-    if (player.id === match.hostPlayerId && request.seatSummaries !== undefined) {
-      try {
-        await publishSeatSummaries(this.deps, match.id, request.seatSummaries)
-      } catch (error) {
-        // Late-join hints are optional metadata. A full settings blob or a transient metadata write
-        // must not discard the authoritative hash report and strand every player at the barrier.
-        this.deps.logger.warn('could not publish seat summaries', {
-          matchId: match.id,
-          turn: number,
-          error: String(error),
-        })
-      }
-    }
+    await publishReportedSeatSummaries(this.deps, match, reported)
     // A refereed turn is decided by the server's state, not by this report. It is resolved here as
     // well as at the seal, so a resolution the seal could not finish is retried by every report.
     const resolved = await this.resolveOnServer(match, number)

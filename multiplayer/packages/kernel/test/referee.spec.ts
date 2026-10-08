@@ -56,6 +56,23 @@ describe('refereeing turns with the server resolver', () => {
     expect(eventsOf(h, 'turn.diverged')).toEqual([])
   })
 
+  it('keeps the seat summaries a host report carries on a turn confirmed at its seal', async () => {
+    const { h } = refereed()
+    const { host, guest } = await h.startedMatch()
+    const digest = await playTurn(h, [host.token, guest.token], 1)
+    const expected = fakeSealedHash(fakeStartHash(await seedOf(h, host.match.id)), digest)
+    const seatSummaries = [{ slot: 1, gangs: 3, sites: 2, sectors: 4 }]
+
+    await h.kernel.turns.report(await h.principalOf(host.token), 1, {
+      stateHash: expected,
+      finished: false,
+      seatSummaries,
+    })
+
+    const settings = (await h.storage.matches.get(host.match.id))?.settings.gameSettings
+    expect(settings).toMatchObject({ seatSummaries })
+  })
+
   it('tells only the seat whose report differs, with the server snapshot stored first', async () => {
     const { h } = refereed()
     const { host, guest } = await h.startedMatch()

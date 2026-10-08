@@ -125,7 +125,7 @@ export class Referee {
       for (const turn of outcome.recorded) await settle(turn)
       return outcome.kind
     } catch (error) {
-      this.deps.logger.warn('could not settle a turn the server resolved; the sweep retries it', {
+      this.deps.logger.warn('could not settle a turn the server resolved; a later seal or report retries it', {
         matchId: match.id,
         turn: through,
         error: String(error),
@@ -149,7 +149,15 @@ export class Referee {
     if (!this.deps.resolver || match.status === 'lobby' || match.status === 'abandoned')
       return false
     const turn = await this.deps.storage.turns.get(match.id, number)
-    if (turn?.status !== 'confirmed' || turn.resolvedHash === null) return false
+    // A turn the reports confirmed while the resolver was down keeps the state they agreed on, and
+    // a resolution recorded for it afterwards does not overrule what `turn.confirmed` announced.
+    if (
+      turn?.status !== 'confirmed' ||
+      turn.resolvedHash === null ||
+      turn.resolvedHash !== turn.stateHash
+    ) {
+      return false
+    }
     requireParticipant(player)
     await this.judge(match, turn, player.id, stateHash)
     return true
@@ -266,7 +274,9 @@ export class Referee {
           return snapshot.stateHash
         }
       }
-      const scratch = `${id}~${turn}`
+      // One id per call: two reports judged at once would otherwise build under the same id, and
+      // the first to finish would release the copy the other is still reading.
+      const scratch = `${id}~${turn}~${crypto.randomUUID()}`
       try {
         await this.feed(match, scratch, turn, null)
         const snapshot = await resolver.snapshot(scratch)
@@ -543,6 +553,10 @@ export class Referee {
       uploadedAt: this.deps.clock.now(),
       body: snapshot.body,
     })
+    // The prune keeps the newest turns, so a snapshot of an older turn written for a seat that
+    // diverged there would be deleted before the seat could fetch it. The next newer write prunes.
+    const latest = await this.deps.storage.snapshots.getLatestSummary(match.id)
+    if (latest && latest.turn > turn) return
     try {
       await this.deps.storage.snapshots.prune(match.id, SNAPSHOTS_KEPT_PER_MATCH)
     } catch (error) {

@@ -113,7 +113,11 @@ export async function buildNodeRuntime(
     config.retentionBatchSize ?? (opened.dialect === 'sqlite' ? 10 : 50),
   )
 
-  const resolver = await startResolver(config, options, logger)
+  const resolver = await startResolver(config, options, logger).catch(async (error: unknown) => {
+    // A refused start must not leave the database pool holding the process open.
+    await opened.close().catch(() => undefined)
+    throw error
+  })
   let scheduler: TimerDeadlineScheduler | undefined
   let warnedAboutProxy = false
   const kernel = createKernel(
@@ -302,7 +306,14 @@ async function startResolver(
       ? {}
       : { managedHeapBudgetBytes: config.resolverManagedHeapMib * 1024 * 1024 }),
   })
-  const { sessionVersion } = await resolver.describe()
+  let sessionVersion: number
+  try {
+    ;({ sessionVersion } = await resolver.describe())
+  } catch (error) {
+    // The worker thread would keep the process alive behind the refusal.
+    await resolver.close().catch(() => undefined)
+    throw error
+  }
   logger.info('turn resolver started', { sessionVersion })
   return { resolver, close: () => resolver.close() }
 }

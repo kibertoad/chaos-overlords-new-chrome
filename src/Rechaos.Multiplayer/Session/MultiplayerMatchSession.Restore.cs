@@ -479,7 +479,7 @@ public sealed partial class MultiplayerMatchSession
         {
             if (_refereed)
             {
-                _divergedTurn ??= confirmed.Payload.Turn;
+                _divergedTurn ??= (confirmed.Payload.Turn, confirmed.Payload.StateHash);
                 return false;
             }
             throw new MultiplayerProtocolException(

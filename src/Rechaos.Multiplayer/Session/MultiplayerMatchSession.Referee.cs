@@ -15,11 +15,11 @@ public sealed partial class MultiplayerMatchSession
 
     /// <summary>
     /// The first turn whose confirmation, met while catching up on the history, differs from the
-    /// state this client rebuilt, or null. Only a refereed match carries one: anywhere else a
-    /// confirmation is what every client reported, and a client that cannot reach it is playing
-    /// different rules.
+    /// state this client rebuilt, with the hash it was confirmed on, or null. Only a refereed match
+    /// carries one: anywhere else a confirmation is what every client reported, and a client that
+    /// cannot reach it is playing different rules.
     /// </summary>
-    private int? _divergedTurn;
+    private (int Turn, string StateHash)? _divergedTurn;
 
     /// <summary>
     /// The server told a seat that its report of a turn differs from the server's state. If the
@@ -62,15 +62,12 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private async Task AdoptDivergedTurnAsync(CancellationToken cancellationToken)
     {
-        if (_divergedTurn is not { } turn) return;
+        if (_divergedTurn is not { } diverged) return;
         _divergedTurn = null;
+        var (turn, stateHash) = diverged;
         var snapshot = await SnapshotForTurnOrNullAsync(turn, cancellationToken).ConfigureAwait(false);
         if (snapshot is null) return;
-        if (snapshot.Turn != turn)
-        {
-            throw new MultiplayerProtocolException(
-                $"the server answered turn {turn}'s snapshot with the snapshot for turn {snapshot.Turn}");
-        }
+        RequireServerSnapshot(snapshot, turn, stateHash);
         var liveTurn = Replay.State.Coordinator.Turn;
         var rebuilt = await RebuildAsync(
                 snapshot,
