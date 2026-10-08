@@ -8,6 +8,8 @@ internal static class OriginalAddresses
     public const int PlayerGangStride = 0xA20;
     public const int GangRecordSize = 0x20;
     public const int GangForceOffset = 3;
+    // FMT-STATE-001: the sector byte at offset 2 holds GANG_INACTIVE once the gang is gone.
+    public const byte GangInactive = 100;
 
     // FMT-STATE-002: 64 sector records of 0x24 bytes, base_tolerance at +2.
     public const uint SectorRecords = 0x004A08E8;
@@ -86,6 +88,7 @@ internal static class OriginalAddresses
     // fn_00464290 plays an effect slot.
     public const uint PlanningLimitChoice = 0x00487854;
     public const uint PlanningLimitMs = 0x0049069C;
+    public const uint PlanningStartMs = 0x004906A0;
     public const uint PlanningTimerStarted = 0x0041B8C8;
     public const uint PlanningBarWidth = 0x0041B96D;
     public const uint PlanningBarDrawStart = 0x0041B8FC;
@@ -142,6 +145,9 @@ internal static class OriginalAddresses
 
     // FND-OBJECTIVE-002: the elimination card of a local human, which blocks until its Done.
     public const uint EliminationCard = 0x0042C3F5;
+    // FND-OBJECTIVE-002: the card's Done, from (428, 377) up to but not including (528, 425).
+    public const int CardDoneX = 428 + 50;
+    public const int CardDoneY = 377 + 24;
 
     // FND-AWARDS-005: the renderer draws each listed player's name with fn_00413FD5, whose third
     // argument is the name at 0x004A2589 + 12 * player: the splash's at 0x0042D1A4, the ranked rows'
@@ -163,6 +169,10 @@ internal static class OriginalAddresses
     // Each waits until its Exit (137, 293, 49, 22) is pressed.
     public const uint CombatResults = 0x00451F80;
     public const uint LastTurnEvents = 0x0044F2FC;
+    // FND-UI-061: each handler calls the panel-open helper once, at these calls, only on the branch
+    // that shows its panel, and before it waits for input.
+    public const uint CombatResultsSlideIn = 0x00452146;
+    public const uint LastTurnEventsSlideIn = 0x0044F3D1;
     public const int PanelExitX = 137 + 24;
     public const int PanelExitY = 293 + 11;
 
