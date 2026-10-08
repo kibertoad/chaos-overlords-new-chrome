@@ -143,6 +143,8 @@ public sealed class SpeculativeTurn
                 DecodedOrderOp.QueueHire hire => turn.QueueHire(hire.GangDefinitionId, hire.SectorId).Accepted,
                 DecodedOrderOp.SnubHireOffer snub => turn.SnubHireOffer(snub.GangDefinitionId).Accepted,
                 DecodedOrderOp.DismissNotification => turn.DismissNotification(),
+                DecodedOrderOp.SendComlinkMessage send => turn.SendComlinkMessage(send.Recipients, send.Text).Accepted,
+                DecodedOrderOp.MarkComlinkRead read => turn.MarkComlinkRead(read.Sequence),
                 var op => throw new UnreachableException($"a decoded op restore does not handle: {op}"),
             };
             if (!accepted)
@@ -240,6 +242,44 @@ public sealed class SpeculativeTurn
         var removed = _replay.TryDismissNotification(Player, out _);
         if (removed) Orders.DismissNotification(Player);
         return removed;
+    }
+
+    /// <summary>
+    /// Sends a Comlink message on the copy, and records it when the core accepted one worth sending.
+    /// </summary>
+    /// <remarks>
+    /// The copy stores the message in each recipient's inbox there and then, which nobody sees: it
+    /// reaches the real inboxes when the turn seals. A draft of spaces only is accepted and stores
+    /// nothing (RULE-COMLINK-003), so it is not recorded either. The core checks only the length and
+    /// the blank draft, while the wire takes only the characters the Send panel types, space to
+    /// <c>Z</c> (RULE-COMLINK-006). Any other character throws before the copy changes, because the
+    /// server would refuse the whole document and every order of the seat's turn with it.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The text holds a character outside space to <c>Z</c>.</exception>
+    public ComlinkSendResult SendComlinkMessage(IReadOnlyList<PlayerId> recipients, string text)
+    {
+        ArgumentNullException.ThrowIfNull(recipients);
+        ArgumentNullException.ThrowIfNull(text);
+        if (!OrderOpDecoder.IsComlinkCharacters(text))
+        {
+            throw new ArgumentException(
+                "A Comlink message holds only the characters space to Z.", nameof(text));
+        }
+        var result = _replay.SendComlinkMessage(Player, recipients, text);
+        if (result.Accepted && result.Recipients.Count > 0)
+            Orders.SendComlinkMessage(Player, recipients, text);
+        return result;
+    }
+
+    /// <summary>
+    /// Marks an inbox message read on the copy, so the panel and the alert show it at once, and
+    /// records it when it was unread.
+    /// </summary>
+    public bool MarkComlinkRead(long sequence)
+    {
+        var changed = _replay.MarkComlinkRead(Player, sequence);
+        if (changed) Orders.MarkComlinkRead(Player, sequence);
+        return changed;
     }
 
     /// <summary>The document to submit for this turn.</summary>

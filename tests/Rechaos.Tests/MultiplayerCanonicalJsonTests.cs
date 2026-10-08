@@ -84,6 +84,27 @@ public sealed class MultiplayerCanonicalJsonTests
             OrderDigest.OfDocument(document));
     }
 
+    /// <summary>
+    /// The golden document over the Comlink ops, pinned in the kernel's tests as well. The message
+    /// text is the only string an order carries, and a quote in it must be escaped as
+    /// <c>JSON.stringify</c> escapes it.
+    /// </summary>
+    [Fact]
+    public void ReproducesTheServersGoldenDigestOfComlinkOps()
+    {
+        var document = new OrderDocument(1, [
+            new SendComlinkMessageOp(2, [0, 4], "MEET AT \"DAWN\", SECTOR 27."),
+            new MarkComlinkReadOp(2, 5),
+        ]);
+
+        Assert.Equal(
+            """{"ops":[{"op":"sendComlinkMessage","player":2,"recipients":[0,4],"text":"MEET AT \"DAWN\", SECTOR 27."},{"op":"markComlinkRead","player":2,"sequence":5}],"schemaVersion":1}""",
+            OrderDigest.CanonicalTextOf(document));
+        Assert.Equal(
+            "ad6e418f5fa21054c41fbb9360ff793cd5dc6f956c0d1d5aa547ca79bc3e55ef",
+            OrderDigest.OfDocument(document));
+    }
+
     /// <summary>Two documents that differ only in serializer ordering are the same document.</summary>
     [Fact]
     public void HashesEqualDocumentsEquallyWhateverOrderTheyWereWrittenIn()

@@ -70,6 +70,8 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonSerializable(typeof(QueueHireOp))]
 [JsonSerializable(typeof(SnubHireOfferOp))]
 [JsonSerializable(typeof(DismissNotificationOp))]
+[JsonSerializable(typeof(SendComlinkMessageOp))]
+[JsonSerializable(typeof(MarkComlinkReadOp))]
 [JsonSerializable(typeof(BugReportCodec))]
 [JsonSerializable(typeof(BugReportMatchType))]
 [JsonSerializable(typeof(BugReportBuild))]

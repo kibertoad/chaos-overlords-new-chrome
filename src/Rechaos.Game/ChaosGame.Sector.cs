@@ -31,15 +31,14 @@ public sealed partial class ChaosGame
             UpdateIdleGangWarning(keyboard);
             return;
         }
-        var column = _cursor % 8;
-        var row = _cursor / 8;
         var previousCursor = _cursor;
-        if (Pressed(keyboard, Keys.Left) && column > 0) _cursor--;
-        if (Pressed(keyboard, Keys.Right) && column < 7) _cursor++;
-        if (Pressed(keyboard, Keys.Up) && row > 0) _cursor -= 8;
-        if (Pressed(keyboard, Keys.Down) && row < 7) _cursor += 8;
+        if (Pressed(keyboard, Keys.Left)) MoveCursor(-1, 0);
+        if (Pressed(keyboard, Keys.Right)) MoveCursor(1, 0);
+        if (Pressed(keyboard, Keys.Up)) MoveCursor(0, -1);
+        if (Pressed(keyboard, Keys.Down)) MoveCursor(0, 1);
         if (_cursor != previousCursor) _sectorGangCardOwner = null;
         _gangSelection.KeepOnly(_cursor);
+        HireDockOffersByKey(keyboard);
         if (Pressed(keyboard, Keys.Back))
             _screens.Show(ClientScreen.City);
         // FND-UI-015: Enter and Execute show the back control pressed for one tick of the
@@ -51,11 +50,15 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// What one draw of the sector view reads more than once, taken once: the cards it lists, the
-    /// player they belong to, whom the Overlord bar's marker follows (FND-UI-018:
+    /// player they belong to, which the compositor makes the viewed player (FND-UI-018:
     /// <c>0x00487B8C</c>), and for each seat whether the viewer sees one of its gangs here.
     /// </summary>
     private readonly record struct SectorViewFrame(
-        IReadOnlyList<MatchGangState> Cards, PlayerId Viewed, IReadOnlyList<bool> SeatsSeen);
+        IReadOnlyList<MatchGangState> Cards, PlayerId Viewed, IReadOnlyList<bool> SeatsSeen)
+    {
+        /// <summary>The seat the Overlord bar's marker turns beside, if any (FND-UI-017).</summary>
+        public PlayerId? Marked => SectorOpponentGangs.MarkedSeat(Viewed, SeatsSeen);
+    }
 
     private SectorViewFrame ComposeSectorView(MatchState state, PlayerId viewer)
     {
@@ -281,8 +284,8 @@ public sealed partial class ChaosGame
             && _hoverPoint is { } backHover && SectorDetailLayout.Back.Contains(backHover))
             DrawPressedSectorBack(batch);
         DrawSectorNeighborhood(batch, pixel, font, state);
-        // FND-UI-018: each site is its portrait under the keyed frame, with the progress meter
-        // when the sector's owner is the active player.
+        // FND-UI-018, FND-UI-070: each site is its portrait under the keyed frame, with the progress
+        // meter only when the sector's owner is the active player, whoever the viewed player is.
         foreach (var site in sector.Sites)
         {
             var definition = state.Definitions.Site(site.DefinitionId);
@@ -323,6 +326,7 @@ public sealed partial class ChaosGame
         // The Sector workspace covers the left side of right-edge tooltips drawn by
         // DrawBoard, so composite the tooltip again after the workspace is complete.
         DrawStatusConsoleTooltip(batch, pixel, font);
+        DrawSectorOwnerTooltip(batch, pixel, font);
         // RULE-TURN-005: what the group order strip does, as FND-TURN-009 records it.
         if (_hoverPoint is { } stripHover && showsGroupOrderStrip
             && SectorDetailLayout.GroupOrderStrip.Contains(stripHover))
