@@ -1,4 +1,5 @@
 import type { ServedSeatView } from '@chaos-overlords/contracts'
+import type { Match } from '../domain/entities'
 import { ConflictError } from '../domain/errors'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
@@ -35,15 +36,14 @@ export class SeatViewService {
         reason: 'not_a_view_match',
       })
     }
-    if (match.status === 'finished') {
-      throw new ConflictError('The match has ended; its whole state is released', {
-        reason: 'match_finished',
-      })
-    }
-    requireRunning(match)
+    requireLive(match)
     const number = match.currentTurn
     if (!(await previousTurnConfirmed(this.deps.storage.turns, match))) {
       await this.turns.resolveOnServer(match, number - 1)
+      // `resolveOnServer` settles only the turns its own feed recorded. A resolution recorded by an
+      // earlier call whose settle never ran (it threw, or the process died) is confirmed here, since
+      // a view match takes no reports and the sweep does not settle a sealed turn.
+      await this.turns.settle(match.id, number - 1)
       if (!(await previousTurnConfirmed(this.deps.storage.turns, match))) throw viewNotReady()
     }
     const outcome = await this.referee.seatView(match, number, player.slot)
@@ -57,12 +57,31 @@ export class SeatViewService {
       }
     }
     if (outcome.kind === 'none') {
+      // The resolver also has no view for any seat of a match it has finished. `match` was read
+      // before this call, and the turn that ended the match may have been confirmed since, here or
+      // by the seal, so the stored status decides which refusal this is.
+      const current = await this.deps.storage.matches.get(match.id)
+      if (current) requireLive(current)
       throw new ConflictError('Your seat is out of the match and has nothing to plan', {
         reason: 'seat_out',
       })
     }
     throw viewNotReady()
   }
+}
+
+/**
+ * Refuses a match with no open turn to plan: `match_finished` once it has finished, so nothing is
+ * withheld any more, and `match_not_running` when it was abandoned or is paused. A client tells an
+ * abandoned match from a finished one by these two reasons.
+ */
+function requireLive(match: Match): void {
+  if (match.status === 'finished') {
+    throw new ConflictError('The match has ended; its whole state is released', {
+      reason: 'match_finished',
+    })
+  }
+  requireRunning(match)
 }
 
 /** A view that cannot be served yet: the turn before is unresolved, or the resolver failed. */
