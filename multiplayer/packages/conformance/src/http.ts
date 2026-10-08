@@ -271,6 +271,44 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(paged).toEqual(events)
     })
 
+    it('relays Comlink ops in the sealed set and refuses one for another seat or untypeable text', async () => {
+      const { host, guest } = await lobbyOfTwo()
+      await host.api.start()
+      const send: OrderDocument = {
+        schemaVersion: 1,
+        ops: [{ op: 'sendComlinkMessage', player: 0, recipients: [1], text: 'MEET AT "DAWN".' }],
+      }
+      const read: OrderDocument = {
+        schemaVersion: 1,
+        ops: [{ op: 'markComlinkRead', player: 1, sequence: 0 }],
+      }
+
+      await expect(
+        guest.api.submitOrders(1, {
+          orders: { schemaVersion: 1, ops: [{ ...send.ops[0], player: 0 }] } as OrderDocument,
+          ready: false,
+        }),
+      ).rejects.toMatchObject({ status: 422, reason: 'foreign_slot_ops' })
+      await expect(
+        host.api.submitOrders(1, {
+          orders: {
+            schemaVersion: 1,
+            ops: [{ op: 'sendComlinkMessage', player: 0, recipients: [1], text: 'lower case' }],
+          },
+          ready: false,
+        }),
+      ).rejects.toMatchObject({ status: 422 })
+
+      await host.api.submitOrders(1, { orders: send, ready: true })
+      await guest.api.submitOrders(1, { orders: read, ready: true })
+
+      const sealed = await guest.api.sealedOrders(1)
+      expect(sealed.players.map((p) => [p.slot, p.orders])).toEqual([
+        [0, send],
+        [1, read],
+      ])
+    })
+
     it('resumes the stream from Last-Event-ID without replaying delivered events', async () => {
       const { host, guest } = await lobbyOfTwo()
       await host.api.start()
@@ -450,6 +488,51 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       await expect(
         anonymous.joinRunning({ match: host.match.id, slot: 1, displayName: 'Later' }),
       ).rejects.toMatchObject({ status: 409, reason: 'seat_reserved' })
+    })
+
+    it('seats a late joiner in a seat the vote handed to the computer, ending its old token', async () => {
+      const anonymous = client()
+      const host = await anonymous.createMatch({
+        settings: { ...settings, gameSettings: { allowLateJoin: true } },
+        hostDisplayName: 'Ada',
+      })
+      const guest = await anonymous.join({ joinCode: host.joinCode, displayName: 'Grace' })
+      const hostApi = anonymous.withToken(host.token).match(host.match.id)
+      const guestApi = anonymous.withToken(guest.token).match(host.match.id)
+      await hostApi.start()
+      await hostApi.uploadSnapshot({
+        turn: 0,
+        formatVersion: 1,
+        stateHash: HASH_A,
+        body: 'c2F2ZQ==',
+        seatSummaries: [],
+      })
+      const guestSlot =
+        (await hostApi.get()).match.players.find((p) => p.id === guest.player.id)?.slot ?? -1
+      await guestApi.leave()
+      await expect(
+        anonymous.joinRunning({ match: host.match.id, slot: guestSlot, displayName: 'Late' }),
+      ).rejects.toMatchObject({ status: 409, reason: 'seat_reserved' })
+
+      await hostApi.voteOnTakeover(guest.player.id, { decision: 'computer' })
+      if (harness.publicListing) {
+        const listed = (await anonymous.listLobbies()).matches.find((l) => l.id === host.match.id)
+        expect(listed?.availableSlots).toContain(guestSlot)
+      }
+      const late = await anonymous.joinRunning({
+        match: host.match.id,
+        slot: guestSlot,
+        displayName: 'Late',
+      })
+
+      expect(late.player.slot).toBe(guestSlot)
+      expect(late.player.id).not.toBe(guest.player.id)
+      await expect(guestApi.rejoin()).rejects.toMatchObject({ status: 401 })
+      const roster = (await hostApi.get()).match.players.filter((p) => p.slot === guestSlot)
+      expect(roster.map((p) => [p.id, p.status])).toEqual([
+        [guest.player.id, 'computer'],
+        [late.player.id, 'active'],
+      ])
     })
 
     it('names the refused field without echoing what was sent, and caps every body', async () => {

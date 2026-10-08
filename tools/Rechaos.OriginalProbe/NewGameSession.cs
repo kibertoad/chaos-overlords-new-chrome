@@ -261,6 +261,8 @@ internal sealed record ProbeTrace(
     List<CloseRecord>? Closes = null,
     List<SavedWriteRecord>? SavedWrites = null,
     bool? EffectsEnabled = null,
+    List<SoundCallRecord>? EffectCalls = null,
+    List<LevelSetupRecord>? LevelSetups = null,
     List<KeyEventRecord>? KeyEvents = null,
     List<NameEntryRecord>? NameEntries = null,
     List<int>? EliminationCards = null,
@@ -283,8 +285,9 @@ internal sealed partial class NewGameSession(
     private readonly List<int> _rollsAtDone = [];
     private int _seed = -1;
     private bool _setupReached;
-    private int _panelsOpen;
-    private int _exitPresses;
+    // The indices in _panels of the panel calls whose handler has not returned, innermost last.
+    private readonly List<int> _openPanelCalls = [];
+    private int PanelsOpen => _openPanelCalls.Count;
     private readonly List<PanelRecord> _panels = [];
     // The panel calls as they stood at the dump: presses made after it, such as a hire step's
     // Exit, close panels and open others that belong to no planning entry of the run.
@@ -322,6 +325,8 @@ internal sealed partial class NewGameSession(
                 BitConverter.GetBytes(OriginalAddresses.ThirtyTwoBitWhite));
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
+        _process.SetBreakpoint(OriginalAddresses.CombatResultsSlideIn, _ => PanelShown("Combat Results"));
+        _process.SetBreakpoint(OriginalAddresses.LastTurnEventsSlideIn, _ => PanelShown("Last Turn Events"));
         if (settings.Finance is { Count: > 0 })
         {
             _process.SetBreakpoint(OriginalAddresses.FinancePanel, OnFinancePanel);
@@ -491,6 +496,7 @@ internal sealed partial class NewGameSession(
                 if (!_process.RunUntil(() => _endgameDrawn, TimeSpan.FromSeconds(10)))
                 {
                     _endgame = null;
+                    _process.RemoveBreakpoint(OriginalAddresses.TextDraw, OnTextDraw);
                     _notes.Add("The endgame renderer did not return within 10 seconds; its rows are not kept.");
                 }
                 _notes.Add($"The match ended with turn {turn}; the endgame drew the awards after roll {_rolls.Count}.");
@@ -594,58 +600,19 @@ internal sealed partial class NewGameSession(
                && quiet > TimeSpan.FromSeconds(8);
     }
 
-    private void OpenPanel(BreakContext context, string panel)
-    {
-        _panelsOpen++;
-        _notes.Add($"{panel} opened after roll {_rolls.Count}");
-        var presses = _exitPresses;
-        // Kept in the order of the calls. A panel still open when the run ends was shown at the
-        // last planning entry, so it stays marked shown until its handler returns.
-        var index = _panels.Count;
-        _panels.Add(new PanelRecord(panel, _rolls.Count, true));
-        _process.SetBreakpoint(context.ReturnAddress, _ =>
-        {
-            _panelsOpen--;
-            _panels[index] = _panels[index] with { Shown = _exitPresses > presses };
-        }, oneShot: true);
-    }
-
-    // Presses Exit until every panel handler that opened has returned.
-    private bool ClosePanels(IntPtr window)
-    {
-        for (var attempt = 0; _panelsOpen > 0 && attempt < 10; attempt++)
-        {
-            _exitPresses++;
-            Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
-            _process.RunUntil(() => _panelsOpen == 0, TimeSpan.FromSeconds(3));
-        }
-
-        return _panelsOpen == 0;
-    }
-
-    // An Exit press of a step after the dump. With no panel open the Exit point lies on the city
-    // map, where a press would select a sector and a second one open the sector view, so the
-    // press is skipped. A press that closes a panel counts as for ClosePanels, so the panel is
-    // recorded as shown.
-    private void PressExitAfterDump(IntPtr window)
-    {
-        if (_panelsOpen == 0)
-        {
-            _notes.Add("exit after the dump skipped: no panel was open");
-            return;
-        }
-        _exitPresses++;
-        Click(window, OriginalAddresses.PanelExitX, OriginalAddresses.PanelExitY);
-    }
-
     // FND-AWARDS-005: the renderer's first call, kept until it returns.
     private void OnAwardsRows(BreakContext context)
     {
         _awardsReached = true;
         _endgame = new EndgameDrawing([context.Argument(0), context.Argument(1), context.Argument(2)], [], []);
-        // Set only now: the helper draws every text of the game.
+        // Set only now and removed once the drawing returns: the helper draws every text of the
+        // game, so left in place it would stop the game at each text drawn after the endgame.
         _process.SetBreakpoint(OriginalAddresses.TextDraw, OnTextDraw);
-        _process.SetBreakpoint(context.ReturnAddress, _ => _endgameDrawn = true, oneShot: true);
+        _process.SetBreakpoint(context.ReturnAddress, _ =>
+        {
+            _endgameDrawn = true;
+            _process.RemoveBreakpoint(OriginalAddresses.TextDraw, OnTextDraw);
+        }, oneShot: true);
     }
 
     private void OnTextDraw(BreakContext context)
@@ -922,6 +889,7 @@ internal sealed partial class NewGameSession(
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
             settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
             _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null,
+            settings.Sounds ? _effectCalls : null, settings.Sounds ? _levelSetups : null,
             _keyEvents.Count == 0 ? null : _keyEvents, _nameEntries.Count == 0 ? null : _nameEntries,
             _eliminationCards.Count == 0 ? null : _eliminationCards, _menus.Count == 0 ? null : _menus,
             settings.ClockCaptures ? _clockCaptures : null,

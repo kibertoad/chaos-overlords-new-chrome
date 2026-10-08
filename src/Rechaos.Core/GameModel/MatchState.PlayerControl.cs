@@ -9,20 +9,15 @@ public sealed partial class MatchState
     /// This is deliberately one-way and does not infer a departure from an absent order document:
     /// an absent document can also mean an active player timed out. Online callers must record an
     /// authoritative approved-takeover event and apply this operation on every client before planning the seal.
-    /// A sender with authenticated human Comlink history cannot transfer because current save
-    /// validation cannot otherwise prove that those earlier messages were sent before the handover.
+    /// Messages the seat's human sent stay in their recipients' inboxes, as a delivered message does
+    /// in the original; the raider mode the takeover sets (RULE-AI-027) is what lets a restored
+    /// inbox accept a sender the computer now plays.
     /// </remarks>
     public bool TransferPlayerToComputer(PlayerId playerId)
     {
         var player = FindPlayer(playerId) ?? throw new ArgumentOutOfRangeException(nameof(playerId));
         if (player.Setup.Controller == PlayerController.Computer) return false;
         RequireCleanCommandBoundary();
-        if (Players.Any(recipient => ComlinkFor(recipient.Id).Messages.Any(
-                message => message.Sender == playerId)))
-        {
-            throw new InvalidOperationException(
-                "A seat with authenticated human Comlink history cannot transfer to the computer.");
-        }
 
         // The seat's carried-over recurring orders go with the human. The AI planner never writes
         // or clears Repeat, so a gang the planner leaves idle would otherwise keep running the
