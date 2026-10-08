@@ -51,6 +51,7 @@ function playerFixture(match: Match, overrides: Partial<Player> = {}): Player {
     tokenHash: uid('hash'),
     status: 'active',
     joinedAt: new Date('2026-03-01T10:00:01.000Z'),
+    comlinkKey: null,
     ...overrides,
   }
 }
@@ -508,6 +509,24 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       await storage.players.create(second)
       await storage.players.revokeToken(second.id)
       expect((await storage.players.listByMatch(match.id)).length).toBe(2)
+    })
+
+    it('stores a Comlink key and reports whether it changed', async () => {
+      const match = matchFixture()
+      await storage.matches.create(match)
+      const player = playerFixture(match)
+      await storage.players.create(player)
+      expect((await storage.players.get(player.id))?.comlinkKey).toBeNull()
+      expect(await storage.players.setComlinkKey(player.id, 'first')).toBe(true)
+      expect(await storage.players.setComlinkKey(player.id, 'first')).toBe(false)
+      expect((await storage.players.get(player.id))?.comlinkKey).toBe('first')
+      expect(await storage.players.setComlinkKey(player.id, 'second')).toBe(true)
+      expect((await storage.players.listByMatch(match.id))[0]?.comlinkKey).toBe('second')
+      expect(await storage.players.setComlinkKey(uid('missing'), 'first')).toBe(false)
+      // A player row written with a key keeps it, whichever insert wrote it.
+      const keyed = playerFixture(match, { comlinkKey: 'written' })
+      await storage.players.create(keyed)
+      expect((await storage.players.get(keyed.id))?.comlinkKey).toBe('written')
     })
 
     it('opens a turn with an empty orders row per player and accepts orders only while open', async () => {

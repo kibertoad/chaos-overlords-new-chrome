@@ -51,6 +51,7 @@ it('discards an orphan vote before a later prompt reuses the seat', async () => 
       tokenHash: 'orphan-vote-token',
       status: 'left',
       joinedAt: now,
+      comlinkKey: null,
     }
     expect(await opened.storage.matches.create(match)).toBe(true)
     expect(await opened.storage.players.create(player)).toBe(true)

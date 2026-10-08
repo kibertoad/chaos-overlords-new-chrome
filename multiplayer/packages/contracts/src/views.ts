@@ -2,6 +2,7 @@ import { array, boolean, type InferOutput, nullable, picklist, strictObject } fr
 import { orderDocumentSchema } from './orders'
 import {
   base64BodySchema,
+  comlinkPublicKeySchema,
   displayNameSchema,
   eventSeqSchema,
   formatVersionSchema,
@@ -56,6 +57,11 @@ export const playerViewSchema = strictObject({
   portraitId: portraitIdSchema,
   status: playerStatusSchema,
   isHost: boolean(),
+  /**
+   * The public key other seats seal this player's Comlink messages to, or null before their client
+   * has published one. See `PUT /matches/:id/comlink-key`.
+   */
+  comlinkKey: nullable(comlinkPublicKeySchema),
 })
 
 export const turnViewSchema = strictObject({

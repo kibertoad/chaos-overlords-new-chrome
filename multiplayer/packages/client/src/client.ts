@@ -37,6 +37,7 @@ import {
   type UploadSnapshotRequest,
   updateMatchSettingsContract,
   postChatMessageContract,
+  publishComlinkKeyContract,
   updatePlayerProfileContract,
   type UpdatePlayerProfileRequest,
   uploadSnapshotContract,
@@ -327,6 +328,15 @@ export class MatchHandle {
       postChatMessageContract,
       postChatMessageContract.pathResolver({ matchId: this.matchId }),
       { text },
+    )
+  }
+
+  /** Publishes this player's Comlink public key, the one other seats seal messages to. */
+  publishComlinkKey(publicKey: string): Promise<void> {
+    return this.client.call(
+      publishComlinkKeyContract,
+      publishComlinkKeyContract.pathResolver({ matchId: this.matchId }),
+      { publicKey },
     )
   }
 

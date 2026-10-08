@@ -41,12 +41,23 @@ public sealed class SpeculativeTurn
 {
     private readonly MatchReplayRecorder _replay;
 
-    private SpeculativeTurn(MatchReplayRecorder replay, PlayerId player, int orderLimit)
+    private SpeculativeTurn(
+        MatchReplayRecorder replay,
+        PlayerId player,
+        int orderLimit,
+        ComlinkKeyring? comlink)
     {
         _replay = replay;
         Player = player;
+        Comlink = comlink;
         Orders = OrderDocumentBuilder.ForTurn(replay.State, player, orderLimit);
     }
+
+    /// <summary>
+    /// The keys this client seals its Comlink messages with and opens its own with, or null where
+    /// there are none, in which case every send is refused as unreachable.
+    /// </summary>
+    public ComlinkKeyring? Comlink { get; }
 
     /// <summary>The seat this client plays.</summary>
     public PlayerId Player { get; }
@@ -67,15 +78,23 @@ public sealed class SpeculativeTurn
     /// Advancing the coordinator seat by seat is what makes the local player active; the seats it
     /// steps past do nothing, because nothing this copy does is ever resolved.
     /// </remarks>
-    public static SpeculativeTurn For(MatchState authoritative, OriginalData definitions, int slot) =>
-        For(authoritative, definitions, slot, OrderDocumentBuilder.MaxOps);
+    public static SpeculativeTurn For(
+        MatchState authoritative,
+        OriginalData definitions,
+        int slot,
+        ComlinkKeyring? comlink = null) =>
+        For(authoritative, definitions, slot, OrderDocumentBuilder.MaxOps, comlink);
 
-    /// <summary><see cref="For(MatchState, OriginalData, int)"/> with a smaller order limit, for tests.</summary>
+    /// <summary>
+    /// <see cref="For(MatchState, OriginalData, int, ComlinkKeyring)"/> with a smaller order limit,
+    /// for tests.
+    /// </summary>
     internal static SpeculativeTurn For(
         MatchState authoritative,
         OriginalData definitions,
         int slot,
-        int orderLimit)
+        int orderLimit,
+        ComlinkKeyring? comlink = null)
     {
         ArgumentNullException.ThrowIfNull(authoritative);
         ArgumentNullException.ThrowIfNull(definitions);
@@ -109,7 +128,7 @@ public sealed class SpeculativeTurn
             throw new InvalidOperationException(
                 $"Seat {slot} never becomes the active player, so there is no turn to plan on it.");
         }
-        return new SpeculativeTurn(replay, player, orderLimit);
+        return new SpeculativeTurn(replay, player, orderLimit, comlink);
     }
 
     /// <summary>
@@ -126,10 +145,11 @@ public sealed class SpeculativeTurn
         MatchState authoritative,
         OriginalData definitions,
         int slot,
-        OrderDocument document)
+        OrderDocument document,
+        ComlinkKeyring? comlink = null)
     {
         EnsureReadable(document, slot);
-        var turn = For(authoritative, definitions, slot);
+        var turn = For(authoritative, definitions, slot, comlink);
         // Every op is read before any is applied, so a draft this build cannot read is refused whole.
         var decoded = new DecodedOrderOp[document.Ops.Count];
         for (var index = 0; index < decoded.Length; index++)
@@ -143,7 +163,7 @@ public sealed class SpeculativeTurn
                 DecodedOrderOp.QueueHire hire => turn.QueueHire(hire.GangDefinitionId, hire.SectorId).Accepted,
                 DecodedOrderOp.SnubHireOffer snub => turn.SnubHireOffer(snub.GangDefinitionId).Accepted,
                 DecodedOrderOp.DismissNotification => turn.DismissNotification(),
-                DecodedOrderOp.SendComlinkMessage send => turn.SendComlinkMessage(send.Recipients, send.Text).Accepted,
+                DecodedOrderOp.SendComlinkMessage send => turn.SendSealedComlinkMessage(send.Letters).Accepted,
                 DecodedOrderOp.MarkComlinkRead read => turn.MarkComlinkRead(read.Sequence),
                 var op => throw new UnreachableException($"a decoded op restore does not handle: {op}"),
             };
@@ -245,29 +265,61 @@ public sealed class SpeculativeTurn
     }
 
     /// <summary>
-    /// Sends a Comlink message on the copy, and records it when the core accepted one worth sending.
+    /// Seals a Comlink message for each recipient and sends it on the copy, and records the sealed
+    /// letters when the core accepted one worth sending.
     /// </summary>
     /// <remarks>
-    /// The copy stores the message in each recipient's inbox there and then, which nobody sees: it
-    /// reaches the real inboxes when the turn seals. A draft of spaces only is accepted and stores
-    /// nothing (RULE-COMLINK-003), so it is not recorded either. The core checks only the length and
-    /// the blank draft, while the wire takes only the characters the Send panel types, space to
-    /// <c>Z</c> (RULE-COMLINK-006). Any other character throws before the copy changes, because the
-    /// server would refuse the whole document and every order of the seat's turn with it.
+    /// <para>
+    /// The text is judged first exactly as a hot-seat send judges it, so a refusal reads the same
+    /// online. A draft of spaces only is accepted and stores nothing (RULE-COMLINK-003), so it is
+    /// neither sealed nor recorded. Anything else is sealed to each recipient's published key
+    /// (<see cref="ComlinkKeyring"/>), and only the envelopes go into the order document: the
+    /// server, the other seats and the sealed set never see the text. A recipient whose client has
+    /// published no key cannot be sealed to, and the send is refused as
+    /// <see cref="ComlinkValidationCode.RecipientUnreachable"/>.
+    /// </para>
+    /// <para>
+    /// The core checks only the length and the blank draft, while a message holds only the
+    /// characters the Send panel types, space to <c>Z</c> (RULE-COMLINK-006). Any other character
+    /// throws before the copy changes, whether or not a key is held to seal it with.
+    /// </para>
+    /// <para>
+    /// The copy stores the sealed message in each recipient's inbox there and then, which nobody
+    /// sees: it reaches the real inboxes when the turn seals.
+    /// </para>
     /// </remarks>
-    /// <exception cref="ArgumentException">The text holds a character outside space to <c>Z</c>.</exception>
+    /// <exception cref="ArgumentException">
+    /// The text holds a character the Send panel cannot type (RULE-COMLINK-006), which cannot be
+    /// sealed.
+    /// </exception>
     public ComlinkSendResult SendComlinkMessage(IReadOnlyList<PlayerId> recipients, string text)
     {
         ArgumentNullException.ThrowIfNull(recipients);
         ArgumentNullException.ThrowIfNull(text);
-        if (!OrderOpDecoder.IsComlinkCharacters(text))
+        if (!ComlinkSeal.IsComlinkCharacters(text))
         {
             throw new ArgumentException(
                 "A Comlink message holds only the characters space to Z.", nameof(text));
         }
-        var result = _replay.SendComlinkMessage(Player, recipients, text);
-        if (result.Accepted && result.Recipients.Count > 0)
-            Orders.SendComlinkMessage(Player, recipients, text);
+        var check = State.CheckComlinkMessage(Player, recipients, text);
+        if (!check.Accepted || check.Recipients.Count == 0) return check;
+        var letters = Comlink?.Seal(State.Coordinator.Turn, Player, check.Recipients, text);
+        if (letters is null)
+        {
+            return new ComlinkSendResult(
+                false,
+                ComlinkValidationCode.RecipientUnreachable,
+                [],
+                ComlinkValidationMessages.For(ComlinkValidationCode.RecipientUnreachable));
+        }
+        return SendSealedComlinkMessage(letters);
+    }
+
+    /// <summary>Sends already sealed letters on the copy, and records them when the core accepted them.</summary>
+    private ComlinkSendResult SendSealedComlinkMessage(IReadOnlyList<SealedComlinkLetter> letters)
+    {
+        var result = _replay.SendSealedComlinkMessage(Player, letters);
+        if (result.Accepted) Orders.SendComlinkMessage(Player, letters);
         return result;
     }
 

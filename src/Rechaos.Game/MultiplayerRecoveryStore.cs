@@ -6,156 +6,6 @@ using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Game;
 
-/// <summary>One seat a player can still return to, as the interface reads it.</summary>
-/// <remarks>
-/// <para>
-/// Two of the names here are easy to confuse. <c>DisplayName</c> is the player's own name in that
-/// match; <c>SessionName</c> is the match's own, which is what a list of sessions has to be read by.
-/// The match's name reaches every member on the wire, so it is kept for every member rather than
-/// only for the host who typed it.
-/// </para>
-/// <para>
-/// <c>LastUpdatedAt</c> is when this seat last had turn data stored against it, which is what tells
-/// two unfinished sessions apart when both are still resumable. It is null, and <c>SessionName</c>
-/// empty, in a record written by a build that stored neither.
-/// </para>
-/// </remarks>
-public sealed record MultiplayerRecovery(
-    int FormatVersion,
-    string Server,
-    string MatchId,
-    string PlayerId,
-    string Token,
-    string JoinCode,
-    string DisplayName,
-    bool IsHost,
-    bool CleanExit,
-    bool Completed,
-    string Password = "",
-    int SessionVersion = MultiplayerSessionVersion.Initial,
-    string SessionName = "",
-    DateTimeOffset? LastUpdatedAt = null,
-    MultiplayerRecoveryFailure? LastFailure = null)
-{
-    public const int CurrentFormatVersion = 1;
-
-    /// <summary>Whether this build plays the session this seat belongs to.</summary>
-    /// <remarks>
-    /// The membership stays worth keeping either way — the seat is still held, and a build of that
-    /// session version can take it — so this is asked beside <see cref="CanReconnect"/> rather than
-    /// folded into it. The browser of this build lists only what it can resume.
-    /// </remarks>
-    public bool IsCompatible => MultiplayerSessionVersion.CanResume(SessionVersion);
-
-    public bool ShouldSuggestReconnect => !CleanExit && !Completed && IsCompatible;
-    public bool CanReconnect => !Completed;
-
-    /// <summary>The seat is still live and this build can carry the match on.</summary>
-    public bool CanResume => CanReconnect && IsCompatible;
-}
-
-/// <summary>
-/// The last non-recoverable online failure for a saved membership.
-/// </summary>
-/// <remarks>
-/// This is a deliberately small forensic breadcrumb, not a replay or a transport capture. It
-/// carries only machine-readable protocol context that can be safely included in a diagnostics
-/// export; credentials, player names, match settings and orders never belong here.
-/// </remarks>
-public sealed record MultiplayerRecoveryFailure(
-    DateTimeOffset OccurredAt,
-    string Stage,
-    string? Operation,
-    int? HttpStatus,
-    string? Reason,
-    string? RequestId,
-    int? PlanningTurn,
-    int? LastEventSequence);
-
-/// <summary>
-/// One membership as it sits on disk.
-/// </summary>
-/// <remarks>
-/// <para>
-/// Separate from <see cref="MultiplayerRecovery"/> because the token is not stored the way it is
-/// held. <see cref="ProtectedToken"/> carries it sealed with DPAPI to the current user account on
-/// Windows. <see cref="TokenStore"/> names the operating-system store that holds it on macOS
-/// (<c>keychain</c>) and Linux (<c>secret-service</c>), and <see cref="TokenAccount"/> the name it
-/// is filed under there; see <see cref="RecoveryTokenProtection"/>. <see cref="Token"/> carries it in clear where
-/// neither is available. Exactly one of the three is set. A file written by a build that predates
-/// the sealed forms has only <see cref="Token"/>, which is why reading that is still supported, and
-/// why the first load that can seal it rewrites the file without it.
-/// </para>
-/// <para>
-/// <see cref="Password"/> is stored in the clear, unlike the token. It opens one session's door to
-/// anyone the player was going to read it out to anyway, where the token is that seat itself; and
-/// the reason to keep it is that the player who resumes has to be able to read it out again.
-/// A file from a build that did not write it has none, which reads back as a session without one.
-/// </para>
-/// <para>
-/// <see cref="SessionVersion"/> is kept so the browser can leave out a seat this build cannot take
-/// before the game dials the server for it. It is additive in both directions, which is why it does not
-/// move <see cref="MultiplayerRecoveryHistory.CurrentFormatVersion"/>: a build that does not know
-/// the field ignores it and keeps its reconnects, and a build that does reads a file without one
-/// as <see cref="MultiplayerSessionVersion.Initial"/>, the only version that can have been stored
-/// before the field existed. The file is a hint either way — the match view settles it.
-/// </para>
-/// </remarks>
-internal sealed record PersistedRecovery(
-    int FormatVersion,
-    string Server,
-    string MatchId,
-    string PlayerId,
-    string JoinCode,
-    string DisplayName,
-    bool IsHost,
-    bool CleanExit,
-    bool Completed,
-    string? Token = null,
-    string? ProtectedToken = null,
-    string? Password = null,
-    int? SessionVersion = null,
-    string? SessionName = null,
-    DateTimeOffset? LastUpdatedAt = null,
-    MultiplayerRecoveryFailure? LastFailure = null,
-    string? TokenStore = null,
-    string? TokenAccount = null);
-
-internal sealed record MultiplayerRecoveryHistory(
-    int FormatVersion,
-    IReadOnlyList<PersistedRecovery> Sessions)
-{
-    /// <summary>
-    /// Version 6 added <see cref="PersistedRecovery.TokenStore"/> and
-    /// <see cref="PersistedRecovery.TokenAccount"/>; 5 added
-    /// <see cref="PersistedRecovery.LastFailure"/>; 4 added <see cref="PersistedRecovery.SessionName"/> and
-    /// <see cref="PersistedRecovery.LastUpdatedAt"/>; 3 added
-    /// <see cref="PersistedRecovery.ProtectedToken"/>; 2 is still read. Every field these versions
-    /// added is optional, so an older file reads back as a membership that simply knows less about
-    /// itself rather than one that cannot be resumed.
-    /// </summary>
-    internal const int CurrentFormatVersion = 6;
-    internal const int OldestReadableFormatVersion = 2;
-
-    /// <summary>
-    /// The newest version without <see cref="PersistedRecovery.TokenStore"/>, which a file is still
-    /// written as when no membership in it uses that field.
-    /// </summary>
-    /// <remarks>
-    /// A build of version 5 would read a token kept in an operating-system store as a membership
-    /// without a token, drop it, and on its next save write the file without it: the seat would be
-    /// gone. Stamping such a file 6 makes that build leave it alone instead. A file with no such
-    /// membership, which is every file on Windows, stays readable by that build, so going back one
-    /// build there costs nothing.
-    /// </remarks>
-    internal const int FormatVersionWithoutTokenStore = 5;
-
-    internal static int FormatVersionFor(IEnumerable<PersistedRecovery> sessions) =>
-        sessions.Any(session => session.TokenStore is not null)
-            ? CurrentFormatVersion
-            : FormatVersionWithoutTokenStore;
-}
-
 /// <summary>Atomic local record of the seat needed to resume an interrupted online match.</summary>
 /// <remarks>
 /// A membership token is a full capability for that seat until the match is retired, so this file is
@@ -778,17 +628,18 @@ public static class MultiplayerRecoveryStore
                 ledger.Refused.Remove(account);
                 ledger.Stored[account] = recovery.Token;
                 ledger.Accounts[seat] = account;
-                return Persisted(recovery, token: null, protectedToken: null, store.Name, account);
+                return Persisted(recovery, token: null, protectedToken: null, store.Name, account, protection.UseDpapi);
             }
             ledger.Refused[account] = recovery.Token;
-            return Persisted(recovery, recovery.Token, protectedToken: null, tokenStore: null, tokenAccount: null);
+            return Persisted(recovery, recovery.Token, protectedToken: null, tokenStore: null, tokenAccount: null, protection.UseDpapi);
         }
         var sealedToken = protection.UseDpapi ? Protect(recovery.Token) : null;
         return Persisted(recovery,
             token: sealedToken is null ? recovery.Token : null,
             protectedToken: sealedToken,
             tokenStore: null,
-            tokenAccount: null);
+            tokenAccount: null,
+            protection.UseDpapi);
     }
 
     /// <summary>What a keychain or keyring browser shows for the item.</summary>
@@ -802,8 +653,12 @@ public static class MultiplayerRecoveryStore
         string? token,
         string? protectedToken,
         string? tokenStore,
-        string? tokenAccount)
+        string? tokenAccount,
+        bool useDpapi)
     {
+        var sealedComlinkKey = useDpapi && recovery.ComlinkKey.Length > 0
+            ? Protect(recovery.ComlinkKey)
+            : null;
         return new PersistedRecovery(
             recovery.FormatVersion,
             recovery.Server,
@@ -822,7 +677,11 @@ public static class MultiplayerRecoveryStore
             LastUpdatedAt: recovery.LastUpdatedAt,
             LastFailure: recovery.LastFailure,
             TokenStore: tokenStore,
-            TokenAccount: tokenAccount);
+            TokenAccount: tokenAccount,
+            ComlinkKey: sealedComlinkKey is null && recovery.ComlinkKey.Length > 0
+                ? recovery.ComlinkKey
+                : null,
+            ProtectedComlinkKey: sealedComlinkKey);
     }
 
     /// <summary>One stored membership as a load reads it.</summary>
@@ -893,10 +752,10 @@ public static class MultiplayerRecoveryStore
         // was copied from. There is nothing to resume with, so the membership is dropped rather than
         // offered as a reconnect that would answer 401.
         if (string.IsNullOrEmpty(token)) return default;
-        return new Revived(Membership(stored, token), null);
+        return new Revived(Membership(stored, token, protection.UseDpapi), null);
     }
 
-    private static MultiplayerRecovery Membership(PersistedRecovery stored, string token) =>
+    private static MultiplayerRecovery Membership(PersistedRecovery stored, string token, bool useDpapi) =>
         new(
             stored.FormatVersion,
             stored.Server,
@@ -912,7 +771,13 @@ public static class MultiplayerRecoveryStore
             stored.SessionVersion ?? MultiplayerSessionVersion.Initial,
             stored.SessionName ?? string.Empty,
             stored.LastUpdatedAt,
-            stored.LastFailure);
+            stored.LastFailure,
+            // A sealed key that will not open is dropped like a sealed token, but the seat is
+            // still worth resuming: it takes a fresh key and loses only what was sealed to the old.
+            (stored.ProtectedComlinkKey is { } sealedKey
+                ? useDpapi ? Unprotect(sealedKey) : null
+                : stored.ComlinkKey)
+                ?? string.Empty);
 
     /// <summary>
     /// Whether a membership whose token could not be read is worth writing back: well formed
@@ -922,7 +787,7 @@ public static class MultiplayerRecoveryStore
     {
         try
         {
-            var placeholder = Membership(stored, "held");
+            var placeholder = Membership(stored, "held", useDpapi: false);
             return IsValid(placeholder) && placeholder.CanReconnect;
         }
         catch
@@ -982,6 +847,7 @@ public static class MultiplayerRecoveryStore
             Password.Length: <= 128,
             SessionVersion: >= 0,
             SessionName.Length: <= 64,
+            ComlinkKey.Length: <= 1024,
             LastFailure: null or
             {
                 Stage.Length: > 0 and <= 48,

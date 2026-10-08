@@ -52,6 +52,7 @@ describe('API_CONTRACTS', () => {
         'PUT /matches/:matchId/settings',
         'PUT /matches/:matchId/profile',
         'POST /matches/:matchId/chat',
+        'PUT /matches/:matchId/comlink-key',
         'POST /matches/:matchId/leave',
         'POST /matches/:matchId/rejoin',
         'POST /matches/:matchId/players/:playerId/kick',

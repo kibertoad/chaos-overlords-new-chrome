@@ -1,5 +1,17 @@
 import type { Player, PlayerRepository } from '@chaos-overlords/kernel'
-import { and, asc, eq, exists, inArray, isNotNull, ne, notExists, or, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  isNull,
+  ne,
+  notExists,
+  or,
+  sql,
+} from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import type { DrizzleD1Database } from 'drizzle-orm/d1'
 import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
@@ -42,6 +54,7 @@ function playerValues(player: Player) {
     tokenHash: sql`${player.tokenHash}`.as('token_hash'),
     status: sql`${player.status}`.as('status'),
     joinedAt: sql`${player.joinedAt.getTime()}`.as('joined_at'),
+    comlinkKey: sql`${player.comlinkKey}`.as('comlink_key'),
   }
 }
 
@@ -210,6 +223,20 @@ export function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
         .update(players)
         .set({ displayName: profile.displayName, portraitId: profile.portraitId })
         .where(and(eq(players.id, playerId), eq(players.status, 'active'), inLobby))
+        .returning({ id: players.id })
+      return rows.length === 1
+    },
+    /** Writes only a key that differs, so republishing the stored key changes nothing. */
+    async setComlinkKey(playerId, comlinkKey) {
+      const rows = await db
+        .update(players)
+        .set({ comlinkKey })
+        .where(
+          and(
+            eq(players.id, playerId),
+            or(isNull(players.comlinkKey), ne(players.comlinkKey, comlinkKey)),
+          ),
+        )
         .returning({ id: players.id })
       return rows.length === 1
     },

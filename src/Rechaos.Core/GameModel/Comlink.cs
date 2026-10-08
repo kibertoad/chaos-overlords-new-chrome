@@ -1,10 +1,57 @@
 namespace Rechaos.Core.GameModel;
 
+/// <summary>One message in a player's inbox.</summary>
+/// <remarks>
+/// A hot-seat message carries its <see cref="Text"/>. An online message carries only the
+/// <see cref="Envelope"/> sealed for its recipient, with an empty <see cref="Text"/>: every client
+/// stores and hashes the envelope, and only the recipient's client can open it (see
+/// docs/MULTIPLAYER.md, "Comlink privacy"). Exactly one of the two is set.
+/// </remarks>
 public sealed record ComlinkMessage(
     long Sequence,
     int Turn,
     PlayerId Sender,
-    string Text);
+    string Text,
+    string? Envelope = null)
+{
+    /// <summary>Whether the text is sealed for the recipient rather than carried in the clear.</summary>
+    /// <remarks>
+    /// Left out of saves and snapshots: it follows from <see cref="Envelope"/>, and a stored copy
+    /// would be read back and ignored.
+    /// </remarks>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsSealed => Envelope is not null;
+}
+
+/// <summary>One recipient's copy of a sealed Comlink message.</summary>
+/// <param name="Recipient">The seat the envelope is sealed for.</param>
+/// <param name="Envelope">What only that seat's client can open; see <see cref="ComlinkEnvelope"/>.</param>
+public sealed record SealedComlinkLetter(PlayerId Recipient, string Envelope);
+
+/// <summary>
+/// The shape of a sealed Comlink message, as the core holds it: opaque text of one fixed length.
+/// </summary>
+/// <remarks>
+/// The core never opens an envelope and does not know how one is made; the online client seals and
+/// opens them. What the core checks is that it is base64 of <see cref="Bytes"/> bytes, because the
+/// envelope is stored in the inbox, hashed and saved, and every client has to agree on what it
+/// accepted. Every envelope has the same length whatever the text, so the length says nothing about
+/// the message.
+/// </remarks>
+public static class ComlinkEnvelope
+{
+    /// <summary>The bytes of an envelope: an ephemeral P-256 point, the padded text, the tag.</summary>
+    public const int Bytes = 64 + MatchLimits.ComlinkMessageCharacters + 16;
+
+    /// <summary>The base64 characters of an envelope. <see cref="Bytes"/> divides by three, so none is padding.</summary>
+    public const int Characters = Bytes / 3 * 4;
+
+    /// <summary>Whether <paramref name="envelope"/> is standard base64 of exactly <see cref="Bytes"/> bytes.</summary>
+    public static bool IsWellFormed(string? envelope) =>
+        envelope is { Length: Characters }
+        && envelope.All(character => character is >= 'A' and <= 'Z' or >= 'a' and <= 'z'
+            or >= '0' and <= '9' or '+' or '/');
+}
 
 public enum ComlinkValidationCode : byte
 {
@@ -20,10 +67,17 @@ public enum ComlinkValidationCode : byte
     DuplicateRecipient,
     EmptyMessage,
     MessageTooLong,
-    RecipientNotActive
+    RecipientNotActive,
+    /// <summary>A sealed message whose envelope for some recipient is not one (see <see cref="ComlinkEnvelope"/>).</summary>
+    MalformedEnvelope,
+    /// <summary>
+    /// The online client holds no key to seal the message to some recipient. The core never answers
+    /// this; it is the client's refusal, in the same vocabulary as the core's.
+    /// </summary>
+    RecipientUnreachable
 }
 
-internal static class ComlinkValidationMessages
+public static class ComlinkValidationMessages
 {
     private static readonly IReadOnlyDictionary<ComlinkValidationCode, string> Messages =
         new Dictionary<ComlinkValidationCode, string>
@@ -40,7 +94,9 @@ internal static class ComlinkValidationMessages
             [ComlinkValidationCode.DuplicateRecipient] = "Recipients must be unique.",
             [ComlinkValidationCode.EmptyMessage] = "Enter a message.",
             [ComlinkValidationCode.MessageTooLong] = "Message exceeds 160 characters.",
-            [ComlinkValidationCode.RecipientNotActive] = "Recipient was eliminated."
+            [ComlinkValidationCode.RecipientNotActive] = "Recipient was eliminated.",
+            [ComlinkValidationCode.MalformedEnvelope] = "Message is not sealed.",
+            [ComlinkValidationCode.RecipientUnreachable] = "Recipient has no Comlink key."
         };
 
     public static string For(ComlinkValidationCode code) => Messages[code];
@@ -84,8 +140,7 @@ public sealed class ComlinkInbox
                 message.Sequence != nextSequence - messages.Count + index
                 || message.Turn < 1
                 || message.Sender.Value is < 0 or >= MatchLimits.PlayerCount
-                || string.IsNullOrWhiteSpace(message.Text)
-                || message.Text.Length > MatchLimits.ComlinkMessageCharacters).Any()
+                || !IsStorable(message)).Any()
             // RULE-COMLINK-007 drops read messages from the front, so an inbox can hold fewer
             // than it has received; what is left is still the newest run of messages.
             || messages.Count > Math.Min(nextSequence, MatchLimits.ComlinkMessagesPerPlayer))
@@ -101,6 +156,18 @@ public sealed class ComlinkInbox
         foreach (var sequence in readSequences) inbox._readSequences.Add(sequence);
         return inbox;
     }
+
+    /// <summary>
+    /// A message as <see cref="Receive"/> or <see cref="ReceiveSealed"/> would have stored it: text
+    /// in the clear that is not blank and fits the Send panel, or an empty text beside a
+    /// well-formed envelope.
+    /// </summary>
+    private static bool IsStorable(ComlinkMessage message) =>
+        message.Text is not null
+        && (message.Envelope is null
+            ? !string.IsNullOrWhiteSpace(message.Text)
+                && message.Text.Length <= MatchLimits.ComlinkMessageCharacters
+            : message.Text.Length == 0 && ComlinkEnvelope.IsWellFormed(message.Envelope));
 
     /// <summary>
     /// RULE-COMLINK-001: stores a message, dropping the oldest when the inbox holds 16. The
@@ -120,7 +187,25 @@ public sealed class ComlinkInbox
                 $"A Comlink message cannot exceed {MatchLimits.ComlinkMessageCharacters} characters.",
                 nameof(text));
 
-        var message = new ComlinkMessage(NextSequence++, turn, sender, text);
+        return Store(new ComlinkMessage(NextSequence++, turn, sender, text));
+    }
+
+    /// <summary>
+    /// RULE-COMLINK-001 for a sealed message: stored, numbered and dropped exactly as
+    /// <see cref="Receive"/> stores one in the clear, with the envelope in place of the text.
+    /// </summary>
+    internal ComlinkMessage ReceiveSealed(int turn, PlayerId sender, string envelope)
+    {
+        if (turn < 1) throw new ArgumentOutOfRangeException(nameof(turn));
+        if (sender.Value is < 0 or >= MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(sender));
+        if (!ComlinkEnvelope.IsWellFormed(envelope))
+            throw new ArgumentException("A sealed Comlink message needs a well-formed envelope.", nameof(envelope));
+        return Store(new ComlinkMessage(NextSequence++, turn, sender, string.Empty, envelope));
+    }
+
+    private ComlinkMessage Store(ComlinkMessage message)
+    {
         if (_messages.Count == MatchLimits.ComlinkMessagesPerPlayer)
             _readSequences.Remove(_messages.Dequeue().Sequence);
         _messages.Enqueue(message);

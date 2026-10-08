@@ -42,6 +42,7 @@ public static class ApiRoutes
     public static string UpdateMatchSettings(string matchId) => $"/matches/{matchId}/settings";
     public static string UpdatePlayerProfile(string matchId) => $"/matches/{matchId}/profile";
     public static string PostChatMessage(string matchId) => $"/matches/{matchId}/chat";
+    public static string PublishComlinkKey(string matchId) => $"/matches/{matchId}/comlink-key";
 
     public static string KickPlayer(string matchId, string playerId) =>
         $"/matches/{matchId}/players/{playerId}/kick";

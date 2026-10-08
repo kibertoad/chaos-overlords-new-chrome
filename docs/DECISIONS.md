@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | Date | Decision |
 |---|---|
 | 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
+| 2026-10-06 | [Online Comlink messages are sealed for their recipients](#2026-10-06--online-comlink-messages-are-sealed-for-their-recipients) |
 | 2026-10-06 | [Comlink in an online match travels in the sealed turn](#2026-10-06--comlink-in-an-online-match-travels-in-the-sealed-turn) |
 | 2026-10-06 | [Let a late joiner take a seat the vote handed to the computer](#2026-10-06--let-a-late-joiner-take-a-seat-the-vote-handed-to-the-computer) |
 | 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
@@ -66,6 +67,60 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   `kdialog` gets no dialog and imports with `chaos-overlords-new-chrome-import`. An explicit
   `--assets` folder and test runs are never offered an import.
 
+## 2026-10-06 — Online Comlink messages are sealed for their recipients
+
+- Decision: an online Comlink message is encrypted on the sender's computer
+  separately for each recipient, and only the envelopes leave it. The
+  `sendComlinkMessage` op carries one letter per recipient (the slot and the
+  envelope) in place of the recipient slots and the text. Every client
+  applies the op at the seal as before and stores the recipient's envelope in
+  that recipient's inbox, so every client stores the same bytes and the state
+  fingerprint covers them. Only the recipient's client opens its envelope,
+  when the player opens the message in Comlink View, and what it opens is
+  never written back into the match. The design and its limits are in
+  [MULTIPLAYER.md](MULTIPLAYER.md#comlink-privacy).
+- Why: the original's network game sent a message only to its recipient. With
+  the text in the sealed set, any modified client, the server's operator, a
+  spectator or a bug report could read messages meant for others. Online
+  Comlink should not ship like that.
+- Designs weighed:
+  - Keep the text out of the hashed state and send it to the recipient
+    through the server on a side channel. The server would read every
+    message, the side channel would need its own storage, retention and
+    replay rules, and an inbox one client holds and another does not cannot
+    be hashed, so the inbox would need a commitment in its place, with the
+    sealed set and the side channel kept in step.
+  - Seal the text in the order document for each recipient (chosen). The
+    lockstep model is unchanged: the envelope is the message as far as the
+    rules are concerned, every client applies and hashes it, and saves,
+    replays, snapshots, takeovers and desync repair carry it with no new
+    path. Neither the server nor another seat can read it.
+- Keys: each seat makes a P-256 key pair when it takes the seat. The private
+  key stays in the local recovery record beside the membership token, sealed
+  with DPAPI on Windows like the token. The public key is published with
+  `PUT /matches/:id/comlink-key`, carried on the roster row and announced as
+  `match.comlinkKeyPublished`. A seat with no key cannot be written to yet.
+  A player who resumes on another computer takes a fresh key, and what was
+  sealed to the old one shows as unreadable.
+- Threat model: sound against a modified client at another seat and against
+  a server operator or network observer who reads but does not alter. Not
+  sound against a server that substitutes keys, since the players cannot
+  compare keys outside it; that would need fingerprints compared over another
+  channel, which the game does not offer. Who wrote to whom, when and how
+  often stays visible. A modified sender can store an envelope its recipient
+  cannot open; every client stores it alike, so it costs the recipient an
+  inbox slot and nothing else.
+- Rules: RULE-COMLINK-001 to RULE-COMLINK-007 produce the same results.
+  Recipients are judged at the seal by every client as before; what the text
+  may be is judged by the sender's client before it seals and by the
+  recipient's after it opens. Hot-seat play is unchanged and stores text.
+- Wire: protocol version 31 and session version 54, because the op's schema
+  and meaning changed. The state fingerprint now encodes whether a message is
+  sealed and its envelope, so the fingerprint format moves to 16, the native
+  save to 41 and the replay journal to 54, which adds a
+  `SendSealedComlinkMessage` step.
+- Status: implemented and tested.
+
 ## 2026-10-06 — Comlink in an online match travels in the sealed turn
 
 - Decision: Comlink opens in an online match. Sending a message and reading
@@ -106,14 +161,8 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   kept, as the original keeps a delivered message, and a restored inbox now
   accepts a sender that is human or that the computer took over (the seat's
   raider mode, RULE-AI-027, marks the takeover).
-- Privacy: the server relays every sealed set to every seat, and every client
-  holds every inbox to hash it. The game shows a player only their own inbox,
-  but a modified client, or anyone who can read a seat's traffic, can read
-  messages addressed to others. The original's network game sent a message
-  only to its recipient. We accept this for now and say so in
-  [MULTIPLAYER.md](MULTIPLAYER.md). Private delivery needs the text out of
-  the hashed state, with a commitment in its place and a ciphertext per
-  recipient; issue #484 holds that design.
+- Privacy: the text is sealed for each recipient, as the decision "Online
+  Comlink messages are sealed for their recipients" records.
 - Wire: the order document gains the two ops. The text is 1 to 160
   characters from space to `Z` (0x20 to 0x5A), the characters the Send panel
   can type (RULE-COMLINK-006). Protocol version 27 and session version 53,

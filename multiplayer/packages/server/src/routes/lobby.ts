@@ -7,6 +7,7 @@ import {
   leaveMatchContract,
   listLobbiesContract,
   postChatMessageContract,
+  publishComlinkKeyContract,
   rejoinMatchContract,
   startMatchContract,
   takeoverVoteContract,
@@ -118,6 +119,16 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
     await c
       .get('container')
       .kernel.lobby.postChat(
+        requireMember(c.get('principal'), c.req.valid('param').matchId),
+        c.req.valid('json'),
+      )
+    return c.body(null, 204)
+  })
+
+  buildHonoRoute(api, publishComlinkKeyContract, async (c) => {
+    await c
+      .get('container')
+      .kernel.lobby.publishComlinkKey(
         requireMember(c.get('principal'), c.req.valid('param').matchId),
         c.req.valid('json'),
       )

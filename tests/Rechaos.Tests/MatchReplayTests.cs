@@ -41,7 +41,8 @@ public sealed class MatchReplayTests
                 (ReplayOperationKind.TransferPlayerToHuman, 17),
                 (ReplayOperationKind.ContinueRandomStream, 18),
                 (ReplayOperationKind.EmptyComlinkInboxes, 19),
-                (ReplayOperationKind.RefreshAiSectorRecords, 20)
+                (ReplayOperationKind.RefreshAiSectorRecords, 20),
+                (ReplayOperationKind.SendSealedComlinkMessage, 21)
             },
             Enum.GetValues<ReplayOperationKind>().Select(kind => (kind, (int)kind)));
     }
@@ -144,6 +145,31 @@ public sealed class MatchReplayTests
         var recipients = Assert.IsAssignableFrom<IList<PlayerId>>(
             recorder.Steps.First(step => step.Kind == ReplayOperationKind.SendComlinkMessage).Recipients!);
         Assert.True(recipients.IsReadOnly);
+    }
+
+    // DEV-NET-001: an online message is stored as each recipient's envelope, and the journal
+    // carries the envelopes and replays them to the same inboxes.
+    [Fact]
+    public void ReplaysSealedComlinkDelivery()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch(secondPlayerHuman: true));
+        recorder.FinishUpkeep();
+        var envelope = string.Concat(Enumerable.Repeat("A+/z", 80));
+        Assert.True(recorder.SendSealedComlinkMessage(
+            new PlayerId(0), [new SealedComlinkLetter(new PlayerId(1), envelope)]).Accepted);
+        Assert.False(recorder.SendSealedComlinkMessage(
+            new PlayerId(0), [new SealedComlinkLetter(new PlayerId(0), envelope)]).Accepted);
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
+
+        var message = Assert.Single(restored.ComlinkFor(new PlayerId(1)).Messages);
+        Assert.Equal((string.Empty, envelope), (message.Text, message.Envelope));
+        Assert.Equal(recorder.State.ComlinkFor(new PlayerId(1)).Messages,
+            restored.ComlinkFor(new PlayerId(1)).Messages);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     // RULE-COMLINK-004, FMT-STATE-005: a local load empties every inbox, and the journal replays it.

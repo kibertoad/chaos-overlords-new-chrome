@@ -25,6 +25,13 @@ export interface HttpConformanceHarness {
 
 const HASH_A = 'a'.repeat(32)
 const HASH_B = 'b'.repeat(32)
+/** Two P-256 public keys in the SubjectPublicKeyInfo form a client publishes. */
+const COMLINK_KEY_A =
+  'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE5RTcO/zdvHwRLrpEwapX1M37clhCvmCyw8YJiSsYSZyYWE4pNKf7oJHhRZreRcy1h0iqdORFmqiGYgieKWbLNw=='
+const COMLINK_KEY_B =
+  'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0vPDK5l2BLl2CQsZFX0dr9LfmKSFe1bBQiDTXv0tRXI3ThX6O57vN9+mSgbhlPO8KQVtXZMyS9+id8WKncRbhg=='
+/** A sealed letter's shape: 240 bytes of base64. The server never opens one, so any bytes do. */
+const ENVELOPE = 'A+/z'.repeat(80)
 /**
  * A one-op document for the player seated in `slot`. Ops name their own slot because the server
  * refuses any that do not, so the fixture has to know which seat it is submitting for.
@@ -271,12 +278,14 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(paged).toEqual(events)
     })
 
-    it('relays Comlink ops in the sealed set and refuses one for another seat or untypeable text', async () => {
+    it('relays sealed Comlink letters and refuses clear text, a malformed envelope or another seat', async () => {
       const { host, guest } = await lobbyOfTwo()
       await host.api.start()
       const send: OrderDocument = {
         schemaVersion: 1,
-        ops: [{ op: 'sendComlinkMessage', player: 0, recipients: [1], text: 'MEET AT "DAWN".' }],
+        ops: [
+          { op: 'sendComlinkMessage', player: 0, letters: [{ recipient: 1, envelope: ENVELOPE }] },
+        ],
       }
       const read: OrderDocument = {
         schemaVersion: 1,
@@ -289,11 +298,27 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
           ready: false,
         }),
       ).rejects.toMatchObject({ status: 422, reason: 'foreign_slot_ops' })
+      // The text itself never travels: a message in the clear is not an op the server knows.
       await expect(
         host.api.submitOrders(1, {
           orders: {
             schemaVersion: 1,
-            ops: [{ op: 'sendComlinkMessage', player: 0, recipients: [1], text: 'lower case' }],
+            ops: [{ op: 'sendComlinkMessage', player: 0, recipients: [1], text: 'MEET AT DAWN' }],
+          } as unknown as OrderDocument,
+          ready: false,
+        }),
+      ).rejects.toMatchObject({ status: 422 })
+      await expect(
+        host.api.submitOrders(1, {
+          orders: {
+            schemaVersion: 1,
+            ops: [
+              {
+                op: 'sendComlinkMessage',
+                player: 0,
+                letters: [{ recipient: 1, envelope: ENVELOPE.slice(4) }],
+              },
+            ],
           },
           ready: false,
         }),
@@ -307,6 +332,39 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
         [0, send],
         [1, read],
       ])
+    })
+
+    it('stores a Comlink key, announces each change once, and refuses one that is not P-256', async () => {
+      const { host, guest } = await lobbyOfTwo()
+      await host.api.publishComlinkKey(COMLINK_KEY_A)
+      await host.api.publishComlinkKey(COMLINK_KEY_A)
+      const players = (await guest.api.get()).match.players
+      expect(players.find((player) => player.id === host.player.id)?.comlinkKey).toBe(COMLINK_KEY_A)
+      expect(players.find((player) => player.id === guest.player.id)?.comlinkKey).toBeNull()
+
+      await host.api.start()
+      await host.api.publishComlinkKey(COMLINK_KEY_B)
+      const published = (await guest.api.events(0)).events.filter(
+        (event) => event.type === 'match.comlinkKeyPublished',
+      )
+      expect(published.map((event) => event.payload)).toEqual([
+        { playerId: host.player.id, comlinkKey: COMLINK_KEY_A },
+        { playerId: host.player.id, comlinkKey: COMLINK_KEY_B },
+      ])
+      expect(
+        (await host.api.get()).match.players.find((player) => player.id === host.player.id)
+          ?.comlinkKey,
+      ).toBe(COMLINK_KEY_B)
+
+      // An RSA key, a P-384 key and a truncated one all fail the shape every client imports.
+      await expect(
+        host.api.publishComlinkKey('MIIBIjANBgkqhkiG9w0BAQEFAAOC'),
+      ).rejects.toMatchObject({
+        status: 422,
+      })
+      await expect(host.api.publishComlinkKey(COMLINK_KEY_A.slice(0, 120))).rejects.toMatchObject({
+        status: 422,
+      })
     })
 
     it('resumes the stream from Last-Event-ID without replaying delivered events', async () => {

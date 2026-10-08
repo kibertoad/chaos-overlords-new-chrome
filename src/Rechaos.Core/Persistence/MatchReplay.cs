@@ -32,7 +32,9 @@ public enum ReplayOperationKind : byte
     /// <summary>A local load empties every Comlink inbox (RULE-COMLINK-004, FMT-STATE-005).</summary>
     EmptyComlinkInboxes,
     /// <summary>A local load reruns every player's planning refresh (RULE-AI-003, FND-AI-045).</summary>
-    RefreshAiSectorRecords
+    RefreshAiSectorRecords,
+    /// <summary>An online Comlink message, sealed for each recipient (RULE-COMLINK-003).</summary>
+    SendSealedComlinkMessage
 }
 
 public sealed record ReplayStep(
@@ -48,7 +50,8 @@ public sealed record ReplayStep(
     IReadOnlyList<PlayerId>? Recipients = null,
     string? Text = null,
     long? ComlinkSequence = null,
-    uint? RandomState = null);
+    uint? RandomState = null,
+    IReadOnlyList<SealedComlinkLetter>? Letters = null);
 
 /// <summary>
 /// Records every public match mutation together with its resulting canonical hash.
@@ -264,6 +267,20 @@ public sealed class MatchReplayRecorder
         return result;
     }
 
+    public ComlinkSendResult SendSealedComlinkMessage(
+        PlayerId sender,
+        IReadOnlyList<SealedComlinkLetter> letters)
+    {
+        ArgumentNullException.ThrowIfNull(letters);
+        EnsureSynchronized();
+        var result = State.SendSealedComlinkMessage(sender, letters);
+        Add(new ReplayStep(
+            ReplayOperationKind.SendSealedComlinkMessage, CurrentHash(), Player: sender,
+            Accepted: result.Accepted, ValidationCode: (int)result.Code,
+            Letters: letters.ToArray()));
+        return result;
+    }
+
     public bool MarkComlinkRead(PlayerId player, long sequence)
     {
         EnsureSynchronized();
@@ -363,7 +380,7 @@ public static class MatchReplaySerializer
     // (MatchStateHasher.FormatVersion 3), and drops every older format: a journal is verified step
     // by step against the fingerprint of its day, so a journal from format 31 would diverge on its
     // first step and be reported as damage rather than as an older format.
-    public const int CurrentFormatVersion = 53;
+    public const int CurrentFormatVersion = 54;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -627,6 +644,15 @@ public static class MatchReplaySerializer
                 VerifyResult(step, result.Accepted, (int)result.Code, index);
                 break;
             }
+            case ReplayOperationKind.SendSealedComlinkMessage:
+            {
+                var result = state.SendSealedComlinkMessage(
+                    Required(step.Player, index),
+                    step.Letters
+                        ?? throw new InvalidDataException($"Replay step {index} has no Comlink letters."));
+                VerifyResult(step, result.Accepted, (int)result.Code, index);
+                break;
+            }
             case ReplayOperationKind.MarkComlinkRead:
             {
                 var changed = state.MarkComlinkRead(
@@ -679,6 +705,7 @@ public static class MatchReplaySerializer
         if (step.Text is not null) actual |= ReplayStepFields.Text;
         if (step.ComlinkSequence is not null) actual |= ReplayStepFields.ComlinkSequence;
         if (step.RandomState is not null) actual |= ReplayStepFields.RandomState;
+        if (step.Letters is not null) actual |= ReplayStepFields.Letters;
 
         var result = ReplayStepFields.Accepted | ReplayStepFields.Validation;
         var expected = step.Kind switch
@@ -704,6 +731,8 @@ public static class MatchReplaySerializer
             ReplayOperationKind.EmptyComlinkInboxes => ReplayStepFields.Accepted,
             ReplayOperationKind.SendComlinkMessage => ReplayStepFields.Player | result
                 | ReplayStepFields.Recipients | ReplayStepFields.Text,
+            ReplayOperationKind.SendSealedComlinkMessage =>
+                ReplayStepFields.Player | result | ReplayStepFields.Letters,
             ReplayOperationKind.FinishUpkeep
                 or ReplayOperationKind.FinishExecutionPhase
                 or ReplayOperationKind.FinishPlayerElimination
@@ -751,7 +780,8 @@ public static class MatchReplaySerializer
         Recipients = 1 << 7,
         Text = 1 << 8,
         ComlinkSequence = 1 << 9,
-        RandomState = 1 << 10
+        RandomState = 1 << 10,
+        Letters = 1 << 11
     }
 }
 

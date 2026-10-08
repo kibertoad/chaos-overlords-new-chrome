@@ -8,6 +8,7 @@ import {
   type MatchSettings,
   type MembershipView,
   type PostChatMessageRequest,
+  type PublishComlinkKeyRequest,
   type TakeoverVoteRequest,
   type UpdatePlayerProfileRequest,
 } from '@chaos-overlords/contracts'
@@ -190,6 +191,7 @@ export class LobbyService {
       tokenHash: await hashToken(token),
       status: 'active',
       joinedAt: now,
+      comlinkKey: null,
     }
     // The match was inserted a statement ago and is in the lobby, so this cannot legitimately fail;
     // treating it as a conflict rather than ignoring it keeps the host's token from being handed out
@@ -232,6 +234,7 @@ export class LobbyService {
       tokenHash: await hashToken(token),
       status: 'active',
       joinedAt: this.deps.clock.now(),
+      comlinkKey: null,
     }
     // Everything after the seat is claimed has to give it back on failure, or capacity drifts and a
     // phantom member keeps the turn barrier waiting for a player nobody can authenticate as. The
@@ -338,6 +341,7 @@ export class LobbyService {
       tokenHash: await hashToken(token),
       status: 'active',
       joinedAt: this.deps.clock.now(),
+      comlinkKey: null,
     }
     // The insert and the end of the former players' right to take the seat back are one unit in
     // storage. A former player whose `rejoin` won the seat a moment earlier is no longer computer
@@ -478,6 +482,27 @@ export class LobbyService {
     await this.publisher.publish(match.id, {
       type: 'lobby.playerUpdated',
       payload: { player: toPlayerView({ ...player, ...profile }, match.hostPlayerId) },
+    })
+  }
+
+  /**
+   * Store the caller's Comlink public key, announced as `match.comlinkKeyPublished` when it changed.
+   *
+   * Any member may, for their own seat only, in the lobby or while the match runs: a client
+   * publishes as soon as it holds a seat and again on every resume where the view shows another
+   * key. A key that is already stored announces nothing, so a client republishing on every start
+   * costs the log nothing. The server never uses the key; it is relayed so the other seats can seal
+   * messages to this one (see docs/MULTIPLAYER.md, "Comlink privacy").
+   */
+  async publishComlinkKey(principal: Principal, request: PublishComlinkKeyRequest): Promise<void> {
+    const { match, player } = principal
+    if (match.status === 'finished' || match.status === 'abandoned') {
+      throw new ConflictError('The match has ended', { reason: 'match_not_running' })
+    }
+    if (!(await this.deps.storage.players.setComlinkKey(player.id, request.publicKey))) return
+    await this.publisher.publish(match.id, {
+      type: 'match.comlinkKeyPublished',
+      payload: { playerId: player.id, comlinkKey: request.publicKey },
     })
   }
 

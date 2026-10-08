@@ -263,8 +263,8 @@ validation plans list the open questions.
   ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
 - Online play has no spectating
   ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)), and an online
-  Comlink message can be read by a modified client at another seat
-  ([#484](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/484)).
+  Comlink message is sealed with the recipient's key as the server hands it out, so a server
+  that substitutes keys could read it ([Comlink privacy](docs/MULTIPLAYER.md#comlink-privacy)).
 - Key bindings cannot be changed
   ([#139](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139)).
 - Save and replay formats may change incompatibly before 1.0.0

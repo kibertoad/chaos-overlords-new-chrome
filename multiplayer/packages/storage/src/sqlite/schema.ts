@@ -54,6 +54,8 @@ export const players = sqliteTable(
     tokenHash: text('token_hash').unique(),
     status: text('status').notNull(),
     joinedAt: integer('joined_at', { mode: 'timestamp_ms' }).notNull(),
+    /** The player's published Comlink public key; null until their client publishes one. */
+    comlinkKey: text('comlink_key'),
   },
   (table) => [index('players_match_idx').on(table.matchId)],
 )

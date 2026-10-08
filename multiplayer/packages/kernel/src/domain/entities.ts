@@ -67,6 +67,12 @@ export interface Player {
   tokenHash: string | null
   status: PlayerStatus
   joinedAt: Date
+  /**
+   * The public key the player's client published for Comlink, or null before it has. Other seats
+   * seal the messages they send this player to it; the server only stores and relays it, and never
+   * holds the private half.
+   */
+  comlinkKey: string | null
 }
 
 /** What a lobby member may change about themselves before the match starts. */

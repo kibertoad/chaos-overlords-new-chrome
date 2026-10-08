@@ -262,7 +262,8 @@ public sealed partial class ChaosGame
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "RECONNECTING TO THE INTERRUPTED MATCH";
         _online.JoinedInProgress = true;
-        _lobby.Resume(recovery.MatchId, recovery.PlayerId, recovery.Token, recovery.JoinCode);
+        _lobby.Resume(
+            recovery.MatchId, recovery.PlayerId, recovery.Token, recovery.JoinCode, recovery.ComlinkKey);
     }
 
     /// <summary>
@@ -339,7 +340,7 @@ public sealed partial class ChaosGame
         {
             _session = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
                 _lobby.Handle, _definitions, view, _lobby.OwnPlayerId, view.LastEventSeq,
-                _online.JoinedInProgress));
+                _online.JoinedInProgress, ComlinkKey: _lobby.ComlinkKey));
         }
         catch (Exception exception) when (exception is MultiplayerProtocolException
             or ArgumentOutOfRangeException or InvalidOperationException)
@@ -496,7 +497,7 @@ public sealed partial class ChaosGame
             _message = _online.Status;
             return false;
         }
-        var turn = restored ?? SpeculativeTurn.For(authoritative, _definitions, _session.Slot);
+        var turn = restored ?? SpeculativeTurn.For(authoritative, _definitions, _session.Slot, _session.Comlink);
         ReplaceMatch(turn.State, new MatchActions(turn));
         _submittedPlanning = null;
         if (authoritative.Coordinator.Turn != _online.PlanningTurn) SetAsideSealedTurnDeadline();
@@ -900,7 +901,8 @@ public sealed partial class ChaosGame
             _online.PasswordShown,
             SessionVersion: membership.Match.SessionVersion,
             SessionName: membership.Match.Settings.Name,
-            LastUpdatedAt: DateTimeOffset.UtcNow);
+            LastUpdatedAt: DateTimeOffset.UtcNow,
+            ComlinkKey: _lobby?.ComlinkKey.ExportPrivateKey() ?? string.Empty);
         _activeMultiplayerRecovery = recovery;
         _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
         _multiplayerRecoveries.Insert(0, recovery);

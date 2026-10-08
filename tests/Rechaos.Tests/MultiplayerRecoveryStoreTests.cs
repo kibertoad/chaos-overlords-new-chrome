@@ -129,6 +129,28 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         Assert.False(MultiplayerRecoveryStore.KeepsTokensInClear(Path()));
     }
 
+    /// <summary>
+    /// The seat's Comlink private key is kept beside the token and sealed like it, so a resumed
+    /// seat still opens what was sealed to it (DEV-NET-001).
+    /// </summary>
+    [Fact]
+    public void KeepsTheComlinkKeySealedBesideTheToken()
+    {
+        using var key = ComlinkKeyPair.Generate();
+        var recovery = Recovery(CleanExit: false, Completed: false) with { ComlinkKey = key.ExportPrivateKey() };
+
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+
+        var loaded = Assert.IsType<MultiplayerRecovery>(MultiplayerRecoveryStore.Load(Path()));
+        Assert.Equal(recovery, loaded);
+        using var restored = ComlinkKeyPair.FromPrivateKey(loaded.ComlinkKey);
+        Assert.Equal(key.PublicKey, restored!.PublicKey);
+        // A build without Comlink keys would write the record back without this one.
+        Assert.Equal(MultiplayerRecoveryHistory.CurrentFormatVersion, StoredVersion());
+        if (OperatingSystem.IsWindows())
+            Assert.DoesNotContain(recovery.ComlinkKey, File.ReadAllText(Path()), StringComparison.Ordinal);
+    }
+
     /// <summary>A file copied from another account has a token this one cannot open.</summary>
     [Fact]
     public void DropsAMembershipWhoseSealedTokenWillNotOpen()

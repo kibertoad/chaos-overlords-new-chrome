@@ -50,8 +50,8 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> roster =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false),
-            new("late-2", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false, ComlinkKey: null),
+            new("late-2", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false, ComlinkKey: null),
         ];
 
         var setup = MatchBootstrapFactory.Setup(Seed, GameSettings, roster);
@@ -66,8 +66,8 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> roster =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false),
-            new("late-2", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false, ComlinkKey: null),
+            new("late-2", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false, ComlinkKey: null),
         ];
         var (session, _, http) = Running(ownPlayerId: "late-2", matchView: View() with { Players = roster });
         using var __ = http;
@@ -82,8 +82,8 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> roster =
         [
             Roster[0],
-            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false),
-            new("late-2", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false, ComlinkKey: null),
+            new("late-2", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false, ComlinkKey: null),
         ];
 
         var refused = Assert.Throws<MultiplayerProtocolException>(() =>

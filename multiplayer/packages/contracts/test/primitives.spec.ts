@@ -1,6 +1,7 @@
 import { safeParse } from 'valibot'
 import { describe, expect, it } from 'vitest'
 import {
+  comlinkPublicKeySchema,
   displayNameInputSchema,
   displayNameSchema,
   eventSeqSchema,
@@ -191,5 +192,33 @@ describe('matchNameSchema', () => {
     // older names to stay readable for.
     expect(safeParse(matchNameSchema, 'Night\u202ECity').success).toBe(false)
     expect(safeParse(matchNameSchema, '  Night City  ').success).toBe(true)
+  })
+})
+
+describe('comlinkPublicKeySchema', () => {
+  // Exported by node:crypto as SubjectPublicKeyInfo DER, which is what the C# client publishes.
+  const p256 = [
+    'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEwCSlkRFZnjaoRsH+0+slNQV1GQ5RAEi3b0T8wWYrlhPim0gjVLuydb/q5tVmHgDc4KFxkSmMGXgpTa2aY79bnA==',
+    'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7KKrdzgaqoe1blFdvTijPRS+At9rKiUXV8Dkkf330bWnjKY3NPIJpIVL5+Pm7y40hlMe/Gu40qiLf5GCjQ6NYQ==',
+    'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEV3e5yB3RTY+I4I9/ItFQujhcMwKbmuyblEpvK1oiVtxaopaLoMolRR+CkOrWpw46lfFc/AQrfL+ZUrxg4dHKdQ==',
+    'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEA4Fp3VwbRiP53hmozbz19bNPgpDP5fZvj5b50j/kTIwhKQrgQ/Sky2fq+umjiyEMcG6z0C+K6SQhSBEEBO0vHw==',
+  ]
+  const p384 =
+    'MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAExOibsRk41u9imFN6DUVyaIFy70YiCa/LOrJkISFuz4QfKihoDXyYQlh8U7WQdOg224a1fm2U5JAz3TsXgEKDaJnvfCatWdYzIdmVNlDBNU9npNhn+724f53Xb6qVw5vs'
+  const ed25519 = 'MCowBQYDK2VwAyEAg3WqnNBYeZ046biX0Q39Xq3Lp36EWuiO1sBDX6IWDFw='
+
+  it('accepts a P-256 key in the SubjectPublicKeyInfo form a client exports', () => {
+    for (const key of p256) {
+      expect(safeParse(comlinkPublicKeySchema, key).success).toBe(true)
+    }
+  })
+
+  it('refuses another curve, another algorithm, and anything cut short or padded', () => {
+    const [key = ''] = p256
+    expect(safeParse(comlinkPublicKeySchema, p384).success).toBe(false)
+    expect(safeParse(comlinkPublicKeySchema, ed25519).success).toBe(false)
+    expect(safeParse(comlinkPublicKeySchema, key.slice(0, -4)).success).toBe(false)
+    expect(safeParse(comlinkPublicKeySchema, `${key}AAAA`).success).toBe(false)
+    expect(safeParse(comlinkPublicKeySchema, ` ${key}`).success).toBe(false)
   })
 })

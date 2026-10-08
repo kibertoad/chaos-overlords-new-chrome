@@ -32,6 +32,7 @@ function player(id: string, joinOrder: number, status: Player['status'] = 'activ
     tokenHash: null,
     status,
     joinedAt: new Date('2026-01-01T00:00:00.000Z'),
+    comlinkKey: null,
   }
 }
 
@@ -171,9 +172,10 @@ describe('canonicalJson', () => {
   })
 
   /**
-   * The same pin over the Comlink ops, whose text is the only string an order carries. A quote in
-   * it is escaped by `JSON.stringify` and by the C# canonical writer alike, and the C# side pins
-   * this digest too (`MultiplayerCanonicalJsonTests`).
+   * The same pin over the Comlink ops, whose envelopes are the only free-form strings an order
+   * carries. Their base64 alphabet includes `+` and `/`, which `JSON.stringify` and the C#
+   * canonical writer both leave unescaped, and the C# side pins this digest too
+   * (`MultiplayerCanonicalJsonTests`).
    */
   it('pins the order digest of a document carrying Comlink ops', async () => {
     const document: OrderDocument = {
@@ -182,15 +184,17 @@ describe('canonicalJson', () => {
         {
           op: 'sendComlinkMessage',
           player: 2,
-          recipients: [0, 4],
-          text: 'MEET AT "DAWN", SECTOR 27.',
+          letters: [
+            { recipient: 0, envelope: 'A+/z'.repeat(80) },
+            { recipient: 4, envelope: 'Q0RF'.repeat(80) },
+          ],
         },
         { op: 'markComlinkRead', player: 2, sequence: 5 },
       ],
     }
     expect(safeParse(orderDocumentSchema, document).success).toBe(true)
     expect(await hashOrderDocument(document)).toBe(
-      'ad6e418f5fa21054c41fbb9360ff793cd5dc6f956c0d1d5aa547ca79bc3e55ef',
+      '3721b79560548355dbd668c9c575eb9c4e00bfcdc2732684d3d1356c928967bd',
     )
   })
 

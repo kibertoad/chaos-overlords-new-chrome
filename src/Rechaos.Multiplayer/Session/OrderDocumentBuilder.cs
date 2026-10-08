@@ -218,14 +218,17 @@ public sealed class OrderDocumentBuilder
         Record(new DismissNotificationOp(player.Value));
     }
 
-    /// <summary>Records a Comlink message. Mirrors <c>MatchState.SendComlinkMessage</c>.</summary>
-    public void SendComlinkMessage(PlayerId player, IReadOnlyList<PlayerId> recipients, string text)
+    /// <summary>
+    /// Records a Comlink message, sealed for each recipient. Mirrors
+    /// <c>MatchState.SendSealedComlinkMessage</c>; the text itself never enters the document.
+    /// </summary>
+    public void SendComlinkMessage(PlayerId player, IReadOnlyList<SealedComlinkLetter> letters)
     {
-        ArgumentNullException.ThrowIfNull(recipients);
-        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(letters);
         RequireOwnSlot(player);
         Record(new SendComlinkMessageOp(
-            player.Value, recipients.Select(recipient => recipient.Value).ToArray(), text));
+            player.Value,
+            letters.Select(letter => new ComlinkLetter(letter.Recipient.Value, letter.Envelope)).ToArray()));
     }
 
     /// <summary>Records a message marked read. Mirrors <c>MatchState.MarkComlinkRead</c>.</summary>

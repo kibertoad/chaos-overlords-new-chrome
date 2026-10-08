@@ -18,6 +18,7 @@ import { orderDocumentSchema } from './orders'
 import {
   base64BodySchema,
   chatMessageTextSchema,
+  comlinkPublicKeySchema,
   displayNameInputSchema,
   formatVersionSchema,
   joinCodeInputSchema,
@@ -98,6 +99,14 @@ export const postChatMessageRequestSchema = strictObject({
   text: chatMessageTextSchema,
 })
 
+/**
+ * The caller's own Comlink public key. A client publishes it as soon as it holds a seat, and again
+ * whenever the match view shows another, so the other seats can seal messages to it.
+ */
+export const publishComlinkKeyRequestSchema = strictObject({
+  publicKey: comlinkPublicKeySchema,
+})
+
 export const submitOrdersRequestSchema = strictObject({
   orders: orderDocumentSchema,
   /** `true` = the player has finished planning; the turn seals once every human is ready. */
@@ -172,6 +181,7 @@ export type JoinMatchRequest = InferOutput<typeof joinMatchRequestSchema>
 export type JoinRunningMatchRequest = InferOutput<typeof joinRunningMatchRequestSchema>
 export type UpdatePlayerProfileRequest = InferOutput<typeof updatePlayerProfileRequestSchema>
 export type PostChatMessageRequest = InferOutput<typeof postChatMessageRequestSchema>
+export type PublishComlinkKeyRequest = InferOutput<typeof publishComlinkKeyRequestSchema>
 export type SubmitOrdersRequest = InferOutput<typeof submitOrdersRequestSchema>
 export type TakeoverVoteRequest = InferOutput<typeof takeoverVoteRequestSchema>
 export type TurnReportRequest = InferOutput<typeof turnReportRequestSchema>

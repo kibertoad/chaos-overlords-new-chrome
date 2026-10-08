@@ -402,6 +402,37 @@ export const base64BodySchema = pipe(
 )
 
 /**
+ * A seat's Comlink public key: the base64 of a P-256 key in its DER SubjectPublicKeyInfo form,
+ * which is always 91 bytes and always starts with the same 27 (the algorithm, the curve and the
+ * uncompressed-point marker). The server never uses the key, so this checks only that it is one
+ * the game's clients could import; whether the point is on the curve is the importing client's
+ * check.
+ */
+export const comlinkPublicKeySchema = pipe(
+  string(),
+  regex(
+    /^MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE[A-Za-z0-9+/]{85}[AQgw]==$/,
+    'expected a base64 P-256 SubjectPublicKeyInfo',
+  ),
+)
+
+/**
+ * A Comlink message sealed for one recipient: the base64 of 240 bytes, an ephemeral P-256 point
+ * (64), the message padded to 160 bytes and encrypted (160), and the authentication tag (16). Every
+ * message has the same length whatever its text, so the length tells the server and the other
+ * seats nothing. Only the recipient's client can open it; see docs/MULTIPLAYER.md.
+ */
+const comlinkEnvelopeBytes = 64 + LIMITS.comlinkMessageLength + 16
+
+export const comlinkEnvelopeSchema = pipe(
+  string(),
+  regex(
+    new RegExp(`^[A-Za-z0-9+/]{${(comlinkEnvelopeBytes / 3) * 4}}$`),
+    `expected a ${comlinkEnvelopeBytes}-byte base64 Comlink envelope`,
+  ),
+)
+
+/**
  * The turn number in a path, which arrives as text and means a bounded integer.
  *
  * Declaring the coercion on the contract is what keeps every handler from re-parsing `:turn` and

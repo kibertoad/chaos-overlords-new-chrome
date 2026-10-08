@@ -36,7 +36,7 @@ public sealed class MultiplayerRecoveryTokenStoreTests : IDisposable
         Assert.Equal("fake", stored.GetProperty("TokenStore").GetString());
         var account = stored.GetProperty("TokenAccount").GetString()!;
         Assert.Equal(recovery.Token, _store.Secrets[account]);
-        Assert.Equal(MultiplayerRecoveryHistory.CurrentFormatVersion, StoredVersion());
+        Assert.Equal(MultiplayerRecoveryHistory.FormatVersionWithoutComlinkKey, StoredVersion());
         Assert.False(MultiplayerRecoveryStore.KeepsTokensInClear(Path()));
         Assert.Equal([recovery], Load());
     }

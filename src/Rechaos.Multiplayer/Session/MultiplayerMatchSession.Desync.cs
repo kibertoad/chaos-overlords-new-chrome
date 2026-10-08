@@ -167,7 +167,7 @@ public sealed partial class MultiplayerMatchSession
             SpeculativeTurn.EnsureReadable(document, Slot);
             try
             {
-                planning = SpeculativeTurn.Restore(state, _definitions, Slot, document);
+                planning = SpeculativeTurn.Restore(state, _definitions, Slot, document, Comlink);
             }
             catch (MultiplayerProtocolException)
             {
@@ -181,7 +181,7 @@ public sealed partial class MultiplayerMatchSession
                     submission.Ready ? submission.OrdersHash : null);
             }
         }
-        planning ??= SpeculativeTurn.For(state, _definitions, Slot);
+        planning ??= SpeculativeTurn.For(state, _definitions, Slot, Comlink);
         // A finished turn queued before the pause was refused with `match_desynced`, which leaves
         // its readiness in the outbox. Carried forward, the first draft after the lift would end
         // the turn for a player who is being shown it open. A ready document still queued for the

@@ -192,6 +192,12 @@ export interface PlayerRepository {
    * every client generates its city from, and one that lands after it must not land at all.
    */
   updateProfile(playerId: string, profile: PlayerProfile): Promise<boolean>
+  /**
+   * Store the player's Comlink public key, in ONE statement. True when the stored key changed,
+   * false when it already was this key (or the player is gone), so a client republishing the key it
+   * already published announces nothing.
+   */
+  setComlinkKey(playerId: string, comlinkKey: string): Promise<boolean>
   /** Clears the token hash, so the player's bearer token stops authenticating immediately. */
   revokeToken(playerId: string): Promise<void>
   /**

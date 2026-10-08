@@ -329,11 +329,29 @@ public sealed partial class ChaosGame
         if (sender is not null && UiSprites is not null)
             batch.Draw(UiSprites, ComlinkViewLayout.SenderPortrait,
                 OriginalSpriteLayout.OverlordPortrait(sender.Setup.PortraitId), Color.White);
-        DrawComlinkLines(batch, font, ComlinkTextEditor.DisplayLines(message.Text),
+        DrawComlinkLines(batch, font, ComlinkTextEditor.DisplayLines(ComlinkText(message)),
             ComlinkViewLayout.MessageOrigin, Color.Lime, ComlinkSendLayout.TextRowStride);
         if (_hoverPoint is { } hover && ComlinkViewLayout.Page.Contains(hover))
             DrawHoverTooltip(batch, pixel, font, hover, ComlinkInboxTooltip);
     }
+
+    /// <summary>
+    /// What a message says, as this client can read it.
+    /// </summary>
+    /// <remarks>
+    /// A hot-seat message carries its text. An online one is sealed for its recipient, and the
+    /// session's keyring opens it with this seat's key. The keyring is the session's rather than
+    /// the planning copy's, because the planning copy is taken away once the turn is ended and the
+    /// messages stay readable while the turn seals. One that will not open (sealed to a key this
+    /// seat no longer holds, or by a modified client) still takes its place in the inbox every
+    /// client hashes, and says why it shows nothing.
+    /// </remarks>
+    private string ComlinkText(ComlinkMessage message) =>
+        !message.IsSealed
+            ? message.Text
+            : _session?.Comlink.Read(message) ?? UnreadableComlinkMessage;
+
+    internal const string UnreadableComlinkMessage = "THIS MESSAGE CANNOT BE READ ON THIS COMPUTER.";
 
     // RULE-COMLINK-007
     internal static readonly IReadOnlyList<string> ComlinkInboxTooltip =

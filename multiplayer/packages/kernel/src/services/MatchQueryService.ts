@@ -28,6 +28,7 @@ export function toPlayerView(player: Player, hostPlayerId: string): PlayerView {
     portraitId: player.portraitId,
     status: player.status,
     isHost: player.id === hostPlayerId,
+    comlinkKey: player.comlinkKey,
   }
 }
 

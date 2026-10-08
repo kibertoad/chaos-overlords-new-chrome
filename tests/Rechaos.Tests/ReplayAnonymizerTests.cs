@@ -42,6 +42,36 @@ public sealed class ReplayAnonymizerTests
     }
 
     /// <summary>
+    /// An online message is an envelope only its recipient can open, so there is no text to
+    /// replace: it is carried as it was, and the journal still replays.
+    /// </summary>
+    [Fact]
+    public void KeepsASealedMessageAsItsEnvelope()
+    {
+        var recorder = new MatchReplayRecorder(TestMatches.Create(secondPlayerHuman: true));
+        recorder.FinishUpkeep();
+        var envelope = string.Concat(Enumerable.Repeat("Q0RF", 80));
+        Assert.True(recorder.SendSealedComlinkMessage(
+            new PlayerId(0), [new SealedComlinkLetter(new PlayerId(1), envelope)]).Accepted);
+        var earlier = new MatchReplayRecorder(recorder.State);
+        Assert.True(earlier.SendSealedComlinkMessage(
+            new PlayerId(0), [new SealedComlinkLetter(new PlayerId(1), envelope)]).Accepted);
+
+        var anonymized = ReplayAnonymizer.Anonymize(earlier);
+
+        Assert.All(anonymized.State.ComlinkFor(new PlayerId(1)).Messages, message =>
+            Assert.Equal((string.Empty, envelope), (message.Text, message.Envelope)));
+        Assert.Equal(2, anonymized.State.ComlinkFor(new PlayerId(1)).Messages.Count);
+        using var journal = new MemoryStream();
+        MatchReplaySerializer.Save(journal, anonymized);
+        journal.Position = 0;
+        Assert.Equal(
+            MatchStateHasher.ComputeFingerprint(anonymized.State),
+            MatchStateHasher.ComputeFingerprint(
+                MatchReplaySerializer.LoadAndReplay(journal, recorder.State.Definitions)));
+    }
+
+    /// <summary>
     /// A message already in an inbox when the journal starts is in the snapshot, not in a step.
     /// </summary>
     /// <remarks>

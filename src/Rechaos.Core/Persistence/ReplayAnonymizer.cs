@@ -30,7 +30,9 @@ public sealed class ReplayAnonymizationException : Exception
 /// A journal is the whole reproduction of a bug, which is why it is worth attaching to a report at
 /// all. It is also, as recorded, a file with the names of everyone at the table in it and every
 /// Comlink message they sent each other. Those are the only two, and both are replaced here: names
-/// become seat labels, message text becomes a run of the same length.
+/// become seat labels, message text becomes a run of the same length. An online message is already
+/// sealed for its recipients, and its envelope is kept as it is: nobody holding the journal can
+/// open it.
 /// </para>
 /// <para>
 /// Neither can simply be edited in place. Both are part of the canonical state hash, so a journal
@@ -148,6 +150,8 @@ public static class ReplayAnonymizer
                 {
                     var message = item?.AsObject()
                         ?? throw new InvalidDataException("Match snapshot has an empty message.");
+                    // A sealed message's text is empty and stays so: what it says is inside an
+                    // envelope only its recipient's client can open.
                     message["text"] = Redact(Required(message, "text").GetValue<string>());
                 }
             }
@@ -207,6 +211,15 @@ public static class ReplayAnonymizer
                     RequiredValue(step.Player, index),
                     Required(step.Recipients, index),
                     Redact(Required(step.Text, index)));
+                Verify(step, result.Accepted, (int)result.Code, index);
+                break;
+            }
+            // An online message is sealed for its recipients and carries no text a reader of the
+            // journal could see, so it is re-applied as it was recorded.
+            case ReplayOperationKind.SendSealedComlinkMessage:
+            {
+                var result = recorder.SendSealedComlinkMessage(
+                    RequiredValue(step.Player, index), Required(step.Letters, index));
                 Verify(step, result.Accepted, (int)result.Code, index);
                 break;
             }

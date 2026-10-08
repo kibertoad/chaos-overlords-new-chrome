@@ -162,6 +162,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _pumpLane = _health.Open("pump");
         _outboxLane = _health.Open("outbox");
         _reportLane = _health.Open("report");
+        Comlink = new ComlinkKeyring(
+            _match.MatchId, new PlayerId(self.Slot), options.ComlinkKey ?? ComlinkKeyPair.Generate());
+        Comlink.Learn(options.View.Players);
         Bootstrap = new MatchBootstrap(
             MatchStateClone.Of(replay.State, options.Definitions),
             ParseInstant(options.View.Turn?.DeadlineAt));
@@ -239,6 +242,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         session._pump = Task.Run(() => session.RunPumpAsync(session._stoppingToken));
         session._outbox = Task.Run(() => session.RunOutboxAsync(session._stoppingToken));
         session._reporter = Task.Run(() => session.RunReporterAsync(session._stoppingToken));
+        session.PublishComlinkKeyIfStale(self);
         return session;
     }
 
@@ -488,6 +492,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 _notices.Enqueue(new MultiplayerNotice.TakeoverVoteClosed(
                     returned.Payload.PlayerId, ComputerControl: false));
                 return;
+            case MatchComlinkKeyPublishedEvent published:
+                Comlink.Learn(published.Payload.PlayerId, published.Payload.ComlinkKey);
+                return;
             case MatchLatePlayerJoinedEvent joined:
                 AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot);
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
@@ -592,7 +599,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         // stand down from that state gracefully — it says the match reached one this client cannot
         // play on — and it reaches that way by being handed no planning copy, exactly as it is at
         // the end of a match.
-        return (state, IsPlannable(state) ? SpeculativeTurn.For(state, _definitions, Slot) : null);
+        return (state, IsPlannable(state) ? SpeculativeTurn.For(state, _definitions, Slot, Comlink) : null);
     }
 
     /// <summary>Whether there is a turn on this state for the local seat to plan.</summary>
@@ -758,6 +765,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             token => _match.GetAsync(token), _pumpLane, cancellationToken).ConfigureAwait(false);
         var view = detail.Match;
         RequireResumableSession(view.SessionVersion, "match");
+        Comlink.Learn(view.Players);
         // Follow the roster's word on who hosts; the promoted client repairs desyncs.
         _isHost = string.Equals(view.HostPlayerId, PlayerId, StringComparison.Ordinal);
         _awaitedSlots = view.Players

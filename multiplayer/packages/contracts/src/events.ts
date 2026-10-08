@@ -11,6 +11,7 @@ import {
 } from 'valibot'
 import {
   chatMessageTextSchema,
+  comlinkPublicKeySchema,
   eventSeqSchema,
   formatVersionSchema,
   isoTimestampSchema,
@@ -146,6 +147,17 @@ export const matchLatePlayerJoinedEventSchema = strictObject({
   payload: strictObject({ playerId: resourceIdSchema, slot: slotSchema }),
 })
 
+/**
+ * A player published the key their Comlink messages are sealed to, or replaced it. Every client
+ * keeps the newest key per seat from these and from the match view, and seals what it sends to
+ * that seat with it.
+ */
+export const matchComlinkKeyPublishedEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('match.comlinkKeyPublished'),
+  payload: strictObject({ playerId: resourceIdSchema, comlinkKey: comlinkPublicKeySchema }),
+})
+
 export const turnOpenedEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('turn.opened'),
@@ -227,6 +239,7 @@ export const matchEventSchema = variant('type', [
   matchPlayerTakenOverEventSchema,
   matchPlayerReturnedEventSchema,
   matchLatePlayerJoinedEventSchema,
+  matchComlinkKeyPublishedEventSchema,
   turnOpenedEventSchema,
   turnDeadlineExtendedEventSchema,
   turnReadinessEventSchema,
