@@ -36,8 +36,9 @@ detailed sector screen's card and group strips.
 | SCR-UI-001 | EXP-UI-015 | None; the rebuild's buttons and version are masked (DEV-UI-012, DEV-UI-019, DEV-VIDEO-003) |
 | SCR-UI-002 | EXP-UI-015 | None |
 | SCR-SETUP-001 | EXP-UI-015, the screen as New Game opens it and after presses and a drag from Add; EXP-UI-030, after card-face drags | A drag released outside every card or started on an empty card; the name editor; a computer slot's background |
-| SCR-SETUP-002 | EXP-UI-016, EXP-UI-021 | The card held pressed, an eliminated player's card, a later turn |
-| SCR-UI-003 | EXP-UI-001, EXP-UI-003, EXP-UI-006, EXP-UI-008, EXP-UI-012 to EXP-UI-014, EXP-UI-016, EXP-UI-021, EXP-UI-031, EXP-UI-041, EXP-UI-044 | The Events or Comlink light lit; a timed scenario's countdown after the first planning entry; the final view (FND-UI-041); the city behind an elimination card of an earlier human (#421) |
+| SCR-SETUP-002 | EXP-UI-016, EXP-UI-021, EXP-UI-032 | The card held pressed, an eliminated player's card, a later turn |
+| SCR-SETUP-003 | EXP-UI-051, the setup screen under the open dialog | The dialog itself, which Windows draws and the rebuild does not (DEV-SETUP-003); card 0's name row is masked |
+| SCR-UI-003 | EXP-UI-001, EXP-UI-003, EXP-UI-006, EXP-UI-008, EXP-UI-012 to EXP-UI-014, EXP-UI-016, EXP-UI-021, EXP-UI-031, EXP-UI-036, EXP-UI-041, EXP-UI-044 | The Events or Comlink light lit; a timed scenario's countdown after the first planning entry; the final view (FND-UI-041) |
 | SCR-HIRE-002 | EXP-UI-001, EXP-UI-003, EXP-UI-006, EXP-UI-041 | The hire and snub marks; a dragged portrait; the mouse input |
 | SCR-UI-004 | EXP-UI-006, EXP-UI-007, EXP-UI-009 to EXP-UI-011, EXP-UI-041, EXP-UI-042 | The group order strip's menus; a card drag |
 | SCR-UI-005 | EXP-UI-006, EXP-UI-007 | A seventh gang in one sector |
@@ -48,7 +49,7 @@ detailed sector screen's card and group strips.
 | SCR-HIRE-001 | EXP-UI-008, EXP-UI-041 | An offer with a two-digit negative value |
 | SCR-GANG-002 | EXP-UI-008, a hire offer; EXP-UI-041, a button held | A hired gang's panel; its rotating items |
 | SCR-COMBAT-001 | EXP-UI-008, one page; EXP-UI-041, a button held | A second page; the pressed arrows |
-| SCR-EVENT-001 | EXP-UI-008, one Crackdown report; EXP-UI-041, a button held | Other report types, compared through the replays' records only; the pressed arrows |
+| SCR-EVENT-001 | EXP-UI-008, one Crackdown report; EXP-UI-036, open at the planning entry; EXP-UI-041, a button held | Other report types, compared through the replays' records only; the pressed arrows |
 | SCR-OBJECTIVE-001 | EXP-UI-008, EXP-UI-041 | Other scores; tied players |
 | SCR-SEARCH-001 | EXP-UI-008, one selection state; EXP-UI-041, a button held | Other selection states; Site Information opened from a row |
 | SCR-MOVE-001 | EXP-UI-009, no destination chosen; EXP-UI-041, a button held | The arrow of a chosen destination; an edge sector's bands |
@@ -62,7 +63,7 @@ detailed sector screen's card and group strips.
 | SCR-OPTIONS-001 | EXP-UI-012, the line shown | The line in its black ticks |
 | SCR-COMLINK-002 | EXP-UI-016, opened and after a recipient press; EXP-UI-044, Send held | Typed text; the caret plain; a pressed face (#417); an empty slot |
 | SCR-COMLINK-001 | EXP-UI-021, one message | Several messages; a step between them; a pressed face |
-| SCR-AWARDS-001 | EXP-UI-017, both tabs | An eliminated player's row; the endgame after an elimination card (#419) |
-| SCR-OBJECTIVE-002 | EXP-UI-018 | The card behind a Ready card (#421); the press of its Done |
+| SCR-AWARDS-001 | EXP-UI-017, both tabs; EXP-UI-034, the Stats tab after an elimination card, with eliminated rows | None |
+| SCR-OBJECTIVE-002 | EXP-UI-018; EXP-UI-032, behind a Ready card | The press of its Done |
 | SCR-COMBAT-002 | EXP-UI-019, a bare-handed attack without Martial Arts; EXP-UI-020, a police clip; EXP-UI-029, a second police clip; EXP-UI-046, an armed and an unarmed attack on the viewer's gang; EXP-UI-047, a bare-handed Martial Arts attack; EXP-UI-048, an evaded attack by the viewer's gang; EXP-UI-049 and EXP-UI-054, evaded attacks on the viewer's gang | The pressed Exit face; a no-damage hit strip; a clip whose hold flag is cleared; a paint before tick 3, which EXP-UI-049 shows once and the rebuild does not draw (FND-COMBAT-032) |
-| SCR-AWARDS-002 | EXP-UI-023, a human survivor | A computer survivor; a tab pressed |
+| SCR-AWARDS-002 | EXP-UI-023, a human survivor; EXP-UI-034, after an elimination card | A computer survivor; a tab pressed |

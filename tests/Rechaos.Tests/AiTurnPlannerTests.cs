@@ -25,8 +25,11 @@ public sealed partial class AiTurnPlannerTests
         Assert.Equal(first.Count, first.Select(command => command.Gang).Distinct().Count());
     }
 
+    // RULE-AI-004, FND-AI-082: no cash is set aside at planning. Both gangs' Equips become
+    // commands, in roster-slot order whatever the gang ids, although the player can pay for one;
+    // the transaction pass refuses the one it can no longer pay for (RULE-EQUIP-001).
     [Fact]
-    public void SharedEquipmentBudgetFollowsRosterSlotsAfterGangIdOrderChanges()
+    public void EveryPlannedEquipBecomesACommandInRosterSlotOrder()
     {
         var data = BundledOriginalData.Load();
         var researched = data.Items
@@ -58,11 +61,36 @@ public sealed partial class AiTurnPlannerTests
         }
         match.MarkAiPlanningPrepared(playerId);
 
-        var command = Assert.Single(AiTurnPlanner.Plan(match, playerId));
+        var commands = AiTurnPlanner.Plan(match, playerId);
 
-        Assert.Equal(new GangId(30), command.Gang);
-        Assert.Equal(GangAction.Equip, command.Action);
-        Assert.Equal(CommandTarget.Item(itemId), command.Target);
+        Assert.Equal([new GangId(30), new GangId(11)], commands.Select(command => command.Gang));
+        Assert.All(commands, command =>
+        {
+            Assert.Equal(GangAction.Equip, command.Action);
+            Assert.Equal(CommandTarget.Item(itemId), command.Target);
+        });
+
+        // RULE-EQUIP-001: the first Equip spends all the cash, so the transaction pass refuses
+        // the second one and reports it, as it would a human's.
+        Assert.All(commands, command => Assert.True(match.Submit(command).Accepted));
+        match.FinishCommand(playerId);
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase();
+        match.FinishExecutionPhase();
+        Assert.Equal(ExecutionPhase.Transaction, match.Coordinator.ExecutionPhase);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(0, player.Cash);
+        var buyer = match.FindGang(new GangId(30))!;
+        Assert.Equal((short?)itemId, buyer.WeaponItemId ?? buyer.ArmorItemId ?? buyer.MiscellaneousItemId);
+        var equips = match.LastPhaseResolutions
+            .Where(result => result.Command.Action == GangAction.Equip)
+            .ToArray();
+        Assert.Equal([new GangId(30), new GangId(11)], equips.Select(result => result.Command.Gang));
+        Assert.NotEqual(CommandResolutionCode.InsufficientCash, equips[0].Code);
+        Assert.Equal(CommandResolutionCode.InsufficientCash, equips[1].Code);
+        Assert.Equal(GameEventKind.CommandFailed, equips[1].Event!.Kind);
     }
 
     [Fact]
