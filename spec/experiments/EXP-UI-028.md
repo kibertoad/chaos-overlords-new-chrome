@@ -17,7 +17,7 @@ fixture: EXP-UI-028.json
 
 At source columns 32762, 32764 and 32766 the cell's right edge wraps past
 the 16-bit range, and the copy goes to `StretchBlt` instead of `BitBlt`
-(FND-UI-045). What does the original draw at the first draw of a row for a
+(FND-UI-065). What does the original draw at the first draw of a row for a
 cell at column 32766, and for a red cell at column 516?
 
 ## Setup

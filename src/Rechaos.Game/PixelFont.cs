@@ -44,7 +44,7 @@ public sealed class PixelFont
     /// <summary>
     /// RULE-UI-004: draws formatted cells from <paramref name="position"/>, the left edge of the
     /// first drawn cell. A leading quotient off the font strip is the raw <c>PX00129</c> cell the
-    /// original copies (FND-UI-045), cut to the part of it inside the bitmap (EXP-UI-002).
+    /// original copies (FND-UI-065), cut to the part of it inside the bitmap (EXP-UI-002).
     /// </summary>
     public void DrawNumber(SpriteBatch batch, NativeTwoCellNumberPresentation.Value display,
         Vector2 position, Color color)
