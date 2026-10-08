@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 
@@ -152,25 +153,55 @@ public sealed partial class ChaosGame
 
     private void BeginHireDrag(int slot, Point point)
     {
+        if (TakeHireDockOffer(slot) is not { } definitionId) return;
+        _draggedHireSlot = slot;
+        _draggedHireDefinitionId = definitionId;
+        _hirePressPoint = point;
+        _hireDragStarted = false;
+        _dragPoint = point;
+    }
+
+    /// <summary>
+    /// The offer a press on dock <paramref name="slot"/> picks up, or null after saying why none
+    /// can be. The drag and the hire keys (DEV-UI-028) both start here.
+    /// </summary>
+    private short? TakeHireDockOffer(int slot)
+    {
         if (_state is null || PlanningViewer is not { } playerId
             || HireAccess == HireDockAccess.Closed
             || _state.Coordinator.Phase != TurnPhase.Command)
         {
             RejectInput("HIRING REQUIRES A PLANNING TURN");
-            return;
+            return null;
         }
         PrepareCurrentHireOffers();
         var entry = CurrentHireDock(_state.FindPlayer(playerId)!)[slot];
         if (entry is null)
         {
             RejectInput("NO HIRE OFFER IN THIS SLOT");
-            return;
+            return null;
         }
-        _draggedHireSlot = slot;
-        _draggedHireDefinitionId = entry.GangDefinitionId;
-        _hirePressPoint = point;
-        _hireDragStarted = false;
-        _dragPoint = point;
+        return entry.GangDefinitionId;
+    }
+
+    /// <summary>
+    /// DEV-UI-028: the keys 1 to 3 hire the offer in that dock slot into the selected sector, on
+    /// the city screen and on the sector view. The key picks the offer up as a press on its
+    /// portrait does and places it as a drop on the selected sector does, so it meets the same
+    /// refusals and queues the same hire.
+    /// </summary>
+    private void HireDockOfferByKey(int slot)
+    {
+        if (TakeHireDockOffer(slot) is not { } definitionId) return;
+        PlaceHireOffer(definitionId, _cursor);
+    }
+
+    /// <summary>The keys of <see cref="HireDockOfferByKey"/>, one per dock slot from the left.</summary>
+    private void HireDockOffersByKey(KeyboardState keyboard)
+    {
+        if (Pressed(keyboard, Keys.D1)) HireDockOfferByKey(0);
+        else if (Pressed(keyboard, Keys.D2)) HireDockOfferByKey(1);
+        else if (Pressed(keyboard, Keys.D3)) HireDockOfferByKey(2);
     }
 
     private void CompleteHireClick()
@@ -193,7 +224,7 @@ public sealed partial class ChaosGame
         _draggedHireSlot = null;
         _hireDragStarted = false;
         if (definitionId is null || slot is null
-            || _state is null || PlanningViewer is not { } playerId)
+            || _state is null || PlanningViewer is null)
             return;
         if (_actions is null)
         {
@@ -220,12 +251,27 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
+        PlaceHireOffer(definitionId.Value, sectorId);
+    }
+
+    /// <summary>
+    /// Queues the hire of <paramref name="definitionId"/> into <paramref name="sectorId"/>, as a
+    /// drop of the offer on that sector does, and flashes the cell it went to.
+    /// </summary>
+    private void PlaceHireOffer(short definitionId, int sectorId)
+    {
+        if (_state is null || PlanningViewer is not { } playerId) return;
+        if (_actions is null)
+        {
+            RejectInput(OnlinePlanningClosed);
+            return;
+        }
         if (HireDropPlacement.Rejection(_state, playerId, sectorId) is { } rejection)
         {
             ReportInputResult(false, rejection.Message);
             return;
         }
-        var result = _actions.QueueHire(playerId, definitionId.Value, sectorId);
+        var result = _actions.QueueHire(playerId, definitionId, sectorId);
         ReportHireSubmission(result, _state.FindPlayer(playerId)!);
         if (!result.Accepted) return;
         // The Hire handler flashes the cell the portrait was dropped on: the city cell with

@@ -8,6 +8,7 @@
     {"tick":0,"name":"command","value":"File, New Game (0x8101)"},
     {"tick":0,"name":"setup","value":"scenario 4"},
     {"tick":0,"name":"setup","value":"mentality 2"},
+    {"tick":0,"name":"setup","value":"planning_limit_choice 0"},
     {"tick":0,"name":"setup","value":"slot 0: human"},
     {"tick":0,"name":"left_click","value":"Begin (416, 397)"},
     {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 1"},
@@ -5170,6 +5171,16 @@
         [427,2,2,4604587],
         [535,3,2,4604587],
         [649,4,2,4604587]
+      ],
+      "effect_calls": [
+        [0,0,2,4255033],
+        [328,1,2,4297664],
+        [427,2,2,4297664],
+        [535,3,2,4297664],
+        [649,4,2,4297664]
+      ],
+      "level_setups": [
+        [0,0,4591752,1]
       ],
       "panels": [
         {"panel":"Combat Results","after_roll":328,"shown":false},

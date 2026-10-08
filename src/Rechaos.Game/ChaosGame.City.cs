@@ -19,6 +19,9 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.D)) MoveCursor(1, 0);
         if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.W)) MoveCursor(0, -1);
         if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.S)) MoveCursor(0, 1);
+        // DEV-UI-028: the hire keys act before the keys that open another screen, so a hire key
+        // pressed in the same frame as one of them hires from the city.
+        HireDockOffersByKey(keyboard);
         // SCR-UI-003: Enter or Execute opens the detailed sector screen for the selected sector,
         // during planning.
         if (PressedEnterOrExecute(keyboard) && CityPlanningInputOpen()) OpenSectorDetails();
@@ -204,11 +207,12 @@ public sealed partial class ChaosGame
         var player = state.Players[playerIndex];
         // FND-UI-017, FND-UI-018: the marker follows the viewed player, which on the sector view is
         // the player whose cards are shown, and there a portrait dims when the active player sees
-        // none of that player's gangs in the sector.
+        // none of that player's gangs in the sector. When it sees no gang of any seat there, the
+        // bar's redraw sets the viewed player to -1 and draws no marker (FND-UI-017, EXP-UI-045).
         if (sectorView is { } view)
         {
             _overlordMarkerClock.SectorView(_cursor, view.Viewed, _inputTime);
-            DrawOverlordBar(batch, pixel, state, view.Viewed, view.SeatsSeen);
+            DrawOverlordBar(batch, pixel, state, view.Marked, view.SeatsSeen);
         }
         else
         {
@@ -295,11 +299,13 @@ public sealed partial class ChaosGame
         // Online, the footer says where the turn stands instead of which keys save: a match nobody
         // can save is one where the only thing worth knowing is whether it is waiting on you.
         var footer = _session is null
-            ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
+            ? "ARROWS ENTER/H/SPACE  1-3 HIRE  F5/F9 SAVE  F6/F10 REPLAY"
             : OnlineTurnStatus();
         font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
         DrawPressedCityConsole(batch);
         DrawStatusConsoleTooltip(batch, pixel, font);
+        // The sector view draws its workspace over the board, and this tooltip after it.
+        if (sectorView is null) DrawSectorOwnerTooltip(batch, pixel, font);
         if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }
 
@@ -434,10 +440,18 @@ public sealed partial class ChaosGame
         var x = Math.Clamp(_cursor % MatchLimits.BoardWidth + dx, 0, MatchLimits.BoardWidth - 1);
         var y = Math.Clamp(_cursor / MatchLimits.BoardWidth + dy, 0, MatchLimits.BoardWidth - 1);
         _cursor = y * MatchLimits.BoardWidth + x;
-        _message = string.Empty;
+        AnnounceSelectedSectorOwner();
     }
 
-    private static string SectorCode(int sectorId) =>
+    /// <summary>
+    /// DEV-UI-005: a key that moves the selected sector names its owner on the message line, which
+    /// the pointer's tooltip does for a sector it rests on.
+    /// </summary>
+    private void AnnounceSelectedSectorOwner() =>
+        _message = _state is null ? string.Empty
+            : SectorOwnerText.MessageLine(_state, ViewingPlayer(_state), _cursor);
+
+    internal static string SectorCode(int sectorId) =>
         $"{(char)('A' + sectorId % MatchLimits.BoardWidth)}{sectorId / MatchLimits.BoardWidth + 1}";
 
     private static string MatchDate(int turn)

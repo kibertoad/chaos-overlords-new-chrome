@@ -35,6 +35,8 @@ describe('orderDocumentSchema', () => {
         { op: 'queueHire', player: 2, gangDefinitionId: 44, sectorId: 63 },
         { op: 'snubHireOffer', player: 3, gangDefinitionId: -1 },
         { op: 'dismissNotification', player: 4 },
+        { op: 'sendComlinkMessage', player: 5, recipients: [0, 2], text: 'MEET AT DAWN.' },
+        { op: 'markComlinkRead', player: 5, sequence: 3 },
       ]),
     ).toBe(true)
   })
@@ -51,7 +53,11 @@ describe('orderDocumentSchema', () => {
               ? { op, player: 0, gangDefinitionId: 1, sectorId: 1 }
               : op === 'snubHireOffer'
                 ? { op, player: 0, gangDefinitionId: 1 }
-                : { op, player: 0 },
+                : op === 'sendComlinkMessage'
+                  ? { op, player: 0, recipients: [1], text: 'HI' }
+                  : op === 'markComlinkRead'
+                    ? { op, player: 0, sequence: 0 }
+                    : { op, player: 0 },
       ]),
     )
     expect(accepted).toEqual([...ORDER_OP_KINDS])
@@ -135,6 +141,27 @@ describe('orderDocumentSchema', () => {
     )
   })
 
+  /**
+   * RULE-COMLINK-006: the Send panel types space to `Z` into 160 cells, so the wire refuses any other
+   * character and any longer text before a peer has to store it.
+   */
+  it('bounds a Comlink message to what the Send panel can type', () => {
+    const send = (fields: Record<string, unknown>) =>
+      accepts([{ op: 'sendComlinkMessage', player: 0, recipients: [1], text: 'HI', ...fields }])
+    expect(send({ text: 'Z'.repeat(160) })).toBe(true)
+    expect(send({ text: ' !"#,.09:?@AZ' })).toBe(true)
+    expect(send({ text: 'Z'.repeat(161) })).toBe(false)
+    expect(send({ text: '' })).toBe(false)
+    expect(send({ text: 'lower case' })).toBe(false)
+    expect(send({ text: 'TAB\tHERE' })).toBe(false)
+    expect(send({ text: 'CAF\u00c9' })).toBe(false)
+    expect(send({ recipients: [] })).toBe(false)
+    expect(send({ recipients: [1, 2, 3, 4, 5, 0] })).toBe(false)
+    expect(send({ recipients: [6] })).toBe(false)
+    expect(accepts([{ op: 'markComlinkRead', player: 0, sequence: -1 }])).toBe(false)
+    expect(accepts([{ op: 'markComlinkRead', player: 0, sequence: 1.5 }])).toBe(false)
+  })
+
   it('bounds the op list', () => {
     const many = Array.from({ length: LIMITS.ordersMaxOps + 1 }, () => ({
       op: 'dismissNotification',
@@ -167,8 +194,10 @@ describe('foreignOps', () => {
       document([
         { op: 'cancelCommand', player: 1, gang: 1 },
         { op: 'dismissNotification', player: 4 },
+        { op: 'sendComlinkMessage', player: 3, recipients: [1], text: 'I AM PLAYER ONE' },
+        { op: 'markComlinkRead', player: 2, sequence: 0 },
       ]),
     )
-    expect(foreignOps(mixed, 1).map((op) => op.player)).toEqual([4])
+    expect(foreignOps(mixed, 1).map((op) => op.player)).toEqual([4, 3, 2])
   })
 })

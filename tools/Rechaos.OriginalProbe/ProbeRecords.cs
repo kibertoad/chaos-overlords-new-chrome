@@ -25,8 +25,9 @@ internal sealed record ProbeClick(int X, int Y)
 
 /// <summary>
 /// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
-/// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
-/// Combat Results function returns at once when no fight qualifies.
+/// roll count when it was called, and whether it showed its panel, which a call does when it
+/// reaches its call of the panel-open helper (FND-UI-061). A call with nothing to show returns
+/// at once.
 /// </summary>
 internal sealed record PanelRecord(string Panel, int AfterRoll, bool Shown);
 

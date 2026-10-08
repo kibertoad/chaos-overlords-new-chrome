@@ -31,15 +31,14 @@ public sealed partial class ChaosGame
             UpdateIdleGangWarning(keyboard);
             return;
         }
-        var column = _cursor % 8;
-        var row = _cursor / 8;
         var previousCursor = _cursor;
-        if (Pressed(keyboard, Keys.Left) && column > 0) _cursor--;
-        if (Pressed(keyboard, Keys.Right) && column < 7) _cursor++;
-        if (Pressed(keyboard, Keys.Up) && row > 0) _cursor -= 8;
-        if (Pressed(keyboard, Keys.Down) && row < 7) _cursor += 8;
+        if (Pressed(keyboard, Keys.Left)) MoveCursor(-1, 0);
+        if (Pressed(keyboard, Keys.Right)) MoveCursor(1, 0);
+        if (Pressed(keyboard, Keys.Up)) MoveCursor(0, -1);
+        if (Pressed(keyboard, Keys.Down)) MoveCursor(0, 1);
         if (_cursor != previousCursor) _sectorGangCardOwner = null;
         _gangSelection.KeepOnly(_cursor);
+        HireDockOffersByKey(keyboard);
         if (Pressed(keyboard, Keys.Back))
             _screens.Show(ClientScreen.City);
         // FND-UI-015: Enter and Execute show the back control pressed for one tick of the
@@ -51,11 +50,15 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// What one draw of the sector view reads more than once, taken once: the cards it lists, the
-    /// player they belong to, whom the Overlord bar's marker follows (FND-UI-018:
+    /// player they belong to, which the compositor makes the viewed player (FND-UI-018:
     /// <c>0x00487B8C</c>), and for each seat whether the viewer sees one of its gangs here.
     /// </summary>
     private readonly record struct SectorViewFrame(
-        IReadOnlyList<MatchGangState> Cards, PlayerId Viewed, IReadOnlyList<bool> SeatsSeen);
+        IReadOnlyList<MatchGangState> Cards, PlayerId Viewed, IReadOnlyList<bool> SeatsSeen)
+    {
+        /// <summary>The seat the Overlord bar's marker turns beside, if any (FND-UI-017).</summary>
+        public PlayerId? Marked => SectorOpponentGangs.MarkedSeat(Viewed, SeatsSeen);
+    }
 
     private SectorViewFrame ComposeSectorView(MatchState state, PlayerId viewer)
     {
@@ -77,6 +80,14 @@ public sealed partial class ChaosGame
         && planningViewer == viewer
         && cards.Count >= 2
         && cards[0].Owner == viewer;
+
+    /// <summary>
+    /// SCR-UI-004, FND-UI-069: a card carries its gang's action strip only when the gang is the
+    /// active player's and the match is still in play. Another player's card, and every card of
+    /// the final view after the match has ended, keeps the blank band of the card frame there.
+    /// </summary>
+    internal static bool ShowsActionStrip(PlayerId viewer, PlayerId owner, bool matchOver) =>
+        owner == viewer && !matchOver;
 
     /// <summary>The gangs the Sector workspace lists (<see cref="SectorOpponentGangs.Cards"/>).</summary>
     private IReadOnlyList<MatchGangState> SectorCardGangs(MatchState state, PlayerId viewer) =>
@@ -229,6 +240,9 @@ public sealed partial class ChaosGame
         var repeat = SectorGangCardLayout.ActionRepeatAt(index, point);
         if (repeat is { } selectedRepeat)
         {
+            // FND-UI-021: the strip opens no menu once the match has ended, where FND-UI-069 leaves
+            // the strip undrawn.
+            if (state.Outcome is not null) return;
             if (IsSelectedForBulkCommand(gang)) OpenBulkCommands(selectedRepeat);
             else OpenCommands(selectedRepeat, ClientScreen.Sector);
         }
@@ -281,8 +295,8 @@ public sealed partial class ChaosGame
             && _hoverPoint is { } backHover && SectorDetailLayout.Back.Contains(backHover))
             DrawPressedSectorBack(batch);
         DrawSectorNeighborhood(batch, pixel, font, state);
-        // FND-UI-018: each site is its portrait under the keyed frame, with the progress meter
-        // when the sector's owner is the active player.
+        // FND-UI-018, FND-UI-070: each site is its portrait under the keyed frame, with the progress
+        // meter only when the sector's owner is the active player, whoever the viewed player is.
         foreach (var site in sector.Sites)
         {
             var definition = state.Definitions.Site(site.DefinitionId);
@@ -317,12 +331,13 @@ public sealed partial class ChaosGame
         if (UiSprites is not null && showsGroupOrderStrip)
             batch.Draw(UiSprites, SectorDetailLayout.GroupOrderStrip,
                 OriginalSpriteLayout.GroupOrderStrip, Color.White);
-        DrawQueuedCommandTargetHighlight(batch, pixel, viewer, visibleGangs);
+        DrawQueuedCommandTargetHighlight(batch, pixel, viewer, state.Outcome is not null, visibleGangs);
         DrawGangMoveDrag(batch, pixel, state);
         DrawSectorHireDrag(batch);
         // The Sector workspace covers the left side of right-edge tooltips drawn by
         // DrawBoard, so composite the tooltip again after the workspace is complete.
         DrawStatusConsoleTooltip(batch, pixel, font);
+        DrawSectorOwnerTooltip(batch, pixel, font);
         // RULE-TURN-005: what the group order strip does, as FND-TURN-009 records it.
         if (_hoverPoint is { } stripHover && showsGroupOrderStrip
             && SectorDetailLayout.GroupOrderStrip.Contains(stripHover))
@@ -373,15 +388,18 @@ public sealed partial class ChaosGame
         SpriteBatch batch,
         Texture2D pixel,
         PlayerId viewer,
+        bool matchOver,
         IReadOnlyList<MatchGangState> visibleGangs)
     {
         if (_hoverPoint is not { } point) return;
         // The card a press here would take (FND-UI-015), gaps between the cards included.
         var hoveredSlot = SectorGangCardLayout.CardAt(point);
-        // An opponent's orders stay their own business: the cards hide their action strip, so the
-        // workspace must not betray the same order by highlighting what it targets.
+        // DEV-UI-008 highlights the target of the order a card's action strip shows, and only on a
+        // card that draws the strip: the original draws none on another player's card or in the
+        // final view (FND-UI-069), so the workspace shows no other player's order and no order the
+        // match will no longer run.
         if (hoveredSlot < 0 || hoveredSlot >= Math.Min(visibleGangs.Count, SectorGangCardLayout.VisibleCards)
-            || visibleGangs[hoveredSlot].Owner != viewer
+            || !ShowsActionStrip(viewer, visibleGangs[hoveredSlot].Owner, matchOver)
             || visibleGangs[hoveredSlot].QueuedCommand is not { } queued) return;
 
         switch (queued.Command.Action)
@@ -640,12 +658,13 @@ public sealed partial class ChaosGame
             new Color(0, 247, 0));
 
         var action = gang.QueuedCommand?.Command.Action ?? GangAction.None;
-        if (UiSprites is not null && gang.Owner == viewer)
+        var showsAction = ShowsActionStrip(viewer, gang.Owner, state.Outcome is not null);
+        if (showsAction && UiSprites is not null)
         {
             batch.Draw(UiSprites, SectorGangCardLayout.ActionStrip(slot),
                 OriginalSpriteLayout.GangActionStrip(action), Color.White);
         }
-        else if (UiSprites is null)
+        else if (showsAction)
         {
             var strip = SectorGangCardLayout.ActionStrip(slot);
             batch.Draw(pixel, strip, Color.Black);
