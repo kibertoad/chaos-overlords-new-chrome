@@ -208,6 +208,17 @@ unknown fields are refused. See "What the server does and does not defend agains
 stops short of judging legality, which stays with the core on each client while it applies the
 sealed set, exactly as a replay is verified.
 
+A document holds at most `LIMITS.ordersMaxOps` (512) ops, and the server answers a longer one with
+422, which would lose the seat every order of its turn. The client keeps well inside that bound
+(DEV-NET-002). Its document leaves out the ops a later one makes moot: a gang's later order replaces
+its earlier op, cancelling an order given this turn removes it, and the hire dock keeps only the op
+that leaves it in its final state when it starts the turn clear, as hire resolution leaves it every
+turn (a dock that starts with a hire or snub keeps every hire op). A turn then holds at most one op per gang, one for the dock and
+one per dismissed notification, 145 at most. An action that would still grow a full document is
+refused on the planning copy before the copy changes, with "TOO MANY ORDERS THIS TURN.", so the copy
+never shows an order the document lacks. The generated `WireLimits` class carries the bound to the
+C# client from `limits.ts`.
+
 Numbers are **safe integers only**, and `-0` is refused. The order digest is SHA-256 over
 canonical JSON, so a client in another language has to reproduce that text byte for byte, and a
 float's shortest round-trip spelling is not portable (`1e+21` from JavaScript, `1E+21` from .NET).

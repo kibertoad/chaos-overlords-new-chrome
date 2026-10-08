@@ -41,11 +41,11 @@ public sealed class SpeculativeTurn
 {
     private readonly MatchReplayRecorder _replay;
 
-    private SpeculativeTurn(MatchReplayRecorder replay, PlayerId player)
+    private SpeculativeTurn(MatchReplayRecorder replay, PlayerId player, int orderLimit)
     {
         _replay = replay;
         Player = player;
-        Orders = new OrderDocumentBuilder(player);
+        Orders = OrderDocumentBuilder.ForTurn(replay.State, player, orderLimit);
     }
 
     /// <summary>The seat this client plays.</summary>
@@ -67,7 +67,15 @@ public sealed class SpeculativeTurn
     /// Advancing the coordinator seat by seat is what makes the local player active; the seats it
     /// steps past do nothing, because nothing this copy does is ever resolved.
     /// </remarks>
-    public static SpeculativeTurn For(MatchState authoritative, OriginalData definitions, int slot)
+    public static SpeculativeTurn For(MatchState authoritative, OriginalData definitions, int slot) =>
+        For(authoritative, definitions, slot, OrderDocumentBuilder.MaxOps);
+
+    /// <summary><see cref="For(MatchState, OriginalData, int)"/> with a smaller order limit, for tests.</summary>
+    internal static SpeculativeTurn For(
+        MatchState authoritative,
+        OriginalData definitions,
+        int slot,
+        int orderLimit)
     {
         ArgumentNullException.ThrowIfNull(authoritative);
         ArgumentNullException.ThrowIfNull(definitions);
@@ -101,7 +109,7 @@ public sealed class SpeculativeTurn
             throw new InvalidOperationException(
                 $"Seat {slot} never becomes the active player, so there is no turn to plan on it.");
         }
-        return new SpeculativeTurn(replay, player);
+        return new SpeculativeTurn(replay, player, orderLimit);
     }
 
     /// <summary>
@@ -176,41 +184,59 @@ public sealed class SpeculativeTurn
     }
 
     /// <summary>Queues a command, and records it when the core accepted it.</summary>
+    /// <remarks>Refused before the copy changes when the document has no room for it (DEV-NET-002).</remarks>
     public CommandSubmissionResult Submit(GameCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
+        if (!Orders.HasRoomFor(command.Gang)) return CommandLimitReached;
         var result = _replay.Submit(command);
         if (result.Accepted) Orders.Submit(command);
         return result;
     }
 
     /// <summary>Cancels a queued command, and records it when the core accepted it.</summary>
+    /// <remarks>Refused before the copy changes when the document has no room for it (DEV-NET-002).</remarks>
     public CommandSubmissionResult Cancel(GangId gang)
     {
+        if (!Orders.HasRoomFor(gang)) return CommandLimitReached;
         var result = _replay.Cancel(Player, gang);
         if (result.Accepted) Orders.Cancel(Player, gang);
         return result;
     }
 
     /// <summary>Queues a hire, and records it when the core accepted it.</summary>
+    /// <remarks>Refused before the copy changes when the document has no room for it (DEV-NET-002).</remarks>
     public HireSubmissionResult QueueHire(short gangDefinitionId, int sectorId)
     {
+        if (!Orders.HasRoomForHireAction) return new HireSubmissionResult(HireLimitReached);
         var result = _replay.QueueHire(Player, gangDefinitionId, sectorId);
         if (result.Accepted) Orders.QueueHire(Player, gangDefinitionId, sectorId);
         return result;
     }
 
     /// <summary>Snubs an offer, and records it when the core accepted it.</summary>
+    /// <remarks>
+    /// An accepted snub that names no offer is the core withdrawing the turn's hire or snub of
+    /// that offer, which the document records as the dock having no action.
+    /// Refused before the copy changes when the document has no room for it (DEV-NET-002).
+    /// </remarks>
     public HireOfferSnubResult SnubHireOffer(short gangDefinitionId)
     {
+        if (!Orders.HasRoomForHireAction) return new HireOfferSnubResult(HireLimitReached);
         var result = _replay.SnubHireOffer(Player, gangDefinitionId);
-        if (result.Accepted) Orders.SnubHireOffer(Player, gangDefinitionId);
+        if (result.Accepted)
+            Orders.SnubHireOffer(Player, gangDefinitionId, withdrewHireAction: result.GangDefinitionId is null);
         return result;
     }
 
     /// <summary>Dismisses a notification, and records it when there was one to dismiss.</summary>
+    /// <remarks>
+    /// Returns false, leaving the notification in place, when the document has no room for it
+    /// (DEV-NET-002).
+    /// </remarks>
     public bool DismissNotification()
     {
+        if (!Orders.HasRoom) return false;
         var removed = _replay.TryDismissNotification(Player, out _);
         if (removed) Orders.DismissNotification(Player);
         return removed;
@@ -221,4 +247,15 @@ public sealed class SpeculativeTurn
 
     /// <summary>What a refusal names, so a player is told which payload could not be read.</summary>
     private const string Document = "the saved draft";
+
+    /// <summary>
+    /// DEV-NET-002: the refusal of an order the document has no room for. The player is told at
+    /// once, and nothing is applied to the copy, so the copy and the document never disagree.
+    /// </summary>
+    private static readonly CommandSubmissionResult CommandLimitReached =
+        new(CommandValidation.Reject(CommandValidationCode.OrderLimitReached), null);
+
+    /// <summary>The hire dock's form of <see cref="CommandLimitReached"/>.</summary>
+    private static readonly HireValidation HireLimitReached =
+        HireValidation.Reject(HireValidationCode.OrderLimitReached);
 }
