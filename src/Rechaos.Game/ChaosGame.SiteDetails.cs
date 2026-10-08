@@ -45,8 +45,8 @@ public sealed partial class ChaosGame
         else
             DrawSectorDetails(batch, pixel, font, state);
 
-        if (_siteInfoBackground is not null)
-            batch.Draw(_siteInfoBackground, SiteInformationLayout.Panel,
+        if (SiteInfoBackground is not null)
+            batch.Draw(SiteInfoBackground, SiteInformationLayout.Panel,
                 SiteInformationLayout.BackgroundSource, Color.White);
         else
             batch.Draw(pixel, SiteInformationLayout.Panel, new Color(0, 0, 0, 245));
@@ -63,11 +63,11 @@ public sealed partial class ChaosGame
             definition = state.Definitions.Site(site.DefinitionId);
         }
         ClearSiteInformationFields(batch, pixel);
-        if (_sitePortraits is not null)
-            batch.Draw(_sitePortraits, SiteInformationLayout.Portrait,
+        if (SitePortraits is not null)
+            batch.Draw(SitePortraits, SiteInformationLayout.Portrait,
                 OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
-        if (_uiKeyedSprites is not null)
-            batch.Draw(_uiKeyedSprites, SiteInformationLayout.Portrait,
+        if (UiKeyedSprites is not null)
+            batch.Draw(UiKeyedSprites, SiteInformationLayout.Portrait,
                 SiteInformationLayout.PortraitFrameSource, Color.White);
         font.Draw(batch, definition.Name,
             new Vector2(SiteInformationLayout.NameLeft, 151), Color.Lime, 1);
@@ -104,7 +104,7 @@ public sealed partial class ChaosGame
             DrawNativeTwoCellValue(font, batch, left[row], SiteInformationLayout.LeftValueLeft, y);
             DrawNativeTwoCellValue(font, batch, right[row], SiteInformationLayout.RightValueLeft, y);
         }
-        if (_hoverPoint is { } hover)
+        if (TooltipHoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.SiteAt(hover, definition.Special));
     }
 

@@ -27,6 +27,180 @@ for post-1.0 compatibility.
 The installer contains no original assets and requires an installed legal copy
 when importing them.
 
+### macOS
+
+The macOS builds are not signed or notarized, and there are no plans to change
+that: Apple signs and notarizes only for Apple Developer members, and we do not
+have Apple Developer membership. macOS therefore refuses to open the
+installer until you allow it, and the steps below are how to install the game
+on a Mac for the foreseeable future. Releases that include macOS
+builds carry `ChaosOverlords-NewChrome-osx-arm64-Setup-<version>.pkg` for Apple
+silicon (M1 and later) and, in some releases,
+`ChaosOverlords-NewChrome-osx-x64-Setup-<version>.pkg` for Intel Macs.
+
+Allow the downloaded installer in one of these ways:
+
+- macOS 15 (Sequoia) and later: double-click the `.pkg` and click **Done** when
+  macOS says it could not verify it. Open **System Settings > Privacy &
+  Security**, scroll down to the message that the package was blocked, click
+  **Open Anyway**, enter your password, and click **Open Anyway** again.
+- macOS 12 to 14: Control-click (or right-click) the `.pkg` in Finder, choose
+  **Open**, and click **Open** in the warning dialog.
+- Any version, from Terminal: remove the quarantine flag the browser put on the
+  download, then double-click the `.pkg` as usual.
+
+  ```shell
+  xattr -d com.apple.quarantine ~/Downloads/ChaosOverlords-NewChrome-osx-*-Setup-*.pkg
+  ```
+
+The installer puts **Chaos Overlords New Chrome** in Applications. If macOS also
+blocks the app the first time it starts, allow it under **Privacy & Security**
+the same way, or clear the flag from the whole bundle:
+
+```shell
+xattr -dr com.apple.quarantine "/Applications/Chaos Overlords New Chrome.app"
+```
+
+The first time the game starts, it asks for the folder that holds your copy of
+*Chaos Overlords* and imports the original assets from it into
+`~/Library/Application Support/ChaosOverlordsNewChrome/Assets`. To import from
+Terminal instead, run:
+
+```shell
+"/Applications/Chaos Overlords New Chrome.app/Contents/MacOS/Install Original Resources" "/path/to/Chaos Overlords"
+```
+
+### Linux
+
+Linux releases carry one x86-64 package,
+`ChaosOverlords-NewChrome-linux-x64-Setup-<version>.deb`. Some releases leave it
+out; pick one from [GitHub Releases](https://github.com/kibertoad/chaos-overlords-new-chrome/releases)
+that lists it. The package installs the game into `/opt/chaos-overlords-new-chrome`,
+the `chaos-overlords-new-chrome` and `chaos-overlords-new-chrome-import`
+commands, and a desktop menu entry. Installing takes three steps: install the
+game, unpack your GOG copy of *Chaos Overlords*, and import its assets.
+
+#### 1. Install the game
+
+Download the package from a terminal with `curl`. Ubuntu does not install it by
+default; get it with `sudo apt install curl`. This fetches the newest release;
+set `VERSION` by hand (for example `VERSION=0.10.9`) when the newest one has no
+`.deb`.
+
+```shell
+VERSION=$(curl -fsSL https://api.github.com/repos/kibertoad/chaos-overlords-new-chrome/releases/latest \
+  | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+curl -fLO "https://github.com/kibertoad/chaos-overlords-new-chrome/releases/download/$VERSION/ChaosOverlords-NewChrome-linux-x64-Setup-$VERSION.deb"
+```
+
+On Ubuntu 22.04 and later, Debian 12 and later, Linux Mint 21 and later, Pop!_OS
+and other distributions built on them, let apt install the package and its
+dependencies:
+
+```shell
+sudo apt install "./ChaosOverlords-NewChrome-linux-x64-Setup-$VERSION.deb"
+```
+
+The `./` matters: without it apt looks the name up in its repositories. Remove
+the game with `sudo apt remove chaos-overlords-new-chrome`. Debian 11 and older
+cannot read the package, because their dpkg does not unpack zstd.
+
+Fedora, Arch Linux and other distributions without apt have no package of their
+own yet. Install the libraries the game needs, unpack the `.deb` with `ar` and
+`tar`, and copy its files into place. On Fedora:
+
+```shell
+sudo dnf install binutils zstd libicu openssl-libs mesa-libGL libX11 zenity
+```
+
+On Arch Linux:
+
+```shell
+sudo pacman -S --needed binutils zstd icu openssl libglvnd libx11 zenity
+```
+
+Then, on either:
+
+```shell
+mkdir chaos-overlords-deb && cd chaos-overlords-deb
+ar x "../ChaosOverlords-NewChrome-linux-x64-Setup-$VERSION.deb" data.tar.zst
+tar --zstd -xf data.tar.zst
+sudo rm -rf /opt/chaos-overlords-new-chrome
+sudo cp -r opt/chaos-overlords-new-chrome /opt/
+sudo install -m 755 usr/bin/chaos-overlords-new-chrome usr/bin/chaos-overlords-new-chrome-import /usr/local/bin/
+sudo install -Dm 644 usr/share/applications/chaos-overlords-new-chrome.desktop /usr/local/share/applications/chaos-overlords-new-chrome.desktop
+cd .. && rm -rf chaos-overlords-deb
+```
+
+On another distribution, install its packages for ICU, OpenSSL 3 (or 1.1),
+OpenGL, libX11 and zenity (or kdialog) the same way. To update, run the same
+commands with the new package. To remove the game:
+
+```shell
+sudo rm -rf /opt/chaos-overlords-new-chrome
+sudo rm /usr/local/bin/chaos-overlords-new-chrome /usr/local/bin/chaos-overlords-new-chrome-import
+sudo rm /usr/local/share/applications/chaos-overlords-new-chrome.desktop
+```
+
+#### 2. Unpack the GOG installer
+
+GOG sells *Chaos Overlords* as a Windows installer only, a file named like
+`setup_chaos_overlords_<version>.exe`. Download it from your
+[GOG library](https://www.gog.com/account) in a browser, or from a terminal with
+`lgogdownloader`. Install it first with `sudo apt install lgogdownloader` or
+`sudo dnf install lgogdownloader`; on Arch it is in the AUR (for example
+`yay -S lgogdownloader`). `--login` asks for your GOG email and password; if it
+cannot log in, download the installer in a browser instead. The download lands
+in a `chaos_overlords` folder under `--directory`:
+
+```shell
+lgogdownloader --login
+lgogdownloader --download --game '^chaos_overlords$' --platform windows --include installers --directory ~/Downloads
+```
+
+Unpack it with `innoextract`, which needs no Wine. Install it with the command
+for your distribution:
+
+```shell
+sudo apt install innoextract      # Debian, Ubuntu
+sudo dnf install innoextract      # Fedora
+sudo pacman -S innoextract        # Arch
+```
+
+Then point it at the installer. The example uses the file name of GOG's
+installer version 2.1.0.17 in `~/Downloads`, where a browser saves it; change
+the name if your download has a different version, and add `chaos_overlords/`
+to the path if lgogdownloader fetched it:
+
+```shell
+innoextract --gog --output-dir ~/Games/chaos-overlords ~/Downloads/setup_chaos_overlords_2.1.0.17.exe
+```
+
+innoextract writes the game's files to `~/Games/chaos-overlords/app`, the folder
+that holds `DATA`, `HELP` and `MUSIC`, and the installer's own images to
+`~/Games/chaos-overlords/tmp`, which the game does not need. GOG's installer
+version 2.1.0.17 unpacks with innoextract 1.8 (Ubuntu 22.04) and later.
+
+A copy installed another way works as well: running the installer under Wine
+puts it in `~/.wine/drive_c/GOG Games/Chaos Overlords`, and the Heroic Games
+Launcher puts it in `~/Games/Heroic/Chaos Overlords` by default.
+
+#### 3. Import the assets
+
+Start the game from the desktop menu or with `chaos-overlords-new-chrome`. The
+first time it starts, it asks for the folder that holds your copy of
+*Chaos Overlords* and imports the original assets from it into
+`~/.local/share/ChaosOverlordsNewChrome/Assets`. The folder picker needs `zenity`
+or `kdialog`. Without either, or to import before the first start, run the
+import from a terminal:
+
+```shell
+chaos-overlords-new-chrome-import ~/Games/chaos-overlords/app
+```
+
+The import reads the folder and copies nothing back into it, so you can delete
+the unpacked copy afterwards.
+
 ## Project status
 
 New Chrome is a fully featured reproduction of the original, believed to be
@@ -82,14 +256,15 @@ validation plans list the open questions.
   ([#136](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/136)).
 - Every screen the rebuild draws has been compared with at least one capture
   of the original, but some states of most, such as pressed faces, selections
-  and drags, have not been captured yet; [VALIDATION.md](docs/VALIDATION.md#screen-capture-coverage)
+  and drags, have not been captured yet; [the capture coverage table](docs/validation/screen-capture-coverage.md)
   lists them ([#137](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/137)).
 - Help is drawn by a cross-platform viewer, so its typography and paragraph
   layout approximate WinHelp's
   ([#140](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/140)).
 - Online play has no spectating, lobby chat or Comlink messages between
   players ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)).
-- Single-key shortcuts can be rebound in Options. macOS builds are not signed or notarized
+- Only single-key shortcuts can be rebound, in Options > Keys; text editing
+  keys and key chords keep their defaults
   ([#139](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139)).
 - Save and replay formats may change incompatibly before 1.0.0
   ([#141](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/141)).
@@ -107,6 +282,8 @@ The technical documentation is cataloged in [docs/README.md](docs/README.md);
   interoperability will not be recreated. Online play uses the new documented
   transport instead.
 - Legacy Help macros and external-file execution are not run.
+- macOS builds are not signed or notarized, and there are no plans to change
+  that; [macOS](#macos) under Quick start says how to open them.
 
 ## Quality-of-life additions
 

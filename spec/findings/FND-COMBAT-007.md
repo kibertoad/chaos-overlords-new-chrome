@@ -10,17 +10,17 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00453087..0x00453A8C
+    address: 0x00453087..0x00453A8D
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004948F0..0x004948F7
+    address: 0x004948F0..0x004948F8
 tool: Ghidra 12.1.3
 environment: null
 ---
 
 ## Observation
 
-`fn_00453087` occupies `0x00453087..0x00453A8C` (2,566 bytes, FND-EXE-004). All
+`fn_00453087` occupies `0x00453087..0x00453A8D` (2,566 bytes, FND-EXE-004). All
 seven of its call sites are in the Combat Results handler `fn_00451F80`. It
 takes the viewing player and an opponent index (0 to 4, or -1) and returns the
 opponent index it drew. It draws into surface 7, which the panel shows at

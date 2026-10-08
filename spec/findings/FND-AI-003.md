@@ -48,7 +48,7 @@ ranking mode, and writes the chosen hire role to `0x00482128 + player * 4`.
 This is the computer player's planning entry. The three three-byte groups in
 each planning record are the older, the previous and the newly planned action
 with its two target bytes, and a sector of 100 marks an empty roster slot. The
-scenario switch after the dispatch is the hiring strategy (FND-AI-008,
+scenario switch after the dispatch is the hiring strategy (FND-AI-064,
 FND-AI-009). The 64-entry pass prepares the per-sector values the handlers read
 (FND-AI-018, FND-AI-040).
 

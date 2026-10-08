@@ -4,7 +4,7 @@ title: The Comlink alert plays slot 6 through the effects gate
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-012, FND-COMLINK-004, FND-EXE-004, EXP-COMLINK-001, EXP-COMLINK-002]
+evidence: [FND-AUDIO-018, FND-COMLINK-004, FND-EXE-004, EXP-COMLINK-001, EXP-COMLINK-002]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005, RULE-AUDIO-008, RULE-SETUP-008, RULE-COMLINK-001]
@@ -17,11 +17,12 @@ effect slot 6, and only while sound effects are on.
 
 ## When it runs
 
-Each time `ComlinkAlert` is emitted: when a player with an unread message starts
-planning (RULE-SETUP-008), when a message for the active player arrives
-(RULE-COMLINK-001), every 24 presentation ticks while a message is unread
-(RULE-AUDIO-008), and when the event pump enters the city screen with
-`comlink_pending` set.
+Each time `ComlinkAlert` is emitted: once when a player with an unread message
+starts planning, after the Last Turn Events panel closes (RULE-SETUP-008), when
+a message for the active player arrives (RULE-COMLINK-001), and every 24
+presentation ticks while a message is unread (RULE-AUDIO-008). No other path
+plays slot 6; the event pump's other read of `comlink_pending` only chooses how
+the Comlink light is drawn [FND-AUDIO-018].
 
 ## Parameters
 
@@ -45,7 +46,7 @@ No return value. Plays slot 6 when effects are on.
 
 The Comlink View panel marks the message it shows as read and then sets
 `comlink_pending` from a scan of all 16 records, so the alert stops only when
-the last unread message has been viewed [FND-AUDIO-012].
+the last unread message has been viewed [FND-AUDIO-018].
 
 ## What the sources say
 
@@ -58,5 +59,4 @@ None known.
 
 ## Open questions
 
-- When the city entry path plays slot 6 relative to the planning entry, and
-  whether a player can hear both.
+None.

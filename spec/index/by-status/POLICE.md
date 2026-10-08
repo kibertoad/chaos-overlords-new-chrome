@@ -4,14 +4,21 @@
 
 Entries by status.
 
-## established
+## supported
 
-4 entries.
+2 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-POLICE-001](../../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice |
 | [RULE-POLICE-002](../../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police |
+
+## established
+
+2 entries.
+
+| ID | Title |
+|---|---|
 | [RULE-POLICE-003](../../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent |
 | [RULE-POLICE-004](../../rules/RULE-POLICE-004.md) | Crackdown reports go to the players who had a gang in the sector when resolution began |
 
@@ -32,8 +39,6 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [RULE-POLICE-001](../../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice |
-| [RULE-POLICE-002](../../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police |
 | [RULE-POLICE-003](../../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent |
 | [RULE-POLICE-004](../../rules/RULE-POLICE-004.md) | Crackdown reports go to the players who had a gang in the sector when resolution began |
 
@@ -43,6 +48,7 @@ Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-POLICE-001](../../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | established |
-| [RULE-POLICE-002](../../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | established |
+| [RULE-POLICE-001](../../rules/RULE-POLICE-001.md) | In a Crackdown sector the police may find each gang and attack it with 25 minus its Defense in dice | supported |
+| [RULE-POLICE-002](../../rules/RULE-POLICE-002.md) | A Crackdown is recorded in the sector's history, and a third within five turns neutralizes the sector and adds 3 to 5 turns of police | supported |
+| [RULE-POLICE-003](../../rules/RULE-POLICE-003.md) | Police presence counts down by one at the end of every turn unless it is permanent | established |
 | [RULE-POLICE-004](../../rules/RULE-POLICE-004.md) | Crackdown reports go to the players who had a gang in the sector when resolution began | established |

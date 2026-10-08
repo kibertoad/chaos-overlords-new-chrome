@@ -9,7 +9,7 @@ byte_order: little
 size: 36
 text: false
 definition: fmt_state_002.ksy
-evidence: [FND-CHAOS-002, FND-AI-004, FND-AI-010, FND-CHAOS-001, FND-CONTROL-001, FND-CONTROL-003, FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-008, FND-GANG-001, FND-GANG-007, FND-HIRE-008, FND-PLATFORM-003, FND-SETUP-003, FND-STATE-001, FND-STATE-002, FND-TOLERANCE-001, FND-TURN-001, FND-TURN-003, FND-UI-015, FND-UI-018, FND-UI-035, FND-UPKEEP-001, FND-UPKEEP-002, FND-EXE-004, EXP-SETUP-001]
+evidence: [FND-CHAOS-002, FND-AI-004, FND-AI-010, FND-CHAOS-001, FND-CONTROL-001, FND-CONTROL-003, FND-EQUIP-001, FND-EQUIP-007, FND-EQUIP-012, FND-GANG-001, FND-GANG-007, FND-HIRE-008, FND-PLATFORM-003, FND-SETUP-003, FND-STATE-001, FND-STATE-002, FND-TOLERANCE-001, FND-TURN-001, FND-TURN-003, FND-UI-015, FND-UI-018, FND-UI-035, FND-UPKEEP-001, FND-UPKEEP-002, FND-EXE-004, EXP-SETUP-001]
 conflicting: []
 split_with: []
 related: []
@@ -38,7 +38,7 @@ its definition's Resistance [FND-STATE-001].
 | `0x06` | 1 | `INT8` | `support` | The Support of the sector's completed sites, shown on the Support row: set to 0 by the refresh, plus the Support of each completed site. Read by the Control pass | supported | FND-GANG-001, FND-STATE-001, FND-UI-035, FND-CONTROL-003 |
 | `0x07` | 6 | `FMT-STATE-004[3]` | `sites` | The sector's three site slots | supported | FND-TURN-001, FND-TURN-003 |
 | `0x0D` | 1 | `UINT8` | `research_level` | 0, raised to 1 by a completed site whose `special` is 1 and to 2 by one whose `special` is 2 (the higher wins). The item list for a gang whose player owns the sector caps the items' Tech Level at 5 for 0 and at 8 for 1 | supported | FND-STATE-001 |
-| `0x0E` | 1 | `UINT8` | `factory` | 1 when a completed site has `special` 3, else 0; set only by the refresh before planning. Lowers item prices for the owner | supported | FND-EQUIP-001, FND-STATE-001, FND-EQUIP-007, FND-EQUIP-008 |
+| `0x0E` | 1 | `UINT8` | `factory` | 1 when a completed site has `special` 3, else 0; set only by the refresh before planning. Lowers item prices for the owner | supported | FND-EQUIP-001, FND-STATE-001, FND-EQUIP-007, FND-EQUIP-012 |
 | `0x0F` | 1 | `INT8` | `crackdown_turns` | Police presence: the number of police Combat phases left, 0 for none, 100 for a Crackdown that never ends. The Control pass settles no sector where it is not 0 | supported | FND-SETUP-003, FND-CONTROL-003 |
 | `0x10` | 6 | `UINT8[6]` | `gangs_seen` | One byte per player slot: 1 when that player has a living gang in the sector that the player at the screen can see, else 0. Rebuilt by the city map drawer, not by resolution; read by the map, the panels, the Attack picker and the hire drop test. The Overlord bar lights the portraits of the players whose byte is set, and the sector view offers their gangs (FND-UI-015, FND-UI-018) | supported | FND-HIRE-008, FND-STATE-001, FND-UI-015, FND-UI-018 |
 | `0x16` | 1 | `INT8` | `site_combat` | Sum of the Combat modifiers of the completed sites | supported | FND-STATE-001, FND-STATE-002 |
