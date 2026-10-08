@@ -136,6 +136,13 @@ public sealed record ScreenCaptureRecord(
     /// <summary>The screen shown before a match the capture shows, or null.</summary>
     public string? BeforeMatch { get; init; }
 
+    /// <summary>
+    /// The objective, Mentality and planning limit the probe wrote before New Game, which the setup
+    /// screen opened with (RULE-OPTIONS-001): the fixture's <c>preferences</c> setup input. Set on
+    /// every copy of the setup screen.
+    /// </summary>
+    public ReferenceSetupPreferences? SetupPreferences { get; init; }
+
     /// <summary>The setup step after which <c>--setup-steps</c> took the copy, or null.</summary>
     public int? SetupStep => BeforeMatch is not null && Step <= SetupStepBase ? SetupStepBase - Step : null;
 
@@ -158,6 +165,7 @@ public sealed record ScreenCaptureRecord(
             using var fixture = JsonDocument.Parse(File.ReadAllText(file));
             var experiment = fixture.RootElement.GetProperty("experiment").GetString()!;
             var whiteKeyed = IsWhiteKeyed(fixture.RootElement);
+            var preferences = SetupPreferencesInput(fixture.RootElement);
             var run = 0;
             foreach (var recorded in fixture.RootElement.GetProperty("runs").EnumerateArray())
             {
@@ -167,9 +175,14 @@ public sealed record ScreenCaptureRecord(
                 // the match are keyed as the match's are.
                 foreach (var (screen, step) in BeforeMatchScreens)
                     if (recorded.TryGetProperty(screen + "_capture", out var before))
-                        records.Add(Parse(experiment, run, before, whiteKeyed) with { Step = step, BeforeMatch = screen });
+                        records.Add(Parse(experiment, run, before, whiteKeyed) with
+                        {
+                            Step = step, BeforeMatch = screen,
+                            SetupPreferences = screen == "setup" ? RequirePreferences(experiment, preferences) : null,
+                        });
                 if (recorded.TryGetProperty("setup_steps", out var setupSteps))
-                    records.AddRange(SetupStepCaptures(experiment, run, setupSteps.EnumerateArray().ToArray(), whiteKeyed));
+                    records.AddRange(SetupStepCaptures(experiment, run, setupSteps.EnumerateArray().ToArray(), whiteKeyed)
+                        .Select(record => record with { SetupPreferences = RequirePreferences(experiment, preferences) }));
                 var pressesDone = recorded.TryGetProperty("done_at_roll", out var done) && done.GetArrayLength() > 0;
                 if (recorded.TryGetProperty("order_steps", out var steps))
                     records.AddRange(StepCaptures(experiment, run, steps.EnumerateArray().ToArray(), whiteKeyed, !pressesDone));
@@ -222,6 +235,28 @@ public sealed record ScreenCaptureRecord(
                 };
         }
     }
+
+    private const string PreferencesInput = "preferences ";
+
+    /// <summary>
+    /// The <c>preferences</c> setup input of <c>--setup-capture</c>, the objective, Mentality and
+    /// planning limit written before New Game, or null when the fixture has none.
+    /// </summary>
+    public static ReferenceSetupPreferences? SetupPreferencesInput(JsonElement fixture) =>
+        fixture.TryGetProperty("inputs", out var inputs)
+            ? inputs.EnumerateArray()
+                .Where(input => input.GetProperty("name").GetString() == "setup")
+                .Select(input => input.GetProperty("value").GetString()!)
+                .Where(value => value.StartsWith(PreferencesInput, StringComparison.Ordinal))
+                .Select(value => ReferenceSetupPreferences.Parse(value[PreferencesInput.Length..]))
+                .FirstOrDefault()
+            : null;
+
+    // A copy of the setup screen shows the preferences it opened with, so the rebuild has to start
+    // from the same ones; a fixture that copies it without saying which is not comparable.
+    private static ReferenceSetupPreferences RequirePreferences(string experiment, ReferenceSetupPreferences? preferences) =>
+        preferences ?? throw new InvalidDataException(
+            $"{experiment} copies the setup screen but lists no preferences setup input.");
 
     /// <summary>Whether a fixture's inputs hold the <c>key_colour</c> setup input of <c>--white-key</c>.</summary>
     public static bool IsWhiteKeyed(JsonElement fixture) =>
@@ -596,8 +631,9 @@ public static class RebuildFrame
     /// <see cref="ReferenceFrameRequest.ScreenOperands"/>.
     /// </summary>
     public static ScreenFrame RenderBeforeMatch(
-        string screen, string? name = null, IReadOnlyList<ReferenceClick>? clicks = null) =>
-        Render(null, null, clicks, name, screen: screen);
+        string screen, string? name = null, IReadOnlyList<ReferenceClick>? clicks = null,
+        ReferenceSetupPreferences? setupPreferences = null) =>
+        Render(null, null, clicks, name, screen: screen, setupPreferences: setupPreferences);
 
     /// <summary>Why no frame can be drawn on this machine, or null when an asset pack is installed.</summary>
     public static string? MissingAssetPack() =>
@@ -610,7 +646,7 @@ public static class RebuildFrame
         MatchState? state, int? markerFrame, IReadOnlyList<ReferenceClick>? clicks = null, string? name = null,
         int? pumpCounter = null, int? selectedSector = null, ReferenceLamps? lamps = null, int? itemFrame = null,
         string? screen = null, int? clipTick = null, int? idlePhase = null, int? caretPhase = null, int? clipIndex = null,
-        bool entryPanels = false, bool idleGangWarning = true)
+        bool entryPanels = false, bool idleGangWarning = true, ReferenceSetupPreferences? setupPreferences = null)
     {
         if (MissingAssetPack() is { } missing) Assert.Skip(missing);
         var assets = AssetRoot();
@@ -663,6 +699,11 @@ public static class RebuildFrame
             }
             if (entryPanels) start.ArgumentList.Add("--entry-panels");
             if (!idleGangWarning) start.ArgumentList.Add("--no-idle-warning");
+            if (setupPreferences is not null)
+            {
+                start.ArgumentList.Add("--setup-preferences");
+                start.ArgumentList.Add(setupPreferences.ToString());
+            }
             if (pumpCounter is { } counter)
             {
                 start.ArgumentList.Add("--pump-counter");

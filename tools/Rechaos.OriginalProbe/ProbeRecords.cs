@@ -15,6 +15,32 @@ internal sealed record ProbeDrawValue(uint Address, IReadOnlyList<int> Values)
 }
 
 /// <summary>
+/// The objective, Mentality and planning limit the probe writes once the preference loader has
+/// returned, in a run that copies the setup screen (<c>--setup-capture</c> or <c>--setup-steps</c>),
+/// so the screen opens with them (RULE-OPTIONS-001, RULE-SETUP-002). <see cref="GogInstallation"/>
+/// is what GOG's installer stores (SRC-INSTALLER-GOG), and the default; <see cref="Initialized"/>
+/// is what the executable's data holds when the registry key is absent (FND-OPTIONS-001), which the
+/// runs made before the option existed showed.
+/// </summary>
+internal sealed record ProbeSetupPreferences(int Scenario, int Mentality, int PlanningLimit)
+{
+    public static readonly ProbeSetupPreferences GogInstallation = new(4, 0, 0);
+    public static readonly ProbeSetupPreferences Initialized = new(0, 1, 0);
+
+    public static ProbeSetupPreferences Parse(string value) => value.Split(':') switch
+    {
+        [var scenario, var mentality, var limit]
+            when int.TryParse(scenario, out var s) && s is >= 0 and <= 9
+                 && int.TryParse(mentality, out var m) && m is >= 0 and <= 3
+                 && int.TryParse(limit, out var l) && l is >= 0 and <= 3 => new(s, m, l),
+        _ => throw new ArgumentException(
+            $"--setup-preferences takes <scenario 0-9>:<mentality 0-3>:<planning limit 0-3>, not {value}."),
+    };
+
+    public override string ToString() => $"{Scenario}:{Mentality}:{PlanningLimit}";
+}
+
+/// <summary>
 /// A left-button press and release the probe posts at a client point once the dump is taken
 /// (<c>--search-clicks</c>, SearchClickRecord).
 /// </summary>

@@ -127,8 +127,8 @@ public sealed partial class ChaosGame
     private TimeSpan _setupNameCaretShownAt;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.OneYear;
-    // RULE-SETUP-002: the scenario a fresh local setup selects, Greed when nothing is stored.
-    private ScenarioId _preferredScenario = ScenarioId.Greed;
+    // RULE-SETUP-002: the scenario a fresh local setup selects, Kill 'Em All when nothing is stored.
+    private ScenarioId _preferredScenario = OriginalOptionsPolicy.ScenarioByDefault;
     private bool _scenarioPreferenceUnsaved;
     // RULE-SETUP-010: the roster of the last Begin of this session.
     private LocalSetupSnapshot? _begunLocalSetup;

@@ -1,10 +1,10 @@
 ---
 id: RULE-SETUP-002
-title: A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit
+title: A fresh local setup selects the stored scenario preference, which is Kill 'Em All after a GOG installation, and a one-year time limit
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-013, FND-OBJECTIVE-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG, EXP-UI-015, FND-AI-005, FND-OBJECTIVE-006, FND-PLATFORM-003, FND-RESEARCH-002, FND-SETUP-018, FND-TURN-003, FND-UI-033]
+evidence: [FND-SETUP-013, SRC-INSTALLER-GOG, EXP-UI-055, FND-OBJECTIVE-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG, EXP-UI-015, FND-AI-005, FND-OBJECTIVE-006, FND-PLATFORM-003, FND-RESEARCH-002, FND-SETUP-018, FND-TURN-003, FND-UI-033]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001]
@@ -13,8 +13,10 @@ related: [SCR-SETUP-001]
 ## Summary
 
 When the full local setup screen opens, its selected scenario is the one the
-player's preferences hold, and Greed if the preferences key is absent. The
-time limit starts at 52 turns every time, whatever was chosen before.
+player's preferences hold. GOG's installer stores Kill 'Em All
+(SRC-INSTALLER-GOG), so that is the scenario a fresh installation opens on;
+Greed is selected only when the preferences key is absent. The time limit
+starts at 52 turns every time, whatever was chosen before.
 
 ## When it runs
 
@@ -44,7 +46,10 @@ screen. Makes no draws.
 
 ## Edge cases
 
-`preferred_scenario` is 0, Greed, in the executable's data. The preference
+`preferred_scenario` is 4, Kill 'Em All, after a GOG installation, whose
+installer writes `prefsObjective` with every value the loader reads before it
+(SRC-INSTALLER-GOG). It is 0, Greed, in the executable's data, which only a
+missing key leaves in place. The preference
 loader reads its registry values into one shared variable, so when the key
 exists but `prefsObjective` is missing, `preferred_scenario` takes the low
 byte of the last earlier value that was found (FND-SETUP-013). A committed
@@ -55,7 +60,8 @@ selection light and the description undefined.
 ## What the sources say
 
 SRC-MANUAL-GOG, page 12, describes the Scenario Selection Control Panel and
-its ten scenarios, and gives no default.
+its ten scenarios, and gives no default. SRC-INSTALLER-GOG, GOG's installer,
+writes `prefsObjective` as 4.
 
 ## Differences between builds
 
@@ -65,4 +71,5 @@ None known.
 
 - A run of the original with the key absent, which would confirm Greed, has
   not been made. FND-SETUP-012 saw Kill 'Em All while the registry held a
-  stored value of 4.
+  stored value of 4, and EXP-UI-015 saw it in a run that left the
+  installation's registry values in place.

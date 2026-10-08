@@ -63,11 +63,16 @@ namespace Rechaos.Game;
 /// Whether a Done click asks about idle gangs (RULE-OPTIONS-003). The probe switches the option off
 /// in a run that presses Done, unless a <c>warn</c> step switches it back on.
 /// </param>
+/// <param name="SetupPreferences">
+/// The scenario, Mentality and planning limit the setup screen opens with, as the probe wrote them
+/// before New Game (RULE-OPTIONS-001, RULE-SETUP-002), in place of a fresh start's. Null keeps a
+/// fresh start's.
+/// </param>
 public sealed record ReferenceFrameRequest(
     string SavePath, string OutputPath, int? MarkerFrame = null, IReadOnlyList<ReferenceClick>? Clicks = null,
     int? PumpCounter = null, int? SelectedSector = null, ReferenceLamps? Lamps = null, int? ItemFrame = null,
     int? ClipTick = null, int? IdlePhase = null, int? CaretPhase = null, int? ClipIndex = null,
-    bool EntryPanels = false, bool IdleGangWarning = true)
+    bool EntryPanels = false, bool IdleGangWarning = true, ReferenceSetupPreferences? SetupPreferences = null)
 {
     /// <summary>
     /// The operands that ask for a screen shown before a match in place of a save: the title
@@ -80,7 +85,8 @@ public sealed record ReferenceFrameRequest(
         "Usage: --reference-frame <save|title|credits|setup> <bitmap> [--marker-frame <0-11>] [--pump-counter <0-7>]"
         + " [--selected-sector <0-63>] [--lamps <0|1>,<0|1>] [--item-frame <0-14>] [--idle-phase <0-7>]"
         + " [--caret-phase <0-5>] [--clip-tick <0-21> [--clip-index <n>]]"
-        + " [--entry-panels] [--no-idle-warning] [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]";
+        + " [--entry-panels] [--no-idle-warning] [--reference-clicks <x:y[:2]|x:y>x:y|'TEXT>,...]"
+        + " [--setup-preferences <scenario>:<mentality>:<planning limit>]";
 
     // Keep captures independent of the player's preferences, recovery files and saves. The
     // directory sits beside the bitmap and is kept after exit, so a failed run can be diagnosed
@@ -107,8 +113,10 @@ public sealed record ReferenceFrameRequest(
         var clip = Array.IndexOf(args, "--clip-index");
         var entry = Array.IndexOf(args, "--entry-panels");
         var noWarning = Array.IndexOf(args, "--no-idle-warning");
+        var setupPreferences = Array.IndexOf(args, "--setup-preferences");
         if (reference < 0)
         {
+            if (setupPreferences >= 0) throw new ArgumentException("--setup-preferences requires --reference-frame.");
             if (noWarning >= 0) throw new ArgumentException("--no-idle-warning requires --reference-frame.");
             if (entry >= 0) throw new ArgumentException("--entry-panels requires --reference-frame.");
             if (tick >= 0) throw new ArgumentException("--clip-tick requires --reference-frame.");
@@ -135,7 +143,8 @@ public sealed record ReferenceFrameRequest(
             || (caret >= 0 && Array.LastIndexOf(args, "--caret-phase") != caret)
             || (clip >= 0 && Array.LastIndexOf(args, "--clip-index") != clip)
             || (entry >= 0 && Array.LastIndexOf(args, "--entry-panels") != entry)
-            || (noWarning >= 0 && Array.LastIndexOf(args, "--no-idle-warning") != noWarning))
+            || (noWarning >= 0 && Array.LastIndexOf(args, "--no-idle-warning") != noWarning)
+            || (setupPreferences >= 0 && Array.LastIndexOf(args, "--setup-preferences") != setupPreferences))
             throw new ArgumentException("Capture options may only be supplied once.");
         static string Operand(string[] values, int index)
         {
@@ -154,6 +163,8 @@ public sealed record ReferenceFrameRequest(
             throw new ArgumentException(
                 "--marker-frame, --pump-counter, --selected-sector, --lamps, --item-frame, --idle-phase, --caret-phase,"
                 + " --clip-tick, --clip-index and --entry-panels require a save.");
+        if (setupPreferences >= 0 && source != "setup")
+            throw new ArgumentException("--setup-preferences requires the setup screen.");
         // A clip is drawn at a tick, so its index alone gives nothing to draw.
         if (clip >= 0 && tick < 0) throw new ArgumentException("--clip-index requires --clip-tick.");
         var output = Path.GetFullPath(Operand(args, reference + 2));
@@ -189,8 +200,35 @@ public sealed record ReferenceFrameRequest(
         return new ReferenceFrameRequest(save, output, frame,
             clicks >= 0 ? ReferenceClick.ParseList(Operand(args, clicks + 1)) : null, counter, sector,
             lamps >= 0 ? ReferenceLamps.Parse(Operand(args, lamps + 1)) : null, itemFrame, clipTick,
-            idlePhase, caretPhase, clipIndex, entry >= 0, noWarning < 0);
+            idlePhase, caretPhase, clipIndex, entry >= 0, noWarning < 0,
+            setupPreferences >= 0 ? ReferenceSetupPreferences.Parse(Operand(args, setupPreferences + 1)) : null);
     }
+}
+
+/// <summary>
+/// The objective, Mentality and planning limit globals the probe writes before New Game
+/// (RULE-OPTIONS-001), each in the original's numbering: <c>objective_choice</c> 0 to 9,
+/// <c>mentality</c> 0 to 3 and <c>planning_limit_choice</c> 0 to 3.
+/// </summary>
+public sealed record ReferenceSetupPreferences(ScenarioId Scenario, AiDifficulty Mentality, PlanningTimeLimit PlanningTimeLimit)
+{
+    public static ReferenceSetupPreferences Parse(string value)
+    {
+        var parts = value.Split(':');
+        if (parts.Length != 3
+            || !int.TryParse(parts[0], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var scenario)
+            || !int.TryParse(parts[1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var mentality)
+            || !int.TryParse(parts[2], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var limit)
+            || scenario > 9 || mentality > 3 || limit > 3)
+            throw new ArgumentException(
+                "--setup-preferences is <scenario 0-9>:<mentality 0-3>:<planning limit 0-3> in the original's numbering.");
+        return new ReferenceSetupPreferences(
+            Enum.GetValues<ScenarioId>().Single(id => ExecutableStrings.ScenarioNumber(id) == scenario),
+            (AiDifficulty)mentality, (PlanningTimeLimit)limit);
+    }
+
+    public override string ToString() =>
+        $"{ExecutableStrings.ScenarioNumber(Scenario)}:{(int)Mentality}:{(int)PlanningTimeLimit}";
 }
 
 /// <summary>
@@ -343,6 +381,12 @@ public sealed partial class ChaosGame
                     OpenCredits();
                     break;
                 case "setup":
+                    if (_referenceFrame.SetupPreferences is { } preferences)
+                    {
+                        _preferredScenario = preferences.Scenario;
+                        _selectedAiMentality = preferences.Mentality;
+                        _selectedPlanningTimeLimit = preferences.PlanningTimeLimit;
+                    }
                     OpenNewGameSetup();
                     break;
                 default:

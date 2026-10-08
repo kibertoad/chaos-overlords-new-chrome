@@ -106,7 +106,7 @@ internal sealed record NewGameSettings(
     bool DetailedCombat = false, bool Pointer = false, bool Sounds = false, bool WatchIntro = false, bool Waits = false, bool Slides = false,
     IReadOnlyList<ProbeSavedWrite>? SavedWrites = null, IReadOnlyList<ProbeClose>? Closes = null,
     bool PassCards = false, IReadOnlyList<ProbeDelay>? Delays = null, IReadOnlyList<ProbeMenu>? Menus = null,
-    bool ClockCaptures = false)
+    bool ClockCaptures = false, ProbeSetupPreferences? SetupPreferences = null)
 {
     /// <summary>
     /// A local match with several humans whose turns the probe plays: each round it presses Ready on
@@ -136,8 +136,15 @@ internal sealed record NewGameSettings(
         Search = Search?.Select(write => write.Player < 0 ? write with { Player = FirstHuman } : write).ToArray(),
     };
 
+    /// <summary>Whether the run copies the setup screen, as it opens or after setup steps.</summary>
+    public bool SetupCopied => SetupCapture || SetupSteps is { Count: > 0 };
+
     public IEnumerable<string> Describe()
     {
+        // A trace recorded before --setup-preferences existed holds none. Those runs wrote the
+        // initialized values with --setup-capture, and without it found the same values in this
+        // machine's registry, as their copies of the setup screen show.
+        if (SetupCopied) yield return $"preferences {SetupPreferences ?? ProbeSetupPreferences.Initialized}";
         if (Scenario is { } scenario) yield return $"scenario {scenario}";
         if (Mentality is { } mentality) yield return $"mentality {mentality}";
         if (TurnLimit is { } turns) yield return $"turn_limit {turns}";
@@ -389,14 +396,6 @@ internal sealed partial class NewGameSession(
             _process.Pump(TimeSpan.FromSeconds(2));
             if (settings.TitleCapture) CaptureBeforeMatch(window, "title");
             if (settings.CreditsCapture) CaptureCredits(window);
-            if (settings.SetupCapture)
-            {
-                // FND-OPTIONS-001: the objective, Mentality and planning limit take their
-                // initialized values, as when the registry key holds none, so setup opens with them.
-                _process.Write(OriginalAddresses.PreferredScenario, BitConverter.GetBytes(0));
-                _process.Write(OriginalAddresses.Mentality, BitConverter.GetBytes(1));
-                _process.Write(OriginalAddresses.PlanningLimitChoice, BitConverter.GetBytes(0));
-            }
         }
         var reached = _process.RunUntil(() =>
         {
@@ -804,6 +803,15 @@ internal sealed partial class NewGameSession(
         if (settings.Sound) Unmute();
         else Mute();
         _preferencesSet = true;
+        // RULE-OPTIONS-001: a run that copies the setup screen gives it the objective, Mentality and
+        // planning limit of --setup-preferences, by default as GOG's installer stores them
+        // (SRC-INSTALLER-GOG), whatever this machine's registry holds.
+        if (settings.SetupPreferences is { } preferences)
+        {
+            _process.Write(OriginalAddresses.PreferredScenario, BitConverter.GetBytes(preferences.Scenario));
+            _process.Write(OriginalAddresses.Mentality, BitConverter.GetBytes(preferences.Mentality));
+            _process.Write(OriginalAddresses.PlanningLimitChoice, BitConverter.GetBytes(preferences.PlanningLimit));
+        }
         if (settings.Comlink is not null) _process.Write(OriginalAddresses.PrefSlidePanels, BitConverter.GetBytes(0));
         if (settings.EndTurns == 0 && settings.Comlink is null) return;
         _process.Write(OriginalAddresses.PrefWarnIdle, BitConverter.GetBytes(0));

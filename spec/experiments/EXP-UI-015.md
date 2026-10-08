@@ -39,6 +39,7 @@ and posts a press and release of the space bar. It then writes 0 to the
 objective `0x00487858`, 1 to the Mentality `0x00487850` and 0 to the planning
 limit `0x00487854`, their initialized values (FND-OPTIONS-001), because the
 registry key of this installation holds other values, and posts New Game.
+The fixture lists those three writes as the setup input `preferences 0:1:0`.
 Two seconds after the setup screen opens it copies the drawing area a third
 time. It then posts the setup steps, before the run writes its own settings,
 and goes on with the run as EXP-TURN-001 does. The rest of the run only gives
@@ -100,7 +101,8 @@ showed the objective the registry held, Kill 'Em All.
 
 A test of the rebuild compares the copies with the rebuild's title screen,
 credits and setup screen, which the game draws with `--reference-frame title`,
-`credits` and `setup`. Leaving out the rebuild's buttons, line under the logo
+`credits` and `setup`, the setup screen with `--setup-preferences 0:1:0`, the
+objective, Mentality and planning limit the probe wrote. Leaving out the rebuild's buttons, line under the logo
 and credit line (DEV-UI-019), its Intro button (DEV-VIDEO-003) and its version
 (DEV-UI-012), the title screen matches. The credits and the setup screen match
 everywhere, the setup screen also after each of the eleven setup copies, with

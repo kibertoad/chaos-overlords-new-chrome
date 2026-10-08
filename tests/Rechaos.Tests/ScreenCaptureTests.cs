@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
+using Rechaos.Core.GameModel;
+using Rechaos.Game;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -41,7 +43,8 @@ public sealed partial class ScreenCaptureTests
     // (EXP-UI-013) and Big Man (EXP-UI-014). The setup steps of EXP-UI-015 compare the first setup
     // of RULE-SETUP-002 and RULE-SETUP-010, the card presses of RULE-SETUP-009, Add and Remove of
     // RULE-SETUP-010, and setup buttons released inside and outside (RULE-UI-001). The setup
-    // steps of EXP-UI-030 compare the card drags of RULE-SETUP-009. The Done press
+    // steps of EXP-UI-030 compare the card drags of RULE-SETUP-009. EXP-UI-055 compares the setup
+    // screen as the preferences GOG's installer stores open it (RULE-SETUP-002). The Done press
     // of EXP-UI-012 opens the warning of RULE-OPTIONS-003 from the original's gangs, one of them
     // idle. The console presses before these captures route as RULE-UI-002 reads them. EXP-UI-018
     // compares the elimination card the only local human sees where its planning would have come
@@ -126,7 +129,7 @@ public sealed partial class ScreenCaptureTests
         return capture.BeforeMatch is { } screen
             ? RebuildFrame.RenderBeforeMatch(screen,
                 $"{experiment}-{run}-{screen}" + (capture.SetupStep is { } setupStep ? $"-{setupStep}" : ""),
-                capture.Clicks)
+                capture.Clicks, capture.SetupPreferences)
             : RebuildFrame.Render(
                 OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
                 $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
@@ -350,6 +353,23 @@ public sealed partial class ScreenCaptureTests
         Assert.False(ScreenCaptureRecord.IsWhiteKeyed(plain.RootElement));
         Assert.Contains(ScreenCaptureRecord.LoadAll(), capture => capture.Experiment == "EXP-UI-003" && capture.WhiteKeyed);
         Assert.Contains(ScreenCaptureRecord.LoadAll(), capture => capture.Experiment == "EXP-UI-001" && !capture.WhiteKeyed);
+    }
+
+    // RULE-OPTIONS-001: every copy of the setup screen carries the preferences it opened with, from
+    // the fixture's preferences setup input.
+    [Fact]
+    public void ACopyOfTheSetupScreenCarriesThePreferencesItOpenedWith()
+    {
+        using var fixture = JsonDocument.Parse("""
+            {"inputs":[{"tick":0,"name":"setup","value":"preferences 4:0:0"},
+                       {"tick":0,"name":"setup","value":"scenario 0"}]}
+            """);
+        Assert.Equal(new ReferenceSetupPreferences(ScenarioId.KillEmAll, AiDifficulty.Goon, PlanningTimeLimit.None),
+            ScreenCaptureRecord.SetupPreferencesInput(fixture.RootElement));
+        var captures = ScreenCaptureRecord.LoadAll();
+        Assert.Contains(captures, capture => capture.BeforeMatch == "setup");
+        Assert.All(captures, capture =>
+            Assert.Equal(capture.BeforeMatch == "setup", capture.SetupPreferences is not null));
     }
 
     [Fact]

@@ -58,6 +58,11 @@ key, it also copies the game window alone twice, as a setup step's copy.
 The tokens appear in the fixture's inputs; `name_shots` holds each shot's text
 and selection, and `name_entries` each step's name record.
 
+The probe wrote no options. The setup screen took the objective, Mentality and
+planning limit this machine's registry gave an unelevated process, 0, 1 and 0,
+which the fixture lists as the setup input `preferences 0:1:0`; EXP-UI-051's
+copies of the setup screen show them.
+
 ## Observations
 
 The dialog opened at every press, and every shot was read. The selection is

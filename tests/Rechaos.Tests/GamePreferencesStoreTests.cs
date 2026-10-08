@@ -32,8 +32,8 @@ public sealed class GamePreferencesStoreTests : IDisposable
             preferences.CustomMultiplayerServer);
         Assert.Equal(OnlineLobbyPresentation.Modern, preferences.LobbyPresentation);
         Assert.Equal(OriginalOptionsPolicy.IntroOnlyOnceByDefault, preferences.IntroOnlyOnce);
-        // RULE-SETUP-002: Greed when nothing is stored.
-        Assert.Equal(ScenarioId.Greed, preferences.PreferredScenario);
+        // RULE-SETUP-002: Kill 'Em All, as GOG's installer stores it, when nothing is stored.
+        Assert.Equal(ScenarioId.KillEmAll, preferences.PreferredScenario);
     }
 
     [Fact]
