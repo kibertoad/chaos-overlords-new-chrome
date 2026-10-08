@@ -129,6 +129,10 @@ namespace Rechaos.Tests;
 /// reported (RULE-HIRE-001, RULE-EVENT-011).
 /// EXP-TURN-101 writes families 13 and 14 into computer gangs in Greed, where they move to the
 /// planned target, sector 0, with no selector call (RULE-AI-031).
+/// EXP-UI-032 and EXP-UI-034 play hot seat in Eliminate with a write that takes a human's Right
+/// Hands out of the match, which eliminates that human (RULE-TURN-006, RULE-OBJECTIVE-005).
+/// EXP-UI-035 plays timed hot-seat turns, one of them run out, and EXP-TURN-102 opens the menu bar
+/// in timed turns (RULE-TIMER-002, RULE-TIMER-003).
 /// In EXP-TURN-103 a Bribe every turn takes a base Tolerance to 41, where it stays while the later
 /// gangs of the phase act, and the clamp lowers it to 40 (RULE-TOLERANCE-002, RULE-TURN-003). In
 /// EXP-TURN-104 a Research gang acts after its sector's site is completed earlier in the same

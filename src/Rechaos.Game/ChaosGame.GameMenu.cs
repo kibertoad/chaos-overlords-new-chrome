@@ -320,7 +320,10 @@ public sealed partial class ChaosGame
         _message = string.Empty;
         // RULE-AUDIO-001, FND-AUDIO-015: cancelling the title load dialog
         // does not enter a game or request the title program again.
-        if (_saveBrowserFromTitle) _gameMenuOpen = false;
+        if (!_saveBrowserFromTitle) return;
+        _gameMenuOpen = false;
+        // OpenSaveBrowser paused the clock's countdown; the next match's clock must run.
+        _planningTimer.Resume(_inputTime, _eventPump.Ticks);
     }
 
     private void CloseSaveBrowserAfterLoad()
@@ -330,6 +333,8 @@ public sealed partial class ChaosGame
         _saveBrowserMode = SaveBrowserMode.None;
         _editingSaveName = false;
         _saveName.IsFocused = false;
+        // The menu closes without CloseGameMenu, so the countdown OpenSaveBrowser paused resumes here.
+        _planningTimer.Resume(_inputTime, _eventPump.Ticks);
     }
 
     private void HandleGameMenuClick(Point point)
@@ -397,6 +402,9 @@ public sealed partial class ChaosGame
         _bugReportOpen = false;
         _quitToMainMenuConfirmationOpen = false;
         _saveBrowserMode = SaveBrowserMode.None;
+        // The menu closes without CloseGameMenu: resume the countdown OpenGameMenu paused, so the
+        // next match's clock runs.
+        _planningTimer.Resume(_inputTime, _eventPump.Ticks);
         ClearPlanningTimer();
         ResetTransientMatchUi();
         if (_session is not null)

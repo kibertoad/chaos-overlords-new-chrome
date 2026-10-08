@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AWARDS-004, FND-AWARDS-003, FND-OBJECTIVE-002, FND-AUDIO-002, FND-AUDIO-010, FND-EXE-004, FND-AWARDS-005, FND-RESEARCH-003, EXP-UI-023]
+evidence: [FND-AWARDS-004, FND-AWARDS-003, FND-OBJECTIVE-002, FND-AUDIO-002, FND-AUDIO-010, FND-EXE-004, FND-AWARDS-005, FND-RESEARCH-003, EXP-UI-023, EXP-UI-034]
 conflicting: []
 split_with: []
 related: [RULE-AWARDS-002, SCR-AWARDS-001]
@@ -65,8 +65,8 @@ None known.
 ## Open questions
 
 - Whether the tab buttons play a sound is not recorded.
-- The only capture (EXP-UI-023) shows a human survivor in slot 0, opened
-  before any press of a tab or of Done.
+- The captures (EXP-UI-023, EXP-UI-034) show a human survivor in slot 0,
+  opened before any press of a tab or of Done.
 - In 256-colour mode the game uses the `DATA/PX08` files of the same names.
 - No recorded run of the original reaches a computer survivor, other player
   slots and other name lengths; Done, the Awards and Stats tabs and menu
