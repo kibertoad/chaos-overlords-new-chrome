@@ -4,7 +4,7 @@ title: At the start of each resolution a sector's base Tolerance moves one point
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [EXP-TURN-010, FND-CITY-001, FND-EXE-004, FND-STATE-001, FND-TOLERANCE-001, FND-TURN-008, SRC-MANUAL-GOG]
+evidence: [EXP-TURN-010, FND-CITY-001, FND-EXE-004, FND-STATE-001, FND-TOLERANCE-001, FND-TURN-008, SRC-MANUAL-GOG, EXP-TURN-103, EXP-TURN-114, EXP-TURN-115]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002, RULE-TURN-002, RULE-TOLERANCE-002, RULE-SITE-001, RULE-CITY-001]
@@ -78,4 +78,6 @@ None known.
 
 ## Open questions
 
-None known.
+None known. The runs reach steps up, down and none, and EXP-TURN-115 and
+EXP-TURN-114 a base of 40 stepping to 39, which in EXP-TURN-115 one Bribe takes
+back to 40 through the clamp.

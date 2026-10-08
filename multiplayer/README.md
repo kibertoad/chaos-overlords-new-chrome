@@ -112,8 +112,8 @@ behind a load balancer, with no sticky sessions:
 - `MAX_EVENT_STREAMS` and the per-match and per-player stream caps count the streams of one
   instance, so a match's ceiling is its per-match cap times the number of instances its players
   reached.
-- The rate-limit windows live in each instance's memory, so every budget above is multiplied by the
-  number of instances a client's requests reach.
+- Every instance counts the rate limits in the shared `rate_limit_windows` table, so a client
+  spends each budget above once, whichever instances its requests reach.
 - The bug report intake is a SQLite file of each instance's own. Turn it on in one instance and
   route `/api/v1/bug-reports` to that instance, or keep it off.
 
@@ -179,6 +179,7 @@ deployment has to satisfy:
 | `BUG_DB` | D1 | Bug reports, from `packages/bug-reports/migrations/sqlite`. Its own database; see "Bug reports" below. Leave it unbound and `POST /api/v1/bug-reports` answers 404. |
 | `BUG_BLOBS` | R2 | Compressed match journals. Leave it unbound and only journals under 256 KiB are kept. |
 | `MATCH_HUB` | Durable Object | `MatchHub`, one per match: SSE fan-out and the turn deadline alarm. Its migration lineage starts at tag `v1`, `new_sqlite_classes = ["MatchHub"]`. |
+| `RATE_LIMITS` | Durable Object | `RateLimitCounter`, one per budget and caller: the rate limit windows, counted once for the whole deployment. Added at migration tag `v2`, `new_sqlite_classes = ["RateLimitCounter"]`. Leave it unbound and every isolate counts on its own, and the Worker logs `RATE_LIMITS is not bound` once per isolate. |
 
 `PUBLIC_LISTING`, `CORS_ORIGINS`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
 `UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`,
@@ -186,14 +187,23 @@ deployment has to satisfy:
 `LOBBY_RETENTION_DAYS`, `ABANDONED_RETENTION_DAYS`, `SILENT_RETENTION_DAYS`, `RETENTION_BATCH_SIZE`
 (`50`), `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars, with the same meanings
 and defaults as the Node environment variables above. A deployment also wants the cron trigger the
-`scheduled` handler expects — `wrangler.dev.toml` declares `crons = ["*/5 * * * *"]`, the interval
-the sweeper and the retention sweeps are written for —
-and Cloudflare rate limiting rules on `/api/v1/matches`, `/api/v1/matches/join` and
-`/api/v1/bug-reports`: the in-Worker limiter counts per isolate, so it softens abuse on one edge node
-rather than globally. Replacing it with a global limiter is
-[#455](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/455).
+`scheduled` handler expects: `wrangler.dev.toml` declares `crons = ["*/5 * * * *"]`, the interval
+the sweeper and the retention sweeps are written for.
 
-For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all four to throwaway local resources.
+Every budget, the per-player ones and the day-long journal budget included, is counted in the
+`RATE_LIMITS` objects, so it holds however many isolates and locations a caller's requests reach.
+Each object holds one caller's window for one budget and lives near that caller's first request.
+Every check, spend or refund of a budget costs one Durable Object request on top of the Worker's:
+one for an authenticated call, three for a match creation (the address budget, then a peek and a
+spend of the creation budget), and a window longer than a minute also costs a storage write and an
+alarm. Cloudflare's own rate limiting binding is not used: it counts per Cloudflare location, only
+over ten or sixty seconds, and answers only yes or no, so it cannot give `Retry-After`, peek at the
+match-creation budget, refund a journal reservation or count a day. A counter that fails or takes
+longer than two seconds lets the request through and logs `rate limit store failed` at most once a
+minute. Cloudflare WAF rate limiting rules in front of the Worker remain a sensible extra layer
+against volumetric floods, but nothing here depends on them.
+
+For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all of these to throwaway local resources.
 It is a development and test fixture, not a deployment.
 
 ```sh
@@ -368,8 +378,10 @@ Rules that keep the two runtimes honest:
   conformance suite running on both.
 - **One process per SQLite file.** Events fan out in memory within a process, and only the Postgres
   runtime announces them to other instances (see "Several instances"). Anything a process keeps in
-  memory that another instance needs to act on goes over that bus. What still stays per instance
-  is tracked in [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
+  memory that another instance needs to act on goes over that bus. Rate limits are shared: on
+  Postgres every instance counts in the `rate_limit_windows` table, and the cleanup job deletes the
+  windows that have rolled. What still stays per instance is tracked in
+  [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
 - No transactions: D1 has none. Every race is a single conditional statement whose row count says
   who won (see the port comments in `packages/kernel/src/ports/storage.ts`).
 - A write a unique index can refuse returns `false` instead of throwing. Driver error shapes are

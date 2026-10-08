@@ -45,51 +45,47 @@ public sealed partial class ChaosGame
     private readonly RollingAutoSave _autoSave;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
-    private Texture2D? _titleBackground;
-    private Texture2D? _setupBackground;
-    private Texture2D? _setupControls;
-    private Texture2D? _setupKeyedControls;
-    private Texture2D? _cityBackground;
-    private readonly Texture2D?[] _cityOwnershipLayers = new Texture2D?[MatchLimits.PlayerCount + 1];
-    private Texture2D? _gameInfoBackground;
-    private Texture2D? _idleGangWarningBackground;
-    private Texture2D? _cityFinanceBackground;
-    private Texture2D? _sectorFinanceBackground;
-    private Texture2D? _rankingBackground;
-    private Texture2D? _gangInfoBackground;
-    private Texture2D? _sectorGangsBackground;
-    private Texture2D? _gangDefinitionInfoBackground;
-    private Texture2D? _siteInfoBackground;
-    private Texture2D? _itemInfoBackground;
-    private Texture2D? _combatBackground;
-    private Texture2D? _combatResultsBackground;
-    private Texture2D? _lastTurnEventsBackground;
+    private Texture2D? TitleBackground => Texture(OriginalBitmap.TitleBackground);
+    private Texture2D? SetupBackground => Texture(OriginalBitmap.SetupBackground);
+    private Texture2D? SetupControls => Texture(OriginalBitmap.SetupControls);
+    private Texture2D? SetupKeyedControls => Texture(OriginalBitmap.SetupKeyedControls);
+    private Texture2D? CityBackground => Texture(OriginalBitmap.CityBackground);
+    private Texture2D? GameInfoBackground => Texture(OriginalBitmap.GameInfoBackground);
+    private Texture2D? IdleGangWarningBackground => Texture(OriginalBitmap.IdleGangWarningBackground);
+    private Texture2D? CityFinanceBackground => Texture(OriginalBitmap.CityFinanceBackground);
+    private Texture2D? SectorFinanceBackground => Texture(OriginalBitmap.SectorFinanceBackground);
+    private Texture2D? RankingBackground => Texture(OriginalBitmap.RankingBackground);
+    private Texture2D? GangInfoBackground => Texture(OriginalBitmap.GangInfoBackground);
+    private Texture2D? SectorGangsBackground => Texture(OriginalBitmap.SectorGangsBackground);
+    private Texture2D? GangDefinitionInfoBackground => Texture(OriginalBitmap.GangDefinitionInfoBackground);
+    private Texture2D? SiteInfoBackground => Texture(OriginalBitmap.SiteInfoBackground);
+    private Texture2D? ItemInfoBackground => Texture(OriginalBitmap.ItemInfoBackground);
+    private Texture2D? CombatBackground => Texture(OriginalBitmap.CombatBackground);
+    private Texture2D? CombatResultsBackground => Texture(OriginalBitmap.CombatResultsBackground);
+    private Texture2D? LastTurnEventsBackground => Texture(OriginalBitmap.LastTurnEventsBackground);
     private Texture2D? _eventSiteDitherOverlay;
-    private Texture2D? _comlinkViewBackground;
-    private Texture2D? _comlinkSendBackground;
-    private readonly Texture2D?[] _lastTurnEventArtwork = new Texture2D?[10];
-    private Texture2D? _hireComparisonBackground;
-    private Texture2D? _influenceBackground;
-    private Texture2D? _targetAcquisitionBackground;
-    private Texture2D? _equipmentPurchaseBackground;
-    private Texture2D? _equipmentResearchBackground;
-    private Texture2D? _equipmentSellBackground;
-    private Texture2D? _equipmentGiveBackground;
-    private Texture2D? _movementBackground;
-    private Texture2D? _siteSearchBackground;
-    private Texture2D? _siteMarkerSprites;
-    private Texture2D? _sitePortraits;
-    private Texture2D? _gangPortraits;
-    private Texture2D? _itemPortraits;
-    private readonly Texture2D?[] _itemRotationTextures = new Texture2D?[53];
-    private Texture2D? _policeSprites;
-    private Texture2D? _uiSprites;
-    private Texture2D? _uiKeyedSprites;
+    private Texture2D? ComlinkViewBackground => Texture(OriginalBitmap.ComlinkViewBackground);
+    private Texture2D? ComlinkSendBackground => Texture(OriginalBitmap.ComlinkSendBackground);
+    private Texture2D? HireComparisonBackground => Texture(OriginalBitmap.HireComparisonBackground);
+    private Texture2D? InfluenceBackground => Texture(OriginalBitmap.InfluenceBackground);
+    private Texture2D? TargetAcquisitionBackground => Texture(OriginalBitmap.TargetAcquisitionBackground);
+    private Texture2D? EquipmentPurchaseBackground => Texture(OriginalBitmap.EquipmentPurchaseBackground);
+    private Texture2D? EquipmentResearchBackground => Texture(OriginalBitmap.EquipmentResearchBackground);
+    private Texture2D? EquipmentSellBackground => Texture(OriginalBitmap.EquipmentSellBackground);
+    private Texture2D? EquipmentGiveBackground => Texture(OriginalBitmap.EquipmentGiveBackground);
+    private Texture2D? MovementBackground => Texture(OriginalBitmap.MovementBackground);
+    private Texture2D? SiteSearchBackground => Texture(OriginalBitmap.SiteSearchBackground);
+    private Texture2D? SiteMarkerSprites => Texture(OriginalBitmap.SiteMarkerSprites);
+    private Texture2D? SitePortraits => Texture(OriginalBitmap.SitePortraits);
+    private Texture2D? GangPortraits => Texture(OriginalBitmap.GangPortraits);
+    private Texture2D? ItemPortraits => Texture(OriginalBitmap.ItemPortraits);
+    private Texture2D? PoliceSprites => Texture(OriginalBitmap.PoliceSprites);
+    private Texture2D? UiSprites => Texture(OriginalBitmap.UiSprites);
+    private Texture2D? UiKeyedSprites => Texture(OriginalBitmap.UiKeyedSprites);
     private PixelFont? _font;
     /// <summary>The effects the asset pack loads into, unless a test plays them elsewhere.</summary>
     private readonly NativeSoundEffects? _nativeSoundEffects;
     private readonly ISoundEffectOutput _soundEffects;
-    private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
     private readonly DetailedCombatExit _combatExit = new();
     private readonly PanelSlideTransition _panelSlideTransition = new();
@@ -127,6 +123,8 @@ public sealed partial class ChaosGame
     private int _selectedSetupPlayerSlot;
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
+    private bool _setupNameSelecting;
+    private TimeSpan _setupNameCaretShownAt;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.OneYear;
     // RULE-SETUP-002: the scenario a fresh local setup selects, Greed when nothing is stored.
@@ -244,19 +242,18 @@ public sealed partial class ChaosGame
         string? screenshotFolder = null,
         ReferenceFrameRequest? referenceFrame = null,
         string? startupSavePath = null)
-        : this(assetRoot, ChaosGameServices.Desktop, debugPhaseStepping, diagnostics, screenshotFolder,
-            originalComputerMoves, originalComputerHires, referenceFrame, startupSavePath)
+        : this(assetRoot, ChaosGameServices.Desktop, localDeviations, debugPhaseStepping, diagnostics,
+            screenshotFolder, referenceFrame, startupSavePath)
     {
     }
 
     internal ChaosGame(
         string assetRoot,
         ChaosGameServices services,
+        MatchDeviations localDeviations,
         bool debugPhaseStepping = false,
         RuntimeDiagnostics? diagnostics = null,
         string? screenshotFolder = null,
-        bool originalComputerMoves = false,
-        bool originalComputerHires = false,
         ReferenceFrameRequest? referenceFrame = null,
         string? startupSavePath = null)
     {
@@ -290,6 +287,8 @@ public sealed partial class ChaosGame
             // A pressed face acts on the screen it was pressed on; if something else moved the
             // screen during the wait, the key's action is dropped.
             _tickedPresentation.Clear();
+            // FND-UI-062: a plain face a release left stays only until its panel goes.
+            _releasedPanelFace = null;
             _citySectorClicks.Cancel();
             _sectorSiteClicks.Cancel();
             _sectorNeighborClicks.Cancel();
@@ -378,59 +377,11 @@ public sealed partial class ChaosGame
         _eventSiteDitherOverlay = LastTurnEventPresentation.CreateEventSiteDitherOverlay(
             GraphicsDevice);
 
-        _titleBackground = LoadTexture("PX00130.bmp");
-        _setupBackground = LoadTexture("PX00143.bmp");
-        _setupControls = LoadTexture("PX00140.bmp");
-        _setupKeyedControls = LoadTexture("PX00140.bmp", transparentWhite: true);
-        _cityBackground = LoadTexture("PX00128.bmp");
-        for (var index = 0; index < _cityOwnershipLayers.Length; index++)
-            _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
-        _endgameBackground = LoadTexture("PX00200.bmp");
-        _endgameSprites = LoadTexture("PX00201.bmp");
-        _endgameKeyedSprites = LoadTexture("PX00201.bmp", transparentWhite: true);
-        _victoryBackground = LoadTexture("PX00202.bmp");
-        _eliminationBackground = LoadTexture("PX00203.bmp");
-        _gameInfoBackground = LoadTexture("PX05021.bmp");
-        _idleGangWarningBackground = LoadTexture("PX05020.bmp");
-        _cityFinanceBackground = LoadTexture("PX05008.bmp");
-        _sectorFinanceBackground = LoadTexture("PX05019.bmp");
-        _rankingBackground = LoadTexture("PX05011.bmp");
-        _handoffPanel = LoadTexture("PX00132.bmp");
-        _gangInfoBackground = LoadTexture("PX05000.bmp");
-        _sectorGangsBackground = LoadTexture("PX05009.bmp");
-        _gangDefinitionInfoBackground = LoadTexture("PX05022.bmp");
-        _siteInfoBackground = LoadTexture("PX05002.bmp");
-        _itemInfoBackground = LoadTexture("PX05001.bmp");
-        _combatBackground = LoadTexture("PX05014.bmp");
-        _combatResultsBackground = LoadTexture("PX05012.bmp");
-        _lastTurnEventsBackground = LoadTexture("PX05010.bmp");
-        _comlinkViewBackground = LoadTexture("PX05017.bmp");
-        _comlinkSendBackground = LoadTexture("PX05018.bmp");
-        for (var eventArt = 1; eventArt <= 9; eventArt++)
-            _lastTurnEventArtwork[eventArt] = LoadTexture(
-                $"PX060{eventArt:00}.bmp", transparentWhite: eventArt == 4);
-        _hireComparisonBackground = LoadTexture("PX05016.bmp");
-        _influenceBackground = LoadTexture("PX05005.bmp");
-        _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
-        _equipmentPurchaseBackground = LoadTexture("PX05004.bmp");
-        _equipmentResearchBackground = LoadTexture("PX05007.bmp");
-        _equipmentSellBackground = LoadTexture("PX05013.bmp");
-        _equipmentGiveBackground = LoadTexture("PX05015.bmp");
-        _movementBackground = LoadTexture("PX05006.bmp");
-        _siteSearchBackground = LoadTexture("PX05024.bmp");
-        _siteMarkerSprites = LoadTexture("PX00150.bmp", transparentWhite: true);
-        _sitePortraits = LoadTexture("PX02000.bmp");
-        _gangPortraits = LoadTexture("PX03000.bmp");
-        _itemPortraits = LoadTexture("PX04999.bmp");
-        for (var itemId = 0; itemId < _itemRotationTextures.Length; itemId++)
-            _itemRotationTextures[itemId] = LoadTexture($"PX04{itemId:000}.bmp");
-        _policeSprites = LoadTexture("PX00300.bmp");
-        _uiSprites = LoadTexture("PX00129.bmp");
-        _uiKeyedSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
-        _font = _uiSprites is null
+        _font = UiSprites is null
             ? throw new InvalidDataException("PX00129 is required for the original UI font.")
-            : new PixelFont(GraphicsDevice, _uiSprites);
-        LoadCombatAnimationTextures();
+            : new PixelFont(GraphicsDevice, UiSprites);
+        FindCombatAnimationFiles();
+        if (!DecodesTexturesOnFirstDraw) DecodeAllTextures();
         _nativeSoundEffects?.LoadAll(_assetRoot);
         LoadGameData();
         _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
@@ -438,7 +389,7 @@ public sealed partial class ChaosGame
             ["helpAvailable"] = (_helpDocument is not null).ToString(),
             ["combatSounds"] = (_nativeSoundEffects?.Count(SoundEffectBank.Combat) ?? 0).ToString(),
             ["generalSounds"] = (_nativeSoundEffects?.Count(SoundEffectBank.General) ?? 0).ToString(),
-            ["combatAnimations"] = _combatAnimationTextures.Count.ToString()
+            ["combatAnimations"] = CombatAnimations.Count.ToString()
         });
     }
 
@@ -457,7 +408,9 @@ public sealed partial class ChaosGame
         // match skips.
         OpenStartupSave();
         InitializeIntroMovies();
-        LoadSoundtrack();
+        // A reference frame is drawn and written before its Update ever reaches the soundtrack,
+        // and opening every track took about a quarter of its run.
+        if (_referenceFrame is null) LoadSoundtrack();
     }
 
     /// <summary>One tick of the game: the input since the last tick, the clocks and the screens.</summary>
@@ -826,6 +779,7 @@ public sealed partial class ChaosGame
     /// <summary>Records this frame's input as the previous frame's, which every edge test reads.</summary>
     private void EndUpdate(KeyboardState keyboard, MouseState mouse)
     {
+        ReleaseSkippedPanelFace(mouse);
         FlushScenarioPreference();
         _pointer.Refresh();
         _previousKeyboard = keyboard;
@@ -862,6 +816,7 @@ public sealed partial class ChaosGame
                 HandleLobbyClick(point);
                 break;
             case ClientScreen.Setup:
+                if (PressSetupName(point)) break;
                 var timed = ScenarioCatalog.Get(_selectedScenario).IsTimed;
                 var panelControl = SetupPanelLayout.HitTest(point, timed);
                 var durationRefused = !timed && SetupPanelLayout.DurationArea.Contains(point);
@@ -922,8 +877,8 @@ public sealed partial class ChaosGame
                 PressPanelFace(point, GangDetailsPanel, GangDetailsOk, CloseGangDetails);
                 break;
             case ClientScreen.Site:
-                if (SiteInformationLayout.Ok.Contains(point))
-                    AcceptAndInvoke(CloseSiteDetails);
+                // SCR-UI-007, FND-UI-067: the held close face closes on a release inside it.
+                PressPanelFace(point, SiteInformationLayout.Panel, SiteInformationLayout.Ok, CloseSiteDetails);
                 break;
             case ClientScreen.ItemInformation:
                 // SCR-UI-006, FND-UI-047: the held exit face closes on a release inside it.
@@ -935,12 +890,15 @@ public sealed partial class ChaosGame
                     CloseGameInformation);
                 break;
             case ClientScreen.Finance:
-                if (FinanceLayout.Ok.Contains(point))
-                    AcceptAndShow(_managementReturnScreen);
+                // SCR-FINANCE-001, FND-UI-067: the press is tested against the shared panel
+                // rectangle, wider than the panel drawn.
+                PressPanelFace(point, SharedPanelLayout.Panel, FinanceLayout.Ok,
+                    () => _screens.Show(_managementReturnScreen));
                 break;
             case ClientScreen.Ranking:
-                if (PlayerRankingLayout.Ok.Contains(point))
-                    AcceptAndShow(_managementReturnScreen);
+                // SCR-OBJECTIVE-001, FND-UI-067.
+                PressPanelFace(point, PlayerRankingLayout.Panel, PlayerRankingLayout.Ok,
+                    () => _screens.Show(_managementReturnScreen));
                 break;
             case ClientScreen.Search:
                 HandleSiteSearchClick(point);

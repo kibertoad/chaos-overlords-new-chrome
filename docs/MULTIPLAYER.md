@@ -444,14 +444,16 @@ guarantee sets `synchronous = FULL` or runs Postgres.
 - **Rate limits** come in three tiers: the unauthenticated doors per client address, every
   authenticated call per player, and snapshot uploads per player on a tighter budget, because a
   member is a cost too — order documents are a quarter of a megabyte and snapshots four times that.
-  Match creation also has one process-wide budget shared by every caller, because a per-address
+  Match creation also has one deployment-wide budget shared by every caller, because a per-address
   budget does nothing against many addresses and every create is a stored lobby; only a create whose
   body validates spends it. The Node runtime also caps connections and sets header and request
-  deadlines, so a client that never finishes sending a request cannot hold a socket for long. The
-  windows are per process, which is what a self-hosted server needs; a public deployment puts its
-  platform's rate limiting in front as the real gate. On Cloudflare the in-Worker windows are per
-  isolate; moving them to a global limiter is
-  [#455](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/455).
+  deadlines, so a client that never finishes sending a request cannot hold a socket for long. A
+  budget holds across the whole deployment: the Node runtime counts in memory on SQLite, where one
+  process is the deployment, and in a `rate_limit_windows` table every instance shares on Postgres;
+  the Worker counts in a `RateLimitCounter` Durable Object per budget and caller (the `RATE_LIMITS`
+  binding), because Cloudflare's rate limiting binding counts per location and cannot express the
+  day-long journal budget or `Retry-After`. A counter that fails lets the request through and logs,
+  so an outage of the counter does not refuse every player.
 - **A refused request is described, not echoed.** A validation failure names the field and the
   rule; the value the client sent (a mistyped password, an order document) is never written back
   into the response or, through it, into a proxy log.
@@ -845,11 +847,11 @@ dock a player plans against the dock the sealed turn grants.
 - **Several Node instances need Postgres, and some limits stay per instance.** Instances that share a
   Postgres database announce each event and each kick to one another over `LISTEN/NOTIFY`, so a
   stream held by any instance is woken at once, and they take the turn sweep and the retention pass
-  in turn through advisory locks. The stream caps count one instance's streams, a player's stale
+  in turn through advisory locks. Rate limits are counted in one shared table, so a budget is spent
+  once across every instance. The stream caps count one instance's streams, a player's stale
   stream on another instance is not replaced by their reconnect (it ends at its stall check or when
-  its socket closes), the rate-limit windows live in each instance's memory, so every budget is
-  multiplied by the number of instances, and the bug report intake is a SQLite file per instance. A
-  SQLite store serves one process. Tracked in
+  its socket closes), and the bug report intake is a SQLite file per instance. A SQLite store
+  serves one process. Tracked in
   [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
 - **Late joining is offered, and narrowly.** A host may set `allowLateJoin`, and once the match
   has its bootstrap snapshot a newcomer can take a slot that never belonged to a human. A public match
