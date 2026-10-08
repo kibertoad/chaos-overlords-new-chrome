@@ -12,13 +12,12 @@ public sealed partial class ChaosGame
 {
     private AiDifficulty _selectedAiMentality = OriginalOptionsPolicy.MentalityByDefault;
     private AiPolicyMode _defaultAiPolicy = OriginalOptionsPolicy.AiPolicyByDefault;
-    // DEV-AI-007: set by --original-computer-moves, for the local matches this session starts.
-    private readonly bool _originalComputerMoves;
-    // DEV-AI-008: set by --original-computer-hires, for the local matches this session starts.
-    private readonly bool _originalComputerHires;
+    // DEV-AI-007 and DEV-AI-008, for the local matches this session starts. A new match takes
+    // DEV-AI-003 from _defaultAiPolicy, the Advanced AI option, in place of this AiPolicy.
+    private readonly MatchDeviations _localDeviations;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
-    private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
+    internal static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
     private static readonly Rectangle TitleOptions = new(154, 376, 80, 34);
     private static readonly Rectangle TitleHelp = new(238, 376, 80, 34);
     private static readonly Rectangle TitleIntro = new(322, 376, 80, 34);
@@ -370,9 +369,16 @@ public sealed partial class ChaosGame
         // character leaves the existing 12-byte seat record untouched rather than restoring a
         // generated default name.
         _setupNameEditor.Begin(string.Empty);
+        _setupNameSelecting = false;
+        RestartSetupNameCaretBlink();
         _message = string.Empty;
     }
 
+    /// <summary>
+    /// SCR-SETUP-003: Enter is the dialog's OK, its default button, and Escape its Cancel. The
+    /// editing keys arrive through <see cref="HandleKeyDown"/> and the characters through the
+    /// window's text input, both with the platform's key repeat.
+    /// </summary>
     private void UpdateSetupName(KeyboardState keyboard)
     {
         if (_editingPlayerName is null) return;
@@ -382,24 +388,66 @@ public sealed partial class ChaosGame
             return;
         }
         if (Pressed(keyboard, Keys.Enter))
-        {
             FinishSetupNameEdit(cancel: false);
-            return;
-        }
-        if (Pressed(keyboard, Keys.Back))
-        {
-            _setupNameEditor.Backspace();
-            return;
-        }
-
-        var shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
-        foreach (var key in keyboard.GetPressedKeys())
-        {
-            if (_previousKeyboard.IsKeyDown(key)) continue;
-            if (OriginalTextInput.TryCharacter(key, shift, out var character))
-                _setupNameEditor.TryAppend(character);
-        }
     }
+
+    /// <summary>
+    /// SCR-SETUP-003, FND-UI-068: the name dialog's edit control takes the character Windows
+    /// produces for a key from the keyboard layout, through the dialog's own message loop, so
+    /// the setup name takes the platform's text input rather than the game's key switch.
+    /// </summary>
+    private bool TypeSetupName(char character)
+    {
+        if (!SetupNameEditorFocused) return false;
+        if (_setupNameEditor.Type(character)) RestartSetupNameCaretBlink();
+        return true;
+    }
+
+    /// <summary>A key went down, or repeated while held.</summary>
+    internal void HandleKeyDown(Keys key)
+    {
+        if (_soundtrackFade is not null || !SetupNameEditorFocused) return;
+        var keyboard = _shell.ReadKeyboard();
+        var shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
+        if (_setupNameEditor.Press(key, shift)) RestartSetupNameCaretBlink();
+    }
+
+    private bool SetupNameEditorFocused =>
+        !_gameMenuOpen && _screens.Current == ClientScreen.Setup && _editingPlayerName is not null;
+
+    /// <summary>
+    /// SCR-SETUP-003: a press on the name being edited places the insertion point, and Shift
+    /// extends the selection to it; holding the button and moving selects (SRC-WIN32-EDIT).
+    /// Returns whether the press landed on that name.
+    /// </summary>
+    private bool PressSetupName(Point point)
+    {
+        if (_editingPlayerName is not { } index
+            || !PlayerPortraitLayout.NameHit(index).Contains(point)) return false;
+        var keyboard = _shell.ReadKeyboard();
+        var shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
+        _setupNameEditor.MoveTo(SetupNameIndexAt(index, point), shift);
+        _setupNameSelecting = true;
+        RestartSetupNameCaretBlink();
+        return true;
+    }
+
+    private void HoldSetupName(Point point)
+    {
+        if (!_setupNameSelecting || _editingPlayerName is not { } index) return;
+        var at = SetupNameIndexAt(index, point);
+        if (at == _setupNameEditor.Caret) return;
+        _setupNameEditor.MoveTo(at, extend: true);
+        RestartSetupNameCaretBlink();
+    }
+
+    private int SetupNameIndexAt(int index, Point point)
+    {
+        var start = SetupPlayerCardArtLayout.NameStart(index, _setupNameEditor.VisibleLength);
+        return _setupNameEditor.IndexAt(point.X - start.X, OriginalFontLayout.CellWidth);
+    }
+
+    private void RestartSetupNameCaretBlink() => _setupNameCaretShownAt = _inputTime;
 
     private void FinishSetupNameEdit(bool cancel)
     {
@@ -409,6 +457,7 @@ public sealed partial class ChaosGame
             ? _setupOriginalName
             : LocalSetupPolicy.NameAfterModalEntry(_setupOriginalName, entered);
         _editingPlayerName = null;
+        _setupNameSelecting = false;
         _message = string.Empty;
     }
 
@@ -521,10 +570,8 @@ public sealed partial class ChaosGame
         KeepRunRandomState();
         var setup = new MatchSetup(
             _selectedScenario, _selectedDuration, unchecked((int)_runRandomState), players,
-            _selectedAiMentality, allowSparsePlayerIds: true,
-            aiPolicy: _defaultAiPolicy,
-            computerMovesToNeighboursOnly: !_originalComputerMoves,
-            computerHiresWhereHumansCan: !_originalComputerHires);
+            _localDeviations with { AiPolicy = _defaultAiPolicy }, _selectedAiMentality,
+            allowSparsePlayerIds: true);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
         {
             ["scenario"] = _selectedScenario.ToString(),
@@ -540,6 +587,14 @@ public sealed partial class ChaosGame
         var created = OriginalMatchFactory.Create(_definitions, setup);
         EnterNewMatch(created, advanceToPlanning: !_debugPhaseStepping);
     }
+
+    /// <summary>
+    /// Puts <paramref name="match"/>, which stands at a local human's planning entry, on screen the
+    /// way a hot-seat match enters that player's planning (RULE-SETUP-008): the Ready card when two
+    /// humans remain, then the completed turn's Combat Results and Last Turn Events, then the city.
+    /// For a test that reaches the entry another way, such as a replay of a run of the original.
+    /// </summary>
+    internal void EnterPlanningEntry(MatchState match) => EnterNewMatch(match, advanceToPlanning: false);
 
     /// <summary>
     /// Puts a newly created match on screen at its first planning entry. A match that already
@@ -572,8 +627,8 @@ public sealed partial class ChaosGame
 
     private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        if (_titleBackground is not null)
-            batch.Draw(_titleBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        if (TitleBackground is not null)
+            batch.Draw(TitleBackground, new Rectangle(0, 0, 640, 460), Color.White);
         else
         {
             batch.Draw(pixel, new Rectangle(92, 72, 456, 112), new Color(0, 0, 0, 210));
@@ -631,8 +686,8 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawSetupLight(SpriteBatch batch, Texture2D pixel, Rectangle lit)
     {
-        if (_setupControls is not null)
-            batch.Draw(_setupControls, new Rectangle(lit.X - 1, lit.Y - 3,
+        if (SetupControls is not null)
+            batch.Draw(SetupControls, new Rectangle(lit.X - 1, lit.Y - 3,
                 SetupPanelLayout.LightSource.Width, SetupPanelLayout.LightSource.Height),
                 SetupPanelLayout.LightSource, Color.White);
         else DrawSelectionLight(batch, pixel, lit);
@@ -657,15 +712,15 @@ public sealed partial class ChaosGame
 
     private void DrawSetup(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        if (_setupBackground is not null)
-            batch.Draw(_setupBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        if (SetupBackground is not null)
+            batch.Draw(SetupBackground, new Rectangle(0, 0, 640, 460), Color.White);
         else
             batch.Draw(pixel, new Rectangle(70, 52, 500, 384), new Color(0, 0, 0, 220));
-        if (_setupControls is not null
+        if (SetupControls is not null
             && _pressedSetupButton is { } pressed
             && _hoverPoint is { } buttonHover
             && SetupButtonLayout.HitTest(buttonHover) == pressed)
-            batch.Draw(_setupControls, SetupButtonLayout.Destination(pressed),
+            batch.Draw(SetupControls, SetupButtonLayout.Destination(pressed),
                 SetupButtonLayout.PressedSource(pressed), Color.White);
         DrawSetupScenarioText(batch, pixel, font);
         DrawSetupLight(batch, pixel, OriginalSelectionLightLayout.Scenario(
@@ -689,8 +744,8 @@ public sealed partial class ChaosGame
             var active = _configuringOnlineLobby
                 ? index < onlinePlayers.Length
                 : _localSetupRoster.IsHuman(index);
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
+            if (UiSprites is not null)
+                batch.Draw(UiSprites, PlayerPortraitLayout.SetupTop(index),
                     OriginalSpriteLayout.OverlordPortrait(
                         active ? portraits[index] : PlayerPortraitLayout.Count - 1),
                     Color.White);
@@ -703,13 +758,13 @@ public sealed partial class ChaosGame
             // FND-SETUP-014: the bar in the slot's colour at the card's left edge.
             batch.Draw(pixel, SetupPlayerCardArtLayout.ColourBar(index), SetupPlayerCardArtLayout.Colours[index]);
             var portrait = SetupPlayerCardArtLayout.PortraitDestination(index);
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, portrait,
+            if (UiSprites is not null)
+                batch.Draw(UiSprites, portrait,
                     SetupPlayerCardArtLayout.PortraitSource(portraits[index]), Color.White);
             if (!_configuringOnlineLobby && index == _selectedSetupPlayerSlot)
             {
-                if (_setupKeyedControls is not null)
-                    batch.Draw(_setupKeyedControls,
+                if (SetupKeyedControls is not null)
+                    batch.Draw(SetupKeyedControls,
                         new Rectangle(portrait.X, portrait.Y, 64, 62),
                         SetupPlayerCardArtLayout.ArrowOverlaySource, Color.White);
                 else
@@ -722,28 +777,26 @@ public sealed partial class ChaosGame
             }
             // An online seat shows the ten-character projection its overlord plays under, which
             // fits the card as a local name does; the lobby's display name can run to 32 characters.
-            var text = _configuringOnlineLobby ? OriginalPlayerName.Project(onlinePlayers[index].DisplayName)
-                : _editingPlayerName == index
-                ? _setupNameEditor.Text
+            if (!_configuringOnlineLobby && _editingPlayerName == index)
+            {
+                DrawSetupNameEditor(batch, pixel, font, index);
+                continue;
+            }
+            var text = _configuringOnlineLobby
+                ? OriginalPlayerName.Project(onlinePlayers[index].DisplayName)
                 : _playerNames[index];
-            var label = _editingPlayerName == index && !_configuringOnlineLobby
-                && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0
-                ? text + "_"
-                : text;
-            // FND-SETUP-014: the name in the screen's green, centred on the card. The blinking
-            // cursor of the rebuild's name editor is left out of the centring, so the name holds
-            // still while it blinks.
+            // FND-SETUP-014: the name in the screen's green, centred on the card.
             var name = SetupPlayerCardArtLayout.NameStart(index, text.Length);
-            font.Draw(batch, label, new Vector2(name.X, name.Y), Color.Lime, 1);
+            font.Draw(batch, text, new Vector2(name.X, name.Y), Color.Lime, 1);
         }
         if (_setupPlayerDragStarted && _draggedSetupPlayerSlot is { } dragged
-            && _uiSprites is not null)
+            && UiSprites is not null)
         {
             var token = PlayerPortraitLayout.SetupDragToken(_dragPoint);
-            batch.Draw(_uiSprites, token,
+            batch.Draw(UiSprites, token,
                 OriginalSpriteLayout.OverlordPortrait(_playerPortraits[dragged]), Color.White);
-            if (_uiKeyedSprites is not null)
-                batch.Draw(_uiKeyedSprites, token,
+            if (UiKeyedSprites is not null)
+                batch.Draw(UiKeyedSprites, token,
                     OriginalSpriteLayout.SetupDragFrame, Color.White);
             if (HitTest.IndexAt(
                 MatchLimits.PlayerCount, PlayerPortraitLayout.SetupHit, _dragPoint) is { } target
@@ -755,11 +808,11 @@ public sealed partial class ChaosGame
         DrawSetupLight(batch, pixel,
             OriginalSelectionLightLayout.PlanningTime((int)_selectedPlanningTimeLimit));
         // FND-SETUP-013: while held, the pressed image covers the control, its light included.
-        if (_setupControls is not null
+        if (SetupControls is not null
             && _pressedSetupPanelControl is { } pressedControl
             && _hoverPoint is { } controlHover
             && SetupPanelLayout.Destination(pressedControl).Contains(controlHover))
-            batch.Draw(_setupControls, SetupPanelLayout.Destination(pressedControl),
+            batch.Draw(SetupControls, SetupPanelLayout.Destination(pressedControl),
                 SetupPanelLayout.PressedSource(pressedControl), Color.White);
         if (_configuringOnlineLobby)
         {
@@ -790,6 +843,35 @@ public sealed partial class ChaosGame
             else if (control is { Kind: SetupPanelControlKind.AiMentality } difficulty)
                 DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)difficulty.Index);
         }
+    }
+
+    /// <summary>
+    /// DEV-SETUP-003: the name being edited, in the window of it the card shows, centred as a
+    /// name is. Selected characters are drawn in black on the name's green, and the caret
+    /// blinks at the insertion point.
+    /// </summary>
+    private void DrawSetupNameEditor(SpriteBatch batch, Texture2D pixel, PixelFont font, int index)
+    {
+        var editor = _setupNameEditor;
+        var shown = editor.VisibleText;
+        var start = SetupPlayerCardArtLayout.NameStart(index, shown.Length);
+        font.Draw(batch, shown, new Vector2(start.X, start.Y), Color.Lime, 1);
+        var first = Math.Max(editor.SelectionStart, editor.FirstVisible) - editor.FirstVisible;
+        var last = Math.Min(editor.SelectionEnd, editor.FirstVisible + shown.Length) - editor.FirstVisible;
+        var highlighted = editor.HasSelection && last > first;
+        if (highlighted)
+        {
+            batch.Draw(pixel,
+                SetupPlayerCardArtLayout.NameCells(index, shown.Length, first, last - first), Color.Lime);
+            font.Draw(batch, shown[first..last],
+                new Vector2(start.X + OriginalFontLayout.CellWidth * first, start.Y), Color.Black, 1);
+        }
+        // The caret's column is the last of the cell before it, so a caret at a selection's right
+        // end falls inside the highlight and is drawn in black there, as an inverted caret shows.
+        var caret = editor.Caret - editor.FirstVisible;
+        if (SetupPlayerCardArtLayout.NameCaretShown(_inputTime - _setupNameCaretShownAt))
+            batch.Draw(pixel, SetupPlayerCardArtLayout.NameCaret(index, shown.Length, caret),
+                highlighted && caret > first && caret <= last ? Color.Black : Color.Lime);
     }
 
     private static void DrawSelectionLight(

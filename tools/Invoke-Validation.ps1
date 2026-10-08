@@ -155,13 +155,12 @@ try {
         & node (Join-Path $PSScriptRoot 'update-doc-indexes.mjs') --check
         $documentationCheckFailed = $LASTEXITCODE -ne 0
         # spec/, parity/ and deviations/ against the documentation standard's checks, run by the
-        # shared checker that `pnpm install` at the repository root installs.
+        # shared checker that `pnpm install` at the repository root installs. It also fails a spec
+        # line that names a file of the rebuild.
         & node (Join-Path $PSScriptRoot 'check-documentation.mjs') --check
         $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
-        # No spec line names a file of the rebuild (until the shared checker's --rebuild is released).
-        & node (Join-Path $PSScriptRoot 'check-rebuild-paths.mjs')
-        $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
-        # The function index docs/FUNCTION-INDEX.md, generated from FND-EXE-004 and the entries' citations.
+        # The function index, computed from FND-EXE-004 and the entries' citations without writing
+        # the local report docs/FUNCTION-INDEX.md, so a broken function table fails here.
         & node (Join-Path $PSScriptRoot 'spec-coverage.mjs') --check
         $documentationCheckFailed = $documentationCheckFailed -or $LASTEXITCODE -ne 0
     }
@@ -202,7 +201,7 @@ try {
     # or discovery change that silently drops tests fails the run; theories whose rows are only
     # expanded at run time make the executed count somewhat higher. Full = fast + long-running;
     # raise all three together when tests are added.
-    $minimumFastTests = 3063
+    $minimumFastTests = 3091
     $minimumLongRunningTests = 53
     $minimumAllTests = $minimumFastTests + $minimumLongRunningTests
     if ($TestFilter) {
@@ -254,7 +253,7 @@ try {
     }
 
     if ($documentationCheckFailed) {
-        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs, node tools/check-documentation.mjs, node tools/check-rebuild-paths.mjs and node tools/spec-coverage.mjs, and fix what they report.'
+        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs, node tools/check-documentation.mjs and node tools/spec-coverage.mjs --check, and fix what they report.'
     }
 }
 finally {

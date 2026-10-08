@@ -41,7 +41,7 @@ public sealed class CombatPanelLayoutTests
         Assert.Equal(0, CombatPanelLayout.TrackFill(-1));
         // The Exit face, local (33,169)-(82,191), and its pressed look.
         Assert.Equal(new Rectangle(137, 293, 50, 23), CombatPanelLayout.Exit);
-        Assert.Equal(new Rectangle(50, 386, 50, 23), CombatPanelLayout.ExitPressedSource);
+        Assert.Equal(new Rectangle(0, 409, 50, 23), CombatPanelLayout.ExitPressedSource);
     }
 
     [Fact]

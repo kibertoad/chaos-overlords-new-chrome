@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Rechaos.Tests;
 
-public sealed class MultiplayerLobbySessionTests
+public sealed partial class MultiplayerLobbySessionTests
 {
     [Theory]
     [InlineData("host", "/matches")]

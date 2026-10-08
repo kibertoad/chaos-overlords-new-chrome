@@ -1,10 +1,16 @@
-import { RateLimitedError, RateLimiter } from '@chaos-overlords/kernel'
+import {
+  memoryRateLimiters,
+  RateLimitedError,
+  type RateLimiterFactory,
+  sharedRateLimiters,
+} from '@chaos-overlords/kernel'
 import {
   type AppEnv,
   configFlag,
   configInteger,
   configList,
   createApp,
+  createRateLimiters,
   DEFAULT_RATE_LIMITS,
   DEFAULT_SERVER_CONFIG,
   defaultClientAddress,
@@ -14,8 +20,10 @@ import type { ExecutionContext, ScheduledController } from '@cloudflare/workers-
 import type { Hono } from 'hono'
 import type { Env } from './env'
 import { buildBugReports, buildKernel, HUB_PATHS, hubFor, workerLogger } from './kernel'
+import { durableObjectRateLimitStore } from './RateLimitCounter'
 
 export { MatchHub } from './MatchHub'
+export { RateLimitCounter } from './RateLimitCounter'
 
 type Built = { container: ServerContainer; app: Hono<AppEnv> }
 
@@ -29,11 +37,10 @@ type RateLimitVar =
 /**
  * One container per isolate, held in module scope.
  *
- * It has to be cached: a rate limiter counts requests within a window, so building a fresh one per
- * request would reset the window every time and limit nothing. The router and the D1-backed kernel
- * are per-isolate state for the same reason a server builds them once at startup — there is nothing
- * request-specific in either. Cloudflare's own rate limiting rules still belong in front of a public
- * deployment, because an isolate is not the whole world.
+ * It has to be cached: without the `RATE_LIMITS` binding a rate limiter counts requests within a
+ * window in the isolate, so building a fresh one per request would reset the window every time and
+ * limit nothing. The router and the D1-backed kernel are per-isolate state for the same reason a
+ * server builds them once at startup: there is nothing request-specific in either.
  *
  * A module-scoped singleton rather than a `WeakMap` keyed on `env`: the bindings object being the
  * same identity on every request is not a documented guarantee, and if it ever stopped being one the
@@ -61,10 +68,11 @@ export function buildContainer(env: Env): ServerContainer {
   // A misconfigured var refuses every request and every cron run until it is fixed, so the error
   // names the variable: a Worker has no startup log for it to go unnoticed in, only request errors.
   const perMinute = (name: RateLimitVar, fallback: number) =>
-    new RateLimiter(clock, { limit: configInteger(env[name], fallback, 1, name), windowMs: 60_000 })
+    configInteger(env[name], fallback, 1, name)
+  const rateLimits = rateLimitersFor(env, clock)
   const bugReports = buildBugReports(env)
   return {
-    kernel: buildKernel(env),
+    kernel: buildKernel(env, { rateLimits }),
     ...(bugReports ? { bugReports } : {}),
     eventStream: {
       open: async ({ matchId, playerId, afterSeq, signal }) => {
@@ -95,23 +103,29 @@ export function buildContainer(env: Env): ServerContainer {
         })
       },
     },
-    rateLimiters: {
-      anonymous: perMinute('RATE_LIMIT_PER_MINUTE', DEFAULT_RATE_LIMITS.anonymousPerMinute),
-      member: perMinute('MEMBER_RATE_LIMIT_PER_MINUTE', DEFAULT_RATE_LIMITS.memberPerMinute),
-      upload: perMinute('UPLOAD_RATE_LIMIT_PER_MINUTE', DEFAULT_RATE_LIMITS.uploadPerMinute),
-      bugReport: perMinute(
+    rateLimiters: createRateLimiters(rateLimits, {
+      anonymousPerMinute: perMinute(
+        'RATE_LIMIT_PER_MINUTE',
+        DEFAULT_RATE_LIMITS.anonymousPerMinute,
+      ),
+      memberPerMinute: perMinute(
+        'MEMBER_RATE_LIMIT_PER_MINUTE',
+        DEFAULT_RATE_LIMITS.memberPerMinute,
+      ),
+      uploadPerMinute: perMinute(
+        'UPLOAD_RATE_LIMIT_PER_MINUTE',
+        DEFAULT_RATE_LIMITS.uploadPerMinute,
+      ),
+      bugReportPerMinute: perMinute(
         'BUG_REPORT_RATE_LIMIT_PER_MINUTE',
         DEFAULT_RATE_LIMITS.bugReportPerMinute,
       ),
-      bugReportState: new RateLimiter(clock, {
-        limit: DEFAULT_RATE_LIMITS.bugReportStatePerDay,
-        windowMs: 24 * 60 * 60 * 1000,
-      }),
-      matchCreation: perMinute(
+      bugReportStatePerDay: DEFAULT_RATE_LIMITS.bugReportStatePerDay,
+      matchCreationPerMinute: perMinute(
         'MATCH_CREATION_RATE_LIMIT_PER_MINUTE',
         DEFAULT_RATE_LIMITS.matchCreationPerMinute,
       ),
-    },
+    }),
     // Listing is on unless a deployment turns it off: an unset var means the Browse screen works,
     // rather than every client being told the server lists nothing.
     config: {
@@ -124,6 +138,24 @@ export function buildContainer(env: Env): ServerContainer {
     // header anyone can write, which is why the default resolver ignores it unless told otherwise.
     clientAddress: (c) => defaultClientAddress(c, { cloudflare: true }),
   }
+}
+
+/**
+ * Where this Worker's budgets are counted: in a `RateLimitCounter` per key when `RATE_LIMITS` is
+ * bound, so they hold across every isolate and location, and in the isolate otherwise.
+ *
+ * The fallback keeps a deployment that has not added the binding yet serving, and says so once per
+ * isolate, at the point the container is built: a Worker has no startup to fail, and refusing every
+ * request over a missing binding would take the game down for a limit that is only weaker.
+ */
+function rateLimitersFor(env: Env, clock: { now(): Date }): RateLimiterFactory {
+  if (env.RATE_LIMITS) {
+    return sharedRateLimiters(durableObjectRateLimitStore(env.RATE_LIMITS), clock, workerLogger)
+  }
+  workerLogger.warn('RATE_LIMITS is not bound: rate limits count per isolate', {
+    hint: 'bind the RateLimitCounter Durable Object as RATE_LIMITS in wrangler.toml; see multiplayer/README.md',
+  })
+  return memoryRateLimiters(clock)
 }
 
 /**

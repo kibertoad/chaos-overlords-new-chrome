@@ -209,7 +209,8 @@ public sealed class DeterminismTests
             new(new PlayerId(0), "SMGHUBBLE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups,
+            MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setup.Players[0], 500, [new MatchGangState(new GangId(10), new PlayerId(0), 1, 0, 5)]),

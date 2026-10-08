@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-HIRE-004, FND-HIRE-001, FND-HIRE-007, FND-HIRE-008, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-063]
+evidence: [FND-HIRE-004, FND-HIRE-001, FND-HIRE-007, FND-HIRE-008, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-063, FND-HIRE-010, EXP-UI-041]
 conflicting: []
 split_with: []
 related: [RULE-HIRE-003, RULE-HIRE-002, SCR-GANG-002]
@@ -22,7 +22,7 @@ slot, 0 to 2.
 | Offer price | Digit glyphs of `DATA/PX16/PX00129` | The definition's `hire_cost`, two cells wide | Left edge x `450 + 66s`, top y 440 | During the player's `planning_phase` | FND-HIRE-007 |
 | Hire mark | `DATA/PX16/PX00129`, the 64-by-64 image at `(114, 299)` | None | Over the portrait, transparent | The slot's order is a sector | FND-HIRE-008 |
 | Snub mark | `DATA/PX16/PX00129`, the 64-by-64 image at `(178, 299)` | None | Over the portrait, transparent | The slot's order is -2 | FND-HIRE-008 |
-| Dragged portrait | `DATA/PX16/PX03000` | The dragged offer's portrait, 40 by 40 | Under the pointer, which is held to x 20 to 620 and y 20 to 440 | While an offer is dragged | FND-HIRE-008 |
+| Dragged portrait | `DATA/PX16/PX03000` | The dragged offer's 64-by-64 portrait shrunk to 40 by 40, copied opaquely; nothing marks the sector under it | `(x - 20, y - 20, 40, 40)` for the pointer `(x, y)`, which is held to x 20 to 620 and y 20 to 440; it moves on the ticks of timer slot 1 | While an offer is dragged | FND-HIRE-008, FND-HIRE-010, EXP-UI-041 |
 
 ## Mouse input
 
@@ -69,3 +69,9 @@ None known.
 - Whether this belongs in the main console's screen entry of the UI area is
   for that entry to decide; the offers are described here because their input
   is the hire order.
+- No recorded run of the original reaches the hire and snub marks; the dragged
+  portrait and the pointer clamp; a release before the pointer moves more than
+  2 pixels; drops in the sector view and outside the map; input outside the
+  planning phase; the sounds of a drop and of Reject (FND-HIRE-007,
+  FND-HIRE-008). These rest on the static findings named, so the entry stays
+  `supported`.

@@ -56,10 +56,12 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
 
     /// <summary>A client bounded by <see cref="MaximumResponseBytes"/>, for a caller that owns one.</summary>
     public static HttpClient CreateHttpClient() =>
-        new(new SocketsHttpHandler { PooledConnectionLifetime = PooledConnectionLifetime })
-        {
-            MaxResponseContentBufferSize = MaximumResponseBytes,
-        };
+        CreateHttpClient(new SocketsHttpHandler { PooledConnectionLifetime = PooledConnectionLifetime });
+
+    /// <inheritdoc cref="CreateHttpClient()"/>
+    /// <param name="handler">The transport to send over, for a caller that supplies its own.</param>
+    public static HttpClient CreateHttpClient(HttpMessageHandler handler) =>
+        new(handler) { MaxResponseContentBufferSize = MaximumResponseBytes };
 
     internal TimeSpan EffectiveTimeout => RequestTimeout ?? DefaultRequestTimeout;
 

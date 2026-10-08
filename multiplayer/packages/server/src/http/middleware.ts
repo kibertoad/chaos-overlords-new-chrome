@@ -42,7 +42,7 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   const header = c.req.header('authorization') ?? ''
   const [scheme, token] = header.split(' ', 2)
   if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    chargeAnonymous(c)
+    await chargeAnonymous(c)
     throw new UnauthorizedError('Send the player token as a Bearer credential', {
       reason: 'missing_token',
     })
@@ -50,7 +50,7 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   try {
     c.set('principal', await c.get('container').kernel.auth.authenticate(token))
   } catch (error) {
-    if (error instanceof UnauthorizedError) chargeAnonymous(c)
+    if (error instanceof UnauthorizedError) await chargeAnonymous(c)
     throw error
   }
   await next()
@@ -64,15 +64,15 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
  * a second thing to size. A caller who is over budget is told so (429) instead of being told the
  * token was wrong, which is the right order of refusals for a caller who has proved nothing.
  */
-function chargeAnonymous(c: Context<AppEnv>): string {
+async function chargeAnonymous(c: Context<AppEnv>): Promise<string> {
   const key = addressOf(c)
-  enforce(c.get('container').rateLimiters, 'anonymous', key)
+  await enforce(c.get('container').rateLimiters, 'anonymous', key)
   return key
 }
 
 /** Fixed-window limiter on the unauthenticated doors, keyed by client address. */
 export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const key = chargeAnonymous(c)
+  const key = await chargeAnonymous(c)
   // The join doors charge a per-caller budget of their own in front of PBKDF2, in the kernel,
   // where there is no request to work an address out from. Normalised here so that one client is
   // one key there too; see `rateLimitKey`.
@@ -88,17 +88,17 @@ export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
 export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
   const container = c.get('container')
   const key = addressOf(c)
-  enforce(container.rateLimiters, 'bugReport', key)
+  await enforce(container.rateLimiters, 'bugReport', key)
   // The handler reserves one unit only for a validated report carrying a journal, then releases it
   // if the journal fails its digest check or is omitted by the storage budget.
   c.set('bugReportJournalBudget', () =>
-    container.rateLimiters.bugReportState.reserve(`bugReportState:${rateLimitKey(key)}`),
+    container.rateLimiters.bugReportState.reserve(rateLimitKey(key)),
   )
   await next()
 }
 
 /**
- * The process-wide budget on creating a match, checked here and spent by the create handler.
+ * The deployment-wide budget on creating a match, checked here and spent by the create handler.
  *
  * Mounted for `POST /matches` alone, because the same path also serves the public listing, which
  * must not spend it. It runs after `rateLimited`, so a single address over its own budget is
@@ -109,7 +109,7 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
  */
 export const matchCreationRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
   const limiters = c.get('container').rateLimiters
-  const retryAfter = limiters.matchCreation.peek(`matchCreation:${MATCH_CREATION_KEY}`)
+  const retryAfter = await limiters.matchCreation.peek(MATCH_CREATION_KEY)
   if (retryAfter !== null) refuse(retryAfter)
   c.set('spendMatchCreation', () => enforce(limiters, 'matchCreation', MATCH_CREATION_KEY))
   await next()
@@ -122,7 +122,7 @@ export const matchCreationRateLimited: MiddlewareHandler<AppEnv> = async (c, nex
 export function memberRateLimited(tier: keyof RateLimiters = 'member'): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     const container = c.get('container')
-    enforce(container.rateLimiters, tier, c.get('principal').player.id)
+    await enforce(container.rateLimiters, tier, c.get('principal').player.id)
     await next()
   }
 }
@@ -213,13 +213,17 @@ function ipv6Prefix64(address: string): string {
  */
 const IDENTITY_TIERS: ReadonlySet<string> = new Set(['member', 'upload', 'matchCreation'])
 
-/** The one key the match-creation tier counts under; it is a process-wide budget, not a per-caller one. */
+/** The one key the match-creation tier counts under; it is one budget for the whole deployment. */
 const MATCH_CREATION_KEY = 'all'
 
-function enforce(limiters: RateLimiters, tier: keyof RateLimiters, key: string): void {
-  const retryAfter = limiters[tier].take(
-    `${tier}:${IDENTITY_TIERS.has(tier) ? key : rateLimitKey(key)}`,
-  )
+async function enforce(
+  limiters: RateLimiters,
+  tier: keyof RateLimiters,
+  key: string,
+): Promise<void> {
+  // No tier prefix: each tier has its own limiter, and a shared store already files a key under
+  // its budget's name.
+  const retryAfter = await limiters[tier].take(IDENTITY_TIERS.has(tier) ? key : rateLimitKey(key))
   if (retryAfter !== null) refuse(retryAfter)
 }
 

@@ -28,12 +28,19 @@ internal static partial class Native
 
     public const uint WmKeyDown = 0x0100;
     public const uint WmKeyUp = 0x0101;
+    public const uint WmChar = 0x0102;
     public const uint WmCommand = 0x0111;
     public const uint WmClose = 0x0010;
     public const uint WmMouseMove = 0x0200;
     public const uint WmLButtonDown = 0x0201;
     public const uint WmLButtonUp = 0x0202;
     public const uint WmLButtonDblClk = 0x0203;
+    public const uint WmSysCommand = 0x0112;
+    public const int ScKeyMenu = 0xF100;
+    public const int VkEscape = 0x1B;
+    public const int VkDown = 0x28;
+    public const uint WmRButtonDown = 0x0204;
+    public const uint WmRButtonUp = 0x0205;
     public const uint MfByCommand = 0x0000;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -153,4 +160,65 @@ internal static partial class Native
 
     [DllImport("gdi32.dll")]
     public static extern int GetDeviceCaps(IntPtr dc, int index);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GuiThreadInfo
+    {
+        public int Size;
+        public uint Flags;
+        public IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret;
+        public Rect CaretRect;
+    }
+
+    // GUI_INMENUMODE, GUI_SYSTEMMENUMODE and GUI_POPUPMENUMODE of GUITHREADINFO.flags.
+    public const uint GuiInMenuMode = 0x4;
+    public const uint GuiSystemMenuMode = 0x8;
+    public const uint GuiPopupMenuMode = 0x10;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool GetGUIThreadInfo(uint threadId, ref GuiThreadInfo info);
+
+    // The system's millisecond clock, the one the original's timeGetTime reads (FND-TIMER-003).
+    [DllImport("winmm.dll")]
+    public static extern uint timeGetTime();
+
+    [DllImport("user32.dll")]
+    public static extern uint MapVirtualKeyW(uint code, uint mapType);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDlgItem(IntPtr dialog, int item);
+
+    [DllImport("user32.dll")]
+    public static extern bool IsWindow(IntPtr window);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetClassNameW(IntPtr window, char[] name, int length);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool AttachThreadInput(uint attach, uint attachTo, bool join);
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetKeyboardLayout(uint thread);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Message
+    {
+        public IntPtr Window;
+        public uint Id;
+        public IntPtr WParam, LParam;
+        public uint Time;
+        public int X, Y;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern bool PeekMessageW(out Message message, IntPtr window, uint first, uint last, uint remove);
+
+    [DllImport("user32.dll")]
+    public static extern bool GetKeyboardState(byte[] state);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetKeyboardState(byte[] state);
 }

@@ -53,6 +53,14 @@ public sealed class MatchHandle
             HttpMethod.Put, ApiRoutes.UpdatePlayerProfile(MatchId), request, cancellationToken);
 
     /// <summary>
+    /// Posts a lobby chat message, which every member reads back as <c>lobby.chatMessage</c>.
+    /// </summary>
+    /// <remarks>Refused with <c>match_not_in_lobby</c> once the match has started.</remarks>
+    public Task<Unit> PostChatAsync(PostChatMessageRequest request, CancellationToken cancellationToken) =>
+        _client.SendAsync<Unit>(
+            HttpMethod.Post, ApiRoutes.PostChatMessage(MatchId), request, cancellationToken);
+
+    /// <summary>
     /// Leaves the active roster while retaining the durable membership needed to rejoin.
     /// </summary>
     /// <remarks>

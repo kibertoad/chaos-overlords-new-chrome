@@ -43,7 +43,11 @@ Get-ChildItem -LiteralPath $portableRoot | Copy-Item -Destination $installRoot -
 # A self-contained .NET app needs ICU (no project sets InvariantGlobalization) and OpenSSL for the
 # multiplayer client's HTTPS, plus the C++ and zlib runtimes. ubuntu-latest has all of them, so the
 # CI smoke test could never catch their absence; a minimal Debian install or a container aborted at
-# launch with "Couldn't find a valid ICU package". Keep the ICU alternatives list current.
+# launch with "Couldn't find a valid ICU package". Keep the ICU alternatives list current: a release
+# whose ICU is missing from it refuses the package (Ubuntu 26.04 ships libicu78, which the list once
+# lacked). apt skips names no archive has, so the list runs a few versions ahead.
+# zenity or kdialog draws the folder picker the game shows on its first start (FirstLaunchImport);
+# without either, the player imports with chaos-overlords-new-chrome-import from a terminal.
 @"
 Package: chaos-overlords-new-chrome
 Version: $Version
@@ -51,7 +55,8 @@ Section: games
 Priority: optional
 Architecture: amd64
 Maintainer: kibertoad
-Depends: libc6, libgcc-s1, libstdc++6, zlib1g, libssl3 | libssl1.1, libicu76 | libicu74 | libicu72 | libicu70 | libicu67, libgl1, libx11-6
+Depends: libc6, libgcc-s1, libstdc++6, zlib1g, libssl3 | libssl1.1, libicu80 | libicu79 | libicu78 | libicu77 | libicu76 | libicu74 | libicu72 | libicu70 | libicu67, libgl1, libx11-6
+Recommends: zenity | kdialog
 Description: Clean-room recreation of Chaos Overlords
  Requires resources extracted from a legally owned original copy.
 "@ | Set-Content -LiteralPath (Join-Path $debianRoot 'control') -Encoding utf8NoBOM

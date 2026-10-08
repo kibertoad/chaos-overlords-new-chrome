@@ -6,8 +6,8 @@ namespace Rechaos.Tests;
 
 /// <summary>
 /// The element lists in tools/Rechaos.OriginalProbe/Screens, which the probe digests a capture
-/// at (docs/VALIDATION.md, "Screens against captures of the original"). Each list names its screen
-/// entry, which has masks, every rectangle lies inside the 640-by-460 drawing area (RULE-GFX-002),
+/// at (docs/validation/screen-captures.md). Each list names its screen entry, which has masks,
+/// every rectangle lies inside the 640-by-460 drawing area (RULE-GFX-002),
 /// and every element names a row of the entry's Drawn elements table: its name is the row's, or
 /// the row's name (or that name's part before its own comma) followed by a comma and either an
 /// index ("slot 0") or a field or variant the row's Element or Shows cell names as a whole word.

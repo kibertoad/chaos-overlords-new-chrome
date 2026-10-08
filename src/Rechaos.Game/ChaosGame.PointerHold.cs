@@ -10,6 +10,10 @@ public sealed partial class ChaosGame
     /// </summary>
     private void HoldPointerAt(Point point)
     {
+        HoldSetupName(point);
+        // FND-UI-062: a held panel face the pointer leaves gets its plain face.
+        if (_pressedCommandPanelButton is { } held && !CommandPanelFaces.Hit(held).Contains(point))
+            LeaveCommandPanelFacePlain(held);
         if (_draggedSetupPlayerSlot is not null && !_setupPlayerDragStarted
             && PlayerPortraitLayout.SetupDragMoved(_setupPlayerPressPoint, point))
         {
