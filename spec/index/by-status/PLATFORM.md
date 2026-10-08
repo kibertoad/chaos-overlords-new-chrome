@@ -17,10 +17,10 @@ Entries by status.
 | [FND-PLATFORM-005](../../findings/FND-PLATFORM-005.md) | Preferences live under the Stick Man Games registry key, and an App Paths key locates the installation |
 | [FND-PLATFORM-006](../../findings/FND-PLATFORM-006.md) | Sound, CD music, timers and Smacker video come from WINMM and smackw32.dll |
 | [FND-PLATFORM-007](../../findings/FND-PLATFORM-007.md) | The palette loader fills entries 10 to 245 of a 256-entry palette from a CLT file |
-| [FND-PLATFORM-008](../../findings/FND-PLATFORM-008.md) | Image copies are opaque except for a pattern mask and an exact-white colour key used by two images |
 | [FND-PLATFORM-009](../../findings/FND-PLATFORM-009.md) | The program entry allows one instance, picks the image set, sets up the display, sound and menus, runs the title loop, and undoes it all on the way out |
 | [FND-PLATFORM-010](../../findings/FND-PLATFORM-010.md) | Data files are named by the App Paths install directory and length-prefixed names, and four file slots open them with no message on failure |
 | [FND-PLATFORM-011](../../findings/FND-PLATFORM-011.md) | At 8 bits the palette comes from data/CLT00002, read as red, green, blue, and PX08 pictures are mapped to it through their own colour tables |
 | [FND-PLATFORM-012](../../findings/FND-PLATFORM-012.md) | The startup disc check looks for a fixed drive from the string ".\" and always passes, and the CD track search has no callers |
 | [FND-PLATFORM-013](../../findings/FND-PLATFORM-013.md) | The ordinal imports of WSOCK32 and smackw32 by name, and the functions that call the WinSock, Telephony and serial port imports |
 | [FND-PLATFORM-014](../../findings/FND-PLATFORM-014.md) | On a 32-bit desktop the keyed copies key nothing, and the white they should drop is drawn |
+| [FND-PLATFORM-015](../../findings/FND-PLATFORM-015.md) | The keyed compositor sets its depth's key with one SetBkColor call and restores the colour with a second, and 72 of the 77 calls of the copy wrapper ask for it |

@@ -4,7 +4,7 @@ title: Decoding the RLE8 pixel data of a PX08 image
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GFX-002, FND-GFX-003, FND-PLATFORM-002]
+evidence: [FND-GFX-002, FND-GFX-003, FND-PLATFORM-002, FND-GFX-008]
 conflicting: []
 split_with: []
 related: [FMT-GFX-002]
@@ -86,6 +86,10 @@ the picture. Changes no game state.
   each of its `height` lines (FND-GFX-002, FND-GFX-003). The guards against
   writing outside the image, the delta branch and the pixels left at 0 are
   therefore never reached by the game's own files.
+- `SetDIBits` decodes every shipped file to the pixels this procedure gives,
+  and on hand-written data it cuts a run at the end of its line, follows a
+  delta code, and accepts data without the end-of-bitmap code, as the
+  procedure does (FND-GFX-008).
 
 ## What the sources say
 
@@ -97,7 +101,9 @@ None known.
 
 ## Open questions
 
-- Windows decodes the data, not the game. What `SetDIBits` does with a pixel
-  that no code writes, with a run past the end of a line, or with a delta code
-  is written here as the plain BMP definition reads, and has not been observed.
-  None of it matters for the shipped files.
+- A pixel no code writes keeps what the target bitmap held before
+  `SetDIBits` (FND-GFX-008). The procedure gives it 0, which holds only when
+  the original's temporary bitmap (FND-PLATFORM-002) starts at 0, and how
+  that bitmap is created has not been read. No shipped file leaves a pixel
+  unwritten, so the game's images do not depend on it, and the entry stays
+  `supported` until it is settled.

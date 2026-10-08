@@ -1,7 +1,7 @@
 ---
 id: RULE-AI-008
 title: A computer player ranks its three hire offers by the mode of its hire role
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-AI-064, FND-EXE-004, EXP-TURN-003, FND-EQUIP-006, FND-HIRE-001, FND-HIRE-002, FND-HIRE-006, FND-PLATFORM-003, FND-UPKEEP-001]
@@ -119,3 +119,5 @@ None known.
 - What the helper does with an offer slot that holds no gang (a negative
   element of `hire_offers`) is not recorded; offers are refilled at each
   planning entry, before this rule runs.
+- No recorded run requests mode 5 (Stealth) or runs mode 1 in Greed. These
+  rest on FND-AI-064. Until a run reaches them, the entry stays `supported`.
