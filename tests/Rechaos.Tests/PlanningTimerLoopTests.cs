@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
@@ -184,6 +185,33 @@ public sealed class PlanningTimerLoopTests
         game.Tick();
         AssertTurnEnded(game, human);
     }
+
+    // RULE-TIMER-002, EXP-UI-035: the planning entry redraws the console, so the next player's entry
+    // panels show the console's full bar, not the bar of the turn that ran out before them.
+    [Fact]
+    public void ThePlanningEntryPutsBackTheConsolesBar()
+    {
+        using var game = TimedGame(out _);
+        game.Advance(TimeSpan.FromSeconds(29));
+        var timer = game.Game.PlanningClock;
+        timer.Stop();
+        Assert.True(timer.ShowsBar);
+        Assert.NotEqual(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
+
+        Field("_state").SetValue(game.Game, null);
+        ((ScreenRouter)Field("_screens").GetValue(game.Game)!).Show(ClientScreen.Handoff);
+        Method("FinishHandoff").Invoke(game.Game, null);
+        Assert.False(timer.ShowsBar);
+        Assert.Equal(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth);
+    }
+
+    private static FieldInfo Field(string name) => typeof(ChaosGame)
+        .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new MissingFieldException(nameof(ChaosGame), name);
+
+    private static MethodInfo Method(string name) => typeof(ChaosGame)
+        .GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(nameof(ChaosGame), name);
 
     /// <summary>
     /// A local match on its first planning turn, with the 30-second limit the preferences hold and

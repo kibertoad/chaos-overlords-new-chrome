@@ -71,8 +71,25 @@ public sealed partial class ScreenCaptureTests
             .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
         var output = TestContext.Current.TestOutputHelper;
         foreach (var result in results) output?.WriteLine(result.ToString());
-        Assert.Empty(results.Where(result => result.Verdict == ElementVerdict.Differs).Select(result => result.ToString()));
+        var leftOut = LeftOut.GetValueOrDefault((experiment, run, step));
+        if (leftOut.Elements is not null) output?.WriteLine($"Not asserted: {string.Join(", ", leftOut.Elements)}: {leftOut.Reason}.");
+        Assert.Empty(results
+            .Where(result => result.Verdict == ElementVerdict.Differs
+                && leftOut.Elements?.Contains(result.Element.Element) != true)
+            .Select(result => result.ToString()));
     }
+
+    // Elements of a capture that are compared and reported but not asserted, because the capture
+    // does not record what picks their pixels.
+    private static readonly Dictionary<(string Experiment, int Run, int Step), (string[] Elements, string Reason)> LeftOut = new()
+    {
+        // EXP-UI-036: Last Turn Events is open at the dump. The selection frame behind it is the one
+        // the panel held when it came in at the planning entry (FND-UI-051), which the capture's
+        // pump counter does not give, so the elements that hold the selected sector are left out.
+        [("EXP-UI-036", 0, -1)] = (
+            ["City view and right control panel", "Neutral city map", "Last Turn Events panel"],
+            "the selection frame Last Turn Events held when it came in is not recorded"),
+    };
 
     // Each frame starts the game, so the rows draw theirs ahead on a few workers.
     private static readonly RowPrefetch<ScreenCaptureRecord, ScreenFrame> Renders = new(
@@ -109,7 +126,10 @@ public sealed partial class ScreenCaptureTests
                 OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
                 $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
                 capture.ItemFrame, clipTick: capture.ClipTick, idlePhase: capture.IdlePhase,
-                caretPhase: capture.CaretPhase, clipIndex: capture.ClipIndex);
+                caretPhase: capture.CaretPhase, clipIndex: capture.ClipIndex,
+                // EXP-UI-036: the probe's state dump stands before the Exit of the planning entry's
+                // Last Turn Events, a shot step after it.
+                entryPanels: capture.Step == -1, idleGangWarning: capture.IdleGangWarning);
     }
 
     // Shots whose screen a repaint of the original's window changed. The rebuild never loses what it

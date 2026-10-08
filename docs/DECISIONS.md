@@ -113,7 +113,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   Recipients are judged at the seal by every client as before; what the text
   may be is judged by the sender's client before it seals and by the
   recipient's after it opens. Hot-seat play is unchanged and stores text.
-- Wire: protocol version 31 and session version 52, because the op's schema
+- Wire: protocol version 31 and session version 54, because the op's schema
   and meaning changed. The state fingerprint now encodes whether a message is
   sealed and its envelope, so the fingerprint format moves to 16, the native
   save to 41 and the replay journal to 54, which adds a
@@ -164,7 +164,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   Comlink messages are sealed for their recipients" records.
 - Wire: the order document gains the two ops. The text is 1 to 160
   characters from space to `Z` (0x20 to 0x5A), the characters the Send panel
-  can type (RULE-COMLINK-006). Protocol version 27 and session version 51,
+  can type (RULE-COMLINK-006). Protocol version 27 and session version 53,
   because the order document's schema changed; the state fingerprint's
   encoding did not, so the save and replay formats stay.
 - Status: implemented and tested.
