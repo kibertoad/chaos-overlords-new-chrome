@@ -1,10 +1,10 @@
 ---
 id: RULE-EQUIP-001
 title: Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-001, FND-EQUIP-002, FND-EQUIP-006, FND-EQUIP-007, FND-EQUIP-008, FND-EVENT-001, FND-EVENT-004, EXP-TURN-031, SRC-MANUAL-GOG]
+evidence: [FND-EQUIP-001, FND-EQUIP-002, FND-EQUIP-006, FND-EQUIP-007, FND-EQUIP-012, FND-EVENT-001, FND-EVENT-004, EXP-TURN-031, SRC-MANUAL-GOG, FND-AWARDS-001, FND-PLATFORM-003, FND-RESEARCH-002, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-003, RULE-EVENT-014, FMT-STATE-001, FMT-DATA-003]
@@ -77,7 +77,7 @@ report. Makes no random draw.
   [FND-EQUIP-007].
 - An item whose type is none of the five weapon, armor and miscellaneous types
   is paid for and put in no slot. The list never offers one, since its
-  category cannot match [FND-EQUIP-007, FND-EQUIP-008].
+  category cannot match [FND-EQUIP-007, FND-EQUIP-012].
 
 ## What the sources say
 
@@ -95,4 +95,8 @@ None known.
 
 ## Open questions
 
-None known.
+- No recorded run reaches a failure with cash below 0, an Equip after the same
+  player's Bribe in that turn, or an item whose type is none of the five,
+  which is paid for and put in no slot. These rest on FND-EQUIP-001,
+  FND-EQUIP-006, FND-EQUIP-007 and FND-EQUIP-012. Until a run reaches them,
+  the entry stays `supported`.

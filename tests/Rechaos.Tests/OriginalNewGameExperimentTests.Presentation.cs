@@ -28,11 +28,12 @@ public sealed partial class OriginalNewGameExperimentTests
         return data;
     }
 
-    // RULE-SEARCH-002, FND-SEARCH-006: the probe writes the human's Search filter entries as the
+    // RULE-SEARCH-002, FND-SEARCH-006: the probe writes a human's Search filter entries as the
     // Search panel does and keeps every site marker of the last city redraw before the dump:
-    // definition, sector, ordinal and controlled flag, in drawing order. The rebuild's city shows
-    // the same markers for the same filter. EXP-TURN-045 selects every even site definition, so the
-    // ordinals skip the sites left out, and the human's Headquarters is drawn as controlled.
+    // definition, sector, ordinal and controlled flag, in drawing order, with the human it was
+    // drawn for. The rebuild's city shows that human the same markers for the filter the probe set
+    // for that human. EXP-TURN-045 selects every even site definition, so the ordinals skip the
+    // sites left out, and the human's Headquarters is drawn as controlled.
     [Theory]
     [MemberData(nameof(MarkerRuns))]
     public void TheCityShowsTheOriginalsSiteMarkers(string experiment, int run)
@@ -40,10 +41,10 @@ public sealed partial class OriginalNewGameExperimentTests
         var recorded = Run(experiment, run);
         var match = Replayed(recorded).Match;
         var drawn = recorded.CityMarkers!;
-        // The probe writes the first human's filter, so only that human's redraw is compared.
-        Assert.Equal(recorded.Humans[0].Value, drawn.Viewer);
-        var filter = recorded.SearchFilter.Select(definition => (short)definition).ToHashSet();
-        var markers = CitySiteMarkerProjection.Project(match, new PlayerId(drawn.Viewer), filter)
+        var viewer = new PlayerId(drawn.Viewer);
+        Assert.Contains(viewer, recorded.Humans);
+        var filter = recorded.SearchFilter(viewer).Select(definition => (short)definition).ToHashSet();
+        var markers = CitySiteMarkerProjection.Project(match, viewer, filter)
             .Select(marker => $"{marker.SiteDefinitionId},{marker.SectorId},{marker.VisibleSlot},{(marker.Controlled ? 1 : 0)}")
             .ToArray();
         Assert.Equal(drawn.Markers.Select(marker => string.Join(",", marker)), markers);
@@ -177,7 +178,10 @@ public sealed partial class OriginalNewGameExperimentTests
             {
                 var handled = SiteSearchPanel.Press(selections, human, point, rows, doubleClicks, time);
                 Assert.False(handled.OpensDetails);
-                if (handled.Press.Control == SiteSearchControl.Done) open = false;
+                // The probe releases each press where it pressed, so ALL, NONE and Done act on
+                // that release (FND-UI-062).
+                if (handled.Press.Control is SiteSearchControl.All or SiteSearchControl.None or SiteSearchControl.Done)
+                    open = !SiteSearchPanel.Release(selections, human, handled.Press.Control, rows);
             }
             Assert.Equal(human.Value, click.ActivePlayer);
             Assert.Equal(click.PanelOpen, open);
@@ -198,7 +202,7 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // RULE-EQUIP-004: at the endpoint the probe called the original's Equip list builder for every
-    // category of every living gang of the human (FND-EQUIP-008). The rebuild offers the same items,
+    // category of every living gang of the human (FND-EQUIP-012). The rebuild offers the same items,
     // in item record order, as its legal Equip commands of the gang in that category, and gives the
     // gang the Tech Level the builder was passed.
     [Theory]

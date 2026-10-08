@@ -7,7 +7,7 @@ implementation plan.
 
 Entries are ordered newest first. Each records the decision, the evidence or
 reasoning behind it, and what it rules in or out. A decision that departs from
-the original is also recorded as an entry of [DEVIATIONS.md](../DEVIATIONS.md),
+the original is also recorded as an entry in `deviations/`,
 which names the spec entries it departs from.
 
 ## Decision index
@@ -17,6 +17,9 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
+| 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
+| 2026-10-06 | [Chat in the online lobby, through the match's event log](#2026-10-06--chat-in-the-online-lobby-through-the-matchs-event-log) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
 | 2026-10-05 | [Capture the original with the 32-bit white key](#2026-10-05--capture-the-original-with-the-32-bit-white-key) |
@@ -45,6 +48,99 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-10-07 — Import the assets on first start on macOS and Linux
+
+- Decision: on macOS and Linux, a start that finds no current asset pack in the per-user folder
+  asks for the original installation with a native dialog (`osascript`, then `zenity` or
+  `kdialog`), runs the packaged extractor on it and goes on starting. Startup errors on those
+  platforms are shown in the same kind of dialog. Windows keeps importing in Setup.
+- Reason: the `.pkg` and `.deb` cannot import while they install: their scripts run as root,
+  with no player to ask and no home folder of theirs to write to. The import was left to a
+  terminal helper, and a game started from Finder or a desktop menu without it closed without a
+  word, because the startup error went to stderr.
+- Boundary: the macOS builds stay unsigned; there is no Apple Developer membership, and the
+  README's Gatekeeper steps are the supported install. A Linux desktop with neither `zenity` nor
+  `kdialog` gets no dialog and imports with `chaos-overlords-new-chrome-import`. An explicit
+  `--assets` folder and test runs are never offered an import.
+
+## 2026-10-06 — Establish an entry only when its runs reach everything it describes
+
+- A rule, format or screen entry becomes `established` when a static reading
+  and runs of the original agree and those runs reach every branch, edge case,
+  field, value, element, state, input, sound and timing the entry describes.
+  Agreement on the cases a run happens to reach is not enough. This is the
+  work protocol's condition that an experiment raising an entry to
+  `established` covers everything the entry says (docs/upstream/work-protocol.md).
+- A case counts as reached only when it is measured as below. For a rule or
+  format, a temporary trace in the rebuild counts each branch while every
+  replayed run plays, and is removed before commit. A case the probe sets up by
+  writing the original's memory, mirrored by the replay, counts as reached when
+  the code after the write takes the branch. For a screen, a drawn element or state counts as
+  reached when a capture shows it and the comparison does not mask it; a
+  masked element counts only when a `mandatory` deviation's Replaces item
+  names it. An input counts when a recorded run performed it and recorded its
+  result, and a sound or a timing when a run recorded it. A static finding
+  alone reaches nothing.
+- Whatever no run reaches stays in the entry's Open questions with the static
+  finding it rests on, the parity row's notes say the same, and the entry
+  stays `supported`. For a format the entry takes the lowest status of its
+  rows, so a reached field can be `established` while the entry is not. A
+  row the probe does not read is not reached. A memory format that names the
+  save block holding it leaves that placement to the save format
+  (FMT-SAVE-001): decoding a save reaches the save format's claim, and an
+  undecoded block holds back no row of the memory layout.
+- Screens: on this date no screen entry qualifies. Every capture run so far
+  set the sound levels to 0, no run measured a slide, and each screen's
+  captures show some of its states while its keys, refusals and pressed faces
+  rest on static findings. The screen entries stay `supported`, and a capture
+  pull request follows the checklist in
+  [validation/screen-comparison.md](validation/screen-comparison.md#raising-a-screen-entry).
+- Reason: issues #354, #373 and #408 found entries raised, or proposed for
+  raising, on one agreeing run while some of their cases had never been
+  observed, and entries kept at `supported` with no written bar. One stated
+  bar applies the same way to every entry.
+
+## 2026-10-06 — Chat in the online lobby, through the match's event log
+
+- Decision: players seated in an online lobby can send each other short text
+  messages until the host starts the match. A message is posted with
+  `POST /matches/:id/chat` and stored as a `lobby.chatMessage` event in the
+  match's own event log. The game reads new events whenever its once-a-second
+  lobby poll shows the log has grown, so a message reaches the others within
+  about a second, and a player who joins later reads the conversation so far.
+- Lobby only. Once the match starts, the server refuses chat
+  (`match_not_in_lobby`) and the game hides the panel. Inside a match the
+  original's Comlink is the channel between players, with its own rules about
+  who may write to whom and when (RULE-COMLINK-002 and RULE-COMLINK-003). A
+  second, unrestricted channel beside it would change how the diplomacy of a
+  match is played. Players are free to talk elsewhere, but the game does not
+  offer that channel.
+- Limits:
+  - A message is 1 to 160 characters after trimming and NFC normalisation,
+    the length of a Comlink message. Control, format and private-use
+    characters are refused, as in names.
+  - Each player may post ten messages a minute.
+  - Once a lobby's log holds 1,000 events, chat is refused with
+    `lobby_log_full`. The log is the only store and lobby retention keeps it
+    for days, so a cap on its length is what bounds what one lobby can cost
+    the server, whichever process counted the rate. The check and the append
+    are separate steps, so posts that arrive together can carry the log past
+    1,000 by at most one message each. The cap bounds the log; it does not
+    need to be exact, so no atomic check-and-append is added to storage.
+- The game draws chat in the original font, which has upper-case letters,
+  digits and punctuation. A character it has no glyph for is drawn blank, and
+  the game's own input accepts only characters it can draw. The server accepts
+  any safe text, because other clients may read it.
+- Moderation is the host's kick: it revokes the member's token, which ends
+  their chat along with their seat. Messages already sent stay in the log.
+  There is no word filter.
+- Transport: the event log rather than a WebSocket lane. The lobby already
+  polls once a second, and the log gives ordering, history for latecomers,
+  retention and deletion with the match, all without new infrastructure on
+  either runtime.
+- Status: implemented and tested; protocol version 25, session version
+  unchanged.
 
 ## 2026-10-06 — Recover from a desync without waiting on the host
 
@@ -109,8 +205,8 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   Tests item makes sure the replacement does what the deviation log claims.
 - The rule is the documentation standard's, a minor version of version 1
   (kibertoad/refurbished-dinosaurs#58, with the checker in
-  kibertoad/refurbished-dinosaurs-toolkit#291). `tools/check-spec.mjs` applies
-  it the same way, and `docs/upstream/` holds the standard's text.
+  kibertoad/refurbished-dinosaurs-toolkit#291). The toolkit's checker, which
+  `tools/check-documentation.mjs` runs, applies it, and `docs/upstream/` holds the standard's text.
 
 ## 2026-10-05 — Capture the original with the 32-bit white key
 
@@ -127,8 +223,9 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   key reaches the drawing and nothing else. A DirectDraw wrapper cannot help, since the windowed
   original draws with GDI only (FND-GFX-004): DDrawCompat left the same 5089 white pixels (the
   next decision, which still holds for the wrapper). No compatibility layer changed the result.
-- Boundary: the write changes one argument of one `SetBkColor` call and only when it is the
-  16-bit key. A capture shows what the original draws on a 16-bit display only where the key is
+- Boundary: the write changes the immediate operand the compositor takes its 16-bit key from
+  (FND-PLATFORM-015), once, before the game runs; the 8-bit key and every other byte stay as
+  they are. A capture shows what the original draws on a 16-bit display only where the key is
   the difference; FND-PLATFORM-014 records the capture of the first planning entry only.
 
 ## 2026-10-05 — Take captures of the original without a DirectDraw wrapper
@@ -222,7 +319,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   does not.
 - Method: a throwaway harness, not kept in the repository, switched the guard
   per player between the two comparisons. Seat 0 was a simulated human (see
-  [VALIDATION.md](VALIDATION.md#simulated-human-seats)) that always used the
+  [the test harnesses](validation/test-harnesses.md#simulated-human-seats)) that always used the
   corrected comparison; the five computer players used the original comparison
   in one arm and the corrected one in the other, on the same seeds. It ran the
   seven scenarios that have a hunter guard (Greed, Power, Acceptance,

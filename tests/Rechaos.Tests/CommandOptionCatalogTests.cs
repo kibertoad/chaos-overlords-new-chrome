@@ -64,7 +64,8 @@ public sealed class CommandOptionCatalogTests
     {
         var data = BundledOriginalData.Load();
         var setupPlayer = new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human);
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer]);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer],
+            MatchDeviations.Original);
         var definition = data.Gangs.OrderByDescending(gang => gang.TechLevel).First();
         var gang = new MatchGangState(new GangId(10), setupPlayer.Id, definition.Id, 0, 10);
         var researched = data.Items.Where(item => item.Type != 99).Select(item => item.Id).ToHashSet();

@@ -18,6 +18,15 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
         Assert.Equal(expectedMode,
             OriginalAiObjectiveFamilyRules.SelectionMode(scenario, family));
 
+    // RULE-AI-031: outside Big Man and Siege the handler calls no selector (EXP-TURN-101).
+    [Theory]
+    [InlineData(ScenarioId.BigMan, true)]
+    [InlineData(ScenarioId.Siege, true)]
+    [InlineData(ScenarioId.Greed, false)]
+    [InlineData(ScenarioId.Power, false)]
+    public void OnlyBigManAndSiegeHaveObjectives(ScenarioId scenario, bool expected) =>
+        Assert.Equal(expected, OriginalAiObjectiveFamilyRules.HasObjectives(scenario));
+
     [Theory]
     [InlineData(ScenarioId.BigMan, 27, true)]
     [InlineData(ScenarioId.BigMan, 36, true)]
@@ -150,6 +159,6 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
             ], owner: id == 0 ? setups[0].Id : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.BigMan, GameDuration.SixMonths, 41, setups), players, sectors);
+            ScenarioId.BigMan, GameDuration.SixMonths, 41, setups, MatchDeviations.Original), players, sectors);
     }
 }

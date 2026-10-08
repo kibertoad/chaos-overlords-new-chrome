@@ -47,13 +47,13 @@ eliminated during the run.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. The rebuild makes the same calls with the same bounds and results and
-reaches the same state, the planning records included. The rebuild reaches the
-attack draw that follows a Chaos or an Equip at weight 10, whose first target
-passes the strength test, and plans the Attack on it. Gangs of the same run
-left in family 7 run out of research and take family 0, as in EXP-TURN-073.
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. The rebuild makes the same calls
+with the same bounds and results and reaches the same state, the planning
+records included. The rebuild reaches the attack draw that follows a Chaos or an
+Equip at weight 10, whose first target passes the strength test, and plans the
+Attack on it. Gangs of the same run left in family 7 run out of research and
+take family 0, as in EXP-TURN-073.
 
 ## Conclusion
 

@@ -104,7 +104,7 @@ confirmed"). Nothing is latency-critical below a second.
 | Option | Verdict |
 |---|---|
 | **REST + SSE** (chosen) | Intents get HTTP semantics for free: bearer auth, idempotent retries, `413`/`429`, immutable caching of a sealed order set. The event log is exactly what SSE models: ordered, resumable with `Last-Event-ID`, one-directional, over plain HTTP/1.1 or HTTP/2 through any proxy or tunnel a self-hoster already has. Works on Node and on Workers with the same code. |
-| WebSocket | Bidirectional and lower overhead per message, neither of which this traffic needs. It brings a bespoke resume protocol, ping/pong, and on Cloudflare a hibernation dance; behind reverse proxies it is the thing that breaks. Reasonable later for lobby chat, never required for turns. |
+| WebSocket | Bidirectional and lower overhead per message, neither of which this traffic needs. It brings a bespoke resume protocol, ping/pong, and on Cloudflare a hibernation dance; behind reverse proxies it is the thing that breaks. Lobby chat rides the event log instead, read by the lobby's existing poll. Never required for turns. |
 | gRPC | No Workers support (HTTP/2 trailers), no browser path without grpc-web, and a code generator on the C# side for a dozen calls. |
 | Polling | Kept as the fallback, not the design: `GET /events?after=N` reads the same log the stream serves, for networks that cannot hold a streaming response. |
 
@@ -167,6 +167,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
+| `POST /matches/:id/chat` | member | Posts `{ text }` to the lobby chat before start (`409 match_not_in_lobby` after it). The text is 1 to 160 characters after trimming and NFC, with no control, format or private-use characters. Each player may post ten a minute (`429 rate_limited`), and a lobby whose log holds 1,000 events takes no more (`409 lobby_log_full`). Announced as `lobby.chatMessage`, which is the message's only store. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
 | `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the departure and opens a takeover vote; it does not transfer control. A leaving host hands the role to the lowest active slot. The durable membership token is retained for later rejoin. |
 | `POST /matches/:id/rejoin` | former member | Reactivates the caller's durable seat, restores host authority when appropriate, and transfers an AI-controlled reserved seat back to its owner. |
@@ -453,14 +454,16 @@ guarantee sets `synchronous = FULL` or runs Postgres.
 - **Rate limits** come in three tiers: the unauthenticated doors per client address, every
   authenticated call per player, and snapshot uploads per player on a tighter budget, because a
   member is a cost too — order documents are a quarter of a megabyte and snapshots four times that.
-  Match creation also has one process-wide budget shared by every caller, because a per-address
+  Match creation also has one deployment-wide budget shared by every caller, because a per-address
   budget does nothing against many addresses and every create is a stored lobby; only a create whose
   body validates spends it. The Node runtime also caps connections and sets header and request
-  deadlines, so a client that never finishes sending a request cannot hold a socket for long. The
-  windows are per process, which is what a self-hosted server needs; a public deployment puts its
-  platform's rate limiting in front as the real gate. On Cloudflare the in-Worker windows are per
-  isolate; moving them to a global limiter is
-  [#455](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/455).
+  deadlines, so a client that never finishes sending a request cannot hold a socket for long. A
+  budget holds across the whole deployment: the Node runtime counts in memory on SQLite, where one
+  process is the deployment, and in a `rate_limit_windows` table every instance shares on Postgres;
+  the Worker counts in a `RateLimitCounter` Durable Object per budget and caller (the `RATE_LIMITS`
+  binding), because Cloudflare's rate limiting binding counts per location and cannot express the
+  day-long journal budget or `Retry-After`. A counter that fails lets the request through and logs,
+  so an outage of the counter does not refuse every player.
 - **A refused request is described, not echoed.** A validation failure names the field and the
   rule; the value the client sent (a mistyped password, an order document) is never written back
   into the response or, through it, into a proxy log.
@@ -780,12 +783,43 @@ this one neither offers it nor prefills its join code. Terminal online
 errors are shown on the title screen and name that recovery path when the saved membership may
 still be valid. A completed match or an explicit Leave retires
 the recovery record, and a retired record is dropped rather than written back: the token is a full
-capability for that seat, so keeping a spent one on disk buys nothing. On Windows the token is
-sealed with DPAPI to the current user account, so another account on the same machine cannot read
-it out of the file; macOS and Linux keep it in clear under the user's own data root, because their
-keystores want a native dependency the game does not otherwise carry
-([#456](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/456)). Neither defends
-against something already running as the player.
+capability for that seat, so keeping a spent one on disk buys nothing.
+
+The token is kept out of the record's clear text wherever the platform offers a per-user store, so
+another account on the same machine, or a copy of the file, does not carry the seat:
+
+- On Windows it is sealed with DPAPI to the current user account, and the sealed bytes stay in the
+  record.
+- On macOS it is a generic password item in the login Keychain, and on Linux a password in the
+  Secret Service keyring (GNOME Keyring, KWallet or KeePassXC), reached through libsecret. The
+  record names the store and the account the token is filed under. Both are libraries the operating
+  system provides (Security.framework, `libsecret-1.so.0`), loaded when first needed, so the build
+  carries no native package for them. Every item is filed under one service of the game's own,
+  "Chaos Overlords New Chrome online seats", and the account name starts with a digest of the
+  record's path, so two data roots on one account keep apart. A record that names an account under
+  another root's digest (a copied or moved data root) is read, and its next save files the token
+  under the root's own account; the other root's item is never deleted from here, so a copy cannot
+  remove the original's seats and a move leaves its old items in the store. The game is not signed
+  with a Keychain entitlement, so after an update replaces the executable macOS asks, once for each
+  saved seat, whether the new build may read the item.
+- Where no store answers (a Linux system without libsecret or without a running keyring, a store
+  that refuses the write, or any other platform), the token stays in clear in the record, which is
+  created readable and writable by its owner only, and the Unfinished Sessions screen says so in
+  one line under the list.
+
+A record written by an older build that still holds a clear token is rewritten by the first load
+that can protect it, and its `.bak` generation is replaced with the rewritten file, so the clear
+token does not wait for the next turn to leave the disk. A save that drops a seat (Leave, a finished
+match, a seat the server has retired) also removes that seat's token from the store. A seat whose
+store does not answer when the record is loaded (the keyring is locked, its unlock prompt was
+dismissed, no keyring runs this session) is not offered, because there is no token to offer it
+with, and is not dropped either: every save writes it back unchanged until a load finds the store
+answering. A store that answers and holds no such token is the one case that drops the seat. A
+record that uses an operating-system store is stamped with a format version the previous build
+leaves alone, since that build would read such a seat as one without a token and drop it; a record
+that does not use one, which is every record on Windows, keeps the version that build reads.
+
+None of this defends against something already running as the player, which nothing local can.
 
 The session password is kept in clear on every platform. It opens one session's door to whoever the
 player was going to read it out to anyway, where the token is that seat itself, and the player who
@@ -822,9 +856,10 @@ dock a player plans against the dock the sealed turn grants.
 
 - **One server process.** The Node runtime fans events out in memory, so two instances behind a
   load balancer would each wake only their own subscribers: a client on instance A would sit silent
-  through everything written on instance B, with no error to show for it. Rate-limit windows
-  fragment the same way. Postgres is offered for durability and operational familiarity, not as a
-  way to scale out; running more than one instance needs a shared fan-out (the Cloudflare runtime's
+  through everything written on instance B, with no error to show for it. Rate limits do not
+  fragment: on Postgres every instance counts in one shared table. Postgres is offered for
+  durability and operational familiarity, not as a way to scale out; running more than one
+  instance needs a shared fan-out (the Cloudflare runtime's
   Durable Object is the worked example) before it is safe. The `GET /events?after=` fallback is the
   one path that does work under it, because it reads the log directly. Tracked in
   [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
@@ -845,7 +880,10 @@ dock a player plans against the dock the sealed turn grants.
   facts too; opening it earlier would mean unwinding a session for every player who backs out.
   Cutting the cost of an unchanged poll is
   [#458](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/458).
-- No chat. A WebSocket lane for lobby chat would sit beside the stream without touching turns.
+- **Chat is a lobby feature.** Seated players chat until the match starts, through
+  `lobby.chatMessage` events the lobby poll reads when the log has grown; a player who arrives later
+  reads what was said before them. Inside a match the Comlink is the channel, under its own rules.
+  The game draws chat in the original font, so its input takes only characters that font can draw.
 - **Comlink is closed in an online match.** The original's player-to-player messaging writes hashed
   state on both sides: a message lands in a recipient's inbox, and merely opening the view clears
   that inbox's read mark. Either done on one client alone is a desync rather than a lost message, so

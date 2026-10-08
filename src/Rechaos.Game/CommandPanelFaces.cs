@@ -55,12 +55,12 @@ public static class CommandPanelFaces
 
     /// <summary>
     /// Image the shared held-button helper <c>fn_00418821</c> shows while the button is held
-    /// inside its target (FND-COMLINK-003).
+    /// inside its target (FND-UI-062).
     /// </summary>
     public static Rectangle HeldSource(CommandPanelButton button) => button switch
     {
-        CommandPanelButton.Cancel => new Rectangle(50, 409, 50, 23),
-        CommandPanelButton.Confirm => new Rectangle(50, 386, 50, 23),
+        CommandPanelButton.Cancel => HeldButtonFaces.Lit(HeldButtonKind.Cancel),
+        CommandPanelButton.Confirm => HeldButtonFaces.Lit(HeldButtonKind.Confirm),
         _ => throw new ArgumentOutOfRangeException(nameof(button))
     };
 

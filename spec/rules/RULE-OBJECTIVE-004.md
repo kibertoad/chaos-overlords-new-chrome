@@ -1,10 +1,10 @@
 ---
 id: RULE-OBJECTIVE-004
 title: Each scenario's own end condition, and the Dominance weights
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-006, FND-TURN-003, FND-UI-033, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-037, EXP-TURN-039, EXP-TURN-038, EXP-TURN-041, EXP-TURN-058]
+evidence: [FND-OBJECTIVE-003, FND-OBJECTIVE-006, FND-TURN-003, FND-UI-033, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-037, EXP-TURN-039, EXP-TURN-038, EXP-TURN-041, EXP-TURN-058, FND-AI-005, FND-CITY-003, FND-CONTROL-001, FND-EQUIP-006, FND-PLATFORM-003, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-002]
@@ -135,3 +135,7 @@ None known.
 - None. A loaded or network-restored match carries `scenario`, `turn_limit`
   and `elapsed_turns` unchanged (FND-OBJECTIVE-006), so it can pass the
   timed test only where the match that was saved could.
+- No recorded run reaches the Dominance weights of a 208-turn match, Power's
+  timed end, Big 40 at 40 sectors, Siege holding all six headquarters,
+  Armageddon at 64, or two winners in one turn. These rest on
+  FND-OBJECTIVE-003. Until a run reaches them, the entry stays `supported`.
