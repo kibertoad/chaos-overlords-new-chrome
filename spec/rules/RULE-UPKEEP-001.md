@@ -4,7 +4,7 @@ title: Upkeep charges each active gang its Upkeep and pays each owned sector's C
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UPKEEP-001, SRC-MANUAL-GOG, EXP-TURN-059]
+evidence: [FND-UPKEEP-001, SRC-MANUAL-GOG, EXP-TURN-059, FND-AWARDS-001, FND-EQUIP-006, FND-HIRE-002, FND-HIRE-006, FND-PLATFORM-003, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-SITE-001, FMT-STATE-001, FMT-STATE-002, FMT-DATA-002]

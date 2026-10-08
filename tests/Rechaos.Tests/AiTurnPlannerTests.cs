@@ -25,7 +25,7 @@ public sealed partial class AiTurnPlannerTests
         Assert.Equal(first.Count, first.Select(command => command.Gang).Distinct().Count());
     }
 
-    // RULE-AI-004, FND-AI-081: no cash is set aside at planning. Both gangs' Equips become
+    // RULE-AI-004, FND-AI-082: no cash is set aside at planning. Both gangs' Equips become
     // commands, in roster-slot order whatever the gang ids, although the player can pay for one;
     // the transaction pass refuses the one it can no longer pay for (RULE-EQUIP-001).
     [Fact]
@@ -182,7 +182,8 @@ public sealed partial class AiTurnPlannerTests
             ], income: 3))
             .ToArray();
         var match = new MatchState(data,
-            new MatchSetup(ScenarioId.KillEmAll, GameDuration.SixMonths, 9, setups), players, sectors);
+            new MatchSetup(ScenarioId.KillEmAll, GameDuration.SixMonths, 9, setups,
+                MatchDeviations.Original), players, sectors);
         match.FinishUpkeep();
         match.PrepareAiPlanning(new PlayerId(0));
 
@@ -264,7 +265,7 @@ public sealed partial class AiTurnPlannerTests
                 income: ManualRules.MinimumSectorIncome))
             .ToArray();
         var match = new MatchState(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.SixMonths, 23, setups), players, sectors);
+            ScenarioId.Power, GameDuration.SixMonths, 23, setups, MatchDeviations.Original), players, sectors);
         var attacker = match.FindGang(new GangId(10))!;
 
         Assert.False(match.CanPlayerDetectGang(new PlayerId(0), new GangId(20)));
@@ -338,7 +339,7 @@ public sealed partial class AiTurnPlannerTests
                 income: ManualRules.MinimumSectorIncome, support: id == 0 ? support : 0))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.SixMonths, 23, setups), players, sectors);
+            ScenarioId.Power, GameDuration.SixMonths, 23, setups, MatchDeviations.Original), players, sectors);
     }
 
     [Fact]
@@ -755,10 +756,15 @@ public sealed partial class AiTurnPlannerTests
         Assert.Equal(consumptionBefore, match.Random.ConsumptionCount);
     }
 
-    [Fact]
-    public void PreparedRecoveredMoveToSourcePlansNothing()
+    // RULE-AI-004 writes a planned Move into the gang's record whatever its target, so with
+    // DEV-AI-007 off a Move to the gang's own sector becomes its order, as in the original. With
+    // DEV-AI-007 on the sector is not a neighbour and the planner gives the gang no order.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PreparedRecoveredMoveToSourceIsOrderedOnlyWithDevAi007Off(bool computerMovesToNeighboursOnly)
     {
-        var match = CreateMatch();
+        var match = CreateMatch(computerMovesToNeighboursOnly: computerMovesToNeighboursOnly);
         var player = new PlayerId(0);
         match.FinishUpkeep();
         match.AiPlanning.BeginPlanning(player);
@@ -767,7 +773,18 @@ public sealed partial class AiTurnPlannerTests
             player, 0, GangAction.Move, new AiActionTarget(0, 0));
         match.MarkAiPlanningPrepared(player);
 
-        Assert.Empty(AiTurnPlanner.Plan(match, player));
+        var commands = AiTurnPlanner.Plan(match, player);
+
+        if (computerMovesToNeighboursOnly)
+        {
+            Assert.Empty(commands);
+        }
+        else
+        {
+            var command = Assert.Single(commands);
+            Assert.Equal(GangAction.Move, command.Action);
+            Assert.Equal(CommandTarget.Sector(0), command.Target);
+        }
         Assert.Equal(GangAction.Move, match.AiPlanning.PlannedAction(player, 0));
         Assert.Equal(new AiActionTarget(0, 0), match.AiPlanning.PlannedTarget(player, 0));
     }
@@ -880,7 +897,8 @@ public sealed partial class AiTurnPlannerTests
         PlayerController rivalController = PlayerController.Human,
         short rivalDefinitionId = 2,
         IReadOnlySet<short>? researchedItems = null,
-        int startingSector = 0)
+        int startingSector = 0,
+        bool computerMovesToNeighboursOnly = false)
     {
         data ??= BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -906,7 +924,9 @@ public sealed partial class AiTurnPlannerTests
             ], owner: ownsStartingSector && id == startingSector ? new PlayerId(0) : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            scenario, GameDuration.SixMonths, 7, setups, difficulty), players, sectors);
+            scenario, GameDuration.SixMonths, 7, setups,
+            MatchDeviations.Original with { ComputerMovesToNeighboursOnly = computerMovesToNeighboursOnly },
+            difficulty), players, sectors);
     }
 
     private static MatchState CreateNeutralControlMatch(
@@ -934,6 +954,6 @@ public sealed partial class AiTurnPlannerTests
             ], income: ManualRules.MinimumSectorIncome))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.SixMonths, 17, setups), players, sectors);
+            ScenarioId.Power, GameDuration.SixMonths, 17, setups, MatchDeviations.Original), players, sectors);
     }
 }

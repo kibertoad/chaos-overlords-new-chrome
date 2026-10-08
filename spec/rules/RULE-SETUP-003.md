@@ -4,7 +4,7 @@ title: Begin turns every empty setup slot into a computer player with an unused 
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-013, FND-SETUP-017, FND-SETUP-002, FND-RNG-005, SRC-HELP-GOG, SRC-MANUAL-GOG, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003]
+evidence: [FND-SETUP-013, FND-SETUP-017, FND-SETUP-002, FND-RNG-005, SRC-HELP-GOG, SRC-MANUAL-GOG, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003, FND-AI-004, FND-OBJECTIVE-004, FND-PLATFORM-003, FND-SETUP-005, FND-STATE-004, FND-TURN-005, FND-UI-003]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, RULE-SETUP-001]

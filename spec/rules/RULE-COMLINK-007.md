@@ -1,10 +1,10 @@
 ---
 id: RULE-COMLINK-007
 title: When a player finishes planning, the read messages at the front of the inbox are dropped
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-COMLINK-006, EXP-COMLINK-001]
+evidence: [FND-COMLINK-006, EXP-COMLINK-001, FND-COMLINK-001, FND-COMLINK-002, FND-COMLINK-004]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-001, RULE-COMLINK-004, FMT-STATE-005]
@@ -73,3 +73,6 @@ None known.
 
 - Whether this also runs for a player at another computer in a network game,
   where that player's inbox is kept on their own computer, was not read.
+- No recorded run keeps a read message behind an unread one; viewing opens at
+  the oldest unread message, so no local input can leave one there. That rests
+  on FND-COMLINK-006. Until a run reaches them, the entry stays `supported`.

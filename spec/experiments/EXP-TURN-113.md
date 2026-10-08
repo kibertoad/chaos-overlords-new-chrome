@@ -15,7 +15,7 @@ fixture: EXP-TURN-113.json
 
 ## Question
 
-No recorded run plays Kill 'Em All beyond turn 82. Kill 'Em All ends only when
+No recorded run plays Kill 'Em All beyond turn 30. Kill 'Em All ends only when
 one player is left (RULE-OBJECTIVE-001), and with one human in the match a
 recorded run cannot see a computer player win it unless every other player,
 the human included, is eliminated. Does a Kill 'Em All match at Goon, with the
@@ -41,14 +41,14 @@ has not ended.
 
 The resolution after the 116th Done press ends with a draw at `0x00475AC6`,
 the Force of a hired gang (FND-RNG-006), before the next planning entry's
-offer draw at `0x0047172A`. The hire is player 2's; FND-AI-081 traces its cash
+offer draw at `0x0047172A`. The hire is player 2's; FND-AI-082 traces its cash
 in that turn to an Equip of the 114th turn.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same 108911 calls with the same bounds and results, and its
-end state agrees with the original's.
+A test of the rebuild replays the run. The rebuild makes the same 108911
+calls with the same bounds and results, and its end state agrees with the
+original's.
 
 ## Conclusion
 

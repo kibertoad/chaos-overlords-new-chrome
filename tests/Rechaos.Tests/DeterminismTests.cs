@@ -94,6 +94,27 @@ public sealed class DeterminismTests
         Assert.Equal([4L, 5L], queue.Items.Select(item => item.Sequence));
     }
 
+    // RULE-EVENT-002: a stored history past the bound is valid only in the shape
+    // NotificationQueue.Enqueue leaves it, every notification of the newest turn or the one before.
+    [Fact]
+    public void NotificationHistoryPastItsBoundHoldsOnlyTheNewestTwoTurns()
+    {
+        static bool IsValid(int count, int firstTurn) => GameNotificationValidator.IsValidHistory(
+            Enumerable.Range(0, count)
+                .Select(index => Notification(index, turn: index == 0 ? firstTurn : 3)).ToArray(),
+            count, currentTurn: 3, events: []);
+
+        Assert.True(IsValid(MatchLimits.NotificationsPerPlayer, firstTurn: 1));
+        Assert.True(IsValid(MatchLimits.NotificationsPerPlayer + 1, firstTurn: 2));
+        Assert.False(IsValid(MatchLimits.NotificationsPerPlayer + 1, firstTurn: 1));
+
+        var outOfOrder = Enumerable.Range(0, MatchLimits.NotificationsPerPlayer + 1)
+            .Select(index => Notification(index, turn: index == MatchLimits.NotificationsPerPlayer ? 2 : 3))
+            .ToArray();
+        Assert.False(GameNotificationValidator.IsValidHistory(
+            outOfOrder, outOfOrder.Length, currentTurn: 3, events: []));
+    }
+
     [Fact]
     public void CanonicalHashMatchesEquivalentStateAndChangesWithCommands()
     {
@@ -227,7 +248,8 @@ public sealed class DeterminismTests
             new(new PlayerId(0), "SMGHUBBLE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups,
+            MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setup.Players[0], 500, [new MatchGangState(new GangId(10), new PlayerId(0), 1, 0, 5)]),

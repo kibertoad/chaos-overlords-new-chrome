@@ -64,6 +64,14 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--clip-tick", "1" },
         new[] { "--reference-frame", "save", "frame", "--clip-tick", "22" },
         new[] { "--reference-frame", "title", "frame", "--clip-tick", "1" },
+        new[] { "--idle-phase", "1" },
+        new[] { "--reference-frame", "save", "frame", "--idle-phase", "8" },
+        new[] { "--caret-phase", "1" },
+        new[] { "--reference-frame", "save", "frame", "--caret-phase", "6" },
+        new[] { "--clip-index", "1" },
+        new[] { "--reference-frame", "save", "frame", "--clip-index", "1" },
+        new[] { "--reference-frame", "save", "frame", "--clip-tick", "1", "--clip-index", "-1" },
+        new[] { "--reference-frame", "title", "frame", "--idle-phase", "1" },
         new[] { "--reference-frame", "save", "frame", "--item-frame", "1", "--item-frame", "2" },
         new[] { "--reference-frame", "title", "frame", "--marker-frame", "0" },
         new[] { "--reference-frame", "setup", "frame", "--selected-sector", "1" },
@@ -171,6 +179,21 @@ public sealed class ReferenceFrameRequestTests
         Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("'"));
     }
 
+    // FND-UI-046: a held button is pressed, moved and released as edges of their own, so a frame
+    // can be drawn while it is down.
+    [Fact]
+    public void ButtonEdgesAreReadOnTheirOwn()
+    {
+        var clicks = ReferenceClick.ParseList("161:304:d,300:200:m,300:200:u,524:150:rd,524:150:ru,10:10");
+        Assert.Equal(
+            [ReferenceButtonEdge.Down, ReferenceButtonEdge.Move, ReferenceButtonEdge.Up,
+                ReferenceButtonEdge.RightDown, ReferenceButtonEdge.RightUp, null],
+            clicks.Select(click => click.Edge));
+        Assert.Equal("161:304:d,300:200:m,300:200:u,524:150:rd,524:150:ru,10:10", string.Join(",", clicks));
+        Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("161:304:x"));
+        Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("640:304:d"));
+    }
+
     // FND-COMBAT-016: the screen shows a clip's ticks 0 to 21.
     [Fact]
     public void TheClipTickIsReadAsGiven()
@@ -179,6 +202,30 @@ public sealed class ReferenceFrameRequestTests
             ["--reference-frame", "planning.rchsave", "frame.bmp", "--clip-tick", "21"])!;
         Assert.Equal(21, request.ClipTick);
         Assert.Null(ReferenceFrameRequest.ParseArguments(["--reference-frame", "planning.rchsave", "frame.bmp"])!.ClipTick);
+    }
+
+    // FND-COMBAT-011: a later clip of the presentation is named by its index, with its tick.
+    [Fact]
+    public void TheClipIndexIsReadAsGiven()
+    {
+        var request = ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--clip-tick", "4", "--clip-index", "2"])!;
+        Assert.Equal(2, request.ClipIndex);
+        Assert.Equal(4, request.ClipTick);
+        Assert.Null(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--clip-tick", "4"])!.ClipIndex);
+    }
+
+    // FND-UI-054, FND-COMLINK-010: the idle warning's and the Send caret's phases are separate
+    // values, each read into its own field.
+    [Fact]
+    public void TheIdleAndCaretPhasesAreReadAsGiven()
+    {
+        var request = ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--idle-phase", "7", "--caret-phase", "5"])!;
+        Assert.Equal(7, request.IdlePhase);
+        Assert.Equal(5, request.CaretPhase);
+        Assert.Null(request.ItemFrame);
     }
 
     [Theory]

@@ -33,7 +33,7 @@ public static partial class AiTurnPlanner
         if (!features.HasFlag(AdvancedFeature.IdleRecovery)) return commands;
         var assigned = commands.Select(command => command.Gang).ToHashSet();
         // The original plan sets no cash aside and may cost more than the player holds
-        // (FND-AI-081); the fallback commands only spend what is left after it.
+        // (FND-AI-082); the fallback commands only spend what is left after it.
         var cashBudget = Math.Max(0,
             player.Cash - commands.Sum(command => EstimatedCost(state, command)));
 

@@ -34,7 +34,7 @@ public static partial class AiTurnPlanner
         // RULE-AI-004, FND-AI-074: the handlers write each planned action straight into the gang
         // record, so every gang carries out what it planned. No cash is set aside at planning:
         // the transaction pass tests each Equip against the cash left when the gang's turn comes
-        // (RULE-EQUIP-001), so one gang's plan never stops another's (FND-AI-081).
+        // (RULE-EQUIP-001), so one gang's plan never stops another's (FND-AI-082).
         var commands = new List<GameCommand>();
         for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
         {
@@ -57,6 +57,22 @@ public static partial class AiTurnPlanner
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
+        int gangSlot) =>
+        PlannedCommand(state, playerId, gang, gangSlot) is { } command
+        && CommandValidator.Validate(state, command).IsValid
+        && IsDetectableAttack(state, playerId, command)
+            ? command
+            : null;
+
+    /// <summary>
+    /// The command the gang's record describes (RULE-AI-002), before validation: null when the
+    /// record holds no action, an action whose command needs more than the record holds, or no
+    /// target the action needs.
+    /// </summary>
+    internal static GameCommand? PlannedCommand(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
         int gangSlot)
     {
         var action = state.AiPlanning.PlannedAction(playerId, gangSlot);
@@ -70,11 +86,7 @@ public static partial class AiTurnPlanner
         if (targetId is not { } id
             || !CommandTarget.TryCreate(rule.PrimaryTarget, id, out var target))
             return null;
-        var command = new GameCommand(playerId, gang.Id, action, target);
-        return CommandValidator.Validate(state, command).IsValid
-            && IsDetectableAttack(state, playerId, command)
-                ? command
-                : null;
+        return new GameCommand(playerId, gang.Id, action, target);
     }
 
     private static void PrepareFamilyElevenCommand(

@@ -57,11 +57,11 @@ had Research (11) of item 13 in its record.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state. In the replay, family-1 gangs plan Snitch
-after Control and then again after Snitch, and Chaos after Snitch; others
-heal, take sectors by Control, equip and move.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same generator position and state. In
+the replay, family-1 gangs plan Snitch after Control and then again after
+Snitch, and Chaos after Snitch; others heal, take sectors by Control, equip and
+move.
 
 ## Conclusion
 

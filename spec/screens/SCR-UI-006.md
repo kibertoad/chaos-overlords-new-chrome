@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-004, FND-UI-006, FND-UI-011, FND-UI-013, FND-UI-024, FND-UI-023, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-047, FND-UI-052, EXP-UI-009]
+evidence: [FND-UI-004, FND-UI-006, FND-UI-011, FND-UI-013, FND-UI-024, FND-UI-023, FND-AUDIO-011, FND-EXE-004, SRC-MANUAL-GOG, FND-UI-047, FND-UI-052, EXP-UI-009, FND-UI-062, FND-UI-067, EXP-UI-041]
 conflicting: []
 split_with: []
 related: [RULE-UI-003, RULE-UI-004]
@@ -23,12 +23,13 @@ related: [RULE-UI-003, RULE-UI-004]
 | Cost and Tech Level | The digits of `DATA/PX16/PX00129` | The item's cost and tech level, by `number_cells` with width 2 (RULE-UI-004) | Two cells from x 300 and from x 396, screen row 216 (backing row 236) | Always | FND-UI-004, FND-UI-006, FND-UI-013 |
 | Edge of the panel underneath | The left 24 columns of the panel the item was opened from | None | `(104,124,24,209)` | When opened from another panel, on a repaint | FND-UI-013 |
 | The fourteen effects | The digits of `DATA/PX16/PX00129` | The item's fourteen statistic modifiers, by `modifier_cells` with width 2 (RULE-UI-004) | Two cells from x 300 and from x 396 on rows 243, 252, 270, 279, 288, 297 and 306 | Always | FND-UI-004, FND-UI-006 |
+| Exit pressed | `DATA/PX16/PX00129` rectangle (0, 386, 50, 23); plain face (50, 386, 50, 23) while the pointer is outside and after a release that leaves the panel open | None | (161, 293, 50, 23) | While the face is held with the pointer inside it | FND-UI-062, FND-UI-067 |
 
 ## Mouse input
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Exit face | `(161,293,49,22)` | While open | Held through the held-button helper; a release inside it closes the panel (RULE-UI-003) | FND-UI-004, FND-UI-047 |
+| Exit face | `(161,293,49,22)` | While open | Held through the held-button helper; a release inside it closes the panel (RULE-UI-003) | FND-UI-004, FND-UI-047, FND-UI-067 |
 | Inside the panel, off the face | The rest of `(128,124,320,209)` | While open | None | FND-UI-013 |
 | Outside the panel | Outside `(128,124,320,209)` | While open | Refused; plays slot 4 | FND-UI-004, FND-AUDIO-011, FND-UI-013 |
 
@@ -66,7 +67,8 @@ slide takes about a quarter of a second (RULE-UI-003).
 
 While the exit face is held with the pointer, the rotation stops. The pass that
 ends with the release takes one tick if any fell during the hold and loses the
-others (FND-UI-047).
+others (FND-UI-047). EXP-UI-041 held Exit for more than three seconds: the item frame
+stood still, and the release step's first clear of slot 0 came at once.
 
 ## Differences between builds
 
@@ -77,3 +79,9 @@ None known.
 - Which item each caller passes on a double-click is recorded with each
   caller; FND-UI-013 lists the eight functions that open the panel.
 - `VK_EXECUTE` is a key code that no key on a US keyboard sends.
+- No recorded run of the original reaches frame 0 on opening, the frame
+  sequence and its rate; the rotation stopping while Exit is held; opening
+  from the other panels and cards; presses outside the panel and off the face;
+  Enter and Execute; the sounds and the slide's timing (FND-UI-004,
+  FND-UI-013, FND-UI-047, FND-UI-052, FND-AUDIO-011). These rest on the static
+  findings named, so the entry stays `supported`.

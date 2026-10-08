@@ -66,10 +66,9 @@ gang died in that turn's combat phase.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state, with the human's gang dead at the end of
-turn 15.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same generator position and state, with
+the human's gang dead at the end of turn 15.
 
 ## Conclusion
 

@@ -9,7 +9,7 @@ byte_order: little
 size: 32
 text: false
 definition: fmt_state_001.ksy
-evidence: [FND-DETECT-002, FND-COMBAT-008, FND-AI-004, FND-AI-007, FND-CHAOS-001, FND-COMBAT-001, FND-COMBAT-004, FND-CONTROL-001, FND-DETECT-001, FND-EQUIP-002, FND-EQUIP-007, FND-EQUIP-008, FND-GANG-001, FND-GANG-003, FND-GANG-005, FND-GANG-007, FND-HIDE-001, FND-HIRE-002, FND-MOVE-001, FND-MOVE-003, FND-PLATFORM-003, FND-STATE-002, FND-TURN-001, FND-TURN-002, FND-TURN-004, FND-TURN-005, FND-UI-036, SRC-RECHAOS-3561D41, FND-EXE-004, EXP-SETUP-001, EXP-TURN-022]
+evidence: [FND-DETECT-002, FND-COMBAT-008, FND-AI-004, FND-AI-007, FND-CHAOS-001, FND-COMBAT-001, FND-COMBAT-004, FND-CONTROL-001, FND-DETECT-001, FND-EQUIP-002, FND-EQUIP-007, FND-EQUIP-012, FND-GANG-001, FND-GANG-003, FND-GANG-005, FND-GANG-007, FND-HIDE-001, FND-HIRE-002, FND-MOVE-001, FND-MOVE-003, FND-PLATFORM-003, FND-STATE-002, FND-TURN-001, FND-TURN-002, FND-TURN-004, FND-TURN-005, FND-UI-036, SRC-RECHAOS-3561D41, FND-EXE-004, EXP-SETUP-001, EXP-TURN-022]
 conflicting: []
 split_with: []
 related: []
@@ -37,8 +37,8 @@ Hands, with definition 0 and Force 10 [FND-STATE-002].
 | `0x05` | 1 | `INT8` | `armor` | Item record number of the equipped armor, or -1 for none. Kept unchanged when the gang dies or is terminated | supported | FND-GANG-001, FND-GANG-003 |
 | `0x06` | 1 | `INT8` | `misc` | Item record number of the equipped miscellaneous item, or -1 for none. Kept unchanged when the gang dies or is terminated | supported | FND-GANG-001, FND-GANG-003 |
 | `0x07` | 1 | `UINT8` | `action` | The action the gang carries out this turn. Hide is in force while this byte is 8 | supported | FND-AI-007, FND-COMBAT-004, FND-HIDE-001, FND-TURN-002 |
-| `0x08` | 1 | `INT8` | `target` | First target byte of `action`: the target player for Attack, the destination sector for Move, the item for Equip and Research, the site slot 0 to 2 for Influence, and the item mask (weapon 1, armor 2, misc 4) for Give and Sell. No other action reads it | supported | FND-COMBAT-004, FND-COMBAT-008, FND-EQUIP-007, FND-STATE-002, FND-TURN-002, FND-EQUIP-008, FND-MOVE-003 |
-| `0x09` | 1 | `INT8` | `target_2` | Second target byte of `action`: the target's roster slot for Attack, the recipient's roster slot for Give. No other action reads it | supported | FND-COMBAT-004, FND-COMBAT-008, FND-EQUIP-007, FND-STATE-002, FND-EQUIP-008 |
+| `0x08` | 1 | `INT8` | `target` | First target byte of `action`: the target player for Attack, the destination sector for Move, the item for Equip and Research, the site slot 0 to 2 for Influence, and the item mask (weapon 1, armor 2, misc 4) for Give and Sell. No other action reads it | supported | FND-COMBAT-004, FND-COMBAT-008, FND-EQUIP-007, FND-STATE-002, FND-TURN-002, FND-EQUIP-012, FND-MOVE-003 |
+| `0x09` | 1 | `INT8` | `target_2` | Second target byte of `action`: the target's roster slot for Attack, the recipient's roster slot for Give. No other action reads it | supported | FND-COMBAT-004, FND-COMBAT-008, FND-EQUIP-007, FND-STATE-002, FND-EQUIP-012 |
 | `0x0A` | 1 | `UINT8` | `repeat_action` | The recurring action, copied into `action` at the start of each turn; 0 for none | supported | FND-HIDE-001, FND-TURN-002, FND-TURN-004 |
 | `0x0B` | 1 | `INT8` | `repeat_target` | The recurring action's target, copied into `target` with it | supported | FND-TURN-002, FND-TURN-004 |
 | `0x0C` | 6 | `UINT8[6]` | `visible_to` | One byte per observing player slot: nonzero when that player can see this gang. Rebuilt by the visibility pass, 0 or 1, for active gangs only, so a gone gang keeps the bytes of the last pass before it died; always nonzero for the owner | supported | FND-DETECT-001, FND-DETECT-002, FND-UI-036, EXP-TURN-022 |

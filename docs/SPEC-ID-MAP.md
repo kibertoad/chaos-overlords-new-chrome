@@ -21,7 +21,7 @@ This file is not maintained further. New IDs never need a row here.
 | `BIN-AI-001` | [`FND-AI-001`](../spec/findings/FND-AI-001.md) |
 | `BIN-AI-002` | [`FND-AI-002`](../spec/findings/FND-AI-002.md) |
 | `BIN-AI-003` | [`FND-AI-003`](../spec/findings/FND-AI-003.md) |
-| `BIN-AI-003A` | [`FND-AI-008`](../spec/findings/FND-AI-008.md), [`FND-AI-011`](../spec/findings/FND-AI-011.md) |
+| `BIN-AI-003A` | [`FND-AI-064`](../spec/findings/FND-AI-064.md), [`FND-AI-065`](../spec/findings/FND-AI-065.md) |
 | `BIN-AI-003B` | [`FND-AI-009`](../spec/findings/FND-AI-009.md), [`FND-AI-012`](../spec/findings/FND-AI-012.md), [`FND-AI-013`](../spec/findings/FND-AI-013.md), [`FND-AI-014`](../spec/findings/FND-AI-014.md), [`FND-AI-015`](../spec/findings/FND-AI-015.md) |
 | `BIN-AI-003C` | [`FND-AI-010`](../spec/findings/FND-AI-010.md), [`FND-AI-016`](../spec/findings/FND-AI-016.md), [`FND-AI-017`](../spec/findings/FND-AI-017.md) |
 | `BIN-AI-004` | [`FND-AI-004`](../spec/findings/FND-AI-004.md), [`FND-AI-018`](../spec/findings/FND-AI-018.md), [`FND-AI-019`](../spec/findings/FND-AI-019.md), [`FND-AI-020`](../spec/findings/FND-AI-020.md), [`FND-AI-021`](../spec/findings/FND-AI-021.md), [`FND-AI-022`](../spec/findings/FND-AI-022.md), [`FND-AI-023`](../spec/findings/FND-AI-023.md) |
@@ -29,7 +29,7 @@ This file is not maintained further. New IDs never need a row here.
 | `BIN-AI-006` | [`FND-AI-006`](../spec/findings/FND-AI-006.md), [`FND-AI-024`](../spec/findings/FND-AI-024.md) |
 | `BIN-AI-007` | [`FND-AI-007`](../spec/findings/FND-AI-007.md) |
 | `BIN-API-001` | [`FND-PLATFORM-001`](../spec/findings/FND-PLATFORM-001.md) |
-| `BIN-API-002` | [`FND-PLATFORM-002`](../spec/findings/FND-PLATFORM-002.md), [`FND-PLATFORM-007`](../spec/findings/FND-PLATFORM-007.md), [`FND-PLATFORM-008`](../spec/findings/FND-PLATFORM-008.md) |
+| `BIN-API-002` | [`FND-PLATFORM-002`](../spec/findings/FND-PLATFORM-002.md), [`FND-PLATFORM-007`](../spec/findings/FND-PLATFORM-007.md), [`FND-PLATFORM-015`](../spec/findings/FND-PLATFORM-015.md) |
 | `BIN-API-003` | [`FND-PLATFORM-003`](../spec/findings/FND-PLATFORM-003.md), [`FND-SAVE-001`](../spec/findings/FND-SAVE-001.md) |
 | `BIN-API-004` | [`FND-PLATFORM-004`](../spec/findings/FND-PLATFORM-004.md) |
 | `BIN-API-005` | [`FND-PLATFORM-005`](../spec/findings/FND-PLATFORM-005.md) |
@@ -38,7 +38,7 @@ This file is not maintained further. New IDs never need a row here.
 | `BIN-ASSET-002` | [`FND-HELP-001`](../spec/findings/FND-HELP-001.md) |
 | `BIN-ASSET-003` | [`FND-HELP-002`](../spec/findings/FND-HELP-002.md) |
 | `BIN-ATTACK-001` | [`FND-ATTACK-001`](../spec/findings/FND-ATTACK-001.md) |
-| `BIN-AWARDS-001` | [`FND-AWARDS-001`](../spec/findings/FND-AWARDS-001.md), [`FND-AI-025`](../spec/findings/FND-AI-025.md), [`FND-AI-026`](../spec/findings/FND-AI-026.md), [`FND-AI-027`](../spec/findings/FND-AI-027.md), [`FND-AI-028`](../spec/findings/FND-AI-028.md), [`FND-AI-029`](../spec/findings/FND-AI-029.md), [`FND-AI-030`](../spec/findings/FND-AI-030.md), [`FND-AI-031`](../spec/findings/FND-AI-031.md), [`FND-AI-032`](../spec/findings/FND-AI-032.md), [`FND-AI-033`](../spec/findings/FND-AI-033.md), [`FND-AI-034`](../spec/findings/FND-AI-034.md), [`FND-AI-035`](../spec/findings/FND-AI-035.md), [`FND-AI-036`](../spec/findings/FND-AI-036.md), [`FND-AI-037`](../spec/findings/FND-AI-037.md), [`FND-AI-038`](../spec/findings/FND-AI-038.md), [`FND-AI-039`](../spec/findings/FND-AI-039.md), [`FND-AI-040`](../spec/findings/FND-AI-040.md), [`FND-AWARDS-002`](../spec/findings/FND-AWARDS-002.md) |
+| `BIN-AWARDS-001` | [`FND-AWARDS-001`](../spec/findings/FND-AWARDS-001.md), [`FND-AI-069`](../spec/findings/FND-AI-069.md), [`FND-AI-026`](../spec/findings/FND-AI-026.md), [`FND-AI-028`](../spec/findings/FND-AI-028.md), [`FND-AI-029`](../spec/findings/FND-AI-029.md), [`FND-AI-048`](../spec/findings/FND-AI-048.md), [`FND-AI-049`](../spec/findings/FND-AI-049.md), [`FND-AI-032`](../spec/findings/FND-AI-032.md), [`FND-AI-033`](../spec/findings/FND-AI-033.md), [`FND-AI-034`](../spec/findings/FND-AI-034.md), [`FND-AI-035`](../spec/findings/FND-AI-035.md), [`FND-AI-036`](../spec/findings/FND-AI-036.md), [`FND-AI-071`](../spec/findings/FND-AI-071.md), [`FND-AI-070`](../spec/findings/FND-AI-070.md), [`FND-AI-039`](../spec/findings/FND-AI-039.md), [`FND-AI-040`](../spec/findings/FND-AI-040.md), [`FND-AWARDS-002`](../spec/findings/FND-AWARDS-002.md) |
 | `BIN-BRIBE-001` | [`FND-BRIBE-001`](../spec/findings/FND-BRIBE-001.md) |
 | `BIN-CHAOS-001` | [`FND-CHAOS-001`](../spec/findings/FND-CHAOS-001.md) |
 | `BIN-CITY-001` | [`FND-CITY-001`](../spec/findings/FND-CITY-001.md) |
@@ -50,7 +50,7 @@ This file is not maintained further. New IDs never need a row here.
 | `BIN-COMBAT-STATS-001` | [`FND-COMBAT-003`](../spec/findings/FND-COMBAT-003.md) |
 | `BIN-COMLINK-001` | [`FND-COMLINK-001`](../spec/findings/FND-COMLINK-001.md) |
 | `BIN-COMLINK-002` | [`FND-COMLINK-002`](../spec/findings/FND-COMLINK-002.md) |
-| `BIN-COMLINK-003` | [`FND-COMLINK-003`](../spec/findings/FND-COMLINK-003.md), [`FND-COMLINK-005`](../spec/findings/FND-COMLINK-005.md) |
+| `BIN-COMLINK-003` | [`FND-COMLINK-003`](../spec/findings/FND-COMLINK-003.md), [`FND-COMLINK-010`](../spec/findings/FND-COMLINK-010.md) |
 | `BIN-COMLINK-004` | [`FND-COMLINK-004`](../spec/findings/FND-COMLINK-004.md) |
 | `BIN-COMMAND-ASSIGN-001` | [`FND-TURN-002`](../spec/findings/FND-TURN-002.md) |
 | `BIN-CONTROL-001` | [`FND-CONTROL-001`](../spec/findings/FND-CONTROL-001.md), [`FND-CONTROL-002`](../spec/findings/FND-CONTROL-002.md) |

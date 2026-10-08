@@ -125,7 +125,7 @@ public sealed class AudioRoutingTests
             ]))
             .ToArray();
         var state = new MatchState(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1, [setupPlayer]),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1, [setupPlayer], MatchDeviations.Original),
             [new MatchPlayerState(setupPlayer, 20, [gang])], sectors);
         var gameEvent = new GameEvent(
             0, 1, TurnPhase.Execution, ExecutionPhase.Combat,
@@ -195,7 +195,7 @@ public sealed class AudioRoutingTests
             ]))
             .ToArray();
         return new MatchState(data,
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1, [setupPlayer]),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1, [setupPlayer], MatchDeviations.Original),
             [new MatchPlayerState(setupPlayer, 20, [gang])], sectors);
     }
 }

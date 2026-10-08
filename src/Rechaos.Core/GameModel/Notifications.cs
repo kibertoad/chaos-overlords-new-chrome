@@ -45,9 +45,12 @@ internal static class GameNotificationValidator
         var eventsBySequence = events.ToDictionary(gameEvent => gameEvent.Sequence);
         if (nextSequence < 0) return false;
         // NotificationQueue.Enqueue goes past its capacity only while every notification it holds
-        // belongs to the newest turn or the one before it.
+        // belongs to the newest turn or the one before it, and it adds them in turn order, which its
+        // drop loop relies on when the history is restored.
         if (values.Count > MatchLimits.NotificationsPerPlayer
-            && values.Any(value => value.Turn < values[^1].Turn - 1))
+            && values.Where((value, index) =>
+                    value.Turn < values[^1].Turn - 1 || index > 0 && value.Turn < values[index - 1].Turn)
+                .Any())
             return false;
         if (values.Count > 0 && values.Where((value, index) =>
                 value.Sequence != nextSequence - values.Count + index).Any())

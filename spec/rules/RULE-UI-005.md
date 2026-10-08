@@ -1,7 +1,7 @@
 ---
 id: RULE-UI-005
 title: Lengths of the site progress and Force meters
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-UI-036, FND-UI-010, FND-EXE-004, EXP-UI-010, EXP-UI-011]
@@ -64,3 +64,7 @@ None known.
 
 - What a Force above 10, or progress above the Resistance, draws beyond the
   track.
+- The captures draw only full and empty meters. No recorded capture shows a
+  truncated part such as 2 of 3, a partly filled meter, or a completed site
+  with nonzero Resistance. These rest on FND-UI-036. Until a run reaches them,
+  the entry stays `supported`.
