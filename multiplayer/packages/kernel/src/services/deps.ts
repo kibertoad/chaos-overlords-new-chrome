@@ -7,6 +7,7 @@ import type {
 } from '../ports/runtime'
 import type { TurnResolver } from '../ports/resolver'
 import type { MultiplayerStorage } from '../ports/storage'
+import type { RateLimiterFactory } from './RateLimiter'
 
 /** Everything the services need, injected once by the runtime facade. */
 export interface KernelDeps {
@@ -30,4 +31,10 @@ export interface KernelDeps {
    * the players' reports agreeing.
    */
   resolver?: TurnResolver
+  /**
+   * Where the kernel's own budgets (the password attempts on the join doors) count. Unset, they
+   * count in this process, which is right for one process; a runtime that runs as several instances
+   * passes the same shared factory it builds the transport's limiters from.
+   */
+  rateLimits?: RateLimiterFactory
 }

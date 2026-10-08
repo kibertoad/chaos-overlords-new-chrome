@@ -46,12 +46,11 @@ having started 61 and 90 ms after a tick.
 
 ## Results
 
-`PresentationWaitsEndAtTheNextTickOfTheClock` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Waits.cs` checks these
-observations and starts the rebuild's city-cell flash as far past a tick of its
-166 ms clock as each recorded flash started. The rebuild's flashes end 437 and
-408 ms after they start, within the debugger's delay of the original's. The
-hire-step replay compares the hire orders after each drop.
+A test of the rebuild checks these observations and starts the rebuild's
+city-cell flash as far past a tick of its 166 ms clock as each recorded flash
+started. The rebuild's flashes end 437 and 408 ms after they start, within the
+debugger's delay of the original's. The hire-step replay compares the hire
+orders after each drop.
 
 ## Conclusion
 

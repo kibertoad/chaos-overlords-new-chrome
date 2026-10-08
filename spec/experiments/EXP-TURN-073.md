@@ -46,12 +46,12 @@ The run made 808 calls of `roll` over seven Done presses. At the end
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. The rebuild makes the same calls with the same bounds and results and
-reaches the same state, the planning records included. The rebuild takes the
-fallback research scans, finds no item on the fixed list, sets the gang's
-family to 0 and plans a Move through selector mode 5.
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. The rebuild makes the same calls
+with the same bounds and results and reaches the same state, the planning
+records included. The rebuild takes the fallback research scans, finds no item
+on the fixed list, sets the gang's family to 0 and plans a Move through selector
+mode 5.
 
 ## Conclusion
 

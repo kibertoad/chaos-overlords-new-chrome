@@ -10,14 +10,17 @@ import {
   createKernel,
   type Kernel,
   type Logger,
-  RateLimiter,
+  memoryRateLimiters,
+  type RateLimiterFactory,
   retentionPolicyFromDays,
   type TurnResolver,
+  sharedRateLimiters,
 } from '@chaos-overlords/kernel'
 import { startNodeMatchResolver } from '@chaos-overlords/resolver/node'
 import {
   type AppEnv,
   createApp,
+  createRateLimiters,
   DEFAULT_EVENT_HUB_LIMITS,
   DEFAULT_RATE_LIMITS,
   DEFAULT_SERVER_CONFIG,
@@ -63,6 +66,11 @@ export interface NodeRuntimeOptions {
    * whose rules are a digest chain; a server has no other reason to pass one.
    */
   resolver?: TurnResolver
+  /**
+   * Overrides the interval between event stream keepalive frames. Tests shorten it so the frame can
+   * be seen over the real listener without waiting out the production interval.
+   */
+  sseHeartbeatMs?: number
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -84,9 +92,15 @@ export async function buildNodeRuntime(
     (error) => logger.warn('database pool reported an error', { error: String(error) }),
   )
   const clock: Clock = options.clock ?? { now: () => new Date() }
+  // On Postgres every budget is counted in the database, so instances behind one load balancer
+  // spend one budget rather than one each. A SQLite file belongs to this process alone, and so do
+  // its counts.
+  const rateLimits: RateLimiterFactory = opened.rateLimits
+    ? sharedRateLimiters(opened.rateLimits, clock, logger)
+    : memoryRateLimiters(clock)
   const hub = new LocalEventHub(
     opened.storage.events,
-    DEFAULT_SERVER_CONFIG.sseHeartbeatMs,
+    options.sseHeartbeatMs ?? DEFAULT_SERVER_CONFIG.sseHeartbeatMs,
     { ...DEFAULT_EVENT_HUB_LIMITS, perProcess: config.maxEventStreams },
     {
       unreadable: (matchId, seq) =>
@@ -129,6 +143,7 @@ export async function buildNodeRuntime(
       logger,
       scheduler: { schedule: (input) => (scheduler as TimerDeadlineScheduler).schedule(input) },
       ...(resolver ? { resolver: resolver.resolver } : {}),
+      rateLimits,
     },
     {
       retention,
@@ -137,24 +152,23 @@ export async function buildNodeRuntime(
   scheduler = new TimerDeadlineScheduler(kernel.turns, clock, logger)
   const bugReports = openBugReports(config, clock, logger)
   const stopSweeper = startSweeper(kernel, config.sweepIntervalMs, logger)
-  const stopCleanup = startCleanup(kernel, config.retentionIntervalMs, logger, bugReports?.service)
-
-  const perMinute = (limit: number) => new RateLimiter(clock, { limit, windowMs: 60_000 })
+  const sharedWindows = opened.rateLimits
+  const stopCleanup = startCleanup(kernel, config.retentionIntervalMs, logger, {
+    ...(bugReports ? { bugReports: bugReports.service } : {}),
+    ...(sharedWindows ? { sweepRateLimits: () => sharedWindows.sweep(clock.now().getTime()) } : {}),
+  })
   const container: ServerContainer = {
     kernel,
     ...(bugReports ? { bugReports: bugReports.service } : {}),
     eventStream: hub,
-    rateLimiters: {
-      anonymous: perMinute(config.rateLimitPerMinute),
-      member: perMinute(config.memberRateLimitPerMinute),
-      upload: perMinute(config.uploadRateLimitPerMinute),
-      bugReport: perMinute(config.bugReportRateLimitPerMinute),
-      bugReportState: new RateLimiter(clock, {
-        limit: DEFAULT_RATE_LIMITS.bugReportStatePerDay,
-        windowMs: DAY_MS,
-      }),
-      matchCreation: perMinute(config.matchCreationRateLimitPerMinute),
-    },
+    rateLimiters: createRateLimiters(rateLimits, {
+      anonymousPerMinute: config.rateLimitPerMinute,
+      memberPerMinute: config.memberRateLimitPerMinute,
+      uploadPerMinute: config.uploadRateLimitPerMinute,
+      bugReportPerMinute: config.bugReportRateLimitPerMinute,
+      bugReportStatePerDay: DEFAULT_RATE_LIMITS.bugReportStatePerDay,
+      matchCreationPerMinute: config.matchCreationRateLimitPerMinute,
+    }),
     config: {
       ...DEFAULT_SERVER_CONFIG,
       publicListing: config.publicListing,
@@ -194,6 +208,8 @@ export async function buildNodeRuntime(
     },
     bugReports: bugReports ? 'on' : 'off',
     resolveTurns: resolver ? 'on' : 'off',
+    // Where the budgets are counted: in the database every instance shares, or in this process.
+    rateLimits: opened.rateLimits ? 'database' : 'process',
   })
   const closeStreams = (): void => {
     stopSweeper()

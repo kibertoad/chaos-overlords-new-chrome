@@ -41,17 +41,13 @@ public sealed partial class ChaosGame
     /// <summary>
     /// RULE-UI-014, RULE-UI-015: closing the window is File, Exit, so it asks to save first while
     /// the match is unsaved and closes at once otherwise. The autosave is still written on the
-    /// way out (UnloadContent).
+    /// way out (UnloadContent). Returns whether the program may close now.
     /// </summary>
-    protected override void OnExiting(object sender, ExitingEventArgs args)
+    internal bool ConfirmExit()
     {
-        if (!_exitConfirmed && MatchUnsaved)
-        {
-            args.Cancel = true;
-            RequestLeave(LeaveKind.Exit);
-            return;
-        }
-        base.OnExiting(sender, args);
+        if (_exitConfirmed || !MatchUnsaved) return true;
+        RequestLeave(LeaveKind.Exit);
+        return false;
     }
 
     /// <summary>

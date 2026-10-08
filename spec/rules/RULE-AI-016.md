@@ -4,7 +4,7 @@ title: Every Attack order lowers the target player's attitude toward the attacke
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [EXP-TURN-011, FND-AI-047, FND-AI-006, FND-EXE-004, EXP-TURN-014, EXP-TURN-017]
+evidence: [EXP-TURN-011, FND-AI-047, FND-AI-006, FND-EXE-004, EXP-TURN-014, EXP-TURN-017, FND-RNG-005, FND-RNG-006, FND-STATE-003]
 conflicting: []
 split_with: []
 related: [RULE-SETUP-004, RULE-ATTACK-001]
@@ -67,9 +67,9 @@ attitude toward itself.
 
 ## Open questions
 
-EXP-TURN-011 confirms that an Attack lowers the attitude and that it stops at
--10: player 4's attitude toward the attacker is -9 after the rise of RULE-AI-015
-and ends at -10. It cannot tell how far the attitude fell, because any drop of
-at least 1 ends at the floor, so the choice of the larger of `reaction` and
-`damage` still rests on the static reading alone. A run in which the attacked
-player's attitude stays above -10 after the drop would settle it.
+None known. EXP-TURN-011 shows an Attack lowering the attitude to the floor of
+-10. The replays reach every case, among them damage larger than the reaction,
+a reaction of 0 at Homicidal Maniac and evaded attacks, and they tell the
+larger of `reaction` and `damage` from either alone: a rebuild that lowers the
+attitude by the reaction only parts from the original in 37 replays, among
+them EXP-TURN-012, EXP-TURN-013, EXP-TURN-017 and EXP-COMBAT-002.

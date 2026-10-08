@@ -10,28 +10,28 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042B8EC..0x0042B9D8
+    address: 0x0042B8EC..0x0042B9D9
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004876B4..0x00487700
+    address: 0x004876B4..0x00487701
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00487538..0x0048763F
+    address: 0x00487538..0x00487640
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00449BFC..0x00449C8D
+    address: 0x00449BFC..0x00449C8E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042AB80..0x0042AF30
+    address: 0x0042AB80..0x0042AF31
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042B60F..0x0042B8EB
+    address: 0x0042B60F..0x0042B8EC
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00493F88..0x004944FF
+    address: 0x00493F88..0x00494500
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004667DC..0x0046690F
+    address: 0x004667DC..0x00466910
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -60,7 +60,7 @@ the length and the characters follow. Callers build them with the byte copy
 `fn_00449BFC` (source, destination, count) and finish them with
 `fn_00449C41`, which counts the characters from byte 1 up to the first NUL
 and writes the count into byte 0. Its counter is a signed byte
-(`0x00449C52..0x00449C71`): for a name of more than 126 characters it turns
+(`0x00449C52..0x00449C77`): for a name of more than 126 characters it turns
 negative and the count goes wrong, and `fn_0042B60F`, which reads the length
 byte as signed (`0x0042B642`), then copies no characters and the open fails.
 The table and sound names are the install directory followed by the file name

@@ -109,10 +109,13 @@ public static class WireJson
 
     private static T Read<T>(string body, JsonSerializerOptions options)
     {
+        // Outside the try: a type the contexts do not name is a bug in this build, and reporting it
+        // as a payload the server got wrong would send the reader after the server.
+        var contract = Contract<T>(options);
         try
         {
             var node = WireOrder.TagFirst(JsonNode.Parse(body));
-            return node.Deserialize(Contract<T>(options))
+            return node.Deserialize(contract)
                 ?? throw new MultiplayerProtocolException($"the server sent an empty {typeof(T).Name}");
         }
         catch (Exception exception) when (exception is JsonException or NotSupportedException)
@@ -128,11 +131,16 @@ public static class WireJson
         (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
 
     /// <summary>Serializes a request body.</summary>
-    /// <remarks>A body passed as <see cref="object"/> is written as the type it is.</remarks>
-    public static string Write<T>(T value) =>
-        typeof(T) == typeof(object) && value is not null
-            ? JsonSerializer.Serialize(value, Options.GetTypeInfo(value.GetType()))
-            : JsonSerializer.Serialize(value, Contract<T>(Options));
+    /// <remarks>
+    /// A body passed as <see cref="object"/> is written as the type it is, and a null one as
+    /// <c>null</c>, since the contexts name no contract for <see cref="object"/>.
+    /// </remarks>
+    public static string Write<T>(T value) => value switch
+    {
+        null => "null",
+        _ when typeof(T) == typeof(object) => JsonSerializer.Serialize(value, Options.GetTypeInfo(value.GetType())),
+        _ => JsonSerializer.Serialize(value, Contract<T>(Options)),
+    };
 }
 
 /// <summary>The server answered something this client cannot make sense of.</summary>

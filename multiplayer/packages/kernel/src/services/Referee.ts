@@ -125,11 +125,14 @@ export class Referee {
       for (const turn of outcome.recorded) await settle(turn)
       return outcome.kind
     } catch (error) {
-      this.deps.logger.warn('could not settle a turn the server resolved; a later seal or report retries it', {
-        matchId: match.id,
-        turn: through,
-        error: String(error),
-      })
+      this.deps.logger.warn(
+        'could not settle a turn the server resolved; a later seal or report retries it',
+        {
+          matchId: match.id,
+          turn: through,
+          error: String(error),
+        },
+      )
       return 'unavailable'
     }
   }

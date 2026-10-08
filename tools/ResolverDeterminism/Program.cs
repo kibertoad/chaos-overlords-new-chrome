@@ -123,12 +123,16 @@ while (client.State.Outcome is null && client.State.Coordinator.Turn <= turns)
     }
 }
 
-if (checkpoint is not null && checkpointHash is not null)
+if (checkpoint is null || checkpointHash is null)
 {
-    var walked = AuthoritativeMatch.FromSnapshot(definitions, checkpoint, checkpointHash, players, logTurn: 1);
-    foreach (var (@event, set) in log) walked.Apply(@event, set);
-    Require(Hash(client.State), walked.StateHash, "the whole log folded over the snapshot");
+    // Without it check.mjs never restores a match, and the run would pass without the check.
+    Console.Error.WriteLine("the run stopped before turn 10, so the transcript has no snapshot to restore from");
+    return 1;
 }
+
+var walked = AuthoritativeMatch.FromSnapshot(definitions, checkpoint, checkpointHash, players, logTurn: 1);
+foreach (var (@event, set) in log) walked.Apply(@event, set);
+Require(Hash(client.State), walked.StateHash, "the whole log folded over the snapshot");
 
 var transcript = new JsonObject
 {

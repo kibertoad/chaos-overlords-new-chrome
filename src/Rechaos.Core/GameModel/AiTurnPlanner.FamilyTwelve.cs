@@ -155,8 +155,10 @@ public static partial class AiTurnPlanner
                 break;
         }
 
-        // A positive weight means a visible gang, and weight 10 a visible human gang, so the pool
-        // is never empty (RULE-AI-030). The guard keeps an inconsistent loaded state from throwing.
+        // A positive weight means a visible gang, and weight 10 a visible human gang, and the
+        // weights are cached at the start of this pass (RULE-AI-003), so the pool is never empty
+        // and the original has no branch for it (RULE-AI-030). The guard only keeps a planning
+        // state whose weights disagree with the board, which no pass writes, from throwing.
         if (selected is null)
         {
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.None);

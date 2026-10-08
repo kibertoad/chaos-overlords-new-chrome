@@ -62,7 +62,11 @@ describe('the snapshot archive', () => {
       },
     } as unknown as PayloadResolver
     const body = toBase64(concat(header(2, payload.length), nodeBrotliCodec.compress(payload)))
-    const pending = withArchives(host, nodeBrotliCodec).restore('m', { body, stateHash: 'h' }, { players: [] })
+    const pending = withArchives(host, nodeBrotliCodec).restore(
+      'm',
+      { body, stateHash: 'h' },
+      { players: [] },
+    )
     await expect(pending).rejects.toBeInstanceOf(ResolverRefusedError)
     await expect(pending).rejects.toThrow(/version 2/)
     expect(restored).toBe(false)

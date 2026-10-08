@@ -14,6 +14,7 @@ import {
   type EventNotifier,
   type Kernel,
   type Logger,
+  type RateLimiterFactory,
   type RetentionPolicy,
   retentionPolicyFromDays,
   type StreamCloser,
@@ -130,18 +131,26 @@ const HUB_CALL_TIMEOUT_MS = 5_000
  *
  * The step it belongs to has already committed whatever was durable about it, so the only thing a
  * failure here can still cost is latency somebody else's retry or the sweep already covers.
+ *
+ * An answer with an error status is a failure too: the object was reached but did not do what it
+ * was asked, for example a path missing from its routes answers 404. It gets its own warning, so a
+ * hub that refuses every call shows up in the log instead of passing as a delivered one.
  */
-async function tellHub(
+export async function tellHub(
   env: Env,
   call: { matchId: string; path: string; body: unknown },
 ): Promise<void> {
   const { matchId, path, body } = call
   try {
-    await hubFor(env, matchId).fetch(`https://hub${path}`, {
+    const response = await hubFor(env, matchId).fetch(`https://hub${path}`, {
       method: 'POST',
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(HUB_CALL_TIMEOUT_MS),
     })
+    if (!response.ok) {
+      workerLogger.warn('the match hub refused a call', { matchId, path, status: response.status })
+    }
+    await response.body?.cancel()
   } catch (error) {
     workerLogger.warn('could not reach the match hub', { matchId, path, error: String(error) })
   }
@@ -158,6 +167,8 @@ export function buildKernel(
     scheduler: DeadlineScheduler
     streams: StreamCloser
     resolver: TurnResolver
+    /** Where the kernel's password budgets count; the isolate when absent. */
+    rateLimits: RateLimiterFactory
   }> = {},
 ): Kernel {
   const storage = createSqliteStorage(drizzle(env.DB, { schema: sqliteSchema }))
@@ -192,6 +203,7 @@ export function buildKernel(
       clock: { now: () => new Date() },
       logger: workerLogger,
       ...(resolver ? { resolver } : {}),
+      ...(overrides.rateLimits ? { rateLimits: overrides.rateLimits } : {}),
     },
     { retention: retentionPolicyFor(env) },
   )

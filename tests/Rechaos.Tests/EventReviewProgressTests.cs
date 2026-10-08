@@ -53,7 +53,7 @@ public sealed class EventReviewProgressTests
             [
                 new MatchPlayerSetup(
                     new PlayerId(0), "PLAYER 1", PlayerController.Human, 0)
-            ], allowSparsePlayerIds: true));
+            ], MatchDeviations.Original, allowSparsePlayerIds: true));
         const int siteId = 4;
         var related = new GameEvent(7, 3, TurnPhase.Execution, ExecutionPhase.Instant,
             GameEventKind.CommandResolved, new PlayerId(0), new GangId(0),

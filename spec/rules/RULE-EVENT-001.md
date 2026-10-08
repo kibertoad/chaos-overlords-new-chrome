@@ -1,7 +1,7 @@
 ---
 id: RULE-EVENT-001
 title: The Last Turn reports are cleared just before each resolution
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-EVENT-001, FND-EVENT-004, SRC-MANUAL-GOG, EXP-TURN-010, EXP-TURN-034]
@@ -64,5 +64,9 @@ None known.
 
 ## Open questions
 
-None known. The clearing loop visits players 0 to 5 and each player's records
-0 to 31 [FND-EVENT-004]; the order does not change the result.
+- The clearing loop visits players 0 to 5 and each player's records
+  0 to 31 [FND-EVENT-004]; the order does not change the result.
+- The probe reads `report_type` and the arguments of the records below the
+  count only, so no run compares the bytes the clearing leaves alone
+  (FMT-STATE-006). That rests on FND-EVENT-004. Until a run reaches them, the
+  entry stays `supported`.

@@ -1,4 +1,7 @@
-import { defineStorageConformance } from '@chaos-overlords/conformance'
+import {
+  defineRateLimitStoreConformance,
+  defineStorageConformance,
+} from '@chaos-overlords/conformance'
 import type { Match, Player } from '@chaos-overlords/kernel'
 import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -43,6 +46,33 @@ describe.skipIf(!url)('postgres', () => {
 
   defineStorageConformance({
     createStorage: async () => (opened as OpenedStorage).storage,
+  })
+
+  defineRateLimitStoreConformance({
+    createStore: async () => {
+      const store = (opened as OpenedStorage).rateLimits
+      if (!store) throw new Error('openPostgresStorage returned no rate limit store')
+      return store
+    },
+  })
+
+  it('sweeps rolled rate limit windows and keeps live ones', async () => {
+    const store = (opened as OpenedStorage).rateLimits
+    if (!store) throw new Error('openPostgresStorage returned no rate limit store')
+    // On the real clock, so this sweep removes only windows that a Node runtime sweeping the same
+    // database in a parallel suite would remove as well, and theirs cannot reach the live row.
+    const now = Date.now()
+    const rolledPolicy = { limit: 5, windowMs: 1_000 }
+    const livePolicy = { limit: 5, windowMs: 3_600_000 }
+    const rolled = `sweep|rolled-${crypto.randomUUID()}`
+    const live = `sweep|live-${crypto.randomUUID()}`
+    await store.consume(rolled, rolledPolicy, now - 5_000)
+    await store.consume(live, livePolicy, now)
+    // A parallel sweep may delete the rolled row first, so the count this sweep returns is not
+    // asserted; the consume below shows the row is gone either way.
+    await store.sweep(now, 10_000)
+    expect(await store.inspect(live, now)).toEqual({ count: 1, resetAt: now + 3_600_000 })
+    expect((await store.consume(rolled, rolledPolicy, now - 4_999)).count).toBe(1)
   })
 
   async function matchWithPlayers(maxPlayers = 2, playerCount = 1, start = true) {

@@ -1,6 +1,4 @@
 import {
-  foreignOps,
-  type MatchEventBody,
   type OwnSubmissionView,
   type SubmitOrdersRequest,
   type TurnReportRequest,
@@ -13,7 +11,7 @@ import {
   type SealedSlot,
   type TurnReport,
 } from '../domain/entities'
-import { ConflictError, ValidationError } from '../domain/errors'
+import { ConflictError } from '../domain/errors'
 import { hashOrderDocument, hashOrderSet } from '../logic/crypto'
 import {
   allAwaitedReady,
@@ -24,10 +22,26 @@ import {
   sealedByDeadline,
   turnDeadline,
 } from '../logic/turn-logic'
+import {
+  confirmationKey,
+  type DesyncPayload,
+  desyncAnnouncementKey,
+  FINISH_ANNOUNCEMENT_KEY,
+  promptAnnouncementKey,
+  promptWithdrawalKey,
+  sealAnnouncementKey,
+  statusAnnouncementKey,
+} from './announcementKeys'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
-import { requireInProgress, requireParticipant, requireTurn } from './guards'
+import {
+  assertOwnOps,
+  requireInProgress,
+  requireParticipant,
+  requireRunning,
+  requireTurn,
+} from './guards'
 import { matchStartedEvent } from './MatchQueryService'
 import type { Referee, ResolveOutcome } from './Referee'
 import { publishReportedSeatSummaries } from './SnapshotService'
@@ -135,7 +149,7 @@ export class TurnService {
       // member rate limit and the client sends a whole-document replacement per queued command: one
       // misbehaving client could grow a match's durable log by hundreds of thousands of rows a day
       // and wake every subscriber of the match for each. The window it covered is closed from the
-      // other end instead — the match view carries `readyPlayerIds`, and every client reconciles
+      // other end instead â€” the match view carries `readyPlayerIds`, and every client reconciles
       // its readiness from the view when it reconnects.
       await this.publisher.publish(match.id, {
         type: 'turn.readiness',
@@ -149,8 +163,8 @@ export class TurnService {
   /**
    * The answer to a draft the storage refused because the seat's final document is already in.
    *
-   * Such a draft left the client before its final document did and arrived after it — see
-   * `TurnRepository.submitOrders` — so it is not a write to refuse but one that has been
+   * Such a draft left the client before its final document did and arrived after it â€” see
+   * `TurnRepository.submitOrders` â€” so it is not a write to refuse but one that has been
    * overtaken. Answering it with the document that stands keeps the client from reporting a sync
    * error over a turn it has in fact finished. Null when the refusal was for any other reason.
    */
@@ -256,8 +270,8 @@ export class TurnService {
    * caller came for must not fail with it.
    *
    * The match is read again whenever the turn it names is no longer the open one: a seal that
-   * somebody else is finishing — the timer, the sweep, or a ready seal that won the race with this
-   * call — has moved the match on since the caller loaded it, and a view built from that copy
+   * somebody else is finishing â€” the timer, the sweep, or a ready seal that won the race with this
+   * call â€” has moved the match on since the caller loaded it, and a view built from that copy
    * would name the sealed turn as current beside a log that already carries its seal.
    */
   async sealIfOverdue(match: Match): Promise<Match> {
@@ -299,7 +313,7 @@ export class TurnService {
    * A timer is not an exact instrument. `setTimeout` can fire a millisecond early by the wall
    * clock, and a Durable Object's alarm runs on a different machine from the isolate that computed
    * the deadline, so any skew between the two clocks reads as an early alarm. Refusing the seal is
-   * right — sealing before `deadlineAt` would misjudge who missed the turn — but refusing it and
+   * right â€” sealing before `deadlineAt` would misjudge who missed the turn â€” but refusing it and
    * doing nothing else spent the only timer the turn had. The turn then waited on the sweep: 15
    * seconds on Node and up to five minutes on Cloudflare's cron, with every client showing an
    * expired clock the whole time. The retry is floored against this clock, which bounds the poll
@@ -368,7 +382,7 @@ export class TurnService {
     if (!turn) {
       // No row at all: the match is live and pointed at a turn that was never created, which is
       // what `start` leaves behind when it dies between the status change and opening turn 1.
-      // There is no seal to finish, only the missing turn to open — `currentTurn` names it, except
+      // There is no seal to finish, only the missing turn to open â€” `currentTurn` names it, except
       // at 0, which is the lobby's value and means turn 1 was never reached.
       if (number <= FIRST_TURN) await this.repairInterruptedStart(match)
       return this.openTurn(match, Math.max(number, FIRST_TURN))
@@ -587,7 +601,7 @@ export class TurnService {
     for (const { matchId, number } of expired) {
       // One match that throws must not abort the pass. `listExpiredOpen` is ordered oldest first,
       // so the same match would be at the head of the next pass too and no later expired turn or
-      // stalled seal would ever be reached — and this is the safety net behind a lost timer.
+      // stalled seal would ever be reached â€” and this is the safety net behind a lost timer.
       if (await this.guard(matchId, number, () => this.trySeal(matchId, number, 'deadline'))) {
         sealed += 1
       }
@@ -750,8 +764,8 @@ export class TurnService {
     // The announcement is owed by the prompt, not by the call that inserted it. The inserting call
     // used to be the only publisher, so a publish that threw after the insert left a prompt that
     // held the turn's clock and that no client was ever shown: every later call found it open and
-    // returned. A prompt still unstamped is announced by whichever call finds it — the repeated seal
-    // step, a rejoin re-asking about absent seats, a vote on the seat — keyed so racing callers log
+    // returned. A prompt still unstamped is announced by whichever call finds it â€” the repeated seal
+    // step, a rejoin re-asking about absent seats, a vote on the seat â€” keyed so racing callers log
     // it once, and stamped only after the event is durable.
     const prompt = await this.deps.storage.takeovers.getPrompt(matchId, playerId)
     if (prompt === null || prompt.announcedAt !== null) return opened
@@ -966,13 +980,13 @@ export class TurnService {
           payload,
         })
         await this.deps.storage.turns.claimDesyncAnnouncement(matchId, number, now)
-      } else if (options.reannounce !== false) {
+      } else {
         // The verdict was re-run because something changed: a client re-reported after checking
         // its own state, or the roster moved. Either can change who holds the most-reported hash
         // and who breaks a tie, and a client acts on the announcement it last saw, so a changed
-        // verdict is announced again. The sweep passes `reannounce: false` and never pays for the
-        // try.
-        await this.reannounceDesync(matchId, payload)
+        // verdict is announced again. The sweep runs this too, quietly, as the retry for a
+        // re-announcement whose publish threw after the change it follows was already committed.
+        await this.reannounceDesync(matchId, payload, options.reannounce !== false)
       }
       // Not behind the receipt above: a turn stamped by an older build that died before pausing
       // the match is paused only now, and its pause is still owed to clients.
@@ -1000,29 +1014,52 @@ export class TurnService {
 
   /**
    * Announce a desync verdict again when it differs from what clients were last told about the
-   * turn. A verdict can return to an earlier one — a seat that left and rejoined restores the tie
-   * its departure broke — and a key naming only the content would find that earlier announcement
+   * turn. A verdict can return to an earlier one (a seat that left and rejoined restores the tie
+   * its departure broke), and a key naming only the content would find that earlier announcement
    * in the log and drop the new one, leaving every client acting on the departure's verdict while
    * the server enforces the tie: the designated player never learned it was named, and everybody
    * else was refused with `not_tie_breaker`. So the verdict is compared with the latest
-   * announcement and, like a status change, keyed by the event it follows. When the latest
-   * announcement is of another turn the turn's own last word is not at hand, and the content key
-   * is the fallback.
+   * announcement and, like a status change, keyed by the event it follows.
+   *
+   * When the latest announcement is of another turn (two turns desynced at once), the turn's own
+   * last word is not at hand. A loud call then announces anyway, keyed by that event, because a
+   * repeat of an unchanged verdict costs a duplicate clients already tolerate and a dropped change
+   * costs the match. A quiet call (the sweep) publishes only a change it can see, so a paused
+   * match costs one indexed read per desynced turn and no writes while nothing changes.
    */
-  private async reannounceDesync(matchId: string, payload: DesyncPayload): Promise<void> {
+  private async reannounceDesync(
+    matchId: string,
+    payload: DesyncPayload,
+    loud: boolean,
+  ): Promise<void> {
     const last = await this.deps.storage.events.latestOfType(matchId, 'turn.desynced')
     const lastPayload = last?.type === 'turn.desynced' ? last.payload : null
-    let key = desyncAnnouncementKey(payload)
-    if (last && lastPayload?.turn === payload.turn) {
+    if (!last || !lastPayload) {
+      if (loud)
+        await this.publisher.publishOnce(matchId, desyncAnnouncementKey(payload), {
+          type: 'turn.desynced',
+          payload,
+        })
+      return
+    }
+    if (lastPayload.turn === payload.turn) {
       if (
         (lastPayload.tieBreakerPlayerId ?? null) === payload.tieBreakerPlayerId &&
         lastPayload.candidateStateHashes.join(',') === payload.candidateStateHashes.join(',')
       ) {
         return
       }
-      key = `${key}:after:${last.seq}`
+    } else if (!loud) {
+      return
     }
-    await this.publisher.publishOnce(matchId, key, { type: 'turn.desynced', payload })
+    await this.publisher.publishOnce(
+      matchId,
+      `${desyncAnnouncementKey(payload)}:after:${last.seq}`,
+      {
+        type: 'turn.desynced',
+        payload,
+      },
+    )
   }
 
   /**
@@ -1048,7 +1085,7 @@ export class TurnService {
   /**
    * Everything a confirmation owes after its compare-and-swap: announce it, lift a desync pause it
    * ends, finish a match it completes, then stamp `settledAt`. Every step is conditional on its own
-   * state or keyed in the log, so a repeat — by the sweep, over a verdict cut short — finishes what
+   * state or keyed in the log, so a repeat â€” by the sweep, over a verdict cut short â€” finishes what
    * the first attempt left and duplicates nothing. Returns whether this call logged or changed
    * anything, which for a repeat means it found work the first attempt left.
    */
@@ -1150,52 +1187,17 @@ export class TurnService {
   }
 }
 
-/*
- * Dedupe keys of the announcements that follow a compare-and-swap (`EventPublisher.publishOnce`).
- * Each names the one fact it announces, so a repeat of the announcement is recognised as the same
- * fact and never logged twice. They are server-side only and never reach a client.
- */
-const sealAnnouncementKey = (turn: number): string => `turn.sealed:${turn}`
-const confirmationKey = (turn: number): string => `turn.confirmed:${turn}`
-/**
- * The dedupe key of a desync announcement: the turn and everything a client acts on, so a verdict
- * announced again with the same content is logged once. The reports themselves are left out,
- * because a report that changes without changing the candidates or the tie-breaker asks nothing
- * new of anybody.
- */
-/** A `turn.desynced` payload as this build writes it: the tie-breaker is always named. */
-type DesyncPayload = Extract<MatchEventBody, { type: 'turn.desynced' }>['payload'] & {
-  tieBreakerPlayerId: string | null
-}
-
-const desyncAnnouncementKey = (payload: DesyncPayload): string =>
-  `turn.desynced:${payload.turn}:${payload.candidateStateHashes.join(',')}:${payload.tieBreakerPlayerId ?? ''}`
-
 export interface SettleOptions {
   /**
-   * Whether a desync whose announcement is already out is announced again when its verdict has
-   * changed. On by default; the sweep turns it off, since it re-runs verdicts on a timer rather
-   * than because anything happened.
+   * Whether a desync whose announcement is already out is announced again whenever its verdict may
+   * have changed. On by default; the sweep turns it off, since it re-runs verdicts on a timer
+   * rather than because anything happened, and then only a change visible against the turn's own
+   * latest announcement is published.
    */
   reannounce?: boolean
 }
 
 const QUIET_SETTLE: SettleOptions = { reannounce: false }
-/**
- * A pause or its lift, named by the status event it follows: the same change announced after the
- * same last word is the same fact, and the next pause of the match follows a different event.
- */
-const statusAnnouncementKey = (status: string, afterSeq: number): string =>
-  `match.statusChanged:${status}:after:${afterSeq}`
-/** A match finishes once. */
-const FINISH_ANNOUNCEMENT_KEY = 'match.statusChanged:finished'
-/** A prompt is one opening of the question about a seat, which its `openedAt` identifies. */
-const promptAnnouncementKey = (playerId: string, openedAt: Date): string =>
-  `match.takeoverVoteRequested:${playerId}:${openedAt.getTime()}`
-/** The withdrawal of one prompt's request that was logged after the prompt had closed. */
-const promptWithdrawalKey = (playerId: string, openedAt: Date): string =>
-  `match.takeoverVoteCancelled:${playerId}:${openedAt.getTime()}`
-
 /**
  * Whether a confirmed turn finished the match, judged again from its reports when the verdict's
  * follow-ups are repeated. Reports are immutable once the turn is confirmed, and every client that
@@ -1204,33 +1206,4 @@ const promptWithdrawalKey = (playerId: string, openedAt: Date): string =>
 function confirmedFinished(reports: readonly TurnReport[], stateHash: string): boolean {
   const agreeing = reports.filter((report) => report.stateHash === stateHash)
   return agreeing.length > 0 && agreeing.every((report) => report.finished)
-}
-
-/**
- * Refuse a document whose ops act for a slot other than the submitter's.
- *
- * The sealed set attributes every op to the slot it was submitted from, and that attribution is
- * the one clients apply, so an op naming a different player can only be a client bug or an attempt
- * to act as somebody else. Catching it here keeps the two attributions from ever disagreeing, and
- * it is the one piece of order semantics the server can judge without knowing the rules.
- */
-function assertOwnOps(request: SubmitOrdersRequest, slot: number): void {
-  const foreign = foreignOps(request.orders, slot)
-  if (foreign.length === 0) return
-  throw new ValidationError('Orders may only act for your own slot', {
-    reason: 'foreign_slot_ops',
-    slot,
-    ops: foreign.slice(0, 8).map((op) => ({ op: op.op, player: op.player })),
-  })
-}
-
-function requireRunning(match: Match): void {
-  if (match.status === 'desynced') {
-    throw new ConflictError('The match is paused until the host uploads a snapshot', {
-      reason: 'match_desynced',
-    })
-  }
-  if (match.status !== 'running') {
-    throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
-  }
 }
