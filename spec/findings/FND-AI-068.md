@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00431C60..0x004327BC
+    address: 0x00431C60..0x004327BD
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00404660..0x004047E9
@@ -63,9 +63,6 @@ step overwrites it. The selector adds to the score of the sector whose table
 element is `(100 % 8) * 8 + 100 / 8`, element 44, which is sector 37
 (FND-AI-069), so the gang heads for sector 37. Mode 2 is used only when no
 sector has weight 10.
-
-This corrects FND-AI-059, which took mode `0xA4` to score no sector and the
-gang to step toward a sector drawn from all 64.
 
 ## Alternatives
 

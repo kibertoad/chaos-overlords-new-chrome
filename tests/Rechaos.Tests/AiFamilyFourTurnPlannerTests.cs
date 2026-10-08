@@ -274,7 +274,7 @@ public sealed class AiFamilyFourTurnPlannerTests
                     : setups[0].Id))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            scenario, GameDuration.SixMonths, 41, setups,
+            scenario, GameDuration.SixMonths, 41, setups, MatchDeviations.Original,
             AiDifficulty.HomicidalManiac), players, sectors);
     }
 }

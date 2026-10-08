@@ -208,7 +208,8 @@ public sealed class BulkGangCommandsTests
     {
         var data = BundledOriginalData.Load();
         var setupPlayer = new MatchPlayerSetup(Player, "ONE", PlayerController.Human);
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer]);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer],
+            MatchDeviations.Original);
         var definition = data.Gangs.OrderByDescending(gang => gang.TechLevel).First();
         var gangs = Enumerable.Range(0, 3)
             .Select(index => new MatchGangState(

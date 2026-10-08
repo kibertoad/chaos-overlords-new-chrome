@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00428EF0..0x0042A6D3
+    address: 0x00428EF0..0x0042A6D4
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0042A618..0x0042A649
@@ -99,13 +99,6 @@ planned action is Move and the older action (selector `0x3F`, byte +2) is Move,
 the family byte becomes 11 in scenario 7 and 2 otherwise.
 
 ## Interpretation
-
-This corrects FND-AI-030 in three places. The branch it gives for previous Hide
-or Equip is taken after previous Chaos or Equip; the branch it gives for
-previous Heal, Snitch or Move is taken after previous Heal, Hide or Move; and
-the Move it gives for previous Research is taken after previous Snitch, while
-previous Research plans nothing. Where FND-AI-030 says Hide the branches write
-Chaos.
 
 Family 0 raises Chaos where no gang of its player did so last turn, and wanders
 otherwise. After previous Chaos or Equip in an owned sector it always either

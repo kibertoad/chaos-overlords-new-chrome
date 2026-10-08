@@ -13,7 +13,7 @@ namespace Rechaos.Tests;
 /// <summary>The fake server and the waiting the session tests are written against.</summary>
 public sealed partial class MultiplayerSessionTests
 {
-    private const string MatchId = "m1";
+    internal const string MatchId = "m1";
     private const int Seed = 1996;
     /// <summary>
     /// How long a test waits for something the session does on its own tasks before giving up.
@@ -27,10 +27,10 @@ public sealed partial class MultiplayerSessionTests
     /// </remarks>
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
-    private static readonly MultiplayerGameSettings GameSettings = new(
+    internal static readonly MultiplayerGameSettings GameSettings = new(
         ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]);
 
-    private static readonly IReadOnlyList<PlayerView> Roster =
+    internal static readonly IReadOnlyList<PlayerView> Roster =
     [
         new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
         new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
@@ -78,7 +78,7 @@ public sealed partial class MultiplayerSessionTests
         return (session, server, http);
     }
 
-    private static MatchView View(string? deadlineAt = null) => new(
+    internal static MatchView View(string? deadlineAt = null) => new(
         MatchId,
         MultiplayerProtocolVersion.Current,
         MultiplayerSessionVersion.Current,
@@ -94,10 +94,10 @@ public sealed partial class MultiplayerSessionTests
         "2026-09-10T11:59:00.000Z");
 
     /// <summary>The sealed set for a turn nobody ordered anything in, with honest digests.</summary>
-    private static SealedOrdersView SealedOrders(int turn)
+    internal static SealedOrdersView SealedOrders(int turn)
         => SealedOrdersForSlots(turn, 0, 1);
 
-    private static SealedOrdersView SealedOrdersForSlots(int turn, params int[] slots)
+    internal static SealedOrdersView SealedOrdersForSlots(int turn, params int[] slots)
     {
         var empty = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);
         var players = slots
@@ -107,11 +107,11 @@ public sealed partial class MultiplayerSessionTests
         return new SealedOrdersView(turn, OrderDigest.OfSet(players), players);
     }
 
-    private static string Frame(int seq, string type, string payload) =>
+    internal static string Frame(int seq, string type, string payload) =>
         $"id: {seq}\ndata: {{\"seq\":{seq},\"matchId\":\"{MatchId}\","
         + $"\"createdAt\":\"2026-09-10T12:00:00.000Z\",\"type\":\"{type}\",\"payload\":{payload}}}\n\n";
 
-    private static string SealedFrame(int seq, int turn) => SealedFrameForSlots(seq, turn, 0, 1);
+    internal static string SealedFrame(int seq, int turn) => SealedFrameForSlots(seq, turn, 0, 1);
 
     /// <summary>
     /// Puts the session where a desync for turn 1 is actually announced from, and answers with the
@@ -151,7 +151,7 @@ public sealed partial class MultiplayerSessionTests
     /// before it ever applies it — so a test about a seat that submitted nothing says which seats
     /// did here, rather than announcing one set and serving another.
     /// </remarks>
-    private static string SealedFrameForSlots(int seq, int turn, params int[] slots) => Frame(
+    internal static string SealedFrameForSlots(int seq, int turn, params int[] slots) => Frame(
         seq,
         "turn.sealed",
         $$"""{"turn":{{turn}},"orderSetHash":"{{SealedOrdersForSlots(turn, slots).OrderSetHash}}"}""");

@@ -5,10 +5,11 @@ using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
+using Rechaos.Multiplayer.Http;
 
 namespace Rechaos.Game;
 
-public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
+public sealed partial class ChaosGame
 {
     private static readonly Color[] PlayerColors =
         [Color.Red, Color.LimeGreen, Color.Blue, Color.Yellow, Color.Magenta, Color.Cyan];
@@ -31,7 +32,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         Color.FromNonPremultiplied(150, 255, 165, 210);
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
-    private readonly GraphicsDeviceManager _graphics;
+    /// <summary>The program the game runs in; see <see cref="IGameShell"/>.</summary>
+    private IGameShell _shell = DetachedShell.Instance;
     private readonly string _assetRoot;
     private readonly string _saveDirectory;
     private readonly string _autoSavePath;
@@ -43,51 +45,47 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly RollingAutoSave _autoSave;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
-    private Texture2D? _titleBackground;
-    private Texture2D? _setupBackground;
-    private Texture2D? _setupControls;
-    private Texture2D? _setupKeyedControls;
-    private Texture2D? _cityBackground;
-    private readonly Texture2D?[] _cityOwnershipLayers = new Texture2D?[MatchLimits.PlayerCount + 1];
-    private Texture2D? _gameInfoBackground;
-    private Texture2D? _idleGangWarningBackground;
-    private Texture2D? _cityFinanceBackground;
-    private Texture2D? _sectorFinanceBackground;
-    private Texture2D? _rankingBackground;
-    private Texture2D? _gangInfoBackground;
-    private Texture2D? _sectorGangsBackground;
-    private Texture2D? _gangDefinitionInfoBackground;
-    private Texture2D? _siteInfoBackground;
-    private Texture2D? _itemInfoBackground;
-    private Texture2D? _combatBackground;
-    private Texture2D? _combatResultsBackground;
-    private Texture2D? _lastTurnEventsBackground;
+    private Texture2D? TitleBackground => Texture(OriginalBitmap.TitleBackground);
+    private Texture2D? SetupBackground => Texture(OriginalBitmap.SetupBackground);
+    private Texture2D? SetupControls => Texture(OriginalBitmap.SetupControls);
+    private Texture2D? SetupKeyedControls => Texture(OriginalBitmap.SetupKeyedControls);
+    private Texture2D? CityBackground => Texture(OriginalBitmap.CityBackground);
+    private Texture2D? GameInfoBackground => Texture(OriginalBitmap.GameInfoBackground);
+    private Texture2D? IdleGangWarningBackground => Texture(OriginalBitmap.IdleGangWarningBackground);
+    private Texture2D? CityFinanceBackground => Texture(OriginalBitmap.CityFinanceBackground);
+    private Texture2D? SectorFinanceBackground => Texture(OriginalBitmap.SectorFinanceBackground);
+    private Texture2D? RankingBackground => Texture(OriginalBitmap.RankingBackground);
+    private Texture2D? GangInfoBackground => Texture(OriginalBitmap.GangInfoBackground);
+    private Texture2D? SectorGangsBackground => Texture(OriginalBitmap.SectorGangsBackground);
+    private Texture2D? GangDefinitionInfoBackground => Texture(OriginalBitmap.GangDefinitionInfoBackground);
+    private Texture2D? SiteInfoBackground => Texture(OriginalBitmap.SiteInfoBackground);
+    private Texture2D? ItemInfoBackground => Texture(OriginalBitmap.ItemInfoBackground);
+    private Texture2D? CombatBackground => Texture(OriginalBitmap.CombatBackground);
+    private Texture2D? CombatResultsBackground => Texture(OriginalBitmap.CombatResultsBackground);
+    private Texture2D? LastTurnEventsBackground => Texture(OriginalBitmap.LastTurnEventsBackground);
     private Texture2D? _eventSiteDitherOverlay;
-    private Texture2D? _comlinkViewBackground;
-    private Texture2D? _comlinkSendBackground;
-    private readonly Texture2D?[] _lastTurnEventArtwork = new Texture2D?[10];
-    private Texture2D? _hireComparisonBackground;
-    private Texture2D? _influenceBackground;
-    private Texture2D? _targetAcquisitionBackground;
-    private Texture2D? _equipmentPurchaseBackground;
-    private Texture2D? _equipmentResearchBackground;
-    private Texture2D? _equipmentSellBackground;
-    private Texture2D? _equipmentGiveBackground;
-    private Texture2D? _movementBackground;
-    private Texture2D? _siteSearchBackground;
-    private Texture2D? _siteMarkerSprites;
-    private Texture2D? _sitePortraits;
-    private Texture2D? _gangPortraits;
-    private Texture2D? _itemPortraits;
-    private readonly Texture2D?[] _itemRotationTextures = new Texture2D?[53];
-    private Texture2D? _policeSprites;
-    private Texture2D? _uiSprites;
-    private Texture2D? _uiKeyedSprites;
+    private Texture2D? ComlinkViewBackground => Texture(OriginalBitmap.ComlinkViewBackground);
+    private Texture2D? ComlinkSendBackground => Texture(OriginalBitmap.ComlinkSendBackground);
+    private Texture2D? HireComparisonBackground => Texture(OriginalBitmap.HireComparisonBackground);
+    private Texture2D? InfluenceBackground => Texture(OriginalBitmap.InfluenceBackground);
+    private Texture2D? TargetAcquisitionBackground => Texture(OriginalBitmap.TargetAcquisitionBackground);
+    private Texture2D? EquipmentPurchaseBackground => Texture(OriginalBitmap.EquipmentPurchaseBackground);
+    private Texture2D? EquipmentResearchBackground => Texture(OriginalBitmap.EquipmentResearchBackground);
+    private Texture2D? EquipmentSellBackground => Texture(OriginalBitmap.EquipmentSellBackground);
+    private Texture2D? EquipmentGiveBackground => Texture(OriginalBitmap.EquipmentGiveBackground);
+    private Texture2D? MovementBackground => Texture(OriginalBitmap.MovementBackground);
+    private Texture2D? SiteSearchBackground => Texture(OriginalBitmap.SiteSearchBackground);
+    private Texture2D? SiteMarkerSprites => Texture(OriginalBitmap.SiteMarkerSprites);
+    private Texture2D? SitePortraits => Texture(OriginalBitmap.SitePortraits);
+    private Texture2D? GangPortraits => Texture(OriginalBitmap.GangPortraits);
+    private Texture2D? ItemPortraits => Texture(OriginalBitmap.ItemPortraits);
+    private Texture2D? PoliceSprites => Texture(OriginalBitmap.PoliceSprites);
+    private Texture2D? UiSprites => Texture(OriginalBitmap.UiSprites);
+    private Texture2D? UiKeyedSprites => Texture(OriginalBitmap.UiKeyedSprites);
     private PixelFont? _font;
-    private readonly Dictionary<short, SoundEffect> _combatSounds = [];
-    private readonly Dictionary<int, SoundEffect> _generalSounds = [];
-    private SoundEffectInstance? _activeEffectVoice;
-    private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
+    /// <summary>The effects the asset pack loads into, unless a test plays them elsewhere.</summary>
+    private readonly NativeSoundEffects? _nativeSoundEffects;
+    private readonly ISoundEffectOutput _soundEffects;
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
     private readonly DetailedCombatExit _combatExit = new();
     private readonly PanelSlideTransition _panelSlideTransition = new();
@@ -109,6 +107,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly IndexedDoubleClickTracker _sectorGangClicks = new();
     private readonly IndexedDoubleClickTracker _sectorSiteClicks = new();
     private readonly IndexedDoubleClickTracker _sectorNeighborClicks = new();
+    private readonly PointDoubleClickTracker _sectorRightClicks = new();
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentPortraitClicks = new();
@@ -124,6 +123,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _selectedSetupPlayerSlot;
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
+    private bool _setupNameSelecting;
+    private TimeSpan _setupNameCaretShownAt;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.OneYear;
     // RULE-SETUP-002: the scenario a fresh local setup selects, Greed when nothing is stored.
@@ -195,6 +196,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private CityConsoleControl? _pressedCityConsoleControl;
     private CityConsoleAction? _pressedCityConsoleAction;
     private ClientScreen _pressedCityConsoleReturnScreen;
+    private bool _pressedCityConsoleByRightButton;
     private short? _draggedHireDefinitionId;
     private Point _hirePressPoint;
     private Point _setupPlayerPressPoint;
@@ -209,6 +211,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     /// button is still down, and cleared when it comes up (FND-UI-044, FND-HIRE-008).
     /// </summary>
     private bool _leftHoldOutlivesCancel;
+    /// <summary>
+    /// The same for a console tile the right button holds, cleared when the right button comes up
+    /// (FND-UI-063).
+    /// </summary>
+    private bool _rightHoldOutlivesCancel;
     private Point _dragPoint;
     private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
@@ -229,20 +236,39 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     public ChaosGame(
         string assetRoot,
+        MatchDeviations localDeviations,
         bool debugPhaseStepping = false,
         RuntimeDiagnostics? diagnostics = null,
         string? screenshotFolder = null,
-        bool originalComputerMoves = false,
-        bool originalComputerHires = false,
+        ReferenceFrameRequest? referenceFrame = null,
+        string? startupSavePath = null)
+        : this(assetRoot, ChaosGameServices.Desktop, localDeviations, debugPhaseStepping, diagnostics,
+            screenshotFolder, referenceFrame, startupSavePath)
+    {
+    }
+
+    internal ChaosGame(
+        string assetRoot,
+        ChaosGameServices services,
+        MatchDeviations localDeviations,
+        bool debugPhaseStepping = false,
+        RuntimeDiagnostics? diagnostics = null,
+        string? screenshotFolder = null,
         ReferenceFrameRequest? referenceFrame = null,
         string? startupSavePath = null)
     {
+        ArgumentNullException.ThrowIfNull(services);
         _assetRoot = assetRoot;
+        if (services.SoundEffects is { } soundEffects) _soundEffects = soundEffects;
+        else _soundEffects = _nativeSoundEffects = new NativeSoundEffects(diagnostics);
+        _http = services.MultiplayerTransport is { } transport
+            ? MultiplayerClientOptions.CreateHttpClient(transport)
+            : MultiplayerClientOptions.CreateHttpClient();
+        if (services.RunRandomState is { } runRandomState) _runRandomState = runRandomState;
         _startupSavePath = startupSavePath;
-        _originalComputerMoves = originalComputerMoves;
-        _originalComputerHires = originalComputerHires;
+        _localDeviations = localDeviations;
         _referenceFrame = referenceFrame;
-        _pointer = new(shape => Mouse.SetCursor(shape == PointerShape.Hourglass ? MouseCursor.Wait : MouseCursor.Arrow),
+        _pointer = new(shape => _shell.ShowPointer(shape),
             () => ComputerTurnsCanRun() ? PresentationPointer.Idle(_state) : PointerShape.Arrow);
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;
@@ -261,9 +287,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             // A pressed face acts on the screen it was pressed on; if something else moved the
             // screen during the wait, the key's action is dropped.
             _tickedPresentation.Clear();
+            // FND-UI-062: a plain face a release left stays only until its panel goes.
+            _releasedPanelFace = null;
             _citySectorClicks.Cancel();
             _sectorSiteClicks.Cancel();
             _sectorNeighborClicks.Cancel();
+            _sectorRightClicks.Cancel();
             _sectorGangClicks.Cancel();
             _siteSearchClicks.Cancel();
             _heldSelectionFrame = HeldSelectionFrame(previous, current, _heldSelectionFrame, SelectionFrameShown());
@@ -276,7 +305,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
                 _showEndgameStats = false;
         };
-        var userDataRoot = _referenceFrame?.UserDataDirectory ?? Path.Combine(
+        var userDataRoot = services.UserDataDirectory ?? _referenceFrame?.UserDataDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords");
         _saveDirectory = userDataRoot;
@@ -305,6 +334,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _online.Server.Set(preferences.CustomMultiplayerServer);
         _onlineLobbyPresentation = preferences.LobbyPresentation;
         _multiplayerRecoveries.AddRange(MultiplayerRecoveryStore.LoadAll(_multiplayerRecoveryPath));
+        _onlineTokensInClear = MultiplayerRecoveryStore.KeepsTokensInClear(_multiplayerRecoveryPath);
         // The player's own name carries over from any saved seat, including one from another
         // session version; only the join code is limited to a match this build can play.
         if (_multiplayerRecoveries.FirstOrDefault(saved => saved.CanReconnect) is { } latest)
@@ -315,41 +345,30 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (recovery.ShouldSuggestReconnect)
                 _message = "ONLINE MATCH INTERRUPTED  OPEN ONLINE TO RECONNECT";
         }
-        // Two virtual pixels per device pixel is the size the interface was drawn for, but a
-        // 1366x768 laptop or a 1080p panel at 150% scaling cannot show a 920-pixel-tall window, and
-        // the DONE button ends up below the screen edge. Draw and input already letterbox from the
-        // viewport, so any size works; the window just has to fit on the display it opens on.
-        var (backBufferWidth, backBufferHeight) = _referenceFrame is null
-            ? ShellWindow.OpeningSize(
-                GraphicsAdapter.DefaultAdapter?.CurrentDisplayMode?.Width,
-                GraphicsAdapter.DefaultAdapter?.CurrentDisplayMode?.Height)
-            : (VirtualInput.Width, VirtualInput.Height);
-        _graphics = new GraphicsDeviceManager(this)
-        {
-            PreferredBackBufferWidth = backBufferWidth,
-            PreferredBackBufferHeight = backBufferHeight,
-            SynchronizeWithVerticalRetrace = true,
-            HardwareModeSwitch = ShellWindow.SwitchesDisplayMode,
-            IsFullScreen = _fullscreen && _referenceFrame is null
-        };
-        // Ticking on without focus is what keeps background online notices, the planning timer and
-        // the autosave serviced; the redraw is the expensive part, and BeginDraw spaces that out
-        // instead. The sleep between inactive ticks doubles as the input poll gap, because every
-        // edge comes from comparing consecutive polled snapshots, so it stays far shorter than a
-        // click: a press and release that both landed inside one sleep would never be seen, and
-        // the click that raises the window would be swallowed.
-        InactiveSleepTime = ShellWindow.InactiveSleepTime;
-        IsFixedTimeStep = true;
-        TargetElapsedTime = ShellWindow.FrameTime;
-        IsMouseVisible = true;
-        Window.AllowUserResizing = ShellWindow.AllowsResizing;
-        Window.Title = "Chaos Overlords: New Chrome";
-        // The only text the game takes: a server address, a name and a join code. The platform has
-        // already decoded the keystroke, so a non-US layout types what it should.
-        Window.TextInput += (_, args) => HandleTextInput(args.Character);
     }
 
-    protected override void LoadContent()
+    private GraphicsDevice GraphicsDevice => _shell.GraphicsDevice;
+
+    /// <summary>Whether the window has the focus.</summary>
+    private bool IsActive => _shell.IsActive;
+
+    /// <summary>Closes the program; the shell asks <see cref="ConfirmExit"/> first.</summary>
+    private void Exit() => _shell.Exit();
+
+    /// <summary>Lets <paramref name="shell"/> run the game, before anything is loaded.</summary>
+    internal void Attach(IGameShell shell) => _shell = shell ?? throw new ArgumentNullException(nameof(shell));
+
+    /// <summary>Whether the window opens on the full screen, as the player last left it.</summary>
+    internal bool StartsFullScreen => _fullscreen && _referenceFrame is null;
+
+    /// <summary>Whether the window is a reference frame's, drawn at the virtual screen's size.</summary>
+    internal bool DrawsReferenceFrame => _referenceFrame is not null;
+
+    /// <summary>
+    /// Loads the asset pack onto the graphics device and the audio device, then
+    /// <see cref="LoadGameData"/>. The window calls this once its device exists.
+    /// </summary>
+    internal void LoadContent()
     {
         ValidateAssetPack();
         _batch = new SpriteBatch(GraphicsDevice);
@@ -357,100 +376,52 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _pixel.SetData([Color.White]);
         _eventSiteDitherOverlay = LastTurnEventPresentation.CreateEventSiteDitherOverlay(
             GraphicsDevice);
+
+        _font = UiSprites is null
+            ? throw new InvalidDataException("PX00129 is required for the original UI font.")
+            : new PixelFont(GraphicsDevice, UiSprites);
+        FindCombatAnimationFiles();
+        if (!DecodesTexturesOnFirstDraw) DecodeAllTextures();
+        _nativeSoundEffects?.LoadAll(_assetRoot);
+        LoadGameData();
+        _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
+        {
+            ["helpAvailable"] = (_helpDocument is not null).ToString(),
+            ["combatSounds"] = (_nativeSoundEffects?.Count(SoundEffectBank.Combat) ?? 0).ToString(),
+            ["generalSounds"] = (_nativeSoundEffects?.Count(SoundEffectBank.General) ?? 0).ToString(),
+            ["combatAnimations"] = CombatAnimations.Count.ToString()
+        });
+    }
+
+    /// <summary>
+    /// Loads the original's data and the help, opens the save named on the command line and starts
+    /// the intro. Everything the game plays with, and nothing it draws or sounds: a shell with no
+    /// graphics device calls this alone.
+    /// </summary>
+    internal void LoadGameData()
+    {
         _definitions = BundledOriginalData.Load();
         _helpDocument = ExtractedHelpStore.LoadOrNull(_assetRoot) is { } help
             ? HelpContentAugmentation.AddExecutableNotes(help)
             : null;
-
-        _titleBackground = LoadTexture("PX00130.bmp");
-        _setupBackground = LoadTexture("PX00143.bmp");
-        _setupControls = LoadTexture("PX00140.bmp");
-        _setupKeyedControls = LoadTexture("PX00140.bmp", transparentWhite: true);
-        _cityBackground = LoadTexture("PX00128.bmp");
-        for (var index = 0; index < _cityOwnershipLayers.Length; index++)
-            _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
-        _endgameBackground = LoadTexture("PX00200.bmp");
-        _endgameSprites = LoadTexture("PX00201.bmp");
-        _endgameKeyedSprites = LoadTexture("PX00201.bmp", transparentWhite: true);
-        _victoryBackground = LoadTexture("PX00202.bmp");
-        _eliminationBackground = LoadTexture("PX00203.bmp");
-        _gameInfoBackground = LoadTexture("PX05021.bmp");
-        _idleGangWarningBackground = LoadTexture("PX05020.bmp");
-        _cityFinanceBackground = LoadTexture("PX05008.bmp");
-        _sectorFinanceBackground = LoadTexture("PX05019.bmp");
-        _rankingBackground = LoadTexture("PX05011.bmp");
-        _handoffPanel = LoadTexture("PX00132.bmp");
-        _gangInfoBackground = LoadTexture("PX05000.bmp");
-        _sectorGangsBackground = LoadTexture("PX05009.bmp");
-        _gangDefinitionInfoBackground = LoadTexture("PX05022.bmp");
-        _siteInfoBackground = LoadTexture("PX05002.bmp");
-        _itemInfoBackground = LoadTexture("PX05001.bmp");
-        _combatBackground = LoadTexture("PX05014.bmp");
-        _combatResultsBackground = LoadTexture("PX05012.bmp");
-        _lastTurnEventsBackground = LoadTexture("PX05010.bmp");
-        _comlinkViewBackground = LoadTexture("PX05017.bmp");
-        _comlinkSendBackground = LoadTexture("PX05018.bmp");
-        for (var eventArt = 1; eventArt <= 9; eventArt++)
-            _lastTurnEventArtwork[eventArt] = LoadTexture(
-                $"PX060{eventArt:00}.bmp", transparentWhite: eventArt == 4);
-        _hireComparisonBackground = LoadTexture("PX05016.bmp");
-        _influenceBackground = LoadTexture("PX05005.bmp");
-        _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
-        _equipmentPurchaseBackground = LoadTexture("PX05004.bmp");
-        _equipmentResearchBackground = LoadTexture("PX05007.bmp");
-        _equipmentSellBackground = LoadTexture("PX05013.bmp");
-        _equipmentGiveBackground = LoadTexture("PX05015.bmp");
-        _movementBackground = LoadTexture("PX05006.bmp");
-        _siteSearchBackground = LoadTexture("PX05024.bmp");
-        _siteMarkerSprites = LoadTexture("PX00150.bmp", transparentWhite: true);
-        _sitePortraits = LoadTexture("PX02000.bmp");
-        _gangPortraits = LoadTexture("PX03000.bmp");
-        _itemPortraits = LoadTexture("PX04999.bmp");
-        for (var itemId = 0; itemId < _itemRotationTextures.Length; itemId++)
-            _itemRotationTextures[itemId] = LoadTexture($"PX04{itemId:000}.bmp");
-        _policeSprites = LoadTexture("PX00300.bmp");
-        _uiSprites = LoadTexture("PX00129.bmp");
-        _uiKeyedSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
-        _font = _uiSprites is null
-            ? throw new InvalidDataException("PX00129 is required for the original UI font.")
-            : new PixelFont(GraphicsDevice, _uiSprites);
-        LoadCombatAnimationTextures();
-        for (short index = 0; index <= 18; index++)
-        {
-            var sound = LoadSound(AudioRouting.SoundFile(index));
-            if (sound is not null) _combatSounds.Add(index, sound);
-        }
-        foreach (var slot in AudioRouting.GeneralSoundSlots)
-        {
-            var sound = LoadSound(AudioRouting.GeneralSoundFile(slot));
-            if (sound is not null) _generalSounds.Add(slot, sound);
-        }
         // RULE-UI-013: the command-line file is opened before the intro test, which a loaded
         // match skips.
         OpenStartupSave();
         InitializeIntroMovies();
-        LoadSoundtrack();
-        _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
-        {
-            ["helpAvailable"] = (_helpDocument is not null).ToString(),
-            ["combatSounds"] = _combatSounds.Count.ToString(),
-            ["generalSounds"] = _generalSounds.Count.ToString(),
-            ["combatAnimations"] = _combatAnimationTextures.Count.ToString()
-        });
+        // A reference frame is drawn and written before its Update ever reaches the soundtrack,
+        // and opening every track took about a quarter of its run.
+        if (_referenceFrame is null) LoadSoundtrack();
     }
 
-    protected override void Update(GameTime gameTime)
+    /// <summary>One tick of the game: the input since the last tick, the clocks and the screens.</summary>
+    internal void Update(GameTime gameTime)
     {
         _autoSave.Pump();
         _inputTime = _referenceFrame is null ? gameTime.TotalGameTime : _referenceClock;
         _eventPump.Update(_inputTime, OutsideEventPump());
-        if (UpdateReferenceFrame())
-        {
-            base.Update(gameTime);
-            return;
-        }
-        var keyboard = Keyboard.GetState();
-        var mouse = Mouse.GetState();
+        if (UpdateReferenceFrame()) return;
+        var keyboard = _shell.ReadKeyboard();
+        var mouse = _shell.ReadMouse();
         // The rebuild's window shortcuts are not game events, so a fade does not swallow them.
         if (Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
         // Alt+Enter goes no further, so the Enter does not also act on the screen.
@@ -464,7 +435,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (_soundtrackFade is not null)
             {
                 UpdatePointerDuringFade(mouse);
-                EndUpdate(gameTime, keyboard, mouse);
+                EndUpdate(keyboard, mouse);
                 return;
             }
         }
@@ -472,14 +443,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             || keyboard.IsKeyDown(Keys.RightControl);
         if (altEnter || UpdateIntroMovies(gameTime, keyboard, mouse))
         {
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         if (!soundtrackUpdated) UpdateSoundtrack(gameTime);
         if (_soundtrackFade is not null)
         {
             UpdatePointerDuringFade(mouse);
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         UpdateComlinkAlert(_eventPump.Time);
@@ -492,14 +463,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_creditsOpen)
         {
             UpdateCredits(keyboard, mouse);
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         var rightClicked = PointerButtonEdges.Pressed(
             mouse.RightButton, _previousMouse.RightButton);
         if (!_gameMenuOpen && UpdatePlanningTimer(gameTime.TotalGameTime))
         {
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         RunComputerTurns();
@@ -509,7 +480,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_combatAnimationPlayer.IsPlaying)
         {
             var exitPointMapped = VirtualInput.TryMap(
-                GraphicsDevice.Viewport, mouse.Position, out var exitPoint);
+                _shell.Viewport, mouse.Position, out var exitPoint);
             var pointer = _combatExit.Update(exitPointMapped ? exitPoint : null,
                 mouse.LeftButton == ButtonState.Pressed,
                 _previousMouse.LeftButton == ButtonState.Pressed);
@@ -529,7 +500,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             }
             // The key or button that ended the presentation does nothing else this frame, so
             // Escape does not also open the game menu.
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         _combatExit.Reset();
@@ -539,12 +510,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // on the presentation clock, so this frame's keys and clicks are dropped.
         if (UpdateTickedPresentation())
         {
-            EndUpdate(gameTime, keyboard, mouse);
+            EndUpdate(keyboard, mouse);
             return;
         }
         if (rightClicked && !_gameMenuOpen)
             CancelCurrentInteraction(
-                VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var rightPoint) ? rightPoint : null);
+                VirtualInput.TryMap(_shell.Viewport, mouse.Position, out var rightPoint) ? rightPoint : null);
         if (_gameMenuOpen)
         {
             UpdateGameMenu(keyboard);
@@ -780,7 +751,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // RULE-UI-003: the original handles no message while a panel slides in, and takes a click
         // made during the slide from the queue once the panel is in place. The pointer is
         // therefore read against the panel's final place, whatever the drawn offset.
-        var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
+        var pointerMapped = VirtualInput.TryMap(_shell.Viewport, mouse.Position, out var virtualPoint);
         UpdateHoverPoint(pointerMapped ? virtualPoint : null);
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)
@@ -797,23 +768,29 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: false);
         }
         if (_previousMouse.RightButton == ButtonState.Pressed && mouse.RightButton == ButtonState.Released)
+        {
+            _rightHoldOutlivesCancel = false;
             CompletePointerRelease(pointerMapped, virtualPoint, rightButton: true);
+        }
         CaptureNewCombatAnimations();
-        EndUpdate(gameTime, keyboard, mouse);
+        EndUpdate(keyboard, mouse);
     }
 
     /// <summary>Records this frame's input as the previous frame's, which every edge test reads.</summary>
-    private void EndUpdate(GameTime gameTime, KeyboardState keyboard, MouseState mouse)
+    private void EndUpdate(KeyboardState keyboard, MouseState mouse)
     {
+        ReleaseSkippedPanelFace(mouse);
         FlushScenarioPreference();
         _pointer.Refresh();
         _previousKeyboard = keyboard;
         _previousMouse = mouse;
-        base.Update(gameTime);
     }
 
     private void HandleClick(Point point)
     {
+        // FND-UI-063: the console tile helper loops until the right button that pressed it comes up,
+        // and a left press meanwhile reaches nothing.
+        if (_pressedCityConsoleControl is not null && _pressedCityConsoleByRightButton) return;
         if (HandleOnlineErrorPopupClick(point) || HandleReconnectPopupClick(point)) return;
         if (_gameMenuOpen)
         {
@@ -839,6 +816,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleLobbyClick(point);
                 break;
             case ClientScreen.Setup:
+                if (PressSetupName(point)) break;
                 var timed = ScenarioCatalog.Get(_selectedScenario).IsTimed;
                 var panelControl = SetupPanelLayout.HitTest(point, timed);
                 var durationRefused = !timed && SetupPanelLayout.DurationArea.Contains(point);
@@ -899,8 +877,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 PressPanelFace(point, GangDetailsPanel, GangDetailsOk, CloseGangDetails);
                 break;
             case ClientScreen.Site:
-                if (SiteInformationLayout.Ok.Contains(point))
-                    AcceptAndInvoke(CloseSiteDetails);
+                // SCR-UI-007, FND-UI-067: the held close face closes on a release inside it.
+                PressPanelFace(point, SiteInformationLayout.Panel, SiteInformationLayout.Ok, CloseSiteDetails);
                 break;
             case ClientScreen.ItemInformation:
                 // SCR-UI-006, FND-UI-047: the held exit face closes on a release inside it.
@@ -912,12 +890,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     CloseGameInformation);
                 break;
             case ClientScreen.Finance:
-                if (FinanceLayout.Ok.Contains(point))
-                    AcceptAndShow(_managementReturnScreen);
+                // SCR-FINANCE-001, FND-UI-067: the press is tested against the shared panel
+                // rectangle, wider than the panel drawn.
+                PressPanelFace(point, SharedPanelLayout.Panel, FinanceLayout.Ok,
+                    () => _screens.Show(_managementReturnScreen));
                 break;
             case ClientScreen.Ranking:
-                if (PlayerRankingLayout.Ok.Contains(point))
-                    AcceptAndShow(_managementReturnScreen);
+                // SCR-OBJECTIVE-001, FND-UI-067.
+                PressPanelFace(point, PlayerRankingLayout.Panel, PlayerRankingLayout.Ok,
+                    () => _screens.Show(_managementReturnScreen));
                 break;
             case ClientScreen.Search:
                 HandleSiteSearchClick(point);

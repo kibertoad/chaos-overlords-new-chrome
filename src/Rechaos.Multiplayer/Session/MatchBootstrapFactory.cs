@@ -49,10 +49,12 @@ public static class MatchBootstrapFactory
                     new PlayerId(slot), DerivedSeatName(slot), PlayerController.Computer,
                     settings.Portraits[slot]);
         }
-        // DEV-AI-007 stays on online: the command line that switches it off reaches local matches.
+        // DEV-AI-007 and DEV-AI-008 keep their defaults online: the command line that switches
+        // them off reaches local matches only. DEV-AI-003 is the host's choice in the settings.
         return new MatchSetup(
-            settings.Scenario, settings.Duration, seed, setups, settings.AiMentality,
-            aiPolicy: settings.AiPolicy);
+            settings.Scenario, settings.Duration, seed, setups,
+            MatchDeviations.Defaults with { AiPolicy = settings.AiPolicy },
+            settings.AiMentality);
     }
 
     /// <summary>The match, generated from the setup, with hire offers drawn for every seat.</summary>

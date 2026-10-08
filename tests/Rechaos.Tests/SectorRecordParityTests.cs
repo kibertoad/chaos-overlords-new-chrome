@@ -163,7 +163,7 @@ public sealed class SectorRecordParityTests
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var match = OriginalMatchFactory.Create(
-            data, new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            data, new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         var neutral = match.Sectors.Where(sector => sector.Owner is null).ToArray();
         Assert.NotEmpty(neutral);
         Assert.All(neutral, sector =>
@@ -287,5 +287,6 @@ public sealed class SectorRecordParityTests
         [
             new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human),
             new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Computer)
-        ]);
+        ],
+        MatchDeviations.Original);
 }

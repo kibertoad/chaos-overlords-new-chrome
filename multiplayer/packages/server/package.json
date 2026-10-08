@@ -1,6 +1,6 @@
 {
   "name": "@chaos-overlords/server",
-  "version": "0.9.9",
+  "version": "0.9.10",
   "description": "The Hono application both runtimes serve: REST intents, the SSE event stream, auth and the error envelope. Takes its ports through a container.",
   "keywords": [
     "chaos-overlords",
@@ -60,7 +60,7 @@
     "@chaos-overlords/kernel": "workspace:*",
     "@toad-contracts/core": "1.0.0",
     "@toad-contracts/hono": "1.0.0",
-    "hono": "^4.13.9"
+    "hono": "^4.13.12"
   },
   "devDependencies": {
     "@chaos-overlords/conformance": "workspace:*",

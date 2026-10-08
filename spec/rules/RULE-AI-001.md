@@ -4,7 +4,7 @@ title: A computer player's planning pass rolls its gangs' action history, dispat
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-003, FND-AI-019, FND-AI-010, FND-AI-001, FND-AI-009, FND-AI-042, FND-AI-043, FND-AI-044, FND-AI-046, FND-AI-051, FND-EXE-004]
+evidence: [FND-AI-003, FND-AI-019, FND-AI-010, FND-AI-001, FND-AI-009, FND-AI-042, FND-AI-043, FND-AI-081, FND-AI-046, FND-AI-051, FND-EXE-004, FND-AI-014, FND-AI-021, FND-AI-045, FND-HIRE-002, FND-PLATFORM-003, FND-STATE-006, FND-UI-036, EXP-TURN-016, EXP-TURN-001, EXP-TURN-012, EXP-TURN-013, EXP-TURN-022, EXP-TURN-039, EXP-TURN-040, EXP-TURN-099]
 conflicting: []
 split_with: []
 related: [RULE-AI-002, RULE-AI-003, RULE-AI-004, RULE-AI-010, RULE-AI-011, RULE-AI-013, FMT-STATE-001, FMT-STATE-007]
@@ -159,4 +159,21 @@ None known.
 
 ## Open questions
 
-None.
+- Reach was measured over every replayed run (DECISIONS.md, 2026-10-06). The
+  runs reach the first pass (EXP-TURN-001 and every other run) and the later
+  passes; the history roll and both cooldown updates, with and without an
+  item; empty slots flagged and a refilled slot wiped at its first dispatch;
+  a slot emptied and refilled in the same turn keeping the dead gang's family
+  and history (EXP-TURN-012, EXP-TURN-099 and 27 other runs; flagging such a
+  slot for a new family makes 25 of the replays diverge); both cleanups,
+  including three or more gangs in one sector (EXP-TURN-022, EXP-TURN-099) and
+  both cleanups in one sector (EXP-TURN-013); `raider_mode` set by a write
+  (EXP-TURN-040); and the trigger of BUG-AI-005, which one computer player
+  meets at two passes of EXP-TURN-039, where switching its gangs to family 9
+  makes the replay diverge.
+- No run reaches a gang in a roster slot other than 0 on its player's first
+  pass. Every local match gives each computer player one gang, in slot 0,
+  before that pass, so the gang that keeps family 99 and plans nothing rests
+  on FND-AI-042 alone. A run would need a write that puts a gang in another
+  slot before the player's first pass, which the probe does not make. Until a
+  run reaches it, the entry stays `supported`.
