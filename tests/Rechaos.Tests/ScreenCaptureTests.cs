@@ -50,7 +50,9 @@ public sealed partial class ScreenCaptureTests
     // (FND-COMBAT-011). EXP-UI-041 and EXP-UI-042 hold a button across their shots: console
     // tiles, close, Cancel and confirm faces held under the pointer and off it (FND-UI-062,
     // FND-UI-067), a hire offer in flight (FND-HIRE-010), and the order panels with a choice made
-    // (FND-EQUIP-011). EXP-UI-051 compares the setup screen the game drew under the name
+    // (FND-EQUIP-011). EXP-UI-045 and EXP-UI-050 compare the site progress meters of SCR-UI-004,
+    // left out in sectors other players own and drawn in the active player's own (FND-UI-070).
+    // EXP-UI-051 compares the setup screen the game drew under the name
     // dialog SCR-SETUP-003, which Windows draws, with card 0's name row left to the editor of
     // DEV-SETUP-003.
     // EXP-UI-031 compares the first planning entry at every frame of the active-player marker
