@@ -182,15 +182,32 @@ public sealed record ScreenCaptureRecord(
     private static IEnumerable<ScreenCaptureRecord> SetupStepCaptures(string experiment, int run, JsonElement[] steps, bool whiteKeyed)
     {
         var clicks = new List<ReferenceClick>();
+        var named = false;
         for (var index = 0; index < steps.Length; index++)
         {
             var step = steps[index];
+            if (named && step.TryGetProperty("capture", out _))
+                throw new InvalidDataException(
+                    $"{experiment} run {run} copies the setup screen after a name step, whose keys the rebuild does not replay.");
             var point = new Point(step.GetProperty("x").GetInt32(), step.GetProperty("y").GetInt32());
             if (step.GetProperty("kind").GetString() == "strip")
                 clicks.Add(new ReferenceClick(point));
             else if (step.GetProperty("kind").GetString() == "drag")
                 clicks.Add(new ReferenceClick(point,
                     Release: new Point(step.GetProperty("to_x").GetInt32(), step.GetProperty("to_y").GetInt32())));
+            else if (step.GetProperty("kind").GetString() == "name")
+            {
+                // The press on the name band opens the editor; the copy is taken with it open,
+                // before any key, so the keys a step types after it are not replayed. A copy after
+                // a name step that typed would need them.
+                clicks.Add(new ReferenceClick(point));
+                if (step.TryGetProperty("capture", out var underDialog))
+                    yield return Parse(experiment, run, underDialog, whiteKeyed) with
+                    {
+                        Step = SetupStepBase - index, BeforeMatch = "setup", Clicks = clicks.ToArray(),
+                    };
+                named = true;
+            }
             else if (step.TryGetProperty("capture", out var capture))
                 yield return Parse(experiment, run, capture, whiteKeyed) with
                 {
@@ -440,6 +457,10 @@ public static class ScreenCaptureMasks
             ],
             ["SCR-UI-002"] = [],
             ["SCR-SETUP-001"] = [],
+            // DEV-SETUP-003: while the name dialog is open the rebuild edits the name on card 0's
+            // name row, where the original still shows the name. The dialog itself is drawn by
+            // Windows, and the copy under it leaves it out.
+            ["SCR-SETUP-003"] = [new CaptureMask("DEV-SETUP-003", SetupPlayerCardArtLayout.NameRow(0))],
         };
 
     /// <summary>The masks of every screen a capture shows, since one frame draws them all.</summary>
