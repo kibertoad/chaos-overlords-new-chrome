@@ -28,8 +28,11 @@ public sealed class StartupSaveTests
     public void AStartThatOpensASaveSkipsTheIntroAndOpensItAfterLoadingAssets()
     {
         var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        // LoadContent reads the asset pack, then the game data, which opens the save.
         var load = typeof(ChaosGame).GetMethod("LoadContent", flags)!;
-        Assert.Contains(typeof(ChaosGame).GetMethod("OpenStartupSave", flags)!, DeviationBehaviourTests.Calls(load));
+        var loadData = typeof(ChaosGame).GetMethod("LoadGameData", flags)!;
+        Assert.Contains(loadData, DeviationBehaviourTests.Calls(load));
+        Assert.Contains(typeof(ChaosGame).GetMethod("OpenStartupSave", flags)!, DeviationBehaviourTests.Calls(loadData));
 
         // A start that has loaded a match skips the intro.
         var game = DeviationBehaviourTests.HeadlessGame();

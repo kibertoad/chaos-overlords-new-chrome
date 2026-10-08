@@ -4,7 +4,7 @@ title: The texts of the Game Information panel
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-UI-003, FND-UI-024, FND-TURN-003, FND-SETUP-002, FND-EXE-004, SRC-MANUAL-GOG]
+evidence: [FND-UI-003, FND-UI-024, FND-TURN-003, FND-SETUP-002, FND-EXE-004, SRC-MANUAL-GOG, FND-COMLINK-007, FND-OBJECTIVE-003, FND-SAVE-001, FND-STATE-004]
 conflicting: []
 split_with: []
 related: []

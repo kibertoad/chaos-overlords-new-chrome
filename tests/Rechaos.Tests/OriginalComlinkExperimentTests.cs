@@ -67,7 +67,8 @@ public sealed class OriginalComlinkExperimentTests
                     : new MatchPlayerSetup(new PlayerId(slot), $"CPU{slot}", PlayerController.Computer))
                 .ToArray();
             _match = OriginalMatchFactory.Create(BundledOriginalData.Load(), new MatchSetup(
-                ScenarioId.Greed, GameDuration.SixMonths, run.GetProperty("rng_state").GetInt32(), players));
+                ScenarioId.Greed, GameDuration.SixMonths, run.GetProperty("rng_state").GetInt32(), players,
+                MatchDeviations.Original));
             _match.FinishUpkeep();
             _recorder = new MatchReplayRecorder(_match);
         }
@@ -240,7 +241,7 @@ public sealed class OriginalComlinkExperimentTests
             _sendOpen = true;
         }
 
-        // FND-COMLINK-003: a card press flips the selection of a player who can take a message and
+        // FND-COMLINK-011: a card press flips the selection of a player who can take a message and
         // is refused for any other.
         private void Card(string line, bool refused, int slot)
         {
@@ -281,7 +282,7 @@ public sealed class OriginalComlinkExperimentTests
                         case "UP": _editor.MoveUp(); break;
                         case "RIGHT": _editor.MoveRight(); break;
                         case "DOWN": _editor.MoveDown(); break;
-                        // FND-COMLINK-003: Execute sends as the Send control does.
+                        // FND-COMLINK-011: Execute sends as the Send control does.
                         case "EXEC": PressSend(line, refused: false); break;
                         default: throw new InvalidOperationException($"No key {name}.");
                     }

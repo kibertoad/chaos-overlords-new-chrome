@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-HIRE-003, FND-HIRE-007, FND-HIRE-009, FND-UI-006, FND-AUDIO-011, FND-PLATFORM-002, FND-EXE-004, EXP-UI-008]
+evidence: [FND-HIRE-003, FND-HIRE-007, FND-HIRE-009, FND-UI-006, FND-AUDIO-011, FND-PLATFORM-002, FND-EXE-004, EXP-UI-008, FND-UI-062, FND-UI-067, EXP-UI-041]
 conflicting: []
 split_with: []
 related: [RULE-HIRE-002]
@@ -22,12 +22,13 @@ offer slot, 0 to 2.
 | Offer portraits | `DATA/PX16/PX03000` | The portrait of the gang definition each entry of `hire_offers` names (RULE-HIRE-002), scaled from 64 by 64 to 32 by 32 | `(292 + 40s, 138)`, 32 by 32 | The panel is open | FND-HIRE-009, FND-HIRE-007 |
 | Baseline values, six per offer | Digit glyphs of `DATA/PX16/PX00129` | For the same definition, top to bottom: Tech Level; Upkeep as a negative number; Combat plus Strength plus Fighting plus Martial Arts; Defense; Stealth; Detect. Each is a signed value two cells wide, a one-digit value in the right cell, a negative value in the red digit row without a minus sign, a zero in bright green | x `302 + 40s`, y 172, 181, 191, 200, 209 and 218 | The panel is open | FND-HIRE-003, FND-HIRE-009, FND-UI-006 |
 | Modifier values, ten per offer | Digit glyphs of `DATA/PX16/PX00129` | Chaos, Control, Heal, Influence, Research, Strength, Blade, Range, Fighting and Martial Arts of the same definition, top to bottom, drawn the same way, a zero in dim green | x `302 + 40s`, y 228, 237, 246, 255, 264, 274, 283, 292, 301 and 310 | The panel is open | FND-HIRE-003, FND-HIRE-009, FND-UI-006 |
+| Close pressed | `DATA/PX16/PX00129` rectangle (0, 386, 50, 23); plain face (50, 386, 50, 23) while the pointer is outside and after a release that leaves the panel open | None | (161, 293, 50, 23) | While the face is held with the pointer inside it | FND-UI-062, FND-UI-067 |
 
 ## Mouse input
 
 | Region | Rectangle | Enabled when | Effect | Evidence |
 |---|---|---|---|---|
-| Close control | `(161, 293, 49, 22)`; a press counts inside `(161, 293)` to `(210, 315)` | Always | Left press or double-click presses the control; the panel closes when the button is released over it | FND-HIRE-009 |
+| Close control | `(161, 293, 49, 22)`; a press counts inside `(161, 293)` to `(210, 315)` | Always | Left press or double-click holds the control through the held-button helper; the panel closes only when the button is released over it | FND-HIRE-009, FND-UI-067 |
 | Rest of the panel | Inside `(104, 124, 344, 209)` | Always | Nothing | FND-HIRE-009 |
 | Outside the panel | Outside `(104, 124, 344, 209)` | Always | Refused with slot 4 | FND-HIRE-009 |
 
@@ -70,3 +71,9 @@ None known.
   strength or is a slip is not settled by the code (FND-HIRE-009).
 - The rule that turns a value into two cells is the UI area's number-drawing
   rule; its ID should be added to `related` once it exists.
+- No recorded run of the original reaches offers with values other than the
+  captured set, among them a two-digit negative value; a close double-click;
+  presses elsewhere on the panel and outside it; Enter, Execute, Escape and
+  the other keys; the rejected sound (FND-HIRE-009, FND-UI-006,
+  FND-AUDIO-011). These rest on the static findings named, so the entry stays
+  `supported`.

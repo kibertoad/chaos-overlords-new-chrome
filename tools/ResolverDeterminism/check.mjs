@@ -36,25 +36,26 @@ async function onNode() {
 
 async function onWorkerd() {
   const bundle = fs.mkdtempSync(path.join(os.tmpdir(), 'rechaos-resolver-workerd-'));
-  const { execFileSync } = await import('node:child_process');
-  execFileSync(process.execPath, [path.join(here, 'bundle-workerd.mjs'), framework, bundle], { stdio: 'inherit' });
-  const require = createRequire(path.join(repository, 'multiplayer', 'runtimes', 'cloudflare', 'package.json'));
-  const { unstable_dev } = require('wrangler');
-  // wrangler keeps its local state under the working directory; the bundle's is thrown away.
   const directory = process.cwd();
-  process.chdir(bundle);
-  const worker = await unstable_dev(path.join(bundle, 'index.mjs'), {
-    config: path.join(bundle, 'wrangler.toml'),
-    logLevel: 'warn',
-    experimental: { disableExperimentalWarning: true },
-  });
+  let worker;
   try {
+    const { execFileSync } = await import('node:child_process');
+    execFileSync(process.execPath, [path.join(here, 'bundle-workerd.mjs'), framework, bundle], { stdio: 'inherit' });
+    const require = createRequire(path.join(repository, 'multiplayer', 'runtimes', 'cloudflare', 'package.json'));
+    const { unstable_dev } = require('wrangler');
+    // wrangler keeps its local state under the working directory; the bundle's is thrown away.
+    process.chdir(bundle);
+    worker = await unstable_dev(path.join(bundle, 'index.mjs'), {
+      config: path.join(bundle, 'wrangler.toml'),
+      logLevel: 'warn',
+      experimental: { disableExperimentalWarning: true },
+    });
     const response = await worker.fetch('http://resolver/', { method: 'POST', body: transcriptText });
     const text = await response.text();
     if (!response.ok) throw new Error(`the Worker answered ${response.status}: ${text}`);
     return JSON.parse(text);
   } finally {
-    await worker.stop();
+    await worker?.stop();
     process.chdir(directory);
     fs.rmSync(bundle, { recursive: true, force: true });
   }
@@ -67,9 +68,14 @@ for (const name of runtimes) {
   if (!result) throw new Error(`unknown runtime ${name}`);
   const wallMs = Math.round(performance.now() - started);
   const heapMb = (result.heapBytes / 1048576).toFixed(0);
+  // workerd's clocks advance only on I/O, so Date.now() inside the one request the whole match is
+  // resolved in reads the same before and after: its boot and resolving times come out as 0, and
+  // only the wall time measured here says what the run cost.
+  const timings =
+    name === 'workerd' ? 'boot and resolving not measurable inside a request' : `boot ${result.bootMs} ms, resolving ${result.resolveMs} ms`;
   console.log(
     `${name}: ${result.checks} checks, ${result.mismatches.length} mismatches; ` +
-      `boot ${result.bootMs} ms, resolving ${result.resolveMs} ms, wall ${wallMs} ms, wasm heap ${heapMb} MiB`,
+      `${timings}, wall ${wallMs} ms, wasm heap ${heapMb} MiB`,
   );
   for (const mismatch of result.mismatches) {
     console.log(`  ${mismatch.what}: expected ${mismatch.expected}, got ${mismatch.actual}`);

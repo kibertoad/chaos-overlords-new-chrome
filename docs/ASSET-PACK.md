@@ -9,6 +9,7 @@ extractor has always checked; the spec's xxh3 hashes identify the same files.
 <!-- doc-index:begin toc depth=2 -->
 - [Asset pack fingerprint](#asset-pack-fingerprint)
 - [Bundled gameplay data](#bundled-gameplay-data)
+- [Loading the images](#loading-the-images)
 <!-- doc-index:end -->
 
 ## Asset pack fingerprint
@@ -53,3 +54,19 @@ loads the embedded payload.
 Exact bytes say nothing about what a field means. Which field is a gang's Influence, or how the
 original combines two fields, is a claim of the format and rule entries in the spec, with the
 status their evidence supports.
+
+## Loading the images
+
+`OriginalBitmap` lists every bitmap of the pack's `images` folder that the game draws, with
+whether its white is keyed out. A texture can only be drawn through an entry of that table.
+
+The game decodes every entry before its first frame. A bitmap that cannot be read or decoded
+stops the game at start-up, before a match is running, and the first frame of a screen never waits
+for a decode. A file that is missing is not an error: whatever would draw it draws nothing, and
+Detailed Combat plays only when at least one combat animation strip is present. A truncated bitmap
+whose header is intact can decode without an error, so this check does not catch every damaged
+file; `Rechaos.Extractor --verify-output` without `--quick` checks every file's hash.
+
+A reference frame (`--reference-frame`) decodes each bitmap the first time it draws it instead.
+It draws a single screen, which uses a few of the bitmaps, and decoding all of them took about a
+fifth of its run. A damaged bitmap that screen does not draw goes unnoticed there.

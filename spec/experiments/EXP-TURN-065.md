@@ -49,12 +49,11 @@ The run made 2219 calls of `roll` over twelve Done presses. At the end
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off. The rebuild makes the same calls with the same bounds
-and results and reaches the same state, and at the end each human gang's
-recurring order matches the original's `repeat_action`. A Research or
-Influence carried on after it was done would have rolled dice and changed the
-calls.
+A test of the rebuild replays the run with DEV-AI-007 switched off. The rebuild
+makes the same calls with the same bounds and results and reaches the same
+state, and at the end each human gang's recurring order matches the original's
+`repeat_action`. A Research or Influence carried on after it was done would have
+rolled dice and changed the calls.
 
 ## Conclusion
 

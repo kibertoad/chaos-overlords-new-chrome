@@ -10,10 +10,10 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043D132..0x0043D93B
+    address: 0x0043D132..0x0043D93C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043B9D8..0x0043B9E5
+    address: 0x0043B9D8..0x0043B9EA
 tool: capstone 5.0.7 disassembly of the hash-verified executable
 environment: null
 ---
@@ -26,7 +26,7 @@ starts at `0x00498DA8` with 81 records per player.
 - The Attack picker `fn_0043B290` calls `fn_0043D132` at `0x0043B9E5` with two
   stack arguments: the chosen opponent's player slot, read from the picker's
   opponent list, and the acting gang's sector byte, pushed first and so the
-  second argument (`0x0043B9D8..0x0043B9E4`). The caller removes the
+  second argument (`0x0043B9D8..0x0043B9E5`). The caller removes the
   arguments.
 - `fn_0043D132` sets the six INT32 entries at `0x00494850` to -1
   (`0x0043D13E..0x0043D16C`) and draws the picker's target area.

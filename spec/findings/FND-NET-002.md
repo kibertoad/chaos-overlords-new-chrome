@@ -10,14 +10,14 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0046D77B..0x0046DC0F
+    address: 0x0046D77B..0x0046DC10
 tool: Ghidra 12.1.3
 environment: null
 ---
 
 ## Observation
 
-`fn_0046D77B` occupies `0x0046D77B..0x0046DC0F` (1,142 bytes, FND-EXE-004). It
+`fn_0046D77B` occupies `0x0046D77B..0x0046DC10` (1,142 bytes, FND-EXE-004). It
 has thirteen call sites: four in `fn_0046D22F` and nine in `fn_0046A7CB`,
 the connected-session branches of FND-SETUP-007. It takes one status code.
 

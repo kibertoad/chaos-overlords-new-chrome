@@ -271,6 +271,7 @@ public sealed partial class ChaosGame
             _choosingCommandTarget = true;
             _commandPanelFace = CommandPanelFaceState.NotDrawn;
             _pressedCommandPanelButton = null;
+            _commandCancelFacePlain = false;
             // RULE-UI-003, FND-UI-057: the order panel slides in with slot 0, the first sound since
             // the order list opened.
             if (_slidePanels)
@@ -471,12 +472,12 @@ public sealed partial class ChaosGame
         Texture2D pixel,
         MatchState state)
     {
-        DrawPanelArtwork(batch, pixel, _influenceBackground, InfluenceCommandLayout.Panel, 248);
+        DrawPanelArtwork(batch, pixel, InfluenceBackground, InfluenceCommandLayout.Panel, 248);
 
         var actor = state.FindGang(_commandTargetGang)!;
         var actorDefinition = state.Definitions.Gang(actor.DefinitionId);
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, InfluenceCommandLayout.Portrait,
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, InfluenceCommandLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actorDefinition.Id), Color.White);
 
         var sector = state.Sectors[actor.SectorId];
@@ -520,8 +521,8 @@ public sealed partial class ChaosGame
     {
         var action = _commandTargetAction;
         var background = action == GangAction.Equip
-            ? _equipmentPurchaseBackground
-            : _equipmentResearchBackground;
+            ? EquipmentPurchaseBackground
+            : EquipmentResearchBackground;
         if (background is not null)
             batch.Draw(background, EquipmentCommandLayout.Panel, Color.White);
         else
@@ -529,8 +530,8 @@ public sealed partial class ChaosGame
         // SCR-RESEARCH-001, EXP-UI-009: the item list is written on a black area.
         if (action == GangAction.Research) batch.Draw(pixel, EquipmentCommandLayout.ResearchListArea, Color.Black);
         var actor = state.FindGang(_commandTargetGang)!;
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, EquipmentCommandLayout.Portrait,
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, EquipmentCommandLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actor.DefinitionId), Color.White);
         if (action == GangAction.Equip) DrawEquipmentCommandHeldItems(batch, actor);
 
@@ -545,10 +546,12 @@ public sealed partial class ChaosGame
             var rectangle = EquipmentCommandLayout.ItemRow(entry.row);
             font.Draw(batch, item.Name, EquipmentCommandLayout.ItemNameOrigin(entry.row).ToVector2(),
                 Color.Lime, 1);
+            int? cost = null;
             if (action == GangAction.Equip)
             {
                 // SCR-EQUIP-001: the Factory-adjusted price in two number cells from x 420.
-                var price = SpecialSiteRules.EquipmentCost(state, actor, item).ToString();
+                cost = SpecialSiteRules.EquipmentCost(state, actor, item);
+                var price = cost.Value.ToString();
                 font.Draw(batch, price,
                     new Vector2(EquipmentCommandLayout.PriceLeft(price), rectangle.Y + 1), Color.Lime, 1);
             }
@@ -560,28 +563,28 @@ public sealed partial class ChaosGame
                     new Vector2(rectangle.Right - value.Length * 6 - 2, rectangle.Y + 1), Color.Lime, 1);
             }
             if (entry.index == _commandTargetCursor)
-                DrawEquipmentChosenRow(batch, pixel, entry.row, item.Name);
+                DrawEquipmentChosenRow(batch, pixel, entry.row, item.Name, cost);
         }
-        if (_uiKeyedSprites is not null)
-            batch.Draw(_uiKeyedSprites, EquipmentCommandLayout.Category(_equipmentCategory),
+        if (UiKeyedSprites is not null)
+            batch.Draw(UiKeyedSprites, EquipmentCommandLayout.Category(_equipmentCategory),
                 EquipmentCommandLayout.CategoryFrameSource, Color.White);
         DrawCommandPanelFaces(batch);
     }
 
     /// <summary>
     /// The chosen row mark of <c>fn_0043EFE5</c>: the row's 30-character text in the second
-    /// font row of PX00129 inside a one-pixel (0,255,0) frame, covering the price
-    /// (SCR-EQUIP-001, FND-EQUIP-010).
+    /// font row of PX00129 inside a one-pixel (0,255,0) frame. An Equip row's text ends in its
+    /// price (SCR-EQUIP-001, FND-EQUIP-010, FND-EQUIP-011).
     /// </summary>
-    private void DrawEquipmentChosenRow(SpriteBatch batch, Texture2D pixel, int row, string name)
+    private void DrawEquipmentChosenRow(SpriteBatch batch, Texture2D pixel, int row, string name, int? price)
     {
         var strip = EquipmentCommandLayout.ItemRow(row);
-        if (_uiSprites is not null)
+        if (UiSprites is not null)
         {
             var origin = EquipmentCommandLayout.ItemNameOrigin(row);
-            var text = EquipmentCommandLayout.ChosenRowText(name);
+            var text = EquipmentCommandLayout.ChosenRowText(name, price);
             for (var index = 0; index < text.Length; index++)
-                batch.Draw(_uiSprites,
+                batch.Draw(UiSprites,
                     new Rectangle(origin.X + index * OriginalFontLayout.CellWidth, origin.Y,
                         OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight),
                     EquipmentCommandLayout.ChosenRowGlyphSource(text[index]), Color.White);
@@ -591,11 +594,11 @@ public sealed partial class ChaosGame
 
     private void DrawEquipmentCommandHeldItems(SpriteBatch batch, MatchGangState gang)
     {
-        if (_itemPortraits is null) return;
+        if (ItemPortraits is null) return;
         var itemIds = EquippedItems(gang);
         for (var slot = 0; slot < itemIds.Length; slot++)
             if (itemIds[slot] is { } itemId)
-                batch.Draw(_itemPortraits, EquipmentCommandLayout.EquippedItem(slot),
+                batch.Draw(ItemPortraits, EquipmentCommandLayout.EquippedItem(slot),
                     OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
     }
 
