@@ -43,30 +43,27 @@ stored scores of players 1 to 5 are 1, 1, 1, 1 and 2.
 In the resolution after the 96th Done press, player 5 orders two attacks on
 player 3's gangs in sector 34 and five attacks on the human's hiding gang in
 sector 12. Between the last draw at another address (`0x00466E0E`) and the
-first Hide test at `0x00473ABC` the original makes 646 calls at `0x00475FBB`
-and the rebuild 637. That address also rolls the resolver's dice outside
-combat (FND-RNG-006), and every one of these calls is `roll(6)`, so comparing
-bounds and results does not show which 9 of the original's calls are the
-extra ones. The rebuild's last 40 are the combat phase's dice before that
-test, as RULE-ATTACK-001 gives them for player 5's two attacks: an attack of
-14 dice, a retaliation of 7 and an attack of 19, the second target being
-unable to strike back. With the thresholds of a Goon attacker, those pools
-give the damage the end state shows on all four gangs whether the other 9
-dice come before, between or after them. The 9 add nothing to any player's
-`damage_inflicted`: player 5's grows by 10, which the two attacks and the one
-attack on the human that passes its Hide test account for.
+first Hide test at `0x00473ABC` the original makes 646 calls at `0x00475FBB`.
+That address also rolls the resolver's dice outside combat (FND-RNG-006), and
+every one of these calls is `roll(6)`. The last 40 are the combat phase's dice
+before that test, as RULE-ATTACK-001 gives them for player 5's two attacks: an
+attack of 14 dice, a retaliation of 7 and an attack of 19, the second target
+being unable to strike back. With the thresholds of a Goon attacker, those
+pools give the damage the end state shows on all four gangs. Among the earlier
+calls are the 9 dice of player 5's gang in roster slot 19, which Influences
+site 2 of sector 25 in the instant phase (RULE-INFLUENCE-001); FND-AI-082
+traces that choice to player 5's cash after an Equip of the 94th turn. They
+add nothing to any player's `damage_inflicted`: player 5's grows by 10, which
+the two attacks and the one attack on the human that passes its Hide test
+account for.
 
 ## Results
 
-A test of the rebuild replays the run. The rebuild makes the same calls with the same bounds and results up to call
-52029, through 95 full turns of the computer players' planning and
-resolution. There it rolls the first Hide test where the original rolls the
-9 extra dice. The test holds the run as a known divergence at that call.
+A test of the rebuild replays the run. The rebuild makes the same 52052 calls
+with the same bounds and results, and its end state agrees with the
+original's.
 
 ## Conclusion
 
-The run agrees with the rebuild through 95 Siege turns at Goon and shows no
-computer player ending a Siege match in that time. In the last resolution
-the original rolls 9 more dice than the rebuild before the first Hide test.
-If they belong to the combat phase, RULE-ATTACK-001 as written does not give
-them; which step or gang rolls them is an open question.
+The run agrees with the rebuild through 96 Siege turns at Goon and shows no
+computer player ending a Siege match in that time.

@@ -211,12 +211,6 @@ public sealed partial class OriginalNewGameExperimentTests
     private static readonly Dictionary<(string Experiment, int Run), int> KnownDivergences = new()
     {
         [("EXP-TURN-083", 0)] = 1420,
-        // EXP-TURN-112: in the last resolution the original rolls 9 more dice than the rebuild
-        // before the first Hide test, which RULE-ATTACK-001 may not give (#517).
-        [("EXP-TURN-112", 0)] = 52029,
-        // EXP-TURN-113: a computer player hires in the original's 116th turn, and in the rebuild
-        // every computer player rejects an offer (#518).
-        [("EXP-TURN-113", 0)] = 96038,
     };
 
     public static TheoryData<string, int> MatchingRuns()
