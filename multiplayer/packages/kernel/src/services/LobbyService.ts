@@ -16,6 +16,7 @@ import {
   activePlayers,
   humanParticipants,
   isInProgress,
+  isVacated,
   type Match,
   type Player,
 } from '../domain/entities'
@@ -309,20 +310,32 @@ export class LobbyService {
     if (humanParticipants(existing).length === 0) {
       throw new ConflictError('Every player has left this match', { reason: 'match_abandoned' })
     }
-    if (existing.some((player) => player.slot === request.slot)) {
-      throw new ConflictError('That seat has already belonged to a human', {
+    // Every row that ever held this seat, oldest first. The seat is open when there are none, or
+    // when the computer plays every one of them: a takeover vote passed on each human who held it.
+    // A seat whose human is merely absent, kicked or late with a turn is still theirs until the
+    // players present vote, so it stays reserved.
+    const holders = existing.filter((player) => player.slot === request.slot)
+    if (holders.some((player) => player.status !== 'computer')) {
+      throw new ConflictError('That seat still belongs to a human', {
         reason: 'seat_reserved',
       })
     }
+    // The claims that remain once this one releases the seat's former players.
+    const claimants = existing.filter(
+      (player) => player.slot !== request.slot && !isVacated(player),
+    )
     // A courtesy refusal with the right reason before any work is done; `createLate` tests
     // capacity again inside its own insert, which is what actually decides the race between two
     // late joiners taking two different free seats.
-    if (existing.length >= match.settings.maxPlayers) {
+    if (claimants.length >= match.settings.maxPlayers) {
       throw new ConflictError('The match is full', { reason: 'match_full' })
     }
-    this.assertNameIsFree(existing, request.displayName)
+    this.assertNameIsFree(claimants, request.displayName)
     const token = generateToken()
-    const seatKey = (await hashToken(`${match.id}:${request.slot}`)).slice(0, 32)
+    // Deterministic per claim of the seat, so two callers claiming the same seat at once collide
+    // on the id as well as on the occupancy test. The first claim keeps the form ids always had.
+    const claim = holders.length === 0 ? '' : `:${holders.length}`
+    const seatKey = (await hashToken(`${match.id}:${request.slot}${claim}`)).slice(0, 32)
     // The position is taken before the insert because the port has no transactions to take both
     // in one; a join `createLate` then refuses leaves a gap in the sequence, which only has to be
     // unique and increasing. The checks above refuse the requests that are doomed from the start.
@@ -334,16 +347,26 @@ export class LobbyService {
       slot: request.slot,
       joinOrder,
       displayName: request.displayName,
-      portraitId: request.portraitId ?? DEFAULT_PORTRAIT_ID,
+      // A seat a human held wears the face it was generated with, which is its first holder's; the
+      // match state never changes it, so the roster must not either. A seat nobody held wears the
+      // face the host's settings gave it, which is what the client sends.
+      portraitId: holders[0]?.portraitId ?? request.portraitId ?? DEFAULT_PORTRAIT_ID,
       tokenHash: await hashToken(token),
       status: 'active',
       joinedAt: this.deps.clock.now(),
     }
-    if (!(await this.deps.storage.players.createLate(player))) {
+    // The insert and the end of the former players' right to take the seat back are one unit in
+    // storage. A former player whose `rejoin` won the seat a moment earlier is no longer computer
+    // controlled, so the claim refuses. A claim that loses the seat to another late joiner, the
+    // last place under `maxPlayers` to a late joiner on another seat, or the match to its end
+    // revokes nothing, and the former players can still return.
+    const claimed = await this.deps.storage.players.createLate(player)
+    if (!claimed) {
       throw new ConflictError('That seat was claimed by another player, or the match filled up', {
         reason: 'seat_reserved',
       })
     }
+    for (const playerId of claimed.released) await this.hangUp(match.id, playerId)
     await this.refreshRetention(match.id)
     await this.topUpCurrentTurn(match.id, player.id)
     await this.publisher.publish(match.id, {
@@ -383,8 +406,16 @@ export class LobbyService {
         player.id,
         ['left', 'takeoverPending', 'computer'],
         'active',
+        // A late joiner who claims a computer seat revokes its former player's token first. The
+        // returning player authenticated before that, so the token is tested again here.
+        { holdingToken: true },
       ))
     ) {
+      if ((await this.deps.storage.players.get(player.id))?.tokenHash === null) {
+        throw new ForbiddenError('Another player has taken over this seat', {
+          reason: 'seat_taken',
+        })
+      }
       throw new ConflictError('The player seat could not be reclaimed', { reason: 'rejoin_race' })
     }
     await this.topUpCurrentTurn(match.id, player.id)

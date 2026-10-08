@@ -335,4 +335,94 @@ public sealed partial class MultiplayerSessionTests
         Assert.NotNull(report.Outcome);
         Assert.Equal(resumed.State.Coordinator.Turn, report.Coordinator.Turn);
     }
+
+    /// <summary>
+    /// A seat already out still passes the open turn when a reconnect is what finds it, since the
+    /// <c>turn.opened</c> that would have passed it is in the history the restore skips over.
+    /// </summary>
+    [Fact]
+    public async Task AReconnectOfASeatAlreadyOutPassesTheOpenTurn()
+    {
+        var match = ServerMatch();
+        var (session, server, http) = RunningFromViews(match);
+        using var _ = http;
+        await using var __ = session;
+        await WaitFor<MultiplayerNotice.Resumed>(session);
+        var seq = SealAndConfirm(match, server, 7, () => server.Answer(
+            HttpMethod.Get, "/view", Envelope("seat_out"), HttpStatusCode.Conflict));
+        await WaitFor<MultiplayerNotice.SeatOut>(session);
+        await Until(() => server.CallsTo(HttpMethod.Put, "/turns/2/orders") >= 1, "turn 2 was passed");
+
+        // Turn 2 sealed and turn 3 opened while the stream was away.
+        server.Answer(
+            HttpMethod.Get,
+            $"/matches/{MatchId}",
+            new MatchDetail(ViewMatch() with { CurrentTurn = 3, LastEventSeq = seq + 2 }, "CODE1234", "p1"));
+        session.RequestResync();
+
+        await Until(() => server.CallsTo(HttpMethod.Put, "/turns/3/orders") >= 1, "the restore passed turn 3");
+    }
+
+    /// <summary>
+    /// A reconnect after the other players handed this seat to the computer goes on watching the
+    /// match, as lockstep does, rather than failing over the view a computer seat is not served.
+    /// </summary>
+    [Fact]
+    public async Task AReconnectAfterTheSeatWasHandedToTheComputerKeepsWatching()
+    {
+        var match = ServerMatch();
+        var (session, server, http) = RunningFromViews(match);
+        using var _ = http;
+        await using var __ = session;
+        await WaitFor<MultiplayerNotice.Resumed>(session);
+        server.Answer(HttpMethod.Get, "/view", Envelope("not_active"), HttpStatusCode.Forbidden);
+        server.Answer(
+            HttpMethod.Get,
+            $"/matches/{MatchId}",
+            new MatchDetail(ViewMatch() with { LastEventSeq = 8 }, "CODE1234", "p1"));
+        server.Events.Write(Frame(8, "match.playerTakenOver", """{"playerId":"p1"}"""));
+        var seen = new List<MultiplayerNotice>();
+        await WaitFor<MultiplayerNotice.TakeoverVoteClosed>(session, seen);
+
+        session.RequestResync();
+
+        // The stream is opened again only by a restore that kept the session.
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") >= 2, "the stream was reopened");
+        while (session.TryDequeueNotice(out var notice)) seen.Add(notice);
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+    }
+
+    /// <summary>
+    /// A pump that is behind hands a view over at the confirmation it belongs to, with that turn's
+    /// hash, and not at the earlier confirmation it happened to be reading.
+    /// </summary>
+    [Fact]
+    public async Task AViewServedAheadOfTheConfirmationBeingReadWaitsForItsOwn()
+    {
+        var match = ServerMatch();
+        var (session, server, http) = RunningFromViews(match);
+        using var _ = http;
+        await using var __ = session;
+        await WaitFor<MultiplayerNotice.Resumed>(session);
+
+        // Two turns resolve on the server before the client reads either confirmation.
+        using var elsewhere = new FakeMultiplayerServer();
+        var seq = SealAndConfirm(match, elsewhere, 7);
+        var firstHash = match.StateHash;
+        SealAndConfirm(match, elsewhere, seq);
+        var secondHash = match.StateHash;
+        server.Answer(HttpMethod.Get, "/view", ServedView(match, slot: 0));
+        server.Events.Write(SealedFrame(8, 1));
+        server.Events.Write(Frame(9, "turn.opened", """{"turn":2,"deadlineAt":null}"""));
+        server.Events.Write(Frame(10, "turn.confirmed", $$"""{"turn":1,"stateHash":"{{firstHash}}"}"""));
+        server.Events.Write(SealedFrame(11, 2));
+        server.Events.Write(Frame(12, "turn.opened", """{"turn":3,"deadlineAt":null}"""));
+        server.Events.Write(Frame(13, "turn.confirmed", $$"""{"turn":2,"stateHash":"{{secondHash}}"}"""));
+
+        var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session);
+
+        Assert.Equal(2, resolved.Turn);
+        Assert.Equal(secondHash, resolved.StateHash);
+        Assert.Equal(3, resolved.Planning!.State.Coordinator.Turn);
+    }
 }

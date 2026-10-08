@@ -166,8 +166,12 @@ public sealed partial class MultiplayerMatchSession
     /// the state moved on and <see cref="_resumeAfterSeq"/> not, which the restore that followed
     /// replayed history onto as though neither had happened. A resync asked for while a handler
     /// runs is acted on as soon as it returns, at the next read. Nothing a handler awaits is
-    /// unbounded — the calls it makes each have a retry window — except the one wait that can be,
-    /// which watches the cycle itself; see <see cref="AwaitRepairReportsAsync"/>.
+    /// unbounded — the calls it makes each have a retry window — except two waits. The wait for a
+    /// repair's reports watches the cycle itself; see <see cref="AwaitRepairReportsAsync"/>. The wait
+    /// for a view the server has not prepared, in a match played from views, does not: it ends when
+    /// the match ends or the server resolves the turn, and until then nobody can plan the next turn, so the
+    /// events it holds back change nothing a resync would act on sooner; see
+    /// <see cref="FetchViewAsync"/>.
     /// </remarks>
     private async Task<bool> ReadStreamCycleAsync(
         System.Diagnostics.Stopwatch outage,

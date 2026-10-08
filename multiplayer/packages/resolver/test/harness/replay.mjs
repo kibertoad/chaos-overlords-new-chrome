@@ -75,9 +75,14 @@ export async function replayTranscript(resolver, transcript, prefix = '') {
       check('own snapshot round trip', step.hash, roundTrip.stateHash)
       await resolver.release(`${prefix}own`)
       // Every human seat is served the view the native build projects, byte for byte.
-      for (const [slot, expected] of Object.entries(step.seatViews ?? {})) {
+      // A transcript without views was written before they existed and would check none of them.
+      if (!step.seatViews)
+        throw new Error('the snapshot step carries no seat views; rewrite the transcript')
+      for (const [slot, expected] of Object.entries(step.seatViews)) {
         const view = await resolver.seatView(live, Number(slot))
-        check(`seat ${slot}'s view turn`, (await resolver.status(live))?.turn, view?.turn)
+        // A seat that is out has no view, written as null.
+        if (expected !== null)
+          check(`seat ${slot}'s view turn`, (await resolver.status(live))?.turn, view?.turn)
         check(`seat ${slot}'s view`, expected, view ? archivePayload(view.body) : null)
       }
     } else {

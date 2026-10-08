@@ -173,6 +173,49 @@ describe('matches played from seat views', () => {
     expect((await h.storage.turns.get(host.match.id, 2))?.deadlineAt).not.toBeNull()
   })
 
+  it('confirms a turn whose resolution was recorded but never settled', async () => {
+    const { h, resolver } = viewServer()
+    const { host, guest } = await h.startedMatch()
+    resolver.failure = new Error('resolver down')
+    await playTurn(h, [host.token, guest.token], 1)
+    resolver.failure = null
+    // The resolution is written to the turn row, but nothing settles it: the seal's settle was cut
+    // short after the record.
+    const hostP = await h.principalOf(host.token)
+    await h.kernel.referee.resolveThrough(hostP.match, 1)
+    expect((await h.storage.turns.get(host.match.id, 1))?.status).toBe('sealed')
+
+    expect((await viewOf(h, host.token)).turn).toBe(2)
+    expect((await h.storage.turns.get(host.match.id, 1))?.status).toBe('confirmed')
+  })
+
+  it('answers match_finished when the resolution a view request retries ends the match', async () => {
+    const { h, resolver } = viewServer({ finishAfterTurn: 1 })
+    const { host, guest } = await h.startedMatch()
+    resolver.failure = new Error('resolver down')
+    await playTurn(h, [host.token, guest.token], 1)
+    const stale = await h.principalOf(host.token)
+    resolver.failure = null
+
+    await expect(h.kernel.views.seatView(stale)).rejects.toMatchObject({
+      details: { reason: 'match_finished' },
+    })
+    expect(h.storage.statusOf(host.match.id)).toBe('finished')
+  })
+
+  it('answers match_not_running for an abandoned match, which a client tells from a finished one', async () => {
+    const { h } = viewServer()
+    const { host } = await h.startedMatch()
+    await h.storage.matches.transition(host.match.id, ['running'], {
+      status: 'abandoned',
+      updatedAt: new Date(),
+    })
+
+    await expect(viewOf(h, host.token)).rejects.toMatchObject({
+      details: { reason: 'match_not_running' },
+    })
+  })
+
   it('serves a view again after the resolver lost the match', async () => {
     const { h, resolver } = viewServer()
     const { host, guest } = await h.startedMatch()

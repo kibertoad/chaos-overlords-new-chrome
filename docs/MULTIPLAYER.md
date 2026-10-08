@@ -76,9 +76,9 @@ was ordered**:
 
 Every seat no human took at the start is a computer player, planned by the deterministic AI on every
 client identically, so its orders never cross the wire. A host may start with only themselves and
-may opt into late joining. In that mode an incoming player can claim an AI seat that has never been
-owned by a human. A historically human seat is permanently reserved for its original owner, even
-while AI temporarily controls it. The match seed and slot assignment come from the server at start,
+may opt into late joining. In that mode an incoming player can claim any seat the AI plays: one no
+human ever held, or one whose human the players present voted to hand to the AI. A seat whose human
+is absent but not voted out stays reserved for them. The match seed and slot assignment come from the server at start,
 so every client bootstraps the same city.
 
 A departure or a timed turn with no submitted document opens a takeover vote. Every currently
@@ -129,8 +129,9 @@ than it looks: the number and the row become visible together, so a committed `s
 lower one is committed too. A counter handed out before the write could leave a hole that a cursor
 moving forward would skip forever.
 
-The fan-out (an in-process hub on Node, a per-match Durable Object on Cloudflare) is only a wake-up
-hint: every wake and heartbeat drains the log from the last delivered sequence, so a lost
+The fan-out (an in-process hub on Node, announced to the other instances over Postgres
+`LISTEN/NOTIFY` when several share a database; a per-match Durable Object on Cloudflare) is only a
+wake-up hint: every wake and heartbeat drains the log from the last delivered sequence, so a lost
 notification costs at most one heartbeat, never an event, and a reconnecting client resumes from
 the last `seq` it saw. A stored row the server's own build cannot validate (a payload reshaped by
 another build) is withheld from both the stream and `GET /events`, so a jump in the sequence numbers
@@ -178,7 +179,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `hostPortraitId` is the overlord face the host sits down under, stored on their roster row. `settings.gameSettings` is an object the server stores for clients (scenario, the portraits that dress the unclaimed seats, difficulty) and reads two keys of: `allowLateJoin` gates the late-join door, and `seatSummaries` is written back from the host's snapshot uploads and hash reports for the public listing. Everything else in it is opaque. The server also reads `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`. An optional `password` gates joining. |
 | `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings, each match's `sessionVersion`, and available late-join seats with current gang, site, and sector counts. `?sessionVersion=N` narrows the list to matches stored under that session version before the page limit applies; the desktop client always sends its own, so a public match it could not play is never listed. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
 | `POST /matches/join` | anyone | Joins by code (and password), under the caller's chosen `portraitId`. Returns that player's token. Capacity is a single atomic seat claim. |
-| `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings`: the match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
+| `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected seat the AI plays: one no human held, or one every human who held it was voted out of (`409 seat_reserved` otherwise). Claiming a voted-out seat revokes its former player's token and closes their streams, so their `rejoin` stops working. Each claim is a new player row, so a slot can carry several rows, all but the newest computer controlled. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings` for a seat no human held; for one a human held, the server stores that human's face instead. The match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed (null in a match played from views until it ends), and `seatViews: true` in such a match. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
@@ -196,7 +197,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `PUT /matches/:id/turns/:n/orders` | member | Replaces the caller's order document for the open turn and sets `ready`. The write is one statement conditional on the turn still being open, so a new order landing after the seal is refused (`409 turn_not_open`), never silently folded in. An exact retry of the persisted document is acknowledged even after the turn advances, covering a lost success response. Readiness is never taken back: a `ready: false` document for a seat that is already ready is a draft that arrived after the final one, so the same statement leaves the row alone and the call answers with the document that stands. When `ready` completes the roster, the turn seals in the same call. |
 | `GET /matches/:id/turns/:n/orders/mine` | member | The caller's own submission (for a reconnecting client). |
 | `GET /matches/:id/turns/:n/orders` | member | The sealed set: the documents of the players the seal froze, in slot order, plus `orderSetHash`. Refused while open (`409 turn_open`), and in a match played from views until it ends (`409 withheld_until_end`). |
-| `GET /matches/:id/view` | member | In a match played from views, the caller's view of the open turn: `{ turn, slot, formatVersion, sessionVersion, body }`, where `body` is the snapshot archive of the view's save payload. Sent with `Cache-Control: private, no-store`. Refused with 409 `not_a_view_match`, `match_finished`, `seat_out` (the seat is out of the match), or `view_not_ready` (the server has not resolved the turn before; ask again). See [Serving the views](#serving-the-views). |
+| `GET /matches/:id/view` | member | In a match played from views, the caller's view of the open turn: `{ turn, slot, formatVersion, sessionVersion, body }`, where `body` is the snapshot archive of the view's save payload. Sent with `Cache-Control: private, no-store`. Refused with 409 `not_a_view_match`, `match_finished`, `match_not_running` (the match was abandoned), `seat_out` (the seat is out of the match), or `view_not_ready` (the server has not resolved the turn before; ask again). See [Serving the views](#serving-the-views). |
 | `POST /matches/:id/turns/:n/report` | member | `{ stateHash, finished }` after applying the sealed turn locally. Refused in a match played from views (`409 reports_not_taken`). |
 | `POST /matches/:id/snapshots` | host | A base64 native snapshot for a sealed turn, with its `stateHash`. Refused in a match played from views (`409 snapshot_not_required`). |
 | `GET /matches/:id/snapshots/latest`, `/:turn` | member | Snapshot bodies for resync or reconnect. Refused in a match played from views until it ends (`409 withheld_until_end`). |
@@ -222,6 +223,17 @@ bounded by the capacity it indexes and every op must name the submitter's own sl
 unknown fields are refused. See "What the server does and does not defend against" for why this
 stops short of judging legality, which stays with the core on each client while it applies the
 sealed set, exactly as a replay is verified.
+
+A document holds at most `LIMITS.ordersMaxOps` (512) ops, and the server answers a longer one with
+422, which would lose the seat every order of its turn. The client keeps well inside that bound
+(DEV-NET-002). Its document leaves out the ops a later one makes moot: a gang's later order replaces
+its earlier op, cancelling an order given this turn removes it, and the hire dock keeps only the op
+that leaves it in its final state when it starts the turn clear, as hire resolution leaves it every
+turn (a dock that starts with a hire or snub keeps every hire op). A turn then holds at most one op per gang, one for the dock and
+one per dismissed notification, 145 at most. An action that would still grow a full document is
+refused on the planning copy before the copy changes, with "TOO MANY ORDERS THIS TURN.", so the copy
+never shows an order the document lacks. The generated `WireLimits` class carries the bound to the
+C# client from `limits.ts`.
 
 Numbers are **safe integers only**, and `-0` is refused. The order digest is SHA-256 over
 canonical JSON, so a client in another language has to reproduce that text byte for byte, and a
@@ -958,9 +970,9 @@ seats' documents in a sealed set (a seat reads its own and the set's digest), an
 whole match. Those changes, the view route and the refusals of reports and uploads moved the
 protocol version to 34. The session version stays: the sealed sets, order documents and snapshots a
 match stores are the same, and the mode is a new column on the match (`seat_views`, migration
-`0008_seat_views`), false for every match created before it. Journals record the seat they were
-recorded on, which moved the replay format to 55; the state fingerprint encoding, the native save
-format and the session version stay.
+`0008_seat_views` on SQLite and `0009_seat_views` on Postgres), false for every match created before it.
+Journals record the seat they were recorded on, which moved the replay format to 55; the state
+fingerprint encoding, the native save format and the session version stay.
 
 ### Cost
 
@@ -1104,6 +1116,13 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    as an exceptional repair (the same state as a quick-save), declaring the **native save** format
    version — the replay format's says nothing about those bytes. Every other client refuses a version
    newer than it reads, and otherwise loads it, recomputes the hash and re-reports.
+   Planning stays closed for the whole pause, including on a client that corrected its own
+   report: the corrected state is shown, but the server still refuses orders. It reopens when the
+   client adopts a repair it did not hold, or on `match.statusChanged` to `running`, which the
+   server logs after every confirmation that settled the pause. A client that reopens on the status
+   change restores the draft the server holds for the open turn, as a reconnect does. A draft written
+   on a state the client has since corrected is dropped and the next edit replaces it; a finished
+   document cannot be replaced, so the seat stays finished and waits for the seal.
 6. On `turn.deadlineExtended`, replace the countdown for that turn. A null deadline pauses it for an
    absence vote; a later timestamp restarts it after that vote or a desync pause closes. Show that
    countdown and warn against it — the client runs no planning clock of its own online, so the
@@ -1255,27 +1274,33 @@ dock a player plans against the dock the sealed turn grants.
 
 ## Limitations and next steps
 
-- **One server process.** The Node runtime fans events out in memory, so two instances behind a
-  load balancer would each wake only their own subscribers: a client on instance A would sit silent
-  through everything written on instance B, with no error to show for it. Rate limits do not
-  fragment: on Postgres every instance counts in one shared table. Postgres is offered for
-  durability and operational familiarity, not as a way to scale out; running more than one
-  instance needs a shared fan-out (the Cloudflare runtime's
-  Durable Object is the worked example) before it is safe. The `GET /events?after=` fallback is the
-  one path that does work under it, because it reads the log directly. Tracked in
+- **Several Node instances need Postgres, and some limits stay per instance.** Instances that share a
+  Postgres database announce each event and each kick to one another over `LISTEN/NOTIFY`, so a
+  stream held by any instance is woken at once, and they take the turn sweep and the retention pass
+  in turn through advisory locks. Rate limits are counted in one shared table, so a budget is spent
+  once across every instance. The stream caps count one instance's streams, a player's stale
+  stream on another instance is not replaced by their reconnect (it ends at its stall check or when
+  its socket closes), and the bug report intake is a SQLite file per instance. A SQLite store
+  serves one process. Tracked in
   [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
 - **Late joining is offered, and narrowly.** A host may set `allowLateJoin`, and once the match
-  has its bootstrap snapshot a newcomer can take a slot that never belonged to a human. A public match
+  has its bootstrap snapshot a newcomer can take a slot the AI plays, whether no human ever held it
+  or the vote handed its human's seat to the AI. A public match
   can be named by its id or its join code; a `private` one only by its code, because the id rides
   every event, the client's recovery file and any log line. The code is trimmed and upper-cased
   there as it is at the lobby door. The door reads the host's
-  `maxPlayers`, so the lobby's limit is the running match's limit too.
+  `maxPlayers`, so the lobby's limit is the running match's limit too. A former player whose seat
+  was voted to the AI counts against it until a newcomer claims that seat, because until then they
+  can still come back.
 - **An approved computer seat can be reclaimed, by the player whose seat it was.** Players may
   wait indefinitely while a temporarily absent member holds a human seat, and authenticated turn
   activity cancels the pending vote. Once everyone approves computer control the deterministic
   transfer stands, but the original member still holds their token and `rejoin` takes the seat
-  back; the `match.playerReturned` event says whether it replaced a computer. A late joiner
-  cannot take a seat that was ever human, which is what keeps the two paths from colliding.
+  back; the `match.playerReturned` event says whether it replaced a computer. That right lasts
+  until a late joiner claims the seat, which revokes the former member's token. The claim releases
+  the token in one statement and inserts the new row in the next, and `rejoin` only reclaims a seat
+  whose token is still live, so a return and a claim racing for the same seat cannot both win; the
+  loser of a `rejoin` is told `seat_taken`.
 - **The lobby is polled, not streamed.** The game reads the match about once a second while the
   lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
   facts too; opening it earlier would mean unwinding a session for every player who backs out.

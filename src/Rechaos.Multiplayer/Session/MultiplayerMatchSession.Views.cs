@@ -64,6 +64,12 @@ public sealed partial class MultiplayerMatchSession
     public MatchReplayRecorder? ReleasedJournal => Volatile.Read(ref _releasedJournal);
 
     /// <summary>
+    /// Set once this session has handed the interface a view, the final state or the seat's exit,
+    /// so a later restore is a reconnect of a match the player is already looking at.
+    /// </summary>
+    private bool _interfaceHoldsTheMatch;
+
+    /// <summary>
     /// Whether this match is played from per-seat views, as the server stamped it at creation.
     /// </summary>
     public bool PlaysFromViews => _history is null;
@@ -108,7 +114,10 @@ public sealed partial class MultiplayerMatchSession
             case TurnOpenedEvent opened when _seatOut:
                 _viewTurn = Math.Max(_viewTurn, opened.Payload.Turn);
                 PassTurn(opened.Payload.Turn);
-                return false;
+                // No deadline to show: the game cleared it when the seat went out.
+                return true;
+            case TurnDeadlineExtendedEvent when _seatOut:
+                return true;
             case MatchStatusChangedEvent { Payload.Status: MatchStatus.Finished }:
                 // The final state goes before the finish, which the interface reads it beside.
                 await DeliverFinalStateAsync(includedOwnOrders: false, cancellationToken)
@@ -139,6 +148,11 @@ public sealed partial class MultiplayerMatchSession
             .ConfigureAwait(false);
         switch (await FetchViewAsync(cancellationToken).ConfigureAwait(false))
         {
+            case ViewFetch.Served served when served.View.Coordinator.Turn != confirmedTurn + 1:
+                // The pump is behind: the server has confirmed later turns since this one. Their
+                // own confirmations follow on the stream, and the last of them hands this view over
+                // under the turn, hash and own-orders answer it belongs to.
+                return;
             case ViewFetch.Served served:
                 HandOverView(served.View, stateHash, includedOwnOrders);
                 return;
@@ -186,6 +200,7 @@ public sealed partial class MultiplayerMatchSession
     private void HandOverView(MatchState view, string stateHash, bool includedOwnOrders)
     {
         _viewTurn = view.Coordinator.Turn;
+        _interfaceHoldsTheMatch = true;
         // The planning copy is a copy of the view, so the interface owns both independently.
         var planning = SpeculativeTurn.For(view, _definitions, Slot);
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
@@ -234,6 +249,7 @@ public sealed partial class MultiplayerMatchSession
                     var (_, final, finalHash, rebuilt) =
                         await ReadFinalStateAsync(cancellationToken).ConfigureAwait(false);
                     _finalStateDelivered = true;
+                    _interfaceHoldsTheMatch = true;
                     _notices.Enqueue(new MultiplayerNotice.Resumed(
                         view, final, new OwnSubmissionView(view.CurrentTurn, null, Ready: false, null), null));
                     await ReleaseJournalAsync(rebuilt, finalHash, cancellationToken).ConfigureAwait(false);
@@ -245,6 +261,11 @@ public sealed partial class MultiplayerMatchSession
                 case ViewFetch.Abandoned:
                     _notices.Enqueue(new MultiplayerNotice.MatchAbandoned());
                     return false;
+                case ViewFetch.NotHuman when _ownSeatIsComputerControlled && _interfaceHoldsTheMatch:
+                    // A seat handed to the computer goes on watching, as in lockstep; a reconnect
+                    // after the takeover must not end the session over the view it has no right to.
+                    // A first start has nothing to show the player, so it still fails below.
+                    return true;
                 default:
                     throw new MultiplayerProtocolException(
                         "this seat is not held by a human player, so the server serves it no view");
@@ -267,6 +288,7 @@ public sealed partial class MultiplayerMatchSession
             ? SpeculativeTurn.Restore(state, _definitions, Slot, document)
             : SpeculativeTurn.For(state, _definitions, Slot);
         _viewTurn = state.Coordinator.Turn;
+        _interfaceHoldsTheMatch = true;
         _notices.Enqueue(new MultiplayerNotice.Resumed(view, state, submission, turn));
         foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
             PublishTakeoverVote(vote);
@@ -287,6 +309,13 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private async Task<ViewFetch> FetchViewAsync(CancellationToken cancellationToken)
     {
+        // Every answer after the lane was told proves the server is back, whichever answer it is.
+        var told = false;
+        ViewFetch Answered(ViewFetch fetch)
+        {
+            if (told) _pumpLane.Recovered();
+            return fetch;
+        }
         for (var attempt = 1; ; attempt++)
         {
             try
@@ -294,21 +323,19 @@ public sealed partial class MultiplayerMatchSession
                 var served = await CallAsync(
                     token => _match.SeatViewAsync(token), lane: null, cancellationToken)
                     .ConfigureAwait(false);
-                var view = ReadServedView(served);
-                if (attempt > QuietViewAttempts) _pumpLane.Recovered();
-                return new ViewFetch.Served(view);
+                return Answered(new ViewFetch.Served(ReadServedView(served)));
             }
             catch (MultiplayerApiException exception) when (exception.Reason == "seat_out")
             {
-                return new ViewFetch.Out();
+                return Answered(new ViewFetch.Out());
             }
             catch (MultiplayerApiException exception) when (exception.Reason == "match_finished")
             {
-                return new ViewFetch.Ended();
+                return Answered(new ViewFetch.Ended());
             }
             catch (MultiplayerApiException exception) when (exception.Reason == "not_active")
             {
-                return new ViewFetch.NotHuman();
+                return Answered(new ViewFetch.NotHuman());
             }
             catch (MultiplayerApiException exception)
                 when (exception.Reason is "view_not_ready" or "match_not_running")
@@ -319,12 +346,13 @@ public sealed partial class MultiplayerMatchSession
                         "The server has not resolved the last turn yet. The match carries on as "
                         + "soon as it has.",
                         attempt);
+                    told = true;
                 }
                 await Task.Delay(ViewRetryDelay(attempt), cancellationToken).ConfigureAwait(false);
                 var detail = await CallAsync(
                     token => _match.GetAsync(token), lane: null, cancellationToken).ConfigureAwait(false);
-                if (detail.Match.Status == MatchStatus.Finished) return new ViewFetch.Ended();
-                if (detail.Match.Status == MatchStatus.Abandoned) return new ViewFetch.Abandoned();
+                if (detail.Match.Status == MatchStatus.Finished) return Answered(new ViewFetch.Ended());
+                if (detail.Match.Status == MatchStatus.Abandoned) return Answered(new ViewFetch.Abandoned());
             }
         }
     }
@@ -384,9 +412,14 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private void EnterSeatOut(int turn)
     {
-        if (_seatOut) return;
-        _seatOut = true;
-        _notices.Enqueue(new MultiplayerNotice.SeatOut(turn));
+        if (!_seatOut)
+        {
+            _seatOut = true;
+            _interfaceHoldsTheMatch = true;
+            _notices.Enqueue(new MultiplayerNotice.SeatOut(turn));
+        }
+        // Passed again on a restore of a seat already out: the turn.opened that would have passed
+        // the open turn may be what the restore skipped over. The document replaces what is held.
         PassTurn(turn);
     }
 
@@ -400,6 +433,7 @@ public sealed partial class MultiplayerMatchSession
         var (turn, final, stateHash, rebuilt) =
             await ReadFinalStateAsync(cancellationToken).ConfigureAwait(false);
         _finalStateDelivered = true;
+        _interfaceHoldsTheMatch = true;
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
             turn, final, stateHash, includedOwnOrders, Planning: null));
         await ReleaseJournalAsync(rebuilt, stateHash, cancellationToken).ConfigureAwait(false);
@@ -551,6 +585,8 @@ public sealed partial class MultiplayerMatchSession
                 return;
             case MatchPlayerTakenOverEvent takenOver:
                 _takeoverVotes.Remove(takenOver.Payload.PlayerId);
+                if (string.Equals(takenOver.Payload.PlayerId, PlayerId, StringComparison.Ordinal))
+                    _ownSeatIsComputerControlled = true;
                 return;
             case MatchPlayerReturnedEvent returned:
                 _takeoverVotes.Remove(returned.Payload.PlayerId);

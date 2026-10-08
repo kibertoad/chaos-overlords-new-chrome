@@ -355,7 +355,6 @@ public sealed class AiTournamentTests
     /// </summary>
     private static readonly HashSet<(GangAction Action, string Reason)> DocumentedDrops =
     [
-        (GangAction.Equip, "Budget"),
         (GangAction.Move, nameof(CommandValidationCode.DestinationNotAdjacent)),
         (GangAction.Influence, nameof(CommandValidationCode.SectorNotControlled)),
         (GangAction.Research, nameof(CommandValidationCode.ResearchTechLevelUnavailable)),
@@ -390,14 +389,15 @@ public sealed class AiTournamentTests
         }
     }
 
-    // The planned action as the command it describes (RULE-AI-002), and why validation or the
-    // planner's running cash total refuses it.
+    // The planned action as the command it describes (RULE-AI-002), and why validation refuses
+    // it. The planner sets no cash aside (FND-AI-082), so a valid command other than an Attack is
+    // never dropped; one that is would be reported as Unexplained.
     private static string DropReason(MatchState state, PlayerId playerId, MatchGangState gang, int slot)
     {
         if (AiTurnPlanner.PlannedCommand(state, playerId, gang, slot) is not { } command) return "NoTarget";
         var validation = CommandValidator.Validate(state, command);
         if (!validation.IsValid) return validation.Code.ToString();
-        return command.Action == GangAction.Attack ? "Undetected" : "Budget";
+        return command.Action == GangAction.Attack ? "Undetected" : "Unexplained";
     }
 
     private void Trace(string format, params object[] values)

@@ -219,6 +219,20 @@ export interface PublicLobbyRow extends LobbyListing {
 export interface MatchSeat {
   matchId: string
   slot: number
+  /** Whether the computer plays the row's seat, which a late joiner may then claim. */
+  computer: boolean
+  /** Whether the row's claim on the seat is over: see `isVacated`. */
+  vacated: boolean
+}
+
+/**
+ * Whether a player row no longer holds any claim on its seat: the computer plays it and nobody
+ * holds a token that could take it back. A late joiner may claim a seat whose every row is
+ * computer controlled, and claiming it releases the tokens that are left, which makes those rows
+ * vacated. See the 2026-10-06 late-join decision.
+ */
+export function isVacated(player: Pick<Player, 'status' | 'tokenHash'>): boolean {
+  return player.status === 'computer' && player.tokenHash === null
 }
 
 export type TakeoverDecision = 'computer' | 'wait'
@@ -256,7 +270,6 @@ export function humanParticipants(players: readonly Player[]): Player[] {
   return players.filter(isHumanParticipant)
 }
 
-/** A started match that has not ended. A desync pause counts: the match resumes from it. */
 /**
  * Whether a match played from views has ended, so that nothing in it is hidden any more: the seed,
  * every seat's sealed sets and the whole state are released to its members.
@@ -265,6 +278,7 @@ export function isConcluded(match: Pick<Match, 'status'>): boolean {
   return match.status === 'finished' || match.status === 'abandoned'
 }
 
+/** A started match that has not ended. A desync pause counts: the match resumes from it. */
 export function isInProgress(match: Pick<Match, 'status'>): boolean {
   return match.status === 'running' || match.status === 'desynced'
 }
