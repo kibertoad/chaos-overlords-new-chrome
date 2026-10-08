@@ -1,7 +1,7 @@
 ---
 id: RULE-SETUP-004
 title: A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-SETUP-015, FND-RNG-005, FND-AI-006, FND-CITY-001, FND-CITY-002, FND-CITY-003, FND-SETUP-003, FND-SETUP-004, FND-SETUP-011, FND-RESEARCH-002, EXP-SETUP-001, EXP-SETUP-002, EXP-SETUP-003, EXP-SETUP-004, FND-DETECT-001, FND-HIRE-005, FND-RNG-006, FND-STATE-003]
@@ -97,3 +97,6 @@ None known.
 - The initialization of the computer players' attitude matrix, which happens
   in the same loop as the reactions, is described with the
   computer players.
+- No recorded run is a network game, which skips the modifier scan. That rests
+  on FND-SETUP-015 and FND-NET-004. Until a run reaches them, the entry stays
+  `supported`.

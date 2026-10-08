@@ -39,7 +39,7 @@
     <None Include="../fixtures/stable-saves/*.rchsave" LinkBase="stable-saves" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../docs/NATIVE-SAVE-FORMAT.md" Link="docs/NATIVE-SAVE-FORMAT.md" CopyToOutputDirectory="PreserveNewest" />
     <!-- The capture coverage table, for the check that it names every compared capture. -->
-    <None Include="../../docs/VALIDATION.md" Link="docs/VALIDATION.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../docs/validation/screen-capture-coverage.md" Link="docs/validation/screen-capture-coverage.md" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="xunit.v3" Version="4.0.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />

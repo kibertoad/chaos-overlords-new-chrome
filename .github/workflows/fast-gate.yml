@@ -77,11 +77,82 @@ jobs:
       # The recovery token's Secret Service store (libsecret) needs a session bus and an unlocked
       # keyring, which the runner image does not start. Without them its test skips, and the
       # binding would never run anywhere in automation.
+      #
+      # The packages are cached per runner image. `apt-get update` and the download usually take
+      # 10-20s, but the Azure Ubuntu mirror the runners use stalls at times, and the step then took
+      # 50-250s before apt fell back to archive.ubuntu.com. With the cache a run reads no package
+      # list and downloads nothing. A new image, or a change to the package list, misses the cache
+      # and downloads them once. The set is saved as soon as it is installed, so a run whose gate
+      # fails still saves it.
+      #
+      # Each saved set gets a key of its own, ending in the run that saved it, and the restore takes
+      # the newest set under the image's prefix. A cached set that does not install is downloaded
+      # again, and the fresh set is saved once it installs from its files, so it replaces the broken
+      # one on the next run. On a runner that does not name its image, nothing is cached.
+      - name: Name the keyring packages
+        if: runner.os == 'Linux'
+        id: keyring-names
+        env:
+          PACKAGES: dbus gnome-keyring libsecret-1-0
+        run: |
+          echo "packages=$PACKAGES" >> "$GITHUB_OUTPUT"
+          if [ -n "${ImageOS:-}" ] && [ -n "${ImageVersion:-}" ]; then
+            echo "prefix=keyring-packages-$ImageOS-$ImageVersion-${PACKAGES// /-}-" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore the keyring packages
+        if: runner.os == 'Linux' && steps.keyring-names.outputs.prefix != ''
+        id: keyring-packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/keyring-packages
+          key: ${{ steps.keyring-names.outputs.prefix }}
+          restore-keys: ${{ steps.keyring-names.outputs.prefix }}
+
       - name: Install a Secret Service keyring
         if: runner.os == 'Linux'
+        id: keyring-install
+        env:
+          RESTORED_KEY: ${{ steps.keyring-packages.outputs.cache-matched-key }}
+          PACKAGES: ${{ steps.keyring-names.outputs.packages }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends dbus gnome-keyring libsecret-1-0
+          read -ra packages <<< "$PACKAGES"
+          shopt -s nullglob
+          downloaded=false
+          download() {
+            downloaded=true
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends --download-only "${packages[@]}"
+            rm -rf ~/keyring-packages
+            mkdir -p ~/keyring-packages
+            find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp {} ~/keyring-packages/ \;
+          }
+          install_files() {
+            local debs=(~/keyring-packages/*.deb)
+            [ ${#debs[@]} -gt 0 ] && sudo apt-get install -y --no-install-recommends "${debs[@]}"
+          }
+          [ -n "$RESTORED_KEY" ] || download
+          # A cached set that no longer installs on this image is downloaded again. A set this run
+          # has just downloaded is not, so apt reads the package lists once.
+          installed=false
+          if install_files; then
+            installed=true
+          elif [ "$downloaded" = false ]; then
+            download
+            if install_files; then installed=true; fi
+          fi
+          [ "$installed" = true ] || sudo apt-get install -y --no-install-recommends "${packages[@]}"
+          # Only a set this run downloaded and installed from its files is worth saving.
+          if [ "$downloaded" = true ] && [ "$installed" = true ]; then
+            echo "save=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Save the keyring packages
+        if: runner.os == 'Linux' && steps.keyring-names.outputs.prefix != '' && steps.keyring-install.outputs.save == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/keyring-packages
+          key: ${{ steps.keyring-names.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Verify, build, and test
         if: runner.os != 'Linux'

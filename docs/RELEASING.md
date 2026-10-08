@@ -205,17 +205,22 @@ signature from an unexpected key means nothing.
 
 ### macOS: deliberately unsigned
 
-macOS installers are never signed, and the `signed release` choice has no macOS
-option. Signing them is not a matter of adding a step: it needs a Developer ID
-Application identity for the app bundle, a separate Developer ID Installer
-identity for the `.pkg`, notarization credentials, and packaging changes first.
+macOS installers are never signed, the `signed release` choice has no macOS
+option, and there are no plans to add one. Apple issues signing identities and
+notarizes only for Apple Developer members, and we do not have Apple Developer
+membership. Players allow the unsigned `.pkg` through Gatekeeper as the
+[README](../README.md#macos) describes, and that is the supported way to install
+on macOS.
+
+For reference, signing would not be a matter of adding a step. It needs a
+Developer ID Application identity for the app bundle, a separate Developer ID
+Installer identity for the `.pkg`, notarization credentials, and packaging
+changes first.
 `Publish-Portable.ps1` builds with `IncludeNativeLibrariesForSelfExtract`, so the
 native libraries are unpacked at run time and are neither signed nor notarized,
 which the hardened runtime required for notarization rejects; and
 `Build-MacInstaller.ps1` places `Rechaos.Extractor` under `Contents/Resources`,
-where `codesign` seals it as data rather than as nested code. Until those are
-addressed, a macOS `.pkg` warns on first open and must be opened from the
-context menu.
+where `codesign` seals it as data rather than as nested code.
 
 ## Continuous integration
 

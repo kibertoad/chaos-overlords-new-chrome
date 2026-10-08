@@ -24,12 +24,12 @@ public static class AttackCommandLayout
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 50, 23);
 
     // FND-UI-019: fn_00418E66 draws the Confirm face from PX00129, (50,386) while the order can be
-    // confirmed and (100,386) otherwise. FND-COMLINK-003: the held-button helper fn_00418821
-    // shows (50,409) for the Cancel face and (50,386) for the Confirm face while held.
+    // confirmed and (100,386) otherwise. FND-UI-062: the held-button helper fn_00418821 shows the
+    // lit Cancel and Confirm faces while either is held with the pointer over it.
     public static Rectangle OkEnabledSource => new(50, 386, 50, 23);
     public static Rectangle OkDisabledSource => new(100, 386, 50, 23);
-    public static Rectangle CancelPressedSource => new(50, 409, 50, 23);
-    public static Rectangle OkPressedSource => new(50, 386, 50, 23);
+    public static Rectangle CancelPressedSource => HeldButtonFaces.Lit(HeldButtonKind.Cancel);
+    public static Rectangle OkPressedSource => HeldButtonFaces.Lit(HeldButtonKind.Confirm);
 
     /// <summary>SCR-ATTACK-001, FND-ATTACK-003: the acting gang's weapon, armor and miscellaneous item.</summary>
     public static Rectangle ActorItem(int slot)
@@ -162,7 +162,7 @@ public static class AttackCommandLayout
 
     /// <summary>
     /// SCR-ATTACK-001, FND-ATTACK-003: Enter (0x0D) and key 0x2B confirm. The rebuild reads 0x2B as
-    /// the Execute virtual key, as the other panels do (FND-COMLINK-003, FND-EQUIP-010).
+    /// the Execute virtual key, as the other panels do (FND-COMLINK-011, FND-EQUIP-010).
     /// </summary>
     public static IReadOnlyList<Keys> ConfirmKeys { get; } = [Keys.Enter, Keys.Execute];
 }

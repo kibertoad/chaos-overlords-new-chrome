@@ -229,6 +229,9 @@ public sealed partial class ChaosGame
             DrawReplayControls(batch, pixel, font);
             return;
         }
+
+        // FND-UI-062: the held-button helper's face, over the panel and under everything above it.
+        DrawHeldPanelFace(batch);
         if (_state is not null && _combatAnimationPlayer.IsPlaying)
             DrawCombatPanel(batch, pixel, font, _state);
         DrawPlanningTimer(batch, pixel);

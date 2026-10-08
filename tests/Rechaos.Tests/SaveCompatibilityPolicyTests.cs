@@ -75,7 +75,7 @@ public sealed class SaveCompatibilityPolicyTests
     private static int DeclaredFormat(string fixture)
     {
         using var bounded = new MemoryStream(File.ReadAllBytes(fixture));
-        return NativeSaveSerializer.DeclaredFormatVersion(bounded)
+        return NativeSaveSerializer.DeclaredFormatVersion(bounded, NativeSaveSerializer.CurrentFormatVersion)
             ?? throw new InvalidDataException($"{Path.GetFileName(fixture)} declares no format version.");
     }
 }

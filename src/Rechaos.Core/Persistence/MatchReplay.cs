@@ -512,7 +512,7 @@ public static class MatchReplaySerializer
         {
             using var bounded = NativeSaveSerializer.ReadBounded(
                 source, MaximumReplayBytes, "Replay exceeds the size limit.");
-            if (NativeSaveSerializer.DeclaredFormatVersion(bounded) is { } declared
+            if (NativeSaveSerializer.DeclaredFormatVersion(bounded, CurrentFormatVersion) is { } declared
                 && declared != CurrentFormatVersion)
             {
                 declaredFormatVersion = declared;

@@ -6,26 +6,26 @@ Entries by status.
 
 ## supported
 
-1 entries.
-
-| ID | Title |
-|---|---|
-| [SCR-EQUIP-001](../../screens/SCR-EQUIP-001.md) | Equip panel |
-
-## established
-
-4 entries.
+3 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-EQUIP-001](../../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
 | [RULE-EQUIP-002](../../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
+| [SCR-EQUIP-001](../../screens/SCR-EQUIP-001.md) | Equip panel |
+
+## established
+
+2 entries.
+
+| ID | Title |
+|---|---|
 | [RULE-EQUIP-003](../../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete |
 | [RULE-EQUIP-004](../../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry |
 
 ## recorded
 
-13 entries.
+14 entries.
 
 | ID | Title |
 |---|---|
@@ -39,9 +39,10 @@ Entries by status.
 | [FND-EQUIP-005](../../findings/FND-EQUIP-005.md) | The Equip panel has four 32-by-32 category cells and a sixteen-row item list on a 9-pixel pitch |
 | [FND-EQUIP-006](../../findings/FND-EQUIP-006.md) | Equip checks cash at its place in the transaction pass, not in the picker, and equal cash is enough |
 | [FND-EQUIP-007](../../findings/FND-EQUIP-007.md) | The transaction pass skips inactive gangs, reads the Equip item, the Give mask and the Sell mask from target and the Give recipient from target_2, and tests only the Give recipient's sector |
-| [FND-EQUIP-008](../../findings/FND-EQUIP-008.md) | The Equip, Give and Sell panels store the item, the item mask and the recipient in target and target_2, and the Equip list and the Give recipients are filtered by the gang definition's Tech Level |
 | [FND-EQUIP-009](../../findings/FND-EQUIP-009.md) | The Equip and Research panels frame the chosen category cell with a 34-by-34 keyed cell of PX00129 and open on category 0 or the category of the pending order |
 | [FND-EQUIP-010](../../findings/FND-EQUIP-010.md) | The Equip panel handler's faces, keys and double-clicks, and the chosen row redrawn in the second font of PX00129 inside a green frame |
+| [FND-EQUIP-011](../../findings/FND-EQUIP-011.md) | The Equip list builder ends each row's text with the price, so the chosen row's strip shows it |
+| [FND-EQUIP-012](../../findings/FND-EQUIP-012.md) | The Equip, Give and Sell panels store the item, the item mask and the recipient in target and target_2, and the Equip list and the Give recipients are filtered by the gang definition's Tech Level |
 
 ## Established on unreproduced evidence
 
@@ -49,8 +50,6 @@ Entries whose status is established and whose findings and experiments are all o
 
 | ID | Title |
 |---|---|
-| [RULE-EQUIP-001](../../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot |
-| [RULE-EQUIP-002](../../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan |
 | [RULE-EQUIP-003](../../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete |
 | [RULE-EQUIP-004](../../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry |
 
@@ -60,6 +59,8 @@ Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
+| [RULE-EQUIP-001](../../rules/RULE-EQUIP-001.md) | Equip pays the item's price from the cash the player has at that point, and replaces the item in the matching slot | supported |
+| [RULE-EQUIP-002](../../rules/RULE-EQUIP-002.md) | The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan | supported |
 | [RULE-EQUIP-003](../../rules/RULE-EQUIP-003.md) | An item's price is its Cost, less a third of it rounded down when the buyer owns the sector and its Factory is complete | established |
 | [RULE-EQUIP-004](../../rules/RULE-EQUIP-004.md) | The Equip list offers researched items of the chosen category within the gang's Tech Level that the gang does not already carry | established |
 | [SCR-EQUIP-001](../../screens/SCR-EQUIP-001.md) | Equip panel | supported |
