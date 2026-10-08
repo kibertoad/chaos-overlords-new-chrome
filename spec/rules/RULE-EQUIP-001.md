@@ -4,7 +4,7 @@ title: Equip pays the item's price from the cash the player has at that point, a
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-EQUIP-001, FND-EQUIP-002, FND-EQUIP-006, FND-EQUIP-007, FND-EQUIP-012, FND-EVENT-001, FND-EVENT-004, EXP-TURN-031, SRC-MANUAL-GOG, FND-AWARDS-001, FND-PLATFORM-003, FND-RESEARCH-002, FND-UPKEEP-001]
+evidence: [FND-EQUIP-001, FND-EQUIP-002, FND-EQUIP-006, FND-EQUIP-007, FND-EQUIP-012, FND-EVENT-001, FND-EVENT-004, EXP-TURN-031, SRC-MANUAL-GOG, FND-AWARDS-001, FND-PLATFORM-003, FND-RESEARCH-002, FND-UPKEEP-001, FND-AI-082]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-003, RULE-EVENT-014, FMT-STATE-001, FMT-DATA-003]
@@ -67,6 +67,10 @@ report. Makes no random draw.
   later Sells, the Chaos payout and the next Upkeep have not.
 - Nothing checked cash when the order was given (FND-EQUIP-006), so an order
   the player cannot afford reaches this point and fails here.
+- A computer player's Equips are tested the same way. Its planning sets no
+  cash aside for them, so every Equip it planned reaches this point, and one
+  planned by a gang that dies in combat before the pass costs nothing and
+  leaves its cash to the Equips after it [FND-AI-082].
 - The replaced item is not sold or returned.
 - A gift delivered to this gang later in the same pass replaces what it bought
   here (RULE-EQUIP-002).

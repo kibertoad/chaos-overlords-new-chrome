@@ -84,6 +84,18 @@ export class MatchLog {
   }
 
   /**
+   * Remember that another process appended `seq`, without its frame.
+   *
+   * Raising `notified` is what makes a stream read: it moves `caughtUp` past every cursor below
+   * `seq`, so the next wake finds no frame in memory and asks the log, which holds the row by the
+   * time the notification arrives because it is sent after the append commits.
+   */
+  heard(seq: number, type: string): void {
+    if (seq > this.notified) this.notified = seq
+    if (type === 'match.started') this.started = true
+  }
+
+  /**
    * Whether a stream at `lastSeq` holds every event this process has been told about.
    *
    * False whenever nothing has been (see `notified`), so an unsure answer is always the one that

@@ -23,11 +23,12 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider, bool Retired = false,
-        int? Cash = null, int? Force = null, int? Tolerance = null)
+        int? Cash = null, int? Force = null, int? Tolerance = null, bool Deactivated = false)
     {
         // "turn 2: player 1 gang slot 0 family 4", "turn 1: player 3 raider_mode 1", "turn 1:
         // player 3 player_active 0", "turn 1: player 0 cash 30000", "turn 2: player 0 gang slot 0
-        // force 10" or "turn 1: sector 54 base_tolerance 127", as the probe writes them.
+        // force 10", "turn 1: sector 54 base_tolerance 127" or "turn 1: player 1 gang slot 0 sector
+        // 100", as the probe writes them.
         public static RecordedPlanning Parse(string value)
         {
             var force = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) gang slot (\d+) force (-?\d+)$");
@@ -41,6 +42,12 @@ public sealed partial class OriginalNewGameExperimentTests
                 return new(int.Parse(tolerance.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture), 0,
                     int.Parse(tolerance.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), 0, false,
                     Tolerance: int.Parse(tolerance.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture));
+            var deactivated = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) gang slot (\d+) sector 100$");
+            if (deactivated.Success)
+                return new(int.Parse(deactivated.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(deactivated.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(deactivated.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture), 0, false,
+                    Deactivated: true);
             var cash = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) cash (-?\d+)$");
             if (cash.Success)
                 return new(int.Parse(cash.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
@@ -121,9 +128,13 @@ public sealed partial class OriginalNewGameExperimentTests
     // shape and force it was passed, and the address of the call.
     private sealed record RecordedPointerCall(int AfterRoll, int Done, int Shape, int Force, int Call);
 
-    // A call of the play helper (FND-AUDIO-006): the roll count and the Done presses before it, the
-    // effect slot and the address of the call.
+    // A call of the play helper (FND-AUDIO-006) or of the effects wrapper (FND-AUDIO-002): the roll
+    // count and the Done presses before it, the effect slot and the address of the call.
     private sealed record RecordedSoundCall(int AfterRoll, int Done, int Slot, int Call);
+
+    // A call of the level setup (FND-AUDIO-019): the roll count and the Done presses before it, the
+    // address of the call, and whether effects_enabled was set when it returned.
+    private sealed record RecordedLevelSetup(int AfterRoll, int Done, int Call, bool EffectsEnabled);
 
     // A call of the presentation wait (FND-TIMER-002): its argument, the call's address, and the
     // milliseconds of its start and return on the clock the run's ticks are timed with.
@@ -165,7 +176,8 @@ public sealed partial class OriginalNewGameExperimentTests
         bool CityView, IReadOnlyList<int> Cards, IReadOnlyList<IReadOnlyList<int>> Gangs, int Viewed);
 
     // A call of a planning entry panel: its name, the roll count when it was called and whether it
-    // stayed open until Exit was pressed (RULE-SETUP-008).
+    // showed its panel, which it does when it reaches the panel-open helper (RULE-SETUP-008,
+    // FND-UI-061).
     private sealed record RecordedPanel(string Panel, int AfterRoll, bool Shown);
 
     // The planning clock of a turn that ran out: the limit, each redraw of the bar as elapsed
@@ -173,6 +185,17 @@ public sealed partial class OriginalNewGameExperimentTests
     // time-limit test that let planning go on and of the one that ended it (RULE-TIMER-002).
     private sealed record RecordedTimer(
         int Turn, int LimitMs, IReadOnlyList<(int Elapsed, int Width, int Slot)> Bars, int LastUnexpiredMs, int ExpiredMs);
+
+    // A holding of the menu bar in a timed turn, in elapsed milliseconds of the planning clock: the
+    // opening key posted, menu mode seen, Escape posted and menu mode left, with the elapsed
+    // milliseconds of every tick of timer slot 0 from the clock's start to its expiry
+    // (RULE-TIMER-003, EXP-TURN-102).
+    private sealed record RecordedMenu(int Turn, int PostedMs, int OpenMs, int ClosingMs, int ClosedMs, IReadOnlyList<int> Ticks);
+
+    // A copy of the planning clock bar's rectangle at the start of a human's clock, before the
+    // start draws the bar: the player, elapsed_turns, and the width and elapsed milliseconds of the
+    // last bar drawn before it, -1 when none was (RULE-TIMER-002, EXP-UI-035).
+    private sealed record RecordedClockCapture(int Player, int ElapsedTurns, int LastWidth, int LastElapsedMs, string? Xxh3);
 
     // A hire the probe wrote into human Player's hire_orders before the Done press of Turn.
     private sealed record RecordedHire(int Turn, int Player, int OfferSlot, int Sector)
@@ -193,6 +216,11 @@ public sealed partial class OriginalNewGameExperimentTests
     {
         private readonly Dictionary<(string, int), int> _terms = [];
         private readonly Dictionary<(string, int, string), int> _fields = [];
+
+        // sound_calls and effect_calls share one form: after_roll, done, slot and the call's address.
+        private static RecordedSoundCall[] SoundCallList(JsonElement calls) =>
+            calls.EnumerateArray().Select(call => new RecordedSoundCall(
+                call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray();
 
         public RecordedRun(JsonElement run, JsonElement inputs)
         {
@@ -239,6 +267,24 @@ public sealed partial class OriginalNewGameExperimentTests
                     call.GetProperty("panel").GetString()!, call.GetProperty("after_roll").GetInt32(),
                     call.GetProperty("shown").GetBoolean())).ToArray()
                 : null;
+            Menus = run.TryGetProperty("menus", out var menus)
+                ? menus.EnumerateArray().Select(menu => new RecordedMenu(
+                    menu.GetProperty("turn").GetInt32(), menu.GetProperty("posted_ms").GetInt32(),
+                    menu.GetProperty("open_ms").GetInt32(), menu.GetProperty("closing_ms").GetInt32(),
+                    menu.GetProperty("closed_ms").GetInt32(),
+                    menu.GetProperty("ticks").EnumerateArray().Select(value => value.GetInt32()).ToArray())).ToArray()
+                : [];
+            ClockCaptures = run.TryGetProperty("clock_captures", out var clocks)
+                ? clocks.EnumerateArray().Select(clock => new RecordedClockCapture(
+                    clock.GetProperty("player").GetInt32(), clock.GetProperty("elapsed_turns").GetInt32(),
+                    clock.GetProperty("last_width").GetInt32(), clock.GetProperty("last_elapsed_ms").GetInt32(),
+                    clock.TryGetProperty("capture", out var copy)
+                        ? copy.GetProperty("screens")[0].GetProperty("elements")[0].GetProperty("xxh3").GetString()
+                        : null)).ToArray()
+                : [];
+            EliminationCards = run.TryGetProperty("elimination_cards", out var cards)
+                ? cards.EnumerateArray().Select(value => value.GetInt32()).ToArray()
+                : [];
             EndgameRows = run.TryGetProperty("endgame_rows", out var endgame)
                 ? new RecordedEndgame(
                     endgame.GetProperty("arguments").EnumerateArray().Select(value => value.GetInt32()).ToArray(),
@@ -330,11 +376,13 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? pointerCalls.EnumerateArray().Select(call => new RecordedPointerCall(
                     call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32(), call[4].GetInt32())).ToArray()
                 : null;
-            SoundCalls = run.TryGetProperty("sound_calls", out var soundCalls)
-                ? soundCalls.EnumerateArray().Select(call => new RecordedSoundCall(
-                    call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
-                : null;
+            SoundCalls = run.TryGetProperty("sound_calls", out var soundCalls) ? SoundCallList(soundCalls) : null;
             EffectsEnabled = run.TryGetProperty("effects_enabled", out var effectsEnabled) ? effectsEnabled.GetBoolean() : null;
+            EffectCalls = run.TryGetProperty("effect_calls", out var effectCalls) ? SoundCallList(effectCalls) : null;
+            LevelSetups = run.TryGetProperty("level_setups", out var levelSetups)
+                ? levelSetups.EnumerateArray().Select(setup => new RecordedLevelSetup(
+                    setup[0].GetInt32(), setup[1].GetInt32(), setup[2].GetInt32(), setup[3].GetInt32() != 0)).ToArray()
+                : null;
             IntroMovies = run.TryGetProperty("intro_movies", out var introMovies)
                 ? introMovies.EnumerateArray().Select(movie => new RecordedIntroMovie(
                     movie.GetProperty("name").GetString()!, movie.GetProperty("frames").GetInt32(),
@@ -397,6 +445,10 @@ public sealed partial class OriginalNewGameExperimentTests
         public IReadOnlyList<RecordedTimer> Timers { get; }
         public IReadOnlyList<RecordedPanel>? Panels { get; }
         public RecordedEndgame? EndgameRows { get; }
+        public IReadOnlyList<RecordedMenu> Menus { get; }
+        public IReadOnlyList<RecordedClockCapture> ClockCaptures { get; }
+        // The active_player at each elimination card a --pass-cards run passed (RULE-OBJECTIVE-005).
+        public IReadOnlyList<int> EliminationCards { get; }
         public IReadOnlyList<RecordedSearch> Search { get; }
 
         /// <summary>The Done presses and expired turns the inputs list before the dump.</summary>
@@ -421,6 +473,10 @@ public sealed partial class OriginalNewGameExperimentTests
         // whether the effects wrapper's calls reach the play helper. Null when the run did not
         // record it.
         public bool? EffectsEnabled { get; }
+        // Null when the run did not record the effects wrapper.
+        public IReadOnlyList<RecordedSoundCall>? EffectCalls { get; }
+        // Null when the run did not record the level setup.
+        public IReadOnlyList<RecordedLevelSetup>? LevelSetups { get; }
         // Null when the run did not record the presentation clock: the milliseconds of each tick of
         // timer slot 0 from the dump on, and each call of the wait.
         public IReadOnlyList<long>? Ticks { get; }

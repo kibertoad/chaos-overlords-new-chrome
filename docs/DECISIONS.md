@@ -19,6 +19,8 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 |---|---|
 | 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
 | 2026-10-06 | [Spectators watch an online match some turns behind](#2026-10-06--spectators-watch-an-online-match-some-turns-behind) |
+| 2026-10-06 | [Comlink in an online match travels in the sealed turn](#2026-10-06--comlink-in-an-online-match-travels-in-the-sealed-turn) |
+| 2026-10-06 | [Let a late joiner take a seat the vote handed to the computer](#2026-10-06--let-a-late-joiner-take-a-seat-the-vote-handed-to-the-computer) |
 | 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
 | 2026-10-06 | [Chat in the online lobby, through the match's event log](#2026-10-06--chat-in-the-online-lobby-through-the-matchs-event-log) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
@@ -117,7 +119,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 - What a spectator sees: the whole map, every seat's position and the orders
   every seat gave, as of the released turn. That is hidden information to the
   players, who see the city through fog of war and never see a rival's
-  orders. If the Comlink is carried online in sealed sets, its messages are
+  orders. The Comlink is carried online in sealed sets, so its messages are
   in that view too. The delay is the control against a player watching their
   own match to cheat: what a spectator can relay is at least the delay old,
   and positions and plans that old have mostly been overtaken. It narrows the
@@ -133,7 +135,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   application and storage, the Worker over D1 with the SQLite migration. A
   spectator polls; nothing is added to the stream or the Durable Object.
   Spectators are rows of their own table, deleted with the match.
-- Versions: protocol version 28. The session version is unchanged: the
+- Versions: protocol version 29. The session version is unchanged: the
   setting is a new optional field and the spectators a new table, and nothing
   a stored match already holds changes meaning. A match created before has no
   delay, which means it cannot be watched.
@@ -156,6 +158,99 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   reads it as one, and the unfinished sessions list offers it as WATCHING.
 - Status: the server on both runtimes, the contracts, the client session
   that follows a match and the desktop screens are implemented and tested.
+
+## 2026-10-06 — Comlink in an online match travels in the sealed turn
+
+- Decision: Comlink opens in an online match. Sending a message and reading
+  one are recorded as two new ops in the player's order document,
+  `sendComlinkMessage` (recipient slots and the text) and `markComlinkRead`
+  (the message's sequence number). Every client applies them when the turn
+  seals, in the sender's or reader's place in slot order, through the same
+  core calls hot-seat play makes (RULE-COMLINK-001, RULE-COMLINK-003,
+  RULE-COMLINK-005). Each player's inbox is part of the state every client
+  hashes, so applying them anywhere else would be a desync.
+- What the rules produce is unchanged. The sealed turn applies every seat's
+  ops and then finishes its planning in slot order, which is the order a
+  hot-seat turn takes, so a message is stored for each recipient, the 16-message
+  cap drops the oldest, and the read messages at the front of a reader's
+  inbox are dropped when its planning ends (RULE-COMLINK-007), exactly as a
+  hot-seat turn with the same actions would do. The recipients must be other
+  human players still in the match (RULE-COMLINK-002); every client checks
+  that when it applies the op, and one that fails is refused the same way
+  everywhere. A message of spaces only is dropped as RULE-COMLINK-003 says,
+  and the game sends no op for it.
+- Timing: a player plans on the state the turn started from, so a message
+  reaches its recipient's inbox when the turn seals. A recipient in a higher
+  slot than the sender would read it during the same turn in hot-seat play,
+  and in the original's network game, where a message went to the
+  recipient's computer at once; online they read it on the next turn. A
+  message to a lower slot arrives after the recipient's planning in hot-seat
+  play and online alike. This is recorded in
+  DEV-NET-001, which already departs from the original's network delivery
+  of RULE-COMLINK-001. It has no setting: delivering a message before the
+  seal would need a second channel outside the sealed log, and a message
+  that one client had stored and another had not would be a desync.
+- Read marks: opening a message in Comlink View marks it read at once on the
+  player's own planning copy, so the panel and the unread alert behave as in
+  hot-seat play, and records `markComlinkRead` for the seal.
+- Takeovers: a seat whose human sent messages can now pass to the computer.
+  The rebuild used to refuse that, because a restored inbox had to show every
+  sender as a human seat. A message from a seat the computer took over is
+  kept, as the original keeps a delivered message, and a restored inbox now
+  accepts a sender that is human or that the computer took over (the seat's
+  raider mode, RULE-AI-027, marks the takeover).
+- Privacy: the server relays every sealed set to every seat, and every client
+  holds every inbox to hash it. The game shows a player only their own inbox,
+  but a modified client, or anyone who can read a seat's traffic, can read
+  messages addressed to others. The original's network game sent a message
+  only to its recipient. We accept this for now and say so in
+  [MULTIPLAYER.md](MULTIPLAYER.md). Private delivery needs the text out of
+  the hashed state, with a commitment in its place and a ciphertext per
+  recipient; issue #484 holds that design.
+- Wire: the order document gains the two ops. The text is 1 to 160
+  characters from space to `Z` (0x20 to 0x5A), the characters the Send panel
+  can type (RULE-COMLINK-006). Protocol version 27 and session version 53,
+  because the order document's schema changed; the state fingerprint's
+  encoding did not, so the save and replay formats stay.
+- Status: implemented and tested.
+
+## 2026-10-06 — Let a late joiner take a seat the vote handed to the computer
+
+- Decision: in a match whose host allowed late join, a newcomer may take
+  over two kinds of computer seat:
+  - a seat that never had a human, as before;
+  - a seat that had a human until a unanimous takeover vote handed it to the
+    computer. Kicking a player ends in the same vote, so a kicked seat
+    becomes open once that vote passes.
+- A seat whose player is absent but not yet voted out (`left`, `kicked` or
+  `takeoverPending`) stays reserved. The vote is unanimous among the players
+  present, so a seat opens only when everyone still playing agreed that its
+  human is gone.
+- The former player may still `rejoin` a computer seat while nobody has
+  claimed it, as before. The first claim wins: the server revokes the former
+  player's token and closes their streams in the same step, and from then on
+  their `rejoin` is refused like any other dead token. One storage statement
+  releases the old claim and another inserts the new one, and `rejoin` only
+  reclaims a seat whose token is still live, so a return and a claim racing
+  for the same seat cannot both win.
+- No new host setting. `allowLateJoin` already asks whether strangers may
+  take computer seats mid-match, and the vote is where the players present
+  consent to this seat being one. A match that was already running when this
+  shipped reads its setting the same way.
+- The seat keeps what the match was generated with. The newcomer plays under
+  the overlord name and face the seat already has, so nothing the rules read
+  changes. The server stores the seat's existing face on the newcomer's row,
+  whatever face the request named. Their own display name is used in the
+  roster only.
+- Capacity: `maxPlayers` counts the humans who still hold a claim on a seat.
+  A seat that was released to a newcomer no longer counts its former player.
+- Each claim of a seat is a new player row with its own id, so a slot can
+  carry several rows over a match. Clients keep every row for history and
+  treat the one that is not computer controlled as the slot's holder.
+- Status: implemented and tested; protocol version 26, because a client from
+  before this cannot follow a seat changing hands this way. The session
+  version is unchanged: nothing stored about a match changes meaning, and
+  every match in progress can carry on.
 
 ## 2026-10-06 — Establish an entry only when its runs reach everything it describes
 

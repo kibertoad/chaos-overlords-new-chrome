@@ -145,6 +145,13 @@ public sealed partial class MultiplayerMatchSession
         AddLatePlayer(playerId, slot, _replay.State.Coordinator.Turn);
 
     /// <param name="beforeTurn">The turn the join took effect before; see <see cref="HandOverSeat"/>.</param>
+    /// <remarks>
+    /// A late joiner may take a seat that a human held until the vote handed it to the computer, so
+    /// a seat this session already knows a player for is not by itself a contradiction. One the
+    /// computer does not play at the point of the join is: the server has seated a second human in
+    /// a chair somebody is still playing. That can be judged only while the state stands at that
+    /// point; a replay over a later snapshot has already settled who plays it.
+    /// </remarks>
     private void AddLatePlayer(string playerId, int slot, int beforeTurn)
     {
         if (_slotsByPlayerId.TryGetValue(playerId, out var knownSlot))
@@ -152,7 +159,10 @@ public sealed partial class MultiplayerMatchSession
             if (knownSlot != slot)
                 throw new MultiplayerProtocolException("a late player changed seats");
         }
-        else if (_slotsByPlayerId.Values.Contains(slot))
+        else if (_slotsByPlayerId.Values.Contains(slot)
+                 && beforeTurn >= _replay.State.Coordinator.Turn
+                 && CanTransferControl(_replay.State)
+                 && ControllerOfSlot(slot) != PlayerController.Computer)
             throw new MultiplayerProtocolException("a late player claimed a human-owned seat");
         else
         {

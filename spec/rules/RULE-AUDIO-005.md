@@ -4,7 +4,7 @@ title: Playing a sound effect, which cuts off the one playing
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AUDIO-002, FND-AUDIO-003, FND-AUDIO-006, FND-EXE-004, FND-AUDIO-013]
+evidence: [FND-AUDIO-002, FND-AUDIO-003, FND-AUDIO-006, FND-AUDIO-019, FND-EXE-004, FND-AUDIO-013, EXP-AUDIO-001, EXP-AUDIO-002]
 conflicting: []
 split_with: []
 related: []
@@ -69,4 +69,8 @@ None known.
 
 ## Open questions
 
-None.
+- EXP-AUDIO-001 and EXP-AUDIO-002 reach both outcomes of the test in
+  `play_effect`, the push cue passed on with `effects_enabled` set and refused
+  with it clear. No run of the original reaches an empty slot or observes one
+  effect cutting off another, which rest on FND-AUDIO-003 and FND-AUDIO-006
+  alone, so the status stays `supported`.
