@@ -144,6 +144,8 @@ namespace Rechaos.Tests;
 /// in (RULE-TOLERANCE-002). EXP-TURN-116 keeps the island modifier's Crackdowns of 100 through a
 /// countdown (RULE-POLICE-003), and EXP-SETUP-005 names two players with that modifier
 /// (RULE-SETUP-005).
+/// EXP-UI-030 drags players between setup cards and ends with the roster New Game opens with, so
+/// the match it then starts is the one the seed alone gives (RULE-SETUP-009).
 /// In EXP-TURN-109 a family-7 gang whose focus names the sector it stands in, its best research
 /// sector, researches there although a Research site in it is unfinished (RULE-AI-026, FND-AI-078).
 /// Every computer player's pass starts from its sector weights and the hostility step

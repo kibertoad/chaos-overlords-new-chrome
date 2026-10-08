@@ -151,6 +151,7 @@ public sealed partial class OriginalNewGameExperimentTests
         "EXP-UI-025",
         "EXP-UI-026",
         "EXP-UI-029",
+        "EXP-UI-030",
         "EXP-UI-041",
         "EXP-UI-042",
         "EXP-UI-043",
