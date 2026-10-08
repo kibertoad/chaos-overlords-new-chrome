@@ -81,13 +81,16 @@ internal static class CaptureFixture
 
     /// <summary>
     /// The setup steps of <c>--setup-steps</c>, each with the copy a <c>shot</c> took, compared at
-    /// SCR-SETUP-001.
+    /// SCR-SETUP-001, or the copy a <c>name</c> step took under the open dialog, compared at
+    /// SCR-SETUP-003.
     /// </summary>
     public static JsonArray? ExtractSetupSteps(string runDirectory, JsonNode trace)
     {
         if (trace["Settings"]?["SetupSteps"] is not JsonArray steps) return null;
         var notes = trace["Notes"]!.AsArray().Select(note => note!.GetValue<string>()).ToHashSet();
         var screen = CaptureScreen.Load("SCR-SETUP-001");
+        // A name step's copy is the screen the game drew under the name dialog (SCR-SETUP-003).
+        var underDialog = CaptureScreen.Load("SCR-SETUP-003");
         return new JsonArray(steps.Select((step, index) =>
         {
             var record = new JsonObject
@@ -96,13 +99,20 @@ internal static class CaptureFixture
                 ["x"] = step["X"]!.GetValue<int>(),
                 ["y"] = step["Y"]!.GetValue<int>(),
             };
+            // A name step presses the name band of card 0 (NewGameSession.EnterName).
+            if (record["kind"]!.GetValue<string>() == "name")
+            {
+                record["x"] = OriginalAddresses.NameBandX;
+                record["y"] = OriginalAddresses.NameBandY;
+            }
             if (record["kind"]!.GetValue<string>() == "drag")
             {
                 record["to_x"] = step["Target"]!.GetValue<int>();
                 record["to_y"] = step["Choice"]!.GetValue<int>();
             }
             if (notes.Contains(SetupStepNote(index))
-                && Extract(Path.Combine(runDirectory, $"setup-step-{index}.bmp"), 0, null, null, null, screen)
+                && Extract(Path.Combine(runDirectory, $"setup-step-{index}.bmp"), 0, null, null, null,
+                    record["kind"]!.GetValue<string>() == "name" ? underDialog : screen)
                     is { } capture)
                 record["capture"] = capture;
             return (JsonNode)record;

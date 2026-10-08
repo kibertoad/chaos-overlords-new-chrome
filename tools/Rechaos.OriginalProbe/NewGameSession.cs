@@ -77,12 +77,6 @@ internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions, int
     public override string ToString() => $"turn {Turn}: player {Player} search filter {string.Join(" ", Definitions)}";
 }
 
-/// <summary>
-/// One city redraw (FND-SEARCH-006): the viewing player and each site marker it drew as
-/// definition, sector, ordinal and controlled flag.
-/// </summary>
-internal sealed record CityMarkers(int Viewer, List<int[]> Markers);
-
 /// A Financial panel the probe opens before the Done press of <paramref name="Turn"/>, after that
 /// turn's orders and hires are written: the City variant for sector -1, otherwise the Sector variant
 /// of that sector, which the probe selects on the map first (FND-FINANCE-002).
@@ -93,42 +87,6 @@ internal sealed record ProbeFinance(int Turn, int Sector)
         ? $"Financial, City ({OriginalAddresses.FinanceCityX}, {OriginalAddresses.FinanceCityY}), turn {Turn}"
         : $"Financial, Sector ({OriginalAddresses.FinanceSectorX}, {OriginalAddresses.FinanceSectorY}) with sector {Sector} selected, turn {Turn}";
 }
-
-/// <summary>
-/// 32-bit values the probe writes at <paramref name="Address"/> when the planning-entry function
-/// starts to draw the console (FND-UI-040): the first at its first call, the second at its second,
-/// and the last at every later call. The console then draws a number the match would not reach,
-/// such as a score whose first glyph cell lies outside the glyph sheet (RULE-UI-004), over what an
-/// earlier call drew. The write changes the match from then on, so a run that uses it is not
-/// replayed. The calls are counted over every human's entries, so the probe takes it with one
-/// human only.
-/// </summary>
-internal sealed record ProbeDrawValue(uint Address, IReadOnlyList<int> Values)
-{
-    public override string ToString() => $"draw_value 0x{Address:X8} {string.Join("/", Values)}";
-}
-
-/// <summary>
-/// A left-button press and release the probe posts at a client point once the dump is taken
-/// (<c>--search-clicks</c>, SearchClickRecord).
-/// </summary>
-internal sealed record ProbeClick(int X, int Y)
-{
-    public override string ToString() => $"({X}, {Y}) after the dump";
-}
-
-/// <summary>
-/// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
-/// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
-/// Combat Results function returns at once when no fight qualifies.
-/// </summary>
-internal sealed record PanelRecord(string Panel, int AfterRoll, bool Shown);
-
-/// <summary>
-/// The values one Financial panel drew, in the order it drew them (FND-FINANCE-003), with the sector
-/// the probe asked for and the sector the panel function was passed, -2 when it was not called.
-/// </summary>
-internal sealed record FinanceRecord(int Turn, int Sector, int PanelSector, List<int> Values);
 
 /// <summary>
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
@@ -307,7 +265,8 @@ internal sealed record ProbeTrace(
     List<NameEntryRecord>? NameEntries = null,
     List<int>? EliminationCards = null,
     List<MenuRecord>? Menus = null,
-    List<ClockCaptureRecord>? ClockCaptures = null);
+    List<ClockCaptureRecord>? ClockCaptures = null,
+    List<NameShotRecord>? NameShots = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -335,8 +294,6 @@ internal sealed partial class NewGameSession(
     private bool _eliminationCardReached;
     private EndgameDrawing? _endgame;
     private bool _endgameDrawn;
-    private CityMarkers? _redraw;
-    private CityMarkers? _lastRedraw;
     private readonly List<FinanceRecord> _finance = [];
     private FinanceRecord? _financeCapture;
     private int _financePanelSector = -2;
@@ -724,22 +681,6 @@ internal sealed partial class NewGameSession(
         _notes.Add($"search after roll {_rolls.Count}: {write}");
     }
 
-    // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
-    // last complete redraw, whichever human it was drawn for, with that viewer.
-    private void OnCityRedraw(BreakContext context)
-    {
-        var redraw = new CityMarkers(context.Argument(0), []);
-        _redraw = redraw;
-        _process.SetBreakpoint(context.ReturnAddress, _ =>
-        {
-            if (_redraw == redraw) _lastRedraw = redraw;
-            _redraw = null;
-        }, oneShot: true);
-    }
-
-    private void OnSiteMarker(BreakContext context) =>
-        _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3) & 0xFF]);
-
     // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
     // of the Financial control that opens the variant, keeps the nine numbers the panel draws, and
     // presses its close control until the panel function has returned. A capture counts only when
@@ -983,7 +924,8 @@ internal sealed partial class NewGameSession(
             _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null,
             _keyEvents.Count == 0 ? null : _keyEvents, _nameEntries.Count == 0 ? null : _nameEntries,
             _eliminationCards.Count == 0 ? null : _eliminationCards, _menus.Count == 0 ? null : _menus,
-            settings.ClockCaptures ? _clockCaptures : null);
+            settings.ClockCaptures ? _clockCaptures : null,
+            _nameShots.Count == 0 ? null : _nameShots);
     }
 
     private static void Click(IntPtr window, int x, int y)

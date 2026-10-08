@@ -32,14 +32,15 @@ public sealed partial class ScreenCaptureTests
     // SCR-HIRE-001, SCR-GANG-002, SCR-COMBAT-001, SCR-EVENT-001, SCR-OBJECTIVE-001, SCR-SEARCH-001,
     // SCR-MOVE-001, SCR-EQUIP-001, SCR-RESEARCH-001, SCR-GANG-001, SCR-GIVE-001, SCR-SELL-001,
     // SCR-INFLUENCE-001, SCR-ATTACK-001, SCR-OPTIONS-001, SCR-COMLINK-002, SCR-COMLINK-001,
-    // SCR-AWARDS-001, SCR-OBJECTIVE-002, SCR-COMBAT-002 and SCR-AWARDS-002.
+    // SCR-AWARDS-001, SCR-OBJECTIVE-002, SCR-COMBAT-002, SCR-AWARDS-002 and SCR-SETUP-003.
     // docs/validation/screen-capture-coverage.md lists the experiments whose captures each screen is compared at,
     // and CoverageTableNamesEveryComparedCapture holds that table to the fixtures.
     // The site and Force meters of RULE-UI-005 and the sector values of RULE-UI-011 are compared
     // as elements of those screens, and the pylons of RULE-UI-012 on the city map of Siege
     // (EXP-UI-013) and Big Man (EXP-UI-014). The setup steps of EXP-UI-015 compare the first setup
     // of RULE-SETUP-002 and RULE-SETUP-010, the card presses of RULE-SETUP-009, Add and Remove of
-    // RULE-SETUP-010, and setup buttons released inside and outside (RULE-UI-001). The Done press
+    // RULE-SETUP-010, and setup buttons released inside and outside (RULE-UI-001). The setup
+    // steps of EXP-UI-030 compare the card drags of RULE-SETUP-009. The Done press
     // of EXP-UI-012 opens the warning of RULE-OPTIONS-003 from the original's gangs, one of them
     // idle. The console presses before these captures route as RULE-UI-002 reads them. EXP-UI-018
     // compares the elimination card the only local human sees where its planning would have come
@@ -48,7 +49,9 @@ public sealed partial class ScreenCaptureTests
     // (FND-COMBAT-011). EXP-UI-041 and EXP-UI-042 hold a button across their shots: console
     // tiles, close, Cancel and confirm faces held under the pointer and off it (FND-UI-062,
     // FND-UI-067), a hire offer in flight (FND-HIRE-010), and the order panels with a choice made
-    // (FND-EQUIP-011).
+    // (FND-EQUIP-011). EXP-UI-051 compares the setup screen the game drew under the name
+    // dialog SCR-SETUP-003, which Windows draws, with card 0's name row left to the editor of
+    // DEV-SETUP-003.
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
