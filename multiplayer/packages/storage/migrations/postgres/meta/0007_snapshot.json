@@ -1,5 +1,5 @@
 {
-  "id": "804bd923-8f7f-453e-8431-1f343ed5b3cc",
+  "id": "26b7d700-72fa-466e-9e44-f54bc03d4b15",
   "prevId": "57a5f971-553d-4d2d-99f7-8a77f192ecfe",
   "version": "7",
   "dialect": "postgresql",
@@ -409,67 +409,60 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.removal_votes": {
-      "name": "removal_votes",
+    "public.rate_limit_windows": {
+      "name": "rate_limit_windows",
       "schema": "",
       "columns": {
-        "match_id": {
-          "name": "match_id",
+        "key": {
+          "name": "key",
           "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "window_start": {
+          "name": "window_start",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
-        "target_player_id": {
-          "name": "target_player_id",
-          "type": "text",
+        "reset_at": {
+          "name": "reset_at",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
-        "voter_player_id": {
-          "name": "voter_player_id",
-          "type": "text",
+        "count": {
+          "name": "count",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "decision": {
-          "name": "decision",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "cast_at": {
-          "name": "cast_at",
-          "type": "timestamp with time zone",
+        "allowed": {
+          "name": "allowed",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": true
         }
       },
-      "indexes": {},
-      "foreignKeys": {
-        "removal_votes_match_id_matches_id_fk": {
-          "name": "removal_votes_match_id_matches_id_fk",
-          "tableFrom": "removal_votes",
-          "tableTo": "matches",
-          "columnsFrom": [
-            "match_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "removal_votes_match_id_target_player_id_voter_player_id_pk": {
-          "name": "removal_votes_match_id_target_player_id_voter_player_id_pk",
+      "indexes": {
+        "rate_limit_windows_reset_idx": {
+          "name": "rate_limit_windows_reset_idx",
           "columns": [
-            "match_id",
-            "target_player_id",
-            "voter_player_id"
-          ]
+            {
+              "expression": "reset_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},

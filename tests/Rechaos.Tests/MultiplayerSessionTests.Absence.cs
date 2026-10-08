@@ -179,8 +179,13 @@ public sealed partial class MultiplayerSessionTests
     /// The same bootstrap, settings and empty turns the session is about to be fed, so the count is
     /// the one it will reach. It has to be exact: a seal announced for a turn past the end is a
     /// protocol failure, which is the very thing the test would then be unable to tell from the bug.
+    /// The inputs never change, so the match is played once for every test that asks.
     /// </remarks>
-    private static int TurnTheMatchEndsOn()
+    private static int TurnTheMatchEndsOn() => FinalTurn.Value;
+
+    private static readonly Lazy<int> FinalTurn = new(PlayToTheEnd);
+
+    private static int PlayToTheEnd()
     {
         var replay = new MatchReplayRecorder(
             MatchBootstrapFactory.Create(BundledOriginalData.Load(), Seed, GameSettings, Roster));

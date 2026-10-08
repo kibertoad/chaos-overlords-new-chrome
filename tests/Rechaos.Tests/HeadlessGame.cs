@@ -57,7 +57,7 @@ internal sealed class HeadlessGame : IDisposable
             SoundEffects = Sounds,
             MultiplayerTransport = multiplayerTransport,
             RunRandomState = runRandomState,
-        });
+        }, MatchDeviations.Original);
         Game.Attach(_shell);
         Game.LoadGameData();
     }
