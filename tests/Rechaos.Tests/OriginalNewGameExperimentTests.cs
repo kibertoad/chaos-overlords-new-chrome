@@ -158,6 +158,7 @@ public sealed partial class OriginalNewGameExperimentTests
         "EXP-UI-026",
         "EXP-UI-029",
         "EXP-UI-030",
+        "EXP-UI-031",
         "EXP-UI-032",
         "EXP-UI-034",
         "EXP-UI-035",
@@ -166,10 +167,12 @@ public sealed partial class OriginalNewGameExperimentTests
         "EXP-UI-042",
         "EXP-UI-043",
         "EXP-UI-044",
+        "EXP-UI-045",
         "EXP-UI-046",
         "EXP-UI-047",
         "EXP-UI-048",
         "EXP-UI-049",
+        "EXP-UI-050",
         "EXP-UI-054",
 
         "EXP-EQUIP-001",
@@ -197,6 +200,7 @@ public sealed partial class OriginalNewGameExperimentTests
         "EXP-COMBAT-009",
 
         "EXP-AUDIO-001",
+        "EXP-AUDIO-002",
 
         "EXP-VIDEO-001",
     ];
