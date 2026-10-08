@@ -14,7 +14,13 @@ public enum HireValidationCode : byte
     InsufficientCash,
     SectorNotControlled,
     GangCapacityReached,
-    SectorCapacityReached
+    SectorCapacityReached,
+
+    /// <summary>
+    /// DEV-NET-002: the order document of an online turn has no room for another order. The core
+    /// never produces it; the online planning copy does.
+    /// </summary>
+    OrderLimitReached
 }
 
 public readonly record struct HireValidation(HireValidationCode Code, string Message)
@@ -65,7 +71,8 @@ internal static class HireValidationMessages
             [HireValidationCode.InsufficientCash] = "Not enough cash to hire.",
             [HireValidationCode.SectorNotControlled] = "Use owned or occupied sector.",
             [HireValidationCode.GangCapacityReached] = "Player gang limit reached.",
-            [HireValidationCode.SectorCapacityReached] = "Sector gang limit reached."
+            [HireValidationCode.SectorCapacityReached] = "Sector gang limit reached.",
+            [HireValidationCode.OrderLimitReached] = "Too many orders this turn."
         };
 
     public static string For(HireValidationCode code) => Messages[code];

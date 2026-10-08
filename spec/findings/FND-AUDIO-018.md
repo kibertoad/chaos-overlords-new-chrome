@@ -44,8 +44,7 @@ environment: null
 
 ## Observation
 
-This entry is FND-AUDIO-012 with the event pump's part read again. Function
-extents are those of FND-EXE-004.
+Function extents are those of FND-EXE-004.
 
 - The Comlink recorder `fn_0045D2F0`, when it appends a message for the active
   player, sets the pending byte at `0x0048781C`, plays slot 6 through the
@@ -84,10 +83,6 @@ the eight-step counter stood.
 
 ## Alternatives
 
-- FND-AUDIO-012's reading that the event pump also plays slot 6 when it enters
-  the city screen with the pending byte set is ruled out: the pump's only other
-  read of the pending byte, at `0x0046331D`, draws the light, and no fourth
-  call pushes slot 6.
 - Whether the eight-step counter and the repeat counter advance only on the
   city and sector screens or on every screen the pump serves has not been
   recorded.

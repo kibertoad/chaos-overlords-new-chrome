@@ -23,6 +23,32 @@ public sealed partial class OriginalNewGameExperimentTests
         } while (match.Outcome is null && match.Coordinator.Phase != TurnPhase.Upkeep);
     }
 
+    // RULE-SETUP-008, RULE-OBJECTIVE-005: the rest of a hot-seat round after the first human's
+    // Done. Each later human still playing draws its offers at its planning entry and presses Done
+    // with no orders; an eliminated one's slot is crossed, its card being presentation only. The
+    // round ends before the first human's next planning entry, where the probe stops at the
+    // hand-off card before the offers are drawn, or at the match's outcome.
+    private static void AdvanceHotSeatRound(MatchReplayRecorder recorder, PlayerId first)
+    {
+        var match = recorder.State;
+        while (match.Outcome is null)
+        {
+            if (match.Coordinator.Phase == TurnPhase.Command
+                && match.Coordinator.ActivePlayer is { } player
+                && match.FindPlayer(player)!.Setup.Controller == PlayerController.Human)
+            {
+                if (player == first && IsActive(match, first)) return;
+                if (IsActive(match, player))
+                {
+                    recorder.PrepareHireOffers(player);
+                    recorder.FinishCommand(player);
+                    continue;
+                }
+            }
+            HeadlessMatchRunner.Advance(recorder);
+        }
+    }
+
     private static void AssertReplayEndpoint(MatchState match, PlayerId human, int controller)
     {
         if (controller != 0)

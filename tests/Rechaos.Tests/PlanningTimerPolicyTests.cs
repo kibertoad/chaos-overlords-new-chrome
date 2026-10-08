@@ -213,10 +213,11 @@ public sealed class PlanningTimerPolicyTests
         Assert.Equal(58, timer.VisibleBarWidth);
     }
 
+    // DEV-TIMER-002 on: the game menu stops the elapsed time of a timed turn until it closes.
     [Fact]
-    public void PausedTimerPreservesItsElapsedTimeUntilResumed()
+    public void WithDevTimer002OnTheGameMenuStopsTheElapsedTime()
     {
-        var timer = new PlanningTimer();
+        var timer = new PlanningTimer { StopsInGameMenu = true };
         timer.Advance(TimeSpan.Zero);
         timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
         timer.Advance(TimeSpan.FromSeconds(10));
@@ -233,5 +234,92 @@ public sealed class PlanningTimerPolicyTests
 
         Assert.False(timer.HasExpired(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(20)));
         Assert.True(timer.HasExpired(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(20.001)));
+    }
+
+    // DEV-TIMER-002 switched on in Options while the game menu holds the clock: the elapsed
+    // time stops from that moment.
+    [Fact]
+    public void SwitchingDevTimer002OnWhileTheMenuIsOpenStopsTheElapsedTimeThere()
+    {
+        var timer = new PlanningTimer();
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        timer.Pause(TimeSpan.FromSeconds(10));
+
+        timer.SetStopsInGameMenu(true, TimeSpan.FromSeconds(15));
+
+        Assert.False(timer.HasExpired(TimeSpan.FromHours(1)));
+        timer.Resume(TimeSpan.FromHours(1));
+        Assert.False(timer.HasExpired(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(15)));
+        Assert.True(timer.HasExpired(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(15.001)));
+    }
+
+    // DEV-TIMER-002 switched off in Options while the game menu holds the clock: the elapsed
+    // time runs on from that moment.
+    [Fact]
+    public void SwitchingDevTimer002OffWhileTheMenuIsOpenRunsTheElapsedTimeFromThere()
+    {
+        var timer = new PlanningTimer { StopsInGameMenu = true };
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        timer.Pause(TimeSpan.FromSeconds(10));
+
+        timer.SetStopsInGameMenu(false, TimeSpan.FromSeconds(100));
+
+        Assert.False(timer.HasExpired(TimeSpan.FromSeconds(120)));
+        Assert.True(timer.HasExpired(TimeSpan.FromSeconds(120.001)));
+    }
+
+    // RULE-TIMER-002, EXP-TURN-102: the original's menu bar leaves the elapsed time running, so a
+    // turn can pass its limit in the menu; no bar is drawn while it is open.
+    [Fact]
+    public void TheElapsedTimeRunsOnInTheGameMenu()
+    {
+        var period = PresentationClock.Period;
+        var timer = new PlanningTimer();
+        timer.Advance(TimeSpan.Zero, 0);
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        timer.Advance(TimeSpan.FromSeconds(10), 60);
+        Assert.Equal(41, timer.VisibleBarWidth);
+
+        timer.Pause(TimeSpan.FromSeconds(10));
+        Assert.Equal(PlanningTimerSignal.None, timer.Advance(TimeSpan.FromSeconds(29), 174));
+        Assert.Equal(41, timer.VisibleBarWidth);
+        Assert.True(timer.HasExpired(TimeSpan.FromSeconds(31)));
+
+        timer.Resume(TimeSpan.FromSeconds(40), PresentationClock.Ticks(period * 241));
+        Assert.True(timer.HasExpired(TimeSpan.FromSeconds(40)));
+    }
+
+    // RULE-TIMER-003, EXP-TURN-102: the menu bar keeps the event pump from running, and the timer
+    // flag keeps one tick for the first pass after it closes. With five ticks of the countdown left
+    // when the menu opens, the first redraw after the close comes on the fourth tick, however long
+    // the menu was open, timed or not.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void TheGameMenuKeepsOneTickOfTheRedrawCountdown(bool timed)
+    {
+        var period = PresentationClock.Period;
+        var timer = new PlanningTimer();
+        timer.Advance(TimeSpan.Zero, 0);
+        if (timed) timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+        timer.Advance(period, 1);
+
+        timer.Pause(period * 1.5);
+        for (var tick = 2; tick <= 72; tick++)
+            Assert.Equal(PlanningTimerSignal.None, timer.Advance(period * tick, tick));
+        timer.Resume(period * 72.5, 72);
+        if (!timed) timer.Start(PlanningTimeLimit.ThirtySeconds, period * 72.5);
+        var drawn = timer.VisibleBarWidth;
+
+        for (var tick = 73; tick <= 75; tick++)
+        {
+            timer.Advance(period * tick, tick);
+            Assert.Equal(drawn, timer.VisibleBarWidth);
+            Assert.Equal(76 - tick, timer.RedrawCountdown);
+        }
+        timer.Advance(period * 76, 76);
+        Assert.Equal(PlanningTimerPolicy.RefreshCountdown, timer.RedrawCountdown);
+        var elapsed = PlanningTimerPolicy.WholeMilliseconds(period * (timed ? 76 : 3.5));
+        Assert.Equal(PlanningTimerPolicy.VisibleBarWidth(30000, elapsed), timer.VisibleBarWidth);
     }
 }

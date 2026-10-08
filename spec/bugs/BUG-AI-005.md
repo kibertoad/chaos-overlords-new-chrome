@@ -1,13 +1,13 @@
 ---
 id: BUG-AI-005
 title: A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index
-status: supported
+status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 impact: rules
 intent: unintended
 player_reliance: not-relied-on
-evidence: [FND-AI-043]
+evidence: [FND-AI-043, EXP-TURN-039]
 conflicting: []
 split_with: []
 related: [RULE-AI-001, RULE-AI-027]
@@ -37,6 +37,12 @@ the player's flag, finds it clear, and leaves the families alone.
 
 Every planning pass that meets the trigger conditions. With six players the
 standing condition needs a player in fifth or sixth place.
+
+EXP-TURN-039, a six-month Acceptance played to its end, meets the conditions
+for one computer player with active gangs at two planning passes in its
+closing turns. The original keeps their families: the rebuild replays the run
+without the switch, and switching that player's gangs to family 9 at those
+passes makes the replay diverge.
 
 ## Player reliance
 
