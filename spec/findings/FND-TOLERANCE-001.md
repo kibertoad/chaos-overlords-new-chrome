@@ -10,16 +10,16 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00472964..0x00472AD8
+    address: 0x00472964..0x00472AD9
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00472B6B..0x00472BF5
+    address: 0x00472B6B..0x00472BF6
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00473046..0x0047307E
+    address: 0x00473046..0x0047307F
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0047310B..0x00473187
+    address: 0x0047310B..0x00473188
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0047358D
@@ -28,7 +28,7 @@ locations:
     address: 0x0046B0FC
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00498B78..0x00498BB7
+    address: 0x00498B78..0x00498BB8
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -56,7 +56,7 @@ another function is named. The sector records are at `0x004A08E8 + sector *
   loop reads nothing else to decide the move.
 - The instant-phase switch dispatches on `action - 2` through the byte table at
   `0x004730C9` and the jump table at `0x004730AD`.
-- Bribe, case 2, is `0x00472B6B..0x00472BF5`. It compares the player's cash at
+- Bribe, case 2, is `0x00472B6B..0x00472BF6`. It compares the player's cash at
   `0x004A25E8` with 3 (`0x00472B71`, `JL` to the failure call). On success it
   subtracts 3 from cash (`0x00472B85`), reads the byte at offset `0x02` with
   `MOVSX`, adds 3 in a 32-bit register (`0x00472B9F`), stores the low byte back
@@ -64,11 +64,11 @@ another function is named. The sector records are at `0x004A08E8 + sector *
   (`0x00472BBA`) and adds 3 to cash spent at `0x0049CA78` (`0x00472BC7`). The
   failure path calls the report helper `fn_00477748` with report type 6
   (`0x00472BE9`) and sets no mark.
-- Snitch, case 13, is `0x00473046..0x0047307E`. It reads the byte at offset
+- Snitch, case 13, is `0x00473046..0x0047307F`. It reads the byte at offset
   `0x02` with `MOVSX`, subtracts 3 in a 32-bit register (`0x00473058`), stores
   the low byte back (`0x00473065`) and stores 1 in the sector's entry of
   `0x00498B78` (`0x00473073`).
-- Clamp. After the scan ends, the loop at `0x0047310B..0x00473187` visits
+- Clamp. After the scan ends, the loop at `0x0047310B..0x00473188` visits
   sectors 0 to 63. When the signed byte at offset `0x02` is less than 1 it
   stores 1 (`0x00473150`); it then reads the byte again, and when it is greater
   than 40 (`0x28`) it stores 40 (`0x0047317B`).

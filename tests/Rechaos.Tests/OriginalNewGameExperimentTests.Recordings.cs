@@ -22,12 +22,25 @@ public sealed partial class OriginalNewGameExperimentTests
         }
     }
 
-    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider, bool Retired = false, int? Cash = null)
+    private sealed record RecordedPlanning(int Turn, int Player, int Slot, int Family, bool Raider, bool Retired = false,
+        int? Cash = null, int? Force = null, int? Tolerance = null)
     {
         // "turn 2: player 1 gang slot 0 family 4", "turn 1: player 3 raider_mode 1", "turn 1:
-        // player 3 player_active 0" or "turn 1: player 0 cash 30000", as the probe writes them.
+        // player 3 player_active 0", "turn 1: player 0 cash 30000", "turn 2: player 0 gang slot 0
+        // force 10" or "turn 1: sector 54 base_tolerance 127", as the probe writes them.
         public static RecordedPlanning Parse(string value)
         {
+            var force = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) gang slot (\d+) force (-?\d+)$");
+            if (force.Success)
+                return new(int.Parse(force.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(force.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(force.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture), 0, false,
+                    Force: int.Parse(force.Groups[4].Value, System.Globalization.CultureInfo.InvariantCulture));
+            var tolerance = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): sector (\d+) base_tolerance (-?\d+)$");
+            if (tolerance.Success)
+                return new(int.Parse(tolerance.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture), 0,
+                    int.Parse(tolerance.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), 0, false,
+                    Tolerance: int.Parse(tolerance.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture));
             var cash = System.Text.RegularExpressions.Regex.Match(value, @"^turn (\d+): player ([0-5]) cash (-?\d+)$");
             if (cash.Success)
                 return new(int.Parse(cash.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
@@ -84,7 +97,7 @@ public sealed partial class OriginalNewGameExperimentTests
     private sealed record RecordedFinance(int Turn, int Sector, IReadOnlyList<int> Values);
 
     // The list the original's Equip list builder filled for one category of one of the human's
-    // gangs at the recording's endpoint, with the Tech Level it was passed (FND-EQUIP-008).
+    // gangs at the recording's endpoint, with the Tech Level it was passed (FND-EQUIP-012).
     private sealed record RecordedEquipList(int Slot, int Category, int TechLevel, IReadOnlyList<int> Items);
 
     // The opponent's roster slots the original's Attack picker roster builder listed for one of the

@@ -35,21 +35,28 @@ internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector, int Player
 /// or less writes the <c>family</c> of a computer player's planning record in the slot
 /// (FMT-STATE-007), <see cref="Raider"/> sets a computer player's byte of <c>raider_mode</c>, which
 /// a takeover of a network seat sets (RULE-AI-027), <see cref="Retired"/> clears the player's
-/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006), and
+/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006),
 /// <see cref="Cash"/> sets the player's <c>cash</c> to <paramref name="Value"/>, so a human can pay
-/// for a hire every turn.
+/// for a hire every turn, <see cref="Force"/> sets the <c>force</c> of the player's gang in the slot
+/// (FMT-STATE-001), so a gang ordered to Heal can be at Force 10 when it acts (RULE-HEAL-001), and
+/// <see cref="Tolerance"/> sets the <c>base_tolerance</c> of sector <paramref name="Slot"/>
+/// (FMT-STATE-002), so one Bribe can wrap the signed byte (RULE-BRIBE-001).
 /// </summary>
 internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family, int Value = 0)
 {
     public const int Raider = -1;
     public const int Retired = -2;
     public const int Cash = -3;
+    public const int Force = -4;
+    public const int Tolerance = -5;
 
     public override string ToString() => Family switch
     {
         Raider => $"turn {Turn}: player {Player} raider_mode 1",
         Retired => $"turn {Turn}: player {Player} player_active 0",
         Cash => $"turn {Turn}: player {Player} cash {Value}",
+        Force => $"turn {Turn}: player {Player} gang slot {Slot} force {Value}",
+        Tolerance => $"turn {Turn}: sector {Slot} base_tolerance {Value}",
         _ => $"turn {Turn}: player {Player} gang slot {Slot} family {Family}",
     };
 }
@@ -64,12 +71,6 @@ internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions, int
 {
     public override string ToString() => $"turn {Turn}: player {Player} search filter {string.Join(" ", Definitions)}";
 }
-
-/// <summary>
-/// One city redraw (FND-SEARCH-006): the viewing player and each site marker it drew as
-/// definition, sector, ordinal and controlled flag.
-/// </summary>
-internal sealed record CityMarkers(int Viewer, List<int[]> Markers);
 
 /// A Financial panel the probe opens before the Done press of <paramref name="Turn"/>, after that
 /// turn's orders and hires are written: the City variant for sector -1, otherwise the Sector variant
@@ -182,6 +183,7 @@ internal sealed record NewGameSettings(
     {
         "strip" => $"press ({step.X}, {step.Y})",
         "drag" => $"drag ({step.X}, {step.Y}) to ({step.Target}, {step.Choice})",
+        "name" => $"name {step.Text}",
         _ => $"capture for {step.Screens}",
     };
 
@@ -225,8 +227,12 @@ internal sealed record NewGameSettings(
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
         foreach (var step in OrderSteps ?? [])
-            yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", "type" => "key", _ => "left_click" },
-                $"{step} after the dump");
+            yield return (step.Kind switch
+                {
+                    "open" => "double_click", "wait" => "wait", "type" or "keys" => "key", "down" => "left_press",
+                    "move" => "pointer_move", "up" => "left_release", "rdown" => "right_press",
+                    "rup" => "right_release", _ => "left_click",
+                }, $"{step} after the dump");
         foreach (var close in Closes ?? []) yield return ("close", $"{close} after the dump");
     }
 }
@@ -276,7 +282,9 @@ internal sealed record ProbeTrace(
     List<SlideRecord>? Slides = null,
     List<CloseRecord>? Closes = null,
     List<SavedWriteRecord>? SavedWrites = null,
-    bool? EffectsEnabled = null);
+    bool? EffectsEnabled = null,
+    List<KeyEventRecord>? KeyEvents = null,
+    List<NameEntryRecord>? NameEntries = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -305,8 +313,6 @@ internal sealed partial class NewGameSession(
     private bool _eliminationCardReached;
     private EndgameDrawing? _endgame;
     private bool _endgameDrawn;
-    private CityMarkers? _redraw;
-    private CityMarkers? _lastRedraw;
     private readonly List<FinanceRecord> _finance = [];
     private FinanceRecord? _financeCapture;
     private int _financePanelSector = -2;
@@ -326,9 +332,13 @@ internal sealed partial class NewGameSession(
         if (settings.TraceHires) _process.SetBreakpoint(OriginalAddresses.HireOrderCheck, TraceHire);
         if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
         // FND-PLATFORM-014: on a 32-bit desktop the keyed copies key nothing, so the white the
-        // key should drop is drawn. --white-key passes the white a 32-bit surface holds instead.
-        // Quiet, because the keyed copies run on every animation tick of a waiting planning phase.
-        if (settings.WhiteKey) _process.SetBreakpoint(OriginalAddresses.KeyColourCall, UseThirtyTwoBitKey, quiet: true);
+        // key should drop is drawn. --white-key makes the white a 32-bit surface holds the 16-bit
+        // key. The key is an immediate operand (FND-PLATFORM-015), so one write before the game
+        // runs changes every keyed copy, and the run never stops for it.
+        if (settings.WhiteKey)
+            _process.Patch(OriginalAddresses.SixteenBitKeyImmediate,
+                BitConverter.GetBytes(OriginalAddresses.SixteenBitWhiteKey),
+                BitConverter.GetBytes(OriginalAddresses.ThirtyTwoBitWhite));
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
         _process.SetBreakpoint(OriginalAddresses.CombatResultsSlideIn, _ => PanelShown("Combat Results"));
@@ -678,22 +688,6 @@ internal sealed partial class NewGameSession(
         _notes.Add($"search after roll {_rolls.Count}: {write}");
     }
 
-    // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
-    // last complete redraw, whichever human it was drawn for, with that viewer.
-    private void OnCityRedraw(BreakContext context)
-    {
-        var redraw = new CityMarkers(context.Argument(0), []);
-        _redraw = redraw;
-        _process.SetBreakpoint(context.ReturnAddress, _ =>
-        {
-            if (_redraw == redraw) _lastRedraw = redraw;
-            _redraw = null;
-        }, oneShot: true);
-    }
-
-    private void OnSiteMarker(BreakContext context) =>
-        _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3) & 0xFF]);
-
     // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
     // of the Financial control that opens the variant, keeps the nine numbers the panel draws, and
     // presses its close control until the panel function has returned. A capture counts only when
@@ -763,18 +757,19 @@ internal sealed partial class NewGameSession(
             _process.Write(OriginalAddresses.PlayerActive + (uint)write.Player, [0]);
         else if (write.Family == ProbePlanning.Cash)
             _process.Write(OriginalAddresses.Cash + (uint)(write.Player * 4), BitConverter.GetBytes(write.Value));
+        else if (write.Family == ProbePlanning.Force)
+            _process.Write(OriginalAddresses.GangRecords
+                + (uint)(write.Player * OriginalAddresses.PlayerGangStride + write.Slot * OriginalAddresses.GangRecordSize
+                    + OriginalAddresses.GangForceOffset), [(byte)(sbyte)write.Value]);
+        else if (write.Family == ProbePlanning.Tolerance)
+            _process.Write(OriginalAddresses.SectorRecords
+                + (uint)(write.Slot * OriginalAddresses.SectorRecordSize + OriginalAddresses.SectorBaseToleranceOffset),
+                [(byte)(sbyte)write.Value]);
         else
             _process.Write(OriginalAddresses.PlanningRecords
                 + (uint)(write.Player * OriginalAddresses.PlanningPlayerStride
                     + write.Slot * OriginalAddresses.PlanningRecordSize), [(byte)write.Family]);
         _notes.Add($"planning after roll {_rolls.Count}: {write}");
-    }
-
-    private void UseThirtyTwoBitKey(BreakContext context)
-    {
-        // At the call instruction the device context is at [esp] and the colour at [esp + 4].
-        if (_process.ReadInt32(context.Esp + 4) == OriginalAddresses.SixteenBitWhiteKey)
-            _process.Write(context.Esp + 4, BitConverter.GetBytes(OriginalAddresses.ThirtyTwoBitWhite));
     }
 
     // --seed replaces the clock value the process start passes to srand, so a run can be repeated.
@@ -929,7 +924,8 @@ internal sealed partial class NewGameSession(
             settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
             settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
-            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null);
+            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null,
+            _keyEvents.Count == 0 ? null : _keyEvents, _nameEntries.Count == 0 ? null : _nameEntries);
     }
 
     private static void Click(IntPtr window, int x, int y)

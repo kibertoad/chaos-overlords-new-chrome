@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00405ADD..0x00405B4A
+    address: 0x00405ADD..0x00405B4B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0040485C..0x00404979
@@ -72,12 +72,11 @@ already excluded.
 
 Selector `0x5B` has no action argument: it always counts previous Chaos, as
 FND-AI-019 reads it. The addresses FND-AI-019 gives for it are those of
-selectors `0x70` and `0x71`. The descriptions of families 0 and 4 in
-FND-AI-030 and FND-AI-031 name Hide where the branches write Chaos: those
-branches raise Chaos in the sector when no gang of the player (at `0x0040179A`:
-at most one) carried out Chaos there the turn before, and move on otherwise. The
-count includes the planning gang itself, so a gang that raised Chaos last turn
-moves on.
+selectors `0x70` and `0x71`. In families 0 and 4 (FND-AI-048 and FND-AI-049)
+these branches write Chaos: they raise Chaos in the sector when no gang of the
+player (at `0x0040179A`: at most one) carried out Chaos there the turn before,
+and move on otherwise. The count includes the planning gang itself, so a gang
+that raised Chaos last turn moves on.
 
 ## Alternatives
 

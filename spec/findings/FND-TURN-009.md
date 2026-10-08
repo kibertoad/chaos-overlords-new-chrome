@@ -10,10 +10,10 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041462F..0x00414D8B
+    address: 0x0041462F..0x00414D8C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00414D8C..0x004169B2
+    address: 0x00414D8C..0x004169B3
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x0043F692
@@ -125,7 +125,7 @@ been read.
 
 ## How to reproduce
 
-In `fn_0041462F`, find the writes to `0x004997A8..0x004997B1` before the menu
+In `fn_0041462F`, find the writes to `0x004997A8..0x004997B2` before the menu
 switch, the pickers called with 80, the loop at `0x00414B25` and the store of
 100 at `0x00414D7B`. In `fn_00414D8C`, list the writes to `0x00498DAF`,
 `0x00498DB0`, `0x00498DB2` and `0x00498DB3`. In the pickers, list the writes to

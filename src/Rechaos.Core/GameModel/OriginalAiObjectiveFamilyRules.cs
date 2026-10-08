@@ -24,6 +24,10 @@ internal static class OriginalAiObjectiveFamilyRules
         };
     }
 
+    /// <summary>RULE-AI-031: only Big Man and Siege have objective sectors and selector modes.</summary>
+    public static bool HasObjectives(ScenarioId scenario) =>
+        scenario is ScenarioId.BigMan or ScenarioId.Siege;
+
     public static int SelectionMode(ScenarioId scenario, int family) =>
         (scenario, family) switch
         {
@@ -32,7 +36,7 @@ internal static class OriginalAiObjectiveFamilyRules
             (ScenarioId.BigMan, 14) => 14,
             (ScenarioId.Siege, 14) => 15,
             (_, 13 or 14) => throw new ArgumentException(
-                "Objective families are only dispatched by Big Man and Siege.",
+                "Objective families call a sector selector only in Big Man and Siege.",
                 nameof(scenario)),
             _ => throw new ArgumentOutOfRangeException(nameof(family))
         };
