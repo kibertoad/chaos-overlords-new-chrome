@@ -128,6 +128,31 @@ export const matchTakeoverVoteCancelledEventSchema = strictObject({
   payload: strictObject({ playerId: resourceIdSchema }),
 })
 
+/**
+ * An active player's latest choice on removing another seat. The first `remove` on a seat with no
+ * open removal vote opens one; it stays open while any active player other than the seat holds
+ * `remove`.
+ */
+export const matchRemovalVoteCastEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('match.removalVoteCast'),
+  payload: strictObject({
+    playerId: resourceIdSchema,
+    voterPlayerId: resourceIdSchema,
+    decision: picklist(['remove', 'keep']),
+  }),
+})
+
+/**
+ * A removal vote is over. `removed` is true when the seat was removed (by the vote, or by the
+ * host's kick while the vote was open) and false when no active player held `remove` any more.
+ */
+export const matchRemovalVoteClosedEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('match.removalVoteClosed'),
+  payload: strictObject({ playerId: resourceIdSchema, removed: boolean() }),
+})
+
 export const matchPlayerTakenOverEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('match.playerTakenOver'),
@@ -224,6 +249,8 @@ export const matchEventSchema = variant('type', [
   matchTakeoverVoteRequestedEventSchema,
   matchTakeoverVoteCastEventSchema,
   matchTakeoverVoteCancelledEventSchema,
+  matchRemovalVoteCastEventSchema,
+  matchRemovalVoteClosedEventSchema,
   matchPlayerTakenOverEventSchema,
   matchPlayerReturnedEventSchema,
   matchLatePlayerJoinedEventSchema,

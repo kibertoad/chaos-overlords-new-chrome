@@ -9,6 +9,16 @@ public enum TakeoverChoice
     Wait,
 }
 
+/// <summary>A player's choice on removing another seat from the running match.</summary>
+public enum RemovalChoice
+{
+    /// <summary>Propose the removal, or approve it.</summary>
+    Remove,
+
+    /// <summary>Withdraw this player's approval; one standing <c>Keep</c> keeps the seat.</summary>
+    Keep,
+}
+
 /// <summary>
 /// Something the session wants the interface to know about, polled from the game loop.
 /// </summary>
@@ -34,6 +44,26 @@ public abstract record MultiplayerNotice
 
     /// <summary>The player returned or the vote transferred their seat, closing the prompt.</summary>
     public sealed record TakeoverVoteClosed(string PlayerId, bool ComputerControl) : MultiplayerNotice;
+
+    /// <summary>
+    /// A vote to remove a seat is open, or its latest votes changed. <paramref name="Votes"/> maps
+    /// each voter to their latest choice; the server removes the seat once every other active
+    /// player's is <see cref="RemovalChoice.Remove"/>.
+    /// </summary>
+    public sealed record RemovalVoteChanged(
+        string PlayerId,
+        IReadOnlyDictionary<string, RemovalChoice> Votes) : MultiplayerNotice;
+
+    /// <summary>
+    /// A vote to remove a seat is over: the seat was removed, or nobody approves any more.
+    /// </summary>
+    public sealed record RemovalVoteClosed(string PlayerId, bool Removed) : MultiplayerNotice;
+
+    /// <summary>A removal vote this client cast did not reach the server.</summary>
+    public sealed record RemovalVoteFailed(
+        string PlayerId,
+        RemovalChoice Choice,
+        string Reason) : MultiplayerNotice;
 
     /// <summary>
     /// The session reconstructed the authoritative state — at startup, or after the live stream

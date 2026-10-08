@@ -109,6 +109,15 @@ export const takeoverVoteRequestSchema = strictObject({
   decision: picklist(['computer', 'wait']),
 })
 
+/**
+ * One active player's choice on removing another seat from a running match. `remove` proposes the
+ * removal or approves it; `keep` withdraws the caller's approval. The seat is removed, exactly as a
+ * host's kick removes it, once every other active player's latest choice is `remove`.
+ */
+export const removalVoteRequestSchema = strictObject({
+  decision: picklist(['remove', 'keep']),
+})
+
 export const aiSeatSummarySchema = strictObject({
   slot: slotSchema,
   gangs: pipe(number(), integer(), minValue(0), maxValue(256)),
@@ -174,6 +183,7 @@ export type UpdatePlayerProfileRequest = InferOutput<typeof updatePlayerProfileR
 export type PostChatMessageRequest = InferOutput<typeof postChatMessageRequestSchema>
 export type SubmitOrdersRequest = InferOutput<typeof submitOrdersRequestSchema>
 export type TakeoverVoteRequest = InferOutput<typeof takeoverVoteRequestSchema>
+export type RemovalVoteRequest = InferOutput<typeof removalVoteRequestSchema>
 export type TurnReportRequest = InferOutput<typeof turnReportRequestSchema>
 export type UploadSnapshotRequest = InferOutput<typeof uploadSnapshotRequestSchema>
 export type AiSeatSummary = InferOutput<typeof aiSeatSummarySchema>

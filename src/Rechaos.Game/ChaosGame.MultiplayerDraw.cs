@@ -110,6 +110,12 @@ public sealed partial class ChaosGame
             _ when _online.OwnTakeoverVote is { } ownVote =>
                 $"YOU MISSED TURN {ownVote.Turn}  THE OTHER PLAYERS ARE VOTING ON "
                     + "COMPUTER CONTROL OF YOUR SEAT",
+            // A removal vote does not stop the clock and can stay open for many turns, so the line
+            // keeps the countdown the player is still planning against.
+            _ when _online.OwnRemovalVote is not null =>
+                ("THE OTHER PLAYERS ARE VOTING TO REMOVE YOU  " + (_online.Stage == MultiplayerStage.Playing
+                    ? OnlineTurnClock()
+                    : OnlineCountdown())).TrimEnd(),
             MultiplayerStage.WaitingForSeal =>
                 _online.ReadySubmissionPending
                     ? "FINISHING TURN"
@@ -226,11 +232,13 @@ public sealed partial class ChaosGame
     private void DrawBlockingOnlineOverlays(Viewport viewport)
     {
         if (_batch is null || _pixel is null || _font is null || _session is null) return;
-        if (!_online.ReconnectPopupShown && _online.CurrentTakeoverVote is null) return;
+        if (!_online.ReconnectPopupShown && _online.CurrentTakeoverVote is null
+            && _online.CurrentRemovalVote is null) return;
         _batch.Begin(
             samplerState: SamplerState.PointClamp,
             transformMatrix: VirtualInput.Transform(viewport));
         DrawTakeoverVote(_batch, _pixel, _font);
+        DrawRemovalVote(_batch, _pixel, _font);
         DrawReconnectPopup(_batch, _pixel, _font);
         _batch.End();
     }

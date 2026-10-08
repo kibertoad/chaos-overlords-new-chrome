@@ -230,6 +230,7 @@ public sealed partial class ChaosGame
             DrawCombatPanel(batch, pixel, font, _state);
         DrawPlanningTimer(batch, pixel);
         DrawTakeoverVote(batch, pixel, font);
+        DrawRemovalVote(batch, pixel, font);
         DrawGameMenu(batch, pixel, font);
         DrawReconnectPopup(batch, pixel, font);
     }

@@ -560,7 +560,8 @@ public sealed partial class ChaosGame
                     else if (!_screens.Back()) Exit();
                 }
             }
-            if (!_gameMenuOpen && !TakeoverVoteBlocksInput) switch (_screens.Current)
+            if (!_gameMenuOpen && !TakeoverVoteBlocksInput && !RemovalVoteBlocksInput)
+                switch (_screens.Current)
             {
                 case ClientScreen.Title:
                     UpdateTitle(keyboard);
@@ -798,7 +799,7 @@ public sealed partial class ChaosGame
             HandleGameMenuClick(point);
             return;
         }
-        if (HandleTakeoverVoteClick(point)) return;
+        if (HandleTakeoverVoteClick(point) || HandleRemovalVoteClick(point)) return;
         switch (_screens.Current)
         {
             case ClientScreen.Title:

@@ -212,6 +212,17 @@ export interface TakeoverVote {
   castAt: Date
 }
 
+export type RemovalDecision = 'remove' | 'keep'
+
+/** One active player's latest choice on removing another seat; see `RemovalVoteRepository`. */
+export interface RemovalVote {
+  matchId: string
+  targetPlayerId: string
+  voterPlayerId: string
+  decision: RemovalDecision
+  castAt: Date
+}
+
 export type PersistedEvent = MatchEvent
 
 export const ACTIVE_PLAYER: PlayerStatus = 'active'

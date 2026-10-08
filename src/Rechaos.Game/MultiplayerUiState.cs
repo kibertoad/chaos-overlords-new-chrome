@@ -70,6 +70,75 @@ internal sealed class MultiplayerUiState
     private readonly Dictionary<string, TakeoverVotePrompt> _takeoverVotes =
         new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// The votes to remove a seat the server has open, by the seat each one is about. Kept under the
+    /// same rule as <see cref="_takeoverVotes"/>: emptied when the match is over.
+    /// </summary>
+    private readonly Dictionary<string, RemovalVotePrompt> _removalVotes =
+        new(StringComparer.Ordinal);
+
+    /// <summary>The open removal votes, for the players panel.</summary>
+    internal IReadOnlyDictionary<string, RemovalVotePrompt> RemovalVotes => _removalVotes;
+
+    /// <summary>
+    /// The removal vote this player is asked to answer, if any: one about somebody else that they
+    /// have not answered yet. See <see cref="RemovalVotePolicy.SeatToVoteOn"/>.
+    /// </summary>
+    internal RemovalVotePrompt? CurrentRemovalVote =>
+        RemovalVotePolicy.SeatToVoteOn(
+                _removalVotes.Values.Select(vote => (vote.PlayerId, vote.Votes)),
+                SelfPlayerId,
+                KeptThisTurn)
+            is { } playerId && _removalVotes.TryGetValue(playerId, out var prompt)
+            ? prompt
+            : null;
+
+    /// <summary>
+    /// The seats this player chose to keep during <see cref="_keptTurn"/>, so a vote on one of them
+    /// that closes and opens again in the same turn is not put in front of them a second time.
+    /// </summary>
+    private readonly HashSet<string> _keptSeats = new(StringComparer.Ordinal);
+
+    private int _keptTurn = -1;
+
+    private IReadOnlySet<string> KeptThisTurn =>
+        _keptTurn == PlanningTurn ? _keptSeats : RemovalVotePolicy.NoSeatsKept;
+
+    /// <summary>The open vote to remove this client's own seat, if one is open.</summary>
+    internal RemovalVotePrompt? OwnRemovalVote =>
+        SelfPlayerId.Length > 0 && _removalVotes.TryGetValue(SelfPlayerId, out var vote)
+            ? vote
+            : null;
+
+    /// <summary>Takes note of a removal vote the server has opened or retallied.</summary>
+    internal void RecordRemovalVote(RemovalVotePrompt prompt)
+    {
+        ArgumentNullException.ThrowIfNull(prompt);
+        if (Stage == MultiplayerStage.Finished) return;
+        _removalVotes[prompt.PlayerId] = prompt;
+        if (SelfPlayerId.Length > 0
+            && prompt.Votes.TryGetValue(SelfPlayerId, out var own)
+            && own == RemovalChoice.Keep)
+        {
+            if (_keptTurn != PlanningTurn)
+            {
+                _keptSeats.Clear();
+                _keptTurn = PlanningTurn;
+            }
+            _keptSeats.Add(prompt.PlayerId);
+        }
+    }
+
+    /// <summary>Forgets the removal vote about a seat, once the server has closed it.</summary>
+    internal void CloseRemovalVote(string playerId) => _removalVotes.Remove(playerId);
+
+    /// <summary>
+    /// Forgets every removal vote, before a restore republishes the ones still open. A vote that
+    /// closed while the stream was behind gets no close notice of its own, and kept here it would
+    /// put a modal for a vote the server no longer has in front of the player.
+    /// </summary>
+    internal void ForgetRemovalVotes() => _removalVotes.Clear();
+
     /// <summary>This client's own player id in the running match, or empty when there is none.</summary>
     internal string SelfPlayerId { get; set; } = string.Empty;
 
@@ -398,6 +467,7 @@ internal sealed class MultiplayerUiState
         Stage = MultiplayerStage.Finished;
         DeadlineAt = null;
         _takeoverVotes.Clear();
+        _removalVotes.Clear();
     }
 
     /// <summary>Forgets everything a finished match leaves behind, so nothing outlives it.</summary>
@@ -445,6 +515,9 @@ internal sealed class MultiplayerUiState
         ConnectionErrorCopyStatus = string.Empty;
         ServerStatus = string.Empty;
         _takeoverVotes.Clear();
+        _removalVotes.Clear();
+        _keptSeats.Clear();
+        _keptTurn = -1;
         SelfPlayerId = string.Empty;
         Password.Set(string.Empty);
         JoinCode.Set(string.Empty);
@@ -469,6 +542,11 @@ internal sealed class MultiplayerUiState
     /// </remarks>
     internal bool PlanningIsSubmitted => Stage == MultiplayerStage.WaitingForSeal;
 }
+
+internal sealed record RemovalVotePrompt(
+    string PlayerId,
+    string DisplayName,
+    IReadOnlyDictionary<string, RemovalChoice> Votes);
 
 internal sealed record TakeoverVotePrompt(
     string PlayerId,

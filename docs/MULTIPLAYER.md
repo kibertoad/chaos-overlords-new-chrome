@@ -28,6 +28,7 @@ characters without disturbing the player-name field.
   - [Lobby](#lobby)
   - [Turn barrier](#turn-barrier)
   - [Turn lifecycle](#turn-lifecycle)
+  - [Removing a player](#removing-a-player)
   - [Timer](#timer)
 - [Bug reports: the same deployment, a different database](#bug-reports-the-same-deployment-a-different-database)
 - [Retention](#retention)
@@ -173,6 +174,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the departure and opens a takeover vote; it does not transfer control. A leaving host hands the role to the lowest active slot. The durable membership token is retained for later rejoin. |
 | `POST /matches/:id/rejoin` | former member | Reactivates the caller's durable seat, restores host authority when appropriate, and transfers an AI-controlled reserved seat back to its owner. |
 | `POST /matches/:id/players/:pid/kick` | host | Same as the target leaving. |
+| `POST /matches/:id/players/:pid/removal-vote` | active member | `{ decision: "remove" | "keep" }` on another seat of a running match. The latest choice per voter counts. When every other active player's choice is `remove`, the seat is removed exactly as a kick removes it. `keep` withdraws the caller's approval; the vote closes when no active player holds `remove`. See [Removing a player](#removing-a-player). |
 | `POST /matches/:id/players/:pid/takeover-vote` | active member | `{ decision: "computer" | "wait" }`. The latest choice per voter counts. Computer control requires every currently active player to approve; one wait vote preserves the human controller. |
 
 ### Turn barrier
@@ -297,6 +299,44 @@ state it announces records that it was announced: a seal is announced before its
 confirmed turn's `settledAt` after every follow-up of the verdict (the announcement, lifting a pause,
 finishing the match). The sweep finishes whichever is missing. The bounded sweep pass counts a seal
 as a touch of the match, since sealing writes only the turn row.
+
+### Removing a player
+
+Only the host can kick, which on its own would let a host who stays connected and never readies an
+untimed turn hold the match for as long as they like, and let a host keep a player who desyncs every
+turn. Any active player of a running match may therefore propose removing another
+seat, and the seat is removed once the latest choice of every other active player is `remove`. The
+host is one voter among them. The decision and the alternatives it was weighed against are in
+[DECISIONS.md](DECISIONS.md#2026-10-06--let-the-other-players-remove-a-seat-by-unanimous-vote).
+
+Removal is the kick, unchanged: the seat becomes `kicked`, its token is revoked and its streams are
+hung up, the open turn stops waiting on it (so a turn the removed host was holding seals at once if
+everyone else is ready), the takeover vote decides whether the computer plays the seat, and a
+removed host's role moves to the lowest active slot. The removed player cannot rejoin.
+
+Votes are rows of their own (`removal_votes`), one per voter and seat, holding the voter's latest
+choice. There is no prompt row: a removal vote is open while some active player other than the seat
+holds `remove`. `match.removalVoteCast` announces each choice and `match.removalVoteClosed`
+announces the end, with `removed` true when the seat went (by the vote, or by the host's kick while
+it was open) and false when nobody approved any more. The tally runs after every vote and whenever
+the set of voters shrinks, as the takeover tally does, so the departure of the one player who had
+not approved, or the computer taking over that player's seat, completes it. A seat the computer
+plays is removed by revoking its owner's token, and a revoked token refuses further votes on it
+(`already_removed`) as the `kicked` status does. Closing deletes the rows in one statement and only
+the caller whose statement deleted them announces it, so racing tallies log one
+`match.removalVoteClosed`, which follows the seat's `lobby.playerLeft` and any host change. A vote does
+not pause the turn clock: it is the remedy for a match that is not moving, and a timed match moves
+on its own.
+
+The game starts a vote from the PLAYERS entry of the online game menu, which lists the other seats
+with REMOVE (or WITHDRAW for a seat this player already voted to remove) and the tally of any vote
+open on them. An open vote is put to every other active player who has not answered it in a modal
+with KEEP and REMOVE; an absence vote, which stops the clock, is shown first when both are open. A
+player who chose KEEP on a seat is not asked about it again in the same turn, even when the vote
+closes and is proposed again, so withdrawing and proposing over and over cannot keep a modal in
+front of the others while their clock runs. The seat being voted on is told on the turn status
+line, which keeps the turn countdown. Clients rebuild open votes from the event log
+on a restore, as they do takeover votes.
 
 ### Timer
 
@@ -492,8 +532,8 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   client can reveal hidden gangs or peek at fog it should not see. The hash consensus catches any
   client that *changes* the outcome, not one that merely reads. Nor does it attribute blame: a
   client that diverges deliberately can grief a match by desyncing it every turn, and the remedy is
-  social — `turn.desynced` names every player's hash and the candidates, so the host can see who is
-  the odd one out and kick them. Moving resolution server-side (a WebAssembly build of
+  social — `turn.desynced` names every player's hash and the candidates, so the players can see who
+  is the odd one out and vote to remove them (see [Removing a player](#removing-a-player)). Moving resolution server-side (a WebAssembly build of
   `Rechaos.Core` behind a `TurnResolver` port) would close both gaps and is the one design change
   this layout leaves room for; the wire protocol would not change. Tracked in
   [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
@@ -933,16 +973,15 @@ dock a player plans against the dock the sealed turn grants.
   once it has been silent for long enough. The counting assumes one human per seat; see the
   security model and
   [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
-- **A host who never presses ready stalls an untimed match.** Only the host can kick, and without a
-  turn timer nothing seals on its own, so the other players' only remedy is to leave. A unanimous
-  vote of the remaining active players, reusing the takeover machinery, is the obvious next step
-  ([#457](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/457)).
 - **The host role moves only to fill an empty seat.** `rejoin` promotes the caller when the current
   host has `left`, been `kicked` or been voted to `computer`. A host who is merely
   `takeoverPending` (one missed timed deadline, still connected) keeps the role, or any former
   member could take it at that moment and then kick the real host, whose token a kick revokes for
-  good. A vote that moves the role away from a present host is part of
-  [#457](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/457).
+  good. A host who stays connected and never readies an untimed turn is removed by the other
+  players' vote instead; see [Removing a player](#removing-a-player).
+- **Removal needs every other active player.** Two seats that refuse every vote to remove each
+  other cannot be removed by the rest, which is the same limit the takeover vote has, and the
+  counting assumes one human per seat like the rest of the security model.
 - An event is published after it is durable, so a process dying mid-publish can lose the
   notification but never the event. The stream heartbeat rechecks the durable log even while its
   connection remains healthy. A process dying between persisting an event and its successor simply

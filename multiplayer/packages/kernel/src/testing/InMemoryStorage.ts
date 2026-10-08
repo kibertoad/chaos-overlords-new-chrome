@@ -5,6 +5,7 @@ import type {
   PersistedEvent,
   Player,
   PublicLobbyRow,
+  RemovalVote,
   Snapshot,
   TakeoverVote,
   Turn,
@@ -16,6 +17,7 @@ import type {
   MatchRepository,
   MultiplayerStorage,
   PlayerRepository,
+  RemovalVoteRepository,
   SnapshotRepository,
   TakeoverRepository,
   TurnRepository,
@@ -43,6 +45,7 @@ export class InMemoryStorage implements MultiplayerStorage {
   /** `matchId` + dedupe key of every event appended with `appendOnce`, as the unique index holds. */
   private readonly eventKeys = new Set<string>()
   private readonly voteRows = new Map<string, TakeoverVote>()
+  private readonly removalRows = new Map<string, RemovalVote>()
 
   readonly matches: MatchRepository = {
     create: async (match) => {
@@ -530,6 +533,40 @@ export class InMemoryStorage implements MultiplayerStorage {
         .map((vote) => ({ ...vote })),
   }
 
+  readonly removals: RemovalVoteRepository = {
+    castVote: async (vote) => {
+      this.removalRows.set(
+        `${promptKey(vote.matchId, vote.targetPlayerId)}:${vote.voterPlayerId}`,
+        {
+          ...vote,
+        },
+      )
+    },
+    listVotes: async (matchId, targetPlayerId) =>
+      [...this.removalRows.values()]
+        .filter((vote) => vote.matchId === matchId && vote.targetPlayerId === targetPlayerId)
+        .sort((a, b) => a.voterPlayerId.localeCompare(b.voterPlayerId))
+        .map((vote) => ({ ...vote })),
+    listTargets: async (matchId) =>
+      [
+        ...new Set(
+          [...this.removalRows.values()]
+            .filter((vote) => vote.matchId === matchId)
+            .map((vote) => vote.targetPlayerId),
+        ),
+      ].sort(),
+    clear: async (matchId, targetPlayerId) => {
+      let deleted = false
+      for (const [key, vote] of this.removalRows) {
+        if (vote.matchId === matchId && vote.targetPlayerId === targetPlayerId) {
+          this.removalRows.delete(key)
+          deleted = true
+        }
+      }
+      return deleted
+    },
+  }
+
   readonly events: EventRepository = {
     append: async (event) => {
       const log = this.eventRows.get(event.matchId) ?? []
@@ -594,6 +631,9 @@ export class InMemoryStorage implements MultiplayerStorage {
     }
     for (const [key, row] of this.voteRows) {
       if (row.matchId === matchId) this.voteRows.delete(key)
+    }
+    for (const [key, row] of this.removalRows) {
+      if (row.matchId === matchId) this.removalRows.delete(key)
     }
   }
 

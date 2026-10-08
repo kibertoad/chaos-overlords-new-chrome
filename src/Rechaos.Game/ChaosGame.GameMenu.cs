@@ -36,6 +36,12 @@ public static class GameMenuLayout
     public static Rectangle ReportBug => new(226, 276, 188, 32);
     public static Rectangle QuitToMainMenu => new(226, 314, 188, 42);
 
+    /// <summary>
+    /// An online match's roster, where a vote to remove a player is started. It takes the place the
+    /// save entry has in a local match, which an online one does not offer.
+    /// </summary>
+    public static Rectangle Players => Save;
+
     /// <summary>Entries in the order they are drawn, which is the order the cursor walks.</summary>
     public const int EntryCount = 6;
 
@@ -90,6 +96,7 @@ internal enum GameMenuAction
     Load,
     Options,
     ReportBug,
+    Players,
     QuitToMainMenu
 }
 
@@ -116,6 +123,7 @@ public sealed partial class ChaosGame
         LetGoOfLeftHeldPanelFace();
         _gameMenuOpen = true;
         _bugReportOpen = false;
+        _playersPanelOpen = false;
         _quitToMainMenuConfirmationOpen = false;
         _leavePrompt = LeaveKind.None;
         _leaveAfterSave = LeaveKind.None;
@@ -129,6 +137,7 @@ public sealed partial class ChaosGame
     {
         _gameMenuOpen = false;
         _bugReportOpen = false;
+        _playersPanelOpen = false;
         _quitToMainMenuConfirmationOpen = false;
         _leavePrompt = LeaveKind.None;
         _leaveAfterSave = LeaveKind.None;
@@ -178,6 +187,11 @@ public sealed partial class ChaosGame
         if (_bugReportOpen)
         {
             UpdateBugReport(keyboard);
+            return;
+        }
+        if (_playersPanelOpen)
+        {
+            UpdatePlayersPanel(keyboard);
             return;
         }
         if (_saveBrowserMode != SaveBrowserMode.None)
@@ -244,6 +258,7 @@ public sealed partial class ChaosGame
             case GameMenuAction.Load: OpenSaveBrowser(saving: false); break;
             case GameMenuAction.Options: OpenOptionsFromGameMenu(); break;
             case GameMenuAction.ReportBug: OpenBugReport(); break;
+            case GameMenuAction.Players: OpenPlayersPanel(); break;
             // RULE-UI-015: a local match asks to save first only while it is unsaved. An online
             // match, which the original never asks about, keeps the confirmation that says the
             // server holds it (DEV-NET-001).
@@ -344,6 +359,11 @@ public sealed partial class ChaosGame
             HandleBugReportClick(point);
             return;
         }
+        if (_playersPanelOpen)
+        {
+            HandlePlayersPanelClick(point);
+            return;
+        }
         if (_saveBrowserMode != SaveBrowserMode.None)
         {
             HandleSaveBrowserClick(point);
@@ -427,6 +447,11 @@ public sealed partial class ChaosGame
             DrawBugReport(batch, pixel, font);
             return;
         }
+        if (_playersPanelOpen)
+        {
+            DrawPlayersPanel(batch, pixel, font);
+            return;
+        }
         if (_saveBrowserMode != SaveBrowserMode.None)
         {
             DrawSaveBrowser(batch, pixel, font);
@@ -498,6 +523,7 @@ public sealed partial class ChaosGame
             :
             [
                 (GameMenuLayout.Resume, "RESUME", GameMenuAction.Resume),
+                (GameMenuLayout.Players, "PLAYERS", GameMenuAction.Players),
                 (GameMenuLayout.Options, "OPTIONS", GameMenuAction.Options),
                 (GameMenuLayout.ReportBug, "REPORT BUG", GameMenuAction.ReportBug),
                 (GameMenuLayout.QuitToMainMenu, "QUIT TO MAIN MENU", GameMenuAction.QuitToMainMenu)

@@ -8,6 +8,7 @@ import {
   listLobbiesContract,
   postChatMessageContract,
   rejoinMatchContract,
+  removalVoteContract,
   startMatchContract,
   takeoverVoteContract,
   updateMatchSettingsContract,
@@ -149,6 +150,18 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
     await c
       .get('container')
       .kernel.lobby.voteOnTakeover(
+        requireMember(c.get('principal'), matchId),
+        playerId,
+        c.req.valid('json'),
+      )
+    return c.body(null, 204)
+  })
+
+  buildHonoRoute(api, removalVoteContract, async (c) => {
+    const { matchId, playerId } = c.req.valid('param')
+    await c
+      .get('container')
+      .kernel.lobby.voteOnRemoval(
         requireMember(c.get('principal'), matchId),
         playerId,
         c.req.valid('json'),

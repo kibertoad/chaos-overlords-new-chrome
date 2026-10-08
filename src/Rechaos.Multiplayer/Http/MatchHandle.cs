@@ -79,6 +79,16 @@ public sealed class MatchHandle
             HttpMethod.Post, ApiRoutes.TakeoverVote(MatchId, playerId), request, cancellationToken);
 
     /// <summary>
+    /// Proposes or approves removing another player from the running match, or withdraws that vote.
+    /// </summary>
+    public Task<Unit> VoteOnRemovalAsync(
+        string playerId,
+        RemovalVoteRequest request,
+        CancellationToken cancellationToken) =>
+        _client.SendAsync<Unit>(
+            HttpMethod.Post, ApiRoutes.RemovalVote(MatchId, playerId), request, cancellationToken);
+
+    /// <summary>
     /// Replaces this player's order document for the open turn and sets readiness.
     /// </summary>
     /// <remarks>

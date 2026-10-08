@@ -8,6 +8,7 @@ import {
   type MatchSettings,
   type MembershipView,
   type PostChatMessageRequest,
+  type RemovalVoteRequest,
   type TakeoverVoteRequest,
   type UpdatePlayerProfileRequest,
 } from '@chaos-overlords/contracts'
@@ -622,13 +623,133 @@ export class LobbyService {
     }
     await this.turns.reevaluate(match.id)
     await this.turns.resumeAfterTakeoverVotes(match.id)
+    // The seat has left the removal voters for good. Nothing recounts the removal votes when a voter
+    // only goes `takeoverPending`, since its player may still come back to the turn, so a vote it was
+    // the last holdout on stayed open with every remaining voter already answered. Recount them now.
+    for (const playerId of await this.deps.storage.removals.listTargets(match.id)) {
+      await this.tallyRemovalVote(match.id, playerId)
+    }
   }
 
-  /** Re-tally every open prompt, for when the set of voters has just shrunk. */
+  /** Re-tally every open prompt and removal vote, for when the set of voters has just shrunk. */
   private async retallyOpenPrompts(match: Match): Promise<void> {
     for (const playerId of await this.deps.storage.takeovers.listOpenPrompts(match.id)) {
       await this.tallyTakeoverVote(match, playerId)
     }
+    for (const playerId of await this.deps.storage.removals.listTargets(match.id)) {
+      await this.tallyRemovalVote(match.id, playerId)
+    }
+  }
+
+  /**
+   * Record one active player's latest choice on removing another seat from a running match.
+   *
+   * Only the host can kick, so before this a host who never readied an untimed turn held the match
+   * for as long as they liked, and a host could keep a player who desynced every turn. The vote is
+   * the other players' remedy, and its outcome is the kick itself: the seat is `kicked`, its token
+   * revoked, its streams closed, the turn stops waiting on it, a takeover vote decides who plays it
+   * and a removed host's role moves to the lowest active slot. It takes every other active player,
+   * which is the same bar the takeover vote sets for handing a seat to the computer; in a match of
+   * two the proposer is the only other player, so either can remove the other, as the host already
+   * could. See docs/DECISIONS.md, "Let the other players remove a seat by unanimous vote".
+   *
+   * A removal vote has no prompt row. It is open while some active player other than the seat
+   * holds `remove`, so `keep` on a seat nobody proposes removing changes nothing and is answered as
+   * done, which also covers a `keep` that crossed the vote closing.
+   */
+  async voteOnRemoval(
+    principal: Principal,
+    targetPlayerId: string,
+    request: RemovalVoteRequest,
+  ): Promise<void> {
+    const { match, player } = principal
+    requireInProgress(match)
+    const currentVoter = await this.deps.storage.players.get(player.id)
+    if (currentVoter?.status !== 'active') {
+      throw new ForbiddenError('Only present players may vote', { reason: 'not_active' })
+    }
+    if (targetPlayerId === player.id) {
+      throw new ConflictError('Leave the match instead of voting to remove yourself', {
+        reason: 'self_removal',
+      })
+    }
+    const target = await this.requireTarget(match, targetPlayerId)
+    if (isRemoved(target)) {
+      throw new ConflictError('That player has already been removed', {
+        reason: 'already_removed',
+      })
+    }
+    if (
+      request.decision === 'keep' &&
+      (await this.deps.storage.removals.listVotes(match.id, target.id)).length === 0
+    ) {
+      return
+    }
+    await this.deps.storage.removals.castVote({
+      matchId: match.id,
+      targetPlayerId: target.id,
+      voterPlayerId: player.id,
+      decision: request.decision,
+      castAt: this.deps.clock.now(),
+    })
+    // A kick of the same seat can land between the check above and the cast: it cleared the votes
+    // and announced the close, and the row just written would reopen a vote on a removed seat and
+    // announce a second close. Take the row back unannounced and refuse, as the check would have.
+    const current = await this.deps.storage.players.get(target.id)
+    if (!current || isRemoved(current)) {
+      await this.deps.storage.removals.clear(match.id, target.id)
+      throw new ConflictError('That player has already been removed', {
+        reason: 'already_removed',
+      })
+    }
+    await this.publisher.publish(match.id, {
+      type: 'match.removalVoteCast',
+      payload: { playerId: target.id, voterPlayerId: player.id, decision: request.decision },
+    })
+    await this.tallyRemovalVote(match.id, target.id)
+  }
+
+  /**
+   * Remove a seat once every other active player's latest choice is `remove`, or close the vote
+   * when none of them holds it any more.
+   *
+   * Run after every vote and whenever the set of voters shrinks, for the same reason the takeover
+   * tally is: when the one player who had not approved leaves, everyone left already has.
+   */
+  private async tallyRemovalVote(matchId: string, targetPlayerId: string): Promise<void> {
+    const votes = await this.deps.storage.removals.listVotes(matchId, targetPlayerId)
+    if (votes.length === 0) return
+    const players = await this.deps.storage.players.listByMatch(matchId)
+    const target = players.find((candidate) => candidate.id === targetPlayerId)
+    if (!target || isRemoved(target)) {
+      await this.closeRemovalVote(matchId, targetPlayerId, target !== undefined)
+      return
+    }
+    const choices = new Map(votes.map((vote) => [vote.voterPlayerId, vote.decision]))
+    const voters = activePlayers(players).filter((voter) => voter.id !== targetPlayerId)
+    const approvals = voters.filter((voter) => choices.get(voter.id) === 'remove').length
+    if (approvals === 0) {
+      await this.closeRemovalVote(matchId, targetPlayerId, false)
+      return
+    }
+    if (approvals < voters.length) return
+    const match = await this.deps.storage.matches.get(matchId)
+    if (!match || !isInProgress(match)) return
+    // `remove` closes the vote once the kick's own events are out.
+    await this.remove(match, target, 'kicked')
+  }
+
+  /** Discard a seat's removal votes and announce the outcome, once however many callers race. */
+  private async closeRemovalVote(
+    matchId: string,
+    targetPlayerId: string,
+    removed: boolean,
+  ): Promise<void> {
+    if (!(await this.deps.storage.removals.clear(matchId, targetPlayerId))) return
+    await this.publisher.publish(matchId, {
+      type: 'match.removalVoteClosed',
+      payload: { playerId: targetPlayerId, removed },
+    })
   }
 
   async start(principal: Principal): Promise<void> {
@@ -670,6 +791,14 @@ export class LobbyService {
   }
 
   private async remove(match: Match, target: Player, reason: 'left' | 'kicked'): Promise<void> {
+    await this.removeSeat(match, target, reason)
+    // A kick ends a vote to remove the same seat: there is nothing left for it to decide. Announced
+    // after the seat's own events, so a client that reads the close already has the seat gone from
+    // the roster and a removed host's role moved on.
+    if (reason === 'kicked') await this.closeRemovalVote(match.id, target.id, true)
+  }
+
+  private async removeSeat(match: Match, target: Player, reason: 'left' | 'kicked'): Promise<void> {
     if (target.status === 'kicked') return
     // A seat already handed to the computer is not a human to remove. Marking it `kicked` put it
     // back in ABSENT_HUMAN_STATUSES, so the next rejoin or vote opened a fresh prompt for a seat
@@ -700,7 +829,7 @@ export class LobbyService {
       // "two statements", and the running path below is the correct one for a seated player.
       const current = await this.deps.storage.matches.get(match.id)
       if (current && current.status !== 'lobby') {
-        await this.remove(current, target, reason)
+        await this.removeSeat(current, target, reason)
         return
       }
       // The seat is released only when a row actually went. Two requests that both authenticated
@@ -934,6 +1063,15 @@ export class LobbyService {
       joinCode: match.joinCode,
     }
   }
+}
+
+/**
+ * Whether a seat's human has already been removed. A kick marks a human seat `kicked`, but leaves a
+ * seat the computer plays as `computer` and only revokes its owner's token, so a revoked token is
+ * the mark there. Without it a removed computer seat could be voted on and "removed" again.
+ */
+function isRemoved(player: Player): boolean {
+  return player.status === 'kicked' || player.tokenHash === null
 }
 
 function requireHost(principal: Principal): void {

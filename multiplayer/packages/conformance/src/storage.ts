@@ -1346,6 +1346,45 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       ).toEqual([['voter', 'computer']])
     })
 
+    it('keeps the latest removal choice per voter and clears a seat once', async () => {
+      const match = matchFixture({ status: 'running', currentTurn: 2 })
+      await storage.matches.create(match)
+      const other = matchFixture({ status: 'running', currentTurn: 1 })
+      await storage.matches.create(other)
+      const at = new Date('2026-03-01T12:00:00.000Z')
+      const vote = (matchId: string, targetPlayerId: string, voterPlayerId: string) => ({
+        matchId,
+        targetPlayerId,
+        voterPlayerId,
+        castAt: at,
+      })
+      await storage.removals.castVote({ ...vote(match.id, 'host', 'b'), decision: 'remove' })
+      await storage.removals.castVote({ ...vote(match.id, 'host', 'a'), decision: 'remove' })
+      await storage.removals.castVote({ ...vote(match.id, 'host', 'a'), decision: 'keep' })
+      await storage.removals.castVote({ ...vote(match.id, 'guest', 'a'), decision: 'remove' })
+      await storage.removals.castVote({ ...vote(other.id, 'host', 'a'), decision: 'remove' })
+      expect(
+        (await storage.removals.listVotes(match.id, 'host')).map((row) => [
+          row.voterPlayerId,
+          row.decision,
+          row.castAt.getTime(),
+        ]),
+      ).toEqual([
+        ['a', 'keep', at.getTime()],
+        ['b', 'remove', at.getTime()],
+      ])
+      expect(await storage.removals.listTargets(match.id)).toEqual(['guest', 'host'])
+      // Racing closers: exactly one deletes rows, so exactly one announces the outcome.
+      const closed = await Promise.all([
+        storage.removals.clear(match.id, 'host'),
+        storage.removals.clear(match.id, 'host'),
+      ])
+      expect(closed.filter(Boolean)).toHaveLength(1)
+      expect(await storage.removals.listVotes(match.id, 'host')).toEqual([])
+      expect(await storage.removals.listTargets(match.id)).toEqual(['guest'])
+      expect(await storage.removals.listTargets(other.id)).toEqual(['host'])
+    })
+
     it('stores snapshots per turn, replacing on re-upload, and serves the latest', async () => {
       const match = matchFixture()
       await storage.matches.create(match)
