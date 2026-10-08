@@ -29,7 +29,10 @@ internal sealed class OriginalProcess : IDisposable
     public int ExitCode { get; private set; }
     public DateTime LastBreakpointUtc { get; private set; } = DateTime.UtcNow;
 
-    /// <summary>Exceptions the probe did not handle itself, with their code and address.</summary>
+    /// <summary>
+    /// Exceptions the probe did not handle itself, with their code and address, and the patches
+    /// skipped because their bytes did not match.
+    /// </summary>
     public List<string> Log { get; } = [];
 
     public static OriginalProcess Start(string executable, string workingDirectory)
@@ -74,6 +77,22 @@ internal sealed class OriginalProcess : IDisposable
         breakpoint.Handlers.Add(new BreakpointHandler(handler, oneShot, quiet));
         _breakpoints[address] = breakpoint;
         if (_started) Arm(breakpoint);
+    }
+
+    /// <summary>
+    /// Removes the handler <paramref name="handler"/> set at <paramref name="address"/>, compared as
+    /// delegates are, and the breakpoint itself once no handler is left on it. Safe to call from any
+    /// handler, one of the same breakpoint included: the original byte goes back at once, a handler
+    /// removed while its breakpoint is being handled does not run, and a breakpoint removed before
+    /// a thread's single step past it is not put back.
+    /// </summary>
+    public void RemoveBreakpoint(uint address, Action<BreakContext> handler)
+    {
+        if (!_breakpoints.TryGetValue(address, out var breakpoint)) return;
+        breakpoint.Handlers.RemoveAll(entry => entry.Action.Equals(handler));
+        if (breakpoint.Handlers.Count > 0) return;
+        Disarm(breakpoint);
+        _breakpoints.Remove(address);
     }
 
     /// <summary>
@@ -264,13 +283,21 @@ internal sealed class OriginalProcess : IDisposable
         if (!breakpoint.Quiet) LastBreakpointUtc = DateTime.UtcNow;
         foreach (var handler in breakpoint.Handlers.ToArray())
         {
+            // An earlier handler of this pass may have removed it.
+            if (!breakpoint.Handlers.Contains(handler)) continue;
             if (handler.OneShot) breakpoint.Handlers.Remove(handler);
             handler.Action(context);
         }
 
         Disarm(breakpoint);
-        if (breakpoint.Handlers.Count == 0)
-            _breakpoints.Remove(address);
+        // A handler may have removed this breakpoint and set a new one at the same address, which
+        // waits for the single step as well, or it would stop this same instruction again.
+        var current = _breakpoints.GetValueOrDefault(address);
+        if (current is not null && current != breakpoint) Disarm(current);
+        if (current is null || current.Handlers.Count == 0)
+        {
+            if (current == breakpoint) _breakpoints.Remove(address);
+        }
         else
         {
             // Run the original instruction, then put the breakpoint back on the single step.

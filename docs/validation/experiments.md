@@ -77,18 +77,23 @@ nothing waits for input, and dumps the state at the planning phase that
 follows the last one. The human's planning phase opens the Combat Results
 panel (SCR-COMBAT-001) after a fight that involved its gangs, and the Last
 Turn Events panel (SCR-EVENT-001) when it has reports, and waits in each; the
-probe breaks on both handlers and presses Exit before the next Done, and presses
-Done again if a press left the turn unmoved for 20 seconds. A match that ends,
+probe breaks on both handlers and presses Exit before the next Done; once a
+press has closed a panel it waits up to 3 seconds for another panel to open
+or the planning loop to run again, since Last Turn Events is a call of its own
+after Combat Results has returned (FND-UI-061). It presses Done again if a
+press left the turn unmoved for 20 seconds. A match that ends,
 or a human eliminated, before `--end-turns` runs out stops the presses there,
 and the fixture's inputs list only the turns the run played: one Done press, or
 one turn left to the planning time limit, per entry of `done_at_roll`, with
 that turn's writes before it, which the replay tests check. A press repeated
 after 20 seconds and the press at the final view of a match that ends
-(FND-OBJECTIVE-004) are not listed. Each call of
-either handler is kept with the roll count at the call and whether the panel
-stayed open until the probe pressed Exit, since the Combat Results handler
-returns at once when no fight qualifies; a panel still open at the dump counts
-as shown. The fixture holds the calls as `panels`. `--orders` writes
+(FND-OBJECTIVE-004) are not listed. Each call of either handler is kept
+with the roll count at the call and whether it showed its panel: a call shows
+it when it reaches its call of the panel-open helper, `0x00452146` in Combat
+Results and `0x0044F3D1` in Last Turn Events, which comes before it waits for
+input, and a call with nothing to show, as Combat Results when no fight
+qualifies, returns without reaching it (FND-UI-061). The fixture holds the
+calls as `panels`. `--orders` writes
 an order into a gang record of a human before the Done press of the
 given turn, counted from 1: the `action`, `target` and `target_2` bytes of
 FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
@@ -247,14 +252,22 @@ every roll from the setup's hourglass on is made under the hourglass and
 compares the rebuild's pointer at each planning entry and after each Done press
 (RULE-UI-007, EXP-UI-022).
 `--sound-calls` logs every call of the play helper `fn_0045851A`
-(FND-AUDIO-006) with the rolls and Done presses before it, its slot and the
-address of the call; with `--sound` the effects wrapper's calls are logged too.
-It also reads `effects_enabled` (FND-AUDIO-002) at each call, at each Done press
-and at the end of the run. The fixture holds the calls as `sound_calls` with
-`effects_enabled` beside them, and `extract` refuses a run whose value is
-unknown or differed between those reads. The replay expects the push cue of Begin and of each Done press
-when effects were enabled, and no push cue when they were not
-(RULE-AUDIO-006, EXP-AUDIO-001).
+(FND-AUDIO-006) and of the effects wrapper `fn_00464290` (FND-AUDIO-002) with
+the rolls and Done presses before it, its slot and the address of the call, and
+every call of the level setup `fn_004652A0` with the address of the call and
+`effects_enabled` as it returned. The level setup is the only code that writes
+`effects_enabled`, and its first call, in the title initialization, comes after
+the probe has written the levels (FND-AUDIO-019). The probe also reads
+`effects_enabled` at each helper call, at each Done press and at the end of the
+run. The fixture holds the calls as `sound_calls`, `effect_calls` and
+`level_setups`, with `effects_enabled` beside them, and `extract` refuses a run
+whose value is unknown or differed between those reads and the level setups'
+returns, that lacks the wrapper calls or level setups, or that ended inside a
+level setup. The replay requires the push cue at Begin and at each Done press
+among the wrapper's calls, every level setup to leave the run's setting, the
+first from the title initialization, and the wrapper to have passed every
+request on to the helper when effects were enabled and none when they were not
+(RULE-AUDIO-006, EXP-AUDIO-001, EXP-AUDIO-002).
 `--watch-intro` lets both intro movies play out before the button is held and
 logs each frame the frame helper shows, with the movie's name, its header's
 frame count, the slot's frame counter and the time from the first movie's first
