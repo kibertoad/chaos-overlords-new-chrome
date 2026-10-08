@@ -149,7 +149,10 @@ matters only when several humans play. The planning clock bar sits at
 - String resources 20 to 24 hold the words the Income row shows; which word
   goes with which Income has not been checked against the string table.
 - The meaning of the two selection frames `f = 0` and `f = 1` (a blink or a
-  second style) has not been checked in the art.
+  second style) was not checked in the art by this reading. EXP-UI-031 shows
+  both reaching the screen around the selected sector, the one or the other
+  as the pump's counter `0x00487804` advances, so they are the two phases of
+  one animated outline.
 
 ## How to reproduce
 

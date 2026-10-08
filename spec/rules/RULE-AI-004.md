@@ -4,7 +4,7 @@ title: Queries the computer players' handlers share
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-072, EXP-TURN-022, FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057, FND-SETUP-018, EXP-TURN-021, FND-AI-074, EXP-TURN-048, EXP-TURN-049, EXP-TURN-050, FND-AI-021, FND-AI-042, FND-AI-047, FND-CONTROL-001, FND-GANG-003, FND-GANG-005, FND-HIRE-002, FND-OBJECTIVE-004, FND-PLATFORM-003, FND-SETUP-002, FND-STATE-006, FND-STATE-011, FND-TURN-001, FND-TURN-005, FND-TURN-006, FND-UI-035, FND-UI-036, FND-AI-079]
+evidence: [FND-AI-072, EXP-TURN-022, FND-AI-004, FND-AI-006, FND-AI-013, FND-AI-019, FND-AI-001, FND-AI-033, FND-AI-026, FND-AI-009, FND-AI-039, FND-AI-048, FND-AI-052, FND-EXE-004, FND-AI-057, FND-SETUP-018, EXP-TURN-021, FND-AI-074, EXP-TURN-048, EXP-TURN-049, EXP-TURN-050, FND-AI-021, FND-AI-042, FND-AI-047, FND-CONTROL-001, FND-GANG-003, FND-GANG-005, FND-HIRE-002, FND-OBJECTIVE-004, FND-PLATFORM-003, FND-SETUP-002, FND-STATE-006, FND-STATE-011, FND-TURN-001, FND-TURN-005, FND-TURN-006, FND-UI-035, FND-UI-036, FND-AI-079, FND-AI-082]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-004, RULE-RNG-002]
@@ -47,7 +47,9 @@ define turns_remaining():
 
 # Write a planned action into the planning record and into the gang record,
 # with only the target bytes the action uses (FND-AI-074). No handler plans
-# Bribe, Give or Sell (FND-AI-079)
+# Bribe, Give or Sell (FND-AI-079). Nothing between planning and resolution
+# drops a planned action for cash: an Equip is tested against the player's
+# cash when the transaction pass reaches it (FND-AI-082)
 define plan(idx, action, t1, t2):
     let r = planning_records[idx]
     let g = gangs[idx]

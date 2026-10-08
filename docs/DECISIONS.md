@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | Date | Decision |
 |---|---|
 | 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
+| 2026-10-06 | [Let a late joiner take a seat the vote handed to the computer](#2026-10-06--let-a-late-joiner-take-a-seat-the-vote-handed-to-the-computer) |
 | 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
 | 2026-10-06 | [Chat in the online lobby, through the match's event log](#2026-10-06--chat-in-the-online-lobby-through-the-matchs-event-log) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
@@ -64,6 +65,44 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   README's Gatekeeper steps are the supported install. A Linux desktop with neither `zenity` nor
   `kdialog` gets no dialog and imports with `chaos-overlords-new-chrome-import`. An explicit
   `--assets` folder and test runs are never offered an import.
+
+## 2026-10-06 — Let a late joiner take a seat the vote handed to the computer
+
+- Decision: in a match whose host allowed late join, a newcomer may take
+  over two kinds of computer seat:
+  - a seat that never had a human, as before;
+  - a seat that had a human until a unanimous takeover vote handed it to the
+    computer. Kicking a player ends in the same vote, so a kicked seat
+    becomes open once that vote passes.
+- A seat whose player is absent but not yet voted out (`left`, `kicked` or
+  `takeoverPending`) stays reserved. The vote is unanimous among the players
+  present, so a seat opens only when everyone still playing agreed that its
+  human is gone.
+- The former player may still `rejoin` a computer seat while nobody has
+  claimed it, as before. The first claim wins: the server revokes the former
+  player's token and closes their streams in the same step, and from then on
+  their `rejoin` is refused like any other dead token. One storage statement
+  releases the old claim and another inserts the new one, and `rejoin` only
+  reclaims a seat whose token is still live, so a return and a claim racing
+  for the same seat cannot both win.
+- No new host setting. `allowLateJoin` already asks whether strangers may
+  take computer seats mid-match, and the vote is where the players present
+  consent to this seat being one. A match that was already running when this
+  shipped reads its setting the same way.
+- The seat keeps what the match was generated with. The newcomer plays under
+  the overlord name and face the seat already has, so nothing the rules read
+  changes. The server stores the seat's existing face on the newcomer's row,
+  whatever face the request named. Their own display name is used in the
+  roster only.
+- Capacity: `maxPlayers` counts the humans who still hold a claim on a seat.
+  A seat that was released to a newcomer no longer counts its former player.
+- Each claim of a seat is a new player row with its own id, so a slot can
+  carry several rows over a match. Clients keep every row for history and
+  treat the one that is not computer controlled as the slot's holder.
+- Status: implemented and tested; protocol version 26, because a client from
+  before this cannot follow a seat changing hands this way. The session
+  version is unchanged: nothing stored about a match changes meaning, and
+  every match in progress can carry on.
 
 ## 2026-10-06 — Establish an entry only when its runs reach everything it describes
 

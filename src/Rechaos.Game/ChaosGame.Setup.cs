@@ -369,9 +369,16 @@ public sealed partial class ChaosGame
         // character leaves the existing 12-byte seat record untouched rather than restoring a
         // generated default name.
         _setupNameEditor.Begin(string.Empty);
+        _setupNameSelecting = false;
+        RestartSetupNameCaretBlink();
         _message = string.Empty;
     }
 
+    /// <summary>
+    /// SCR-SETUP-003: Enter is the dialog's OK, its default button, and Escape its Cancel. The
+    /// editing keys arrive through <see cref="HandleKeyDown"/> and the characters through the
+    /// window's text input, both with the platform's key repeat.
+    /// </summary>
     private void UpdateSetupName(KeyboardState keyboard)
     {
         if (_editingPlayerName is null) return;
@@ -381,26 +388,66 @@ public sealed partial class ChaosGame
             return;
         }
         if (Pressed(keyboard, Keys.Enter))
-        {
             FinishSetupNameEdit(cancel: false);
-            return;
-        }
-        if (Pressed(keyboard, Keys.Back))
-        {
-            _setupNameEditor.Backspace();
-            return;
-        }
-
-        var shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
-        foreach (var key in keyboard.GetPressedKeys())
-        {
-            if (_previousKeyboard.IsKeyDown(key)) continue;
-            // FND-UI-064: the name is typed into an edit control, which translates the key as
-            // Windows does instead of the window procedure's shift switch.
-            if (OriginalTextInput.TryNameCharacter(key, shift, out var character))
-                _setupNameEditor.TryAppend(character);
-        }
     }
+
+    /// <summary>
+    /// SCR-SETUP-003, FND-UI-068: the name dialog's edit control takes the character Windows
+    /// produces for a key from the keyboard layout, through the dialog's own message loop, so
+    /// the setup name takes the platform's text input rather than the game's key switch.
+    /// </summary>
+    private bool TypeSetupName(char character)
+    {
+        if (!SetupNameEditorFocused) return false;
+        if (_setupNameEditor.Type(character)) RestartSetupNameCaretBlink();
+        return true;
+    }
+
+    /// <summary>A key went down, or repeated while held.</summary>
+    internal void HandleKeyDown(Keys key)
+    {
+        if (_soundtrackFade is not null || !SetupNameEditorFocused) return;
+        var keyboard = _shell.ReadKeyboard();
+        var shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
+        if (_setupNameEditor.Press(key, shift)) RestartSetupNameCaretBlink();
+    }
+
+    private bool SetupNameEditorFocused =>
+        !_gameMenuOpen && _screens.Current == ClientScreen.Setup && _editingPlayerName is not null;
+
+    /// <summary>
+    /// SCR-SETUP-003: a press on the name being edited places the insertion point, and Shift
+    /// extends the selection to it; holding the button and moving selects (SRC-WIN32-EDIT).
+    /// Returns whether the press landed on that name.
+    /// </summary>
+    private bool PressSetupName(Point point)
+    {
+        if (_editingPlayerName is not { } index
+            || !PlayerPortraitLayout.NameHit(index).Contains(point)) return false;
+        var keyboard = _shell.ReadKeyboard();
+        var shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
+        _setupNameEditor.MoveTo(SetupNameIndexAt(index, point), shift);
+        _setupNameSelecting = true;
+        RestartSetupNameCaretBlink();
+        return true;
+    }
+
+    private void HoldSetupName(Point point)
+    {
+        if (!_setupNameSelecting || _editingPlayerName is not { } index) return;
+        var at = SetupNameIndexAt(index, point);
+        if (at == _setupNameEditor.Caret) return;
+        _setupNameEditor.MoveTo(at, extend: true);
+        RestartSetupNameCaretBlink();
+    }
+
+    private int SetupNameIndexAt(int index, Point point)
+    {
+        var start = SetupPlayerCardArtLayout.NameStart(index, _setupNameEditor.VisibleLength);
+        return _setupNameEditor.IndexAt(point.X - start.X, OriginalFontLayout.CellWidth);
+    }
+
+    private void RestartSetupNameCaretBlink() => _setupNameCaretShownAt = _inputTime;
 
     private void FinishSetupNameEdit(bool cancel)
     {
@@ -410,6 +457,7 @@ public sealed partial class ChaosGame
             ? _setupOriginalName
             : LocalSetupPolicy.NameAfterModalEntry(_setupOriginalName, entered);
         _editingPlayerName = null;
+        _setupNameSelecting = false;
         _message = string.Empty;
     }
 
@@ -729,19 +777,17 @@ public sealed partial class ChaosGame
             }
             // An online seat shows the ten-character projection its overlord plays under, which
             // fits the card as a local name does; the lobby's display name can run to 32 characters.
-            var text = _configuringOnlineLobby ? OriginalPlayerName.Project(onlinePlayers[index].DisplayName)
-                : _editingPlayerName == index
-                ? _setupNameEditor.Text
+            if (!_configuringOnlineLobby && _editingPlayerName == index)
+            {
+                DrawSetupNameEditor(batch, pixel, font, index);
+                continue;
+            }
+            var text = _configuringOnlineLobby
+                ? OriginalPlayerName.Project(onlinePlayers[index].DisplayName)
                 : _playerNames[index];
-            var label = _editingPlayerName == index && !_configuringOnlineLobby
-                && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0
-                ? text + "_"
-                : text;
-            // FND-SETUP-014: the name in the screen's green, centred on the card. The blinking
-            // cursor of the rebuild's name editor is left out of the centring, so the name holds
-            // still while it blinks.
+            // FND-SETUP-014: the name in the screen's green, centred on the card.
             var name = SetupPlayerCardArtLayout.NameStart(index, text.Length);
-            font.Draw(batch, label, new Vector2(name.X, name.Y), Color.Lime, 1);
+            font.Draw(batch, text, new Vector2(name.X, name.Y), Color.Lime, 1);
         }
         if (_setupPlayerDragStarted && _draggedSetupPlayerSlot is { } dragged
             && UiSprites is not null)
@@ -797,6 +843,35 @@ public sealed partial class ChaosGame
             else if (control is { Kind: SetupPanelControlKind.AiMentality } difficulty)
                 DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)difficulty.Index);
         }
+    }
+
+    /// <summary>
+    /// DEV-SETUP-003: the name being edited, in the window of it the card shows, centred as a
+    /// name is. Selected characters are drawn in black on the name's green, and the caret
+    /// blinks at the insertion point.
+    /// </summary>
+    private void DrawSetupNameEditor(SpriteBatch batch, Texture2D pixel, PixelFont font, int index)
+    {
+        var editor = _setupNameEditor;
+        var shown = editor.VisibleText;
+        var start = SetupPlayerCardArtLayout.NameStart(index, shown.Length);
+        font.Draw(batch, shown, new Vector2(start.X, start.Y), Color.Lime, 1);
+        var first = Math.Max(editor.SelectionStart, editor.FirstVisible) - editor.FirstVisible;
+        var last = Math.Min(editor.SelectionEnd, editor.FirstVisible + shown.Length) - editor.FirstVisible;
+        var highlighted = editor.HasSelection && last > first;
+        if (highlighted)
+        {
+            batch.Draw(pixel,
+                SetupPlayerCardArtLayout.NameCells(index, shown.Length, first, last - first), Color.Lime);
+            font.Draw(batch, shown[first..last],
+                new Vector2(start.X + OriginalFontLayout.CellWidth * first, start.Y), Color.Black, 1);
+        }
+        // The caret's column is the last of the cell before it, so a caret at a selection's right
+        // end falls inside the highlight and is drawn in black there, as an inverted caret shows.
+        var caret = editor.Caret - editor.FirstVisible;
+        if (SetupPlayerCardArtLayout.NameCaretShown(_inputTime - _setupNameCaretShownAt))
+            batch.Draw(pixel, SetupPlayerCardArtLayout.NameCaret(index, shown.Length, caret),
+                highlighted && caret > first && caret <= last ? Color.Black : Color.Lime);
     }
 
     private static void DrawSelectionLight(
