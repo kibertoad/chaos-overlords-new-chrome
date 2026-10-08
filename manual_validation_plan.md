@@ -13,9 +13,10 @@ finding or experiment is in the spec.
 
 ## Executable, platform and file formats
 
-- FND-PLATFORM-015, FMT-GFX-001: do the two white-keyed images show the
+- RULE-GFX-003, FND-PLATFORM-015, FMT-GFX-001: do the keyed copies show the
   exact-white pixels as transparent and near-white pixels as opaque? Start a
-  match in 16-bit colour, open the screens that draw those two images, capture
+  match in 16-bit colour, open screens that draw keyed copies (the site
+  markers, the Last Turn illustration, the interface sheet's frames), capture
   the window and compare the pixels at the key boundary with the file data.
   Record the captures and the pixel values on both sides of the boundary.
 - FMT-GFX-001, FND-GFX-003: how are the odd-width images (`PX00202`,

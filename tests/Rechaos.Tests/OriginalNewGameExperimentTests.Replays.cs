@@ -49,8 +49,10 @@ public sealed partial class OriginalNewGameExperimentTests
     private sealed record Replay(MatchState Match, int DonePresses, IReadOnlyList<(int Bound, int Result)> Rolls);
 
     // The game played once, kept as a native save. Each caller gets a match loaded from those bytes,
-    // so a test that changes its match changes nothing another test reads.
-    private sealed class CachedReplay(byte[] snapshot, int donePresses, IReadOnlyList<(int Bound, int Result)> rolls)
+    // so a test that changes its match changes nothing another test reads. A game too long to save
+    // within NativeSaveSerializer.MaximumSaveBytes (EXP-TURN-108 plays 124 turns) is played again
+    // for each caller instead.
+    private sealed class CachedReplay(Func<MatchState> copy, int donePresses, IReadOnlyList<(int Bound, int Result)> rolls)
     {
         // The definitions are read-only records, so every copy can share one parsed set instead of
         // deserializing and validating the embedded data again for each caller.
@@ -59,7 +61,9 @@ public sealed partial class OriginalNewGameExperimentTests
         public int DonePresses { get; } = donePresses;
         public IReadOnlyList<(int Bound, int Result)> Rolls { get; } = rolls;
 
-        public MatchState Copy()
+        public MatchState Copy() => copy();
+
+        public static MatchState Load(byte[] snapshot)
         {
             using var stream = new MemoryStream(snapshot, writable: false);
             return NativeSaveSerializer.Load(stream, Definitions);
@@ -107,8 +111,19 @@ public sealed partial class OriginalNewGameExperimentTests
         var donePresses = 0;
         var rolls = ObservingRolls(() => match = Play(inputs, out donePresses));
 
-        var snapshot = NativeSaveStore.Serialize(match!);
-        var cached = new CachedReplay(snapshot, donePresses, rolls);
+        byte[] snapshot;
+        try
+        {
+            snapshot = NativeSaveStore.Serialize(match!);
+        }
+        catch (InvalidDataException)
+        {
+            // NativeSaveSerializer.Save refuses a save over its size limit with this exception and
+            // has no other reason to throw it.
+            return new CachedReplay(() => Play(inputs, out _), donePresses, rolls);
+        }
+
+        var cached = new CachedReplay(() => CachedReplay.Load(snapshot), donePresses, rolls);
         // A copy stands in for the replayed match only if the save keeps all of it. Load refuses a
         // copy that does not hash as the replayed match did, and the copy has to save to the same
         // bytes again.

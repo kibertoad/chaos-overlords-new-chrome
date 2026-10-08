@@ -25,11 +25,14 @@ export interface EventStreamSource {
   /**
    * Register a wake-up for new events; returns the unsubscribe.
    *
+   * `wake(true)` makes the drain it starts read the log, as the periodic catch-up does, for a
+   * source that has reason to distrust what it was told.
+   *
    * `close` ends this stream from the other side, which is how a revoked membership loses a stream
    * it already holds and how a player's stale stream is dropped to make room for their reconnect.
    * It is safe to call at any time and does nothing once the stream is closed.
    */
-  subscribe(wake: () => void, close: (reason: HubCloseReason) => void): () => void
+  subscribe(wake: (force?: boolean) => void, close: (reason: HubCloseReason) => void): () => void
 }
 
 /** Why the hub ended a stream from its side; see `EventStreamSource.subscribe`. */
@@ -242,7 +245,7 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
         // placeholder above it only flips `closed`, so passing the reference here would hand the
         // hub a close that leaves the heartbeat running and the subscription in place.
         const unsubscribe = source.subscribe(
-          () => wake(),
+          (force) => wake(force === true),
           (reason) => {
             shutdown(reason)
           },

@@ -43,7 +43,8 @@ public static class OriginalTextInput
     /// EXP-UI-053): the layout's character for the key with or without Shift, upper-cased by the
     /// control's <c>ES_UPPERCASE</c> style. Shift with a number-pad digit types nothing; Shift
     /// with a number-pad operator types the operator. Characters outside space to <c>Z</c> are
-    /// returned as typed; the name copy turns them into spaces (SetupPlayerNameEditor).
+    /// returned as typed; the name copy turns them into spaces
+    /// (<see cref="LocalSetupPolicy.NameAfterModalEntry"/>).
     /// </summary>
     public static bool TryNameCharacter(Keys key, bool shift, out char character)
     {

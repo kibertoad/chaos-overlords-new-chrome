@@ -66,14 +66,17 @@ public sealed class OriginalTextInputExperimentTests
                     case "SHIFT": shift = true; break;
                     case "PLAIN": shift = false; break;
                     // A posted WM_CHAR reaches the control as typed.
-                    case "CHAR": editor.TryAppend((char)value); break;
+                    case "CHAR": editor.Type((char)value); break;
                     case "VK":
                         if (OriginalTextInput.TryNameCharacter((Keys)value, shift, out var character))
-                            editor.TryAppend(character);
+                            editor.Type(character);
                         break;
                 }
             }
-            Assert.True(expected == editor.Text, $"{keys}: \"{expected}\", rebuilt \"{editor.Text}\"");
+            // OK keeps the first ten characters of the control's text, each outside space to Z as
+            // a space (FND-UI-022).
+            var kept = LocalSetupPolicy.NameAfterModalEntry(string.Empty, editor.Text);
+            Assert.True(expected == kept, $"{keys}: \"{expected}\", rebuilt \"{kept}\"");
             compared++;
         }
         Assert.Equal(97, compared);
