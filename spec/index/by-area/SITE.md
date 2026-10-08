@@ -8,4 +8,4 @@ Entries by area.
 
 | ID | Title | Status |
 |---|---|---|
-| [RULE-SITE-001](../../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | established |
+| [RULE-SITE-001](../../rules/RULE-SITE-001.md) | Before planning, each sector record is rebuilt from its completed sites, whose bonuses go to the owner's gangs there | supported |

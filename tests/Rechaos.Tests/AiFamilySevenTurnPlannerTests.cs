@@ -106,6 +106,29 @@ public sealed class AiFamilySevenTurnPlannerTests
             match.AiPlanning.FocusValue(player, 0));
     }
 
+    // RULE-AI-026, FND-AI-078: a focus equal to the best research sector skips the Move toward it,
+    // so a gang whose focus holds that number researches where it stands.
+    [Fact]
+    public void FocusEqualToBestResearchSectorResearchesInPlace()
+    {
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(data, sourceSites: [0, 0, 0],
+            researchSector: 18, researchSectorSites: [4, 8, 2]);
+        var player = new PlayerId(0);
+        BeginFamilySevenTurn(match, player);
+        match.AiPlanning.SetFocusValue(player, 0, 18);
+        match.FinishUpkeep();
+
+        match.PrepareAiPlanning(player);
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+        var expected = OriginalAiFamilySevenRules.SelectFirstResearchItemOfType(
+            match, match.Players[0], match.Players[0].Gangs[0], 2);
+
+        Assert.Equal(GangAction.Research, command.Action);
+        Assert.Equal(CommandTarget.Item(checked((short)expected!.Value)), command.Target);
+        Assert.Equal(expected, match.AiPlanning.FocusValue(player, 0));
+    }
+
     [Fact]
     public void SuccessfulHostileAttackStoresCurrentSectorAsFocus()
     {

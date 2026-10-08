@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-032, FND-TIMER-003, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038, FND-UI-039, FND-OBJECTIVE-004, FND-STATE-010, FND-UI-040, FND-UI-041, FND-UI-042, EXP-TURN-042, FND-UI-043, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-051, FND-SAVE-003, EXP-UI-008, EXP-UI-013, EXP-UI-014, FND-UI-059, FND-UI-060, FND-UI-063, EXP-UI-001, EXP-UI-003, EXP-UI-031]
+evidence: [FND-UI-032, FND-TIMER-003, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-018, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038, FND-UI-039, FND-OBJECTIVE-004, FND-STATE-010, FND-UI-040, FND-UI-041, FND-UI-042, EXP-TURN-042, FND-UI-043, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-051, FND-SAVE-003, EXP-UI-008, EXP-UI-013, EXP-UI-014, FND-UI-059, FND-UI-060, FND-UI-063, EXP-UI-041, EXP-UI-001, EXP-UI-003, EXP-UI-031]
 conflicting: []
 split_with: []
 related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-UI-012, RULE-TIMER-002, RULE-TIMER-003, RULE-OPTIONS-003, RULE-AUDIO-001, RULE-AUDIO-007, RULE-AUDIO-008, SCR-UI-004, SCR-UI-005, SCR-UI-008, SCR-OPTIONS-001, SCR-HIRE-001, SCR-HIRE-002, SCR-GANG-002]
@@ -77,7 +77,7 @@ Every row above is a press or double-click of the left button. The console tiles
 | Sound | Resource | Played when | Evidence |
 |---|---|---|---|
 | Press | `DATA/SND00202` (slot 2) | A console tile is pressed (RULE-UI-001) | FND-UI-032, FND-AUDIO-010 |
-| Comlink alert | `DATA/Snd00205` (slot 6) | On entry with unread mail, and every 24 ticks while mail is unread (RULE-AUDIO-007, RULE-AUDIO-008) | FND-AUDIO-012 |
+| Comlink alert | `DATA/Snd00205` (slot 6) | Once at planning entry with unread mail, after the Last Turn Events; when a message for the planning player arrives; and every 24 ticks while mail is unread (RULE-AUDIO-007, RULE-AUDIO-008) | FND-AUDIO-018 |
 | Clock warnings | `DATA/Snd00206` and `DATA/Snd00207` (slots 7 and 8) | The last ten seconds and the last second of a timed turn (RULE-TIMER-003) | FND-TIMER-001 |
 | Game music | CD audio tracks 3 to 8, repeated (RULE-AUDIO-001 mode 2) | From the start of the game | FND-AUDIO-001 |
 
@@ -123,3 +123,16 @@ None known.
   than `DATA/PX16`) is not recorded here.
 - The Hire dock's input belongs to the Hire screens; its reject gates are in
   FND-UI-032.
+- No recorded run of the original reaches a single press selecting a sector
+  and the refusal for owner byte -2; the arrow keys and Enter; the pressed
+  console faces; the lit Events, Comlink and Done lights and their blink; the
+  final view as pixels; overflow cells; empty seats; marker frames 2, 7 and 11
+  and the marker and selection-frame cadences; the site markers, the hire
+  stamp and snub cross and a partly run clock bar as pixels; the Comlink alert
+  cadence; the game music and the press sound of most tiles; the waiting and
+  loading states; a final view with several humans. The cash row, the key
+  line and the top two pixel rows (y 444 and 445) of the column-letter tabs
+  along the bottom of the map are not compared with the captures; the letters,
+  drawn from y 449, are (FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-032,
+  FND-UI-038, FND-UI-041, FND-UI-043, FND-EVENT-006).
+  These rest on the static findings named, so the entry stays `supported`.

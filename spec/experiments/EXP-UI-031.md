@@ -33,7 +33,7 @@ As EXP-UI-003, with seed 52421.
 --experiment EXP-UI-031` over the run directory.
 
 The state is dumped at the first planning entry, and nothing is pressed after
-it. Each shot copies the drawing area as `--capture` does (docs/VALIDATION.md,
+it. Each shot copies the drawing area as `--capture` does (docs/validation/screen-captures.md,
 "Taking a capture"): two BitBlt copies from the window's device context that
 must agree byte for byte while the marker counter `0x00487B90` and the pump's
 counter `0x00487804` hold still, and keeps the marker frame and the pump's
