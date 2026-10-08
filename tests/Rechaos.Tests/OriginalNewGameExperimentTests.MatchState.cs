@@ -127,6 +127,8 @@ namespace Rechaos.Tests;
 /// turn and order Moves that the Move repair sends back and then gives a random neighbour from a
 /// corner of the city (RULE-MOVE-002, RULE-AI-007), until a hire with 80 gangs is refused and
 /// reported (RULE-HIRE-001, RULE-EVENT-011).
+/// EXP-UI-031 reaches the first planning entry of EXP-SETUP-001's seed and takes shots there only,
+/// which ScreenCaptureTests compares (SCR-UI-003).
 /// EXP-TURN-101 writes families 13 and 14 into computer gangs in Greed, where they move to the
 /// planned target, sector 0, with no selector call (RULE-AI-031).
 /// EXP-UI-032 and EXP-UI-034 play hot seat in Eliminate with a write that takes a human's Right

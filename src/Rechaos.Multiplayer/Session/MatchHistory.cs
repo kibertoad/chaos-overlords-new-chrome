@@ -229,8 +229,16 @@ public sealed class MatchHistory
     /// </summary>
     /// <returns>Whether the player was not seated before.</returns>
     /// <exception cref="MultiplayerProtocolException">
-    /// The player is seated elsewhere, or the slot belongs to another player.
+    /// The player is seated elsewhere, or the slot belongs to another player the computer does not
+    /// play.
     /// </exception>
+    /// <remarks>
+    /// A late joiner may take a seat that a human held until the vote handed it to the computer, so
+    /// a seat this history already knows a player for is not by itself a contradiction. One the
+    /// computer does not play at the point of the join is: the server has seated a second human in
+    /// a chair somebody is still playing. That can be judged only while the state stands at that
+    /// point; a replay over a later snapshot has already settled who plays it.
+    /// </remarks>
     public bool AddLatePlayer(string playerId, int slot, int beforeTurn)
     {
         ArgumentNullException.ThrowIfNull(playerId);
@@ -240,7 +248,10 @@ public sealed class MatchHistory
             if (knownSlot != slot)
                 throw new MultiplayerProtocolException("a late player changed seats");
         }
-        else if (_seats.ContainsValue(slot))
+        else if (_seats.ContainsValue(slot)
+                 && beforeTurn >= Replay.State.Coordinator.Turn
+                 && SeatControl.CanTransfer(Replay.State)
+                 && Replay.State.FindPlayer(new PlayerId(slot))?.Setup.Controller != PlayerController.Computer)
             throw new MultiplayerProtocolException("a late player claimed a human-owned seat");
         else
         {
