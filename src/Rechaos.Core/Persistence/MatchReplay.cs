@@ -144,6 +144,7 @@ public sealed class MatchReplayRecorder
     {
         State = state;
         _verifying = true;
+        _journaling = true;
         _initialSnapshot = initialSnapshot;
         _initialStateFingerprint = initialStateFingerprint;
         _steps.AddRange(steps);
