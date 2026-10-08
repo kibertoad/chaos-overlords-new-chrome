@@ -14,6 +14,7 @@ import {
   submitOrdersRequestSchema,
   takeoverVoteRequestSchema,
   turnReportRequestSchema,
+  postChatMessageRequestSchema,
   updatePlayerProfileRequestSchema,
   uploadSnapshotRequestSchema,
 } from './schemas'
@@ -151,6 +152,15 @@ export const updatePlayerProfileContract = defineApiContract({
   requestBodySchema: updatePlayerProfileRequestSchema,
   responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
   summary: "Change the caller's own name and portrait while the match is in the lobby.",
+})
+
+export const postChatMessageContract = defineApiContract({
+  method: 'post',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/matches/${matchId}/chat`,
+  requestBodySchema: postChatMessageRequestSchema,
+  responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
+  summary: 'Post a chat message to the lobby, announced as lobby.chatMessage.',
 })
 
 export const leaveMatchContract = defineApiContract({
@@ -320,6 +330,7 @@ export const API_CONTRACTS = {
   getMatch: getMatchContract,
   updateMatchSettings: updateMatchSettingsContract,
   updatePlayerProfile: updatePlayerProfileContract,
+  postChatMessage: postChatMessageContract,
   startMatch: startMatchContract,
   leaveMatch: leaveMatchContract,
   rejoinMatch: rejoinMatchContract,

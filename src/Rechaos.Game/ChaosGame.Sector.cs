@@ -198,8 +198,12 @@ public sealed partial class ChaosGame
         AcceptInput();
         if (rightButton) _screens.Show(ClientScreen.City);
         else
+        {
             _pressedPanelFace = (SectorDetailLayout.Back, ClientScreen.Sector,
                 () => _screens.Show(ClientScreen.City));
+            // The sector view draws its own back face (SCR-UI-004).
+            _pressedPanelFaceKind = null;
+        }
         return true;
     }
 
@@ -269,11 +273,11 @@ public sealed partial class ChaosGame
         DrawBoard(batch, pixel, font, state, view);
         var sector = state.Sectors[_cursor];
         DrawSectorBackground(batch, pixel);
-        if (_uiSprites is not null)
+        if (UiSprites is not null)
         {
-            batch.Draw(_uiSprites, SectorDetailLayout.OwnerStrip,
+            batch.Draw(UiSprites, SectorDetailLayout.OwnerStrip,
                 SectorDetailLayout.OwnerStripSource(sector.Owner), Color.White);
-            batch.Draw(_uiSprites, SectorDetailLayout.BackStrip, SectorDetailLayout.BackStripSource, Color.White);
+            batch.Draw(UiSprites, SectorDetailLayout.BackStrip, SectorDetailLayout.BackStripSource, Color.White);
         }
         else
             font.Draw(batch, "<", new Vector2(8, 410), Color.Lime, 2);
@@ -287,23 +291,23 @@ public sealed partial class ChaosGame
         {
             var definition = state.Definitions.Site(site.DefinitionId);
             var portrait = SectorDetailLayout.SitePortrait(site.Slot);
-            if (_sitePortraits is not null)
-                batch.Draw(_sitePortraits, portrait,
+            if (SitePortraits is not null)
+                batch.Draw(SitePortraits, portrait,
                     OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
             // FND-UI-037: the site flash lightens the image; the frame and meter go on top unlit.
             if (_tickedPresentation.Area == portrait)
                 DrawFlashLightening(batch, TickedPresentationKind.SiteFlash);
-            if (_uiKeyedSprites is not null)
-                batch.Draw(_uiKeyedSprites, portrait, SectorDetailLayout.SitePortraitFrameSource, Color.White);
+            if (UiKeyedSprites is not null)
+                batch.Draw(UiKeyedSprites, portrait, SectorDetailLayout.SitePortraitFrameSource, Color.White);
             else
                 DrawBorder(batch, pixel, portrait, Color.Gray, 1);
             if (sector.Owner != viewer) continue;
             var meter = SectorDetailLayout.SiteControlBar(site.Slot);
             var filled = SectorDetailLayout.SiteControlWidth(definition.Resistance, site.Resistance);
-            if (_uiSprites is not null)
+            if (UiSprites is not null)
             {
                 if (filled > 0)
-                    batch.Draw(_uiSprites, meter with { Width = filled },
+                    batch.Draw(UiSprites, meter with { Width = filled },
                         SectorDetailLayout.SiteControlBarSource(filled), Color.White);
             }
             else
@@ -314,12 +318,12 @@ public sealed partial class ChaosGame
         foreach (var entry in visibleGangs.Take(SectorGangCardLayout.VisibleCards)
                      .Select((gang, index) => (gang, index)))
             DrawSectorGangCard(batch, pixel, font, state, viewer, entry.gang, entry.index);
-        if (_uiSprites is not null && showsGroupOrderStrip)
-            batch.Draw(_uiSprites, SectorDetailLayout.GroupOrderStrip,
+        if (UiSprites is not null && showsGroupOrderStrip)
+            batch.Draw(UiSprites, SectorDetailLayout.GroupOrderStrip,
                 OriginalSpriteLayout.GroupOrderStrip, Color.White);
         DrawQueuedCommandTargetHighlight(batch, pixel, viewer, visibleGangs);
         DrawGangMoveDrag(batch, pixel, state);
-        DrawSectorHireDrag(batch, pixel, state);
+        DrawSectorHireDrag(batch);
         // The Sector workspace covers the left side of right-edge tooltips drawn by
         // DrawBoard, so composite the tooltip again after the workspace is complete.
         DrawStatusConsoleTooltip(batch, pixel, font);
@@ -340,8 +344,8 @@ public sealed partial class ChaosGame
 
     private void DrawPressedSectorBack(SpriteBatch batch)
     {
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites, SectorDetailLayout.Back,
+        if (UiSprites is not null)
+            batch.Draw(UiSprites, SectorDetailLayout.Back,
                 PressedKeyFaces.Source(PressedKeyFace.SectorBack), Color.White);
     }
 
@@ -355,7 +359,7 @@ public sealed partial class ChaosGame
     private void DrawSectorBackground(SpriteBatch batch, Texture2D pixel)
     {
         var area = CityMapLayout.Bounds;
-        var neutral = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
+        var neutral = CityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
         if (neutral is not null)
             batch.Draw(neutral, area, CityMapLayout.OwnershipSource(_cursor), Color.White);
         else
@@ -412,41 +416,25 @@ public sealed partial class ChaosGame
         }
     }
 
-    private void DrawSectorHireDrag(SpriteBatch batch, Texture2D pixel, MatchState state)
+    /// <summary>
+    /// FND-HIRE-010, EXP-UI-041: an offer in flight is its 40-by-40 image under the pointer, the
+    /// portrait shrunk with the drag frame of PX00129 keyed over it, and nothing else; the drop
+    /// sector is not marked.
+    /// </summary>
+    private void DrawSectorHireDrag(SpriteBatch batch)
     {
-        if (!_hireDragStarted || _draggedHireDefinitionId is not { } definitionId) return;
-        var playerId = ViewingPlayer(state);
-        var overMap = SectorDetailLayout.TrySectorAt(_dragPoint, _cursor, out var dropSector);
-        if (!overMap && SectorDetailLayout.Workspace.Contains(_dragPoint)) dropSector = _cursor;
-        if (overMap)
-        {
-            var marker = SectorDetailLayout.Marker(_cursor, dropSector);
-            if (marker is { } destination && _uiKeyedSprites is not null)
-            {
-                var friendlyGangs = state.FindPlayer(playerId)!.Gangs.Where(
-                    gang => gang.IsActive && gang.SectorId == dropSector).ToArray();
-                var source = friendlyGangs.Length == 0
-                    ? OriginalSpriteLayout.IncomingGangStatus
-                    : GangStatusSource(
-                        state, playerId, dropSector, friendlyGangs, hasPendingHire: true);
-                batch.Draw(_uiKeyedSprites, destination, source, Color.White);
-            }
-            for (var column = 0; column < SectorDetailLayout.Columns; column++)
-            for (var row = 0; row < SectorDetailLayout.Rows; row++)
-                if (SectorDetailLayout.SectorAt(_cursor, column, row) == dropSector)
-                    DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row),
-                        state.Sectors[dropSector].Owner == playerId ? Color.Lime : Color.OrangeRed, 2);
-        }
-        else if (SectorDetailLayout.Workspace.Contains(_dragPoint))
-        {
-            DrawBorder(batch, pixel, SectorDetailLayout.Workspace,
-                state.Sectors[_cursor].Owner == playerId ? Color.Lime : Color.OrangeRed, 2);
-        }
-        if (_gangPortraits is null) return;
-        var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 18, 36, 36);
-        batch.Draw(_gangPortraits, token,
-            OriginalSpriteLayout.GangPortrait(definitionId), Color.White);
-        DrawBorder(batch, pixel, token, Color.White, 1);
+        if (_hireDragStarted && _draggedHireDefinitionId is { } definitionId)
+            DrawHireDragImage(batch, definitionId);
+    }
+
+    private void DrawHireDragImage(SpriteBatch batch, short definitionId)
+    {
+        if (GangPortraits is null) return;
+        var image = HireDockLayout.DragImage(_dragPoint);
+        _scaledGangPortraits.Draw(batch, GangPortraits, OriginalSpriteLayout.GangPortrait(definitionId), image);
+        // The frame the setup cards' drag keys over its portrait goes over this one as well.
+        if (UiKeyedSprites is not null)
+            batch.Draw(UiKeyedSprites, image, OriginalSpriteLayout.SetupDragFrame, Color.White);
     }
 
     private void BeginGangDrag(MatchGangState gang, Point point)
@@ -622,9 +610,9 @@ public sealed partial class ChaosGame
                 DrawBorder(batch, pixel, SectorDetailLayout.SitePortrait(siteSlot),
                     GangDragSectorHighlight, 1);
         }
-        if (_gangPortraits is null) return;
+        if (GangPortraits is null) return;
         var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 14, 36, 28);
-        batch.Draw(_gangPortraits, token, OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
+        batch.Draw(GangPortraits, token, OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
         DrawBorder(batch, pixel, token,
             IsSelectedForBulkCommand(gang) ? Color.Gold : PlayerColors[gang.Owner.Value], 1);
     }
@@ -639,8 +627,8 @@ public sealed partial class ChaosGame
         int slot)
     {
         var frame = SectorGangCardLayout.Frame(slot);
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites, frame, OriginalSpriteLayout.GangCardFrame, Color.White);
+        if (UiSprites is not null)
+            batch.Draw(UiSprites, frame, OriginalSpriteLayout.GangCardFrame, Color.White);
         else
         {
             batch.Draw(pixel, frame, new Color(115, 115, 115));
@@ -656,12 +644,12 @@ public sealed partial class ChaosGame
             new Color(0, 247, 0));
 
         var action = gang.QueuedCommand?.Command.Action ?? GangAction.None;
-        if (_uiSprites is not null && gang.Owner == viewer)
+        if (UiSprites is not null && gang.Owner == viewer)
         {
-            batch.Draw(_uiSprites, SectorGangCardLayout.ActionStrip(slot),
+            batch.Draw(UiSprites, SectorGangCardLayout.ActionStrip(slot),
                 OriginalSpriteLayout.GangActionStrip(action), Color.White);
         }
-        else if (_uiSprites is null)
+        else if (UiSprites is null)
         {
             var strip = SectorGangCardLayout.ActionStrip(slot);
             batch.Draw(pixel, strip, Color.Black);
@@ -670,14 +658,14 @@ public sealed partial class ChaosGame
         }
 
         var definition = state.Definitions.Gang(gang.DefinitionId);
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, SectorGangCardLayout.Portrait(slot),
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, SectorGangCardLayout.Portrait(slot),
                 OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
         var equippedItems = EquippedItems(gang);
         for (var itemSlot = 0; itemSlot < 3; itemSlot++)
         {
-            if (_itemPortraits is not null && equippedItems[itemSlot] is { } itemId)
-                batch.Draw(_itemPortraits, SectorGangCardLayout.ItemPortrait(slot, itemSlot),
+            if (ItemPortraits is not null && equippedItems[itemSlot] is { } itemId)
+                batch.Draw(ItemPortraits, SectorGangCardLayout.ItemPortrait(slot, itemSlot),
                     OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
         }
     }
@@ -749,12 +737,12 @@ public sealed partial class ChaosGame
         // FND-UI-037: the cell flash lightens the copied display, markers included, and the frame
         // and edge labels are drawn over it unlit.
         DrawFlashLightening(batch, TickedPresentationKind.SectorDisplayCellFlash);
-        if (_uiKeyedSprites is not null)
+        if (UiKeyedSprites is not null)
         {
-            batch.Draw(_uiKeyedSprites, display, SectorDetailLayout.DisplayFrameSource, Color.White);
+            batch.Draw(UiKeyedSprites, display, SectorDetailLayout.DisplayFrameSource, Color.White);
             // FND-UI-048: the pump keys the selection frame over the centre cell, covering the
             // outline the display's frame draws there.
-            batch.Draw(_uiKeyedSprites, SectorDetailLayout.DisplayCentre,
+            batch.Draw(UiKeyedSprites, SectorDetailLayout.DisplayCentre,
                 CityMapLayout.SelectionFrameSource(SelectionFrameShown()), Color.White);
         }
         foreach (var label in SectorDetailLayout.DisplayLabels(_cursor))
@@ -763,7 +751,7 @@ public sealed partial class ChaosGame
 
     private void DrawGangStatusMarker(SpriteBatch batch, Rectangle destination, Rectangle source)
     {
-        if (_uiKeyedSprites is not null)
-            batch.Draw(_uiKeyedSprites, destination, source, Color.White);
+        if (UiKeyedSprites is not null)
+            batch.Draw(UiKeyedSprites, destination, source, Color.White);
     }
 }

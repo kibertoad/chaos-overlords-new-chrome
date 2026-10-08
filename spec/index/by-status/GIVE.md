@@ -6,19 +6,12 @@ Entries by status.
 
 ## supported
 
-1 entries.
-
-| ID | Title |
-|---|---|
-| [SCR-GIVE-001](../../screens/SCR-GIVE-001.md) | Give panel |
-
-## established
-
-1 entries.
+2 entries.
 
 | ID | Title |
 |---|---|
 | [RULE-GIVE-001](../../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan |
+| [SCR-GIVE-001](../../screens/SCR-GIVE-001.md) | Give panel |
 
 ## recorded
 
@@ -30,18 +23,11 @@ Entries by status.
 | [FND-GIVE-002](../../findings/FND-GIVE-002.md) | The Give panel draws each recipient as a card with portrait, Force meter and item icons, covers recipients below the needed Tech Level with a black pattern, and marks selections with keyed PX00129 art |
 | [FND-GIVE-003](../../findings/FND-GIVE-003.md) | The Give recipient list fills no background, and dims an ineligible card with black through bitmap 146 from the card's corner |
 
-## Established on unreproduced evidence
-
-Entries whose status is established and whose findings and experiments are all only recorded.
-
-| ID | Title |
-|---|---|
-| [RULE-GIVE-001](../../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan |
-
 ## Open questions
 
 Entries whose Open questions section says more than None known.
 
 | ID | Title | Status |
 |---|---|---|
+| [RULE-GIVE-001](../../rules/RULE-GIVE-001.md) | Give empties the giver's selected slots and holds the items for delivery to the recipient after the player's scan | supported |
 | [SCR-GIVE-001](../../screens/SCR-GIVE-001.md) | Give panel | supported |

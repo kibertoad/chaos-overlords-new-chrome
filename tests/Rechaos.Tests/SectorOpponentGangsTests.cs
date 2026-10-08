@@ -137,7 +137,8 @@ public sealed class SectorOpponentGangsTests
         var setupPlayers = Enumerable.Range(0, 3)
             .Select(id => new MatchPlayerSetup(new PlayerId(id), $"P{id + 1}", PlayerController.Human))
             .ToArray();
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setupPlayers);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setupPlayers,
+            MatchDeviations.Original);
         var observerDefinition = detectable
             ? data.Gangs.OrderByDescending(gang => gang.Stats.Detect).First()
             : data.Gangs.OrderBy(gang => gang.Stats.Detect).First();
