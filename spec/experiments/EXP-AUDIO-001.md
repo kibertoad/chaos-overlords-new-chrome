@@ -38,10 +38,12 @@ at each Done press and at the end of the run, and the fixture records it as
 `effects_enabled`. The state is dumped at the fifth planning entry, after four
 turns have begun since the first.
 
-The run was made a second time with `--time-limit 0` added, so the planning
-time limit did not depend on the choice the previous run left, and with the
-probe also recording each call of the effects wrapper `fn_00464290(slot)` in
-the same form, and each call of the level setup `fn_004652A0` with the address
+The run was made a second time, as `Rechaos.OriginalProbe new-game --scenario
+4 --mentality 2 --time-limit 0 --humans 0 --seed 7272 --end-turns 4 --sound
+--sound-calls`, with `--time-limit 0` added so the planning time limit did not
+depend on the choice the previous run left, and with the probe also recording
+each call of the effects wrapper `fn_00464290(slot)` in the same form, and
+each call of the level setup `fn_004652A0` with the address
 of the call and `effects_enabled` as it returned, the only writes of the
 setting (FND-AUDIO-019). The fixture holds the second run, as `sound_calls`,
 `effect_calls` and `level_setups`.

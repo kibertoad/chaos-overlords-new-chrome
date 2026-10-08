@@ -532,8 +532,9 @@ the probe has written the levels (FND-AUDIO-019). The probe also reads
 `effects_enabled` at each helper call, at each Done press and at the end of the
 run. The fixture holds the calls as `sound_calls`, `effect_calls` and
 `level_setups`, with `effects_enabled` beside them, and `extract` refuses a run
-whose value is unknown or differed between those reads, that lacks the wrapper
-calls or level setups, or that ended inside a level setup. The replay requires
+whose value is unknown or differed between those reads and the level setups'
+returns, that lacks the wrapper calls or level setups, or that ended inside a
+level setup. The replay requires
 the push cue at Begin and at each Done press among the wrapper's calls, every
 level setup to leave the run's setting, the first from the title
 initialization, and the wrapper to have passed every request on to the helper

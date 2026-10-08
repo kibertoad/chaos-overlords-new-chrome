@@ -63,8 +63,9 @@ internal sealed partial class NewGameSession
         }, quiet: true);
     }
 
-    // The reads at each Done press and at the end of the run, which the level setups' values
-    // confirm: no code but the level setup writes the byte (FND-AUDIO-019).
+    // The read at each call of the play helper and at each Done press; EffectsEnabledAtEachRead
+    // adds the one at the end of the run. The level setups' values confirm them: no code but the
+    // level setup writes the byte (FND-AUDIO-019).
     private void SampleEffectsEnabled() =>
         _effectsEnabled.Add(_process.Read(OriginalAddresses.EffectsEnabled, 1)[0]);
 

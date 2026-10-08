@@ -181,6 +181,11 @@ public sealed partial class OriginalNewGameExperimentTests
         private readonly Dictionary<(string, int), int> _terms = [];
         private readonly Dictionary<(string, int, string), int> _fields = [];
 
+        // sound_calls and effect_calls share one form: after_roll, done, slot and the call's address.
+        private static RecordedSoundCall[] SoundCallList(JsonElement calls) =>
+            calls.EnumerateArray().Select(call => new RecordedSoundCall(
+                call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray();
+
         public RecordedRun(JsonElement run, JsonElement inputs)
         {
             Orders = inputs.EnumerateArray()
@@ -317,15 +322,9 @@ public sealed partial class OriginalNewGameExperimentTests
                 ? pointerCalls.EnumerateArray().Select(call => new RecordedPointerCall(
                     call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32(), call[4].GetInt32())).ToArray()
                 : null;
-            SoundCalls = run.TryGetProperty("sound_calls", out var soundCalls)
-                ? soundCalls.EnumerateArray().Select(call => new RecordedSoundCall(
-                    call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
-                : null;
+            SoundCalls = run.TryGetProperty("sound_calls", out var soundCalls) ? SoundCallList(soundCalls) : null;
             EffectsEnabled = run.TryGetProperty("effects_enabled", out var effectsEnabled) ? effectsEnabled.GetBoolean() : null;
-            EffectCalls = run.TryGetProperty("effect_calls", out var effectCalls)
-                ? effectCalls.EnumerateArray().Select(call => new RecordedSoundCall(
-                    call[0].GetInt32(), call[1].GetInt32(), call[2].GetInt32(), call[3].GetInt32())).ToArray()
-                : null;
+            EffectCalls = run.TryGetProperty("effect_calls", out var effectCalls) ? SoundCallList(effectCalls) : null;
             LevelSetups = run.TryGetProperty("level_setups", out var levelSetups)
                 ? levelSetups.EnumerateArray().Select(setup => new RecordedLevelSetup(
                     setup[0].GetInt32(), setup[1].GetInt32(), setup[2].GetInt32(), setup[3].GetInt32() != 0)).ToArray()
