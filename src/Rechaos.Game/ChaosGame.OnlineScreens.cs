@@ -351,7 +351,7 @@ public sealed partial class ChaosGame
         var window = ListScrollWindow.Of(
             seats.Count, _online.LateJoinSeatSelection, OnlineScreenLayout.ListRows);
         DrawListHeading(batch, font, OnlineConnectLayout.HistoryTop,
-            "COMPUTER EMPIRES NOBODY HAS PLAYED", window.Tally("SEATS"));
+            "EMPIRES THE COMPUTER PLAYS", window.Tally("SEATS"));
         for (var row = 0; row < window.VisibleRows; row++)
         {
             var index = window.IndexAt(row);

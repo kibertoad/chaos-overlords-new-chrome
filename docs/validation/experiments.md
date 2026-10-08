@@ -46,7 +46,7 @@ process, and pass the copy with `--executable`:
 
 ```powershell
 $env:__COMPAT_LAYER = 'DWM8And16BitMitigation WINXPSP2 DISABLEDWM 640X480 DISABLEDXMAXIMIZEDWINDOWEDMODE'
-dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
+dotnet run --project tools/Rechaos.OriginalProbe -- new-game --executable <copy> --out <run directory> [--game <install directory>] [--timeout <seconds>] [--scenario <0-9>] [--mentality <0-3>] [--turns <26|52|104|208>] [--humans <slot[:modifier]>,...] [--end-turns <n>] [--seed <n>] [--dump-at-roll <n>] [--trace-calls <hex address>] [--orders <turn[:player]:slot:action:target:target_2:repeat>,...] [--hires <turn[:player]:offer slot:sector>,...] [--families <turn:player:slot:family>,...] [--raiders <turn:player>,...] [--retire <turn:player>,...] [--cash <turn[-turn]:player:value>,...] [--force <turn:player:slot:force>,...] [--tolerance <turn:sector:value>,...] [--finance <turn:sector>,...] [--search <turn[:player]:definition+definition...>,...] [--time-limit <0-3>] [--expire-turns <turn>,...] [--deactivate <turn:player:slot>,...] [--pass-cards] [--delays <turn:ms>,...] [--menu <turn:after_ms:hold_ms>,...] [--clock-captures] [--comlink <script file>] [--sound] [--capture] [--white-key] [--equip-lists] [--attack-lists] [--draw-values <hex address>=<int32>[/<int32>...],...] [--search-clicks <x:y>,...] [--hire-steps <drag:slot:sector|reject:slot|exit>,...] [--order-steps <open:sector|card:n:x:y:command|strip:x:y:command|back|exit>,...] [--gang-markers] [--pointer] [--sound-calls] [--watch-intro] [--waits] [--slides] [--saved <turn:value>,...] [--closes <saved:answer>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>... [--screens <SCR ID>,...]
 dotnet run --project tools/Rechaos.OriginalProbe -- extract-comlink --experiment <EXP ID> --out spec/experiments/<EXP ID>.json <run directory>...
 ```
@@ -77,18 +77,23 @@ nothing waits for input, and dumps the state at the planning phase that
 follows the last one. The human's planning phase opens the Combat Results
 panel (SCR-COMBAT-001) after a fight that involved its gangs, and the Last
 Turn Events panel (SCR-EVENT-001) when it has reports, and waits in each; the
-probe breaks on both handlers and presses Exit before the next Done, and presses
-Done again if a press left the turn unmoved for 20 seconds. A match that ends,
+probe breaks on both handlers and presses Exit before the next Done; once a
+press has closed a panel it waits up to 3 seconds for another panel to open
+or the planning loop to run again, since Last Turn Events is a call of its own
+after Combat Results has returned (FND-UI-061). It presses Done again if a
+press left the turn unmoved for 20 seconds. A match that ends,
 or a human eliminated, before `--end-turns` runs out stops the presses there,
 and the fixture's inputs list only the turns the run played: one Done press, or
 one turn left to the planning time limit, per entry of `done_at_roll`, with
 that turn's writes before it, which the replay tests check. A press repeated
 after 20 seconds and the press at the final view of a match that ends
-(FND-OBJECTIVE-004) are not listed. Each call of
-either handler is kept with the roll count at the call and whether the panel
-stayed open until the probe pressed Exit, since the Combat Results handler
-returns at once when no fight qualifies; a panel still open at the dump counts
-as shown. The fixture holds the calls as `panels`. `--orders` writes
+(FND-OBJECTIVE-004) are not listed. Each call of either handler is kept
+with the roll count at the call and whether it showed its panel: a call shows
+it when it reaches its call of the panel-open helper, `0x00452146` in Combat
+Results and `0x0044F3D1` in Last Turn Events, which comes before it waits for
+input, and a call with nothing to show, as Combat Results when no fight
+qualifies, returns without reaching it (FND-UI-061). The fixture holds the
+calls as `panels`. `--orders` writes
 an order into a gang record of a human before the Done press of the
 given turn, counted from 1: the `action`, `target` and `target_2` bytes of
 FMT-STATE-001, and for a recurring order `repeat_action` and `repeat_target`,
@@ -146,6 +151,41 @@ rebuild's projection of the same panel.
 planning time runs out; the fixture lists each as a `wait` input and records
 the planning clock of each such turn as `timers` (RULE-TIMER-002,
 RULE-TIMER-003).
+With several `--humans` and `--end-turns` the run plays hot seat
+(RULE-SETUP-008). The first listed slot, which has to be the lowest, presses
+Ready on its hand-off card and takes the turn's inputs, and every later human
+presses Ready and Done with no orders. A turn ends at the first human's next
+hand-off card, before its offers are drawn, or at the end of the match, where
+the probe passes each human's final view with Done. The replay draws the offers
+of each human at its planning entry and finishes the command of every later
+human. `--deactivate` writes sector 100, `GANG_INACTIVE` (FMT-STATE-001), into
+the sector byte of the player's roster slot before the Done press of the given
+turn, which takes the gang out of the match as a fight does; in Eliminate a
+player whose slot 0 is gone loses everything at the end of the turn
+(RULE-TURN-006). The fixture lists it as a `planning` input, and the replay
+retires the gang with its Force. The probe breaks at the elimination card
+`0x0042C3F5` (FND-OBJECTIVE-002) and ends the run there; with `--pass-cards` it
+presses the card's Done and goes on, and the fixture holds the `active_player`
+of each card it passed as `elimination_cards`.
+`--delays` waits the given milliseconds in the given turn before its Done
+press, listed as a `wait` input. `--menu` needs a time limit of 1 to 3. When
+`after_ms` of the turn's planning clock have passed, `timeGetTime` less
+`planning_start_ms` (FND-TIMER-003), it posts `WM_SYSCOMMAND` with
+`SC_KEYMENU` to the game window, which opens the menu bar as the Alt key does,
+polls `GetGUIThreadInfo` until the game's thread is in menu mode, holds it until
+`hold_ms` after the posting and posts Escape until menu mode ends. The run fails
+when menu mode ends before that. The fixture lists each holding as a `key`
+input and holds it as `menus`: the times of the posting, of menu mode seen, of
+Escape and of menu mode left, the `GUITHREADINFO` flags, and as `ticks` the
+elapsed time of every call of the presentation timer's callback `fn_004327C0`
+for slot 0 (FND-TIMER-002) from the clock's start to its expiry or the turn's Done press
+(EXP-TURN-102). `--clock-captures` breaks at `0x0041B8C8` in the clock's start
+helper, after it stores the start time and before it draws the bar, copies the
+drawing area there, and keeps the player, `elapsed_turns` and the width and
+elapsed time of the last bar drawn before it, which the fixture holds as
+`clock_captures` with the digest of the bar's rectangle as an SCR-UI-003
+element (EXP-UI-035). The copy holds the game for a few milliseconds, which the
+first bar of each turn shows as elapsed time.
 `--equip-lists` reads the item lists of the Equip panel after the dump: at
 the next `PeekMessageA` call of the message pump (FND-UI-020) the probe saves
 the thread context and calls the list builder `fn_0043F136` (FND-EQUIP-012)
@@ -212,14 +252,22 @@ every roll from the setup's hourglass on is made under the hourglass and
 compares the rebuild's pointer at each planning entry and after each Done press
 (RULE-UI-007, EXP-UI-022).
 `--sound-calls` logs every call of the play helper `fn_0045851A`
-(FND-AUDIO-006) with the rolls and Done presses before it, its slot and the
-address of the call; with `--sound` the effects wrapper's calls are logged too.
-It also reads `effects_enabled` (FND-AUDIO-002) at each call, at each Done press
-and at the end of the run. The fixture holds the calls as `sound_calls` with
-`effects_enabled` beside them, and `extract` refuses a run whose value is
-unknown or differed between those reads. The replay expects the push cue of Begin and of each Done press
-when effects were enabled, and no push cue when they were not
-(RULE-AUDIO-006, EXP-AUDIO-001).
+(FND-AUDIO-006) and of the effects wrapper `fn_00464290` (FND-AUDIO-002) with
+the rolls and Done presses before it, its slot and the address of the call, and
+every call of the level setup `fn_004652A0` with the address of the call and
+`effects_enabled` as it returned. The level setup is the only code that writes
+`effects_enabled`, and its first call, in the title initialization, comes after
+the probe has written the levels (FND-AUDIO-019). The probe also reads
+`effects_enabled` at each helper call, at each Done press and at the end of the
+run. The fixture holds the calls as `sound_calls`, `effect_calls` and
+`level_setups`, with `effects_enabled` beside them, and `extract` refuses a run
+whose value is unknown or differed between those reads and the level setups'
+returns, that lacks the wrapper calls or level setups, or that ended inside a
+level setup. The replay requires the push cue at Begin and at each Done press
+among the wrapper's calls, every level setup to leave the run's setting, the
+first from the title initialization, and the wrapper to have passed every
+request on to the helper when effects were enabled and none when they were not
+(RULE-AUDIO-006, EXP-AUDIO-001, EXP-AUDIO-002).
 `--watch-intro` lets both intro movies play out before the button is held and
 logs each frame the frame helper shows, with the movie's name, its header's
 frame count, the slot's frame counter and the time from the first movie's first

@@ -107,8 +107,10 @@ public static class NativeSaveStore
     public static MatchState Load(string path, OriginalData definitions)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        // Delete sharing lets a write's File.Replace promotion rename this generation to the backup
+        // while it is read; without it the promotion fails on Windows.
         using var stream = new FileStream(
-            Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read);
+            Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
         return NativeSaveSerializer.Load(stream, definitions);
     }
 

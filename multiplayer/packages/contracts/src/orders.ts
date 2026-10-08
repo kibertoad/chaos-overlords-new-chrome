@@ -6,11 +6,14 @@ import {
   literal,
   maxLength,
   maxValue,
+  minLength,
   minValue,
   nullable,
   number,
   pipe,
+  regex,
   strictObject,
+  string,
   variant,
 } from 'valibot'
 import { LIMITS } from './limits'
@@ -27,8 +30,9 @@ import { notNegativeZero, slotSchema } from './primitives'
  * `Rechaos.Core`. What the server CAN do, and does here, is refuse anything that is not a
  * *representable* operation of this game:
  *
- * - the op must be one of the five player intents the replay recorder accepts over a turn
- *   (`MatchReplayRecorder.Submit`/`Cancel`/`QueueHire`/`SnubHireOffer`/`TryDismissNotification`);
+ * - the op must be one of the seven player intents the replay recorder accepts over a turn
+ *   (`MatchReplayRecorder.Submit`/`Cancel`/`QueueHire`/`SnubHireOffer`/`TryDismissNotification`/
+ *   `SendComlinkMessage`/`MarkComlinkRead`);
  *   the phase transitions and the `Prepare*` steps are driven by the turn structure on every
  *   client and are refused if a client tries to send one,
  * - every field must exist, have the right type, and fit the C# type and capacity it indexes
@@ -132,7 +136,33 @@ export const commandTargetSchema = variant('kind', [
 ])
 
 /**
- * The five player intents. `player` is on every one of them because the game core takes it on
+ * The text of a Comlink message: 1 to 160 characters from space to `Z`, the characters the Send
+ * panel can type (RULE-COMLINK-006). Trailing spaces are stripped by the game before it sends, and a
+ * message of spaces only is never sent (RULE-COMLINK-003), but neither is refused here: the core
+ * decides what such a message does, the same way on every client.
+ */
+export const comlinkTextSchema = pipe(
+  string(),
+  minLength(1),
+  maxLength(LIMITS.comlinkMessageLength),
+  regex(/^[\x20-\x5A]*$/, 'a Comlink message holds only the characters space to Z'),
+)
+
+/**
+ * A Comlink message's sequence number in its recipient's inbox. It counts every message the inbox
+ * ever received, so only its C# type bounds it; the wire keeps it to what a JSON number carries
+ * exactly in every client.
+ */
+export const comlinkSequenceSchema = pipe(
+  number(),
+  integer(),
+  minValue(0),
+  maxValue(2_147_483_647),
+  notNegativeZero,
+)
+
+/**
+ * The seven player intents. `player` is on every one of them because the game core takes it on
  * every one of them; the server checks it against the submitter's own slot rather than trusting
  * it (see `assertOwnOps` in the kernel's turn service).
  */
@@ -185,12 +215,32 @@ export const dismissNotificationOpSchema = strictObject({
   player: slotSchema,
 })
 
+/**
+ * `MatchState.SendComlinkMessage(sender, recipients, text)`: RULE-COMLINK-003, applied when the turn
+ * seals. Whether each recipient may take the message (RULE-COMLINK-002) is the core's judgement.
+ */
+export const sendComlinkMessageOpSchema = strictObject({
+  op: literal('sendComlinkMessage'),
+  player: slotSchema,
+  recipients: pipe(array(slotSchema), minLength(1), maxLength(LIMITS.maxPlayers - 1)),
+  text: comlinkTextSchema,
+})
+
+/** `MatchState.MarkComlinkRead(player, sequence)`: RULE-COMLINK-005, applied when the turn seals. */
+export const markComlinkReadOpSchema = strictObject({
+  op: literal('markComlinkRead'),
+  player: slotSchema,
+  sequence: comlinkSequenceSchema,
+})
+
 export const orderOpSchema = variant('op', [
   submitCommandOpSchema,
   cancelCommandOpSchema,
   queueHireOpSchema,
   snubHireOfferOpSchema,
   dismissNotificationOpSchema,
+  sendComlinkMessageOpSchema,
+  markComlinkReadOpSchema,
 ])
 
 export const orderDocumentSchema = strictObject({
@@ -210,6 +260,8 @@ export const ORDER_OP_KINDS = [
   'queueHire',
   'snubHireOffer',
   'dismissNotification',
+  'sendComlinkMessage',
+  'markComlinkRead',
 ] as const satisfies readonly OrderOpKind[]
 
 /**

@@ -143,13 +143,25 @@ export interface PlayerRepository {
    */
   create(player: Player): Promise<boolean>
   /**
-   * Inserts a deterministic-id late member after start; false if that seat was ever human.
+   * Seats a deterministic-id late member after start and releases the seat's former players, as
+   * ONE atomic unit: the insert, and the revocation of the token of every computer-controlled row
+   * of the seat, which ends a former player's right to `rejoin` it. Returns the ids it revoked
+   * (empty when the seat had none to revoke), or null when it refused, in which case nothing was
+   * revoked either.
    *
-   * `maxPlayers` is part of the same statement, because two late joiners taking two different free
-   * slots each passed a capacity check the other invalidated and the match ended up over capacity,
-   * with a roster the match view's seat schema then refused.
+   * It refuses when the match is not running, when the id is taken, when a row of the seat is not
+   * computer controlled (a human holds it, or a former player took it back a moment earlier), and
+   * when the match is at `maxPlayers` counting the rows that still hold a claim (see `isVacated`)
+   * once the seat's computer rows are released.
+   *
+   * Capacity is part of the unit because two late joiners taking two different free slots each
+   * passed a capacity check the other invalidated, and the match ended up over capacity with a
+   * roster the match view's seat schema then refused. The release is part of it because a claim
+   * refused after a separate release left the seat with nobody: the former player had lost the
+   * right to return and the claimant had not taken it. A `rejoin` racing the claim either lands
+   * first, so the claim refuses, or finds its token revoked.
    */
-  createLate(player: Player): Promise<boolean>
+  createLate(player: Player): Promise<{ released: string[] } | null>
   get(id: string): Promise<Player | null>
   /** Never matches a revoked membership, whose token hash is null. */
   getByTokenHash(tokenHash: string): Promise<Player | null>
@@ -162,11 +174,16 @@ export interface PlayerRepository {
    */
   listSeats(matchIds: readonly string[]): Promise<MatchSeat[]>
   setStatus(playerId: string, status: Player['status']): Promise<void>
-  /** Compare-and-swap a player status; exactly one return/takeover race may win. */
+  /**
+   * Compare-and-swap a player status; exactly one return/takeover race may win. With
+   * `holdingToken`, the row must also still hold a token, which is how `rejoin` loses to a late
+   * joiner who released the seat after the returning player authenticated.
+   */
   transitionStatus(
     playerId: string,
     from: readonly Player['status'][],
     status: Player['status'],
+    options?: { holdingToken?: boolean },
   ): Promise<boolean>
   /**
    * Replace an active lobby member's name and portrait, in ONE statement conditional on the match

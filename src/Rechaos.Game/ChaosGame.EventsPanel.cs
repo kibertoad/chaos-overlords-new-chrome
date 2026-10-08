@@ -46,6 +46,9 @@ public sealed partial class ChaosGame
             ShowTurnReportsOrCity();
             return;
         }
+        // RULE-TIMER-002: the planning entry redraws the console, so the panels it opens before the
+        // clock starts show the console's full bar, not the bar the previous turn left (EXP-UI-035).
+        _planningTimer.Clear();
         if (_state is null || PlanningViewer is not { } playerId)
         {
             _screens.Show(ClientScreen.City);
@@ -54,6 +57,14 @@ public sealed partial class ChaosGame
         }
         PrepareCurrentHireOffers();
         _deferComlinkAlertUntilPlanningVisible = true;
+        // A reference frame's Ready click goes on as its first planning entry does: past the panels
+        // whose Exit presses a shot step's clicks leave out, or to Last Turn Events with EntryPanels.
+        if (_referenceFrame is not null)
+        {
+            _managementReturnScreen = ClientScreen.City;
+            PresentReferenceFrameEntryPanels(_state, playerId);
+            return;
+        }
         // RULE-SETUP-008: after the Ready card, Game Information for each local human who plans in
         // the round a loaded match resumed on, then combat results, Last Turn Events and the Comlink.
         if (_resumedMatchTurn == _state.Coordinator.Turn && _resumedGameInfoShown.Add(playerId))
@@ -281,7 +292,7 @@ public sealed partial class ChaosGame
                 && EventReviewProgress.IsComplete(reportCount, _eventViewedPages))
             {
                 _lastTurnEventArchive.Store(playerId, _state.Coordinator.Turn, currentReports);
-                var count = _state.NotificationsFor(playerId).Count;
+                var count = _state.NotificationCountFor(playerId);
                 for (var index = 0; index < count; index++)
                     _actions.DismissNotification(playerId);
             }
@@ -467,7 +478,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private IReadOnlyList<GameNotification> LastTurnReports(MatchState state, PlayerId playerId)
     {
-        var key = (state.Events.Count, state.Coordinator.Turn, state.NotificationsFor(playerId).Count);
+        var key = (state.Events.Count, state.Coordinator.Turn, state.NotificationCountFor(playerId));
         if (!ReferenceEquals(_lastTurnReportSource, state))
         {
             _lastTurnReportCache.Clear();

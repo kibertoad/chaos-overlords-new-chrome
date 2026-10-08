@@ -70,4 +70,6 @@ the point of the call.
 which is the end-to-end check the .NET test suite cannot make on its own. It then plays a second
 match with a spectator following it through `MultiplayerSpectatorWatch`, two turns behind, and checks
 the spectator's city against the players' hashes on every released turn. The multiplayer workflow
-runs it against the Node server and against the Worker under `wrangler dev`.
+runs it against the Node server and against the Worker under `wrangler dev`, on pull requests and
+pushes to main that touch its paths, and weekly on main; a failed weekly run opens an issue labelled
+`scheduled-multiplayer-ci`, and the next green one closes it.

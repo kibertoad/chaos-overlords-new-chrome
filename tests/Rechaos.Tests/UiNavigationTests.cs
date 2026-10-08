@@ -539,6 +539,7 @@ public sealed partial class UiNavigationTests
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.AdvancedAi));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.IntroOnlyOnce));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.MenuStopsClock));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ExportDiagnostics));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
@@ -558,6 +559,7 @@ public sealed partial class UiNavigationTests
             OptionsLayout.EventSiteImages,
             OptionsLayout.AdvancedAi,
             OptionsLayout.IntroOnlyOnce,
+            OptionsLayout.MenuStopsClock,
             OptionsLayout.ExportDiagnostics,
             OptionsLayout.ColorDepth,
             OptionsLayout.Done

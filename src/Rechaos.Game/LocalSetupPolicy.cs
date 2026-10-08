@@ -17,17 +17,27 @@ public static class LocalSetupPolicy
     }
 
     /// <summary>
-    /// Applies the original setup dialog's accepted text to a player name.
+    /// FND-UI-022, FND-UI-068: applies the text the name dialog's edit control holds when OK
+    /// is pressed to a player name.
     /// </summary>
     /// <remarks>
-    /// Its input buffer starts empty and the native copy helper does nothing when it remains so.
-    /// A space is not empty: it is a glyph the native helper stores in the fixed record.
+    /// The copy helper's buffer starts empty and it does nothing when the text is still empty. A
+    /// space is not empty: it is a glyph the helper stores in the fixed record. Otherwise the
+    /// helper keeps the first ten characters of the text, however long it is, and stores a space
+    /// for every character outside space to <c>Z</c>, which includes every byte from 0x80 because
+    /// the helper reads them as signed.
     /// </remarks>
     public static string NameAfterModalEntry(string existingName, string enteredName)
     {
         ArgumentNullException.ThrowIfNull(existingName);
         ArgumentNullException.ThrowIfNull(enteredName);
-        return enteredName.Length == 0 ? existingName : enteredName;
+        if (enteredName.Length == 0) return existingName;
+        var length = Math.Min(enteredName.Length, MaximumPlayerNameCharacters);
+        return string.Create(length, enteredName, static (cells, text) =>
+        {
+            for (var index = 0; index < cells.Length; index++)
+                cells[index] = text[index] is >= ' ' and <= 'Z' ? text[index] : ' ';
+        });
     }
 
     /// <summary>
