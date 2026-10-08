@@ -127,8 +127,14 @@ namespace Rechaos.Tests;
 /// turn and order Moves that the Move repair sends back and then gives a random neighbour from a
 /// corner of the city (RULE-MOVE-002, RULE-AI-007), until a hire with 80 gangs is refused and
 /// reported (RULE-HIRE-001, RULE-EVENT-011).
+/// EXP-UI-031 reaches the first planning entry of EXP-SETUP-001's seed and takes shots there only,
+/// which ScreenCaptureTests compares (SCR-UI-003).
 /// EXP-TURN-101 writes families 13 and 14 into computer gangs in Greed, where they move to the
 /// planned target, sector 0, with no selector call (RULE-AI-031).
+/// EXP-UI-032 and EXP-UI-034 play hot seat in Eliminate with a write that takes a human's Right
+/// Hands out of the match, which eliminates that human (RULE-TURN-006, RULE-OBJECTIVE-005).
+/// EXP-UI-035 plays timed hot-seat turns, one of them run out, and EXP-TURN-102 opens the menu bar
+/// in timed turns (RULE-TIMER-002, RULE-TIMER-003).
 /// In EXP-TURN-103 a Bribe every turn takes a base Tolerance to 41, where it stays while the later
 /// gangs of the phase act, and the clamp lowers it to 40 (RULE-TOLERANCE-002, RULE-TURN-003). In
 /// EXP-TURN-104 a Research gang acts after its sector's site is completed earlier in the same
@@ -148,6 +154,13 @@ namespace Rechaos.Tests;
 /// the match it then starts is the one the seed alone gives (RULE-SETUP-009).
 /// In EXP-TURN-109 a family-7 gang whose focus names the sector it stands in, its best research
 /// sector, researches there although a Research site in it is unfinished (RULE-AI-026, FND-AI-078).
+/// EXP-TURN-106 to EXP-TURN-108 play Power, Big 40 and Armageddon matches to the turn each one
+/// ends, a computer player's win and a tie for the lead included (RULE-OBJECTIVE-002,
+/// RULE-OBJECTIVE-004), and in EXP-TURN-107 a player gets more than 64 notifications in one
+/// turn, whose Last Turn reports must all survive (RULE-EVENT-002). EXP-TURN-112 and EXP-TURN-113
+/// play Siege for 96 turns and Kill 'Em All for 150 without either reaching its scenario's end
+/// condition; in both a computer player's planned Equips all resolve, the ones it can no longer
+/// pay for refused then, with no cash set aside at planning (FND-AI-082).
 /// Every computer player's pass starts from its sector weights and the hostility step
 /// (RULE-AI-003). Its hires land in the sector the planner encodes (RULE-AI-012), and gangs of the
 /// default family plan by their previous action (RULE-AI-019). Its upgrade choices test danger
@@ -350,12 +363,8 @@ public sealed partial class OriginalNewGameExperimentTests
                             ? eventsBySequence.GetValueOrDefault(sequence)
                             : null))
                     .ToArray();
-                // DEV-AI-002: a computer player's Equip it cannot pay for gives no command in the
-                // rebuild, so the cash report the original records when it fails has no counterpart.
                 var expected = Enumerable.Range(0, recorded.Term("last_turn_report_count", slot))
                     .Select(index => recorded.Report(slot, index))
-                    .Where(report => player.Setup.Controller == PlayerController.Human
-                        || report is not { Type: LastTurnReportRecord.CashShort, Arg1: LastTurnReportRecord.CashShortEquip })
                     .ToArray();
                 Assert.True(expected.Length == reports.Length,
                     $"player {slot}: the original holds {expected.Length} reports, the rebuild {reports.Length}: "

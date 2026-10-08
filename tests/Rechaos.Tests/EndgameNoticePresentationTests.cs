@@ -74,7 +74,7 @@ public sealed class EndgameNoticePresentationTests
         Assert.Equal(new Rectangle(126, 54, 64, 64), EndgameNoticeLayout.Portrait);
         Assert.Equal(
             [new Rectangle(110, 30, 40, 12), new Rectangle(110, 42, 13, 79), new Rectangle(110, 121, 40, 302)],
-            EndgameNoticeLayout.VictoryColourBands);
+            EndgameNoticeLayout.ColourBands);
         Assert.Equal(158, EndgameNoticeLayout.NameCenterX);
         Assert.Equal(46, EndgameNoticeLayout.NameY);
         Assert.Equal(new Rectangle(96, 112, 160, 64), EndgameLayout.StatisticsSource);

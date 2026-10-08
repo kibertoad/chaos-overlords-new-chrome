@@ -15,7 +15,7 @@ internal enum MultiplayerStage
     /// <summary>Browsing public waiting and ongoing sessions.</summary>
     Discover,
 
-    /// <summary>Choosing which never-human computer empire to take over.</summary>
+    /// <summary>Choosing which computer empire to take over.</summary>
     LateJoinSeat,
 
     /// <summary>A request is in flight; the player can only wait.</summary>

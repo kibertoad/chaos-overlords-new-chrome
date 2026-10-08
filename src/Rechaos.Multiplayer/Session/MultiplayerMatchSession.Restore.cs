@@ -167,7 +167,7 @@ public sealed partial class MultiplayerMatchSession
                 : SpeculativeTurn.For(state, _definitions, Slot)
             : null;
         _resumeAfterSeq = view.LastEventSeq;
-        _notices.Enqueue(new MultiplayerNotice.Resumed(view, state, submission, turn));
+        ReopenPlanning(new MultiplayerNotice.Resumed(view, state, submission, turn));
         foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
             PublishTakeoverVote(vote);
         foreach (var playerId in _removalVotes.Keys.Order(StringComparer.Ordinal).ToList())

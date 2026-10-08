@@ -257,9 +257,33 @@ public sealed partial class ChaosGame
                     _screens.Show(ClientScreen.City);
                 }
                 return;
+            case MultiplayerNotice.PauseLifted lifted:
+                // The pause ended without this client adopting anything that reopened planning: it
+                // posted the repair, already held it, or the re-reported hashes agreed. Planning
+                // reopens on the open turn, with the draft the server still holds for it.
+                var turnBeforeLift = _online.PlanningTurn;
+                KeepOnlinePlanningSelection();
+                if (AdoptOnlineState(lifted.State, lifted.Submission, lifted.Planning))
+                {
+                    RewindOnlineCombatPresentation(
+                        presentCompletedTurn: _online.PlanningTurn != turnBeforeLift);
+                    _message = lifted.Submission?.Ready == true
+                        ? "MATCH RESUMED  WAITING FOR THE OTHER PLAYERS"
+                        : "MATCH RESUMED";
+                    _screens.Show(ClientScreen.City);
+                }
+                return;
             case MultiplayerNotice.Desynced desynced:
                 _online.Stage = MultiplayerStage.Desynced;
                 CloseOnlinePlanning();
+                // The session found its own report wrong and moved to the state the server's facts
+                // rebuild to. The board shows that state while the pause holds; planning reopens on
+                // `PauseLifted` once the server lifts it.
+                if (desynced.CorrectedState is { } corrected)
+                {
+                    ReplaceMatchState(corrected);
+                    RewindOnlineCombatPresentation(presentCompletedTurn: false);
+                }
                 // A pause is not a silence. The resolution watchdog is waiting for a seal that
                 // cannot come until the repair lands, and a legitimately slow repair on the
                 // previous turn used to trip it.
