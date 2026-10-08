@@ -1,4 +1,5 @@
 using System.Net;
+using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Session;
 using Xunit;
 
@@ -68,9 +69,10 @@ public sealed partial class MultiplayerSessionTests
         // The announcement says this client reported a hash its rules do not reach from the
         // bootstrap and the sealed set.
         server.Events.Write(Frame(9, "turn.desynced", TiedDesync(correct, "p1", ownReport: OtherHash, "p1")));
-        var resynced = await WaitFor<MultiplayerNotice.Resynced>(session);
+        var desynced = await WaitFor<MultiplayerNotice.Desynced>(session);
 
-        Assert.Equal(correct, resynced.StateHash);
+        Assert.False(desynced.IsRepairing);
+        Assert.Equal(correct, MatchStateHasher.ComputeFingerprint(desynced.CorrectedState!));
         await Until(
             () => server.CallsTo(HttpMethod.Post, "/turns/1/report") > reportsBefore,
             "turn 1 reported again");

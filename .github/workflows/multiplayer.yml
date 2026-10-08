@@ -14,13 +14,21 @@ on:
       - ".github/workflows/multiplayer.yml"
   pull_request:
     paths: *watched
+  # Weekly, on main and its lockfile, so a change outside the repository (the runner image, the
+  # Node 22 and .NET releases the setup steps resolve, a new advisory against a pinned production
+  # dependency) that breaks the build, the audit or the online smoke is found within a week even
+  # when nobody touches multiplayer code. The Postgres image is pinned by digest and cannot drift.
+  # A failure opens or updates an issue; see report-schedule.
+  schedule:
+    - cron: "23 5 * * 1"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: multiplayer-${{ github.ref }}
+  # The scheduled run has its own group, so a push to main does not cancel it, nor it a push.
+  group: multiplayer-${{ github.event_name == 'schedule' && 'schedule' || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -174,3 +182,47 @@ jobs:
           dotnet publish ../src/Rechaos.Resolver.Wasm/Rechaos.Resolver.Wasm.csproj -c Release
           dotnet run --project ../tools/ResolverDeterminism/ResolverDeterminism.csproj -c Release -- "${RUNNER_TEMP}/resolver-transcript.json"
           node ../tools/ResolverDeterminism/check.mjs ../src/Rechaos.Resolver.Wasm/bin/Release/net10.0/publish/wwwroot/_framework "${RUNNER_TEMP}/resolver-transcript.json"
+
+  # Only for the scheduled run: nobody watches its result, so it reports on an issue. A failure
+  # opens an issue with the label below, or comments on the one already open; the next green run
+  # comments and closes it. The label keeps the lookup to the issue list, which has no search lag.
+  # A cancelled run reports nothing, so cancelling one by hand does not open an issue.
+  report-schedule:
+    name: Report the scheduled run
+    needs: verify
+    if: ${{ !cancelled() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write # Opens, comments on and closes the failure issue.
+    steps:
+      - name: Open, update or close the failure issue
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RESULT: ${{ needs.verify.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          label="scheduled-multiplayer-ci"
+          open_issue=$(gh issue list --state open --label "$label" --limit 1 --json number --jq '.[0].number // empty')
+          if [ "$RESULT" = "success" ]; then
+            if [ -n "$open_issue" ]; then
+              gh issue close "$open_issue" --comment "The scheduled run passes again at ${SHA}: ${RUN_URL}"
+            fi
+            exit 0
+          fi
+          body="The weekly multiplayer CI run on main (${SHA}) ended with \`${RESULT}\`: ${RUN_URL}"
+          if [ -n "$open_issue" ]; then
+            gh issue comment "$open_issue" --body "$body"
+          else
+            # Created on first use only, so a maintainer's color or description for it is kept.
+            if ! gh api "repos/${GH_REPO}/labels/${label}" --silent; then
+              gh label create "$label" --color B60205 \
+                --description "The scheduled multiplayer CI run on main is failing"
+            fi
+            hint="If no commit since the last green run touched multiplayer code, look first for a new advisory in the audit step, or a new runner image, Node or .NET release. This issue closes on the next green scheduled run."
+            gh issue create --title "Scheduled multiplayer CI is failing" --label "$label" \
+              --body "$(printf '%s\n\n%s' "$body" "$hint")"
+          fi

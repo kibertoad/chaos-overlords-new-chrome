@@ -97,7 +97,3 @@ it sits, then `DeserializeAsync` straight from the stream.
   nothing lets a test change it, so the worker pool skips the case rather than wait out a heartbeat.
 - **`Retry-After` on every 429.** See [the server item above](#two-kinds-of-429-carry-no-retry-after):
   two of the three kinds do not carry it yet.
-- **End to end on a schedule.** `tools/OnlineSmoke` plays a match against the Node server and
-  against the Worker under `wrangler dev` whenever the multiplayer workflow runs, but nothing runs
-  it on a schedule to catch drift on a branch nobody touched. Running it on a schedule is tracked in
-  [#459](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/459).
