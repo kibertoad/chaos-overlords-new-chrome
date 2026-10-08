@@ -28,7 +28,10 @@ public static class MatchStateClone
     private const int ArchiveVersion = 1;
     private static ReadOnlySpan<byte> ArchiveMagic => "RCHS"u8;
 
-    /// <summary>An independent copy of <paramref name="state"/>.</summary>
+    /// <summary>
+    /// An independent copy of <paramref name="state"/>. A seat's view copies as that seat's view
+    /// (<see cref="SeatView"/>), so the copy refuses to resolve as the original does.
+    /// </summary>
     public static MatchState Of(MatchState state, OriginalData definitions)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -36,7 +39,9 @@ public static class MatchStateClone
         using var stream = new MemoryStream();
         NativeSaveSerializer.Save(stream, state);
         stream.Position = 0;
-        return NativeSaveSerializer.Load(stream, definitions);
+        return state.ViewedBy is { } seat
+            ? SeatView.Load(stream, definitions, seat)
+            : NativeSaveSerializer.Load(stream, definitions);
     }
 
     /// <summary>A compressed native snapshot for bootstrap or desync repair, base64-encoded.</summary>
@@ -69,12 +74,27 @@ public static class MatchStateClone
     {
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(definitions);
+        using var stream = new MemoryStream(Payload(body), writable: false);
+        return NativeSaveSerializer.Load(stream, definitions);
+    }
+
+    /// <summary>
+    /// The seat's view inside an archive the server served (docs/MULTIPLAYER.md, "Serving the
+    /// views"), restored as <paramref name="seat"/>'s view so that nothing resolves on it.
+    /// </summary>
+    public static MatchState ViewFromBase64(string body, OriginalData definitions, PlayerId seat)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(definitions);
+        using var stream = new MemoryStream(Payload(body), writable: false);
+        return SeatView.Load(stream, definitions, seat);
+    }
+
+    /// <summary>The native save payload of a snapshot body: an archive's, or a bare one.</summary>
+    private static byte[] Payload(string body)
+    {
         var bytes = Convert.FromBase64String(body);
-        if (!bytes.AsSpan().StartsWith(ArchiveMagic))
-        {
-            using var legacy = new MemoryStream(bytes, writable: false);
-            return NativeSaveSerializer.Load(legacy, definitions);
-        }
+        if (!bytes.AsSpan().StartsWith(ArchiveMagic)) return bytes;
         if (bytes.Length < ArchiveHeaderBytes)
             throw new InvalidDataException("Native snapshot archive is truncated.");
         var version = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(4, 4));
@@ -108,7 +128,6 @@ public static class MatchStateClone
                 throw new InvalidDataException("Native snapshot archive body is corrupt.", exception);
             }
         }
-        using var stream = new MemoryStream(payload, writable: false);
-        return NativeSaveSerializer.Load(stream, definitions);
+        return payload;
     }
 }

@@ -24,7 +24,7 @@ export function registerSnapshotRoutes(api: Hono<AppEnv>): void {
   buildHonoRoute(api, latestSnapshotContract, async (c) => {
     const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
     return c.json(
-      answering(c, await c.get('container').kernel.snapshots.latest(principal.match.id)),
+      answering(c, await c.get('container').kernel.snapshots.memberLatest(principal.match)),
       200,
     )
   })
@@ -33,7 +33,7 @@ export function registerSnapshotRoutes(api: Hono<AppEnv>): void {
     const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
     const { turn } = c.req.valid('param')
     return c.json(
-      answering(c, await c.get('container').kernel.snapshots.get(principal.match.id, turn)),
+      answering(c, await c.get('container').kernel.snapshots.memberGet(principal.match, turn)),
       200,
     )
   })

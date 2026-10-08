@@ -2,6 +2,8 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using Rechaos.Multiplayer.Generated;
 
 namespace Rechaos.Multiplayer.Protocol;
 
@@ -68,6 +70,10 @@ public static class WireJson
             // refused here rather than thrown hundreds of lines away from the payload that sent it.
             RespectNullableAnnotations = true,
             RespectRequiredConstructorParameters = requireEveryField,
+            // Source-generated contracts rather than reflection, which the trimmed WebAssembly
+            // build of the resolver cannot bind records with (docs/MULTIPLAYER.md, "Resolving
+            // turns on the server"). A type the context does not name fails as NotSupportedException.
+            TypeInfoResolver = JsonTypeInfoResolver.Combine(WireJsonContext.Default, WireShapesJsonContext.Default),
         };
         return options;
     }
@@ -106,7 +112,7 @@ public static class WireJson
         try
         {
             var node = WireOrder.TagFirst(JsonNode.Parse(body));
-            return node.Deserialize<T>(options)
+            return node.Deserialize(Contract<T>(options))
                 ?? throw new MultiplayerProtocolException($"the server sent an empty {typeof(T).Name}");
         }
         catch (Exception exception) when (exception is JsonException or NotSupportedException)
@@ -117,8 +123,16 @@ public static class WireJson
         }
     }
 
+    /// <summary>The contract of <typeparamref name="T"/> under <paramref name="options"/>.</summary>
+    internal static JsonTypeInfo<T> Contract<T>(JsonSerializerOptions options) =>
+        (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+
     /// <summary>Serializes a request body.</summary>
-    public static string Write<T>(T value) => JsonSerializer.Serialize(value, Options);
+    /// <remarks>A body passed as <see cref="object"/> is written as the type it is.</remarks>
+    public static string Write<T>(T value) =>
+        typeof(T) == typeof(object) && value is not null
+            ? JsonSerializer.Serialize(value, Options.GetTypeInfo(value.GetType()))
+            : JsonSerializer.Serialize(value, Contract<T>(Options));
 }
 
 /// <summary>The server answered something this client cannot make sense of.</summary>

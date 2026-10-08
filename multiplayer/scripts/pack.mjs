@@ -7,7 +7,7 @@
 // tarballs from a second job that holds nothing else. That split is the point: the packing job runs
 // `pnpm install`, the whole build, the whole test suite and the codegen check, and any of those —
 // an install script, a vitest plugin, a transitive dev dependency — could otherwise ask GitHub for
-// the job's id-token and trade it at the registry for permission to publish all nine packages with
+// the job's id-token and trade it at the registry for permission to publish all ten packages with
 // valid provenance pointing at this repository.
 //
 // It also makes the published bytes the rehearsed bytes. Publishing from the workspace re-ran each

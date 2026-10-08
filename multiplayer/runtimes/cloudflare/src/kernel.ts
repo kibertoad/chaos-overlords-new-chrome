@@ -18,7 +18,10 @@ import {
   type RetentionPolicy,
   retentionPolicyFromDays,
   type StreamCloser,
+  type TurnResolver,
 } from '@chaos-overlords/kernel'
+import { cloudflareMatchResolver } from '@chaos-overlords/resolver/cloudflare'
+import { configFlag } from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import { drizzle } from 'drizzle-orm/d1'
 import type { Env } from './env'
@@ -73,6 +76,30 @@ export function retentionPolicyFor(env: Env): RetentionPolicy {
     // A batch of 0 would delete nothing while looking switched on; the windows are the off switch.
     batchSize > 0 ? batchSize : DEFAULT_RETENTION_BATCH_SIZE,
   )
+}
+
+let warnedAboutResolver = false
+
+/**
+ * The turn resolver this deployment referees with, or none.
+ *
+ * Refereeing is opt in, because the resolver Worker it calls needs the Workers Paid plan: a turn
+ * is about half a second of CPU against the free plan's 10 ms. `RESOLVE_TURNS` without the
+ * `RESOLVER` binding is a deployment that asked for something it did not wire, so it runs without a
+ * referee and says so once per isolate, rather than refusing every request.
+ */
+export function resolverFor(env: Env): TurnResolver | undefined {
+  if (!configFlag(env.RESOLVE_TURNS, false, 'RESOLVE_TURNS')) return undefined
+  if (!env.RESOLVER) {
+    if (!warnedAboutResolver) {
+      warnedAboutResolver = true
+      workerLogger.warn(
+        'RESOLVE_TURNS is set but no RESOLVER service binding is; turns are decided by reports',
+      )
+    }
+    return undefined
+  }
+  return cloudflareMatchResolver(env.RESOLVER)
 }
 
 export const HUB_PATHS = {
@@ -139,6 +166,7 @@ export function buildKernel(
     notifier: EventNotifier
     scheduler: DeadlineScheduler
     streams: StreamCloser
+    resolver: TurnResolver
     /** Where the kernel's password budgets count; the isolate when absent. */
     rateLimits: RateLimiterFactory
   }> = {},
@@ -165,6 +193,7 @@ export function buildKernel(
         body: { ...input, dueAt: input.dueAt.toISOString() },
       }),
   }
+  const resolver = overrides.resolver ?? resolverFor(env)
   return createKernel(
     {
       storage,
@@ -173,6 +202,7 @@ export function buildKernel(
       streams,
       clock: { now: () => new Date() },
       logger: workerLogger,
+      ...(resolver ? { resolver, seatViews: configFlag(env.SEAT_VIEWS, false, 'SEAT_VIEWS') } : {}),
       ...(overrides.rateLimits ? { rateLimits: overrides.rateLimits } : {}),
     },
     { retention: retentionPolicyFor(env) },

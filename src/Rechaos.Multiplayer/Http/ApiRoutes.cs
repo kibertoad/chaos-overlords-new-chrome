@@ -59,6 +59,8 @@ public static class ApiRoutes
         $"/matches/{matchId}/turns/{Number(turn)}/report";
 
     public static string Snapshots(string matchId) => $"/matches/{matchId}/snapshots";
+    public static string SeatView(string matchId) => $"/matches/{matchId}/view";
+
     public static string LatestSnapshot(string matchId) => $"/matches/{matchId}/snapshots/latest";
 
     public static string Snapshot(string matchId, int turn) =>

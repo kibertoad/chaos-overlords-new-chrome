@@ -141,7 +141,7 @@ jobs:
             echo "main already records $RELEASE_VERSION."
           else
             mapfile -t manifests <<< "$changed"
-            # The contents API writes one file per call, which would put nine commits on main for
+            # The contents API writes one file per call, which would put ten commits on main for
             # one release. The git data API takes every manifest as a single tree instead.
             tree="$(for file in "${manifests[@]}"; do
                 jq -n --arg path "$file" --rawfile content "$file" \
@@ -167,7 +167,7 @@ jobs:
   # `pnpm install` (install scripts allowed for better-sqlite3, esbuild and workerd), the whole
   # build, the whole vitest suite including the workerd pool, and the codegen check all run here —
   # and any of them could otherwise have asked GitHub for the job's id-token and traded it at the
-  # registry for permission to publish all nine packages with valid provenance.
+  # registry for permission to publish all ten packages with valid provenance.
   verify:
     name: Verify and pack
     needs: prepare
@@ -218,6 +218,13 @@ jobs:
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
+      # The resolver package ships the WebAssembly build of the game's rules, built here from
+      # src/Rechaos.Resolver.Wasm, and its tests replay a match the native build played.
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.400
+
       - name: Install
         run: pnpm install --frozen-lockfile
 
@@ -235,6 +242,12 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: pnpm check-versions "$RELEASE_VERSION"
 
+      - name: Bundle the WebAssembly resolver and write a native transcript
+        shell: bash
+        run: |
+          pnpm --filter @chaos-overlords/resolver bundle
+          dotnet run --project ../tools/ResolverDeterminism/ResolverDeterminism.csproj -c Release -- "${RUNNER_TEMP}/resolver-transcript.json"
+
       - name: Build and typecheck
         run: pnpm exec turbo run build typecheck
 
@@ -244,6 +257,8 @@ jobs:
           TEST_DATABASE_URL: postgres://chaos:chaos@localhost:5432/chaos
           # Turns a missing URL from a green skip into a failure; see postgres.spec.ts.
           REQUIRE_POSTGRES: "1"
+          REQUIRE_RESOLVER: "1"
+          RESOLVER_TRANSCRIPT: ${{ runner.temp }}/resolver-transcript.json
 
       - name: Check the generated C# still matches the contracts
         run: pnpm codegen:check

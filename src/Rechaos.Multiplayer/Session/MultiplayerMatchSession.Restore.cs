@@ -44,17 +44,6 @@ public sealed partial class MultiplayerMatchSession
     private readonly List<TurnReport> _unreportedSeals = [];
 
     /// <summary>
-    /// The turn the event log is on at the event being replayed: one past the last turn it sealed.
-    /// </summary>
-    /// <remarks>
-    /// A handover or a late join carries no turn, and the state is no guide to it once a snapshot
-    /// has been adopted — the replay still walks the log from its start, past handovers the
-    /// snapshot already holds. This is the turn such an event took effect before, and the one it is
-    /// judged against exactly as a seal is; see <see cref="HandOverSeat"/>.
-    /// </remarks>
-    private int _historyTurn = 1;
-
-    /// <summary>
     /// Fetches the match, adopts the newest snapshot the local state is behind, replays the log
     /// gaplessly to the view's sequence, and hands the interface the result.
     /// </summary>
@@ -84,10 +73,12 @@ public sealed partial class MultiplayerMatchSession
     /// <returns>False when the match is over and there is nothing left to pump.</returns>
     private async Task<bool> RebuildFromHistoryAsync(int replayFromSeq, CancellationToken cancellationToken)
     {
+        if (PlaysFromViews)
+            return await ResumeFromViewAsync(replayFromSeq, cancellationToken).ConfigureAwait(false);
         // Where the log stands at the sequence the replay starts after, read BEFORE a snapshot can
         // move the state past it: a match starts on turn 1, and a resync starts where the live
-        // state is. See `_historyTurn`.
-        _historyTurn = replayFromSeq == 0 ? 1 : _replay.State.Coordinator.Turn;
+        // state is. See `MatchHistory.LogTurn`.
+        History.BeginWalk(replayFromSeq == 0 ? 1 : Replay.State.Coordinator.Turn);
         var (view, snapshot) = await ReadViewAndLatestSnapshotAsync(cancellationToken).ConfigureAwait(false);
         if (view.Status == MatchStatus.Abandoned)
         {
@@ -104,7 +95,7 @@ public sealed partial class MultiplayerMatchSession
         // recovery baseline until a desync requires a newer one — so a client that skipped it on
         // turn 1 either refused the only snapshot there was, or bootstrapped a city of its own
         // next to everyone else's. A snapshot older than the local state has nothing to add.
-        if (snapshot is not null && snapshot.Turn + 1 >= _replay.State.Coordinator.Turn)
+        if (snapshot is not null && snapshot.Turn + 1 >= Replay.State.Coordinator.Turn)
             AdoptResumeSnapshot(snapshot, view.CurrentTurn);
         // A host that crashed before its bootstrap upload completed never tried again, because the
         // flag that drives it is only set for a session that is NOT restoring — and the server then
@@ -115,14 +106,15 @@ public sealed partial class MultiplayerMatchSession
 
         await ReplayEventHistoryAsync(replayFromSeq, view.LastEventSeq, cancellationToken)
             .ConfigureAwait(false);
+        await AdoptDivergedTurnAsync(cancellationToken).ConfigureAwait(false);
 
-        if (_replay.State.Outcome is null
-            && (_replay.State.Coordinator.Phase != TurnPhase.Command
-                || _replay.State.Coordinator.Turn != view.CurrentTurn))
+        if (Replay.State.Outcome is null
+            && (Replay.State.Coordinator.Phase != TurnPhase.Command
+                || Replay.State.Coordinator.Turn != view.CurrentTurn))
         {
             throw new MultiplayerProtocolException(
-                $"the resumed state reached {_replay.State.Coordinator.Phase} turn "
-                + $"{_replay.State.Coordinator.Turn}, but the server is on turn {view.CurrentTurn}");
+                $"the resumed state reached {Replay.State.Coordinator.Phase} turn "
+                + $"{Replay.State.Coordinator.Turn}, but the server is on turn {view.CurrentTurn}");
         }
         // The pending reports go out BEFORE the "ended but the server says running" check, not
         // after it. The server marks a match finished only once every human seat has reported the
@@ -142,14 +134,14 @@ public sealed partial class MultiplayerMatchSession
             // that was fetched before they were sent.
             view = await ReadMatchViewAsync(cancellationToken).ConfigureAwait(false);
         }
-        if (_replay.State.Outcome is not null
+        if (Replay.State.Outcome is not null
             && view.Status is not (MatchStatus.Finished or MatchStatus.Abandoned))
         {
             throw new MultiplayerProtocolException(
                 "the reconstructed match has ended while the server still reports it in progress");
         }
 
-        var submission = _replay.State.Outcome is null
+        var submission = Replay.State.Outcome is null
             ? await CallAsync(
                 token => _match.OwnSubmissionAsync(view.CurrentTurn, token),
                 _pumpLane,
@@ -160,7 +152,7 @@ public sealed partial class MultiplayerMatchSession
         // planning copy built over it. Building the planning copy is also what proves the saved
         // draft still applies to this state — a draft that does not is refused here, on this
         // thread, as a failure of the protocol rather than as a crash on the game thread.
-        var state = MatchStateClone.Of(_replay.State, _definitions);
+        var state = MatchStateClone.Of(Replay.State, _definitions);
         var turn = state.Outcome is null
             ? submission.Orders is { } document
                 ? SpeculativeTurn.Restore(state, _definitions, Slot, document)
@@ -237,7 +229,7 @@ public sealed partial class MultiplayerMatchSession
                 $"the snapshot for turn {snapshot.Turn} resumes at "
                 + $"{restored.Coordinator.Phase} turn {restored.Coordinator.Turn}");
         }
-        _replay = new MatchReplayRecorder(restored);
+        History.Adopt(new MatchReplayRecorder(restored));
         _canonicalThroughTurn = snapshot.Turn;
     }
 
@@ -350,13 +342,15 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private void PrefetchSealedSets(EventPage page, int throughSeq, CancellationToken cancellationToken)
     {
+        // A match played from views reads no sealed set while it runs; they are withheld.
+        if (PlaysFromViews) return;
         var started = 0;
         foreach (var @event in page.Events)
         {
             if (@event.Seq > throughSeq || started >= SealedSetPrefetchDepth) return;
             if (@event is not TurnSealedEvent sealedTurn) continue;
             var turn = sealedTurn.Payload.Turn;
-            if (turn < _replay.State.Coordinator.Turn || _prefetchedSealedSets.ContainsKey(turn))
+            if (turn < Replay.State.Coordinator.Turn || _prefetchedSealedSets.ContainsKey(turn))
                 continue;
             _prefetchedSealedSets[turn] = FetchSealedSetAsync(turn, cancellationToken);
             started++;
@@ -381,6 +375,11 @@ public sealed partial class MultiplayerMatchSession
         MatchEvent @event,
         CancellationToken cancellationToken)
     {
+        if (PlaysFromViews)
+        {
+            ApplyHistoricalViewEvent(@event);
+            return;
+        }
         switch (@event)
         {
             case MatchTakeoverVoteRequestedEvent requested:
@@ -394,18 +393,21 @@ public sealed partial class MultiplayerMatchSession
                 return;
             case MatchPlayerTakenOverEvent takenOver:
                 _takeoverVotes.Remove(takenOver.Payload.PlayerId);
-                HandOverSeat(takenOver.Payload.PlayerId, PlayerController.Computer, _historyTurn);
+                History.Apply(takenOver);
                 return;
             case MatchPlayerReturnedEvent returned:
                 _takeoverVotes.Remove(returned.Payload.PlayerId);
-                if (returned.Payload.ReplacedComputer)
-                    HandOverSeat(returned.Payload.PlayerId, PlayerController.Human, _historyTurn);
+                History.Apply(returned);
                 return;
             case MatchLatePlayerJoinedEvent joined:
-                AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot, _historyTurn);
+            {
+                var seated = Seats.ContainsKey(joined.Payload.PlayerId);
+                History.Apply(joined);
+                if (!seated) _awaitedSlots.Add(joined.Payload.Slot);
                 return;
+            }
             case TurnOpenedEvent opened:
-                _historyTurn = Math.Max(_historyTurn, opened.Payload.Turn);
+                History.Apply(opened);
                 return;
             // Kept, not announced: the replay says readiness once, after `Resumed`.
             case TurnReadinessEvent readiness:
@@ -413,15 +415,8 @@ public sealed partial class MultiplayerMatchSession
                     readiness.Payload.Turn, readiness.Payload.PlayerId, readiness.Payload.Ready);
                 return;
             case TurnSealedEvent sealedTurn:
-                // Whether or not the state already holds it, the log has moved past this turn.
-                _historyTurn = Math.Max(_historyTurn, sealedTurn.Payload.Turn + 1);
-                if (sealedTurn.Payload.Turn < _replay.State.Coordinator.Turn) return;
-                if (sealedTurn.Payload.Turn > _replay.State.Coordinator.Turn)
-                {
-                    throw new MultiplayerProtocolException(
-                        $"the event history sealed turn {sealedTurn.Payload.Turn} while the "
-                        + $"reconstructed match was still on turn {_replay.State.Coordinator.Turn}");
-                }
+                // Null when the state already holds the turn; see `MatchHistory.Apply`.
+                if (History.Apply(sealedTurn) is null) return;
                 var (stateHash, _) = await FetchAndApplySealedTurnAsync(
                     sealedTurn.Payload.Turn,
                     sealedTurn.Payload.OrderSetHash,
@@ -429,11 +424,13 @@ public sealed partial class MultiplayerMatchSession
                 // Whether this seat's own orders were in that set is not said on this path: these
                 // turns are history being caught up on, and the resumed state is announced by
                 // `Resumed`, which carries the submission the server holds for the open turn.
-                _unreportedSeals.Add(CaptureReport(sealedTurn.Payload.Turn, stateHash, _replay.State));
+                _unreportedSeals.Add(CaptureReport(sealedTurn.Payload.Turn, stateHash, Replay.State));
                 return;
             case TurnConfirmedEvent confirmed:
-                VerifyHistoricalConfirmation(confirmed);
-                _unreportedSeals.RemoveAll(seal => seal.Turn == confirmed.Payload.Turn);
+                // A refereed turn this client disagrees with keeps its report: the server answers
+                // it by storing its own snapshot of the turn for this client to adopt.
+                if (VerifyHistoricalConfirmation(confirmed))
+                    _unreportedSeals.RemoveAll(seal => seal.Turn == confirmed.Payload.Turn);
                 if (_pendingDesync is { } pending && pending.Turn == confirmed.Payload.Turn)
                     _pendingDesync = SettlePendingDesync(pending, confirmed.Payload.StateHash);
                 return;
@@ -472,24 +469,34 @@ public sealed partial class MultiplayerMatchSession
     /// Checks a historical confirmation against the local state when that state is the one it is
     /// about.
     /// </summary>
-    private void VerifyHistoricalConfirmation(TurnConfirmedEvent confirmed)
+    /// <returns>
+    /// False when the state is the one the confirmation is about and differs from it in a match the
+    /// server referees: this client diverged at that turn (see <see cref="_divergedTurn"/>).
+    /// </returns>
+    private bool VerifyHistoricalConfirmation(TurnConfirmedEvent confirmed)
     {
-        var resolvedTurn = _replay.State.Coordinator.Turn - 1;
-        if (confirmed.Payload.Turn < resolvedTurn) return;
+        var resolvedTurn = Replay.State.Coordinator.Turn - 1;
+        if (confirmed.Payload.Turn < resolvedTurn) return true;
         if (confirmed.Payload.Turn > resolvedTurn)
         {
             throw new MultiplayerProtocolException(
                 $"the event history confirmed turn {confirmed.Payload.Turn} while the "
                 + $"reconstructed match had resolved only turn {resolvedTurn}");
         }
-        var actual = MatchStateHasher.ComputeFingerprint(_replay.State);
+        var actual = MatchStateHasher.ComputeFingerprint(Replay.State);
         if (!string.Equals(actual, confirmed.Payload.StateHash, StringComparison.Ordinal))
         {
+            if (_refereed)
+            {
+                _divergedTurn ??= confirmed.Payload.Turn;
+                return false;
+            }
             throw new MultiplayerProtocolException(
                 $"the reconstructed state for confirmed turn {confirmed.Payload.Turn} does not "
                 + "match the server hash; the match was produced by incompatible game rules");
         }
         _canonicalThroughTurn = confirmed.Payload.Turn;
+        return true;
     }
 
     /// <summary>

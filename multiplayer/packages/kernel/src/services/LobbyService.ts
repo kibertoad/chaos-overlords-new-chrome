@@ -83,20 +83,31 @@ export interface LobbyServiceOptions {
   newId?: () => string
 }
 
+/** Whether a match created now under a session version is played from views; see `Referee`. */
+export type SeatViewsPolicy = (sessionVersion: number) => Promise<boolean>
+
+/** What the kernel wires into the lobby beside the options a runtime passes. */
+export interface LobbyServiceWiring extends LobbyServiceOptions {
+  /** Decides each new match's mode; without it no match is played from views. */
+  seatViewsFor?: SeatViewsPolicy
+}
+
 /** Match creation, joining, leaving, kicking and the start transition. */
 export class LobbyService {
   private readonly query: MatchQueryService
   private readonly newId: () => string
   private readonly passwordAttempts: RateLimiter
   private readonly passwordFailures: RateLimiter
+  private readonly seatViewsFor: SeatViewsPolicy
   private readonly chatMessages: RateLimiter
 
   constructor(
     private readonly deps: KernelDeps,
     private readonly publisher: EventPublisher,
     private readonly turns: TurnService,
-    options: LobbyServiceOptions = {},
+    options: LobbyServiceWiring = {},
   ) {
+    this.seatViewsFor = options.seatViewsFor ?? (async () => false)
     this.query = new MatchQueryService(deps.storage)
     this.newId = options.newId ?? (() => crypto.randomUUID())
     const limiters = deps.rateLimits ?? memoryRateLimiters(deps.clock)
@@ -164,10 +175,11 @@ export class LobbyService {
     const hostId = this.newId()
     const token = generateToken()
     const passwordHash = request.password ? await hashPassword(request.password) : null
+    const sessionVersion = request.sessionVersion ?? 1
     const match = await this.createWithFreshJoinCode({
       id: matchId,
       protocolVersion: request.protocolVersion ?? 1,
-      sessionVersion: request.sessionVersion ?? 1,
+      sessionVersion,
       status: 'lobby',
       settings: request.settings,
       hostPlayerId: hostId,
@@ -177,6 +189,8 @@ export class LobbyService {
       currentTurn: 0,
       seatCount: 1,
       joinCounter: 1,
+      // Stamped once: a match keeps the mode it was created under for its whole life.
+      seatViews: await this.seatViewsFor(sessionVersion),
       createdAt: now,
       updatedAt: now,
     })
@@ -280,7 +294,9 @@ export class LobbyService {
         reason: 'late_join_disabled',
       })
     }
-    if (!(await this.deps.storage.snapshots.getLatestSummary(match.id))) {
+    // A late joiner of a match played from views plans on the view the server sends its seat, so
+    // there is no starting snapshot to wait for.
+    if (!match.seatViews && !(await this.deps.storage.snapshots.getLatestSummary(match.id))) {
       throw new ConflictError('Late join is available after the bootstrap snapshot is uploaded', {
         reason: 'late_join_not_ready',
       })
@@ -665,7 +681,7 @@ export class LobbyService {
     const finalRoster = await this.deps.storage.players.listByMatch(match.id)
     await this.deps.storage.players.assignSlots(assignSlots(finalRoster, match.hostPlayerId))
     const seated = await this.deps.storage.players.listByMatch(match.id)
-    await this.publisher.publish(match.id, matchStartedEvent(seed, seated, match.hostPlayerId))
+    await this.publisher.publish(match.id, matchStartedEvent({ ...match, seed }, seated))
     await this.turns.openTurn({ ...match, status: 'running', seed }, FIRST_TURN)
   }
 

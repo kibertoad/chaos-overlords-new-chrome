@@ -20,7 +20,7 @@ public sealed partial class MultiplayerSessionTests
         await using var __ = session;
         var blocked = server.BlockOnce(HttpMethod.Put, "/turns/1/orders");
         var oldDocument = new OrderDocument(1, []);
-        var gang = session.Bootstrap.State.Players[0].Gangs[0].Id;
+        var gang = session.Bootstrap!.State.Players[0].Gangs[0].Id;
         var builder = new OrderDocumentBuilder(new PlayerId(0));
         builder.Cancel(new PlayerId(0), gang);
         var latestDocument = builder.Build();
@@ -130,7 +130,7 @@ public sealed partial class MultiplayerSessionTests
         await using var _disposeSession = session;
 
         Assert.False(session.IsRestoring);
-        Assert.Equal(1, session.Bootstrap.State.Coordinator.Turn);
+        Assert.Equal(1, session.Bootstrap!.State.Coordinator.Turn);
     }
 
     /// <summary>A repair belonging to another session version is refused before it is decoded.</summary>

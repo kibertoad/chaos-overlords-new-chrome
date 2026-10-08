@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using Rechaos.Core.Persistence;
 
 namespace Rechaos.Core.Assets;
 
@@ -16,7 +17,7 @@ public static class BundledOriginalData
         const string name = "Rechaos.Core.GameData.original-data.json";
         using var stream = assembly.GetManifestResourceStream(name)
             ?? throw new InvalidOperationException($"Missing embedded gameplay data: {name}");
-        var data = JsonSerializer.Deserialize<OriginalData>(stream)
+        var data = JsonSerializer.Deserialize(stream, CoreJsonContext.Default.OriginalData)
             ?? throw new InvalidDataException("Bundled gameplay data is invalid.");
         OriginalDataValidator.Validate(data);
         return data;
