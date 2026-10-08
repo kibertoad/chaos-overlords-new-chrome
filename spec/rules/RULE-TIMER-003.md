@@ -4,7 +4,7 @@ title: The planning clock bar and its warning sounds
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TIMER-001, FND-TIMER-003, FND-UI-023, FND-UI-044, FND-UI-046, FND-EXE-004, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052]
+evidence: [FND-TIMER-001, FND-TIMER-003, FND-UI-023, FND-UI-044, FND-UI-046, FND-EXE-004, EXP-TURN-046, EXP-TURN-047, EXP-TURN-052, EXP-TURN-102]
 conflicting: []
 split_with: []
 related: [RULE-AUDIO-005, RULE-UI-008]
@@ -81,6 +81,11 @@ is taken from the whole percent elapsed, not from the remaining time directly.
   warning sounds until the button comes up. No such loop clears the timer
   flag, so the countdown then takes the one tick the flag kept, and only that
   one, whatever the length of the hold (FND-UI-044, FND-UI-046).
+- While the menu bar is open the game runs its modal loop, which does not call
+  the pump either: the bar is not redrawn and no warning sounds, and after the
+  close the countdown takes the one tick the flag kept. With 5 ticks of the
+  countdown left when the menu opened, the first redraw after the close comes on
+  the fourth tick after it, however long the menu was open (EXP-TURN-102).
 - The bar is the rectangle `(520,336)-(580,339)`: the full bar's first `width`
   columns, then the empty bar's remaining columns.
 

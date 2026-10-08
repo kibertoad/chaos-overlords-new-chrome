@@ -24,6 +24,10 @@ public static class OriginalOptionsPolicy
     /// <summary>DEV-VIDEO-003: the intro plays on the first start only. The original plays it at
     /// every start.</summary>
     public const bool IntroOnlyOnceByDefault = true;
+
+    /// <summary>DEV-TIMER-002: the planning clock keeps running in the game menu, as the original's
+    /// does in its menu bar.</summary>
+    public const bool PlanningClockStopsInMenuByDefault = false;
 }
 
 /// <summary>Which coordination service the Online screen uses.</summary>
@@ -57,7 +61,8 @@ public sealed record GamePreferences(
     string CustomMultiplayerServer,
     OnlineLobbyPresentation LobbyPresentation = OnlineLobbyPresentation.Modern,
     bool IntroOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault,
-    ScenarioId PreferredScenario = ScenarioId.Greed)
+    ScenarioId PreferredScenario = ScenarioId.Greed,
+    bool PlanningClockStopsInMenu = OriginalOptionsPolicy.PlanningClockStopsInMenuByDefault)
 {
     public const int CurrentFormatVersion = 12;
     public const string DefaultCustomMultiplayerServer = "http://localhost:8787";

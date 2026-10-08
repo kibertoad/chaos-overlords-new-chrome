@@ -18,6 +18,15 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
         Assert.Equal(expectedMode,
             OriginalAiObjectiveFamilyRules.SelectionMode(scenario, family));
 
+    // RULE-AI-031: outside Big Man and Siege the handler calls no selector (EXP-TURN-101).
+    [Theory]
+    [InlineData(ScenarioId.BigMan, true)]
+    [InlineData(ScenarioId.Siege, true)]
+    [InlineData(ScenarioId.Greed, false)]
+    [InlineData(ScenarioId.Power, false)]
+    public void OnlyBigManAndSiegeHaveObjectives(ScenarioId scenario, bool expected) =>
+        Assert.Equal(expected, OriginalAiObjectiveFamilyRules.HasObjectives(scenario));
+
     [Theory]
     [InlineData(ScenarioId.BigMan, 27, true)]
     [InlineData(ScenarioId.BigMan, 36, true)]
