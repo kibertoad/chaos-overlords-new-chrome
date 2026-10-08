@@ -58,10 +58,12 @@ key, it also copies the game window alone twice, as a setup step's copy.
 The tokens appear in the fixture's inputs; `name_shots` holds each shot's text
 and selection, and `name_entries` each step's name record.
 
-The probe wrote no options. The setup screen took the objective, Mentality and
-planning limit this machine's registry gave an unelevated process, 0, 1 and 0,
-which the fixture lists as the setup input `preferences 0:1:0`; EXP-UI-051's
-copies of the setup screen show them.
+The probe wrote none of the objective, Mentality and planning limit options.
+The setup screen took the values this machine's registry gave an unelevated
+process, 0, 1 and 0, which the fixture lists as the setup input
+`preferences 0:1:0`; the run's copies of the setup screen show them. A run
+with `--setup-steps` now writes these options, 4, 0 and 0 unless told
+otherwise, so a repeat of this run adds `--setup-preferences 0:1:0`.
 
 ## Observations
 

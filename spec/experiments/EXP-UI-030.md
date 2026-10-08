@@ -34,8 +34,9 @@ As EXP-TURN-001.
 three times, then `extract --experiment EXP-UI-030` over the three run
 directories. As in EXP-UI-015, the probe writes 0 to the objective, 1 to the
 Mentality and 0 to the planning limit before New Game, which the fixture lists
-as the setup input `preferences 0:1:0`. The steps are posted on the setup
-screen before the run writes its own settings:
+as the setup input `preferences 0:1:0`; a repeat of this run adds
+`--setup-preferences 0:1:0`, without which the probe writes 4, 0 and 0. The
+steps are posted on the setup screen before the run writes its own settings:
 
 | Steps | Presses |
 |---|---|

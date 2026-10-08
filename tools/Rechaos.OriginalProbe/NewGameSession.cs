@@ -137,6 +137,7 @@ internal sealed record NewGameSettings(
     };
 
     /// <summary>Whether the run copies the setup screen, as it opens or after setup steps.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool SetupCopied => SetupCapture || SetupSteps is { Count: > 0 };
 
     public IEnumerable<string> Describe()

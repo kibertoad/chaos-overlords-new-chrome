@@ -30,12 +30,16 @@ internal sealed record ProbeSetupPreferences(int Scenario, int Mentality, int Pl
     public static ProbeSetupPreferences Parse(string value) => value.Split(':') switch
     {
         [var scenario, var mentality, var limit]
-            when int.TryParse(scenario, out var s) && s is >= 0 and <= 9
-                 && int.TryParse(mentality, out var m) && m is >= 0 and <= 3
-                 && int.TryParse(limit, out var l) && l is >= 0 and <= 3 => new(s, m, l),
+            when Number(scenario, out var s) && s <= 9
+                 && Number(mentality, out var m) && m <= 3
+                 && Number(limit, out var l) && l <= 3 => new(s, m, l),
         _ => throw new ArgumentException(
             $"--setup-preferences takes <scenario 0-9>:<mentality 0-3>:<planning limit 0-3>, not {value}."),
     };
+
+    // Digits only, as the rebuild's --setup-preferences reads them: no sign, space or separator.
+    private static bool Number(string value, out int number) => int.TryParse(value,
+        System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out number);
 
     public override string ToString() => $"{Scenario}:{Mentality}:{PlanningLimit}";
 }

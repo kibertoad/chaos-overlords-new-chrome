@@ -116,12 +116,13 @@ static int NewGame(string[] args)
         Option(args, "--delays") is { } delays ? ParseDelays(delays) : null,
         Option(args, "--menu") is { } menus ? ParseMenus(menus) : null,
         args.Contains("--clock-captures"),
-        Option(args, "--setup-preferences") is { } setupPreferences
-            ? ProbeSetupPreferences.Parse(setupPreferences)
-            : args.Contains("--setup-capture") || args.Contains("--setup-steps") ? ProbeSetupPreferences.GogInstallation : null)
+        Option(args, "--setup-preferences") is { } setupPreferences ? ProbeSetupPreferences.Parse(setupPreferences) : null)
         .WithActingPlayers();
     if (settings.SetupPreferences is not null && !settings.SetupCopied)
         throw new ArgumentException("--setup-preferences needs --setup-capture or --setup-steps.");
+    // A run that copies the setup screen writes GOG's installer's values unless told otherwise.
+    if (settings.SetupCopied && settings.SetupPreferences is null)
+        settings = settings with { SetupPreferences = ProbeSetupPreferences.GogInstallation };
     // An order, hire or Search write acts for a human of the run: the probe writes it into that
     // player's records, and the fixture names the player in the input.
     foreach (var write in settings.Search ?? [])

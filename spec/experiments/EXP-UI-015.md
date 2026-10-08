@@ -40,6 +40,8 @@ objective `0x00487858`, 1 to the Mentality `0x00487850` and 0 to the planning
 limit `0x00487854`, their initialized values (FND-OPTIONS-001), because the
 registry key of this installation holds other values, and posts New Game.
 The fixture lists those three writes as the setup input `preferences 0:1:0`.
+The probe now writes them only when given `--setup-preferences 0:1:0`, and
+writes 4, 0 and 0 without it, so a repeat of this run adds that option.
 Two seconds after the setup screen opens it copies the drawing area a third
 time. It then posts the setup steps, before the run writes its own settings,
 and goes on with the run as EXP-TURN-001 does. The rest of the run only gives
