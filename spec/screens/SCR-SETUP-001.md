@@ -8,7 +8,7 @@ resolution: 640x480
 evidence: [FND-SETUP-013, FND-OBJECTIVE-003, FND-SETUP-005, FND-SETUP-014, FND-SETUP-002, FND-SETUP-009, FND-SETUP-012, FND-AUDIO-002, FND-AUDIO-010, FND-RNG-005, SRC-MANUAL-GOG, SRC-HELP-GOG, FND-EXE-004, FND-UI-026, FND-SETUP-019, FND-UI-055, EXP-UI-015, FND-PLATFORM-015, EXP-UI-030]
 conflicting: []
 split_with: []
-related: [RULE-SETUP-002, RULE-SETUP-003, RULE-SETUP-009, RULE-SETUP-010]
+related: [RULE-SETUP-002, RULE-SETUP-003, RULE-SETUP-009, RULE-SETUP-010, SCR-SETUP-003]
 ---
 
 ## Drawn elements
@@ -70,7 +70,7 @@ None.
 | Button held | Add, Remove, Begin or Cancel is pressed; its pressed image shows while the pointer is inside it and the released image when it leaves | The button is released; the action runs only if the release is inside | FND-AUDIO-010 |
 | Pressing a card | A card cell is pressed | The pointer leaves the box from -2 to +1 pixels around the press point (Dragging), or the button is released (RULE-SETUP-009 acts) | FND-SETUP-005 |
 | Dragging | The pointer leaves the press box with the button down | The button is released | FND-SETUP-005 |
-| Name editor open | RULE-SETUP-009 opens dialog `Chaos Overlords.exe#DIALOG/139` | The dialog is accepted or cancelled | FND-SETUP-005 |
+| Name editor open | RULE-SETUP-009 opens dialog `Chaos Overlords.exe#DIALOG/139`, SCR-SETUP-003 | The dialog is accepted or cancelled | FND-SETUP-005 |
 | Left | Begin or Cancel is released inside | None | FND-AUDIO-010 |
 
 ## Timing

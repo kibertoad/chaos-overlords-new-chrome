@@ -4,7 +4,7 @@ title: The per-gang AI dispatcher sets the gang's family from scenario and hire 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-001, FND-AI-002, FND-AI-015, FND-AI-041, FND-AI-042, FND-AI-081, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-009, FND-AI-013, FND-AI-014, FND-AI-019, FND-AI-021, FND-HIRE-002, FND-PLATFORM-003, FND-STATE-006, FND-STATE-007, FND-UI-036, EXP-TURN-016]
+evidence: [FND-AI-001, FND-AI-002, FND-AI-015, FND-AI-041, FND-AI-042, FND-AI-081, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-009, FND-AI-013, FND-AI-014, FND-AI-019, FND-AI-021, FND-HIRE-002, FND-PLATFORM-003, FND-STATE-006, FND-STATE-007, FND-UI-036, EXP-TURN-016, EXP-TURN-001, EXP-TURN-012, EXP-TURN-013, EXP-TURN-014, EXP-TURN-023, EXP-TURN-026, EXP-TURN-028, EXP-TURN-038, EXP-TURN-039, EXP-TURN-040, EXP-TURN-055]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, RULE-AI-019, RULE-AI-020, RULE-AI-021, RULE-AI-022, RULE-AI-023, RULE-AI-024, RULE-AI-025, RULE-AI-026, RULE-AI-027, RULE-AI-028, RULE-AI-029, RULE-AI-030, RULE-AI-031]
@@ -30,6 +30,10 @@ roster slot order.
 
 `planning_records` (`needs_family`, `family`), `scenario`, `elapsed_turns`,
 `hire_role`, `gangs` (`sector`).
+
+The scenario values are 0 Greed, 1 Power, 2 Acceptance, 3 Dominance,
+4 Kill 'Em All, 5 Big 40, 6 Siege, 7 Eliminate, 8 Big Man and 9 Armageddon
+(FND-OBJECTIVE-003).
 
 ## Procedure
 
@@ -124,6 +128,23 @@ None known.
 
 ## Open questions
 
-None. The scenario values are 0 Greed, 1 Power, 2 Acceptance, 3 Dominance,
-4 Kill 'Em All, 5 Big 40, 6 Siege, 7 Eliminate, 8 Big Man and 9 Armageddon
-(FND-OBJECTIVE-003).
+- Reach was measured over every replayed run (DECISIONS.md, 2026-10-06). The
+  runs reach the reset of a flagged record and the gangs that keep their
+  family; 53 of the 70 cells of the table, in every scenario (EXP-TURN-028
+  Greed, EXP-TURN-023 Power, EXP-TURN-039 Acceptance, EXP-TURN-038 Dominance,
+  EXP-TURN-001 Kill 'Em All, EXP-TURN-055 Big 40, EXP-TURN-012 Siege,
+  EXP-TURN-013 Eliminate, EXP-TURN-014 Big Man, EXP-TURN-026 Armageddon);
+  hire role 4 storing the coverage sector; Big Man's first-turn forcing of
+  hire role 1 (EXP-TURN-014 and eight other runs); and the handlers of
+  families 0 to 7 and 9 to 14, families 4 and 9 through writes (EXP-TURN-040).
+- No run reaches these cells: Greed roles 4 and 5, Power 2, Acceptance 5,
+  Dominance 4, Kill 'Em All 2, Big 40 roles 2 and 4, Siege 3 and 4, Eliminate
+  3 and 5, Big Man 4 to 6, and Armageddon 2 and 6. Among them are all eight
+  cells marked -1, so no run reaches a new gang left in family 99 by the
+  table. No run reaches a hire role outside 0 to 6, or the dispatch of a
+  family with no handler (8 or 99). These rest on FND-AI-002 and FND-AI-001.
+  The role schedule of RULE-AI-010 does not give some of these roles in some
+  scenarios, so a run would need a write of the player's hire role before a
+  Done press that the probe does not make; a `--families` write of 8 or 99
+  would reach the dispatch without a handler. Until runs reach them, the
+  entry stays `supported`.

@@ -112,7 +112,7 @@ This file is not maintained further. New IDs never need a row here.
 | `BIN-SETUP-008` | [`FND-SETUP-008`](../spec/findings/FND-SETUP-008.md) |
 | `BIN-SITE-INFO-001` | [`FND-UI-005`](../spec/findings/FND-UI-005.md) |
 | `BIN-SNITCH-001` | [`FND-SNITCH-001`](../spec/findings/FND-SNITCH-001.md) |
-| `BIN-SOUND-001` | [`FND-AUDIO-002`](../spec/findings/FND-AUDIO-002.md), [`FND-AUDIO-010`](../spec/findings/FND-AUDIO-010.md), [`FND-AUDIO-011`](../spec/findings/FND-AUDIO-011.md), [`FND-AUDIO-012`](../spec/findings/FND-AUDIO-012.md), [`FND-AUDIO-013`](../spec/findings/FND-AUDIO-013.md), [`FND-UI-012`](../spec/findings/FND-UI-012.md) |
+| `BIN-SOUND-001` | [`FND-AUDIO-002`](../spec/findings/FND-AUDIO-002.md), [`FND-AUDIO-010`](../spec/findings/FND-AUDIO-010.md), [`FND-AUDIO-011`](../spec/findings/FND-AUDIO-011.md), [`FND-AUDIO-018`](../spec/findings/FND-AUDIO-018.md), [`FND-AUDIO-013`](../spec/findings/FND-AUDIO-013.md), [`FND-UI-012`](../spec/findings/FND-UI-012.md) |
 | `BIN-SOUND-002` | [`FND-AUDIO-003`](../spec/findings/FND-AUDIO-003.md) |
 | `BIN-TOOL-001` | [`FND-EXE-003`](../spec/findings/FND-EXE-003.md) |
 | `BIN-TURN-PLAYER-ORDER-001` | [`FND-TURN-005`](../spec/findings/FND-TURN-005.md) |

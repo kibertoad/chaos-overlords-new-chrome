@@ -18,28 +18,44 @@ internal sealed class OriginalProcess : IDisposable
     private readonly Dictionary<int, uint> _rearm = [];
     private readonly List<CodePatch> _patches = [];
     private readonly IntPtr _event = Marshal.AllocHGlobal(Native.DebugEventSize);
+    private const string RunLockName = @"Global\Rechaos.OriginalProbe.Run";
+    private const string GameProcessName = "Chaos Overlords";
     private IntPtr _process;
     private bool _started;
+    private Mutex? _runLock;
 
     public int ProcessId { get; private set; }
     public bool Exited { get; private set; }
     public int ExitCode { get; private set; }
     public DateTime LastBreakpointUtc { get; private set; } = DateTime.UtcNow;
 
-    /// <summary>Exceptions the probe did not handle itself, with their code and address.</summary>
+    /// <summary>
+    /// Exceptions the probe did not handle itself, with their code and address, and the patches
+    /// skipped because their bytes did not match.
+    /// </summary>
     public List<string> Log { get; } = [];
 
     public static OriginalProcess Start(string executable, string workingDirectory)
     {
-        var process = new OriginalProcess();
+        // The game allows one instance per machine (FND-PLATFORM-009): a second start raises the
+        // first window and exits. Probes in parallel worktrees share the machine, so each holds a
+        // machine-wide lock for its run and refuses to start while another holds it or while any
+        // copy of the game is already running.
+        var runLock = AcquireRunLock();
+        var process = new OriginalProcess { _runLock = runLock };
         var startup = new Native.StartupInfo { Cb = Marshal.SizeOf<Native.StartupInfo>() };
         var commandLine = new StringBuilder($"\"{executable}\"");
         if (!Native.CreateProcessW(
                 null, commandLine, IntPtr.Zero, IntPtr.Zero, false, Native.DebugOnlyThisProcess,
                 IntPtr.Zero, workingDirectory, ref startup, out var information))
+        {
+            var error = Marshal.GetLastWin32Error();
+            process.Dispose();
             throw new Win32Exception(
-                Marshal.GetLastWin32Error(),
+                error,
                 $"Cannot start {executable}. The installed path asks for administrator rights; run a staged copy with --executable (docs/validation/experiments.md).");
+        }
+
         process._process = information.Process;
         process.ProcessId = information.ProcessId;
         Native.CloseHandle(information.Thread);
@@ -61,6 +77,22 @@ internal sealed class OriginalProcess : IDisposable
         breakpoint.Handlers.Add(new BreakpointHandler(handler, oneShot, quiet));
         _breakpoints[address] = breakpoint;
         if (_started) Arm(breakpoint);
+    }
+
+    /// <summary>
+    /// Removes the handler <paramref name="handler"/> set at <paramref name="address"/>, compared as
+    /// delegates are, and the breakpoint itself once no handler is left on it. Safe to call from any
+    /// handler, one of the same breakpoint included: the original byte goes back at once, a handler
+    /// removed while its breakpoint is being handled does not run, and a breakpoint removed before
+    /// a thread's single step past it is not put back.
+    /// </summary>
+    public void RemoveBreakpoint(uint address, Action<BreakContext> handler)
+    {
+        if (!_breakpoints.TryGetValue(address, out var breakpoint)) return;
+        breakpoint.Handlers.RemoveAll(entry => entry.Action.Equals(handler));
+        if (breakpoint.Handlers.Count > 0) return;
+        Disarm(breakpoint);
+        _breakpoints.Remove(address);
     }
 
     /// <summary>
@@ -137,6 +169,51 @@ internal sealed class OriginalProcess : IDisposable
         // The thread handles came with debug events, and continuing the exit event closed them.
         if (_process != IntPtr.Zero) Native.CloseHandle(_process);
         Marshal.FreeHGlobal(_event);
+        if (_runLock is not null)
+        {
+            // Only the owning thread can release the lock; from any other thread it stays held
+            // until the probe exits, when Windows abandons it.
+            try { _runLock.ReleaseMutex(); }
+            catch (ApplicationException) { }
+            _runLock.Dispose();
+            _runLock = null;
+        }
+    }
+
+    private static Mutex AcquireRunLock()
+    {
+        var runLock = new Mutex(false, RunLockName);
+        bool acquired;
+        try
+        {
+            acquired = runLock.WaitOne(TimeSpan.Zero);
+        }
+        catch (AbandonedMutexException)
+        {
+            // A probe that died without releasing the lock leaves it abandoned; the wait still
+            // hands it over. Any game it left behind is caught by the process check below.
+            acquired = true;
+        }
+
+        if (!acquired)
+        {
+            runLock.Dispose();
+            throw new InvalidOperationException(
+                "Another probe is running the original on this machine. Wait for its run to end (AGENTS.md, Runs of the original).");
+        }
+
+        var running = System.Diagnostics.Process.GetProcessesByName(GameProcessName);
+        if (running.Length > 0)
+        {
+            var ids = string.Join(", ", running.Select(p => p.Id));
+            foreach (var p in running) p.Dispose();
+            runLock.ReleaseMutex();
+            runLock.Dispose();
+            throw new InvalidOperationException(
+                $"The original is already running (process {ids}). Only one copy may run at a time; wait for it to exit (AGENTS.md, Runs of the original).");
+        }
+
+        return runLock;
     }
 
     private void PumpOne(uint milliseconds)
@@ -206,13 +283,21 @@ internal sealed class OriginalProcess : IDisposable
         if (!breakpoint.Quiet) LastBreakpointUtc = DateTime.UtcNow;
         foreach (var handler in breakpoint.Handlers.ToArray())
         {
+            // An earlier handler of this pass may have removed it.
+            if (!breakpoint.Handlers.Contains(handler)) continue;
             if (handler.OneShot) breakpoint.Handlers.Remove(handler);
             handler.Action(context);
         }
 
         Disarm(breakpoint);
-        if (breakpoint.Handlers.Count == 0)
-            _breakpoints.Remove(address);
+        // A handler may have removed this breakpoint and set a new one at the same address, which
+        // waits for the single step as well, or it would stop this same instruction again.
+        var current = _breakpoints.GetValueOrDefault(address);
+        if (current is not null && current != breakpoint) Disarm(current);
+        if (current is null || current.Handlers.Count == 0)
+        {
+            if (current == breakpoint) _breakpoints.Remove(address);
+        }
         else
         {
             // Run the original instruction, then put the breakpoint back on the single step.

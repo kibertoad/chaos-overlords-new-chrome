@@ -33,10 +33,10 @@ out, which is where the solid white areas of Windows 11 come from
 writes `RGB(255,255,255)`, the white a 32-bit surface holds, over that operand
 once, before the game runs. A run with the option stops no more often than one
 without it, so the timer records of a run with `--time-limit` are not moved.
-When the operand does not hold the expected bytes, the write is skipped and the
-run's notes say so. The fixture lists the option as the setup input
-`key_colour RGB(255,255,255)`. The rolls and the state of a run do not depend
-on it.
+When the operand does not hold the expected bytes, the write is skipped, the
+run's notes say so, and the run takes no captures. The fixture lists the
+option as the setup input `key_colour RGB(255,255,255)`. The rolls and the
+state of a run do not depend on it.
 
 `extract --screens SCR-UI-003,SCR-HIRE-002` adds a `capture` object to each
 run whose two copies agree:
@@ -118,6 +118,16 @@ point `(x, y)` as `open` does (FND-UI-020), `strip:x:y:0` presses a point,
 control and `exit` the Exit of the panel the planning entry left open.
 EXP-UI-006 to EXP-UI-014 are taken this way.
 
+Animated parts of a screen that no state chooses, the Overlord bar's marker
+(FND-UI-038) and the selected sector's outline (FND-UI-017), are compared frame
+by frame with shots alone: `shot:SCR-UI-003` and `wait:37` in turn, with
+nothing pressed, let both counters move on between copies, and each shot keeps
+the marker frame and the pump's counter it shows, at which the rebuild draws
+its frame. Thirty shots at the first planning entry show all twelve marker
+frames and both outline frames (EXP-UI-031). Exact-white pixels need no
+special handling in such a comparison once `--white-key` is given
+(EXP-UI-003).
+
 A shot can also show a control while a button holds it. `down:x:y` presses the
 left button at `(x, y)` and keeps it down, `move:x:y` moves the pointer there
 with the button down, and `up:x:y` releases it there; `rdown:x:y` and
@@ -160,7 +170,15 @@ Two steps type keys, from tokens `{VKhh}` (a press and release of virtual key
 opens the name editor (dialog 139, FND-UI-064), posts the keys to its edit
 control with Shift set in the keyboard state the probe shares with the game's
 thread while `{SHIFT}` holds, presses OK and keeps slot 0's 12-byte name
-record; `extract` lists the records as `name_entries`. The order step
+record; `extract` lists the records as `name_entries`. A name step also takes
+`{PRESSxx}`, a left press and release on the edit control at client x `xx` on
+its middle row, and `{SHOT}`, which reads the control's text and selection and
+for 1.2 seconds copies the game window and the dialog window, each from its own
+device context, keeping every different picture as `name-<step>-<shot>-<n>.bmp`
+with the time it showed; `extract` lists the readings as `name_shots`. When a
+name step's tokens start with `{SHOT}`, that shot also copies the game window
+alone as the step's copy, which leaves the dialog out and is compared at
+SCR-SETUP-003. The order step
 `keys:TOKENS` posts the keys to the game window and makes the window
 procedure's Shift test at `0x0045CA62` report Shift held or not as the tokens
 say, since a posted message cannot hold the key; it keeps the type, character
