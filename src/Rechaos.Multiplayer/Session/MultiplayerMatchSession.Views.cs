@@ -231,11 +231,12 @@ public sealed partial class MultiplayerMatchSession
                     await ResumePlanningAsync(view, served.View, cancellationToken).ConfigureAwait(false);
                     return true;
                 case ViewFetch.Ended:
-                    var (_, final, _, rebuilt) = await ReadFinalStateAsync(cancellationToken).ConfigureAwait(false);
+                    var (_, final, finalHash, rebuilt) =
+                        await ReadFinalStateAsync(cancellationToken).ConfigureAwait(false);
                     _finalStateDelivered = true;
                     _notices.Enqueue(new MultiplayerNotice.Resumed(
                         view, final, new OwnSubmissionView(view.CurrentTurn, null, Ready: false, null), null));
-                    await ReleaseJournalAsync(rebuilt, cancellationToken).ConfigureAwait(false);
+                    await ReleaseJournalAsync(rebuilt, finalHash, cancellationToken).ConfigureAwait(false);
                     return true;
                 case ViewFetch.Out:
                     _viewTurn = view.CurrentTurn;
@@ -401,7 +402,7 @@ public sealed partial class MultiplayerMatchSession
         _finalStateDelivered = true;
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
             turn, final, stateHash, includedOwnOrders, Planning: null));
-        await ReleaseJournalAsync(rebuilt, cancellationToken).ConfigureAwait(false);
+        await ReleaseJournalAsync(rebuilt, stateHash, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -411,19 +412,27 @@ public sealed partial class MultiplayerMatchSession
     /// <remarks>
     /// The final state is on the screen by now, so a rebuild that fails costs only the journal: a
     /// report filed afterwards goes out without one, as a report from a match with nothing to
-    /// attach does.
+    /// attach does. Any failure short of the session stopping is swallowed here, because one that
+    /// reached the pump would fail a session whose match ended well. A rebuild that stops short of
+    /// the final state the game was handed, as a log that ends early does, is not kept either: it
+    /// is not the whole match.
     /// </remarks>
-    private async Task ReleaseJournalAsync(AuthoritativeMatch? rebuilt, CancellationToken cancellationToken)
+    /// <param name="stateHash">The hash of the final state the game was handed.</param>
+    private async Task ReleaseJournalAsync(
+        AuthoritativeMatch? rebuilt, string stateHash, CancellationToken cancellationToken)
     {
+        // A reconnect after the end resumes onto the final state again, and the journal is held.
+        if (Volatile.Read(ref _releasedJournal) is not null) return;
         try
         {
             rebuilt ??= await RebuildReleasedMatchAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception exception) when (exception is MultiplayerApiException
-            or MultiplayerProtocolException or InvalidDataException)
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             return;
         }
+        if (!rebuilt.IsFinished || !string.Equals(rebuilt.StateHash, stateHash, StringComparison.Ordinal))
+            return;
         Volatile.Write(ref _releasedJournal, rebuilt.Recorder);
     }
 
