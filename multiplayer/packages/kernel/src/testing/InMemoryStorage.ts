@@ -350,6 +350,12 @@ export class InMemoryStorage implements MultiplayerStorage {
       turn.desyncedAt = at
       return true
     },
+    recordResolution: async (matchId, number, resolution) => {
+      const turn = this.turnRows.get(turnKey(matchId, number))
+      if (!turn || turn.status === 'open' || turn.resolvedHash !== null) return false
+      Object.assign(turn, resolution)
+      return true
+    },
     markSettled: async (matchId, number, at) => {
       const turn = this.turnRows.get(turnKey(matchId, number))
       if (turn?.status !== 'confirmed' || turn.settledAt !== null) return false

@@ -134,7 +134,7 @@ export const commandTargetSchema = variant('kind', [
 /**
  * The five player intents. `player` is on every one of them because the game core takes it on
  * every one of them; the server checks it against the submitter's own slot rather than trusting
- * it (see `assertOwnOps` in the kernel's turn service).
+ * it (see `assertOwnOps` in the kernel's guards).
  */
 
 /**

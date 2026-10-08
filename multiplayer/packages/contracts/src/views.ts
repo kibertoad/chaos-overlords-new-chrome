@@ -1,4 +1,12 @@
-import { array, boolean, type InferOutput, nullable, picklist, strictObject } from 'valibot'
+import {
+  array,
+  boolean,
+  type InferOutput,
+  nullable,
+  optional,
+  picklist,
+  strictObject,
+} from 'valibot'
 import { orderDocumentSchema } from './orders'
 import {
   base64BodySchema,
@@ -91,6 +99,12 @@ export const matchViewSchema = strictObject({
   previousTurn: nullable(turnViewSchema),
   /** The highest event sequence number persisted for this match. */
   lastEventSeq: eventSeqSchema,
+  /**
+   * True when the server resolves this match's turns itself and its state decides each turn: a
+   * report that differs is that seat's divergence alone (`turn.diverged`). Absent or false, turns
+   * are decided by the players' reports agreeing.
+   */
+  refereed: optional(boolean()),
   createdAt: isoTimestampSchema,
 })
 

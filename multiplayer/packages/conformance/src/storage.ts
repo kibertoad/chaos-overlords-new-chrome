@@ -68,6 +68,9 @@ function turnFixture(match: Match, number: number, overrides: Partial<Turn> = {}
     stateHash: null,
     desyncedAt: null,
     settledAt: null,
+    resolvedHash: null,
+    resolvedFinished: null,
+    resolvedSeq: null,
     ...overrides,
   }
 }

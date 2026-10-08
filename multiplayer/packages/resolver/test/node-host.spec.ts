@@ -3,6 +3,7 @@ import { MatchNotHeldError, ResolverRefusedError } from '../dist/errors.js'
 import { startNodeMatchResolver } from '../dist/node/index.js'
 import {
   apply,
+  expectBatchedFeed,
   expectNativeHashes,
   missing,
   playToSnapshot,
@@ -25,6 +26,10 @@ describe.skipIf(missing)('the Node host', () => {
 
   it('reaches every hash the native build reached, from the start and from its snapshot', async () => {
     await expectNativeHashes(resolver, 'node-')
+  })
+
+  it('feeds a run of the log in one call, once', async () => {
+    await expectBatchedFeed(resolver, 'node-batch')
   })
 
   it('answers MatchNotHeldError for a match it never built', async () => {

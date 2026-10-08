@@ -87,6 +87,14 @@ export const turns = sqliteTable(
      * question without visiting the settled history.
      */
     settledAt: integer('settled_at', { mode: 'timestamp_ms' }),
+    /**
+     * What the server's own resolver reached for the sealed turn: the state hash, whether it ended
+     * the match, and the sequence number of the `turn.sealed` event it was fed through. Null when
+     * the server did not resolve the turn; written once, and when set it decides the turn.
+     */
+    resolvedHash: text('resolved_hash'),
+    resolvedFinished: integer('resolved_finished', { mode: 'boolean' }),
+    resolvedSeq: integer('resolved_seq'),
   },
   (table) => [
     primaryKey({ columns: [table.matchId, table.number] }),

@@ -56,6 +56,8 @@ function dispatch(core: ResolverCore, request: ThreadRequest): unknown {
       return core.restore(a, b, c, d)
     case 'applyEvent':
       return core.applyEvent(a, b, c)
+    case 'applyEvents':
+      return core.applyEvents(a, b, c)
     case 'status':
       return core.status(a)
     case 'savePayload':

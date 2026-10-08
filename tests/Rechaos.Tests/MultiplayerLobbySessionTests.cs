@@ -257,6 +257,7 @@ public sealed partial class MultiplayerLobbySessionTests
         null,
         null,
         0,
+        Refereed: null,
         "2026-09-19T00:00:00.000Z");
 
     private static async Task<TNotice> WaitFor<TNotice>(

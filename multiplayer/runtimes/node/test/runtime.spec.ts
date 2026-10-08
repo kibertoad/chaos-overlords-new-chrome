@@ -2,9 +2,12 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { defineHttpConformance } from '@chaos-overlords/conformance'
+import { existsSync } from 'node:fs'
+import { defineHttpConformance, defineRefereeConformance } from '@chaos-overlords/conformance'
+import { MULTIPLAYER_SESSION_VERSION } from '@chaos-overlords/contracts'
 import { DEFAULT_RETENTION_DAYS } from '@chaos-overlords/kernel'
-import { ManualClock } from '@chaos-overlords/kernel/testing'
+import { FakeTurnResolver, ManualClock } from '@chaos-overlords/kernel/testing'
+import { defaultBundleDir } from '@chaos-overlords/resolver/node'
 import { type ServerType, serve } from '@hono/node-server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildNodeRuntime, loadConfig, type NodeRuntime, startHttpServer } from '../src'
@@ -174,6 +177,81 @@ if (process.env.REQUIRE_POSTGRES === '1' && !process.env.TEST_DATABASE_URL) {
   throw new Error('REQUIRE_POSTGRES=1 but TEST_DATABASE_URL is empty.')
 }
 defineFacadeSuite('node runtime over postgres', process.env.TEST_DATABASE_URL)
+
+/**
+ * Refereed turns over a real listener and real storage, with the game's rules replaced by the
+ * kernel's digest-chain resolver: what the runtime owns is the wiring, the storage of resolutions
+ * and server snapshots, and the routes, and the rules are held to the native build elsewhere
+ * (tools/ResolverDeterminism and the resolver package's host tests).
+ */
+describe('node runtime refereeing turns', () => {
+  let runtime: NodeRuntime
+  let server: ServerType
+  let baseUrl = ''
+
+  beforeAll(async () => {
+    runtime = await buildNodeRuntime(
+      loadConfig({
+        DATABASE_URL: 'sqlite::memory:',
+        LOG_LEVEL: 'error',
+        RATE_LIMIT_PER_MINUTE: '10000',
+        MEMBER_RATE_LIMIT_PER_MINUTE: '10000',
+        UPLOAD_RATE_LIMIT_PER_MINUTE: '10000',
+      }),
+      { resolver: new FakeTurnResolver() },
+    )
+    server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
+    await new Promise<void>((resolve) => server.once('listening', () => resolve()))
+    baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+  })
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+    await runtime.close()
+  })
+
+  defineRefereeConformance({
+    fetch: (input, init) => fetch(input.replace('http://conformance', baseUrl), init),
+  })
+})
+
+const bundleBuilt = existsSync(join(defaultBundleDir(), 'manifest.json'))
+if (process.env.REQUIRE_RESOLVER === '1' && !bundleBuilt) {
+  throw new Error('REQUIRE_RESOLVER=1 but the resolver bundle is not built.')
+}
+
+describe('node runtime turn resolver', () => {
+  it('reads RESOLVE_TURNS as off unless it is set', () => {
+    expect(loadConfig({}).resolveTurns).toBe(false)
+    expect(loadConfig({ RESOLVE_TURNS: 'true' }).resolveTurns).toBe(true)
+    expect(loadConfig({ RESOLVER_MAX_MATCHES: '8' }).resolverMaxMatches).toBe(8)
+    expect(() => loadConfig({ RESOLVER_MAX_MATCHES: '0' })).toThrow(/at least 1/)
+  })
+
+  it.skipIf(!bundleBuilt)('starts the WebAssembly resolver when RESOLVE_TURNS is set', async () => {
+    const runtime = await buildNodeRuntime(
+      loadConfig({ DATABASE_URL: 'sqlite::memory:', LOG_LEVEL: 'error', RESOLVE_TURNS: 'true' }),
+    )
+    try {
+      const resolver = runtime.kernel.deps.resolver
+      expect(resolver).toBeDefined()
+      expect((await resolver?.describe())?.sessionVersion).toBe(MULTIPLAYER_SESSION_VERSION)
+    } finally {
+      await runtime.close()
+    }
+  })
+
+  it('runs without a resolver unless one is asked for', async () => {
+    const runtime = await buildNodeRuntime(
+      loadConfig({ DATABASE_URL: 'sqlite::memory:', LOG_LEVEL: 'error' }),
+    )
+    try {
+      expect(runtime.kernel.deps.resolver).toBeUndefined()
+    } finally {
+      await runtime.close()
+    }
+  })
+})
 
 /**
  * A body refused for its size must not cost the client its connection.

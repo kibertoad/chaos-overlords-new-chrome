@@ -104,6 +104,7 @@ public sealed partial class MultiplayerMatchSession
 
         await ReplayEventHistoryAsync(replayFromSeq, view.LastEventSeq, cancellationToken)
             .ConfigureAwait(false);
+        await AdoptDivergedTurnAsync(cancellationToken).ConfigureAwait(false);
 
         if (Replay.State.Outcome is null
             && (Replay.State.Coordinator.Phase != TurnPhase.Command
@@ -415,8 +416,10 @@ public sealed partial class MultiplayerMatchSession
                 _unreportedSeals.Add(CaptureReport(sealedTurn.Payload.Turn, stateHash, Replay.State));
                 return;
             case TurnConfirmedEvent confirmed:
-                VerifyHistoricalConfirmation(confirmed);
-                _unreportedSeals.RemoveAll(seal => seal.Turn == confirmed.Payload.Turn);
+                // A refereed turn this client disagrees with keeps its report: the server answers
+                // it by storing its own snapshot of the turn for this client to adopt.
+                if (VerifyHistoricalConfirmation(confirmed))
+                    _unreportedSeals.RemoveAll(seal => seal.Turn == confirmed.Payload.Turn);
                 if (_pendingDesync is { } pending && pending.Turn == confirmed.Payload.Turn)
                     _pendingDesync = SettlePendingDesync(pending, confirmed.Payload.StateHash);
                 return;
@@ -455,10 +458,14 @@ public sealed partial class MultiplayerMatchSession
     /// Checks a historical confirmation against the local state when that state is the one it is
     /// about.
     /// </summary>
-    private void VerifyHistoricalConfirmation(TurnConfirmedEvent confirmed)
+    /// <returns>
+    /// False when the state is the one the confirmation is about and differs from it in a match the
+    /// server referees: this client diverged at that turn (see <see cref="_divergedTurn"/>).
+    /// </returns>
+    private bool VerifyHistoricalConfirmation(TurnConfirmedEvent confirmed)
     {
         var resolvedTurn = Replay.State.Coordinator.Turn - 1;
-        if (confirmed.Payload.Turn < resolvedTurn) return;
+        if (confirmed.Payload.Turn < resolvedTurn) return true;
         if (confirmed.Payload.Turn > resolvedTurn)
         {
             throw new MultiplayerProtocolException(
@@ -468,11 +475,17 @@ public sealed partial class MultiplayerMatchSession
         var actual = MatchStateHasher.ComputeFingerprint(Replay.State);
         if (!string.Equals(actual, confirmed.Payload.StateHash, StringComparison.Ordinal))
         {
+            if (_refereed)
+            {
+                _divergedTurn ??= (confirmed.Payload.Turn, confirmed.Payload.StateHash);
+                return false;
+            }
             throw new MultiplayerProtocolException(
                 $"the reconstructed state for confirmed turn {confirmed.Payload.Turn} does not "
                 + "match the server hash; the match was produced by incompatible game rules");
         }
         _canonicalThroughTurn = confirmed.Payload.Turn;
+        return true;
     }
 
     /// <summary>

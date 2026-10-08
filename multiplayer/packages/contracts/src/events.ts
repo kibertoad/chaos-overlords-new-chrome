@@ -202,6 +202,25 @@ export const turnDesyncedEventSchema = strictObject({
   }),
 })
 
+/**
+ * A server that resolves every turn itself (see `matchView.refereed`) found one seat's report
+ * different from its own state for the turn. The server's state decides the turn, so only that seat
+ * is off: it adopts the server's snapshot of the turn (`GET /snapshots/:turn`), which this event
+ * promises is stored, and nobody else is paused or asked anything.
+ */
+export const turnDivergedEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('turn.diverged'),
+  payload: strictObject({
+    turn: turnNumberSchema,
+    playerId: resourceIdSchema,
+    /** The server's state after the turn: the hash the stored snapshot of the turn carries. */
+    stateHash: stateFingerprintSchema,
+    /** What the seat reported instead. */
+    reportedStateHash: stateFingerprintSchema,
+  }),
+})
+
 export const snapshotAvailableEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('snapshot.available'),
@@ -233,6 +252,7 @@ export const matchEventSchema = variant('type', [
   turnSealedEventSchema,
   turnConfirmedEventSchema,
   turnDesyncedEventSchema,
+  turnDivergedEventSchema,
   snapshotAvailableEventSchema,
 ])
 

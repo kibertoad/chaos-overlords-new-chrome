@@ -39,15 +39,19 @@ and `players` the roster as `PlayerView` rows. The resolver folds the log the wa
 client does (`MatchHistory` in `src/Rechaos.Multiplayer`): only seats changing hands, late joins,
 `turn.opened` and seals change the state, and a seal the state already holds is passed over without
 its set. A match restored from a checkpoint is fed the events after it; `logTurn: 1` feeds it the log
-from its start instead. `startNodeResolverHost` is the same host with bare save payloads in place of
-archives.
+from its start instead. `applyEvents(matchId, fromTurn, steps)` feeds a run of the log in one call
+and applies it only when the match is still on `fromTurn`, so two callers feeding the same events
+apply them once; it answers the hash of every seal on the way. `startNodeResolverHost` is the same
+host with bare save payloads in place of archives.
+
+The Node runtime (`@chaos-overlords/node-server`) does this itself when `RESOLVE_TURNS` is set.
 
 ## Cloudflare
 
 The Cloudflare host is a Worker of its own, with a Durable Object per match, which the coordination
 Worker calls over a service binding. It needs the Workers Paid plan: a turn takes about half a second
 of CPU, against the 10 ms the free plan allows. A deployment without it keeps settling turns by the
-hashes the clients report.
+hashes the clients report: it leaves `RESOLVE_TURNS` off and `RESOLVER` unbound.
 
 1. Deploy the resolver Worker from [`worker/wrangler.toml`](worker/wrangler.toml), with `main` set to
    this package's `worker/index.js` and `base_dir` to the package directory. It must run without the
@@ -60,7 +64,9 @@ hashes the clients report.
    service = "chaos-overlords-resolver"
    ```
 
-3. In the coordination Worker, which has `nodejs_compat` for the archive's Brotli:
+3. Set the coordination Worker's `RESOLVE_TURNS` var to `true`. `@chaos-overlords/worker` then
+   wraps the binding itself, as a coordination Worker of your own would, with `nodejs_compat` for the
+   archive's Brotli:
 
    ```ts
    import { cloudflareMatchResolver } from '@chaos-overlords/resolver/cloudflare'

@@ -37,6 +37,7 @@ characters without disturbing the player-name field.
   - [Pieces](#pieces)
   - [What the resolver is fed](#what-the-resolver-is-fed)
   - [Versions](#versions)
+  - [Running the referee](#running-the-referee)
   - [Cost](#cost)
 - [Two languages, one contract](#two-languages-one-contract)
 - [Client integration contract](#client-integration-contract)
@@ -494,17 +495,17 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   client that *changes* the outcome, not one that merely reads. Nor does it attribute blame: a
   client that diverges deliberately can grief a match by desyncing it every turn, and the remedy is
   social — `turn.desynced` names every player's hash and the candidates, so the host can see who is
-  the odd one out and kick them. Resolving turns on the server closes the griefing in its first
-  step and the read leak in its second; see
-  [Resolving turns on the server](#resolving-turns-on-the-server) and [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
+  the odd one out and kick them. In a match the server referees, a client that diverges is told so
+  and put back on the server's state, and nobody else is paused. The read leak stays until the
+  second step; see [Resolving turns on the server](#resolving-turns-on-the-server).
 - **Corroboration assumes one human per seat.** There are no accounts, so nothing stops one person
   holding several seats in a public lobby. A host with two of three seats can report a doctored
   hash twice and then upload a snapshot claiming it, and the honest third player is told to
   converge. Counting reports is a defence against one client, not against one person wearing three
   hats, and the server has no way to tell the two apart. It is sound among people who found each
-  other elsewhere and it is not a guarantee to strangers. The fix is the server resolving the turn
-  itself, so that its hash decides; see
-  [Resolving turns on the server](#resolving-turns-on-the-server) and [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
+  other elsewhere and it is not a guarantee to strangers. In a match the server referees, its own
+  hash decides the turn and the host's start must be the one it built, so no number of seats can
+  outvote it; see [Resolving turns on the server](#resolving-turns-on-the-server).
 - **Which join codes exist is observable to somebody already scanning the code space.** An unknown
   code and a match that has already started answer the same 404, but a code-gated lobby answers 401
   rather than 404, so a caller who guesses a live code learns that it is live. The space is about
@@ -582,9 +583,10 @@ with.
 
 ## Resolving turns on the server
 
-Status: decided (`docs/DECISIONS.md`, 2026-10-06); the C# resolver, its WebAssembly build and the
-Node and Cloudflare hosts (`@chaos-overlords/resolver`) are implemented and checked, and the server
-does not call them yet.
+Status: decided (`docs/DECISIONS.md`, 2026-10-06). The referee step is implemented: the C# resolver,
+its WebAssembly build, the Node and Cloudflare hosts (`@chaos-overlords/resolver`) and the kernel's
+`Referee`. A deployment turns it on; see [Running the referee](#running-the-referee). Per-seat views
+are not started.
 
 Lockstep leaves three gaps that the security model above names: recovery counts reports, so one
 person in several seats outvotes the rest; a client that diverges on purpose pauses the match every
@@ -611,7 +613,8 @@ projection of the state per seat, and a client that renders and plans from a pro
 |---|---|---|
 | `AuthoritativeMatch` | `src/Rechaos.Multiplayer/Resolution` | The match as the server holds it. Bootstrap, sealed turn, handover and snapshot each call the code a client calls for the same fact (`MatchBootstrapFactory` and `CommandPhase`, `SealedTurnApplier`, `SeatControl`, `MatchStateClone`), so the two cannot drift apart. `AuthoritativeMatchTests` holds it to a client's hashes. |
 | `Rechaos.Resolver.Wasm` | `src/Rechaos.Resolver.Wasm` | `AuthoritativeMatch` behind `[JSExport]` functions that take the wire's JSON: the stored `gameSettings` blob, the roster, a sealed set as `GET /turns/:n/orders` answers it. A match lives in the runtime under an integer handle between calls. |
-| `TurnResolver` port | `multiplayer/packages/kernel` (to come) | What the kernel calls. A runtime supplies it; a server without one keeps today's report counting. |
+| `TurnResolver` port | `multiplayer/packages/kernel` (`ports/resolver.ts`) | What the kernel calls. A runtime supplies it; a server without one keeps report counting. `FakeTurnResolver` (`kernel/testing`) stands in for it in the kernel, conformance and runtime tests, with the rules replaced by a digest chain. |
+| `Referee` | `multiplayer/packages/kernel` (`services/Referee.ts`) | Keeps the resolver's copy of each refereed match level with the event log, records what each sealed turn resolved to on its turn row, judges the reports against it and writes the server's snapshots. |
 | Node host | `multiplayer/packages/resolver` (`./node`) | Loads the bundle in a worker thread, because a turn costs hundreds of milliseconds of CPU that must not stall the event loop and every stream on it. A thread that dies is started again on the next call, holding nothing. |
 | Cloudflare host | `multiplayer/packages/resolver` (`./worker`, `./cloudflare`) | A Worker of its own without `nodejs_compat`, holding matches in a Durable Object per match and called over a service binding; `./cloudflare` is the coordination Worker's side of that binding. It needs the paid plan: a turn takes about half a second of CPU against the free plan's 10 ms. |
 | Snapshot archive | `multiplayer/packages/resolver` | Both hosts take and hand out the archive clients upload, which the package writes and reads around the bare payload with `node:zlib` Brotli, in Node and in the coordination Worker. |
@@ -637,10 +640,11 @@ happened, so a walk of the whole log over a newer snapshot leaves out the handov
 already reflects. A match picked up from a snapshot takes the roster as the server holds it, so that
 late joins before the snapshot are known seats.
 
-It keeps the state in memory, under a handle per match, and checkpoints it, every ten turns as the
-host does today and at every desync it settles. A checkpoint is the snapshot archive clients already read, so the server's
-checkpoints replace the host's uploads. A host that lost its runtime restores the newest checkpoint
-and replays the facts after it. The browser-wasm runtime has no Brotli codec, so the resolver hands
+It keeps the state in memory, under a handle per match. The server checkpoints it every ten turns,
+when the match finishes, and for every turn a seat diverged on, so that seat has the turn to adopt.
+A checkpoint is the snapshot archive clients already read, stored with `server` as its uploader.
+A host that lost its runtime restores the newest checkpoint whose hash the server recorded for its
+turn, or bootstraps from `match.started` when there is none, and replays the facts after it. The browser-wasm runtime has no Brotli codec, so the resolver hands
 out and takes the uncompressed save payload, and its host writes and reads the archive's header and
 compression.
 
@@ -661,8 +665,45 @@ with the session version it plays. A server whose hash differs from every client
 is most likely running rules that changed without a session version bump. It still decides the turn,
 which keeps the match consistent, and logs the disagreement for the operator.
 
-The referee changes `turn.desynced` and the snapshot routes, so it moves the protocol version. It
-does not move the session version: nothing stored changes meaning.
+The referee adds the `turn.diverged` event and the match view's `refereed` field, and refuses a host
+start it did not build, so it moved the protocol version to 33. It does not move the session version:
+nothing stored changes meaning. The turn rows gain three columns (`resolved_hash`,
+`resolved_finished`, `resolved_seq`), which stay empty on a server that does not referee.
+
+### Running the referee
+
+A deployment turns the referee on with `RESOLVE_TURNS=true`. Off, which is the default, the server
+settles turns by counting reports.
+
+- **Node** starts the WebAssembly host in a worker thread at startup and refuses to start if it
+  cannot. `RESOLVER_MAX_MATCHES` (64) and `RESOLVER_MANAGED_HEAP_MIB` (512) bound what it holds.
+- **Cloudflare** needs the resolver Worker deployed and bound to the coordination Worker as the
+  service `RESOLVER` (see `multiplayer/packages/resolver/README.md`), which needs the Workers Paid
+  plan. With `RESOLVE_TURNS` set and no `RESOLVER` binding the Worker logs a warning once per isolate
+  and counts reports, so a deployment on the free plan leaves the flag off and loses nothing it had.
+
+What a refereed match does:
+
+1. When a turn seals, the server feeds the resolver the log since the last turn it resolved,
+   records the hash and whether the match finished on the turn row, and confirms the turn on that
+   state. The reports play no part in the verdict. A match whose session version is not the
+   resolver's is not refereed, and the match view says which: `refereed: true`.
+2. A report that matches changes nothing. A report that differs is that seat's divergence alone:
+   the server stores its own snapshot of the turn and then publishes `turn.diverged`, naming the
+   seat, the server's hash and the hash it reported, once per seat and reported hash. Nobody is
+   paused. The client named adopts the snapshot and replays the turns after it, as it adopts a
+   repair, and reports again from there.
+3. The host's turn-0 upload must hash to the start the server built. Anything else is refused with
+   409 `uncorroborated_state_hash`, and the server stores its own start in its place.
+4. A client that restarts and finds, in the history, a confirmation its own replay does not reach
+   adopts the server's snapshot of that turn instead of ending the session.
+
+The resolver's copy of a match is fed in batches that end on a seal and carry the turn they start
+on, and the resolver applies a batch only when the match is still on that turn, so two seals or
+reports feeding the same match at once apply each event once. When the resolver fails or cannot be
+reached, the turn falls back to report counting, desync pause included. The next seal or report
+that reaches a working resolver resolves the turn and confirms it on the server's state, which
+lifts the pause.
 
 ### Cost
 
@@ -1028,7 +1069,8 @@ dock a player plans against the dock the sealed turn grants.
   interface mutation.
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
   that follows a desync pause or the closing of an absence vote.
-- **Desync recovery is decided by a count of reports.** A client that finds its own report wrong
+- **Desync recovery is decided by a count of reports** in a match the server does not referee
+  (see [Running the referee](#running-the-referee)). A client that finds its own report wrong
   against a rebuild from the server's facts corrects it, which settles a divergence of its own
   making with no snapshot. Otherwise the snapshot a client uploads becomes the state every other
   client must match, so it may only claim a hash more active players reported than any other, and

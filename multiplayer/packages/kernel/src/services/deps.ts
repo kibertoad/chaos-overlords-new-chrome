@@ -5,6 +5,7 @@ import type {
   Logger,
   StreamCloser,
 } from '../ports/runtime'
+import type { TurnResolver } from '../ports/resolver'
 import type { MultiplayerStorage } from '../ports/storage'
 import type { RateLimiterFactory } from './RateLimiter'
 
@@ -23,6 +24,13 @@ export interface KernelDeps {
   streams: StreamCloser
   clock: Clock
   logger: Logger
+  /**
+   * The game's own turn resolver, when the deployment runs one. With it the server resolves every
+   * sealed turn of a match stored under the session version it plays, and its state decides the
+   * turn (`Referee`). Without it, or for any other match, or while it fails, turns are decided by
+   * the players' reports agreeing.
+   */
+  resolver?: TurnResolver
   /**
    * Where the kernel's own budgets (the password attempts on the join doors) count. Unset, they
    * count in this process, which is right for one process; a runtime that runs as several instances

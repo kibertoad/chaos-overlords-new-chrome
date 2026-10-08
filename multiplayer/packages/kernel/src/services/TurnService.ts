@@ -1,6 +1,4 @@
 import {
-  foreignOps,
-  type MatchEventBody,
   type OwnSubmissionView,
   type SubmitOrdersRequest,
   type TurnReportRequest,
@@ -13,7 +11,7 @@ import {
   type SealedSlot,
   type TurnReport,
 } from '../domain/entities'
-import { ConflictError, ValidationError } from '../domain/errors'
+import { ConflictError } from '../domain/errors'
 import { hashOrderDocument, hashOrderSet } from '../logic/crypto'
 import {
   allAwaitedReady,
@@ -24,12 +22,29 @@ import {
   sealedByDeadline,
   turnDeadline,
 } from '../logic/turn-logic'
+import {
+  confirmationKey,
+  type DesyncPayload,
+  desyncAnnouncementKey,
+  FINISH_ANNOUNCEMENT_KEY,
+  promptAnnouncementKey,
+  promptWithdrawalKey,
+  sealAnnouncementKey,
+  statusAnnouncementKey,
+} from './announcementKeys'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
-import { requireInProgress, requireParticipant, requireTurn } from './guards'
+import {
+  assertOwnOps,
+  requireInProgress,
+  requireParticipant,
+  requireRunning,
+  requireTurn,
+} from './guards'
 import { matchStartedEvent } from './MatchQueryService'
-import { publishSeatSummaries } from './SnapshotService'
+import type { Referee, ResolveOutcome } from './Referee'
+import { publishReportedSeatSummaries } from './SnapshotService'
 
 export type SealTrigger = 'ready' | 'deadline'
 
@@ -77,6 +92,7 @@ export class TurnService {
   constructor(
     private readonly deps: KernelDeps,
     private readonly publisher: EventPublisher,
+    private readonly referee?: Referee,
   ) {}
 
   async submitOrders(
@@ -133,7 +149,7 @@ export class TurnService {
       // member rate limit and the client sends a whole-document replacement per queued command: one
       // misbehaving client could grow a match's durable log by hundreds of thousands of rows a day
       // and wake every subscriber of the match for each. The window it covered is closed from the
-      // other end instead — the match view carries `readyPlayerIds`, and every client reconciles
+      // other end instead â€” the match view carries `readyPlayerIds`, and every client reconciles
       // its readiness from the view when it reconnects.
       await this.publisher.publish(match.id, {
         type: 'turn.readiness',
@@ -147,8 +163,8 @@ export class TurnService {
   /**
    * The answer to a draft the storage refused because the seat's final document is already in.
    *
-   * Such a draft left the client before its final document did and arrived after it — see
-   * `TurnRepository.submitOrders` — so it is not a write to refuse but one that has been
+   * Such a draft left the client before its final document did and arrived after it â€” see
+   * `TurnRepository.submitOrders` â€” so it is not a write to refuse but one that has been
    * overtaken. Answering it with the document that stands keeps the client from reporting a sync
    * error over a turn it has in fact finished. Null when the refusal was for any other reason.
    */
@@ -184,7 +200,14 @@ export class TurnService {
     const match = await this.claimSeal(matchId, number, trigger)
     if (!match) return false
     await this.completeSeal(match, number)
+    await this.resolveOnServer(match, number)
     return true
+  }
+
+  /** Resolve a refereed match on the server through turn `number`; see `Referee.settleThrough`. */
+  private async resolveOnServer(match: Match, number: number): Promise<ResolveOutcome['kind']> {
+    if (!this.referee) return 'unavailable'
+    return this.referee.settleThrough(match, number, (turn) => this.settle(match.id, turn))
   }
 
   /**
@@ -247,8 +270,8 @@ export class TurnService {
    * caller came for must not fail with it.
    *
    * The match is read again whenever the turn it names is no longer the open one: a seal that
-   * somebody else is finishing — the timer, the sweep, or a ready seal that won the race with this
-   * call — has moved the match on since the caller loaded it, and a view built from that copy
+   * somebody else is finishing â€” the timer, the sweep, or a ready seal that won the race with this
+   * call â€” has moved the match on since the caller loaded it, and a view built from that copy
    * would name the sealed turn as current beside a log that already carries its seal.
    */
   async sealIfOverdue(match: Match): Promise<Match> {
@@ -290,7 +313,7 @@ export class TurnService {
    * A timer is not an exact instrument. `setTimeout` can fire a millisecond early by the wall
    * clock, and a Durable Object's alarm runs on a different machine from the isolate that computed
    * the deadline, so any skew between the two clocks reads as an early alarm. Refusing the seal is
-   * right — sealing before `deadlineAt` would misjudge who missed the turn — but refusing it and
+   * right â€” sealing before `deadlineAt` would misjudge who missed the turn â€” but refusing it and
    * doing nothing else spent the only timer the turn had. The turn then waited on the sweep: 15
    * seconds on Node and up to five minutes on Cloudflare's cron, with every client showing an
    * expired clock the whole time. The retry is floored against this clock, which bounds the poll
@@ -359,7 +382,7 @@ export class TurnService {
     if (!turn) {
       // No row at all: the match is live and pointed at a turn that was never created, which is
       // what `start` leaves behind when it dies between the status change and opening turn 1.
-      // There is no seal to finish, only the missing turn to open — `currentTurn` names it, except
+      // There is no seal to finish, only the missing turn to open â€” `currentTurn` names it, except
       // at 0, which is the lobby's value and means turn 1 was never reached.
       if (number <= FIRST_TURN) await this.repairInterruptedStart(match)
       return this.openTurn(match, Math.max(number, FIRST_TURN))
@@ -514,6 +537,9 @@ export class TurnService {
       stateHash: null,
       desyncedAt: null,
       settledAt: null,
+      resolvedHash: null,
+      resolvedFinished: null,
+      resolvedSeq: null,
     }
     const created = await this.deps.storage.turns.open(
       turn,
@@ -575,7 +601,7 @@ export class TurnService {
     for (const { matchId, number } of expired) {
       // One match that throws must not abort the pass. `listExpiredOpen` is ordered oldest first,
       // so the same match would be at the head of the next pass too and no later expired turn or
-      // stalled seal would ever be reached — and this is the safety net behind a lost timer.
+      // stalled seal would ever be reached â€” and this is the safety net behind a lost timer.
       if (await this.guard(matchId, number, () => this.trySeal(matchId, number, 'deadline'))) {
         sealed += 1
       }
@@ -642,6 +668,17 @@ export class TurnService {
 
   async report(principal: Principal, number: number, request: TurnReportRequest): Promise<void> {
     const { match, player } = principal
+    const reported = { ...request, playerId: player.id, turn: number }
+    // A turn the server confirmed on its own state takes a report only to check it against that.
+    // A refereed turn is confirmed at its seal, so this is where every report of a live refereed
+    // match lands, and it is still the seat's activity and the host's seat summaries.
+    if (await this.referee?.judgeDecided(match, player, number, request.stateHash)) {
+      if (isInProgress(match)) {
+        await this.restorePendingPlayer(player.id, match.id)
+        await publishReportedSeatSummaries(this.deps, match, reported)
+      }
+      return
+    }
     requireInProgress(match)
     requireParticipant(player)
     const turn = await requireTurn(this.deps.storage.turns, match.id, number)
@@ -670,24 +707,21 @@ export class TurnService {
         reportedAt: this.deps.clock.now(),
       }))
     ) {
+      if (await this.referee?.judgeDecided(match, player, number, request.stateHash)) return
       throw new ConflictError('That turn is already confirmed', { reason: 'turn_confirmed' })
     }
-    // The order set is the turn increment the server retains. Publishing these few derived counters
-    // with the host's report keeps late-join selection current without uploading another full save.
-    if (player.id === match.hostPlayerId && request.seatSummaries !== undefined) {
-      try {
-        await publishSeatSummaries(this.deps, match.id, request.seatSummaries)
-      } catch (error) {
-        // Late-join hints are optional metadata. A full settings blob or a transient metadata write
-        // must not discard the authoritative hash report and strand every player at the barrier.
-        this.deps.logger.warn('could not publish seat summaries', {
-          matchId: match.id,
-          turn: number,
-          error: String(error),
-        })
-      }
-    }
+    await publishReportedSeatSummaries(this.deps, match, reported)
+    // A refereed turn is decided by the server's state, not by this report. It is resolved here as
+    // well as at the seal, so a resolution the seal could not finish is retried by every report.
+    const resolved = await this.resolveOnServer(match, number)
+    // Another caller is feeding the match and records the turn; its verdict judges this report.
+    if (resolved === 'pending') return
     await this.settle(match.id, number)
+    // The verdict judged the reports it read when it confirmed the turn, and this one may have
+    // landed after that read. The announcement is keyed, so a report judged twice is told once.
+    if (resolved === 'resolved') {
+      await this.referee?.judgeDecided(match, player, number, request.stateHash)
+    }
   }
 
   /** Authenticated turn activity wins the race with an AI vote and restores the human seat. */
@@ -730,8 +764,8 @@ export class TurnService {
     // The announcement is owed by the prompt, not by the call that inserted it. The inserting call
     // used to be the only publisher, so a publish that threw after the insert left a prompt that
     // held the turn's clock and that no client was ever shown: every later call found it open and
-    // returned. A prompt still unstamped is announced by whichever call finds it — the repeated seal
-    // step, a rejoin re-asking about absent seats, a vote on the seat — keyed so racing callers log
+    // returned. A prompt still unstamped is announced by whichever call finds it â€” the repeated seal
+    // step, a rejoin re-asking about absent seats, a vote on the seat â€” keyed so racing callers log
     // it once, and stamped only after the event is durable.
     const prompt = await this.deps.storage.takeovers.getPrompt(matchId, playerId)
     if (prompt === null || prompt.announcedAt !== null) return opened
@@ -860,12 +894,14 @@ export class TurnService {
       // finished match `running` for good, since nothing else revisits a confirmed turn.
       // `settledAt` says whether the follow-ups completed, and they are all safe to repeat.
       if (turn.settledAt === null && turn.stateHash !== null) {
-        const reports = await this.deps.storage.turns.listReports(matchId, number)
-        const verdict = {
-          stateHash: turn.stateHash,
-          finished: confirmedFinished(reports, turn.stateHash),
-        }
-        return this.finishConfirmation(match, number, verdict, true)
+        const finished =
+          turn.resolvedHash === turn.stateHash
+            ? turn.resolvedFinished === true
+            : confirmedFinished(
+                await this.deps.storage.turns.listReports(matchId, number),
+                turn.stateHash,
+              )
+        return this.finishConfirmation(match, number, { stateHash: turn.stateHash, finished }, true)
       }
       // A desync pause lifted by this verdict whose lift was cut short: `resumeAfterDesync` is
       // private and `reevaluate` only visits sealed and desynced turns, so this is the way back.
@@ -873,6 +909,11 @@ export class TurnService {
         return this.resumeAfterDesync(matchId, this.deps.clock.now())
       }
       return false
+    }
+    if (turn.resolvedHash !== null && this.referee) {
+      const finish = (verdict: { stateHash: string; finished: boolean }) =>
+        this.finishConfirmation(match, number, verdict, false)
+      return this.referee.confirm(match, turn, finish)
     }
     const [players, reports, snapshot] = await Promise.all([
       this.deps.storage.players.listByMatch(matchId),
@@ -1044,7 +1085,7 @@ export class TurnService {
   /**
    * Everything a confirmation owes after its compare-and-swap: announce it, lift a desync pause it
    * ends, finish a match it completes, then stamp `settledAt`. Every step is conditional on its own
-   * state or keyed in the log, so a repeat — by the sweep, over a verdict cut short — finishes what
+   * state or keyed in the log, so a repeat â€” by the sweep, over a verdict cut short â€” finishes what
    * the first attempt left and duplicates nothing. Returns whether this call logged or changed
    * anything, which for a repeat means it found work the first attempt left.
    */
@@ -1146,28 +1187,6 @@ export class TurnService {
   }
 }
 
-/*
- * Dedupe keys of the announcements that follow a compare-and-swap (`EventPublisher.publishOnce`).
- * Each names the one fact it announces, so a repeat of the announcement is recognised as the same
- * fact and never logged twice. They are server-side only and never reach a client.
- */
-const sealAnnouncementKey = (turn: number): string => `turn.sealed:${turn}`
-const confirmationKey = (turn: number): string => `turn.confirmed:${turn}`
-
-/** A `turn.desynced` payload as this build writes it: the tie-breaker is always named. */
-type DesyncPayload = Extract<MatchEventBody, { type: 'turn.desynced' }>['payload'] & {
-  tieBreakerPlayerId: string | null
-}
-
-/**
- * The dedupe key of a desync announcement: the turn and everything a client acts on, so a verdict
- * announced again with the same content is logged once. The reports themselves are left out,
- * because a report that changes without changing the candidates or the tie-breaker asks nothing
- * new of anybody.
- */
-const desyncAnnouncementKey = (payload: DesyncPayload): string =>
-  `turn.desynced:${payload.turn}:${payload.candidateStateHashes.join(',')}:${payload.tieBreakerPlayerId ?? ''}`
-
 export interface SettleOptions {
   /**
    * Whether a desync whose announcement is already out is announced again whenever its verdict may
@@ -1180,21 +1199,6 @@ export interface SettleOptions {
 
 const QUIET_SETTLE: SettleOptions = { reannounce: false }
 /**
- * A pause or its lift, named by the status event it follows: the same change announced after the
- * same last word is the same fact, and the next pause of the match follows a different event.
- */
-const statusAnnouncementKey = (status: string, afterSeq: number): string =>
-  `match.statusChanged:${status}:after:${afterSeq}`
-/** A match finishes once. */
-const FINISH_ANNOUNCEMENT_KEY = 'match.statusChanged:finished'
-/** A prompt is one opening of the question about a seat, which its `openedAt` identifies. */
-const promptAnnouncementKey = (playerId: string, openedAt: Date): string =>
-  `match.takeoverVoteRequested:${playerId}:${openedAt.getTime()}`
-/** The withdrawal of one prompt's request that was logged after the prompt had closed. */
-const promptWithdrawalKey = (playerId: string, openedAt: Date): string =>
-  `match.takeoverVoteCancelled:${playerId}:${openedAt.getTime()}`
-
-/**
  * Whether a confirmed turn finished the match, judged again from its reports when the verdict's
  * follow-ups are repeated. Reports are immutable once the turn is confirmed, and every client that
  * reported the confirmed state computed the same state, so they agree on whether it is final.
@@ -1202,33 +1206,4 @@ const promptWithdrawalKey = (playerId: string, openedAt: Date): string =>
 function confirmedFinished(reports: readonly TurnReport[], stateHash: string): boolean {
   const agreeing = reports.filter((report) => report.stateHash === stateHash)
   return agreeing.length > 0 && agreeing.every((report) => report.finished)
-}
-
-/**
- * Refuse a document whose ops act for a slot other than the submitter's.
- *
- * The sealed set attributes every op to the slot it was submitted from, and that attribution is
- * the one clients apply, so an op naming a different player can only be a client bug or an attempt
- * to act as somebody else. Catching it here keeps the two attributions from ever disagreeing, and
- * it is the one piece of order semantics the server can judge without knowing the rules.
- */
-function assertOwnOps(request: SubmitOrdersRequest, slot: number): void {
-  const foreign = foreignOps(request.orders, slot)
-  if (foreign.length === 0) return
-  throw new ValidationError('Orders may only act for your own slot', {
-    reason: 'foreign_slot_ops',
-    slot,
-    ops: foreign.slice(0, 8).map((op) => ({ op: op.op, player: op.player })),
-  })
-}
-
-function requireRunning(match: Match): void {
-  if (match.status === 'desynced') {
-    throw new ConflictError('The match is paused until the host uploads a snapshot', {
-      reason: 'match_desynced',
-    })
-  }
-  if (match.status !== 'running') {
-    throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
-  }
 }

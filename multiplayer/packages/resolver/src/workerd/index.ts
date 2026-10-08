@@ -16,6 +16,8 @@ import type { DurableObjectNamespace } from '@cloudflare/workers-types'
 import { type BundleManifest, bootResolver } from '../boot.js'
 import {
   type BootstrapInput,
+  type FeedResult,
+  type FeedStep,
   type MatchStatus,
   ResolverCore,
   type ResolverInfo,
@@ -59,6 +61,7 @@ export interface ResolverService {
     input: RestoreInput,
   ): Promise<MatchStatus>
   applyEvent(matchId: string, event: unknown, sealedOrders: unknown): Promise<MatchStatus>
+  applyEvents(matchId: string, fromTurn: number, steps: readonly FeedStep[]): Promise<FeedResult>
   status(matchId: string): Promise<MatchStatus | null>
   savePayload(matchId: string): Promise<{ payload: Uint8Array; status: MatchStatus }>
   release(matchId: string): Promise<void>
@@ -148,6 +151,9 @@ export class MatchResolverObject extends DurableObject<ResolverWorkerEnv> {
   applyEvent(matchId: string, event: unknown, sealedOrders: unknown): Promise<MatchStatus> {
     return run(this.env, (resolver) => resolver.applyEvent(matchId, event, sealedOrders))
   }
+  applyEvents(matchId: string, fromTurn: number, steps: readonly FeedStep[]): Promise<FeedResult> {
+    return run(this.env, (resolver) => resolver.applyEvents(matchId, fromTurn, steps))
+  }
   status(matchId: string): Promise<MatchStatus | null> {
     return run(this.env, (resolver) => resolver.status(matchId))
   }
@@ -195,6 +201,9 @@ export class ResolverEntrypoint
   }
   applyEvent(matchId: string, event: unknown, sealedOrders: unknown): Promise<MatchStatus> {
     return objectFor(this.env, matchId).applyEvent(matchId, event, sealedOrders)
+  }
+  applyEvents(matchId: string, fromTurn: number, steps: readonly FeedStep[]): Promise<FeedResult> {
+    return objectFor(this.env, matchId).applyEvents(matchId, fromTurn, steps)
   }
   status(matchId: string): Promise<MatchStatus | null> {
     return objectFor(this.env, matchId).status(matchId)
