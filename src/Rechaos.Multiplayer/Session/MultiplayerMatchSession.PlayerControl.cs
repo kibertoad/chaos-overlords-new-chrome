@@ -123,12 +123,19 @@ public sealed partial class MultiplayerMatchSession
     /// Guarded on the state it is applied to, not on the live one: see <see cref="CanTransferControl"/>
     /// for why a finished match ignores the transfer.
     /// </remarks>
-    private static void ApplyHandover(MatchReplayRecorder recorder, ControlHandover handover)
+    private static void ApplyHandover(MatchReplayRecorder recorder, ControlHandover handover) =>
+        ApplyHandover(recorder, handover.Slot, handover.Controller);
+
+    /// <summary>
+    /// Hands one slot to a controller on one state; <see cref="MultiplayerSpectatorSession"/> applies
+    /// the handovers it reads from the log through this too.
+    /// </summary>
+    internal static void ApplyHandover(MatchReplayRecorder recorder, int slot, PlayerController controller)
     {
         if (!CanTransferControl(recorder.State)) return;
-        var player = recorder.State.FindPlayer(new PlayerId(handover.Slot));
-        if (player is null || player.Setup.Controller == handover.Controller) return;
-        if (handover.Controller == PlayerController.Computer)
+        var player = recorder.State.FindPlayer(new PlayerId(slot));
+        if (player is null || player.Setup.Controller == controller) return;
+        if (controller == PlayerController.Computer)
             recorder.TransferPlayerToComputer(player.Id);
         else
             recorder.TransferPlayerToHuman(player.Id);

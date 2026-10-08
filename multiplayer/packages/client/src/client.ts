@@ -41,6 +41,19 @@ import {
   type UpdatePlayerProfileRequest,
   uploadSnapshotContract,
   validate,
+  listSpectatorsContract,
+  removeSpectatorContract,
+  type SpectateRequest,
+  type SpectatorEventPage,
+  type SpectatorList,
+  type SpectatorMatchView,
+  type SpectatorMembership,
+  spectateContract,
+  spectatorEventsContract,
+  spectatorMatchContract,
+  spectatorSealedOrdersContract,
+  spectatorSnapshotContract,
+  stopSpectatingContract,
 } from '@chaos-overlords/contracts'
 import { MultiplayerApiError } from './errors'
 import { parseEventStream } from './sse'
@@ -171,6 +184,16 @@ export class MultiplayerClient {
 
   match(matchId: string): MatchHandle {
     return new MatchHandle(this, matchId)
+  }
+
+  /** Start watching a match that allows spectators; the answer carries the spectator token. */
+  spectate(request: SpectateRequest): Promise<SpectatorMembership> {
+    return this.call(spectateContract, spectateContract.pathResolver(), request)
+  }
+
+  /** The reads a spectator token opens; bind the token with `withToken` first. */
+  spectator(matchId: string): SpectatorHandle {
+    return new SpectatorHandle(this, matchId)
   }
 
   /** @internal */
@@ -404,6 +427,22 @@ export class MatchHandle {
     )
   }
 
+  /** Who is watching this match. */
+  spectators(): Promise<SpectatorList> {
+    return this.client.call(
+      listSpectatorsContract,
+      listSpectatorsContract.pathResolver({ matchId: this.matchId }),
+    )
+  }
+
+  /** Host only: stop a spectator watching. */
+  removeSpectator(spectatorId: string): Promise<void> {
+    return this.client.call(
+      removeSpectatorContract,
+      removeSpectatorContract.pathResolver({ matchId: this.matchId, spectatorId }),
+    )
+  }
+
   events(after = 0, limit = 200): Promise<EventPage> {
     const path = listEventsContract.pathResolver({ matchId: this.matchId })
     return this.client.call(listEventsContract, `${path}?after=${after}&limit=${limit}`)
@@ -539,4 +578,45 @@ function sleep(ms: number, signal: AbortSignal | undefined): Promise<void> {
       resolve()
     }
   })
+}
+
+/** What a spectator reads of one match; everything is held behind the match's delay. */
+export class SpectatorHandle {
+  constructor(
+    private readonly client: MultiplayerClient,
+    readonly matchId: string,
+  ) {}
+
+  get(): Promise<SpectatorMatchView> {
+    return this.client.call(
+      spectatorMatchContract,
+      spectatorMatchContract.pathResolver({ matchId: this.matchId }),
+    )
+  }
+
+  events(after = 0, limit = 200): Promise<SpectatorEventPage> {
+    const path = spectatorEventsContract.pathResolver({ matchId: this.matchId })
+    return this.client.call(spectatorEventsContract, `${path}?after=${after}&limit=${limit}`)
+  }
+
+  sealedOrders(turn: number): Promise<SealedOrdersView> {
+    return this.client.call(
+      spectatorSealedOrdersContract,
+      spectatorSealedOrdersContract.pathResolver({ matchId: this.matchId, turn }),
+    )
+  }
+
+  latestSnapshot(): Promise<SnapshotView> {
+    return this.client.call(
+      spectatorSnapshotContract,
+      spectatorSnapshotContract.pathResolver({ matchId: this.matchId }),
+    )
+  }
+
+  leave(): Promise<void> {
+    return this.client.call(
+      stopSpectatingContract,
+      stopSpectatingContract.pathResolver({ matchId: this.matchId }),
+    )
+  }
 }

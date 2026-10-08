@@ -65,6 +65,17 @@ public sealed class MatchHandle
         _client.SendAsync<Unit>(
             HttpMethod.Post, ApiRoutes.RejoinMatch(MatchId), body: null, cancellationToken);
 
+    /// <summary>The spectators watching this match.</summary>
+    public Task<SpectatorList> SpectatorsAsync(CancellationToken cancellationToken) =>
+        _client.SendAsync<SpectatorList>(
+            HttpMethod.Get, ApiRoutes.Spectators(MatchId), body: null, cancellationToken);
+
+    /// <summary>Host only: stops a spectator watching and revokes their token.</summary>
+    public Task<Unit> RemoveSpectatorAsync(string spectatorId, CancellationToken cancellationToken) =>
+        _client.SendAsync<Unit>(
+            HttpMethod.Post, ApiRoutes.RemoveSpectator(MatchId, spectatorId), body: null,
+            cancellationToken);
+
     /// <summary>Host only: removes a player, exactly as if they had left.</summary>
     public Task<Unit> KickAsync(string playerId, CancellationToken cancellationToken) =>
         _client.SendAsync<Unit>(

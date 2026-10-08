@@ -11,6 +11,7 @@ import {
   LIMITS,
   MATCH_EVENT_SSE_NAME,
   matchEventSchema,
+  matchSettingsSchema,
   sealedOrdersContract,
   sectorIdSchema,
   siteIdSchema,
@@ -65,6 +66,14 @@ describe('API_CONTRACTS', () => {
         'GET /matches/:matchId/snapshots/:turn',
         'GET /matches/:matchId/events',
         'GET /matches/:matchId/stream',
+        'GET /matches/:matchId/spectators',
+        'POST /matches/:matchId/spectators/:spectatorId/kick',
+        'POST /spectate',
+        'GET /spectate/:matchId',
+        'GET /spectate/:matchId/events',
+        'GET /spectate/:matchId/turns/:turn/orders',
+        'GET /spectate/:matchId/snapshots/latest',
+        'POST /spectate/:matchId/leave',
         'POST /bug-reports',
       ].sort(),
     )
@@ -97,6 +106,28 @@ describe('order id bounds', () => {
     expect(rejects(gangDefinitionIdSchema, GAME_BOUNDS.minGangDefinitionId - 1)).toBe(true)
     expect(safeParse(gangDefinitionIdSchema, GAME_BOUNDS.maxGangDefinitionId).success).toBe(true)
     expect(rejects(gangDefinitionIdSchema, GAME_BOUNDS.maxGangDefinitionId + 1)).toBe(true)
+  })
+})
+
+describe('spectatorDelayTurns', () => {
+  const settings = (spectatorDelayTurns: unknown) => ({
+    name: 'Watched',
+    maxPlayers: 4,
+    turnTimerSeconds: 0,
+    visibility: 'public',
+    gameSettings: {},
+    spectatorDelayTurns,
+  })
+
+  it('takes the LIMITS range, null, or nothing', () => {
+    const ok = (value: unknown) => safeParse(matchSettingsSchema, settings(value)).success
+    expect(ok(LIMITS.spectatorMinDelayTurns)).toBe(true)
+    expect(ok(LIMITS.spectatorMaxDelayTurns)).toBe(true)
+    expect(ok(null)).toBe(true)
+    expect(ok(undefined)).toBe(true)
+    expect(ok(LIMITS.spectatorMinDelayTurns - 1)).toBe(false)
+    expect(ok(LIMITS.spectatorMaxDelayTurns + 1)).toBe(false)
+    expect(ok(2.5)).toBe(false)
   })
 })
 

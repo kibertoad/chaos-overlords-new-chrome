@@ -589,7 +589,7 @@ public sealed partial class MultiplayerMatchSession
         bool captureReports,
         CancellationToken cancellationToken)
     {
-        var recorder = new MatchReplayRecorder(ReadVerifiedSnapshot(baseline));
+        var recorder = new MatchReplayRecorder(ReadVerifiedSnapshot(baseline, _definitions));
         var reports = new List<TurnReport>();
         if (captureReports) reports.Add(CaptureReport(baseline.Turn, baseline.StateHash, recorder.State));
         var fetches = new Queue<Task<SealedOrdersView>>();

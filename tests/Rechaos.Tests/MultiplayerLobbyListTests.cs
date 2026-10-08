@@ -44,7 +44,7 @@ public sealed class MultiplayerLobbyListTests
         false,
         MatchStatus.Lobby,
         sessionVersion,
-        new MatchSettings(id, 4, 0, MatchVisibility.Public, new Dictionary<string, JsonElement>()),
+        new MatchSettings(id, 4, 0, MatchVisibility.Public, new Dictionary<string, JsonElement>(), null),
         [],
         [],
         "2026-09-24T00:00:00.000Z");

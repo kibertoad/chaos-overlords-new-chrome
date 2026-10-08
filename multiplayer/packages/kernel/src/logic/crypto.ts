@@ -33,6 +33,17 @@ export function generateToken(): string {
   return `${TOKEN_PREFIX}${toBase64Url(randomBytes(32))}`
 }
 
+/**
+ * A spectator's bearer token. A prefix of its own, so neither door ever has to look a token of the
+ * other kind up: the player door refuses anything not `cop_` and the spectator door anything not
+ * `cos_`, before any hash or read.
+ */
+export const SPECTATOR_TOKEN_PREFIX = 'cos_'
+
+export function generateSpectatorToken(): string {
+  return `${SPECTATOR_TOKEN_PREFIX}${toBase64Url(randomBytes(32))}`
+}
+
 export function hashToken(token: string): Promise<string> {
   return sha256Hex(token)
 }

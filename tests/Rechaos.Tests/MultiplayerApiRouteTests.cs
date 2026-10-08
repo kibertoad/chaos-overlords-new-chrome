@@ -16,6 +16,7 @@ public sealed class MultiplayerApiRouteTests
 {
     private const string MatchId = "m1";
     private const string PlayerId = "p2";
+    private const string SpectatorId = "s3";
 
     /// <summary>The template each builder produces, with the sample ids put back as `:params`.</summary>
     private static readonly (string Template, string Built)[] Routes =
@@ -43,6 +44,15 @@ public sealed class MultiplayerApiRouteTests
         (RouteTemplates.Snapshot, $"GET {ApiRoutes.Snapshot(MatchId, 7)}"),
         (RouteTemplates.ListEvents, $"GET {ApiRoutes.Events(MatchId, 0, 200)}"),
         (RouteTemplates.StreamEvents, $"GET {ApiRoutes.Stream(MatchId)}"),
+        (RouteTemplates.ListSpectators, $"GET {ApiRoutes.Spectators(MatchId)}"),
+        (RouteTemplates.RemoveSpectator,
+            $"POST {ApiRoutes.RemoveSpectator(MatchId, SpectatorId)}"),
+        (RouteTemplates.Spectate, $"POST {ApiRoutes.Spectate}"),
+        (RouteTemplates.SpectatorMatch, $"GET {ApiRoutes.SpectatorMatch(MatchId)}"),
+        (RouteTemplates.SpectatorEvents, $"GET {ApiRoutes.SpectatorEvents(MatchId, 0, 200)}"),
+        (RouteTemplates.SpectatorSealedOrders, $"GET {ApiRoutes.SpectatorOrders(MatchId, 7)}"),
+        (RouteTemplates.SpectatorSnapshot, $"GET {ApiRoutes.SpectatorSnapshot(MatchId)}"),
+        (RouteTemplates.StopSpectating, $"POST {ApiRoutes.StopSpectating(MatchId)}"),
         (RouteTemplates.SubmitBugReport, $"POST {ApiRoutes.BugReports}"),
     ];
 
@@ -104,6 +114,7 @@ public sealed class MultiplayerApiRouteTests
     private static string AsTemplate(string built) => built
         .Replace($"/{MatchId}", "/:matchId", StringComparison.Ordinal)
         .Replace($"/{PlayerId}/", "/:playerId/", StringComparison.Ordinal)
+        .Replace($"/{SpectatorId}/", "/:spectatorId/", StringComparison.Ordinal)
         .Replace("/turns/7/", "/turns/:turn/", StringComparison.Ordinal)
         .Replace("/snapshots/7", "/snapshots/:turn", StringComparison.Ordinal)
         .Replace("/events?after=0&limit=200", "/events", StringComparison.Ordinal)

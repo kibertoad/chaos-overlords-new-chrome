@@ -59,6 +59,22 @@ public static class RouteTemplates
     public const string ListEvents = "GET /matches/:matchId/events";
     /// <summary><c>GET /matches/:matchId/stream</c></summary>
     public const string StreamEvents = "GET /matches/:matchId/stream";
+    /// <summary><c>GET /matches/:matchId/spectators</c></summary>
+    public const string ListSpectators = "GET /matches/:matchId/spectators";
+    /// <summary><c>POST /matches/:matchId/spectators/:spectatorId/kick</c></summary>
+    public const string RemoveSpectator = "POST /matches/:matchId/spectators/:spectatorId/kick";
+    /// <summary><c>POST /spectate</c></summary>
+    public const string Spectate = "POST /spectate";
+    /// <summary><c>GET /spectate/:matchId</c></summary>
+    public const string SpectatorMatch = "GET /spectate/:matchId";
+    /// <summary><c>GET /spectate/:matchId/events</c></summary>
+    public const string SpectatorEvents = "GET /spectate/:matchId/events";
+    /// <summary><c>GET /spectate/:matchId/turns/:turn/orders</c></summary>
+    public const string SpectatorSealedOrders = "GET /spectate/:matchId/turns/:turn/orders";
+    /// <summary><c>GET /spectate/:matchId/snapshots/latest</c></summary>
+    public const string SpectatorSnapshot = "GET /spectate/:matchId/snapshots/latest";
+    /// <summary><c>POST /spectate/:matchId/leave</c></summary>
+    public const string StopSpectating = "POST /spectate/:matchId/leave";
     /// <summary><c>POST /bug-reports</c></summary>
     public const string SubmitBugReport = "POST /bug-reports";
 
@@ -88,6 +104,14 @@ public static class RouteTemplates
         Snapshot,
         ListEvents,
         StreamEvents,
+        ListSpectators,
+        RemoveSpectator,
+        Spectate,
+        SpectatorMatch,
+        SpectatorEvents,
+        SpectatorSealedOrders,
+        SpectatorSnapshot,
+        StopSpectating,
         SubmitBugReport,
     ];
 }

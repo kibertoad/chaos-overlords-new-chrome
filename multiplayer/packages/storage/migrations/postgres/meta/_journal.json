@@ -57,6 +57,13 @@
       "when": 1791313322273,
       "tag": "0007_cultured_mongu",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791391707201,
+      "tag": "0008_talented_purifiers",
+      "breakpoints": true
     }
   ]
 }

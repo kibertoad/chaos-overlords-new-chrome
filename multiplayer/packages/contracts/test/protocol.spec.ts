@@ -34,6 +34,6 @@ describe('sessionVersionSchema', () => {
 describe('the two versions', () => {
   it('are pinned separately', () => {
     expect(MULTIPLAYER_SESSION_VERSION).toBe(53)
-    expect(MULTIPLAYER_PROTOCOL_VERSION).toBe(27)
+    expect(MULTIPLAYER_PROTOCOL_VERSION).toBe(29)
   })
 })

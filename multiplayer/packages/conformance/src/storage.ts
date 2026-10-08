@@ -1405,6 +1405,87 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(await storage.snapshots.get(other.id, 1)).not.toBeNull()
     })
 
+    it('keeps the snapshot a spectator starts from and finds the newest at or below a turn', async () => {
+      const match = matchFixture()
+      await storage.matches.create(match)
+      const base = {
+        matchId: match.id,
+        formatVersion: 1,
+        protocolVersion: 2,
+        sessionVersion: 1,
+        stateHash: 'c'.repeat(32),
+        uploadedByPlayerId: 'h',
+        uploadedAt: new Date('2026-03-01T15:00:00.000Z'),
+        body: 'QUJD',
+      }
+      for (const turn of [0, 2, 5, 6, 7, 8]) await storage.snapshots.put({ ...base, turn })
+
+      expect((await storage.snapshots.getLatestSummaryAtOrBelow(match.id, 4))?.turn).toBe(2)
+      expect((await storage.snapshots.getLatestSummaryAtOrBelow(match.id, 5))?.turn).toBe(5)
+      expect(await storage.snapshots.getLatestSummaryAtOrBelow(uid('missing'), 9)).toBeNull()
+      expect(await storage.snapshots.getLatestSummaryAtOrBelow(match.id, 4)).not.toHaveProperty(
+        'body',
+      )
+
+      // Turn 2 is the spectator start: it and every later turn stay, so the start can move to 5
+      // once turn 5 is released even though 5 is older than the three newest.
+      expect(await storage.snapshots.prune(match.id, 3, 2)).toBe(1)
+      expect(await storage.snapshots.get(match.id, 2)).not.toBeNull()
+      expect(await storage.snapshots.get(match.id, 0)).toBeNull()
+      expect(await storage.snapshots.get(match.id, 5)).not.toBeNull()
+      expect((await storage.snapshots.getLatestSummaryAtOrBelow(match.id, 4))?.turn).toBe(2)
+      expect(await storage.snapshots.prune(match.id, 3, 5)).toBe(1)
+      expect(await storage.snapshots.get(match.id, 2)).toBeNull()
+      expect((await storage.snapshots.getLatestSummaryAtOrBelow(match.id, 5))?.turn).toBe(5)
+    })
+
+    it('admits spectators up to a cap counted with the insert, and revokes them once', async () => {
+      const match = matchFixture()
+      await storage.matches.create(match)
+      const spectator = (n: number) => ({
+        id: uid('spectator'),
+        matchId: match.id,
+        displayName: `Watcher ${n}`,
+        tokenHash: uid('spectator-hash'),
+        joinedAt: new Date(`2026-03-01T10:00:0${n}.000Z`),
+        leftAt: null,
+      })
+      const first = spectator(1)
+      expect(await storage.spectators.create(first, 3)).toBe(true)
+      expect(await storage.spectators.get(first.id)).toEqual(first)
+      expect(await storage.spectators.getByTokenHash(first.tokenHash)).toEqual(first)
+      expect(await storage.spectators.create(first, 3)).toBe(false)
+      expect(await storage.spectators.create({ ...spectator(9), matchId: uid('missing') }, 3)).toBe(
+        false,
+      )
+
+      const racing = await Promise.all([
+        storage.spectators.create(spectator(2), 3),
+        storage.spectators.create(spectator(3), 3),
+        storage.spectators.create(spectator(4), 3),
+      ])
+      expect(racing.filter(Boolean)).toHaveLength(2)
+      expect((await storage.spectators.listActive(match.id))[0]).toEqual(first)
+      expect(await storage.spectators.listActive(match.id)).toHaveLength(3)
+
+      const leftAt = new Date('2026-03-01T12:00:00.000Z')
+      expect(await storage.spectators.revoke(first.id, leftAt)).toBe(true)
+      expect(await storage.spectators.revoke(first.id, leftAt)).toBe(false)
+      expect(await storage.spectators.get(first.id)).toEqual({ ...first, tokenHash: null, leftAt })
+      expect(await storage.spectators.getByTokenHash(first.tokenHash)).toBeNull()
+      expect(await storage.spectators.listActive(match.id)).toHaveLength(2)
+      // A revoked row still counts against the cap: leaving does not make room.
+      expect(await storage.spectators.create(spectator(5), 3)).toBe(false)
+
+      await storage.matches.transition(match.id, ['lobby'], {
+        status: 'finished',
+        updatedAt: new Date('2026-03-01T10:00:00.000Z'),
+      })
+      await storage.matches.deleteInactive(['finished'], new Date('2027-01-01T00:00:00.000Z'), 10)
+      expect(await storage.spectators.listActive(match.id)).toEqual([])
+      expect(await storage.spectators.get(first.id)).toBeNull()
+    })
+
     it('numbers appended events gaplessly, even when they are written concurrently', async () => {
       const match = matchFixture()
       await storage.matches.create(match)

@@ -69,6 +69,26 @@ public static class ApiRoutes
 
     public static string Stream(string matchId) => $"/matches/{matchId}/stream";
 
+    public static string Spectators(string matchId) => $"/matches/{matchId}/spectators";
+
+    public static string RemoveSpectator(string matchId, string spectatorId) =>
+        $"/matches/{matchId}/spectators/{spectatorId}/kick";
+
+    /// <summary>The door a spectator comes in by, with no token yet.</summary>
+    public const string Spectate = "/spectate";
+
+    public static string SpectatorMatch(string matchId) => $"/spectate/{matchId}";
+
+    public static string SpectatorEvents(string matchId, int after, int limit) =>
+        $"/spectate/{matchId}/events?after={Number(after)}&limit={Number(limit)}";
+
+    public static string SpectatorOrders(string matchId, int turn) =>
+        $"/spectate/{matchId}/turns/{Number(turn)}/orders";
+
+    public static string SpectatorSnapshot(string matchId) => $"/spectate/{matchId}/snapshots/latest";
+
+    public static string StopSpectating(string matchId) => $"/spectate/{matchId}/leave";
+
     /// <summary>Invariant digits: a culture that groups thousands would write an unroutable path.</summary>
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
 }

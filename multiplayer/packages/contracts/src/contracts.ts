@@ -3,7 +3,12 @@ import { ContractNoBody, defineApiContract, withObjectKeys } from '@toad-contrac
 import { object } from 'valibot'
 import { bugReportReceiptSchema, submitBugReportRequestSchema } from './bug-reports'
 import { errorEnvelopeSchema } from './errors'
-import { eventPageSchema, MATCH_EVENT_SSE_NAME, matchEventSchema } from './events'
+import {
+  eventPageSchema,
+  MATCH_EVENT_SSE_NAME,
+  matchEventSchema,
+  spectatorEventPageSchema,
+} from './events'
 import { resourceIdSchema, turnPathParamSchema } from './primitives'
 import { handshakeRequestSchema, handshakeResponseSchema } from './protocol'
 import { eventsQuerySchema, lobbyListQuerySchema } from './queries'
@@ -15,6 +20,7 @@ import {
   takeoverVoteRequestSchema,
   turnReportRequestSchema,
   postChatMessageRequestSchema,
+  spectateRequestSchema,
   updatePlayerProfileRequestSchema,
   uploadSnapshotRequestSchema,
 } from './schemas'
@@ -26,6 +32,9 @@ import {
   ownSubmissionViewSchema,
   sealedOrdersViewSchema,
   snapshotViewSchema,
+  spectatorListSchema,
+  spectatorMatchViewSchema,
+  spectatorMembershipSchema,
 } from './views'
 
 /**
@@ -70,6 +79,9 @@ const matchParams = withObjectKeys(object({ matchId: resourceIdSchema }))
 const turnParams = withObjectKeys(object({ matchId: resourceIdSchema, turn: turnPathParamSchema }))
 const kickParams = withObjectKeys(object({ matchId: resourceIdSchema, playerId: resourceIdSchema }))
 const takeoverVoteParams = kickParams
+const spectatorParams = withObjectKeys(
+  object({ matchId: resourceIdSchema, spectatorId: resourceIdSchema }),
+)
 
 // ---------------------------------------------------------------------------
 // Protocol handshake
@@ -301,6 +313,82 @@ export const streamEventsContract = defineApiContract({
 })
 
 // ---------------------------------------------------------------------------
+// Spectators
+// ---------------------------------------------------------------------------
+
+/**
+ * The spectator routes, apart from every `/matches/:matchId` route on purpose: those take a player
+ * token and these a spectator token, and neither door accepts the other's. Everything below reads
+ * only what has been released to spectators; see `spectatorMatchViewSchema`.
+ */
+export const spectateContract = defineApiContract({
+  method: 'post',
+  pathResolver: () => '/spectate',
+  requestBodySchema: spectateRequestSchema,
+  responsesByStatusCode: { 201: spectatorMembershipSchema, ...REFUSALS },
+  summary: 'Start watching a match that allows spectators, by its join code.',
+})
+
+export const spectatorMatchContract = defineApiContract({
+  method: 'get',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/spectate/${matchId}`,
+  responsesByStatusCode: { 200: spectatorMatchViewSchema, ...REFUSALS },
+  summary: 'The match as a spectator may see it, with the newest released turn.',
+})
+
+export const spectatorEventsContract = defineApiContract({
+  method: 'get',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/spectate/${matchId}/events`,
+  requestQuerySchema: eventsQuerySchema,
+  responsesByStatusCode: { 200: spectatorEventPageSchema, ...REFUSALS },
+  summary: 'The released events that decide who controls each seat, paged.',
+})
+
+export const spectatorSealedOrdersContract = defineApiContract({
+  method: 'get',
+  requestPathParamsSchema: turnParams,
+  pathResolver: ({ matchId, turn }) => `/spectate/${matchId}/turns/${turn}/orders`,
+  responsesByStatusCode: { 200: sealedOrdersViewSchema, ...REFUSALS },
+  summary: "A released turn's sealed set. Refused for a turn not yet released.",
+})
+
+export const spectatorSnapshotContract = defineApiContract({
+  method: 'get',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/spectate/${matchId}/snapshots/latest`,
+  responsesByStatusCode: { 200: snapshotViewSchema, ...REFUSALS },
+  summary: 'The newest snapshot at or below the released turn, to start watching from.',
+})
+
+export const stopSpectatingContract = defineApiContract({
+  method: 'post',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/spectate/${matchId}/leave`,
+  requestBodySchema: ContractNoBody,
+  responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
+  summary: "Stop watching; the spectator's token stops working.",
+})
+
+export const listSpectatorsContract = defineApiContract({
+  method: 'get',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/matches/${matchId}/spectators`,
+  responsesByStatusCode: { 200: spectatorListSchema, ...REFUSALS },
+  summary: 'Who is watching the match, for its players.',
+})
+
+export const removeSpectatorContract = defineApiContract({
+  method: 'post',
+  requestPathParamsSchema: spectatorParams,
+  pathResolver: ({ matchId, spectatorId }) => `/matches/${matchId}/spectators/${spectatorId}/kick`,
+  requestBodySchema: ContractNoBody,
+  responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
+  summary: 'Host only: stop a spectator watching and revoke their token.',
+})
+
+// ---------------------------------------------------------------------------
 // Bug reports
 // ---------------------------------------------------------------------------
 
@@ -345,5 +433,13 @@ export const API_CONTRACTS = {
   snapshot: snapshotContract,
   listEvents: listEventsContract,
   streamEvents: streamEventsContract,
+  listSpectators: listSpectatorsContract,
+  removeSpectator: removeSpectatorContract,
+  spectate: spectateContract,
+  spectatorMatch: spectatorMatchContract,
+  spectatorEvents: spectatorEventsContract,
+  spectatorSealedOrders: spectatorSealedOrdersContract,
+  spectatorSnapshot: spectatorSnapshotContract,
+  stopSpectating: stopSpectatingContract,
   submitBugReport: submitBugReportContract,
 } as const

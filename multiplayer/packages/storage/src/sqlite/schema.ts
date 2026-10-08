@@ -205,3 +205,23 @@ export const takeoverVotes = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.matchId, table.targetPlayerId, table.voterPlayerId] })],
 )
+
+/**
+ * People watching a match with no seat. Rows stay after a spectator leaves or is removed, with the
+ * token revoked, because their number is what bounds how many spectators a match admits.
+ */
+export const spectators = sqliteTable(
+  'spectators',
+  {
+    id: text('id').primaryKey(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
+    displayName: text('display_name').notNull(),
+    /** Null once revoked; SQL equality never matches null, so a revoked token resolves to nobody. */
+    tokenHash: text('token_hash').unique(),
+    joinedAt: integer('joined_at', { mode: 'timestamp_ms' }).notNull(),
+    leftAt: integer('left_at', { mode: 'timestamp_ms' }),
+  },
+  (table) => [index('spectators_match_idx').on(table.matchId)],
+)

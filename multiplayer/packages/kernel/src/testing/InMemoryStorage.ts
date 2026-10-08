@@ -6,6 +6,7 @@ import type {
   Player,
   PublicLobbyRow,
   Snapshot,
+  Spectator,
   TakeoverVote,
   Turn,
   TurnOrders,
@@ -17,6 +18,7 @@ import type {
   MultiplayerStorage,
   PlayerRepository,
   SnapshotRepository,
+  SpectatorRepository,
   TakeoverRepository,
   TurnRepository,
 } from '../ports/storage'
@@ -43,6 +45,7 @@ export class InMemoryStorage implements MultiplayerStorage {
   /** `matchId` + dedupe key of every event appended with `appendOnce`, as the unique index holds. */
   private readonly eventKeys = new Set<string>()
   private readonly voteRows = new Map<string, TakeoverVote>()
+  private readonly spectatorRows = new Map<string, Spectator>()
 
   readonly matches: MatchRepository = {
     create: async (match) => {
@@ -446,13 +449,15 @@ export class InMemoryStorage implements MultiplayerStorage {
       const { body: _body, ...summary } = row
       return structuredClone(summary)
     },
-    prune: async (matchId, keep) => {
+    prune: async (matchId, keep, retainFrom) => {
       const turns = [...this.snapshotRows.values()]
         .filter((snapshot) => snapshot.matchId === matchId)
         .map((snapshot) => snapshot.turn)
         .sort((a, b) => b - a)
       if (turns.length <= keep) return 0
-      const dropped = turns.slice(keep)
+      const dropped = turns
+        .slice(keep)
+        .filter((turn) => retainFrom === undefined || turn < retainFrom)
       for (const turn of dropped) this.snapshotRows.delete(turnKey(matchId, turn))
       return dropped.length
     },
@@ -469,6 +474,48 @@ export class InMemoryStorage implements MultiplayerStorage {
       if (!latest) return null
       const { body: _body, ...summary } = latest
       return structuredClone(summary)
+    },
+    getLatestSummaryAtOrBelow: async (matchId, turn) => {
+      const latest = [...this.snapshotRows.values()]
+        .filter((snapshot) => snapshot.matchId === matchId && snapshot.turn <= turn)
+        .sort((a, b) => b.turn - a.turn)[0]
+      if (!latest) return null
+      const { body: _body, ...summary } = latest
+      return structuredClone(summary)
+    },
+  }
+
+  readonly spectators: SpectatorRepository = {
+    create: async (spectator, cap) => {
+      if (!this.matchRows.has(spectator.matchId) || this.spectatorRows.has(spectator.id)) {
+        return false
+      }
+      const held = [...this.spectatorRows.values()].filter(
+        (row) => row.matchId === spectator.matchId,
+      ).length
+      if (held >= cap) return false
+      if (
+        spectator.tokenHash !== null &&
+        [...this.spectatorRows.values()].some((row) => row.tokenHash === spectator.tokenHash)
+      ) {
+        return false
+      }
+      this.spectatorRows.set(spectator.id, { ...spectator })
+      return true
+    },
+    get: async (id) => clone(this.spectatorRows.get(id)),
+    getByTokenHash: async (tokenHash) =>
+      clone([...this.spectatorRows.values()].find((row) => row.tokenHash === tokenHash)),
+    listActive: async (matchId) =>
+      [...this.spectatorRows.values()]
+        .filter((row) => row.matchId === matchId && row.leftAt === null)
+        .sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime() || a.id.localeCompare(b.id))
+        .map((row) => structuredClone(row)),
+    revoke: async (id, at) => {
+      const row = this.spectatorRows.get(id)
+      if (!row || row.leftAt !== null) return false
+      this.spectatorRows.set(id, { ...row, tokenHash: null, leftAt: at })
+      return true
     },
   }
 
@@ -576,6 +623,9 @@ export class InMemoryStorage implements MultiplayerStorage {
     }
     for (const [id, player] of this.playerRows) {
       if (player.matchId === matchId) this.playerRows.delete(id)
+    }
+    for (const [id, spectator] of this.spectatorRows) {
+      if (spectator.matchId === matchId) this.spectatorRows.delete(id)
     }
     for (const [key, turn] of this.turnRows) {
       if (turn.matchId === matchId) this.turnRows.delete(key)

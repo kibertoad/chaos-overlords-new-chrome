@@ -29,6 +29,7 @@ characters without disturbing the player-name field.
   - [Turn barrier](#turn-barrier)
   - [Turn lifecycle](#turn-lifecycle)
   - [Timer](#timer)
+  - [Spectators](#spectators)
 - [Bug reports: the same deployment, a different database](#bug-reports-the-same-deployment-a-different-database)
 - [Retention](#retention)
 - [Security model](#security-model)
@@ -161,12 +162,12 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 
 | Call | Who | Effect |
 |---|---|---|
-| `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `hostPortraitId` is the overlord face the host sits down under, stored on their roster row. `settings.gameSettings` is an object the server stores for clients (scenario, the portraits that dress the unclaimed seats, difficulty) and reads two keys of: `allowLateJoin` gates the late-join door, and `seatSummaries` is written back from the host's snapshot uploads and hash reports for the public listing. Everything else in it is opaque. The server also reads `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`. An optional `password` gates joining. |
+| `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `hostPortraitId` is the overlord face the host sits down under, stored on their roster row. `settings.gameSettings` is an object the server stores for clients (scenario, the portraits that dress the unclaimed seats, difficulty) and reads two keys of: `allowLateJoin` gates the late-join door, and `seatSummaries` is written back from the host's snapshot uploads and hash reports for the public listing. Everything else in it is opaque. The server also reads `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`, and `spectatorDelayTurns` (see [Spectators](#spectators)). An optional `password` gates joining. |
 | `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings, each match's `sessionVersion`, and available late-join seats with current gang, site, and sector counts. `?sessionVersion=N` narrows the list to matches stored under that session version before the page limit applies; the desktop client always sends its own, so a public match it could not play is never listed. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
 | `POST /matches/join` | anyone | Joins by code (and password), under the caller's chosen `portraitId`. Returns that player's token. Capacity is a single atomic seat claim. |
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected seat the AI plays: one no human held, or one every human who held it was voted out of (`409 seat_reserved` otherwise). Claiming a voted-out seat revokes its former player's token and closes their streams, so their `rejoin` stops working. Each claim is a new player row, so a slot can carry several rows, all but the newest computer controlled. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings` for a seat no human held; for one a human held, the server stores that human's face instead. The match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. Seals an open turn whose deadline has already passed before answering; see [Timer](#timer). |
-| `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
+| `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, late-join policy and spectator delay before start. |
 | `PUT /matches/:id/profile` | member | Changes the caller's own `displayName` and `portraitId` before start (`409 match_not_in_lobby` after it). The name is held to the same per-match uniqueness as a join (`409 display_name_taken`), against everyone but the caller. Announced as `lobby.playerUpdated`. |
 | `POST /matches/:id/chat` | member | Posts `{ text }` to the lobby chat before start (`409 match_not_in_lobby` after it). The text is 1 to 160 characters after trimming and NFC, with no control, format or private-use characters. Each player may post ten a minute (`429 rate_limited`), and a lobby whose log holds 1,000 events takes no more (`409 lobby_log_full`). Announced as `lobby.chatMessage`, which is the message's only store. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
@@ -317,6 +318,65 @@ and the sweep rather than failing the read.
 Sealing on the deadline includes whatever each player last submitted; a player who submitted
 nothing contributes no orders.
 
+### Spectators
+
+A host may let people watch a match by setting `spectatorDelayTurns` to a whole number from 2 to
+20. Absent or `null` means nobody may watch, and that is the default. The setting can change only in
+the lobby, where every seat sees it, so a player knows before the match starts whether it can be
+watched and how far behind. Setting it back to `null` in the lobby turns away every spectator
+already admitted.
+
+A spectator joins by the match's join code (and its password, when it has one) and receives a
+token that starts `cos_`. A player token starts `cop_`. Each door refuses the other's prefix
+before it looks anything up, so a spectator token opens no member route and a player token opens no
+spectator route. A spectator holds no seat and has no roster row. Nothing that counts players
+(capacity, readiness, the seal barrier, reports, the desync verdict and its tie-breaker, takeover
+votes) can see one.
+
+| Call | Who | Effect |
+|---|---|---|
+| `POST /spectate` | anyone | `{ joinCode, displayName, password? }`. Admits a spectator to a match whose host allows it, whatever its status. Answers the spectator view, the spectator's row and its token. Refusals: `404 unknown_join_code`, `401 password_required` or `wrong_password`, `403 spectating_disabled`, `409 spectators_full`. |
+| `GET /spectate/:id` | spectator | The match as a spectator may see it: status, settings without `seatSummaries`, roster, `currentTurn`, `delayTurns`, `releasedTurn`, and the seed once `releasedTurn` is at least 1. |
+| `GET /spectate/:id/events?after=&limit=` | spectator | The released part of the log, filtered to `match.started`, `match.playerTakenOver`, `match.playerReturned`, `match.latePlayerJoined`, `turn.opened` and `turn.sealed`, with a `cursor` to continue from. It stops at the seal of the first turn not yet released. |
+| `GET /spectate/:id/turns/:turn/orders` | spectator | A released turn's sealed set. A later turn answers `409 turn_not_released` with the released turn. |
+| `GET /spectate/:id/snapshots/latest` | spectator | The newest snapshot at or below the released turn (`404 no_snapshot` before the host's bootstrap upload, and until the bootstrap is the delay old). |
+| `POST /spectate/:id/leave` | spectator | Stops watching and revokes the token. |
+| `GET /matches/:id/spectators` | member | Who is watching. |
+| `POST /matches/:id/spectators/:sid/kick` | host | Removes a spectator and revokes their token. |
+
+**Released turns.** While the match runs, or is paused on a desync, the released turn is
+`currentTurn - 1 - delay`, and never below 0: with a delay of 2 on turn 6, turns 1 to 3 are
+released. The bootstrap snapshot is the board the players plan turn 1 on, so it and the events
+are held back until `currentTurn - 1 - delay` reaches 0: with a delay of 2, until turn 3 opens.
+Once the match is finished or abandoned, every sealed turn is. In the lobby nothing is.
+Every spectator read is checked against that number on the server, so a client cannot ask past it.
+
+**What a spectator sees.** The whole city as every client holds it, on the released turn: every
+seat's gangs, cash and holdings, the fog the players cannot see through, and every order each seat
+sealed. That is hidden information to the players, and the delay is what keeps it from being an
+advantage. A player who opens a spectator view of their own match, or has a friend relay one, learns
+only what the city looked like `delay` turns ago, after every plan in it has resolved. Nothing a
+spectator reads is about a turn a player could still act on. If the Comlink is carried online in
+sealed sets, its messages are released to spectators on the same terms.
+
+**What a spectator does not see.** Order submissions, readiness, state-hash reports, desync
+verdicts, takeover votes, lobby chat, the live `seatSummaries`, and every event after the seal of
+the first unreleased turn. Spectators do not get the event stream; they poll.
+
+**Limits.** A match admits 64 spectators over its whole life, counted in the same statement that
+admits one, and a spectator who leaves or is removed still counts. That bounds how many
+`spectator.joined` and `spectator.left` events a match's log can carry. `POST /spectate` is charged
+to the caller's address like the other doors, and every spectator read to the member budget under
+the spectator's own key.
+
+**Retention.** Spectator rows go with their match. The snapshot pruning that keeps a running match
+to a few recent snapshots also keeps the newest one at or below the released turn and every later
+one, so a spectator always has a state to start from and the start moves forward as turns are
+released. While the match runs that is at most the delay plus a few snapshots.
+
+Both runtimes serve the same routes from the same app. The Cloudflare worker stores spectators in
+D1 through the same migrations, and neither runtime's event fan-out is involved.
+
 ## Bug reports: the same deployment, a different database
 
 The server also takes bug reports, at `POST /api/v1/bug-reports`. It is the same application and the
@@ -454,6 +514,12 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   included, can read another player's plan before the turn seals. There is no commit-reveal
   protocol because the server is the trusted holder; a self-hosted server is trusted by whoever
   chose to play on it.
+- **Spectators read only what is released.** A spectator token is a separate capability with
+  its own prefix, table and routes, and holds no seat. Every spectator read is checked against the
+  released turn on the server, so the delay the host chose is enforced there; see
+  [Spectators](#spectators) for what the delay protects and what it does not hide. The host can list
+  spectators and revoke any of them, and setting the delay back to off in the lobby refuses every
+  spectator read.
 - **Join codes** are 8 characters drawn uniformly (by rejection sampling, not a biased `%`) from a
   31-glyph alphabet, about 40 bits; an optional PBKDF2 hashed password gates the lobby.
 - **Rate limits** come in three tiers: the unauthenticated doors per client address, every
@@ -912,6 +978,11 @@ dock a player plans against the dock the sealed turn grants.
   every client holds every inbox to hash it, so a modified client, or anyone who can read a seat's
   traffic, can read messages addressed to other players. The game shows each player only their own
   inbox. Private delivery is [#484](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/484).
+- **Spectating is delayed and polled.** A spectator sees the match at least two turns late and
+  reads it by polling; there is no live view and no event stream. The delay is fixed once the match
+  starts. A spectator does not see desync verdicts, so a match that has diverged is shown as the
+  sealed sets resolve it on this build. The game client has a spectator session that rebuilds the
+  released turns, and its own screens for watching are still to be built.
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
   that follows a desync pause or the closing of an absence vote.
 - **Desync recovery is decided by a count of reports.** A client that finds its own report wrong

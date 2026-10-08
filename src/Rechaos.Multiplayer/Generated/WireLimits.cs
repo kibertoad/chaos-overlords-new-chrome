@@ -43,6 +43,12 @@ public static class WireLimits
     public const int ComlinkMessageLength = 160;
     /// <summary><c>LIMITS.chatMessageLength</c></summary>
     public const int ChatMessageLength = 160;
+    /// <summary><c>LIMITS.spectatorMinDelayTurns</c></summary>
+    public const int SpectatorMinDelayTurns = 2;
+    /// <summary><c>LIMITS.spectatorMaxDelayTurns</c></summary>
+    public const int SpectatorMaxDelayTurns = 20;
+    /// <summary><c>LIMITS.spectatorsPerMatch</c></summary>
+    public const int SpectatorsPerMatch = 64;
     /// <summary><c>LIMITS.chatMessagesPerMinute</c></summary>
     public const int ChatMessagesPerMinute = 10;
     /// <summary><c>LIMITS.lobbyChatLogEvents</c></summary>

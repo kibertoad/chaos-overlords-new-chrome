@@ -40,6 +40,7 @@ import type { SqliteDatabase } from './database'
 import { sqliteEventRepository } from './events'
 import { sqlitePlayerRepository } from './players'
 import * as schema from './schema'
+import { sqliteSpectatorRepository } from './spectators'
 import { sqliteTakeoverRepository } from './takeovers'
 
 export type { SqliteDatabase }
@@ -50,6 +51,7 @@ export function createSqliteStorage(db: SqliteDatabase): MultiplayerStorage {
     players: sqlitePlayerRepository(db),
     turns: sqliteTurnRepository(db),
     takeovers: sqliteTakeoverRepository(db),
+    spectators: sqliteSpectatorRepository(db),
     snapshots: sqliteSnapshotRepository(db),
     events: sqliteEventRepository(db),
   }
@@ -677,7 +679,16 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
         .limit(1)
       return firstOrNull(rows.map(toSnapshotSummary))
     },
-    async prune(matchId, keep) {
+    async getLatestSummaryAtOrBelow(matchId, turn) {
+      const rows = await db
+        .select(snapshotSummaryColumns)
+        .from(snapshots)
+        .where(and(eq(snapshots.matchId, matchId), lte(snapshots.turn, turn)))
+        .orderBy(desc(snapshots.turn))
+        .limit(1)
+      return firstOrNull(rows.map(toSnapshotSummary))
+    },
+    async prune(matchId, keep, retainFrom) {
       // The turns to keep are the newest `keep`; everything strictly below the oldest of them goes.
       const kept = await db
         .select({ turn: snapshots.turn })
@@ -689,7 +700,14 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
       if (oldestKept === undefined || kept.length < keep) return 0
       const rows = await db
         .delete(snapshots)
-        .where(and(eq(snapshots.matchId, matchId), lt(snapshots.turn, oldestKept)))
+        .where(
+          and(
+            eq(snapshots.matchId, matchId),
+            lt(snapshots.turn, oldestKept),
+            // The snapshot a spectator starts from and every later one stay; see `prune`.
+            retainFrom === undefined ? undefined : lt(snapshots.turn, retainFrom),
+          ),
+        )
         .returning({ turn: snapshots.turn })
       return rows.length
     },

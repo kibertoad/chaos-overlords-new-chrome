@@ -216,6 +216,22 @@ export const takeoverVotes = pgTable(
   (table) => [primaryKey({ columns: [table.matchId, table.targetPlayerId, table.voterPlayerId] })],
 )
 
+/** See the SQLite schema: people watching a match with no seat. */
+export const spectators = pgTable(
+  'spectators',
+  {
+    id: text('id').primaryKey(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
+    displayName: text('display_name').notNull(),
+    tokenHash: text('token_hash').unique(),
+    joinedAt: stamp('joined_at').notNull(),
+    leftAt: stamp('left_at'),
+  },
+  (table) => [index('spectators_match_idx').on(table.matchId)],
+)
+
 /**
  * The rate limit windows every Node instance on this database shares; see `PostgresRateLimitStore`.
  *

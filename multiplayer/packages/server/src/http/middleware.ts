@@ -39,21 +39,53 @@ function safeRequestId(raw: string | undefined): string | null {
  * 256-bit token is not the concern; the database reads are.
  */
 export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const token = await bearerToken(c, 'player')
+  c.set(
+    'principal',
+    await chargingRefusals(c, () => c.get('container').kernel.auth.authenticate(token)),
+  )
+  await next()
+}
+
+/**
+ * Resolves a spectator token, for the `/spectate/:matchId` routes, or refuses with 401.
+ *
+ * The same shape as `bearerAuth`, against the other kind of token: a player token is refused here
+ * by its prefix before any lookup, as a spectator token is at the player door. A spectator's reads
+ * are then charged to the member budget under the spectator's id, so one spectator polling hard
+ * cannot spend anybody else's.
+ */
+export const spectatorAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const token = await bearerToken(c, 'spectator')
+  const principal = await chargingRefusals(c, () =>
+    c.get('container').kernel.spectators.authenticate(token),
+  )
+  c.set('spectator', principal)
+  await enforce(c.get('container').rateLimiters, 'member', `spectator:${principal.spectator.id}`, c)
+  await next()
+}
+
+/** The Bearer credential of a request, or a 401 charged to the caller's address. */
+async function bearerToken(c: Context<AppEnv>, holder: 'player' | 'spectator'): Promise<string> {
   const header = c.req.header('authorization') ?? ''
   const [scheme, token] = header.split(' ', 2)
   if (scheme?.toLowerCase() !== 'bearer' || !token) {
     await chargeAnonymous(c)
-    throw new UnauthorizedError('Send the player token as a Bearer credential', {
+    throw new UnauthorizedError(`Send the ${holder} token as a Bearer credential`, {
       reason: 'missing_token',
     })
   }
+  return token
+}
+
+/** Runs a token lookup, charging a refused token to the caller's address; see `bearerAuth`. */
+async function chargingRefusals<T>(c: Context<AppEnv>, authenticate: () => Promise<T>): Promise<T> {
   try {
-    c.set('principal', await c.get('container').kernel.auth.authenticate(token))
+    return await authenticate()
   } catch (error) {
     if (error instanceof UnauthorizedError) await chargeAnonymous(c)
     throw error
   }
-  await next()
 }
 
 /**

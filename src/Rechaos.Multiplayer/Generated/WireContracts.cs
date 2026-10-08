@@ -18,6 +18,8 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonDerivedType(typeof(LobbyPlayerLeftEvent), "lobby.playerLeft")]
 [JsonDerivedType(typeof(LobbyPlayerUpdatedEvent), "lobby.playerUpdated")]
 [JsonDerivedType(typeof(LobbyChatMessageEvent), "lobby.chatMessage")]
+[JsonDerivedType(typeof(SpectatorJoinedEvent), "spectator.joined")]
+[JsonDerivedType(typeof(SpectatorLeftEvent), "spectator.left")]
 [JsonDerivedType(typeof(LobbyHostChangedEvent), "lobby.hostChanged")]
 [JsonDerivedType(typeof(MatchStartedEvent), "match.started")]
 [JsonDerivedType(typeof(MatchStatusChangedEvent), "match.statusChanged")]
@@ -95,6 +97,29 @@ public sealed record LobbyChatMessageEvent(
     string CreatedAt,
     [property: JsonPropertyName("payload")] LobbyChatMessageEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "lobby.chatMessage");
+
+public sealed record SpectatorJoinedEventPayload(
+    [property: JsonPropertyName("spectator")] SpectatorView Spectator
+);
+
+public sealed record SpectatorJoinedEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] SpectatorJoinedEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "spectator.joined");
+
+public sealed record SpectatorLeftEventPayload(
+    [property: JsonPropertyName("spectatorId")] string SpectatorId,
+    [property: JsonPropertyName("removed")] bool Removed
+);
+
+public sealed record SpectatorLeftEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] SpectatorLeftEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "spectator.left");
 
 public sealed record LobbyHostChangedEventPayload(
     [property: JsonPropertyName("hostPlayerId")] string HostPlayerId
@@ -505,6 +530,11 @@ public sealed record EventPage(
     [property: JsonPropertyName("events")] IReadOnlyList<MatchEvent> Events
 );
 
+public sealed record SpectatorEventPage(
+    [property: JsonPropertyName("events")] IReadOnlyList<MatchEvent> Events,
+    [property: JsonPropertyName("cursor")] int Cursor
+);
+
 public sealed record OrderDocument(
     [property: JsonPropertyName("schemaVersion")] int SchemaVersion,
     [property: JsonPropertyName("ops")] IReadOnlyList<OrderOp> Ops
@@ -531,6 +561,12 @@ public sealed record JoinMatchRequest(
     [property: JsonPropertyName("joinCode")] string JoinCode,
     [property: JsonPropertyName("displayName")] string DisplayName,
     [property: JsonPropertyName("portraitId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? PortraitId,
+    [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password
+);
+
+public sealed record SpectateRequest(
+    [property: JsonPropertyName("joinCode")] string JoinCode,
+    [property: JsonPropertyName("displayName")] string DisplayName,
     [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password
 );
 
@@ -671,6 +707,36 @@ public sealed record MatchView(
     [property: JsonPropertyName("createdAt")] string CreatedAt
 );
 
+public sealed record SpectatorView(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("displayName")] string DisplayName,
+    [property: JsonPropertyName("joinedAt")] string JoinedAt
+);
+
+public sealed record SpectatorList(
+    [property: JsonPropertyName("spectators")] IReadOnlyList<SpectatorView> Spectators
+);
+
+public sealed record SpectatorMatchView(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("protocolVersion")] int ProtocolVersion,
+    [property: JsonPropertyName("sessionVersion")] int SessionVersion,
+    [property: JsonPropertyName("status")] MatchStatus Status,
+    [property: JsonPropertyName("settings")] MatchSettings Settings,
+    [property: JsonPropertyName("players")] IReadOnlyList<PlayerView> Players,
+    [property: JsonPropertyName("currentTurn")] int CurrentTurn,
+    [property: JsonPropertyName("delayTurns")] int DelayTurns,
+    [property: JsonPropertyName("releasedTurn")] int ReleasedTurn,
+    [property: JsonPropertyName("seed")] int? Seed,
+    [property: JsonPropertyName("createdAt")] string CreatedAt
+);
+
+public sealed record SpectatorMembership(
+    [property: JsonPropertyName("match")] SpectatorMatchView Match,
+    [property: JsonPropertyName("spectator")] SpectatorView Spectator,
+    [property: JsonPropertyName("token")] string Token
+);
+
 public sealed record LobbyListing(
     [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("joinCode")] string JoinCode,
@@ -749,5 +815,6 @@ public sealed record MatchSettings(
     [property: JsonPropertyName("maxPlayers")] int MaxPlayers,
     [property: JsonPropertyName("turnTimerSeconds")] int TurnTimerSeconds,
     [property: JsonPropertyName("visibility")] MatchVisibility Visibility,
-    [property: JsonPropertyName("gameSettings")] IReadOnlyDictionary<string, JsonElement> GameSettings
+    [property: JsonPropertyName("gameSettings")] IReadOnlyDictionary<string, JsonElement> GameSettings,
+    [property: JsonPropertyName("spectatorDelayTurns")] int? SpectatorDelayTurns
 );
