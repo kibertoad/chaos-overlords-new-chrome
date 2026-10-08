@@ -1,16 +1,16 @@
 ---
-id: FND-UI-045
-title: The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits
-status: superseded
+id: FND-UI-065
+title: The number helpers copy each glyph cell from the 512-by-646 sheet surface at a source column cut to 16 bits, which every even column can take
+status: recorded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: [FND-UI-065]
+superseded_by: []
 recorded_by: kibertoad
 reproduced_by: []
 method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004141FE..0x0041427E
+    address: 0x004141FE..0x00414279
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004142E7
@@ -25,7 +25,7 @@ locations:
     address: 0x00425FB0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00462420..0x0046243B
+    address: 0x00462420..0x00462436
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -76,12 +76,19 @@ glyphs 16 to 84 (quotients 0 to 68), and the glyphs whose product wraps back
 into that range, first 10923 to 11007 (quotients 10907 to 10991), which start
 at columns 2 to 506 and so are not aligned with the sheet's 6-pixel cells.
 
-Everywhere else part or all of the source cell lies outside the bitmap: columns
-508 and 510 hold 4 and 2 of its 6 pixel columns, columns from 512 to 32766 and
-all negative columns hold none. What `BitBlt` and `StretchBlt` copy from
-outside a memory DC's bitmap is decided by GDI, not by the game, and this
-reading cannot say whether the destination keeps its pixels, is filled, or the
-call fails.
+Everywhere else part or all of the source cell lies outside the bitmap. Since
+6 and 65536 share only the factor 2, `x` takes every even value and no odd
+one, so a `BitBlt` source cell partly overlaps the bitmap at four columns:
+508 and 510 on the right, with 4 and 2 of its 6 pixel columns inside (the
+first glyphs there are 21930 and 85), and -4 and -2 on the left, with sheet
+columns 0 and 1, or 0 to 3, inside (glyphs 10922 and 21845). Columns from 512
+to 32760 and the negative columns from -32768 to -6 hold none. At 32762, 32764
+and 32766 (first glyphs 16383, 27306 and 5461) the copy is the `StretchBlt`
+with a source width of -65530, whose source rectangle runs from `x` down to
+`x - 65530` and so spans every column of the bitmap. What `BitBlt` and
+`StretchBlt` copy from outside a memory DC's bitmap, or from a rectangle of
+negative width, is decided by GDI, not by the game, and this reading cannot
+say whether the destination keeps its pixels, is filled, or the call fails.
 
 The quotient -214748364 of -2147483648 gives the glyph number -214748348, at
 column 13208, outside the bitmap; the remainder -8 gives glyph 8, the

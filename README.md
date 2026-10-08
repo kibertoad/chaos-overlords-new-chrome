@@ -263,8 +263,10 @@ validation plans list the open questions.
   ([DEV-HELP-003](deviations/DEV-HELP-003.md)). The original never shows its
   help, and its layout has not been compared with the Windows help program,
   which current Windows lacks.
-- Online play has no spectating, lobby chat or Comlink messages between
-  players ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)).
+- Online play has no spectating
+  ([#138](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/138)), and an online
+  Comlink message can be read by a modified client at another seat
+  ([#484](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/484)).
 - Key bindings cannot be changed
   ([#139](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/139)).
 - Save and replay formats may change incompatibly before 1.0.0

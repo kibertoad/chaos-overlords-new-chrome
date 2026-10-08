@@ -28,6 +28,14 @@ public abstract record DecodedOrderOp
     /// <summary>Turn down the offer of <see cref="GangDefinitionId"/>.</summary>
     public sealed record SnubHireOffer(short GangDefinitionId) : DecodedOrderOp;
 
+    /// <summary>
+    /// Send <see cref="Text"/> to <see cref="Recipients"/> over the Comlink (RULE-COMLINK-003).
+    /// </summary>
+    public sealed record SendComlinkMessage(IReadOnlyList<PlayerId> Recipients, string Text) : DecodedOrderOp;
+
+    /// <summary>Mark the inbox message numbered <see cref="Sequence"/> read (RULE-COMLINK-005).</summary>
+    public sealed record MarkComlinkRead(long Sequence) : DecodedOrderOp;
+
     /// <summary>Dismiss the oldest notification. It carries nothing, so every op shares one.</summary>
     public sealed record DismissNotification : DecodedOrderOp
     {

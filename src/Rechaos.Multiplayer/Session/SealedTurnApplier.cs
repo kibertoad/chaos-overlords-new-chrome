@@ -159,6 +159,14 @@ public static class SealedTurnApplier
                 case DecodedOrderOp.DismissNotification:
                     replay.TryDismissNotification(player, out _);
                     break;
+                // RULE-COMLINK-003 and RULE-COMLINK-005, in the seat's place in slot order and so
+                // before its FinishCommand, which drops the read messages (RULE-COMLINK-007).
+                case DecodedOrderOp.SendComlinkMessage send:
+                    replay.SendComlinkMessage(player, send.Recipients, send.Text);
+                    break;
+                case DecodedOrderOp.MarkComlinkRead read:
+                    replay.MarkComlinkRead(player, read.Sequence);
+                    break;
                 default:
                     throw new UnreachableException($"a decoded op this applier does not handle: {op}");
             }
