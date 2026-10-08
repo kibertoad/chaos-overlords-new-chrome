@@ -87,6 +87,25 @@ public sealed class SectorOpponentGangsTests
     }
 
     [Fact]
+    public void TheMarkerIsDroppedWhenTheViewerSeesNoGangInTheSector()
+    {
+        var state = CreateMatch();
+        var viewer = new PlayerId(0);
+        var opponent = new PlayerId(1);
+
+        // FND-UI-017, EXP-UI-045: the bar marks the viewed player while some seat has a gang the
+        // viewer sees in the sector, including another player's cards borrowed through a portrait.
+        var seenHere = SectorOpponentGangs.SeenSeats(state, viewer, sectorId: 0);
+        Assert.Equal(viewer, SectorOpponentGangs.MarkedSeat(viewer, seenHere));
+        Assert.Equal(opponent, SectorOpponentGangs.MarkedSeat(opponent, seenHere));
+        // Sector one holds only an opponent gang the viewer cannot detect, so no seat is seen and
+        // no marker is drawn, whoever the viewed player is.
+        var seenNowhere = SectorOpponentGangs.SeenSeats(state, viewer, sectorId: 1);
+        Assert.DoesNotContain(true, seenNowhere);
+        Assert.Null(SectorOpponentGangs.MarkedSeat(viewer, seenNowhere));
+    }
+
+    [Fact]
     public void PortraitHitTestOnlyAnswersForOverlordsInTheMatch()
     {
         var state = CreateMatch();

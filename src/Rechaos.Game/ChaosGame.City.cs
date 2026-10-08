@@ -209,7 +209,7 @@ public sealed partial class ChaosGame
         if (sectorView is { } view)
         {
             _overlordMarkerClock.SectorView(_cursor, view.Viewed, _inputTime);
-            DrawOverlordBar(batch, pixel, state, view.SeatsSeen.Contains(true) ? view.Viewed : null, view.SeatsSeen);
+            DrawOverlordBar(batch, pixel, state, view.Marked, view.SeatsSeen);
         }
         else
         {
