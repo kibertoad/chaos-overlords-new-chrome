@@ -490,6 +490,51 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       ).rejects.toMatchObject({ status: 409, reason: 'seat_reserved' })
     })
 
+    it('seats a late joiner in a seat the vote handed to the computer, ending its old token', async () => {
+      const anonymous = client()
+      const host = await anonymous.createMatch({
+        settings: { ...settings, gameSettings: { allowLateJoin: true } },
+        hostDisplayName: 'Ada',
+      })
+      const guest = await anonymous.join({ joinCode: host.joinCode, displayName: 'Grace' })
+      const hostApi = anonymous.withToken(host.token).match(host.match.id)
+      const guestApi = anonymous.withToken(guest.token).match(host.match.id)
+      await hostApi.start()
+      await hostApi.uploadSnapshot({
+        turn: 0,
+        formatVersion: 1,
+        stateHash: HASH_A,
+        body: 'c2F2ZQ==',
+        seatSummaries: [],
+      })
+      const guestSlot =
+        (await hostApi.get()).match.players.find((p) => p.id === guest.player.id)?.slot ?? -1
+      await guestApi.leave()
+      await expect(
+        anonymous.joinRunning({ match: host.match.id, slot: guestSlot, displayName: 'Late' }),
+      ).rejects.toMatchObject({ status: 409, reason: 'seat_reserved' })
+
+      await hostApi.voteOnTakeover(guest.player.id, { decision: 'computer' })
+      if (harness.publicListing) {
+        const listed = (await anonymous.listLobbies()).matches.find((l) => l.id === host.match.id)
+        expect(listed?.availableSlots).toContain(guestSlot)
+      }
+      const late = await anonymous.joinRunning({
+        match: host.match.id,
+        slot: guestSlot,
+        displayName: 'Late',
+      })
+
+      expect(late.player.slot).toBe(guestSlot)
+      expect(late.player.id).not.toBe(guest.player.id)
+      await expect(guestApi.rejoin()).rejects.toMatchObject({ status: 401 })
+      const roster = (await hostApi.get()).match.players.filter((p) => p.slot === guestSlot)
+      expect(roster.map((p) => [p.id, p.status])).toEqual([
+        [guest.player.id, 'computer'],
+        [late.player.id, 'active'],
+      ])
+    })
+
     it('names the refused field without echoing what was sent, and caps every body', async () => {
       const response = await post(
         '/matches/join',
