@@ -13,7 +13,7 @@ locations:
     address: 0x0048780C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0046F896..0x0046F924
+    address: 0x0046F896..0x0046F929
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004631A4..0x00463259
@@ -33,7 +33,7 @@ references in the executable, all byte moves:
 | `0x0046F907` | match entry `fn_0046E766` | stores 0 just after that call returns |
 | `0x004631A4` | event pump `fn_00462579` | reads it; when it is set, the lit step copies `PX00129` (surface 6) `(488,512)-(496,528)` to the window at `(592,282)-(600,298)` |
 
-The end block `0x0046F896..0x0046F924` visits the slots 0 to 5 in order and
+The end block `0x0046F896..0x0046F929` visits the slots 0 to 5 in order and
 acts only on a slot whose type dword at `0x004AB638` is 0. For such a slot it
 calls the handoff card `0x004396C0` when `0x004ABC98` is set, stores the slot
 in `0x004ABC84`, and then tests the slot's active byte at `0x004ABBE0`: when it

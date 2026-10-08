@@ -14,5 +14,5 @@ Entries by area.
 | [FND-RESEARCH-004](../../findings/FND-RESEARCH-004.md) | The Research panel selects a row on a press, opens Item Information on a double-clicked row and the gang definition on a double-clicked portrait, and shares the command-panel controls | recorded |
 | [FND-RESEARCH-005](../../findings/FND-RESEARCH-005.md) | The Research panel's Enter, Execute and Escape draw the pressed confirm and Cancel faces before they act | recorded |
 | [RULE-RESEARCH-001](../../rules/RULE-RESEARCH-001.md) | Each Research gang rolls Force plus Research and takes its successes off the item's remaining research at once | established |
-| [RULE-RESEARCH-002](../../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | established |
+| [RULE-RESEARCH-002](../../rules/RULE-RESEARCH-002.md) | A new match starts each player with each item's research difficulty, or with every item researched in Armageddon | supported |
 | [SCR-RESEARCH-001](../../screens/SCR-RESEARCH-001.md) | Research panel with item categories and a fixed sixteen-row item list | supported |

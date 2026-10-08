@@ -1,7 +1,7 @@
 ---
 id: RULE-EQUIP-002
 title: The transaction pass carries out Equip, Give and Sell by player and roster slot, and delivers gifts after each player's scan
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-EQUIP-002, FND-EQUIP-006, FND-EQUIP-007, EXP-TURN-030, EXP-TURN-031, SRC-MANUAL-GOG, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
@@ -101,4 +101,6 @@ None known.
 
 ## Open questions
 
-None known.
+- No recorded run has a gang killed in combat while it holds a Give or Sell
+  order, whose items then stay in the inactive record. That rests on
+  FND-EQUIP-007. Until a run reaches them, the entry stays `supported`.

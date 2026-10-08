@@ -55,14 +55,12 @@ locations:
     address: 0x00498110
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00498125..0x004981C4
+    address: 0x00498125..0x004981C5
 tool: Ghidra 12.1.3
 environment: null
 ---
 
 ## Observation
-
-This entry reads again what FND-COMLINK-005 recorded and replaces it.
 
 Key events in the Send handler `fn_0045EAB1`, whose text cursor is a column
 and a row kept as 16-bit stack words that start at 0:
@@ -77,7 +75,7 @@ and a row kept as 16-bit stack words that start at 0:
 - The character the event carries is then lowered by `0x20` when it lies from
   `0x61` to `0x7A`. It is written at the cursor through `fn_004600D2`, and 1 is
   added to the column, only when it lies from `0x20` to `0x5A`
-  (`0x0045F3D6..0x0045F408`: `CMP EAX,0x20`, `JL`, `CMP EAX,0x5A`, `JG`).
+  (`0x0045F3D6..0x0045F40C`: `CMP EAX,0x20`, `JL`, `CMP EAX,0x5A`, `JG`).
 - Then, in this order: a column below 0 becomes 39 and 1 is subtracted from
   the row; a column above 39 becomes 0 and 1 is added to the row; a row below
   0 becomes 0 and a row above 3 becomes 3 (`0x0045F40C..0x0045F45E`). When the

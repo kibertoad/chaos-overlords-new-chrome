@@ -20,7 +20,7 @@ environment: null
 Family 7's handler `0x00436C70` has no jump table. At weight 10 it stores the
 drawn gang (from selector `0x29` or `0x91`) in a local, passes the drawn
 ordinal to selector `0x2B`, and when that returns nonzero divides the stored
-gang number by 81 (`0x00436D9A..0x00436DA3`) and compares the player's
+gang number by 81 (`0x00436D9A..0x00436DA5`) and compares the player's
 attitude toward the quotient with 0 (`0x00436DAE`). A negative attitude
 writes Attack; a failed test jumps to `0x00436EC0`, the start of the path
 taken at other weights, which applies the selector `0x6C` equipment gate.

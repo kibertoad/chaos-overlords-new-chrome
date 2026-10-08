@@ -4,7 +4,7 @@
 
 Entries by status.
 
-## established
+## supported
 
 1 entries.
 
@@ -12,10 +12,10 @@ Entries by status.
 |---|---|
 | [RULE-TERMINATE-001](../../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move |
 
-## Established on unreproduced evidence
+## Open questions
 
-Entries whose status is established and whose findings and experiments are all only recorded.
+Entries whose Open questions section says more than None known.
 
-| ID | Title |
-|---|---|
-| [RULE-TERMINATE-001](../../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move |
+| ID | Title | Status |
+|---|---|---|
+| [RULE-TERMINATE-001](../../rules/RULE-TERMINATE-001.md) | Terminate pass retires every gang ordered to Terminate, before any Move | supported |

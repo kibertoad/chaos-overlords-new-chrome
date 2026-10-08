@@ -53,11 +53,12 @@ public enum PressedKeyFace
 public static class PressedKeyFaces
 {
     /// <summary>FND-UI-019: the pressed image of each kind on the sheet PX00129.</summary>
+    /// <remarks>The key-press helper builds the same pair as the held-button helper and copies its lit face (FND-UI-062).</remarks>
     public static Rectangle Source(PressedKeyFace face) => face switch
     {
-        PressedKeyFace.Confirm => new Rectangle(0, 386, 50, 23),
-        PressedKeyFace.Cancel => new Rectangle(0, 409, 50, 23),
-        PressedKeyFace.SectorBack => new Rectangle(120, 205, 32, 63),
+        PressedKeyFace.Confirm => HeldButtonFaces.Lit(HeldButtonKind.Confirm),
+        PressedKeyFace.Cancel => HeldButtonFaces.Lit(HeldButtonKind.Cancel),
+        PressedKeyFace.SectorBack => HeldButtonFaces.Lit(HeldButtonKind.SectorBack),
         _ => throw new ArgumentOutOfRangeException(nameof(face))
     };
 

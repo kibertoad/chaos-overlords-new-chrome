@@ -199,6 +199,24 @@ public sealed class OriginalCityGeneratorTests
         Assert.False(match.Setup.AllowsSparsePlayerIds);
     }
 
+    // RULE-SETUP-009, EXP-UI-053: the original's name editor keeps a name of spaces, so a match
+    // starts with one; only an empty name is refused.
+    [Fact]
+    public void SetupAcceptsANameOfSpacesAndRefusesAnEmptyOne()
+    {
+        var match = OriginalMatchFactory.Create(
+            BundledOriginalData.Load(),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996,
+                [new MatchPlayerSetup(new PlayerId(0), " ", PlayerController.Human)],
+                MatchDeviations.Original));
+
+        Assert.Equal(" ", match.Players[0].Setup.Name);
+        Assert.Throws<ArgumentException>(() => new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1996,
+            [new MatchPlayerSetup(new PlayerId(0), "", PlayerController.Human)],
+            MatchDeviations.Original));
+    }
+
     [Fact]
     public void SparseSetupRequiresExplicitTransientOptIn()
     {

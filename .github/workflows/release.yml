@@ -448,9 +448,8 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # macOS installers are never signed. Apple signing needs a Developer ID Application identity for
-  # the bundle, a Developer ID Installer identity for the .pkg, and notarization; none of those are
-  # configured, and the packaging would have to change first (see docs/RELEASING.md).
+  # macOS installers are never signed, and there are no plans to sign them: Apple signing needs a
+  # Apple Developer membership, and we do not have Apple Developer membership (see docs/RELEASING.md).
   build-macos:
     name: Build macOS ${{ matrix.arch }} installer
     needs: [prepare, test]

@@ -99,3 +99,6 @@ screenshots/
 *.til
 *.bndb
 *.lst
+
+# The function index, a local report that `node tools/spec-coverage.mjs` writes on demand.
+/docs/FUNCTION-INDEX.md

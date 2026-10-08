@@ -13,7 +13,7 @@ locations:
     address: 0x00402D50..0x00402DED
   - build: BLD-GOG-EN-1.1
     file: SMACKW32.DLL
-    address: 0x00404D7E..0x00404D8B
+    address: 0x00404D7E..0x00404D8C
   - build: BLD-GOG-EN-1.1
     file: SMACKW32.DLL
     address: 0x004072D0..0x00407341
