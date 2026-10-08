@@ -848,7 +848,7 @@ public sealed partial class ChaosGame
     /// <summary>
     /// DEV-SETUP-003: the name being edited, in the window of it the card shows, centred as a
     /// name is. Selected characters are drawn in black on the name's green, and the caret
-    /// blinks at the insertion point.
+    /// blinks at the insertion point, or stays drawn under Steady Lights (DEV-UI-027).
     /// </summary>
     private void DrawSetupNameEditor(SpriteBatch batch, Texture2D pixel, PixelFont font, int index)
     {
@@ -868,8 +868,9 @@ public sealed partial class ChaosGame
         }
         // The caret's column is the last of the cell before it, so a caret at a selection's right
         // end falls inside the highlight and is drawn in black there, as an inverted caret shows.
+        // Steady Lights (DEV-UI-027) keeps the caret drawn.
         var caret = editor.Caret - editor.FirstVisible;
-        if (SetupPlayerCardArtLayout.NameCaretShown(_inputTime - _setupNameCaretShownAt))
+        if (_steadyLights || SetupPlayerCardArtLayout.NameCaretShown(_inputTime - _setupNameCaretShownAt))
             batch.Draw(pixel, SetupPlayerCardArtLayout.NameCaret(index, shown.Length, caret),
                 highlighted && caret > first && caret <= last ? Color.Black : Color.Lime);
     }

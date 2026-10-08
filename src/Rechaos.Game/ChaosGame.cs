@@ -328,6 +328,7 @@ public sealed partial class ChaosGame
         _smoothEventSiteImages = preferences.SmoothEventSiteImages;
         _introMoviesSeen = preferences.IntroMoviesSeen;
         _introOnlyOnce = preferences.IntroOnlyOnce;
+        _steadyLights = preferences.SteadyLights;
         _planningTimer.StopsInGameMenu = preferences.PlanningClockStopsInMenu;
         _defaultAiPolicy = preferences.DefaultAiPolicy;
         _preferredScenario = preferences.PreferredScenario;

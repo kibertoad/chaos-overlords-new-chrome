@@ -272,8 +272,7 @@ public sealed partial class ChaosGame
             && ItemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, destination, _referenceFrame?.ItemFrame is { } frame
                 ? ItemRotationPresentation.Frame(frame)
-                : ItemRotationPresentation.FrameAfter(
-                    _equipmentRotationHeld ?? _eventPump.Ticks - _equipmentRotationStart),
+                : ItemRotationFrameAfter(_equipmentRotationHeld ?? _eventPump.Ticks - _equipmentRotationStart),
                 Color.White);
     }
 

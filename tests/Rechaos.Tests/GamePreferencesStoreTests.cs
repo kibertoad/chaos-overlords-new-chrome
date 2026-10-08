@@ -32,6 +32,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
             preferences.CustomMultiplayerServer);
         Assert.Equal(OnlineLobbyPresentation.Modern, preferences.LobbyPresentation);
         Assert.Equal(OriginalOptionsPolicy.IntroOnlyOnceByDefault, preferences.IntroOnlyOnce);
+        Assert.Equal(OriginalOptionsPolicy.SteadyLightsByDefault, preferences.SteadyLights);
         // RULE-SETUP-002: Greed when nothing is stored.
         Assert.Equal(ScenarioId.Greed, preferences.PreferredScenario);
     }
@@ -45,7 +46,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
             PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true,
             AiPolicyMode.Advanced, OnlineServiceMode.Custom, "https://games.example.test",
             OnlineLobbyPresentation.Classic, IntroOnlyOnce: false,
-            PreferredScenario: ScenarioId.Siege);
+            PreferredScenario: ScenarioId.Siege, PlanningClockStopsInMenu: true, SteadyLights: true);
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -214,6 +215,32 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(OnlineLobbyPresentation.Classic, preferences.LobbyPresentation);
         Assert.True(preferences.IntroMoviesSeen);
         Assert.True(preferences.IntroOnlyOnce);
+    }
+
+    // DEV-UI-027: a file from before Steady Lights keeps its choices, Menu Stops Clock (DEV-TIMER-002)
+    // among them, and takes the setting off.
+    [Fact]
+    public void VersionTwelvePreferencesMigrateWithSteadyLightsOff()
+    {
+        File.WriteAllText(Path(), """
+            {"FormatVersion":12,"MusicVolumeLevel":8,"SoundEffectVolumeLevel":3,
+             "WarnIfIdleGangs":false,"PlanningTimeLimit":2,
+             "ShowBaseStatistics":true,"DetailedCombat":false,"SlidePanels":true,
+             "Fullscreen":true,"SmoothEventSiteImages":true,"IntroMoviesSeen":true,
+             "DefaultAiPolicy":1,"OnlineService":1,
+             "CustomMultiplayerServer":"https://games.example.test","LobbyPresentation":1,
+             "IntroOnlyOnce":false,"PreferredScenario":3,"PlanningClockStopsInMenu":true}
+            """);
+
+        var preferences = GamePreferencesStore.LoadOrDefault(Path());
+
+        Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
+        Assert.False(preferences.IntroOnlyOnce);
+        Assert.Equal((ScenarioId)3, preferences.PreferredScenario);
+        Assert.Equal(OnlineLobbyPresentation.Classic, preferences.LobbyPresentation);
+        Assert.True(preferences.SlidePanels);
+        Assert.True(preferences.PlanningClockStopsInMenu);
+        Assert.False(preferences.SteadyLights);
     }
 
     [Theory]

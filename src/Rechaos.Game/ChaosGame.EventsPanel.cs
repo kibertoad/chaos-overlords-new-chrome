@@ -454,7 +454,7 @@ public sealed partial class ChaosGame
             && itemId >= 0 && itemId < ItemRotationTextures.Length
             && ItemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, LastTurnEventsLayout.ResearchItem,
-                ItemRotationPresentation.FrameAfter(_eventPump.Ticks - _eventPageShownTick),
+                ItemRotationFrameAfter(_eventPump.Ticks - _eventPageShownTick),
                 Color.White);
         // SCR-EVENT-001: an elimination report adds the eliminated player's 32-by-32 portrait,
         // stretched to 48 by 48 over its illustration.

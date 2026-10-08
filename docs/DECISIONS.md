@@ -21,6 +21,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-10-06 | [Comlink in an online match travels in the sealed turn](#2026-10-06--comlink-in-an-online-match-travels-in-the-sealed-turn) |
 | 2026-10-06 | [Let a late joiner take a seat the vote handed to the computer](#2026-10-06--let-a-late-joiner-take-a-seat-the-vote-handed-to-the-computer) |
 | 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
+| 2026-10-06 | [Accessibility criteria the rebuild meets](#2026-10-06--accessibility-criteria-the-rebuild-meets) |
 | 2026-10-06 | [Chat in the online lobby, through the match's event log](#2026-10-06--chat-in-the-online-lobby-through-the-matchs-event-log) |
 | 2026-10-06 | [Recover from a desync without waiting on the host](#2026-10-06--recover-from-a-desync-without-waiting-on-the-host) |
 | 2026-10-06 | [Count a row its mandatory deviations replace as deviated](#2026-10-06--count-a-row-its-mandatory-deviations-replace-as-deviated) |
@@ -195,6 +196,35 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   raising, on one agreeing run while some of their cases had never been
   observed, and entries kept at `supported` with no written bar. One stated
   bar applies the same way to every entry.
+
+## 2026-10-06 — Accessibility criteria the rebuild meets
+
+The rebuild meets these criteria. Each is met by an added setting that starts
+off, by an added line or input that changes nothing the player can do, or by
+an issue that tracks the gap. None changes the rules or what a player can
+order, and every capture comparison runs with the settings off.
+
+1. Blinking and cycling can be stopped. With Steady Lights on (DEV-UI-027),
+   the console lights, the Done light, the selected sector's frame, the
+   Overlord bar's marker and empty seats, the idle-gang warning line, the text
+   carets and the rotating item pictures hold one frame. The original's rates stay under three
+   flashes a second, so the setting starts off.
+2. Motion can be removed. Slide Panels starts off (DEV-OPTIONS-002), so panels
+   are drawn in place, and Detailed Combat can be switched off in Options or
+   cleared with Escape or a right-button press (DEV-COMBAT-001).
+3. A refusal is stated in words. Every refused order, drop or key is named on
+   the message line (DEV-UI-023), so no refusal is reported by a sound alone.
+4. Every match action can be ordered without a pointer. Hiring is the one
+   action that still needs a drag: #474.
+5. Colour is never the only carrier of information. The detailed sector screen
+   names a sector's owner; the city map shows it by colour only: #475.
+6. Keys can be remapped: #158.
+
+Reason: these are the criteria from WCAG 2.2 (2.2.2, 2.3.3, 1.3.3, 2.1.1,
+1.4.1, 2.1.4) that a mouse-driven 1996 strategy game can meet without changing what
+the player can do. Criteria that would need new content, such as spoken text
+or larger fonts with a new layout, are out of scope while screens match the
+original pixel for pixel.
 
 ## 2026-10-06 — Chat in the online lobby, through the match's event log
 

@@ -19,36 +19,52 @@ public static class OptionsLayout
         Enumerable.Range(0, AudioRouting.MaximumEffectVolumeLevel + 1)
             .Select(level => new Rectangle(132 + level * 34, 140, 28, 28))
             .ToArray();
-    public static Rectangle BaseStatistics => Toggle(0);
-    public static Rectangle DetailedCombat => Toggle(1);
-    public static Rectangle SlidePanels => Toggle(2);
-    public static Rectangle WarnIfIdleGangs => Toggle(3);
-    public static Rectangle EventSiteImages => Toggle(4);
-    public static Rectangle AdvancedAi => Toggle(5);
-    public static Rectangle IntroOnlyOnce => Toggle(6);
-    public static Rectangle MenuStopsClock => Toggle(7);
-    public static Rectangle ExportDiagnostics => Toggle(8);
-    public static Rectangle ColorDepth => new(150, 372, 340, 16);
-
-    // The toggles stand 22 pixels apart from y 174, each 20 high.
-    private static Rectangle Toggle(int index) => new(150, 174 + index * 22, 340, 20);
-    public static Rectangle OnlineLobbyPresentation => ColorDepth;
-
     /// <summary>The first row below the two volume sliders.</summary>
     public const int FirstToggleRow = 2;
+
+    // The cursor rows of the toggles, in screen order. Each follows the one above it, so a new row
+    // is one line here and one entry in ToggleRows.
+    public const int BaseStatisticsRow = FirstToggleRow;
+    public const int DetailedCombatRow = BaseStatisticsRow + 1;
+    public const int SlidePanelsRow = DetailedCombatRow + 1;
+    public const int SteadyLightsRow = SlidePanelsRow + 1;
+    public const int WarnIfIdleGangsRow = SteadyLightsRow + 1;
+    public const int EventSiteImagesRow = WarnIfIdleGangsRow + 1;
+    public const int AdvancedAiRow = EventSiteImagesRow + 1;
+    public const int IntroOnlyOnceRow = AdvancedAiRow + 1;
+    public const int MenuStopsClockRow = IntroOnlyOnceRow + 1;
+
+    /// <summary>The cursor row of <see cref="ExportDiagnostics"/>.</summary>
+    public const int ExportDiagnosticsRow = MenuStopsClockRow + 1;
+
+    public const int OnlineLobbyPresentationRow = ExportDiagnosticsRow + 1;
+
+    /// <summary>The last cursor row.</summary>
+    public const int LastRow = OnlineLobbyPresentationRow;
+
+    public static Rectangle BaseStatistics => Toggle(BaseStatisticsRow);
+    public static Rectangle DetailedCombat => Toggle(DetailedCombatRow);
+    public static Rectangle SlidePanels => Toggle(SlidePanelsRow);
+    public static Rectangle SteadyLights => Toggle(SteadyLightsRow);
+    public static Rectangle WarnIfIdleGangs => Toggle(WarnIfIdleGangsRow);
+    public static Rectangle EventSiteImages => Toggle(EventSiteImagesRow);
+    public static Rectangle AdvancedAi => Toggle(AdvancedAiRow);
+    public static Rectangle IntroOnlyOnce => Toggle(IntroOnlyOnceRow);
+    public static Rectangle MenuStopsClock => Toggle(MenuStopsClockRow);
+    public static Rectangle ExportDiagnostics => Toggle(ExportDiagnosticsRow);
+    public static Rectangle ColorDepth => Toggle(OnlineLobbyPresentationRow) with { Height = 16 };
+
+    /// <summary>The toggle rows, 20 pixels apart below the volume sliders, each 19 high, so the
+    /// last one ends above the status line.</summary>
+    private static Rectangle Toggle(int row) => new(150, 174 + (row - FirstToggleRow) * 20, 340, 19);
+    public static Rectangle OnlineLobbyPresentation => ColorDepth;
 
     /// <summary>The toggle rows in cursor order, starting at <see cref="FirstToggleRow"/>.</summary>
     public static IReadOnlyList<Rectangle> ToggleRows { get; } =
     [
-        BaseStatistics, DetailedCombat, SlidePanels, WarnIfIdleGangs, EventSiteImages, AdvancedAi,
-        IntroOnlyOnce, MenuStopsClock, ExportDiagnostics, OnlineLobbyPresentation
+        BaseStatistics, DetailedCombat, SlidePanels, SteadyLights, WarnIfIdleGangs, EventSiteImages,
+        AdvancedAi, IntroOnlyOnce, MenuStopsClock, ExportDiagnostics, OnlineLobbyPresentation
     ];
-
-    /// <summary>The cursor row of <see cref="ExportDiagnostics"/>.</summary>
-    public const int ExportDiagnosticsRow = 10;
-
-    /// <summary>The last cursor row.</summary>
-    public const int LastRow = FirstToggleRow + 9;
 
     /// <summary>Whether Left and Right flip the setting on <paramref name="row"/>.</summary>
     /// <remarks>
@@ -79,6 +95,14 @@ public static class OptionsTooltip
                 "EACH STEP SHOWS MORE OF THE PANEL, LEFT COLUMNS FIRST, CUT OFF",
                 "AT ITS RIGHT EDGE. PANELS CLOSE AT ONCE.",
                 "OFF SHOWS PANELS AT ONCE, SILENTLY."
+            ];
+        if (OptionsLayout.SteadyLights.Contains(point))
+            return [
+                "STEADY LIGHTS",
+                "ON STOPS BLINKING AND CYCLING: THE EVENTS, COMLINK AND DONE",
+                "LIGHTS STAY LIT, AND THE SELECTED SECTOR FRAME, THE OVERLORD",
+                "BAR, ROTATING ITEMS, THE IDLE GANG WARNING AND THE TEXT",
+                "CARETS HOLD STILL. OFF BLINKS THEM AS THE ORIGINAL DOES."
             ];
         if (OptionsLayout.WarnIfIdleGangs.Contains(point))
             return ["WARN IF IDLE GANGS", "ASKS BEFORE ENDING WITH UNASSIGNED ACTIVE GANGS."];
@@ -150,6 +174,7 @@ public sealed partial class ChaosGame
     private bool _fullscreen = OriginalOptionsPolicy.FullscreenByDefault;
     private bool _smoothEventSiteImages = OriginalOptionsPolicy.SmoothEventSiteImagesByDefault;
     private bool _introOnlyOnce = OriginalOptionsPolicy.IntroOnlyOnceByDefault;
+    private bool _steadyLights = OriginalOptionsPolicy.SteadyLightsByDefault;
     private OnlineLobbyPresentation _onlineLobbyPresentation = OnlineLobbyPresentation.Modern;
     private string _optionsStatus = string.Empty;
 
@@ -185,7 +210,7 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(OptionsLayout.LastRow, _optionsRow + 1);
         if (Pressed(keyboard, Keys.Left)) ChangeSelectedVolume(-1);
         if (Pressed(keyboard, Keys.Right)) ChangeSelectedVolume(1);
-        if (_optionsRow >= 2 && Pressed(keyboard, Keys.Space)) ToggleSelectedOption();
+        if (_optionsRow >= OptionsLayout.FirstToggleRow && Pressed(keyboard, Keys.Space)) ToggleSelectedOption();
         if (Pressed(keyboard, Keys.Enter) && _optionsRow == OptionsLayout.ExportDiagnosticsRow)
             ExportDiagnostics();
         else if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Back)
@@ -235,16 +260,20 @@ public sealed partial class ChaosGame
 
     private void ToggleSelectedOption()
     {
-        if (_optionsRow == 2) ToggleBaseStatistics();
-        else if (_optionsRow == 3) ToggleDetailedCombat();
-        else if (_optionsRow == 4) ToggleSlidePanels();
-        else if (_optionsRow == 5) ToggleIdleGangWarning();
-        else if (_optionsRow == 6) ToggleEventSiteImageFilter();
-        else if (_optionsRow == 7) ToggleAdvancedAi();
-        else if (_optionsRow == 8) ToggleIntroOnlyOnce();
-        else if (_optionsRow == 9) ToggleMenuStopsClock();
-        else if (_optionsRow == OptionsLayout.ExportDiagnosticsRow) ExportDiagnostics();
-        else if (_optionsRow == 11) ToggleOnlineLobbyPresentation();
+        switch (_optionsRow)
+        {
+            case OptionsLayout.BaseStatisticsRow: ToggleBaseStatistics(); break;
+            case OptionsLayout.DetailedCombatRow: ToggleDetailedCombat(); break;
+            case OptionsLayout.SlidePanelsRow: ToggleSlidePanels(); break;
+            case OptionsLayout.SteadyLightsRow: ToggleSteadyLights(); break;
+            case OptionsLayout.WarnIfIdleGangsRow: ToggleIdleGangWarning(); break;
+            case OptionsLayout.EventSiteImagesRow: ToggleEventSiteImageFilter(); break;
+            case OptionsLayout.AdvancedAiRow: ToggleAdvancedAi(); break;
+            case OptionsLayout.IntroOnlyOnceRow: ToggleIntroOnlyOnce(); break;
+            case OptionsLayout.MenuStopsClockRow: ToggleMenuStopsClock(); break;
+            case OptionsLayout.ExportDiagnosticsRow: ExportDiagnostics(); break;
+            case OptionsLayout.OnlineLobbyPresentationRow: ToggleOnlineLobbyPresentation(); break;
+        }
     }
 
     private void ToggleBaseStatistics()
@@ -304,6 +333,15 @@ public sealed partial class ChaosGame
         ApplyAudioVolumeLevels(_inputTime);
         SavePreferences();
         if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _message = string.Empty;
+    }
+
+    /// <summary>DEV-UI-027: Steady Lights holds the blinking and cycling parts of the screen still.</summary>
+    private void ToggleSteadyLights()
+    {
+        _steadyLights = !_steadyLights;
+        SavePreferences();
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
     }
 
@@ -425,7 +463,8 @@ public sealed partial class ChaosGame
                 _onlineLobbyPresentation,
                 _introOnlyOnce,
                 _preferredScenario,
-                _planningTimer.StopsInGameMenu));
+                _planningTimer.StopsInGameMenu,
+                _steadyLights));
 
     private void ToggleFullscreen()
     {
@@ -469,25 +508,27 @@ public sealed partial class ChaosGame
             OptionsLayout.SoundEffectLevels, _soundEffectVolumeLevel, _optionsRow == 1);
 
         DrawOptionToggle(batch, pixel, font, OptionsLayout.BaseStatistics,
-            $"GANG STATISTICS: {(_showBaseStatistics ? "BASE" : "CURRENT")}", 2);
+            $"GANG STATISTICS: {(_showBaseStatistics ? "BASE" : "CURRENT")}", OptionsLayout.BaseStatisticsRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.DetailedCombat,
-            $"DETAILED COMBAT: {(_detailedCombat ? "ON" : "OFF")}", 3);
+            $"DETAILED COMBAT: {(_detailedCombat ? "ON" : "OFF")}", OptionsLayout.DetailedCombatRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.SlidePanels,
-            $"SLIDE PANELS: {(_slidePanels ? "ON" : "OFF")}", 4);
+            $"SLIDE PANELS: {(_slidePanels ? "ON" : "OFF")}", OptionsLayout.SlidePanelsRow);
+        DrawOptionToggle(batch, pixel, font, OptionsLayout.SteadyLights,
+            $"STEADY LIGHTS: {(_steadyLights ? "ON" : "OFF")}", OptionsLayout.SteadyLightsRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.WarnIfIdleGangs,
-            $"WARN IF IDLE GANGS: {(_warnIfIdleGangs ? "ON" : "OFF")}", 5);
+            $"WARN IF IDLE GANGS: {(_warnIfIdleGangs ? "ON" : "OFF")}", OptionsLayout.WarnIfIdleGangsRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.EventSiteImages,
-            $"EVENT SITE IMAGES: {(_smoothEventSiteImages ? "SMOOTH" : "ORIGINAL")}", 6);
+            $"EVENT SITE IMAGES: {(_smoothEventSiteImages ? "SMOOTH" : "ORIGINAL")}", OptionsLayout.EventSiteImagesRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.AdvancedAi,
-            $"ADVANCED AI: {(OwnAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 7);
+            $"ADVANCED AI: {(OwnAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", OptionsLayout.AdvancedAiRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.IntroOnlyOnce,
-            $"INTRO ONLY ONCE: {(_introOnlyOnce ? "ON" : "OFF")}", 8);
+            $"INTRO ONLY ONCE: {(_introOnlyOnce ? "ON" : "OFF")}", OptionsLayout.IntroOnlyOnceRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.MenuStopsClock,
-            $"MENU STOPS CLOCK: {(_planningTimer.StopsInGameMenu ? "ON" : "OFF")}", 9);
+            $"MENU STOPS CLOCK: {(_planningTimer.StopsInGameMenu ? "ON" : "OFF")}", OptionsLayout.MenuStopsClockRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ExportDiagnostics,
-            "EXPORT DIAGNOSTICS", 10);
+            "EXPORT DIAGNOSTICS", OptionsLayout.ExportDiagnosticsRow);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.OnlineLobbyPresentation,
-            $"ONLINE LOBBY: {(_onlineLobbyPresentation == OnlineLobbyPresentation.Classic ? "CLASSIC" : "MODERN")}", 11);
+            $"ONLINE LOBBY: {(_onlineLobbyPresentation == OnlineLobbyPresentation.Classic ? "CLASSIC" : "MODERN")}", OptionsLayout.OnlineLobbyPresentationRow);
 
         DrawCentered(font, batch,
             string.IsNullOrEmpty(_optionsStatus)

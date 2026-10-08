@@ -64,9 +64,10 @@ public sealed partial class ChaosGame
             batch.Draw(rotation, ItemInformationLayout.Portrait,
                 // FND-UI-047: the rotation stops while the exit face is held. FND-UI-052: it starts
                 // from frame 0 when the panel opens, or at the frame the reference frame's capture showed.
+                // DEV-UI-027: Steady Lights holds frame 0.
                 _referenceFrame?.ItemFrame is { } frame
                     ? ItemRotationPresentation.Frame(frame)
-                    : ItemRotationPresentation.Frame(PresentationDrawTime < _itemDetailsOpenedAt
+                    : ItemRotationPresentation.Frame((_steadyLights || PresentationDrawTime < _itemDetailsOpenedAt)
                         ? TimeSpan.Zero : PresentationDrawTime - _itemDetailsOpenedAt), Color.White);
         else if (ItemPortraits is not null)
             batch.Draw(ItemPortraits, ItemInformationLayout.CompactPortrait,

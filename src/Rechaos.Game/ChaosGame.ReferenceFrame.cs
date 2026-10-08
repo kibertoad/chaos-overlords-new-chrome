@@ -469,17 +469,44 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// Whether a light whose flag is set is in its lit phase (FND-EVENT-006): the phase the
-    /// reference frame's capture recorded for its lamp, otherwise the clock's.
+    /// reference frame's capture recorded for its lamp, otherwise lit while Steady Lights holds it
+    /// (DEV-UI-027), otherwise the clock's.
     /// </summary>
-    private bool LampInLitPhase(bool? recorded) => recorded ?? PresentationClock.BlinkLit(PresentationDrawTime);
+    private bool LampInLitPhase(bool? recorded) =>
+        recorded ?? (_steadyLights || PresentationClock.BlinkLit(PresentationDrawTime));
+
+    /// <summary>
+    /// The Overlord bar's marker frame (FND-UI-038): the one the reference frame's capture
+    /// recorded, or the first whatever its clicks advanced the clock to; otherwise the first while
+    /// Steady Lights holds it (DEV-UI-027), otherwise the marker clock's.
+    /// </summary>
+    private int MarkerFrameShown() => _referenceFrame is not null
+        ? _referenceFrame.MarkerFrame ?? 0
+        : _steadyLights ? 0 : _overlordMarkerClock.Frame(_inputTime);
+
+    /// <summary>
+    /// The frame of the art an empty Overlord bar seat shows, stepped with the marker
+    /// (FND-UI-038), or the first while Steady Lights holds it (DEV-UI-027).
+    /// </summary>
+    private int EmptySeatFrameShown() =>
+        ActivePlayerMarkerPresentation.EmptySeatFrame(_steadyLights ? TimeSpan.Zero : PresentationInputTime);
+
+    /// <summary>
+    /// The frame of an item's turning picture <paramref name="ticks"/> ticks after its panel's
+    /// counter started, or the first while Steady Lights holds it (DEV-UI-027).
+    /// </summary>
+    private Rectangle ItemRotationFrameAfter(long ticks) =>
+        ItemRotationPresentation.FrameAfter(_steadyLights ? 0 : ticks);
 
     /// <summary>
     /// The selection frame the pump has drawn last (FND-UI-017): the one for the reference frame's
-    /// recorded counter (FND-UI-048), otherwise the one a slid-in panel holds (FND-UI-051), otherwise
-    /// the one for the clock.
+    /// recorded counter (FND-UI-048), otherwise the first while Steady Lights holds it
+    /// (DEV-UI-027), otherwise the one a slid-in panel holds (FND-UI-051), otherwise the one for
+    /// the clock.
     /// </summary>
     private int SelectionFrameShown() => _referenceFrame?.PumpCounter is { } counter
         ? CityMapLayout.SelectionFrameAfterPass(counter)
+        : _steadyLights ? 0
         : _heldSelectionFrame ?? CityMapLayout.SelectionFrame(PresentationDrawTime);
 
     /// <summary>
