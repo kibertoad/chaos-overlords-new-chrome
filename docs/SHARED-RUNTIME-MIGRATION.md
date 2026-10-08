@@ -2,7 +2,7 @@
 
 Status: complete for save writes, reads and repair, writer leases and PCM conversion
 
-The rebuild takes these primitives from the published `10.1.0` toolkit packages: `RecoverableFile`
+The rebuild takes these primitives from the published `11.0.0` toolkit packages: `RecoverableFile`
 (`RefurbishedDinosaurs.Core`) writes, reads and repairs save and replay generations (`Write`
 stages, validates and promotes a generation and renames the kept primary to `.bak`; `Read` falls
 back to the backup without changing a file, for the save browser; `ReadAndRepair` also restores a
