@@ -41,12 +41,10 @@ in the plain font and the portrait inside the splash's frame.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the capture with the
-rebuild entering the replayed save, whose human is eliminated, at that
-player's card. Every element matches. `TheRebuildStartsTheSameMatch` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the 19128
-rolls and stops at the human's elimination.
+A test of the rebuild compares the capture with the rebuild entering the
+replayed save, whose human is eliminated, at that player's card. Every element
+matches. Another test replays the 19128 rolls and stops at the human's
+elimination.
 
 A first comparison found the rebuild drawing the card over an empty console,
 the name in the player's colour, and a border of that colour around the

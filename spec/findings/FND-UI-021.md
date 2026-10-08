@@ -10,25 +10,25 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004252D0..0x00425843
+    address: 0x004252D0..0x00425844
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004120A7..0x004120EE
+    address: 0x004120A7..0x004120EF
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004650E2..0x004653AD
+    address: 0x004650E2..0x004653AE
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00464AE6..0x00464B42
+    address: 0x00464AE6..0x00464B43
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041462F..0x00414D8B
+    address: 0x0041462F..0x00414D8C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00414D8C..0x004169B2
+    address: 0x00414D8C..0x004169B3
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004B0D00..0x004B15BB
+    address: 0x004B0D00..0x004B15BC
 tool: Ghidra 12.1.3 and a resource listing of the executable
 environment: null
 ---
@@ -96,11 +96,11 @@ Menu states found:
 | Startup | Thousands of Colors unless both image sets exist and `full_screen_active` | Comm transports; Host and Join only when `comm_type` is not None | `0x0046109C`, `fn_004650E2` |
 | Title New Game or Open chosen, until the game ends | the Comm menu | | `0x0046175B`, `0x00461E9B` |
 | Host or Join chosen | the four transports | | `fn_0046525B` |
-| Planning entered (`fn_0046E766`) | New Game, Open, Host, Join; Save when `0x00498350` is set | End; Disconnect in a network game | `0x0046EA6C..0x0046EB07` |
+| Planning entered (`fn_0046E766`) | New Game, Open, Host, Join; Save when `0x00498350` is set | End; Disconnect in a network game | `0x0046EA6C..0x0046EB0C` |
 | Resolution in progress (`0x0046F728`) | Save | | `0x0046F73D` |
-| Game over, back to the title | Save, End, Disconnect | New Game, Open, the Comm menu | `0x0046F99C..0x0046F9FA` |
+| Game over, back to the title | Save, End, Disconnect | New Game, Open, the Comm menu | `0x0046F99C..0x0046F9FF` |
 | A panel open | the File menu | | `fn_004120A7` |
-| About screen (`fn_00464D53`) | File, Edit, Options, Comm, Help | File, Options, Comm, Help again on leaving | `0x00464D72..0x0046506D` |
+| About screen (`fn_00464D53`) | File, Edit, Options, Comm, Help | File, Options, Comm, Help again on leaving | `0x00464D72..0x00465072` |
 | Setup `fn_0040E0A0` and the network screens `fn_0040B9C0`, `fn_004677F0`, `fn_00456F80` and `fn_0042B9E0` | New Game, Open, Save, End, Host and Join while they run; Save and End stay greyed after | New Game, Open, Host and Join when the first four return | their calls to `fn_0042548A` and `fn_0042533F` |
 
 The popups, `fn_0042566D(menu, slot, point)`: it takes the first popup of loaded

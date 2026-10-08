@@ -1,5 +1,10 @@
 import type { BugReportService } from '@chaos-overlords/bug-reports'
-import type { EventStreamOpener, Kernel, RateLimiter } from '@chaos-overlords/kernel'
+import type {
+  EventStreamOpener,
+  Kernel,
+  RateLimiter,
+  RateLimiterFactory,
+} from '@chaos-overlords/kernel'
 import type { Context } from 'hono'
 import type { AppEnv } from './http/types'
 
@@ -31,8 +36,9 @@ export interface ServerConfig {
  * only ones a join code can be guessed through. The other two are keyed by player token, because an
  * authenticated member is also a cost: order documents are a quarter of a megabyte each and snapshot
  * uploads four times that, so a buggy client in a retry loop must not be able to write without
- * bound. Windows are per process, which is all a single self-hosted server needs; a public
- * deployment puts its platform's rate limiting in front as the real gate.
+ * bound. Where the windows are counted is the runtime's choice: in the process for one Node
+ * process on SQLite, in a shared Postgres table for Node on Postgres, and in a Durable Object per key
+ * on Cloudflare, so a budget holds across every instance a deployment runs.
  */
 export interface RateLimiters {
   anonymous: RateLimiter
@@ -59,7 +65,7 @@ export interface RateLimiters {
    */
   bugReportState: RateLimiter
   /**
-   * Matches this process creates per window, from every caller together, under one key.
+   * Matches the deployment creates per window, from every caller together, under one key.
    *
    * The anonymous tier is per address, so it bounds one stranger and nothing about many. Each
    * create is a stored lobby that lives until lobby retention collects it, and a PBKDF2 hash when it
@@ -83,6 +89,34 @@ export interface ServerContainer {
   config: ServerConfig
   /** How the runtime identifies a caller for rate limiting; defaults to proxy headers. */
   clientAddress?: (c: Context<AppEnv>) => string
+}
+
+/** The size of every transport budget; see {@link DEFAULT_RATE_LIMITS} for the reasoning. */
+export type RateLimitBudgets = { readonly [K in keyof typeof DEFAULT_RATE_LIMITS]: number }
+
+/**
+ * The transport's limiters, each built by `factory` under its tier's name.
+ *
+ * One place for both runtimes and the tests, so a tier cannot be counted in shared storage on one
+ * runtime and left in the process on another.
+ */
+export function createRateLimiters(
+  factory: RateLimiterFactory,
+  budgets: RateLimitBudgets = DEFAULT_RATE_LIMITS,
+): RateLimiters {
+  const perMinute = (name: keyof RateLimiters, limit: number) =>
+    factory(name, { limit, windowMs: 60_000 })
+  return {
+    anonymous: perMinute('anonymous', budgets.anonymousPerMinute),
+    member: perMinute('member', budgets.memberPerMinute),
+    upload: perMinute('upload', budgets.uploadPerMinute),
+    bugReport: perMinute('bugReport', budgets.bugReportPerMinute),
+    bugReportState: factory('bugReportState', {
+      limit: budgets.bugReportStatePerDay,
+      windowMs: 24 * 60 * 60 * 1000,
+    }),
+    matchCreation: perMinute('matchCreation', budgets.matchCreationPerMinute),
+  }
 }
 
 export const DEFAULT_SERVER_CONFIG: ServerConfig = {

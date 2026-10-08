@@ -84,4 +84,3 @@ Open `0x0042A6E0`; the literal 2 stored as cooldown, the comparison with item
 number 44 (`0x2C`), and the two mode 9 calls to `0x00408642`. In `0x00402D70`,
 read case 8: the loop over three slots calling the function itself with
 selector `0x1C`, and the plain store of the Stealth word in the loop body.
-FND-AI-037 recorded the same handler with selector 8 as a sum.

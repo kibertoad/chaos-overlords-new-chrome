@@ -78,11 +78,14 @@
     "spec/experiments/EXP-TURN-097.json",
     "spec/experiments/EXP-TURN-098.json",
     "spec/experiments/EXP-TURN-099.json",
+    "spec/experiments/EXP-TURN-100.json",
     "spec/experiments/EXP-UI-001.json",
     "spec/experiments/EXP-UI-003.json",
     "spec/experiments/EXP-UI-006.json",
     "spec/experiments/EXP-UI-011.json",
     "spec/experiments/EXP-UI-012.json",
-    "spec/experiments/EXP-UI-018.json"
+    "spec/experiments/EXP-UI-018.json",
+    "spec/experiments/EXP-UI-046.json",
+    "spec/experiments/EXP-UI-030.json"
   ]
 }

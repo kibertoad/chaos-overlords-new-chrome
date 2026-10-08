@@ -59,13 +59,13 @@ The copies held 1 in `elapsed_turns`. The fixture lists every value read.
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` starts the rebuild's
-match with the same seed and settings, ends the human's planning with no
-orders, lets the computer players plan and the turn resolve up to the human's
-next planning entry, and refills the human's offers there. The rebuild makes
-the same calls in the same order with the same bounds and results, and reaches
-the same generator position and the same state, compared as in EXP-SETUP-001.
+Every result is the one RULE-RNG-002 computes from the recorded seed. A test of
+the rebuild starts the rebuild's match with the same seed and settings, ends the
+human's planning with no orders, lets the computer players plan and the turn
+resolve up to the human's next planning entry, and refills the human's offers
+there. The rebuild makes the same calls in the same order with the same bounds
+and results, and reaches the same generator position and the same state,
+compared as in EXP-SETUP-001.
 
 ## Conclusion
 

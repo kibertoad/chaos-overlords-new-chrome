@@ -124,7 +124,8 @@ public sealed class OriginalAiEquipmentRulesTests
     {
         var data = BundledOriginalData.Load();
         var setupPlayer = new MatchPlayerSetup(new PlayerId(0), "CPU", PlayerController.Computer);
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer]);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer],
+            MatchDeviations.Original);
         var researched = data.Items
             .Select((item, index) => (item, index))
             .Where(value => value.item.Type != 99)
@@ -170,6 +171,6 @@ public sealed class OriginalAiEquipmentRulesTests
             ], owner: id == 57 ? adjacentOwner : null))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            scenario, GameDuration.SixMonths, 1997, setups), players, sectors);
+            scenario, GameDuration.SixMonths, 1997, setups, MatchDeviations.Original), players, sectors);
     }
 }

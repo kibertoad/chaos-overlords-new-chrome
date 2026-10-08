@@ -57,9 +57,7 @@ called.
 
 ## Results
 
-`ANewGameHasNoTurnStartSound` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Sounds.cs` checks that the
-setting stayed off from the title initialization to the end, that the wrapper
+A test of the rebuild checks that the setting stayed off from the title initialization to the end, that the wrapper
 was asked for the push cue at Begin and at each Done press and passed none of
 them on, that the helper never played the turn-start cue, replays the match,
 and checks that the rebuild's local game has no turn-start cue.

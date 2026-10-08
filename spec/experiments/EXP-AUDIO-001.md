@@ -63,11 +63,10 @@ Begin, and left `effects_enabled` set.
 
 ## Results
 
-`ANewGameHasNoTurnStartSound` in
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.Sounds.cs` checks these
-calls, that the setting held from the title initialization to the end, that
-every request to the wrapper reached the helper, replays the match, and checks
-that the rebuild's local game has no turn-start cue.
+A test of the rebuild checks these calls, that the setting held from the title
+initialization to the end and that every request to the wrapper reached the
+helper, replays the match, and checks that the rebuild's local game has no
+turn-start cue.
 
 ## Conclusion
 

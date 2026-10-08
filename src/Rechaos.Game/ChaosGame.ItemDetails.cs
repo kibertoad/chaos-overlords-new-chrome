@@ -50,8 +50,8 @@ public sealed partial class ChaosGame
             DrawSellEquipment(batch, pixel, font, state);
         else
             DrawCommands(batch, pixel, font, state);
-        if (_itemInfoBackground is not null)
-            batch.Draw(_itemInfoBackground, ItemInformationLayout.Panel,
+        if (ItemInfoBackground is not null)
+            batch.Draw(ItemInfoBackground, ItemInformationLayout.Panel,
                 ItemInformationLayout.BackgroundSource, Color.White);
         else
             batch.Draw(pixel, ItemInformationLayout.Panel, new Color(0, 0, 0, 245));
@@ -59,8 +59,8 @@ public sealed partial class ChaosGame
 
         var item = state.Definitions.Items[itemId];
         ClearItemInformationFields(batch, pixel);
-        if (itemId >= 0 && itemId < _itemRotationTextures.Length
-            && _itemRotationTextures[itemId] is { } rotation)
+        if (itemId >= 0 && itemId < ItemRotationTextures.Length
+            && ItemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, ItemInformationLayout.Portrait,
                 // FND-UI-047: the rotation stops while the exit face is held. FND-UI-052: it starts
                 // from frame 0 when the panel opens, or at the frame the reference frame's capture showed.
@@ -68,8 +68,8 @@ public sealed partial class ChaosGame
                     ? ItemRotationPresentation.Frame(frame)
                     : ItemRotationPresentation.Frame(PresentationDrawTime < _itemDetailsOpenedAt
                         ? TimeSpan.Zero : PresentationDrawTime - _itemDetailsOpenedAt), Color.White);
-        else if (_itemPortraits is not null)
-            batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,
+        else if (ItemPortraits is not null)
+            batch.Draw(ItemPortraits, ItemInformationLayout.CompactPortrait,
                 OriginalSpriteLayout.ItemPortrait(item.Id), Color.White);
         font.Draw(batch, item.Name,
             new Vector2(ItemInformationLayout.NameLeft, ItemInformationLayout.HeaderY), Color.Lime, 1);
@@ -101,7 +101,7 @@ public sealed partial class ChaosGame
             DrawItemPanelValue(font, batch, left[row], ItemInformationLayout.LeftValueLeft, y);
             DrawItemPanelValue(font, batch, right[row], ItemInformationLayout.RightValueLeft, y);
         }
-        if (_hoverPoint is { } hover)
+        if (TooltipHoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.ItemAt(hover));
     }
 

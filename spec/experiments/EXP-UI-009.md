@@ -77,14 +77,12 @@ at its own slide-in. Those recordings are not kept.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the captures as for
-EXP-UI-008, drawing the recorded item frame. The rebuild's orders are a panel
-(DEV-UI-021), so the test replays a menu 1 choice that runs a picker as the
-card press and a press on that order's row of the rebuild's panel. Leaving
-out the cash row (DEV-UI-006), the Tolerance value (DEV-UI-007) and the
-Research panel's progress column (DEV-RESEARCH-001), every element of the
-five captures matches.
+A test of the rebuild compares the captures as for EXP-UI-008, drawing the
+recorded item frame. The rebuild's orders are a panel (DEV-UI-021), so the test
+replays a menu 1 choice that runs a picker as the card press and a press on that
+order's row of the rebuild's panel. Leaving out the cash row (DEV-UI-006), the
+Tolerance value (DEV-UI-007) and the Research panel's progress column
+(DEV-RESEARCH-001), every element of the five captures matches.
 
 ## Conclusion
 

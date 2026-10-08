@@ -4,14 +4,17 @@ The files in this directory are covered by two licences, and some by neither.
 
 Creative Commons Attribution 4.0 International (CC BY 4.0), full text below:
 
-  - README.md, glossary.md and every other Markdown file in this directory and
-    its subdirectories, including the generated indexes in index/.
+  - README.md, the term files in glossary/ and every other Markdown file in
+    this directory and its subdirectories, including the generated indexes in
+    index/.
 
 MIT License, full text below:
 
   - Kaitai Struct definitions (formats/*.ksy);
   - experiment fixtures (experiments/*.json);
   - save patches (experiments/saves/*.patch.json);
+  - build manifests (builds/*.files.yaml);
+  - value files (rules/*.csv);
   - any schema or script in this directory.
 
 Neither licence. These files were written by the original game, and are

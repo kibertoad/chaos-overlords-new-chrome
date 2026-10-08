@@ -40,11 +40,10 @@ stamped a draft. The count, cursor and records of the human stayed empty, and
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalComlinkExperimentTests.cs` replays the steps as in
-EXP-COMLINK-001: the rebuild finds no recipient for the human, so Send does not
-open, and an empty inbox, so View does not open. The original never played
-slot 6, and the human's planning entry, with no unread message, does not sound
-the alert in the rebuild either.
+A test of the rebuild replays the steps as in EXP-COMLINK-001: the rebuild finds
+no recipient for the human, so Send does not open, and an empty inbox, so View
+does not open. The original never played slot 6, and the human's planning entry,
+with no unread message, does not sound the alert in the rebuild either.
 
 ## Conclusion
 
