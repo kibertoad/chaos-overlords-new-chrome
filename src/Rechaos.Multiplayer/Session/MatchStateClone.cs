@@ -28,7 +28,11 @@ public static class MatchStateClone
     private const int ArchiveVersion = 1;
     private static ReadOnlySpan<byte> ArchiveMagic => "RCHS"u8;
 
-    /// <summary>An independent copy of <paramref name="state"/>.</summary>
+    /// <summary>
+    /// An independent copy of <paramref name="state"/>. A seat's view copies as that seat's view
+    /// (<see cref="SeatView"/>), since its save names the seat, so the copy refuses to resolve as
+    /// the original does.
+    /// </summary>
     public static MatchState Of(MatchState state, OriginalData definitions)
     {
         ArgumentNullException.ThrowIfNull(state);

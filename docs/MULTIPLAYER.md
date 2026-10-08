@@ -38,6 +38,14 @@ characters without disturbing the player-name field.
   - [What the resolver is fed](#what-the-resolver-is-fed)
   - [Versions](#versions)
   - [Cost](#cost)
+- [Per-seat views](#per-seat-views)
+  - [What a seat may know](#what-a-seat-may-know)
+  - [The view](#the-view)
+  - [Planning on a view](#planning-on-a-view)
+  - [Computer seats](#computer-seats)
+  - [Saves, journals and spectators](#saves-journals-and-spectators)
+  - [Versions](#versions-1)
+  - [Cost](#cost-1)
 - [Two languages, one contract](#two-languages-one-contract)
 - [Client integration contract](#client-integration-contract)
   - [What a hot-seat core does not say](#what-a-hot-seat-core-does-not-say)
@@ -483,7 +491,7 @@ guarantee sets `synchronous = FULL` or runs Postgres.
   client that diverges deliberately can grief a match by desyncing it every turn, and the remedy is
   social — `turn.desynced` names every player's hash and the candidates, so the host can see who is
   the odd one out and kick them. Resolving turns on the server closes the griefing in its first
-  step and the read leak in its second; see
+  step, and [per-seat views](#per-seat-views) close the read leak in its second; see
   [Resolving turns on the server](#resolving-turns-on-the-server) and [#453](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/453).
 - **Corroboration assumes one human per seat.** There are no accounts, so nothing stops one person
   holding several seats in a public lobby. A host with two of three seats can report a doctored
@@ -587,10 +595,11 @@ closes multi-seat corroboration and desync griefing: a doctored hash, reported f
 seats, only puts those seats on the server's state. The order wire does not change. Clients still
 resolve, so the read leak stays.
 
-**Per-seat views.** Later, and as a separate decision: the server sends each seat the part of the
-state the original shows that player, and the client plans against it instead of resolving. That
-closes the read leak, and needs what the referee does not: a spec of what each seat may see, a
-projection of the state per seat, and a client that renders and plans from a projection.
+**Per-seat views.** Second, and decided separately (`docs/DECISIONS.md`, 2026-10-06, "Send each
+seat only what the original shows it"): the server sends each seat the part of the state the
+original shows that player, and the client plans against it instead of resolving. That closes the
+read leak. [Per-seat views](#per-seat-views) has what each seat may know, the view, and how the
+client, the computer seats, journals and spectators work with it.
 
 ### Pieces
 
@@ -644,6 +653,174 @@ on Node and about 470 ms under workerd, against 20 to 120 ms natively, and the r
 under 150 ms. The WebAssembly heap is 46 MiB after start and 80 to 96 MiB with one or two matches
 held, within a 128 MB Cloudflare isolate but not by much: a trimmed bundle, which needs
 source-generated JSON contracts in `Rechaos.Core`, takes about 15 MiB off the start.
+
+## Per-seat views
+
+Status: decided (`docs/DECISIONS.md`, 2026-10-06, "Send each seat only what the original shows
+it"). The view is implemented in `Rechaos.Core` (`SeatView`) and checked against every recorded
+run of the original; the server does not serve views yet, and needs the referee first.
+
+A seat's view is the match as that player may know it at their planning entry. The server resolves
+the whole match, takes one view per seat when a turn opens, and sends each seat its own. The client
+plans on its view and resolves nothing, so a modified client holds nothing it could reveal.
+
+### What a seat may know
+
+The rule is what the original draws for that player. The original takes its picture of the city at
+the planning entry: RULE-DETECT-001 writes every gang's `visible_to` there, the console's totals are
+drawn there (FND-UI-040), and nothing a player orders during planning changes what they see of
+anybody else. So a view is taken at the planning entry and holds until the next one. Between the
+seal and the next planning entry a seat learns nothing new.
+
+Every part of the match state, with who may know it:
+
+| Part of the state | Who may know it | Evidence |
+|---|---|---|
+| Scenario, length, Mentality, planning time limit; each seat's name, portrait, and whether it is a human, a computer or out of the match | Every seat | SCR-UI-008, RULE-UI-009, SCR-UI-003 (Overlord bar) |
+| Turn, calendar and turns remaining | Every seat | SCR-UI-003, FND-UI-040 |
+| Which human seats still have orders to give | Every seat | SCR-UI-003 (planning lights), FND-UI-043 |
+| Owner of each sector | Every seat | SCR-UI-003 (owned interiors), SCR-UI-004 (owner strip) |
+| Income and Tolerance of each sector | Every seat | RULE-UI-011 |
+| Police in a sector (`crackdown_turns` above 0) | Every seat. The number of turns left is drawn nowhere, and a Crackdown raises it by a die roll | SCR-UI-003 (police badge), FND-UI-050, RULE-POLICE-002 |
+| Objective sectors: every headquarters in Siege, the centre in Big Man | Every seat | RULE-UI-012 |
+| The type of every site in every sector, and its definition's values | Every seat | RULE-SEARCH-002 (markers by type anywhere), SCR-UI-004 (site portraits), SCR-UI-007 |
+| A site's progress, whether it is complete and who influenced it; a sector's Support and Cash | The sector's owner | SCR-UI-004 (progress meter), SCR-UI-007 (Resistance less progress), RULE-SEARCH-002 (controlled marker), RULE-UI-011 |
+| A sector's base Tolerance and its crackdown history | No seat: no screen draws them | RULE-UI-011, RULE-POLICE-002 |
+| The seat's own gangs, all of them, with every order it has given | The seat | SCR-UI-004, SCR-UI-005, RULE-UI-010 |
+| Another seat's gang in play that the seat detects: its definition, sector, Force, equipment and statistics | The seat, from the planning entry where RULE-DETECT-001 finds it | RULE-DETECT-001, RULE-UI-010, SCR-UI-004 (cards), SCR-GANG-002, SCR-ATTACK-001, RULE-ATTACK-002 |
+| Another seat's gang the seat does not detect, or that is gone; how many gangs a seat has | No other seat | RULE-DETECT-001, RULE-UI-006 (no marker for an enemy not seen) |
+| Which seats detect a gang | No seat beyond its own detection | RULE-DETECT-001 (`visible_to` is kept per observer, and no screen draws another's) |
+| Another seat's orders, recurring or not | No other seat (see the open questions) | RULE-TURN-004, RULE-TURN-005, SCR-UI-004 |
+| The fights and police attacks of the last resolution in each sector where the seat fought or has a gang now, with every seat's row there: each gang's definition, Force before and after, and equipment | The seat, including rows of gangs it does not detect | FND-COMBAT-012, FND-COMBAT-007, SCR-COMBAT-001, RULE-COMBAT-002 |
+| The fights its own gangs were in, attack by attack | The seat | RULE-COMBAT-004, SCR-COMBAT-002 |
+| Last Turn reports | The seat each was written for; an elimination goes to every seat | RULE-EVENT-001 to RULE-EVENT-014, RULE-POLICE-004, SCR-EVENT-001 |
+| Cash and scenario score | The seat, on the console | SCR-UI-003 (player totals), FND-UI-040 |
+| Where every seat's portrait stands on the rankings rail | Every seat. The rail is 140 pixels long, so it shows how far apart the scores are only to that resolution | SCR-OBJECTIVE-001, RULE-OBJECTIVE-002 |
+| Hire offers, and the hire or snub order | The seat | SCR-UI-003 (hire dock), SCR-HIRE-001, SCR-HIRE-002, RULE-HIRE-003 |
+| Research progress and the items researched | The seat | SCR-RESEARCH-001, RULE-EQUIP-004 |
+| The Financial panel's figures and equipment prices | The seat | RULE-FINANCE-001, RULE-EQUIP-003 |
+| Comlink messages | Their recipient. Any seat may know which seats are human and can be written to | RULE-COMLINK-002 to RULE-COMLINK-005, SCR-COMLINK-001 |
+| Cash earned and spent, damage, casualties, overthrows, hides | No seat during play; every seat at the end | SCR-AWARDS-001 |
+| Final standings and awards | Every seat at the end | SCR-AWARDS-001, SCR-AWARDS-002 |
+| The computer players' attitudes, reactions, families and planning records | No seat | RULE-AI-014 to RULE-AI-017, FMT-STATE-007 |
+| The seed, the generator state and every die rolled | No seat | RULE-RNG-001; no screen draws a roll |
+
+What the spec does not settle:
+
+- **Orders on another seat's cards.** The original's detailed sector screen lets a player page
+  through another seat's cards for the gangs they detect (SCR-UI-004, RULE-UI-010), and every card
+  draws the gang's `action`. At a planning entry that is the gang's recurring order or None
+  (RULE-TURN-004), and in a hot-seat match a seat that plans later also sees the orders an earlier
+  seat has just given (RULE-TURN-005). The rebuild draws no action strip on another seat's cards
+  (`docs/DECISIONS.md`, 2026-09-18), so views carry no order of another seat. If the rebuild comes
+  to draw it, a view carries the recurring order of each detected gang, and still no order given in
+  the turn being planned, which simultaneous play has no equivalent for.
+- **Site progress in a sector the seat does not own.** SCR-UI-004 reads the progress meter as drawn
+  for the owner only, and leaves open whether it is drawn for anybody else. Views follow the
+  reading.
+- **Combat Results rows for gangs the seat does not detect.** FND-COMBAT-012 and FND-COMBAT-007
+  read the page as showing every player's row in the sector, with no detection test, so views keep
+  those rows. No recorded run shows such a page with a gang the viewer cannot see.
+- **The original's own network play.** What the original sent each machine (SCR-NET-005) is not
+  recorded, so it is no precedent either way.
+
+### The view
+
+`SeatView.Project(match, seat)` is a pure function from the whole match to a `MatchState`: the
+match's own save document, with every part the seat may not know removed or set to a neutral value,
+restored as that seat's view. `MatchState.ViewedBy` names the seat, and every call that draws or
+resolves (`FinishCommand`, the execution phases, hire offer draws, the computer players' planning)
+throws on a view. A view's save payload names its seat, so every load of it, a copy through
+`MatchStateClone` included, restores a view, and `SeatView.Load` refuses a payload that is not the
+expected seat's view. A whole match's save leaves the field out and is byte for byte what it was.
+
+| What the view does | Parts |
+|---|---|
+| Keeps | The setup without the seed; every sector's owner, Income, Tolerance, police, objective flag and site types; the seat's own player record, gangs, orders, reports and Comlink inbox; eliminations |
+| Keeps, for the gangs of other seats it detected at the planning entry | Definition, sector, Force, equipment and statistics |
+| Leaves out | Every other gang of the other seats; their orders, hire offers and hire orders, research, inventory, reports and Comlink inboxes; the phase hashes; every event outside the table above |
+| Sets to a neutral value | Other seats' cash, Support, Big Man points and statistics (0); site progress in sectors the seat does not own (none), with Support 0, Cash 1 and the base Tolerance equal to the Tolerance; `crackdown_turns` (its sign, which every test the rules make of it reads the same); the crackdown history (empty); the random state and the seed (0); the computer players' state (as at a new match); every die in the events (none) |
+| Renumbers | The seat's orders and the events kept, from 0, because the sequence numbers of the whole match count every seat's orders and events |
+| Coarsens | Other seats' scenario scores, to the narrowest scores that place every portrait on the rankings rail where the true scores do, with the seat's own score exact |
+
+Gang ids are left as they are: an order names the gang it targets by id, and the server reads the
+order against the whole match. Ids come from one counter for the whole city, so the ids a seat sees
+tell it roughly how many gangs have been hired before them. Giving each seat its own ids would need
+the server to translate every order, and is not worth that.
+
+Two tests hold the view to the table. `SeatViewTests.EveryPartOfTheSaveHasAVisibilityDecision`
+lists every member of the save document with what the view does with it, down through every
+record that can carry another seat's data (a kept fight event and the combatants in it, the
+outcome), so state added to a save without a decision fails it. `OriginalNewGameExperimentTests.ASeatPlansTheSameTurnFromItsView` takes
+a view at every planning entry of every recorded run of the original and checks that it hides what
+the table hides; that every order the option catalog offers each of the seat's gangs, and every
+hire, is judged the same on it as on the whole match; that the city's markers, the console values,
+the rankings rail, the sector cards and Overlord bar, the Financial panel and the combat pages read
+the same; and that the human's recorded orders and hires, given through `SpeculativeTurn` on each,
+build the same order document.
+
+### Planning on a view
+
+The client plans on a `SpeculativeTurn` copy as today and sends the same order document. The copy
+is made from the view, which already has the seat as the active player. It resolves nothing and
+reports no hash. When the turn seals, the server resolves it, opens the next turn, draws every
+seat's hire offers (`PrepareSimultaneousHireOffers`), and serves each seat its new view. The client
+shows the last resolution (Last Turn Events, Combat Results, Detailed Combat) from the events the
+view keeps, which are the ones those screens read.
+
+Two things the client does today stop: replaying sealed sets, which it can no longer do without the
+other seats' orders and the random state, and the desync machinery, since there is no client state
+to diverge. The view arrives from the server over the same authenticated channel as everything
+else. Its save payload carries the fingerprint of the view, which catches damage in transit and
+nothing more.
+
+Some of the rebuild's own additions read values a view sets to neutral: the rankings tooltip
+(DEV-UI-005) shows every seat's exact score and holdings, and the Bribe and Snitch tooltips show the
+base Tolerance and the sites' part of any sector the gang stands in. On a view they would show the
+neutral values as if they were true, so they have to say what the seat does not know instead.
+
+### Computer seats
+
+The computer players plan from the whole match, as they do in the original: their handlers read
+every gang, the attitudes and the generator (RULE-AI-001 to RULE-AI-031), not a player's view. In a
+match with views they run only in the server's resolver, which plans each computer seat at the point
+every client plans it today. A seat handed to the computer is planned there from that turn on, and a
+player who takes it back, or a late joiner who takes a computer seat, receives a view at the next
+planning entry.
+
+### Saves, journals and spectators
+
+- An online match is not saved on the client, so nothing changes there.
+- A bug report filed during a match carries the reporter's view and the turn's order document. That
+  is enough for an interface fault and cannot be replayed as a match. Once the match has ended
+  nothing is hidden: the server releases the seed and every seat's sealed sets to the match's
+  members, and the client rebuilds the whole journal from them.
+- When the match ends the server sends the whole state, since the awards screen shows every seat's
+  statistics (SCR-AWARDS-001) and nothing is left to protect.
+- Spectators (#496) read the whole match a fixed number of turns behind. A player can open a
+  spectator session on their own match under another name, so the spectator delay bounds how old
+  the hidden facts are that a player can learn that way. A host who plays strangers and wants none
+  of it turns spectating off.
+
+### Versions
+
+A server with the resolver on decides per deployment whether its matches use views (`SEAT_VIEWS`),
+and stamps the mode on each match when it is created, so a match keeps one mode for its life. In a
+view match the server withholds what lockstep has to publish: the seed in the bootstrap, other
+seats' documents in a sealed set (a seat reads its own and the set's digest), and snapshots of the
+whole match. Those changes and the view route move the protocol version. The session version stays:
+the sealed sets, order documents and snapshots a match stores are the same, and the mode is a new
+field on the match.
+
+### Cost
+
+Measured at all 2,504 planning entries of the recorded runs, natively in a Debug build: a view
+takes 0.3 ms to project at the median and 2.4 ms at most. A view's save payload is 87 KB at the
+median and 161 KB at most, and 3 KB and 9 KB with Brotli, against 23 KB and 301 KB with Brotli
+for the whole match's (the largest at turn 82 of EXP-TURN-099, with 262 gangs in the save). The resolver runs
+about ten times slower under the WebAssembly interpreter than natively, so a view there costs a
+few milliseconds per seat per turn and at most a few tens, beside a turn's hundreds. The server
+compresses it, as it does snapshots.
 
 ## Two languages, one contract
 

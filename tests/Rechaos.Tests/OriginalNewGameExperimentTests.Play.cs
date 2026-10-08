@@ -117,9 +117,16 @@ public sealed partial class OriginalNewGameExperimentTests
     // player's gang list.
     private static void Submit(MatchReplayRecorder recorder, MatchState match, PlayerId human, RecordedOrder order)
     {
+        var command = Command(match, human, order);
+        var result = recorder.Submit(command);
+        Assert.True(result.Accepted, $"turn {order.Turn}: the rebuild refused {command.Action}: {result}");
+    }
+
+    private static GameCommand Command(MatchState match, PlayerId human, RecordedOrder order)
+    {
         var gang = match.Players[human.Value].Gangs[order.Slot];
         var action = (GangAction)order.Action;
-        var command = action switch
+        return action switch
         {
             GangAction.Move => new GameCommand(human, gang.Id, action, CommandTarget.Sector(order.Target), order.Repeat),
             GangAction.Research or GangAction.Equip =>
@@ -142,8 +149,6 @@ public sealed partial class OriginalNewGameExperimentTests
                 new GameCommand(human, gang.Id, action, CommandTarget.None, order.Repeat),
             _ => throw new NotSupportedException($"No recorded order of action {action} is replayed yet."),
         };
-        var result = recorder.Submit(command);
-        Assert.True(result.Accepted, $"turn {order.Turn}: the rebuild refused {action}: {result}");
     }
 
     // The fixture keeps the flags a name set rather than the name (FND-SETUP-015), so the name is
