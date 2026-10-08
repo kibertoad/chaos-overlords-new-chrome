@@ -23,6 +23,10 @@ namespace Rechaos.OnlineSmoke;
 /// agree on are the ones this client computes.
 /// </para>
 /// <para>
+/// A second match then has a spectator follow it from behind its delay; see
+/// <see cref="SpectatorSmoke"/>.
+/// </para>
+/// <para>
 /// It is a tool and not a test because it needs a server: the .NET suite has no Node in it.
 /// </para>
 /// </remarks>
@@ -33,8 +37,25 @@ public static class Program
         var baseAddress = new Uri(args.Length > 0 ? args[0] : "http://localhost:8787");
         var turns = args.Length > 1 ? int.Parse(args[1], CultureInfo.InvariantCulture) : 3;
         using var http = MultiplayerClientOptions.CreateHttpClient();
-        var anonymous = new MultiplayerClient(http, new MultiplayerClientOptions(baseAddress));
         var definitions = BundledOriginalData.Load();
+
+        // The first match's sessions are disposed before the spectator stage starts, so their
+        // event streams are not left running, undrained, against a match nobody plays any more.
+        var joinCode = await PlayLockstepAsync(http, baseAddress, definitions, turns);
+        await SpectatorSmoke.RunAsync(http, baseAddress, definitions, joinCode);
+        return 0;
+    }
+
+    /// <summary>
+    /// Plays the two-client match and its crash recovery, and returns the match's join code.
+    /// </summary>
+    private static async Task<string> PlayLockstepAsync(
+        HttpClient http,
+        Uri baseAddress,
+        OriginalData definitions,
+        int turns)
+    {
+        var anonymous = new MultiplayerClient(http, new MultiplayerClientOptions(baseAddress));
 
         var settings = new MultiplayerGameSettings(
             ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]);
@@ -158,11 +179,11 @@ public static class Program
         Require(final.CurrentTurn == turns + 2, $"the server is on turn {final.CurrentTurn}");
         Require(final.HostPlayerId == guest.Player.Id, "the recovered host was not persisted");
         Console.WriteLine($"OK: {turns + 1} turns in lockstep, including crash recovery");
-        return 0;
+        return host.JoinCode;
     }
 
     /// <summary>One legal order per turn, so the documents are not all empty.</summary>
-    private static void Hide(SpeculativeTurn turn)
+    internal static void Hide(SpeculativeTurn turn)
     {
         var player = turn.State.FindPlayer(turn.Player)!;
         var gang = player.Gangs.FirstOrDefault(candidate => candidate.IsActive);
@@ -171,9 +192,11 @@ public static class Program
     }
 
     /// <summary>Waits for the session to report the turn resolved, or gives up saying why.</summary>
-    private static async Task<MultiplayerNotice.TurnResolved> Resolved(
+    /// <param name="seen">Where the other notices drained on the way go, when the caller wants them.</param>
+    internal static async Task<MultiplayerNotice.TurnResolved> Resolved(
         MultiplayerMatchSession session,
-        int turn)
+        int turn,
+        List<MultiplayerNotice>? seen = null)
     {
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
         while (DateTime.UtcNow < deadline)
@@ -191,6 +214,7 @@ public static class Program
                         throw new InvalidOperationException(
                             $"desynced on turn {desynced.Turn}: {desynced.Details}");
                     default:
+                        seen?.Add(notice);
                         break;
                 }
             }
@@ -199,7 +223,7 @@ public static class Program
         throw new TimeoutException($"turn {turn} never resolved");
     }
 
-    private static async Task WaitForPlayer(
+    internal static async Task WaitForPlayer(
         MatchHandle match,
         string playerId,
         WirePlayerStatus status)
@@ -214,7 +238,7 @@ public static class Program
         throw new TimeoutException($"player {playerId} never became {status}");
     }
 
-    private static async Task<LobbyNotice.Seated> Seated(MultiplayerLobbySession lobby)
+    internal static async Task<LobbyNotice.Seated> Seated(MultiplayerLobbySession lobby)
     {
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(15);
         while (DateTime.UtcNow < deadline)
@@ -230,7 +254,7 @@ public static class Program
         throw new TimeoutException("the returning membership was never seated");
     }
 
-    private static void Require(bool condition, string message)
+    internal static void Require(bool condition, string message)
     {
         if (!condition) throw new InvalidOperationException(message);
     }
