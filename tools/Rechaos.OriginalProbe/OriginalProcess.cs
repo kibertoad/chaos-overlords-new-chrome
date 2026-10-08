@@ -18,8 +18,11 @@ internal sealed class OriginalProcess : IDisposable
     private readonly Dictionary<int, uint> _rearm = [];
     private readonly List<CodePatch> _patches = [];
     private readonly IntPtr _event = Marshal.AllocHGlobal(Native.DebugEventSize);
+    private const string RunLockName = @"Global\Rechaos.OriginalProbe.Run";
+    private const string GameProcessName = "Chaos Overlords";
     private IntPtr _process;
     private bool _started;
+    private Mutex? _runLock;
 
     public int ProcessId { get; private set; }
     public bool Exited { get; private set; }
@@ -31,15 +34,25 @@ internal sealed class OriginalProcess : IDisposable
 
     public static OriginalProcess Start(string executable, string workingDirectory)
     {
-        var process = new OriginalProcess();
+        // The game allows one instance per machine (FND-PLATFORM-009): a second start raises the
+        // first window and exits. Probes in parallel worktrees share the machine, so each holds a
+        // machine-wide lock for its run and refuses to start while another holds it or while any
+        // copy of the game is already running.
+        var runLock = AcquireRunLock();
+        var process = new OriginalProcess { _runLock = runLock };
         var startup = new Native.StartupInfo { Cb = Marshal.SizeOf<Native.StartupInfo>() };
         var commandLine = new StringBuilder($"\"{executable}\"");
         if (!Native.CreateProcessW(
                 null, commandLine, IntPtr.Zero, IntPtr.Zero, false, Native.DebugOnlyThisProcess,
                 IntPtr.Zero, workingDirectory, ref startup, out var information))
+        {
+            var error = Marshal.GetLastWin32Error();
+            process.Dispose();
             throw new Win32Exception(
-                Marshal.GetLastWin32Error(),
+                error,
                 $"Cannot start {executable}. The installed path asks for administrator rights; run a staged copy with --executable (docs/validation/experiments.md).");
+        }
+
         process._process = information.Process;
         process.ProcessId = information.ProcessId;
         Native.CloseHandle(information.Thread);
@@ -137,6 +150,51 @@ internal sealed class OriginalProcess : IDisposable
         // The thread handles came with debug events, and continuing the exit event closed them.
         if (_process != IntPtr.Zero) Native.CloseHandle(_process);
         Marshal.FreeHGlobal(_event);
+        if (_runLock is not null)
+        {
+            // Only the owning thread can release the lock; from any other thread it stays held
+            // until the probe exits, when Windows abandons it.
+            try { _runLock.ReleaseMutex(); }
+            catch (ApplicationException) { }
+            _runLock.Dispose();
+            _runLock = null;
+        }
+    }
+
+    private static Mutex AcquireRunLock()
+    {
+        var runLock = new Mutex(false, RunLockName);
+        bool acquired;
+        try
+        {
+            acquired = runLock.WaitOne(TimeSpan.Zero);
+        }
+        catch (AbandonedMutexException)
+        {
+            // A probe that died without releasing the lock leaves it abandoned; the wait still
+            // hands it over. Any game it left behind is caught by the process check below.
+            acquired = true;
+        }
+
+        if (!acquired)
+        {
+            runLock.Dispose();
+            throw new InvalidOperationException(
+                "Another probe is running the original on this machine. Wait for its run to end (AGENTS.md, Runs of the original).");
+        }
+
+        var running = System.Diagnostics.Process.GetProcessesByName(GameProcessName);
+        if (running.Length > 0)
+        {
+            var ids = string.Join(", ", running.Select(p => p.Id));
+            foreach (var p in running) p.Dispose();
+            runLock.ReleaseMutex();
+            runLock.Dispose();
+            throw new InvalidOperationException(
+                $"The original is already running (process {ids}). Only one copy may run at a time; wait for it to exit (AGENTS.md, Runs of the original).");
+        }
+
+        return runLock;
     }
 
     private void PumpOne(uint milliseconds)
