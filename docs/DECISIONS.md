@@ -115,7 +115,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   recipient; issue #484 holds that design.
 - Wire: the order document gains the two ops. The text is 1 to 160
   characters from space to `Z` (0x20 to 0x5A), the characters the Send panel
-  can type (RULE-COMLINK-006). Protocol version 27 and session version 51,
+  can type (RULE-COMLINK-006). Protocol version 27 and session version 53,
   because the order document's schema changed; the state fingerprint's
   encoding did not, so the save and replay formats stay.
 - Status: implemented and tested.

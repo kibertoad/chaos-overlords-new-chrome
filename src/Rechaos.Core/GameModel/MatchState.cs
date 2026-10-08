@@ -410,6 +410,7 @@ public sealed partial class MatchState
             EffectiveStatisticsCalculator.ForGang(this, target).Stealth);
     }
     public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
+    public int NotificationCountFor(PlayerId player) => GetNotificationQueue(player).Count;
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
         GetNotificationQueue(player).TryDequeue(out notification);
 
