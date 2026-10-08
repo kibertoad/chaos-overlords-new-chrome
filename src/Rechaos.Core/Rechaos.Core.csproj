@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <PackageReference Include="RefurbishedDinosaurs.Core" Version="11.0.0" />
-    <PackageReference Include="RefurbishedDinosaurs.Media.Audio" Version="11.0.0" />
+    <PackageReference Include="RefurbishedDinosaurs.Core" Version="$(RefurbishedDinosaursVersion)" />
+    <PackageReference Include="RefurbishedDinosaurs.Media.Audio" Version="$(RefurbishedDinosaursVersion)" />
     <EmbeddedResource Include="GameData/original-data.json" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="RefurbishedDinosaurs.Media.Smacker" Version="11.0.0" />
+    <PackageReference Include="RefurbishedDinosaurs.Media.Smacker" Version="$(RefurbishedDinosaursVersion)" />
     <PackageReference Include="System.IO.Hashing" Version="10.0.12" />
   </ItemGroup>
 </Project>

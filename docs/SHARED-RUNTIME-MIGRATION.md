@@ -9,11 +9,13 @@ back to the backup without changing a file, for the save browser; `ReadAndRepair
 damaged primary from the backup and keeps the rejected file as `.corrupt`), `FileWriteLock`
 (`RefurbishedDinosaurs.Core`) holds the autosave writer lease, and `Pcm16.FromUnsigned8`
 (`RefurbishedDinosaurs.Media.Audio`) widens movie audio to signed 16-bit samples. Only packages
-used by this restoration are referenced.
+used by this restoration are referenced, all at the one version that `RefurbishedDinosaursVersion`
+in `Directory.Build.props` names.
 
 `AtomicGenerationRecovery` keeps the game's side of recovery: which failures a backup may stand
 in for (damage, never a save `IncompatibleSave` recognises), and that callers see the primary's
-own failure when no generation loads.
+own failure when the backup is missing or damaged too. A backup that fails for another reason, such
+as a newer build's save kept as the backup, surfaces its own failure.
 
 Game save payloads, version admission, slot naming, defaults, audio routing, fades, voice limits
 and control policies remain local. The synthetic checks cover how the migrated code behaves; they

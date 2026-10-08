@@ -213,6 +213,35 @@ public sealed class AtomicGenerationRecoveryTests
     }
 
     [Fact]
+    public void APromotionRenamesAPrimaryThatIsOpenWithDeleteSharingToTheBackup()
+    {
+        var directory = CreateTemporaryDirectory();
+        var path = Path.Combine(directory, "match.rchsave");
+        try
+        {
+            var match = CreateMatch();
+            NativeSaveStore.SaveAtomic(path, match);
+            var previous = File.ReadAllBytes(path);
+            match.FinishUpkeep();
+
+            // The sharing NativeSaveStore.Load and MatchReplayStore.LoadAndReplay open a generation with.
+            using (var reader = new FileStream(
+                       path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
+            {
+                NativeSaveStore.SaveAtomic(path, match);
+            }
+
+            Assert.Equal(previous, File.ReadAllBytes(path + NativeSaveStore.BackupSuffix));
+            Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(
+                NativeSaveStore.Load(path, match.Definitions)));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void CapturedSnapshotCanBeDurablyWrittenAfterTheStateAdvances()
     {
         var directory = CreateTemporaryDirectory();
