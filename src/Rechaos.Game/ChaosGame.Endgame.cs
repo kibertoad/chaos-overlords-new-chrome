@@ -40,13 +40,13 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawEndgameNoticeCard(
         SpriteBatch batch, Texture2D pixel, PixelFont font, Texture2D? background,
-        PlayerId player, int portraitId, string name, bool victory = false)
+        PlayerId player, int portraitId, string name)
     {
         DrawPanelArtwork(batch, pixel, background, EndgameNoticeLayout.Panel, 255);
-        if (victory)
-            foreach (var band in EndgameNoticeLayout.VictoryColourBands)
-                // FND-AWARDS-004: the same slot colour as the table's colour fill.
-                batch.Draw(pixel, band, SetupPlayerCardArtLayout.Colours[player.Value]);
+        // FND-AWARDS-004: the same slot colour as the table's colour fill, on the victory splash and,
+        // in the same three areas, on the elimination card (SCR-OBJECTIVE-002, EXP-UI-032).
+        foreach (var band in EndgameNoticeLayout.ColourBands)
+            batch.Draw(pixel, band, SetupPlayerCardArtLayout.Colours[player.Value]);
         if (UiSprites is not null)
             batch.Draw(UiSprites, EndgameNoticeLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(portraitId), Color.White);
@@ -67,7 +67,7 @@ public sealed partial class ChaosGame
         if (!_showEndgameStats && EndgameNoticePresentation.Survivor(state) is { } survivor)
         {
             DrawEndgameNoticeCard(batch, pixel, font, VictoryBackground, survivor.Player,
-                survivor.PortraitId, state.FindPlayer(survivor.Player)!.Setup.Name, victory: true);
+                survivor.PortraitId, state.FindPlayer(survivor.Player)!.Setup.Name);
             DrawEndgameTabMark(batch, stats: false);
             return;
         }
@@ -115,10 +115,10 @@ public sealed partial class ChaosGame
     /// <summary>
     /// The results frame, loaded opaque into <c>(106, 25, 428, 410)</c> (FND-AWARDS-004), under any
     /// private victory or elimination card. The screen around it is black, as captured when the
-    /// endgame follows the last turn's resolution (SCR-AWARDS-001, EXP-UI-017) and when the
-    /// elimination card does (SCR-OBJECTIVE-002, EXP-UI-018). It is drawn black as well when the
-    /// endgame follows an elimination card and when the card follows an earlier human's planning,
-    /// cases no capture shows (the entries' open questions).
+    /// endgame follows the last turn's resolution (SCR-AWARDS-001, EXP-UI-017) or an elimination
+    /// card (EXP-UI-034), and when the elimination card follows the resolution (SCR-OBJECTIVE-002,
+    /// EXP-UI-018) or another human's planning, after the Ready card that blanks the screen
+    /// (EXP-UI-032).
     /// </summary>
     private void DrawEndgameBackground(SpriteBatch batch, Texture2D pixel)
     {
@@ -240,8 +240,11 @@ public static class EndgameNoticeLayout
     public static Rectangle Panel => new(110, 30, 311, 393);
     public static Rectangle Portrait => new(126, 54, 64, 64);
 
-    /// <summary>SCR-AWARDS-002: the splash's areas painted in the survivor's colour.</summary>
-    public static IReadOnlyList<Rectangle> VictoryColourBands { get; } =
+    /// <summary>
+    /// SCR-AWARDS-002, SCR-OBJECTIVE-002: the splash's areas painted in the colour of the survivor
+    /// or of the eliminated player.
+    /// </summary>
+    public static IReadOnlyList<Rectangle> ColourBands { get; } =
     [
         new(110, 30, 40, 12),
         new(110, 42, 13, 79),

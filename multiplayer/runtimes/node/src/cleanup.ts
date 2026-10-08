@@ -1,9 +1,12 @@
 import type { BugReportService } from '@chaos-overlords/bug-reports'
 import type { Kernel, Logger } from '@chaos-overlords/kernel'
+import type { ClusterBus } from './cluster.js'
 import { startPeriodic } from './periodic.js'
 
 export interface CleanupTargets {
-  bugReports?: BugReportService
+  /** Takes the retention pass one instance at a time across the instances sharing a database. */
+  bus: Pick<ClusterBus, 'exclusive'>
+  bugReports?: BugReportService | undefined
   /**
    * Deletes one batch of the rate limit windows that have rolled, from the table instances share on
    * Postgres, and returns how many went. Every instance runs it; a window two of them delete at
@@ -32,7 +35,7 @@ export function startCleanup(
   kernel: Kernel,
   intervalMs: number,
   logger: Logger,
-  targets: CleanupTargets = {},
+  targets: CleanupTargets,
 ): () => void {
   return startPeriodic(intervalMs, () => cleanup(kernel, logger, targets))
 }
@@ -40,15 +43,18 @@ export function startCleanup(
 async function cleanup(
   kernel: Kernel,
   logger: Logger,
-  { bugReports, sweepRateLimits }: CleanupTargets,
+  { bus, bugReports, sweepRateLimits }: CleanupTargets,
 ): Promise<void> {
+  // One instance at a time for the shared match database: concurrent passes would race to delete
+  // the same matches, and on Postgres two cascading deletes over overlapping rows can deadlock.
   try {
-    await kernel.retention.collect()
+    await bus.exclusive('retention', () => kernel.retention.collect().then(() => undefined))
   } catch (error) {
     logger.warn('retention sweep failed', { error: String(error) })
   }
   // The intake keeps nothing forever either. It is a different database with a different window,
-  // so it gets its own call and its own failure: neither sweep may take the other down.
+  // so it gets its own call and its own failure: neither sweep may take the other down. That
+  // database is a SQLite file of this instance's own, so every instance collects its own.
   try {
     await bugReports?.collect()
   } catch (error) {

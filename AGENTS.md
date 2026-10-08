@@ -228,6 +228,32 @@ pixel except where a documented interface change draws something new. When a
 bug cannot be told from a design decision, the original behaviour stays and any
 fix becomes a setting.
 
+## Runs of the original
+
+Running the original game is part of the normal work here and needs no
+approval beyond the task itself. When a change needs a dynamic finding, an
+experiment or a capture, run the original through
+`tools/Rechaos.OriginalProbe` (`docs/validation/experiments.md`) without
+asking first.
+That includes posting input to its window, capturing its screen, and reading
+or writing its process memory to set up a state a run needs, as long as the
+finding or experiment entry the run supports records every write.
+
+Run the staged copy of the executable that `docs/validation/experiments.md`
+describes,
+not the one in the installation at `C:\GOG Games\Chaos Overlords`, and leave
+the installation and the registry unchanged. Only one process may run the
+original on this machine at a time: the game holds a mutex named after its
+window title, and a second start brings the first window to the front and
+exits (FND-PLATFORM-009). Other agents working on this repository in parallel
+worktrees share the machine. The probe holds a machine-wide lock for its run
+and refuses to start while another probe holds it or while any
+`Chaos Overlords` process is running; when it refuses, wait and try again, and
+stop your own process when the runs are done. Never stop a `Chaos Overlords`
+process you did not start: it may be another agent's run or someone playing.
+If the original is still running after 30 minutes of waiting, report the runs
+as blocked instead of waiting longer.
+
 ## Multiplayer protocol version
 
 Keep `MULTIPLAYER_PROTOCOL_VERSION` in
@@ -302,7 +328,8 @@ reaches, then pin the new set.
 
 After every commit in this repository, inspect running processes for orphaned
 work created by this repository's tasks. Check at least PowerShell
-(`powershell` and `pwsh`), Ghidra/Java, .NET (`dotnet` and `testhost`), and any
+(`powershell` and `pwsh`), Ghidra/Java, .NET (`dotnet` and `testhost`), the
+original game (`Chaos Overlords`, including a staged copy), and any
 other process families that the agent launched while building, testing,
 validating, or analyzing this repository.
 

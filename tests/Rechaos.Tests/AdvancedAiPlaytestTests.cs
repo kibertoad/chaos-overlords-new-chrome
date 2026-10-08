@@ -29,13 +29,14 @@ public sealed class AdvancedAiPlaytestTests
     }
 
     [Fact]
-    public void IdleRecoveryImprovesSameSeedKillEmAllCampaignSample()
+    public void IdleRecoveryImprovesSameSeedSiegeCampaignSample()
     {
-        // With the ported dispatcher (RULE-AI-002) the Original planner leaves a Power campaign
-        // almost no idle gang-turns to recover; Kill 'Em All leaves enough to measure the feature.
+        // With the ported dispatcher (RULE-AI-002) and Equips no longer held back for cash
+        // (FND-AI-082), the Original planner leaves Power and Kill 'Em All almost no idle
+        // gang-turns to recover; Siege leaves enough to measure the feature.
         var (original, advanced) = Compare(
-            ScenarioId.KillEmAll, AiDifficulty.Criminal, AiTurnPlanner.AdvancedFeature.IdleRecovery);
-        Report("Kill 'Em All", "IDLE RECOVERY", original, advanced);
+            ScenarioId.Siege, AiDifficulty.Criminal, AiTurnPlanner.AdvancedFeature.IdleRecovery);
+        Report("Siege", "IDLE RECOVERY", original, advanced);
 
         Assert.True(advanced.IdleGangTurns < original.IdleGangTurns);
         AssertTerritoryImproves(original, advanced);
