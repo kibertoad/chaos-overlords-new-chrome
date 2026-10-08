@@ -91,6 +91,17 @@ public static partial class ResolverExports
     [JSExport]
     public static byte[] SavePayload(int handle) => Match(handle).SavePayload();
 
+    /// <summary>
+    /// The bytes the managed heap holds, after a full collection when <paramref name="collect"/> is
+    /// set.
+    /// </summary>
+    /// <remarks>
+    /// The WebAssembly memory only ever grows, so its size says how much was once needed, not how
+    /// much is in use. A host that keeps its matches under a memory budget reads this instead.
+    /// </remarks>
+    [JSExport]
+    public static double ManagedHeapBytes(bool collect) => GC.GetTotalMemory(collect);
+
     /// <summary>Forgets a match. Releasing an unknown handle does nothing.</summary>
     [JSExport]
     public static void Release(int handle) => Matches.Remove(handle);

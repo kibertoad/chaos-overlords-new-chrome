@@ -582,8 +582,9 @@ with.
 
 ## Resolving turns on the server
 
-Status: decided (`docs/DECISIONS.md`, 2026-10-06); the C# resolver and its WebAssembly build are
-implemented and checked, and the server does not call them yet.
+Status: decided (`docs/DECISIONS.md`, 2026-10-06); the C# resolver, its WebAssembly build and the
+Node and Cloudflare hosts (`@chaos-overlords/resolver`) are implemented and checked, and the server
+does not call them yet.
 
 Lockstep leaves three gaps that the security model above names: recovery counts reports, so one
 person in several seats outvotes the rest; a client that diverges on purpose pauses the match every
@@ -611,9 +612,10 @@ projection of the state per seat, and a client that renders and plans from a pro
 | `AuthoritativeMatch` | `src/Rechaos.Multiplayer/Resolution` | The match as the server holds it. Bootstrap, sealed turn, handover and snapshot each call the code a client calls for the same fact (`MatchBootstrapFactory` and `CommandPhase`, `SealedTurnApplier`, `SeatControl`, `MatchStateClone`), so the two cannot drift apart. `AuthoritativeMatchTests` holds it to a client's hashes. |
 | `Rechaos.Resolver.Wasm` | `src/Rechaos.Resolver.Wasm` | `AuthoritativeMatch` behind `[JSExport]` functions that take the wire's JSON: the stored `gameSettings` blob, the roster, a sealed set as `GET /turns/:n/orders` answers it. A match lives in the runtime under an integer handle between calls. |
 | `TurnResolver` port | `multiplayer/packages/kernel` (to come) | What the kernel calls. A runtime supplies it; a server without one keeps today's report counting. |
-| Node host | `runtimes/node` (to come) | Loads the bundle in a worker thread, because a turn costs hundreds of milliseconds of CPU that must not stall the event loop and every stream on it. |
-| Cloudflare host | a resolver Worker (to come) | A Worker of its own without `nodejs_compat`, holding matches in a Durable Object per match and called over a service binding. It needs the paid plan: a turn takes about half a second of CPU against the free plan's 10 ms. |
-| Determinism check | `tools/ResolverDeterminism` | Plays a match natively and holds the WebAssembly build to every hash, under Node and under workerd. The multiplayer workflow runs it. |
+| Node host | `multiplayer/packages/resolver` (`./node`) | Loads the bundle in a worker thread, because a turn costs hundreds of milliseconds of CPU that must not stall the event loop and every stream on it. A thread that dies is started again on the next call, holding nothing. |
+| Cloudflare host | `multiplayer/packages/resolver` (`./worker`, `./cloudflare`) | A Worker of its own without `nodejs_compat`, holding matches in a Durable Object per match and called over a service binding; `./cloudflare` is the coordination Worker's side of that binding. It needs the paid plan: a turn takes about half a second of CPU against the free plan's 10 ms. |
+| Snapshot archive | `multiplayer/packages/resolver` | Both hosts take and hand out the archive clients upload, which the package writes and reads around the bare payload with `node:zlib` Brotli, in Node and in the coordination Worker. |
+| Determinism check | `tools/ResolverDeterminism` | Plays a match natively and holds the WebAssembly build to every hash in both hosts, and has the native client read each host's own snapshot. The multiplayer workflow runs it. |
 
 ### What the resolver is fed
 
@@ -629,12 +631,19 @@ client replays them:
   refused rather than ignored, because the hash it would return belongs to a later turn: the host
   feeds each set once, and after a restore reads the resolver's turn to know where to resume.
 
-It keeps the state in memory and checkpoints it, every ten turns as the host does today and at
+It keeps the state in memory, under a handle per match, and checkpoints it, every ten turns as the host does today and at
 every desync it settles. A checkpoint is the snapshot archive clients already read, so the server's
 checkpoints replace the host's uploads. A host that lost its runtime restores the newest checkpoint
 and replays the facts after it. The browser-wasm runtime has no Brotli codec, so the resolver hands
 out and takes the uncompressed save payload, and its host writes and reads the archive's header and
 compression.
+
+A host holds a bounded number of matches and releases the least recently used beyond it, or once the
+runtime's live managed heap passes a budget (forcing a collection before it releases anything). A
+call for a match the host no longer holds fails with `MatchNotHeldError`, and the caller rebuilds the
+match from its newest checkpoint and the facts after it. A call whose input the build refuses (a
+sealed set for another turn, a snapshot that does not hash to what it is stored under) fails with
+`ResolverRefusedError`, and rebuilding does not help.
 
 ### Versions
 
@@ -664,6 +673,15 @@ would fall back to reflection fails the build. `JsonContractTests` holds the con
 the reflection-based serializer wrote and pins the definition fingerprint saves are checked against.
 Trimmed, the WebAssembly heap is 32 MiB after start and 55 MiB with one to four 26-turn matches held
 (46 MiB and 80 to 96 MiB untrimmed), against a 128 MB Cloudflare isolate.
+
+The managed heap is about 4 MiB after start; a 26-turn match adds about 1.5 MiB of it and a 104-turn
+match about 8 MiB, and the WebAssembly memory, which only grows, follows at two to three times the
+live heap. Durable Objects of one class share isolates, so the Cloudflare host holds at most four
+matches and 24 MiB of managed heap per isolate by default (`RESOLVER_MAX_MATCHES`,
+`RESOLVER_MANAGED_HEAP_MIB`): three 104-turn matches take the memory to about 96 MiB. The Node host
+defaults to 64 matches and 512 MiB. A four-year match outgrows the 16 MiB save limit before it ends,
+so it cannot be checkpointed late in its life; this is a limit of the native save, which a client
+uploading a snapshot meets in the same place.
 
 Speed is a separate lever, left alone while a turn costs about half a second: Mono AOT (which needs
 the `wasm-tools` workload in CI) or NativeAOT-LLVM once it leaves the experimental feed. Either is

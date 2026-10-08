@@ -93,7 +93,7 @@ export function readRecordedVersion() {
 /**
  * Records one version in every publishable manifest and returns the paths that changed.
  *
- * Only the manifest's own `version` line is rewritten. Re-serialising nine hand-formatted manifests
+ * Only the manifest's own `version` line is rewritten. Re-serialising ten hand-formatted manifests
  * would put unrelated churn in a release commit, so the replacement is checked against a reparse
  * instead: the result has to be the same manifest with the same key order and one new version.
  */

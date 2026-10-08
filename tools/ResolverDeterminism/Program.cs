@@ -1,7 +1,7 @@
 // Writes a transcript of one online match for tools/ResolverDeterminism/check.mjs to replay through
 // the WebAssembly resolver (src/Rechaos.Resolver.Wasm).
 //
-//   dotnet run --project tools/ResolverDeterminism -c Release -- <transcript.json> [seed] [turns]
+//   dotnet run --project tools/ResolverDeterminism -c Release -- <transcript.json> [seed] [turns] [duration]
 //
 // The match is played twice natively while the transcript is written: once the way a client plays
 // it (bootstrap, CommandPhase, SealedTurnApplier, SeatControl) and once through AuthoritativeMatch,
@@ -22,16 +22,28 @@ using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
 if (args.Length < 1)
 {
-    Console.Error.WriteLine("usage: ResolverDeterminism <transcript.json> [seed] [turns]");
+    Console.Error.WriteLine("usage: ResolverDeterminism <transcript.json> [seed] [turns] [duration]");
+    Console.Error.WriteLine("       ResolverDeterminism --read-archive <archive.txt> <stateHash>");
     return 2;
+}
+if (args[0] == "--read-archive")
+{
+    // A snapshot archive a resolver host wrote, read the way every client reads one from the server.
+    if (args.Length < 3) return 2;
+    AuthoritativeMatch.FromSnapshot(BundledOriginalData.Load(), File.ReadAllText(args[1]).Trim(), args[2]);
+    Console.WriteLine($"the archive restores to {args[2]}");
+    return 0;
 }
 var output = args[0];
 var seed = args.Length > 1 ? int.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture) : 1996;
 var turns = args.Length > 2 ? int.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 40;
+// SixMonths by default; a longer duration (OneYear, TwoYears, FourYears) makes a transcript for
+// measuring how the resolver's memory grows over a long match.
+var duration = args.Length > 3 ? Enum.Parse<GameDuration>(args[3]) : GameDuration.SixMonths;
 
 var definitions = BundledOriginalData.Load();
 var settings = new MultiplayerGameSettings(
-    ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]);
+    ScenarioId.Greed, duration, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]);
 PlayerView[] players =
 [
     new("p1", 0, "ADA", PortraitId: 6, Status: WirePlayerStatus.Active, IsHost: true),
@@ -83,6 +95,7 @@ while (client.State.Outcome is null && client.State.Coordinator.Turn <= turns)
         {
             ["kind"] = "snapshot",
             ["savePayload"] = Convert.ToBase64String(resolver.SavePayload()),
+            ["archive"] = resolver.Snapshot(),
             ["hash"] = resolver.StateHash,
         });
     }
@@ -90,7 +103,7 @@ while (client.State.Outcome is null && client.State.Coordinator.Turn <= turns)
 
 if (!steps.Any(step => (string?)step!["kind"] == "snapshot"))
 {
-    // Without it the driver never restores a match, and the run would pass without the check.
+    // Without it check.mjs never restores a match, and the run would pass without the check.
     Console.Error.WriteLine("the run stopped before turn 10, so the transcript has no snapshot to restore from");
     return 1;
 }

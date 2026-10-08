@@ -11,6 +11,9 @@ dist/
 .env
 .dev.vars
 
+# The WebAssembly resolver, laid out by packages/resolver/scripts/bundle.mjs from the .NET build.
+packages/resolver/bundle/
+
 # Licence texts are copied into each publishable package from the repository root by
 # scripts/prepublish.mjs, so every npm tarball carries its own copy.
 packages/*/LICENSE
