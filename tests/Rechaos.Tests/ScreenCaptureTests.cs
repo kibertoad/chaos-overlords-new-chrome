@@ -9,7 +9,8 @@ namespace Rechaos.Tests;
 /// Screens against captures of the original. An experiment run recorded with the probe's
 /// <c>--capture</c> holds a capture of the drawing area at its endpoint, with the xxh3 and the
 /// count of exact white pixels of each screen element it is compared at. The rebuild replays the
-/// run, draws its endpoint with <c>--reference-frame</c> at the capture's marker frame, and has to
+/// run, draws its endpoint with <c>--reference-frame</c> at the capture's marker frame and pump
+/// counter, and has to
 /// draw every element as the original did, outside the areas a deviation draws
 /// (<see cref="ScreenCaptureMasks"/>). docs/validation/screen-captures.md and
 /// docs/validation/screen-comparison.md give the workflow.
@@ -32,7 +33,7 @@ public sealed partial class ScreenCaptureTests
     // SCR-HIRE-001, SCR-GANG-002, SCR-COMBAT-001, SCR-EVENT-001, SCR-OBJECTIVE-001, SCR-SEARCH-001,
     // SCR-MOVE-001, SCR-EQUIP-001, SCR-RESEARCH-001, SCR-GANG-001, SCR-GIVE-001, SCR-SELL-001,
     // SCR-INFLUENCE-001, SCR-ATTACK-001, SCR-OPTIONS-001, SCR-COMLINK-002, SCR-COMLINK-001,
-    // SCR-AWARDS-001, SCR-OBJECTIVE-002, SCR-COMBAT-002 and SCR-AWARDS-002.
+    // SCR-AWARDS-001, SCR-OBJECTIVE-002, SCR-COMBAT-002, SCR-AWARDS-002 and SCR-SETUP-003.
     // docs/validation/screen-capture-coverage.md lists the experiments whose captures each screen is compared at,
     // and CoverageTableNamesEveryComparedCapture holds that table to the fixtures.
     // The site and Force meters of RULE-UI-005 and the sector values of RULE-UI-011 are compared
@@ -51,6 +52,11 @@ public sealed partial class ScreenCaptureTests
     // FND-UI-067), a hire offer in flight (FND-HIRE-010), and the order panels with a choice made
     // (FND-EQUIP-011). EXP-UI-045 and EXP-UI-050 compare the site progress meters of SCR-UI-004,
     // left out in sectors other players own and drawn in the active player's own (FND-UI-070).
+    // EXP-UI-051 compares the setup screen the game drew under the name
+    // dialog SCR-SETUP-003, which Windows draws, with card 0's name row left to the editor of
+    // DEV-SETUP-003.
+    // EXP-UI-031 compares the first planning entry at every frame of the active-player marker
+    // and both frames of the selected sector's outline.
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
@@ -70,8 +76,25 @@ public sealed partial class ScreenCaptureTests
             .Select(element => ScreenComparison.Compare(element, original, rebuild, masks, capture.WhiteKeyed)).ToArray();
         var output = TestContext.Current.TestOutputHelper;
         foreach (var result in results) output?.WriteLine(result.ToString());
-        Assert.Empty(results.Where(result => result.Verdict == ElementVerdict.Differs).Select(result => result.ToString()));
+        var leftOut = LeftOut.GetValueOrDefault((experiment, run, step));
+        if (leftOut.Elements is not null) output?.WriteLine($"Not asserted: {string.Join(", ", leftOut.Elements)}: {leftOut.Reason}.");
+        Assert.Empty(results
+            .Where(result => result.Verdict == ElementVerdict.Differs
+                && leftOut.Elements?.Contains(result.Element.Element) != true)
+            .Select(result => result.ToString()));
     }
+
+    // Elements of a capture that are compared and reported but not asserted, because the capture
+    // does not record what picks their pixels.
+    private static readonly Dictionary<(string Experiment, int Run, int Step), (string[] Elements, string Reason)> LeftOut = new()
+    {
+        // EXP-UI-036: Last Turn Events is open at the dump. The selection frame behind it is the one
+        // the panel held when it came in at the planning entry (FND-UI-051), which the capture's
+        // pump counter does not give, so the elements that hold the selected sector are left out.
+        [("EXP-UI-036", 0, -1)] = (
+            ["City view and right control panel", "Neutral city map", "Last Turn Events panel"],
+            "the selection frame Last Turn Events held when it came in is not recorded"),
+    };
 
     // Each frame starts the game, so the rows draw theirs ahead on a few workers.
     private static readonly RowPrefetch<ScreenCaptureRecord, ScreenFrame> Renders = new(
@@ -108,7 +131,10 @@ public sealed partial class ScreenCaptureTests
                 OriginalNewGameExperimentTests.ReplayedMatch(experiment, run), capture.MarkerFrame, capture.Clicks,
                 $"{experiment}-{run}-{step}", capture.FrameCounter, capture.SelectedSector, capture.Lamps,
                 capture.ItemFrame, clipTick: capture.ClipTick, idlePhase: capture.IdlePhase,
-                caretPhase: capture.CaretPhase, clipIndex: capture.ClipIndex);
+                caretPhase: capture.CaretPhase, clipIndex: capture.ClipIndex,
+                // EXP-UI-036: the probe's state dump stands before the Exit of the planning entry's
+                // Last Turn Events, a shot step after it.
+                entryPanels: capture.Step == -1, idleGangWarning: capture.IdleGangWarning);
     }
 
     // Shots whose screen a repaint of the original's window changed. The rebuild never loses what it
@@ -148,9 +174,10 @@ public sealed partial class ScreenCaptureTests
         }
     }
 
-    // The comparison needs a frame that depends on nothing but the state and the marker frame:
-    // two runs of the game at different marker frames differ only in the marker (FND-UI-038), at
-    // (50 + 70n, 6, 20, 20) for viewed player n, so nothing else on the screen moves with time.
+    // The comparison needs a frame that depends on nothing but the state, the marker frame and the
+    // pump's counter: two renders at different marker frames differ only in the marker
+    // (FND-UI-038), at (50 + 70n, 6, 20, 20) for viewed player n. The selected sector's outline
+    // moves with the pump's counter (FND-UI-048), which each capture records beside its marker frame.
     [Fact]
     public void OnlyTheMarkerFrameChangesAReplayedEndpoint()
     {
