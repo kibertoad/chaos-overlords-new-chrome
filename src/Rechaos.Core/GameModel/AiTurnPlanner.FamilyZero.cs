@@ -31,7 +31,8 @@ public static partial class AiTurnPlanner
                     state, playerId, gang, gangSlot, visible, visibleWeight, snapshot);
                 break;
             case GangAction.Control:
-                if (state.Sectors[gang.SectorId].Owner == playerId)
+                // FND-AI-080: the owner query, which reads -2 under police presence.
+                if (OwnerQuery(state, gang.SectorId) == playerId.Value)
                     SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Chaos);
                 else
                     PrepareFamilyZeroMove(
@@ -197,7 +198,9 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        var owned = state.Sectors[gang.SectorId].Owner == playerId;
+        // FND-AI-080: the owner query, as after Control; selector 0x2C refuses a policed sector
+        // anyway, so only the reading differs from the raw owner byte.
+        var owned = OwnerQuery(state, gang.SectorId) == playerId.Value;
         if (!owned && CanSoloControl(state, playerId, gang))
         {
             SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Control);

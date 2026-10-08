@@ -26,6 +26,27 @@ public sealed class ReferenceFrameRequestTests
         Assert.Null(next.MarkerFrame);
     }
 
+    // EXP-UI-036: an endpoint capture stands at the probe's dump, before the planning entry's Last
+    // Turn Events is exited; a shot step stands after it.
+    [Fact]
+    public void EntryPanelsAreAskedForByAFlag()
+    {
+        Assert.True(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--entry-panels"])!.EntryPanels);
+        Assert.False(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp"])!.EntryPanels);
+    }
+
+    // RULE-OPTIONS-003: the probe switches Warn if Idle Gangs off in a run that presses Done.
+    [Fact]
+    public void TheIdleGangWarningCanBeSwitchedOff()
+    {
+        Assert.False(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp", "--no-idle-warning"])!.IdleGangWarning);
+        Assert.True(ReferenceFrameRequest.ParseArguments(
+            ["--reference-frame", "planning.rchsave", "frame.bmp"])!.IdleGangWarning);
+    }
+
     // SCR-UI-001, SCR-UI-002, SCR-SETUP-001: a screen's name in place of the save asks for that
     // screen.
     [Theory]
@@ -56,6 +77,10 @@ public sealed class ReferenceFrameRequestTests
         new[] { "--reference-frame", "save", "save" },
         new[] { "--reference-clicks", "1:2" },
         new[] { "--pump-counter", "1" },
+        new[] { "--entry-panels" },
+        new[] { "--no-idle-warning" },
+        new[] { "--reference-frame", "title", "frame", "--entry-panels" },
+        new[] { "--reference-frame", "save", "frame", "--entry-panels", "--entry-panels" },
         new[] { "--selected-sector", "1" },
         new[] { "--reference-frame", "save", "frame", "--selected-sector", "64" },
         new[] { "--reference-frame", "save", "frame", "--selected-sector", "-1" },
@@ -177,6 +202,21 @@ public sealed class ReferenceFrameRequestTests
         Assert.Equal("576:166,'MEET ME 0700,250:190", string.Join(",", clicks));
         Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("'lower"));
         Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("'"));
+    }
+
+    // FND-UI-046: a held button is pressed, moved and released as edges of their own, so a frame
+    // can be drawn while it is down.
+    [Fact]
+    public void ButtonEdgesAreReadOnTheirOwn()
+    {
+        var clicks = ReferenceClick.ParseList("161:304:d,300:200:m,300:200:u,524:150:rd,524:150:ru,10:10");
+        Assert.Equal(
+            [ReferenceButtonEdge.Down, ReferenceButtonEdge.Move, ReferenceButtonEdge.Up,
+                ReferenceButtonEdge.RightDown, ReferenceButtonEdge.RightUp, null],
+            clicks.Select(click => click.Edge));
+        Assert.Equal("161:304:d,300:200:m,300:200:u,524:150:rd,524:150:ru,10:10", string.Join(",", clicks));
+        Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("161:304:x"));
+        Assert.Throws<ArgumentException>(() => ReferenceClick.ParseList("640:304:d"));
     }
 
     // FND-COMBAT-016: the screen shows a clip's ticks 0 to 21.

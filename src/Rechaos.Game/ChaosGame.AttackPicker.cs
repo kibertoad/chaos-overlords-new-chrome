@@ -188,7 +188,7 @@ public sealed partial class ChaosGame
         Texture2D pixel,
         MatchState state)
     {
-        DrawPanelArtwork(batch, pixel, _targetAcquisitionBackground, AttackCommandLayout.Panel, 248);
+        DrawPanelArtwork(batch, pixel, TargetAcquisitionBackground, AttackCommandLayout.Panel, 248);
 
         var actor = state.FindGang(_commandTargetGang)!;
         DrawAttackGang(batch, actor, AttackCommandLayout.ActorPortrait, AttackCommandLayout.ActorItem);
@@ -196,9 +196,9 @@ public sealed partial class ChaosGame
         var opponents = AttackPicker.Opponents(actor.Owner);
         for (var slot = 0; slot < opponents.Count; slot++)
         {
-            if (_uiSprites is null || state.FindPlayer(opponents[slot]) is not { } opponent) continue;
+            if (UiSprites is null || state.FindPlayer(opponents[slot]) is not { } opponent) continue;
             var enabled = AttackPicker.IsOpponentEnabled(state, _commandTargetOptions, opponent.Id);
-            batch.Draw(_uiSprites, AttackCommandLayout.Opponent(slot),
+            batch.Draw(UiSprites, AttackCommandLayout.Opponent(slot),
                 AttackCommandLayout.OpponentSource(opponent.Setup.PortraitId, enabled), Color.White);
         }
 
@@ -208,39 +208,39 @@ public sealed partial class ChaosGame
         for (var cell = 0; cell < cells.Count; cell++)
         {
             var candidate = state.FindGang(new GangId(_commandTargetOptions[cells[cell]].Target.Id))!;
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, AttackCommandLayout.TargetCard(cell),
+            if (UiSprites is not null)
+                batch.Draw(UiSprites, AttackCommandLayout.TargetCard(cell),
                     AttackCommandLayout.TargetCardSource, Color.White);
             DrawAttackGang(batch, candidate, AttackCommandLayout.TargetPortrait(cell),
                 itemSlot => AttackCommandLayout.TargetItemBox(cell, itemSlot),
                 () => DrawAttackTargetForce(batch, pixel, candidate, cell));
         }
 
-        if (_uiKeyedSprites is not null)
+        if (UiKeyedSprites is not null)
         {
             var opponentSlot = _attackSelection.Opponent is { } chosen
                 ? opponents.ToList().IndexOf(chosen)
                 : -1;
             if (opponentSlot >= 0)
-                batch.Draw(_uiKeyedSprites, AttackCommandLayout.OpponentFrame(opponentSlot),
+                batch.Draw(UiKeyedSprites, AttackCommandLayout.OpponentFrame(opponentSlot),
                     AttackCommandLayout.OpponentFrameSource, Color.White);
             var targetCell = _attackSelection.Target is { } target ? cells.ToList().IndexOf(target) : -1;
             if (targetCell >= 0)
-                batch.Draw(_uiKeyedSprites, AttackCommandLayout.TargetMarker(targetCell),
+                batch.Draw(UiKeyedSprites, AttackCommandLayout.TargetMarker(targetCell),
                     AttackCommandLayout.TargetMarkerSource, Color.White);
         }
 
-        if (_uiSprites is null) return;
+        if (UiSprites is null) return;
         // FND-ATTACK-004, FND-UI-019: the Confirm face shows whether the order can be confirmed.
-        batch.Draw(_uiSprites, AttackCommandLayout.Ok, _attackSelection.CanConfirm
+        batch.Draw(UiSprites, AttackCommandLayout.Ok, _attackSelection.CanConfirm
             ? AttackCommandLayout.OkEnabledSource
             : AttackCommandLayout.OkDisabledSource, Color.White);
         if (_hoverPoint is not { } hover) return;
         if (_pressedAttackFace == AttackFace.Cancel && AttackCommandLayout.Cancel.Contains(hover))
-            batch.Draw(_uiSprites, AttackCommandLayout.Cancel,
+            batch.Draw(UiSprites, AttackCommandLayout.Cancel,
                 AttackCommandLayout.CancelPressedSource, Color.White);
         else if (_pressedAttackFace == AttackFace.Confirm && AttackCommandLayout.Ok.Contains(hover))
-            batch.Draw(_uiSprites, AttackCommandLayout.Ok,
+            batch.Draw(UiSprites, AttackCommandLayout.Ok,
                 AttackCommandLayout.OkPressedSource, Color.White);
     }
 
@@ -255,18 +255,18 @@ public sealed partial class ChaosGame
         Func<int, Rectangle> itemDestination,
         Action? drawOverPortrait = null)
     {
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, portrait,
+        if (GangPortraits is not null)
+            batch.Draw(GangPortraits, portrait,
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
         drawOverPortrait?.Invoke();
-        if (_itemPortraits is null) return;
+        if (ItemPortraits is null) return;
         for (var slot = 0; slot < AttackCommandLayout.EquippedItemCount; slot++)
             if (EquippedItem(gang, slot) is { } itemId)
             {
                 // FND-ATTACK-007: a narrower box shows the icon's leftmost columns.
                 var destination = itemDestination(slot);
                 var source = OriginalSpriteLayout.ItemPortrait(itemId);
-                batch.Draw(_itemPortraits, destination,
+                batch.Draw(ItemPortraits, destination,
                     source with { Width = Math.Min(source.Width, destination.Width) }, Color.White);
             }
     }
@@ -278,12 +278,12 @@ public sealed partial class ChaosGame
     private void DrawAttackTargetForce(SpriteBatch batch, Texture2D pixel, MatchGangState gang, int cell)
     {
         batch.Draw(pixel, AttackCommandLayout.TargetForceBackground(cell), Color.Black);
-        if (_uiSprites is null) return;
+        if (UiSprites is null) return;
         var track = AttackCommandLayout.TargetForceTrack(cell);
-        batch.Draw(_uiSprites, track, CombatPanelLayout.RedTrackSource, Color.White);
+        batch.Draw(UiSprites, track, CombatPanelLayout.RedTrackSource, Color.White);
         var fill = CombatPanelLayout.TrackFill(gang.Force);
         if (fill == 0) return;
-        batch.Draw(_uiSprites, new Rectangle(track.X, track.Y, fill, track.Height),
+        batch.Draw(UiSprites, new Rectangle(track.X, track.Y, fill, track.Height),
             CombatPanelLayout.GreenTrackSource(fill), Color.White);
     }
 }

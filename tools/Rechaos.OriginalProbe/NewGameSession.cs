@@ -35,21 +35,33 @@ internal sealed record ProbeHire(int Turn, int OfferSlot, int Sector, int Player
 /// or less writes the <c>family</c> of a computer player's planning record in the slot
 /// (FMT-STATE-007), <see cref="Raider"/> sets a computer player's byte of <c>raider_mode</c>, which
 /// a takeover of a network seat sets (RULE-AI-027), <see cref="Retired"/> clears the player's
-/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006), and
+/// byte of <c>player_active</c>, as the elimination check does (RULE-TURN-006),
 /// <see cref="Cash"/> sets the player's <c>cash</c> to <paramref name="Value"/>, so a human can pay
-/// for a hire every turn.
+/// for a hire every turn, <see cref="Force"/> sets the <c>force</c> of the player's gang in the slot
+/// (FMT-STATE-001), so a gang ordered to Heal can be at Force 10 when it acts (RULE-HEAL-001),
+/// <see cref="Tolerance"/> sets the <c>base_tolerance</c> of sector <paramref name="Slot"/>
+/// (FMT-STATE-002), so one Bribe can wrap the signed byte (RULE-BRIBE-001), and
+/// <see cref="Deactivated"/> writes <c>GANG_INACTIVE</c> into the <c>sector</c> of the gang record
+/// in roster slot <paramref name="Slot"/> (FMT-STATE-001), the one byte a gang's death changes, so
+/// the elimination check at the end of the turn finds what it would after a fight.
 /// </summary>
 internal sealed record ProbePlanning(int Turn, int Player, int Slot, int Family, int Value = 0)
 {
     public const int Raider = -1;
     public const int Retired = -2;
     public const int Cash = -3;
+    public const int Force = -4;
+    public const int Tolerance = -5;
+    public const int Deactivated = -6;
 
     public override string ToString() => Family switch
     {
         Raider => $"turn {Turn}: player {Player} raider_mode 1",
         Retired => $"turn {Turn}: player {Player} player_active 0",
         Cash => $"turn {Turn}: player {Player} cash {Value}",
+        Force => $"turn {Turn}: player {Player} gang slot {Slot} force {Value}",
+        Tolerance => $"turn {Turn}: sector {Slot} base_tolerance {Value}",
+        Deactivated => $"turn {Turn}: player {Player} gang slot {Slot} sector 100",
         _ => $"turn {Turn}: player {Player} gang slot {Slot} family {Family}",
     };
 }
@@ -65,12 +77,6 @@ internal sealed record ProbeSearch(int Turn, IReadOnlyList<int> Definitions, int
     public override string ToString() => $"turn {Turn}: player {Player} search filter {string.Join(" ", Definitions)}";
 }
 
-/// <summary>
-/// One city redraw (FND-SEARCH-006): the viewing player and each site marker it drew as
-/// definition, sector, ordinal and controlled flag.
-/// </summary>
-internal sealed record CityMarkers(int Viewer, List<int[]> Markers);
-
 /// A Financial panel the probe opens before the Done press of <paramref name="Turn"/>, after that
 /// turn's orders and hires are written: the City variant for sector -1, otherwise the Sector variant
 /// of that sector, which the probe selects on the map first (FND-FINANCE-002).
@@ -81,42 +87,6 @@ internal sealed record ProbeFinance(int Turn, int Sector)
         ? $"Financial, City ({OriginalAddresses.FinanceCityX}, {OriginalAddresses.FinanceCityY}), turn {Turn}"
         : $"Financial, Sector ({OriginalAddresses.FinanceSectorX}, {OriginalAddresses.FinanceSectorY}) with sector {Sector} selected, turn {Turn}";
 }
-
-/// <summary>
-/// 32-bit values the probe writes at <paramref name="Address"/> when the planning-entry function
-/// starts to draw the console (FND-UI-040): the first at its first call, the second at its second,
-/// and the last at every later call. The console then draws a number the match would not reach,
-/// such as a score whose first glyph cell lies outside the glyph sheet (RULE-UI-004), over what an
-/// earlier call drew. The write changes the match from then on, so a run that uses it is not
-/// replayed. The calls are counted over every human's entries, so the probe takes it with one
-/// human only.
-/// </summary>
-internal sealed record ProbeDrawValue(uint Address, IReadOnlyList<int> Values)
-{
-    public override string ToString() => $"draw_value 0x{Address:X8} {string.Join("/", Values)}";
-}
-
-/// <summary>
-/// A left-button press and release the probe posts at a client point once the dump is taken
-/// (<c>--search-clicks</c>, SearchClickRecord).
-/// </summary>
-internal sealed record ProbeClick(int X, int Y)
-{
-    public override string ToString() => $"({X}, {Y}) after the dump";
-}
-
-/// <summary>
-/// One call of a planning entry panel (RULE-SETUP-008): Combat Results or Last Turn Events, the
-/// roll count when it was called, and whether it stayed open until the probe pressed Exit. The
-/// Combat Results function returns at once when no fight qualifies.
-/// </summary>
-internal sealed record PanelRecord(string Panel, int AfterRoll, bool Shown);
-
-/// <summary>
-/// The values one Financial panel drew, in the order it drew them (FND-FINANCE-003), with the sector
-/// the probe asked for and the sector the panel function was passed, -2 when it was not called.
-/// </summary>
-internal sealed record FinanceRecord(int Turn, int Sector, int PanelSector, List<int> Values);
 
 /// <summary>
 /// Setup choices the probe writes before Begin; a null leaves what the setup screen opened with.
@@ -134,8 +104,16 @@ internal sealed record NewGameSettings(
     IReadOnlyList<ProbeOrderStep>? OrderSteps = null, bool GangMarkers = false, bool TitleCapture = false,
     bool CreditsCapture = false, bool SetupCapture = false, IReadOnlyList<ProbeOrderStep>? SetupSteps = null,
     bool DetailedCombat = false, bool Pointer = false, bool Sounds = false, bool WatchIntro = false, bool Waits = false, bool Slides = false,
-    IReadOnlyList<ProbeSavedWrite>? SavedWrites = null, IReadOnlyList<ProbeClose>? Closes = null)
+    IReadOnlyList<ProbeSavedWrite>? SavedWrites = null, IReadOnlyList<ProbeClose>? Closes = null,
+    bool PassCards = false, IReadOnlyList<ProbeDelay>? Delays = null, IReadOnlyList<ProbeMenu>? Menus = null,
+    bool ClockCaptures = false)
 {
+    /// <summary>
+    /// A local match with several humans whose turns the probe plays: each round it presses Ready on
+    /// every hand-off card and Done for every human after the first (RULE-SETUP-008).
+    /// </summary>
+    public bool HotSeat => Humans is { Count: > 1 } && EndTurns > 0 && Comlink is null;
+
     public static readonly NewGameSettings Defaults = new(null, null, null, null);
 
     /// <summary>The <c>--humans</c> slots in the order given, or slot 0, the setup screen's human, when the option is left out.</summary>
@@ -181,6 +159,7 @@ internal sealed record NewGameSettings(
     {
         "strip" => $"press ({step.X}, {step.Y})",
         "drag" => $"drag ({step.X}, {step.Y}) to ({step.Target}, {step.Choice})",
+        "name" => $"name {step.Text}",
         _ => $"capture for {step.Screens}",
     };
 
@@ -197,6 +176,7 @@ internal sealed record NewGameSettings(
     {
         for (var turn = 1; turn <= Math.Min(EndTurns, turnsPlayed); turn++)
         {
+            if (HotSeat) yield return ("left_click", $"Ready (320, 265) of the first human, turn {turn}");
             var orders = (Orders ?? []).Where(order => order.Turn == turn).ToArray();
             var hires = (Hires ?? []).Where(hire => hire.Turn == turn).ToArray();
             var planning = (Planning ?? []).Where(write => write.Turn == turn).ToArray();
@@ -209,23 +189,36 @@ internal sealed record NewGameSettings(
                 yield return ("saved", write.ToString());
             foreach (var panel in (Finance ?? []).Where(panel => panel.Turn == turn))
                 yield return ("left_click", panel.ToString());
+            foreach (var menu in (Menus ?? []).Where(menu => menu.Turn == turn))
+                yield return ("key", menu.ToString());
             if (ExpireTurns?.Contains(turn) == true)
-            {
                 yield return ("wait", $"no Done press, turn {turn}: the planning time runs out");
-                continue;
+            else
+            {
+                foreach (var delay in (Delays ?? []).Where(delay => delay.Turn == turn))
+                    yield return ("wait", delay.ToString());
+                yield return ("left_click", orders.Length + hires.Length + planning.Length + search.Length == 0
+                    ? $"Done (550, 306) with no orders, turn {turn}"
+                    : $"Done (550, 306), turn {turn}");
             }
-            yield return ("left_click", orders.Length + hires.Length + planning.Length + search.Length == 0
-                ? $"Done (550, 306) with no orders, turn {turn}"
-                : $"Done (550, 306), turn {turn}");
+            if (HotSeat)
+                yield return ("left_click", $"Ready (320, 265) and Done (550, 306) with no orders for each later human, turn {turn}");
         }
+        // Named after the card, so the press is not counted as one of a turn's Done presses.
+        if (PassCards)
+            yield return ("left_click", "Elimination card Done (478, 401) on each card the turns reach");
         foreach (var click in SearchClicks ?? []) yield return ("left_click", click.ToString());
         foreach (var write in (SavedWrites ?? []).Where(write => write.Turn == EndTurns + 1))
             yield return ("saved", $"{write} at the dump");
         foreach (var step in HireSteps ?? [])
             yield return (step.Slot >= 0 && step.Sector != -2 ? "drag" : "left_click", $"{step} after the dump");
         foreach (var step in OrderSteps ?? [])
-            yield return (step.Kind switch { "open" => "double_click", "wait" => "wait", "type" => "key", _ => "left_click" },
-                $"{step} after the dump");
+            yield return (step.Kind switch
+                {
+                    "open" => "double_click", "wait" => "wait", "type" or "keys" => "key", "down" => "left_press",
+                    "move" => "pointer_move", "up" => "left_release", "rdown" => "right_press",
+                    "rup" => "right_release", _ => "left_click",
+                }, $"{step} after the dump");
         foreach (var close in Closes ?? []) yield return ("close", $"{close} after the dump");
     }
 }
@@ -235,14 +228,6 @@ internal sealed record NewGameSettings(
 /// of each name it drew, in drawing order, with the kind of row: splash, ranked or eliminated.
 /// </summary>
 internal sealed record EndgameDrawing(List<int> Arguments, List<int> Rows, List<string> Kinds);
-
-/// <summary>
-/// The planning clock of one human planning turn (RULE-TIMER-002, RULE-TIMER-003): the limit in
-/// milliseconds when the clock started, each redraw of the bar as elapsed milliseconds, width and
-/// the effect slot it played (0 for none), the elapsed milliseconds of the last time-limit test
-/// that did not end the turn, and of the one that did.
-/// </summary>
-internal sealed record TimerRecord(int Turn, int LimitMs, List<int[]> Bars, int LastUnexpired, int Expired);
 
 internal sealed record ProbeTrace(
     string Executable,
@@ -275,7 +260,13 @@ internal sealed record ProbeTrace(
     List<SlideRecord>? Slides = null,
     List<CloseRecord>? Closes = null,
     List<SavedWriteRecord>? SavedWrites = null,
-    bool? EffectsEnabled = null);
+    bool? EffectsEnabled = null,
+    List<KeyEventRecord>? KeyEvents = null,
+    List<NameEntryRecord>? NameEntries = null,
+    List<int>? EliminationCards = null,
+    List<MenuRecord>? Menus = null,
+    List<ClockCaptureRecord>? ClockCaptures = null,
+    List<NameShotRecord>? NameShots = null);
 
 /// <summary>
 /// Starts the original in a window, records the seed and every roll, opens a new local game with
@@ -303,8 +294,6 @@ internal sealed partial class NewGameSession(
     private bool _eliminationCardReached;
     private EndgameDrawing? _endgame;
     private bool _endgameDrawn;
-    private CityMarkers? _redraw;
-    private CityMarkers? _lastRedraw;
     private readonly List<FinanceRecord> _finance = [];
     private FinanceRecord? _financeCapture;
     private int _financePanelSector = -2;
@@ -324,9 +313,13 @@ internal sealed partial class NewGameSession(
         if (settings.TraceHires) _process.SetBreakpoint(OriginalAddresses.HireOrderCheck, TraceHire);
         if (settings.TraceCalls is { } traced) _process.SetBreakpoint(traced, TraceCall);
         // FND-PLATFORM-014: on a 32-bit desktop the keyed copies key nothing, so the white the
-        // key should drop is drawn. --white-key passes the white a 32-bit surface holds instead.
-        // Quiet, because the keyed copies run on every animation tick of a waiting planning phase.
-        if (settings.WhiteKey) _process.SetBreakpoint(OriginalAddresses.KeyColourCall, UseThirtyTwoBitKey, quiet: true);
+        // key should drop is drawn. --white-key makes the white a 32-bit surface holds the 16-bit
+        // key. The key is an immediate operand (FND-PLATFORM-015), so one write before the game
+        // runs changes every keyed copy, and the run never stops for it.
+        if (settings.WhiteKey)
+            _process.Patch(OriginalAddresses.SixteenBitKeyImmediate,
+                BitConverter.GetBytes(OriginalAddresses.SixteenBitWhiteKey),
+                BitConverter.GetBytes(OriginalAddresses.ThirtyTwoBitWhite));
         _process.SetBreakpoint(OriginalAddresses.CombatResults, context => OpenPanel(context, "Combat Results"));
         _process.SetBreakpoint(OriginalAddresses.LastTurnEvents, context => OpenPanel(context, "Last Turn Events"));
         if (settings.Finance is { Count: > 0 })
@@ -341,6 +334,8 @@ internal sealed partial class NewGameSession(
         }
         if (settings.GangMarkers) ArmGangMarkers();
         if (settings.ExpireTurns is { Count: > 0 }) ArmTimer();
+        if (settings.Menus is { Count: > 0 }) ArmMenuTicks();
+        if (settings.Comlink is not null || settings.Humans is { Count: > 1 }) ArmHandoffCard();
         if (settings.Comlink is not null) ArmComlink();
         if (settings.DetailedCombat) ArmDetailedCombat();
         if (settings.Pointer) ArmPointer();
@@ -426,8 +421,10 @@ internal sealed partial class NewGameSession(
         // A match that ends reaches the endgame instead of another planning phase; the run stops
         // there, once the awards are given (RULE-AWARDS-001).
         _process.SetBreakpoint(OriginalAddresses.AwardsRows, OnAwardsRows, oneShot: true);
-        // RULE-OBJECTIVE-005: the human's elimination reaches its card instead; the run stops there.
-        _process.SetBreakpoint(OriginalAddresses.EliminationCard, _ => _eliminationCardReached = true, oneShot: true);
+        // RULE-OBJECTIVE-005: the human's elimination reaches its card instead; the run stops there
+        // unless --pass-cards presses its Done.
+        ArmEliminationCard();
+        if (settings.ClockCaptures) ArmClockCaptures(window);
         var begun = DateTime.UtcNow;
         var settled = _process.RunUntil(
             () => _rolls.Count > rollsBeforeBegin && PlanningWaits(begun),
@@ -446,6 +443,9 @@ internal sealed partial class NewGameSession(
         // when elapsed_turns has moved on and the rolls have stopped again.
         for (var turn = 1; turn <= settings.EndTurns; turn++)
         {
+            // RULE-SETUP-008: with several humans each round starts at the first human's hand-off card.
+            if (settings.HotSeat && HandOff(window, FirstHuman) is { } handOffFailure)
+                return Finish(false, $"Turn {turn}: {handOffFailure}", rollsBeforeBegin);
             if (!ClosePanels(window))
                 return Finish(false, $"A panel of turn {turn} never closed.", rollsBeforeBegin);
             foreach (var order in (settings.Orders ?? []).Where(order => order.Turn == turn))
@@ -461,6 +461,9 @@ internal sealed partial class NewGameSession(
             foreach (var panel in (settings.Finance ?? []).Where(panel => panel.Turn == turn))
                 if (!CaptureFinance(window, panel))
                     return Finish(false, $"The Financial panel of turn {turn} for sector {panel.Sector} was not captured.", rollsBeforeBegin);
+            foreach (var menu in (settings.Menus ?? []).Where(menu => menu.Turn == turn))
+                if (HoldMenu(window, menu) is { } menuFailure)
+                    return Finish(false, $"Turn {turn}: {menuFailure}", rollsBeforeBegin);
             _rollsAtDone.Add(_rolls.Count);
             if (settings.Sounds) SampleEffectsEnabled();
             _turn = turn;
@@ -471,50 +474,16 @@ internal sealed partial class NewGameSession(
                 ? timeout + TimeSpan.FromMilliseconds(Math.Max(0, _process.ReadInt32(OriginalAddresses.PlanningLimitMs)))
                 : timeout;
             if (waits) _notes.Add($"turn {turn}: no Done press, waiting for the planning time to run out");
-            else Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
-            var target = turn;
-            var rollsAtClick = _rolls.Count;
-            var clicked = DateTime.UtcNow;
-            DateTime? moved = null;
-            // A press the game did not take leaves the turn where it was with no roll made; press
-            // again after a quiet while.
-            var next = _process.RunUntil(() =>
+            else
             {
-                if (_awardsReached || _eliminationCardReached) return true;
-                // FND-OBJECTIVE-004: a match that ends gives each active human one last look at the
-                // city, with the turn's Combat Results open, before the awards controller runs and
-                // before elapsed_turns moves on. Close the panels and press Done there.
-                if (_process.Read(OriginalAddresses.MatchOver, 1)[0] != 0
-                    && DateTime.UtcNow - _process.LastBreakpointUtc > TimeSpan.FromSeconds(2)
-                    && DateTime.UtcNow - clicked > TimeSpan.FromSeconds(5))
-                {
-                    _notes.Add($"the match is over; Done pressed at the final view after roll {_rolls.Count}");
-                    ClosePanels(window);
-                    Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
-                    clicked = DateTime.UtcNow;
-                }
-                if (!waits && _rolls.Count == rollsAtClick && _process.ReadInt32(OriginalAddresses.ElapsedTurns) < target
-                    && DateTime.UtcNow - clicked > TimeSpan.FromSeconds(20))
-                {
-                    ClosePanels(window);
-                    _notes.Add($"Done of turn {turn} pressed again after roll {_rolls.Count}");
-                    Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
-                    clicked = DateTime.UtcNow;
-                }
-                if (moved is null)
-                {
-                    if (_process.ReadInt32(OriginalAddresses.ElapsedTurns) < target) return false;
-                    // The loop of the turn just ended no longer runs once the count has moved on.
-                    moved = DateTime.UtcNow;
-                    ArmPlanningLoop();
-                }
-
-                return PlanningWaits(moved.Value);
-            }, turnTimeout);
-            if (!next)
-                return Finish(false, $"Turn {turn} never reached the next planning phase (match_over "
-                    + $"{_process.Read(OriginalAddresses.MatchOver, 1)[0]}, {_panelsOpen} panel(s) open, elapsed_turns "
-                    + $"{_process.ReadInt32(OriginalAddresses.ElapsedTurns)}).", rollsBeforeBegin);
+                foreach (var delay in (settings.Delays ?? []).Where(delay => delay.Turn == turn))
+                    _process.Pump(TimeSpan.FromMilliseconds(delay.Milliseconds));
+                // A --menu record keeps the ticks of its own turn only, up to this press.
+                _turnTicks = null;
+                Click(window, OriginalAddresses.DoneX, OriginalAddresses.DoneY);
+            }
+            if (WaitForNextPlanning(window, turn, waits, turnTimeout) is { } waitFailure)
+                return Finish(false, waitFailure, rollsBeforeBegin);
             if (_awardsReached)
             {
                 // FND-AWARDS-005: let the renderer's first drawing finish, so every row is kept. A
@@ -712,22 +681,6 @@ internal sealed partial class NewGameSession(
         _notes.Add($"search after roll {_rolls.Count}: {write}");
     }
 
-    // FND-SEARCH-006: each city redraw's markers, kept once the redraw returns; the dump keeps the
-    // last complete redraw, whichever human it was drawn for, with that viewer.
-    private void OnCityRedraw(BreakContext context)
-    {
-        var redraw = new CityMarkers(context.Argument(0), []);
-        _redraw = redraw;
-        _process.SetBreakpoint(context.ReturnAddress, _ =>
-        {
-            if (_redraw == redraw) _lastRedraw = redraw;
-            _redraw = null;
-        }, oneShot: true);
-    }
-
-    private void OnSiteMarker(BreakContext context) =>
-        _redraw?.Markers.Add([context.Argument(0), context.Argument(1), context.Argument(2), context.Argument(3) & 0xFF]);
-
     // FND-FINANCE-002, FND-FINANCE-003: selects the sector for the Sector variant, presses the part
     // of the Financial control that opens the variant, keeps the nine numbers the panel draws, and
     // presses its close control until the panel function has returned. A capture counts only when
@@ -797,18 +750,23 @@ internal sealed partial class NewGameSession(
             _process.Write(OriginalAddresses.PlayerActive + (uint)write.Player, [0]);
         else if (write.Family == ProbePlanning.Cash)
             _process.Write(OriginalAddresses.Cash + (uint)(write.Player * 4), BitConverter.GetBytes(write.Value));
+        else if (write.Family == ProbePlanning.Force)
+            _process.Write(OriginalAddresses.GangRecords
+                + (uint)(write.Player * OriginalAddresses.PlayerGangStride + write.Slot * OriginalAddresses.GangRecordSize
+                    + OriginalAddresses.GangForceOffset), [(byte)(sbyte)write.Value]);
+        else if (write.Family == ProbePlanning.Tolerance)
+            _process.Write(OriginalAddresses.SectorRecords
+                + (uint)(write.Slot * OriginalAddresses.SectorRecordSize + OriginalAddresses.SectorBaseToleranceOffset),
+                [(byte)(sbyte)write.Value]);
+        else if (write.Family == ProbePlanning.Deactivated)
+            _process.Write(OriginalAddresses.GangRecords
+                + (uint)(write.Player * OriginalAddresses.PlayerGangStride + write.Slot * OriginalAddresses.GangRecordSize) + 2,
+                [OriginalAddresses.GangInactive]);
         else
             _process.Write(OriginalAddresses.PlanningRecords
                 + (uint)(write.Player * OriginalAddresses.PlanningPlayerStride
                     + write.Slot * OriginalAddresses.PlanningRecordSize), [(byte)write.Family]);
         _notes.Add($"planning after roll {_rolls.Count}: {write}");
-    }
-
-    private void UseThirtyTwoBitKey(BreakContext context)
-    {
-        // At the call instruction the device context is at [esp] and the colour at [esp + 4].
-        if (_process.ReadInt32(context.Esp + 4) == OriginalAddresses.SixteenBitWhiteKey)
-            _process.Write(context.Esp + 4, BitConverter.GetBytes(OriginalAddresses.ThirtyTwoBitWhite));
     }
 
     // --seed replaces the clock value the process start passes to srand, so a run can be repeated.
@@ -963,7 +921,11 @@ internal sealed partial class NewGameSession(
             settings.Pointer ? _pointerCalls : null, settings.Sounds ? _soundCalls : null,
             settings.WatchIntro ? _introMovies : null, settings.Waits ? _waits : null, settings.Waits ? _ticks : null,
             settings.Slides ? _slides : null, _closes.Count == 0 ? null : _closes,
-            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null);
+            _savedWrites.Count == 0 ? null : _savedWrites, settings.Sounds ? EffectsEnabledAtEachRead() : null,
+            _keyEvents.Count == 0 ? null : _keyEvents, _nameEntries.Count == 0 ? null : _nameEntries,
+            _eliminationCards.Count == 0 ? null : _eliminationCards, _menus.Count == 0 ? null : _menus,
+            settings.ClockCaptures ? _clockCaptures : null,
+            _nameShots.Count == 0 ? null : _nameShots);
     }
 
     private static void Click(IntPtr window, int x, int y)

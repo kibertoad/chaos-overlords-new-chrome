@@ -19,15 +19,19 @@ public static class OptionsLayout
         Enumerable.Range(0, AudioRouting.MaximumEffectVolumeLevel + 1)
             .Select(level => new Rectangle(132 + level * 34, 140, 28, 28))
             .ToArray();
-    public static Rectangle BaseStatistics => new(150, 174, 340, 22);
-    public static Rectangle DetailedCombat => new(150, 198, 340, 22);
-    public static Rectangle SlidePanels => new(150, 222, 340, 22);
-    public static Rectangle WarnIfIdleGangs => new(150, 246, 340, 22);
-    public static Rectangle EventSiteImages => new(150, 270, 340, 22);
-    public static Rectangle AdvancedAi => new(150, 294, 340, 22);
-    public static Rectangle IntroOnlyOnce => new(150, 318, 340, 22);
-    public static Rectangle ExportDiagnostics => new(150, 342, 340, 22);
-    public static Rectangle ColorDepth => new(150, 368, 340, 16);
+    public static Rectangle BaseStatistics => Toggle(0);
+    public static Rectangle DetailedCombat => Toggle(1);
+    public static Rectangle SlidePanels => Toggle(2);
+    public static Rectangle WarnIfIdleGangs => Toggle(3);
+    public static Rectangle EventSiteImages => Toggle(4);
+    public static Rectangle AdvancedAi => Toggle(5);
+    public static Rectangle IntroOnlyOnce => Toggle(6);
+    public static Rectangle MenuStopsClock => Toggle(7);
+    public static Rectangle ExportDiagnostics => Toggle(8);
+    public static Rectangle ColorDepth => new(150, 372, 340, 16);
+
+    // The toggles stand 22 pixels apart from y 174, each 20 high.
+    private static Rectangle Toggle(int index) => new(150, 174 + index * 22, 340, 20);
     public static Rectangle OnlineLobbyPresentation => ColorDepth;
 
     /// <summary>The first row below the two volume sliders.</summary>
@@ -37,14 +41,14 @@ public static class OptionsLayout
     public static IReadOnlyList<Rectangle> ToggleRows { get; } =
     [
         BaseStatistics, DetailedCombat, SlidePanels, WarnIfIdleGangs, EventSiteImages, AdvancedAi,
-        IntroOnlyOnce, ExportDiagnostics, OnlineLobbyPresentation
+        IntroOnlyOnce, MenuStopsClock, ExportDiagnostics, OnlineLobbyPresentation
     ];
 
     /// <summary>The cursor row of <see cref="ExportDiagnostics"/>.</summary>
-    public const int ExportDiagnosticsRow = 9;
+    public const int ExportDiagnosticsRow = 10;
 
     /// <summary>The last cursor row.</summary>
-    public const int LastRow = FirstToggleRow + 8;
+    public const int LastRow = FirstToggleRow + 9;
 
     /// <summary>Whether Left and Right flip the setting on <paramref name="row"/>.</summary>
     /// <remarks>
@@ -98,6 +102,13 @@ public static class OptionsTooltip
                 "ON PLAYS THE INTRO ON THE FIRST START ONLY.",
                 "OFF PLAYS IT AT EVERY START, AS THE ORIGINAL DOES.",
                 "INTRO ON THE TITLE SCREEN REPLAYS IT."
+            ];
+        if (OptionsLayout.MenuStopsClock.Contains(point))
+            return [
+                "MENU STOPS CLOCK",
+                "ON STOPS A TIMED TURN'S CLOCK WHILE THE GAME MENU IS OPEN.",
+                "OFF LETS IT RUN, AS THE ORIGINAL'S MENU BAR DOES:",
+                "A TURN CAN RUN OUT IN THE MENU AND ENDS WHEN IT CLOSES."
             ];
         if (OptionsLayout.ExportDiagnostics.Contains(point))
             return [
@@ -231,8 +242,9 @@ public sealed partial class ChaosGame
         else if (_optionsRow == 6) ToggleEventSiteImageFilter();
         else if (_optionsRow == 7) ToggleAdvancedAi();
         else if (_optionsRow == 8) ToggleIntroOnlyOnce();
+        else if (_optionsRow == 9) ToggleMenuStopsClock();
         else if (_optionsRow == OptionsLayout.ExportDiagnosticsRow) ExportDiagnostics();
-        else if (_optionsRow == 10) ToggleOnlineLobbyPresentation();
+        else if (_optionsRow == 11) ToggleOnlineLobbyPresentation();
     }
 
     private void ToggleBaseStatistics()
@@ -314,6 +326,15 @@ public sealed partial class ChaosGame
     private void ToggleIntroOnlyOnce()
     {
         _introOnlyOnce = !_introOnlyOnce;
+        SavePreferences();
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _message = string.Empty;
+    }
+
+    // DEV-TIMER-002: whether a timed turn's clock stops while the game menu is open.
+    private void ToggleMenuStopsClock()
+    {
+        _planningTimer.SetStopsInGameMenu(!_planningTimer.StopsInGameMenu, _inputTime);
         SavePreferences();
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
@@ -403,7 +424,8 @@ public sealed partial class ChaosGame
                 _online.Server.Value,
                 _onlineLobbyPresentation,
                 _introOnlyOnce,
-                _preferredScenario));
+                _preferredScenario,
+                _planningTimer.StopsInGameMenu));
 
     private void ToggleFullscreen()
     {
@@ -421,10 +443,10 @@ public sealed partial class ChaosGame
 
     private Texture2D? ReturnScreenBackground(ClientScreen returnScreen) => returnScreen switch
     {
-        ClientScreen.Title => _titleBackground,
-        ClientScreen.Setup => _setupBackground,
-        ClientScreen.Endgame => _endgameBackground,
-        _ => _cityBackground
+        ClientScreen.Title => TitleBackground,
+        ClientScreen.Setup => SetupBackground,
+        ClientScreen.Endgame => EndgameBackground,
+        _ => CityBackground
     };
 
     private void DrawOptions(SpriteBatch batch, Texture2D pixel, PixelFont font)
@@ -460,16 +482,18 @@ public sealed partial class ChaosGame
             $"ADVANCED AI: {(OwnAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 7);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.IntroOnlyOnce,
             $"INTRO ONLY ONCE: {(_introOnlyOnce ? "ON" : "OFF")}", 8);
+        DrawOptionToggle(batch, pixel, font, OptionsLayout.MenuStopsClock,
+            $"MENU STOPS CLOCK: {(_planningTimer.StopsInGameMenu ? "ON" : "OFF")}", 9);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ExportDiagnostics,
-            "EXPORT DIAGNOSTICS", 9);
+            "EXPORT DIAGNOSTICS", 10);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.OnlineLobbyPresentation,
-            $"ONLINE LOBBY: {(_onlineLobbyPresentation == OnlineLobbyPresentation.Classic ? "CLASSIC" : "MODERN")}", 10);
+            $"ONLINE LOBBY: {(_onlineLobbyPresentation == OnlineLobbyPresentation.Classic ? "CLASSIC" : "MODERN")}", 11);
 
         DrawCentered(font, batch,
             string.IsNullOrEmpty(_optionsStatus)
                 ? "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS"
                 : _optionsStatus,
-            388,
+            391,
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
         if (_hoverPoint is { } hover)

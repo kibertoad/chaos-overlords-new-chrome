@@ -14,8 +14,8 @@ public sealed partial class ChaosGame
     {
         DrawMapBackdrop(batch, pixel, font, state, _managementReturnScreen);
 
-        if (_gameInfoBackground is not null)
-            batch.Draw(_gameInfoBackground, GameInformationLayout.Panel,
+        if (GameInfoBackground is not null)
+            batch.Draw(GameInfoBackground, GameInformationLayout.Panel,
                 GameInformationLayout.BackgroundSource, Color.White);
         else
             batch.Draw(pixel, GameInformationLayout.Panel, new Color(0, 0, 0, 245));

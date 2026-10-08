@@ -1,10 +1,10 @@
 ---
 id: RULE-AI-005
 title: How a computer player picks a weapon, armor or miscellaneous upgrade, and when danger calls for one
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-021, FND-AI-024, FND-AI-071, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054, FND-AI-055, EXP-TURN-017, EXP-TURN-036, FND-AI-044, FND-COMBAT-004, FND-CONTROL-001, FND-EQUIP-006, FND-HIRE-002, FND-HIRE-006, FND-PLATFORM-003, FND-RESEARCH-001, FND-RESEARCH-002, FND-STATE-004, FND-UI-035, FND-UI-036, FND-UPKEEP-001]
+evidence: [FND-AI-021, FND-AI-024, FND-AI-071, FND-AI-039, FND-AI-010, FND-AI-013, FND-EXE-004, FND-AI-054, FND-AI-055, EXP-TURN-017, EXP-TURN-036, FND-AI-081, FND-COMBAT-004, FND-CONTROL-001, FND-EQUIP-006, FND-HIRE-002, FND-HIRE-006, FND-PLATFORM-003, FND-RESEARCH-001, FND-RESEARCH-002, FND-STATE-004, FND-UI-035, FND-UI-036, FND-UPKEEP-001]
 conflicting: []
 split_with: []
 related: [FMT-STATE-001, FMT-STATE-002, FMT-STATE-003, RULE-AI-004]
@@ -219,3 +219,8 @@ None known.
 
 - `combat_records[0].definition` is the disputed byte 0 of FMT-STATE-003;
   either reading gives 0 for player 0's Right Hands (FND-AI-010).
+- No recorded run reaches the Greed branch of `danger_near`, the own-sector
+  weight of 10 for a fully equipped gang, index 64 reading a weight of 10, or
+  a Detect miscellaneous upgrade (selector `0x74`). These rest on FND-AI-021,
+  FND-AI-024, FND-AI-055 and FND-AI-071. Until a run reaches them, the entry
+  stays `supported`.

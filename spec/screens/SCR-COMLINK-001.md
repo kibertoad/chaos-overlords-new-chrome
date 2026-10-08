@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-COMLINK-002, FND-COMLINK-004, FND-COMLINK-007, FND-COMLINK-009, FND-EVENT-005, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-021]
+evidence: [FND-COMLINK-002, FND-COMLINK-004, FND-COMLINK-007, FND-COMLINK-009, FND-EVENT-007, FND-AUDIO-002, FND-AUDIO-011, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-021, FND-UI-062, FND-UI-067]
 conflicting: []
 split_with: []
 related: [RULE-COMLINK-001, RULE-COMLINK-004, RULE-COMLINK-005]
@@ -18,10 +18,10 @@ related: [RULE-COMLINK-001, RULE-COMLINK-004, RULE-COMLINK-005]
 | Panel | `DATA/PX16/PX05017` | None | (104, 124, 344, 209) | While the panel is open | FND-COMLINK-002 |
 | Message number | Digits of `DATA/PX16/PX00129` | `comlink_cursor + 1`, two digits with a leading zero | (138, 137) | While the panel is open | FND-COMLINK-007 |
 | Message count | Digits of `DATA/PX16/PX00129` | `comlink_count`, two digits with a leading zero | (174, 137) | While the panel is open | FND-COMLINK-007 |
-| Previous | `DATA/PX16/PX00129` rectangle (118, 363, 26, 23), or (170, 363, 26, 23) at the first message | None | (135, 157, 26, 23) | While the panel is open | FND-COMLINK-007, FND-EVENT-005 |
-| Next | `DATA/PX16/PX00129` rectangle (144, 363, 26, 23), or (196, 363, 26, 23) at the last message | None | (163, 157, 26, 23) | While the panel is open | FND-COMLINK-007, FND-EVENT-005 |
-| Previous pressed, Next pressed | `DATA/PX16/PX00129` rectangles (66, 363, 26, 23) and (92, 363, 26, 23) | None | Over Previous and Next | While the arrow is held with the pointer inside it, or briefly after Left or Right | FND-COMLINK-007, FND-EVENT-005 |
-| Dismiss pressed | `DATA/PX16/PX00129` rectangle (50, 386, 50, 23) | None | (137, 293, 50, 23) | While Dismiss is held with the pointer inside it | FND-COMLINK-007 |
+| Previous | `DATA/PX16/PX00129` rectangle (118, 363, 26, 23), or (170, 363, 26, 23) at the first message | None | (135, 157, 26, 23) | While the panel is open | FND-COMLINK-007, FND-EVENT-007 |
+| Next | `DATA/PX16/PX00129` rectangle (144, 363, 26, 23), or (196, 363, 26, 23) at the last message | None | (163, 157, 26, 23) | While the panel is open | FND-COMLINK-007, FND-EVENT-007 |
+| Previous pressed, Next pressed | `DATA/PX16/PX00129` rectangles (66, 363, 26, 23) and (92, 363, 26, 23) | None | Over Previous and Next | While the arrow is held with the pointer inside it, or briefly after Left or Right | FND-COMLINK-007, FND-EVENT-007 |
+| Dismiss pressed | `DATA/PX16/PX00129` rectangle (0, 386, 50, 23); plain face (50, 386, 50, 23) while the pointer is outside and after the release | None | (137, 293, 50, 23) | While Dismiss is held with the pointer inside it | FND-COMLINK-007, FND-UI-062 |
 | Year | Digits of `DATA/PX16/PX00129` | `2050 + turn / 52` of the message, four digits | (199, 144) | While the panel is open | FND-COMLINK-004, FND-COMLINK-007 |
 | Week | Digits of `DATA/PX16/PX00129` | `turn % 52 + 1`, two digits with a leading zero | (229, 144) | While the panel is open | FND-COMLINK-004, FND-COMLINK-007 |
 | Name backing | Black fill | None | (199, 162, 60, 7) | While the panel is open | FND-COMLINK-007 |
@@ -36,7 +36,7 @@ related: [RULE-COMLINK-001, RULE-COMLINK-004, RULE-COMLINK-005]
 | Outside the panel | Anything outside (104, 124, 344, 209) | Always | A press or double-click plays the rejected-input sound | FND-COMLINK-007 |
 | Previous | (135, 157, 26, 23) | Always | Subtracts 1 from `comlink_cursor` and shows the message through RULE-COMLINK-005; at the first message, changes nothing and plays the rejected-input sound | FND-COMLINK-002, FND-AUDIO-011 |
 | Next | (163, 157, 26, 23) | Always | Adds 1 to `comlink_cursor` and shows the message through RULE-COMLINK-005; at the last message, changes nothing and plays the rejected-input sound | FND-COMLINK-002, FND-AUDIO-011 |
-| Dismiss | (137, 293, 49, 22) | Always | Closes the panel | FND-COMLINK-002 |
+| Dismiss | (137, 293, 49, 22) | Always | Held through the held-button helper; closes the panel only when the button is released inside it | FND-COMLINK-002, FND-UI-067 |
 
 ## Keyboard input
 
@@ -80,3 +80,9 @@ None known.
 - After each step the region (104, 124, 344, 209) is copied to the screen
   again; how long a pressed arrow stays drawn after Left or Right depends on
   a wait that was not read.
+- No recorded run of the original reaches the enabled arrow faces and the
+  pressed Previous, Next and Dismiss faces; message rows 1 to 3 with text and
+  a name longer than 10 characters; Left, Right, Enter and Execute; a press
+  outside the panel; the network refresh (FND-COMLINK-002, FND-COMLINK-007,
+  FND-COMLINK-009). These rest on the static findings named, so the entry
+  stays `supported`.
