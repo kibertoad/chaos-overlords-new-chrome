@@ -37,6 +37,7 @@ detailed sector screen's card and group strips.
 | SCR-UI-002 | EXP-UI-015 | None |
 | SCR-SETUP-001 | EXP-UI-015, the screen as New Game opens it and after presses and a drag from Add; EXP-UI-030, after card-face drags | A drag released outside every card or started on an empty card; the name editor; a computer slot's background |
 | SCR-SETUP-002 | EXP-UI-016, EXP-UI-021 | The card held pressed, an eliminated player's card, a later turn |
+| SCR-SETUP-003 | EXP-UI-051, the setup screen under the open dialog | The dialog itself, which Windows draws and the rebuild does not (DEV-SETUP-003); card 0's name row is masked |
 | SCR-UI-003 | EXP-UI-001, EXP-UI-003, EXP-UI-006, EXP-UI-008, EXP-UI-012 to EXP-UI-014, EXP-UI-016, EXP-UI-021, EXP-UI-041, EXP-UI-044 | The Events or Comlink light lit; a timed scenario's countdown after the first planning entry; the final view (FND-UI-041); the city behind an elimination card of an earlier human (#421) |
 | SCR-HIRE-002 | EXP-UI-001, EXP-UI-003, EXP-UI-006, EXP-UI-041 | The hire and snub marks; a dragged portrait; the mouse input |
 | SCR-UI-004 | EXP-UI-006, EXP-UI-007, EXP-UI-009 to EXP-UI-011, EXP-UI-041, EXP-UI-042 | The group order strip's menus; a card drag |

@@ -123,6 +123,8 @@ public sealed partial class ChaosGame
     private int _selectedSetupPlayerSlot;
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
+    private bool _setupNameSelecting;
+    private TimeSpan _setupNameCaretShownAt;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.OneYear;
     // RULE-SETUP-002: the scenario a fresh local setup selects, Greed when nothing is stored.
@@ -814,6 +816,7 @@ public sealed partial class ChaosGame
                 HandleLobbyClick(point);
                 break;
             case ClientScreen.Setup:
+                if (PressSetupName(point)) break;
                 var timed = ScenarioCatalog.Get(_selectedScenario).IsTimed;
                 var panelControl = SetupPanelLayout.HitTest(point, timed);
                 var durationRefused = !timed && SetupPanelLayout.DurationArea.Contains(point);
