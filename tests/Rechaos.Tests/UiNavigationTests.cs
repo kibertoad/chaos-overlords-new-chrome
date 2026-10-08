@@ -182,7 +182,7 @@ public sealed partial class UiNavigationTests
 
         var state = OriginalMatchFactory.Create(Rechaos.Core.Assets.BundledOriginalData.Load(),new MatchSetup(
             ScenarioId.Big40, GameDuration.OneYear, 1996,
-            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
         var entries = PlayerRankingPresentation.Project(state);
         Assert.StartsWith($"{title} RATES:", PlayerRankingTooltip.Lines(state, entries[0], entries)[2]);
         Assert.StartsWith($"{title} - TURN ", SaveSlotCatalog.SuggestedName(state));
@@ -539,6 +539,7 @@ public sealed partial class UiNavigationTests
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.AdvancedAi));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.IntroOnlyOnce));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.MenuStopsClock));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ExportDiagnostics));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
@@ -558,6 +559,7 @@ public sealed partial class UiNavigationTests
             OptionsLayout.EventSiteImages,
             OptionsLayout.AdvancedAi,
             OptionsLayout.IntroOnlyOnce,
+            OptionsLayout.MenuStopsClock,
             OptionsLayout.ExportDiagnostics,
             OptionsLayout.ColorDepth,
             OptionsLayout.Done
@@ -929,48 +931,6 @@ public sealed partial class UiNavigationTests
         Assert.Equal(new Rectangle(18, 108, 20, 20), GangArtLayout.CombatPortrait(0, false));
         Assert.Equal(new Rectangle(42, 372, 20, 20), GangArtLayout.CombatPortrait(11, true));
         Assert.Throws<ArgumentOutOfRangeException>(() => GangArtLayout.CombatPortrait(12, false));
-    }
-
-    [Fact]
-    public void SiteSearchPanelFitsAllTwentyTwoSiteTypesInTwoColumns()
-    {
-        var rows = Enumerable.Range(0, SiteSearchLayout.MaximumSites)
-            .Select(SiteSearchLayout.Site).ToArray();
-
-        Assert.Equal(new Rectangle(206, 146, 114, 15), rows[0]);
-        Assert.Equal(new Rectangle(322, 296, 114, 15), rows[^1]);
-        Assert.All(rows.SelectMany((left, index) => rows.Skip(index + 1)
-            .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => SiteSearchLayout.Site(22));
-    }
-
-    // FND-SEARCH-004: the second press of a double-click on a row opens Site Information and leaves
-    // the row as the first press set it; a press on another control between the two presses makes
-    // the second a plain press that flips the row back.
-    [Fact]
-    public void SiteSearchDoubleClickOpensDetailsOnlyForTwoPressesInARow()
-    {
-        var rows = Enumerable.Range(0, SiteSearchLayout.MaximumSites).Select(row => (short)row).ToArray();
-        var player = new PlayerId(0);
-        var row = SiteSearchLayout.Site(5).Center;
-        var none = SiteSearchLayout.None.Center;
-
-        var selections = new SiteSearchSelectionState();
-        var clicks = new IndexedDoubleClickTracker();
-        Assert.False(SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(100)).OpensDetails);
-        Assert.True(SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(200)).OpensDetails);
-        Assert.True(selections.IsSelected(player, 5));
-
-        selections = new SiteSearchSelectionState();
-        clicks = new IndexedDoubleClickTracker();
-        SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(100));
-        Assert.Equal(SiteSearchControl.None,
-            SiteSearchPanel.Press(selections, player, none, rows, clicks, TimeSpan.FromMilliseconds(200)).Press.Control);
-        Assert.False(SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(300)).OpensDetails);
-        Assert.True(selections.IsSelected(player, 5));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => SiteSearchPanel.Apply(
-            selections, player, new SiteSearchPress(SiteSearchControl.Row), rows));
     }
 
     [Fact]

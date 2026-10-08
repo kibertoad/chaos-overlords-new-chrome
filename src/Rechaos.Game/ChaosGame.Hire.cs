@@ -21,8 +21,8 @@ public sealed partial class ChaosGame
         for (var slot = 0; slot < entries.Count; slot++)
         {
             if (entries[slot] is not { } entry) continue;
-            if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, HireDockLayout.Portrait(slot),
+            if (GangPortraits is not null)
+                batch.Draw(GangPortraits, HireDockLayout.Portrait(slot),
                     OriginalSpriteLayout.GangPortrait(entry.GangDefinitionId), Color.White);
             DrawHireDockMark(batch, entry.Mark, HireDockLayout.Portrait(slot));
             // SCR-HIRE-002, FND-HIRE-007, FND-HIRE-008: every offer keeps its price; a hire or
@@ -39,11 +39,11 @@ public sealed partial class ChaosGame
     {
         switch (mark)
         {
-            case HireDockMark.Hired when _uiKeyedSprites is not null:
-                batch.Draw(_uiKeyedSprites, stamp, OriginalSpriteLayout.HiredStamp, Color.White);
+            case HireDockMark.Hired when UiKeyedSprites is not null:
+                batch.Draw(UiKeyedSprites, stamp, OriginalSpriteLayout.HiredStamp, Color.White);
                 break;
-            case HireDockMark.Snubbed when _uiKeyedSprites is not null:
-                batch.Draw(_uiKeyedSprites, stamp, OriginalSpriteLayout.SnubbedStamp, Color.White);
+            case HireDockMark.Snubbed when UiKeyedSprites is not null:
+                batch.Draw(UiKeyedSprites, stamp, OriginalSpriteLayout.SnubbedStamp, Color.White);
                 break;
         }
     }
@@ -56,8 +56,8 @@ public sealed partial class ChaosGame
 
     private void DrawHirePanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_hireComparisonBackground is not null)
-            batch.Draw(_hireComparisonBackground, HireComparisonLayout.Panel,
+        if (HireComparisonBackground is not null)
+            batch.Draw(HireComparisonBackground, HireComparisonLayout.Panel,
                 HireComparisonLayout.BackgroundSource, Color.White);
         else
             batch.Draw(pixel, HireComparisonLayout.Panel, new Color(0, 0, 0, 245));
@@ -72,8 +72,8 @@ public sealed partial class ChaosGame
             if (entries[slot] is not { } entry) continue;
             var definition = state.Definitions.Gang(entry.GangDefinitionId);
             // EXP-UI-008: halved from the cell's odd rows and columns, as Gangs in Sector halves them.
-            if (_gangPortraits is not null)
-                _scaledGangPortraits.Draw(batch, _gangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
+            if (GangPortraits is not null)
+                _scaledGangPortraits.Draw(batch, GangPortraits, OriginalSpriteLayout.GangPortrait(definition.Id),
                     HireComparisonLayout.Portrait(slot));
             var values = HireComparisonValues(definition);
             for (var row = 0; row < values.Length; row++)
@@ -82,7 +82,7 @@ public sealed partial class ChaosGame
                     row < 6 ? NativeTwoCellNumberPresentation.Kind.Baseline
                         : NativeTwoCellNumberPresentation.Kind.Modifier);
         }
-        if (_hoverPoint is { } hover)
+        if (TooltipHoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.HireAt(hover));
     }
 
@@ -332,11 +332,13 @@ public sealed partial class ChaosGame
         _hireCursor = HireDockLayout.MoveCursor(offers, _hireCursor, delta);
     }
 
-    private void HandleHireClick(Point point)
-    {
-        if (HireComparisonLayout.Ok.Contains(point))
-            AcceptAndShow(_managementReturnScreen);
-    }
+    /// <summary>
+    /// SCR-HIRE-001, FND-UI-067: the held close face closes on a release inside it, and a press
+    /// outside the shared panel rectangle, wider than the panel drawn, is refused.
+    /// </summary>
+    private void HandleHireClick(Point point) =>
+        PressPanelFace(point, SharedPanelLayout.Panel, HireComparisonLayout.Ok,
+            () => _screens.Show(_managementReturnScreen));
 
     private void ReportHireSubmission(HireSubmissionResult result, MatchPlayerState player)
     {

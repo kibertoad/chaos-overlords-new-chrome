@@ -125,7 +125,7 @@ public sealed class KeyboardHireTests
             new(new PlayerId(1), "TWO", PlayerController.Human)
         ];
         var state = OriginalMatchFactory.Create(BundledOriginalData.Load(),
-            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original));
         var replay = new MatchReplayRecorder(state);
         GameplayTurnFlow.AdvanceToPlanning(replay);
         Assert.Equal(TurnPhase.Command, state.Coordinator.Phase);

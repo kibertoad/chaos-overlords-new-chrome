@@ -74,7 +74,7 @@ public sealed class EndgameNoticePresentationTests
         Assert.Equal(new Rectangle(126, 54, 64, 64), EndgameNoticeLayout.Portrait);
         Assert.Equal(
             [new Rectangle(110, 30, 40, 12), new Rectangle(110, 42, 13, 79), new Rectangle(110, 121, 40, 302)],
-            EndgameNoticeLayout.VictoryColourBands);
+            EndgameNoticeLayout.ColourBands);
         Assert.Equal(158, EndgameNoticeLayout.NameCenterX);
         Assert.Equal(46, EndgameNoticeLayout.NameY);
         Assert.Equal(new Rectangle(96, 112, 160, 64), EndgameLayout.StatisticsSource);
@@ -102,7 +102,7 @@ public sealed class EndgameNoticePresentationTests
                 PlayerController.Human, index == 0 ? humanPortrait : checked((short)index)))
             .ToArray();
         var state = OriginalMatchFactory.Create(BundledOriginalData.Load(),
-            new MatchSetup(scenario, GameDuration.SixMonths, 404, setups,
+            new MatchSetup(scenario, GameDuration.SixMonths, 404, setups, MatchDeviations.Original,
                 allowSparsePlayerIds: humanCount < MatchLimits.PlayerCount));
         while (state.Outcome is null)
         {
@@ -125,7 +125,7 @@ public sealed class EndgameNoticePresentationTests
             new(new PlayerId(1), "PLAYER 2", PlayerController.Computer, 1)
         ];
         var setup = new MatchSetup(
-            ScenarioId.Eliminate, GameDuration.SixMonths, 404, setups);
+            ScenarioId.Eliminate, GameDuration.SixMonths, 404, setups, MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setups[0], 20,

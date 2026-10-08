@@ -55,12 +55,6 @@ internal sealed partial class NewGameSession
 
     private void ArmComlink()
     {
-        _process.SetBreakpoint(OriginalAddresses.HandoffCard, context =>
-        {
-            _cardPlayer = context.Argument(0);
-            _cardOpen = true;
-            _process.SetBreakpoint(context.ReturnAddress, _ => _cardOpen = false, oneShot: true);
-        });
         _process.SetBreakpoint(OriginalAddresses.ComlinkSend, context =>
         {
             _sendOpen = true;

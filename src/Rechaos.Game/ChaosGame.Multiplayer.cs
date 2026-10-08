@@ -20,7 +20,7 @@ public sealed partial class ChaosGame
     /// The one client every online call goes through, bounded so a hostile server cannot answer with
     /// a body large enough to take the game down. See <see cref="MultiplayerClientOptions.MaximumResponseBytes"/>.
     /// </summary>
-    private readonly HttpClient _http = MultiplayerClientOptions.CreateHttpClient();
+    private readonly HttpClient _http;
     private MultiplayerLobbySession? _lobby;
     private MultiplayerMatchSession? _session;
     private TimeSpan _lobbyPollDue;
@@ -29,6 +29,12 @@ public sealed partial class ChaosGame
     private CancellationTokenSource? _recoveryReconciliationCancellation;
     private Task<IReadOnlyList<MultiplayerRecovery>>? _recoveryReconciliation;
     private readonly List<MultiplayerRecovery> _multiplayerRecoveries = [];
+
+    /// <summary>
+    /// Whether the recovery file holds a seat's token in clear, because no keyring took it; the
+    /// Unfinished Sessions screen says so. Read after each load and save rather than per frame.
+    /// </summary>
+    private bool _onlineTokensInClear;
 
     /// <summary>
     /// Bumped whenever <see cref="_multiplayerRecoveries"/> changes, so the filtered view over it
@@ -121,7 +127,7 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>Routes typed characters to whichever text field currently owns focus.</summary>
-    private void HandleTextInput(char character)
+    internal void HandleTextInput(char character)
     {
         // FND-AUDIO-016: text callbacks must also respect the window-only fade pump.
         if (_soundtrackFade is not null) return;
@@ -137,10 +143,13 @@ public sealed partial class ChaosGame
             _saveName.Type(character);
             return;
         }
+        if (TypeSetupName(character)) return;
         if (_screens.Current == ClientScreen.Lobby)
         {
             if (_online.IsHost && _online.SessionName.IsFocused) _online.SessionName.Type(character);
             else if (EditingLobbyName) _online.DisplayName.Type(character);
+            else if (_online.Chat.IsFocused && LobbyChatPresentation.Accepts(character))
+                _online.Chat.Type(character);
             return;
         }
         if (_screens.Current != ClientScreen.Online) return;
@@ -764,6 +773,16 @@ public sealed partial class ChaosGame
 
     private void HandleLobbyClick(Point point)
     {
+        // A click anywhere but the chat line leaves it; what was typed stays for later.
+        _online.Chat.IsFocused = false;
+        // The chat is drawn only once the server has answered with the lobby.
+        if (_online.Match is not null && LobbyChatInput.Contains(point))
+        {
+            CommitLobbySessionName();
+            FinishLobbyNameEdit(cancel: false);
+            _online.Chat.IsFocused = true;
+            return;
+        }
         if (CanConfigureOnlineLobby() && LobbySessionName.Contains(point))
         {
             FinishLobbyNameEdit(cancel: false);
@@ -823,6 +842,12 @@ public sealed partial class ChaosGame
             return;
         }
         SendPendingLobbyProfile();
+        if (_online.Chat.IsFocused)
+        {
+            if (Pressed(keyboard, Keys.Enter)) SendLobbyChat();
+            PollLobby(gameTime);
+            return;
+        }
         if (_online.SessionName.IsFocused)
         {
             if (Pressed(keyboard, Keys.Enter)) CommitLobbySessionName();
@@ -935,6 +960,7 @@ public sealed partial class ChaosGame
     {
         _multiplayerRecoveryVersion++;
         MultiplayerRecoveryStore.TrySaveAll(_multiplayerRecoveryPath, _multiplayerRecoveries, durable);
+        _onlineTokensInClear = MultiplayerRecoveryStore.KeepsTokensInClear(_multiplayerRecoveryPath);
     }
 
     private static bool SameMembership(MultiplayerRecovery left, MultiplayerRecovery right) =>

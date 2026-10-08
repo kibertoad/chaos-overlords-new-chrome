@@ -10,14 +10,14 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00449E80..0x0044B698
+    address: 0x00449E80..0x0044B699
 tool: Ghidra 12.1.3
 environment: null
 ---
 
 ## Observation
 
-`fn_00449E80` occupies `0x00449E80..0x0044B698` (6,127 bytes, FND-EXE-004). It
+`fn_00449E80` occupies `0x00449E80..0x0044B699` (6,127 bytes, FND-EXE-004). It
 is called from the gang command handler `fn_00414D8C`, from `fn_004169B3` and
 twice from the Hire input handler `fn_00416C75`. It takes a 32-byte gang record
 (FMT-STATE-001) by value and returns nothing.

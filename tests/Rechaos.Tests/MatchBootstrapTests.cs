@@ -73,7 +73,7 @@ public sealed class MatchBootstrapTests
             new(new PlayerId(1), "smgmilk", PlayerController.Computer)
         ];
         var setup = new MatchSetup(
-            ScenarioId.Greed, GameDuration.SixMonths, 1996, players);
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, players, MatchDeviations.Original);
 
         var match = MatchBootstrap.Create(data, setup, sectors, starts);
 
@@ -93,7 +93,7 @@ public sealed class MatchBootstrapTests
                 new(new PlayerId(1), "smgfundage", PlayerController.Computer)
             ];
             var setup = new MatchSetup(
-                scenario, GameDuration.SixMonths, 1996, players);
+                scenario, GameDuration.SixMonths, 1996, players, MatchDeviations.Original);
 
             var match = MatchBootstrap.Create(data, setup, sectors, starts);
 
@@ -130,7 +130,7 @@ public sealed class MatchBootstrapTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(scenario, GameDuration.SixMonths, 1996, players);
+        var setup = new MatchSetup(scenario, GameDuration.SixMonths, 1996, players, MatchDeviations.Original);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => Sector(id, includeHeadquarters: id is 0 or 63))
             .ToArray();
