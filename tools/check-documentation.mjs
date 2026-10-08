@@ -22,8 +22,9 @@
 // read, which a branch does not commit.
 //
 // --allow-unrecorded-validation (this script's own option) passes a run whose only problems are
-// test files of validated rows that VALIDATION.md does not record yet or recorded at another
-// version. The pre-commit hook uses it: the record can only be written after the tests ran on the
+// test files of validated rows that no run in validation/ records yet or records only at an earlier
+// version, and run files that no longer record any of them as they are now, which the next record
+// deletes. The pre-commit hook uses it: the record can only be written after the tests ran on the
 // committed tree, so the commit that changes such a test has to go in before its record. CI runs
 // without it.
 //
@@ -170,7 +171,7 @@ if (run.status === 0) {
   process.exit(0);
 }
 const unrecorded =
-  /: (?:\S+ is not in VALIDATION\.md, so the row cannot be validated|\S+ has changed since VALIDATION\.md recorded it)/;
+  /: (?:\S+ is in no run in validation\/, so the row cannot be validated|\S+ has changed since a run in validation\/ recorded it|records no marked test file of a validated row as it is now)/;
 // The checker prints one problem per line, then a blank line and its summary. Every line before
 // that blank line is a problem, whatever its shape, so an unexpected line blocks the commit.
 const lines = run.stderr.split(/\r?\n/);
@@ -181,7 +182,7 @@ const problems = (summaryAt < 0 ? lines : lines.slice(0, summaryAt)).filter(
 if (run.status === 1 && problems.length > 0 && problems.every((line) => unrecorded.test(line))) {
   for (const line of problems) console.error(`warning: ${line}`);
   console.error(
-    "check-documentation: only VALIDATION.md records are missing or stale; after this commit, run " +
+    "check-documentation: only validation runs are missing or stale; after this commit, run " +
       "the listed tests against the original's files and record them with " +
       "node tools/check-documentation.mjs --record-validation BLD-GOG-EN-1.1.",
   );

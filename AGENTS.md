@@ -74,7 +74,7 @@ version 1 of the
 published at dinorefurb.com. This section summarizes them; where they differ,
 the published pages win. `docs/upstream/` holds a copy of the standard, the
 methodology and the work protocol as published at refurbished-dinosaurs
-`ef0d758`, the revision this repository follows.
+`a9884ae`, the revision this repository follows.
 
 ### The spec
 
@@ -148,12 +148,16 @@ the repository. Tool procedure is in `docs/GHIDRA.md`.
   `mandatory` deviation it lists has a Tests item naming the tests that check
   the rebuild does what the deviation's Reason says. `PARITY.md` at the root is
   generated from these files and is not edited by hand.
-- `VALIDATION.md` records the SHA-256 of each test file of a `validated` row
-  that carries a `needs: GAME_DIR` comment, as it was when its tests last
-  passed against the original's files. After changing such a file, commit,
-  run its tests with `GAME_DIR` set (all must pass, none skipped) and record
-  them with `node tools/check-documentation.mjs --record-validation
-  BLD-GOG-EN-1.1`, which needs a clean tree, then commit `VALIDATION.md`.
+- `validation/` holds one file per run of the test files of `validated` rows
+  that carry a `needs: GAME_DIR` comment, with the SHA-256 of each as it was
+  when its tests last passed against the original's files. A test file counts
+  as validated while any run file records the hash it has now. After changing
+  such a file, commit, run its tests with `GAME_DIR` set (all must pass, none
+  skipped) and record them with `node tools/check-documentation.mjs
+  --record-validation BLD-GOG-EN-1.1`, which needs a clean tree, writes
+  `validation/<date>-<commit>.md` and deletes the run files it replaces, then
+  commit `validation/`. A run file that matches nothing after a merge fails the
+  check and is deleted by hand, without a run.
 - `docs/DECISIONS.md` keeps dated product and scope decisions that are not
   departures from the original (network play, saves, bug reports).
 
@@ -206,8 +210,8 @@ blocks and broken relative links without writing). The fast gate
 `node` is on the path and requires them in CI, so a stale block, a broken link
 or a spec problem fails validation after the tests have run.
 `.githooks/pre-commit` runs the same checks on the staged tree before
-every commit, in a few seconds, and lets a missing or stale `VALIDATION.md`
-record through, since the record can only be written after the commit. In a
+every commit, in a few seconds, and lets a missing or stale validation run
+through, since the record can only be written after the commit. In a
 linked worktree without its own `pnpm install` it uses the main checkout's
 checker when that is the pinned version. Enable it once in each clone, before
 the first commit, with

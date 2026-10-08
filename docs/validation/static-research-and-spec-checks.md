@@ -41,7 +41,7 @@ fails, cite the finding that records the address, or write one.
 The fast gate runs it with `--check`, and `.githooks/pre-commit` runs it before
 each commit once a clone enables the hook. The hook copies the index to a
 temporary directory and checks that, so it judges what is being committed, not
-unstaged edits, and lets a missing or stale `VALIDATION.md` record through.
+unstaged edits, and lets a missing or stale run in `validation/` through.
 It compiles the Kaitai definitions when `kaitai-struct-compiler` (or the path
 in `KSC`) is on the path, skips them when it is not, and in CI requires it.
 Until the patch tool is published with the standard's spec package, an

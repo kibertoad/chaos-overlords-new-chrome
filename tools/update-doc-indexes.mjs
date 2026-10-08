@@ -238,7 +238,7 @@ for (const path of documentPaths()) {
     }
   }
 }
-const rootDocuments = ["README.md", "AGENTS.md", "PARITY.md", "VALIDATION.md", "static_validation_plan.md", "manual_validation_plan.md"]
+const rootDocuments = ["README.md", "AGENTS.md", "PARITY.md", "static_validation_plan.md", "manual_validation_plan.md"]
   .map((name) => join(repoDir, name))
   .filter((path) => existsSync(path));
 /**

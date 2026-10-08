@@ -57,7 +57,7 @@ are. Git history provides change dates.
 | [HANDOVER.md](HANDOVER.md) | Repository state, current format versions, the latest playable work by area, open conformance work, and where the next agent starts | Living checkpoint |
 | [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) | Definition of complete, baseline, engineering principles, documentation and evidence rules, workstreams A–N, milestones M0–M8, test matrix, completion conventions, source hierarchy | Roadmap |
 | [DECISIONS.md](DECISIONS.md) | Dated product, compatibility, and scope decisions, newest first, with an index | Decision log |
-| [upstream/](upstream/documentation-standard.md) | The documentation standard, methodology and work protocol as published at refurbished-dinosaurs `ef0d758`, copied unchanged and without a `Status:` line | Reference copy |
+| [upstream/](upstream/documentation-standard.md) | The documentation standard, methodology and work protocol as published at refurbished-dinosaurs `a9884ae`, copied unchanged and without a `Status:` line | Reference copy |
 | [VALIDATION.md](VALIDATION.md) | Validation layers, canonical identities, fixture classes, failure triage, and a table of the procedure's parts in `validation/`: `Invoke-Validation.ps1` modes, CI and packaging, asset and state tools, test harnesses, experiments and the probe, static research and spec checks, tests against the original, screen captures and their comparison and coverage, native backend checks, diagnostic comparisons | Procedure |
 | [RELEASING.md](RELEASING.md) | `version.txt`, local package builds, the release workflow, signing, continuous integration | Procedure |
 | [SPEC-ENTRY-TEMPLATES.md](SPEC-ENTRY-TEMPLATES.md) | A blank entry of each spec kind | Template |
@@ -100,7 +100,7 @@ are. Git history provides change dates.
 | [spec/](../spec/README.md) | The original game: builds, sources, findings, experiments, formats with their Kaitai definitions, rules, bugs, screens, the glossary, and the generated indexes |
 | [PARITY.md](../PARITY.md) | Generated from `parity/<AREA>.md`, which holds one row per rule, format and screen entry: how much of it the rebuild does, the tests that compare it with the original, and the deviations from it |
 | `deviations/` | Every deliberate departure from the spec, one `DEV-*` entry per file with its setting |
-| [VALIDATION.md](../VALIDATION.md) | The SHA-256 of each test file that checks a validated row against the original's files, as it was when its tests last passed there |
+| [validation/](../validation/) | One file per run of the test files that check a validated row against the original's files, with the SHA-256 of each as it was when its tests passed there |
 | [static_validation_plan.md](../static_validation_plan.md) | Open questions that a reading of the executable or the data files can settle |
 | [manual_validation_plan.md](../manual_validation_plan.md) | Open questions that need a person to run the original |
 | [parity-achievement-plan.md](../parity-achievement-plan.md) | The steps, in order, that take every row of PARITY.md to complete and then to validated |

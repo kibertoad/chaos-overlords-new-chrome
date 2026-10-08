@@ -29,7 +29,7 @@ trap 'rm -rf "$staged"' EXIT
 trap 'exit 1' HUP INT TERM
 git checkout-index --all --prefix="$staged/"
 export GIT_DIR="$git_dir" GIT_WORK_TREE="$staged"
-# A test file of a validated row can only be recorded in VALIDATION.md once it is committed and its
+# A test file of a validated row can only be recorded in validation/ once it is committed and its
 # tests ran against the original's files, so a missing or stale record does not block the commit.
 node "$staged/tools/check-documentation.mjs" --check --no-ksy --allow-unrecorded-validation
 # Computes the function index without writing the local report docs/FUNCTION-INDEX.md.
