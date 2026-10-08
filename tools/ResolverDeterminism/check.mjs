@@ -2,7 +2,7 @@
 //
 //   node tools/ResolverDeterminism/check.mjs <_framework dir> <transcript.json> [node|workerd]...
 //
-// <_framework dir> is the build output of src/Rechaos.Resolver.Wasm, and the transcript is what
+// <_framework dir> is the trimmed publish of src/Rechaos.Resolver.Wasm, and the transcript is what
 // Program.cs wrote. With no runtime named, both run. workerd is driven through wrangler, which is
 // resolved from multiplayer/runtimes/cloudflare, so `pnpm install` in multiplayer/ comes first.
 // Exits non-zero when any hash differs.

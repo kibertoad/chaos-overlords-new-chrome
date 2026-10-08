@@ -213,9 +213,11 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   resolver anywhere outside the coordination server's own process or Worker.
   NativeAOT-LLVM, which would cut both time and size, stays an experiment of
   the .NET team and is not depended on.
-- Status: the C# side (`AuthoritativeMatch`), the WebAssembly build and the
-  determinism check are implemented. Packaging the bundle for the server, the
-  referee mode, a trimmed bundle and per-seat views are tracked from #453.
+- Status: the C# side (`AuthoritativeMatch`), the WebAssembly build, the
+  determinism check and the trimmed bundle (source-generated JSON contracts,
+  #514: 3.2 MB of assemblies, a 32 MiB heap after start) are implemented.
+  Packaging the bundle for the server, the referee mode and per-seat views are
+  tracked from #453.
 
 ## 2026-10-06 — Chat in the online lobby, through the match's event log
 

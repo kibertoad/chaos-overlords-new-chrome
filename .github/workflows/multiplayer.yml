@@ -179,9 +179,9 @@ jobs:
       - name: Hold the WebAssembly resolver to the native build's hashes
         shell: bash
         run: |
-          dotnet build ../src/Rechaos.Resolver.Wasm/Rechaos.Resolver.Wasm.csproj -c Release
+          dotnet publish ../src/Rechaos.Resolver.Wasm/Rechaos.Resolver.Wasm.csproj -c Release
           dotnet run --project ../tools/ResolverDeterminism/ResolverDeterminism.csproj -c Release -- "${RUNNER_TEMP}/resolver-transcript.json"
-          node ../tools/ResolverDeterminism/check.mjs ../src/Rechaos.Resolver.Wasm/bin/Release/net10.0/wwwroot/_framework "${RUNNER_TEMP}/resolver-transcript.json"
+          node ../tools/ResolverDeterminism/check.mjs ../src/Rechaos.Resolver.Wasm/bin/Release/net10.0/publish/wwwroot/_framework "${RUNNER_TEMP}/resolver-transcript.json"
 
   # Only for the scheduled run: nobody watches its result, so it reports on an issue. A failure
   # opens an issue with the label below, or comments on the one already open; the next green run

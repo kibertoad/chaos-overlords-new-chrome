@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 
@@ -18,7 +19,13 @@ public static class NativeSaveSerializer
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
+    private static readonly JsonTypeInfo<NativeSaveDocument> DocumentContract = Contract<NativeSaveDocument>(JsonOptions);
+    private static readonly JsonTypeInfo<OriginalData> DefinitionsContract = Contract<OriginalData>(JsonOptions);
     internal static JsonSerializerOptions CreateCompatibleJsonOptions() => new(JsonOptions);
+
+    /// <summary>The contract of <typeparamref name="T"/> under <paramref name="options"/>.</summary>
+    internal static JsonTypeInfo<T> Contract<T>(JsonSerializerOptions options) =>
+        (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
 
     /// <summary>Writes a snapshot, refusing one the reader would later refuse.</summary>
     /// <remarks>
@@ -35,7 +42,7 @@ public static class NativeSaveSerializer
         ArgumentNullException.ThrowIfNull(state);
         if (!destination.CanWrite) throw new ArgumentException("Destination stream is not writable.", nameof(destination));
         using var buffer = new MemoryStream();
-        JsonSerializer.Serialize(buffer, Capture(state), JsonOptions);
+        JsonSerializer.Serialize(buffer, Capture(state), DocumentContract);
         if (buffer.Length > MaximumSaveBytes)
         {
             throw new InvalidDataException(
@@ -84,7 +91,7 @@ public static class NativeSaveSerializer
         NativeSaveDocument document;
         try
         {
-            document = JsonSerializer.Deserialize<NativeSaveDocument>(bounded, JsonOptions)
+            document = JsonSerializer.Deserialize(bounded, DocumentContract)
                 ?? throw new InvalidDataException("Native save is empty.");
         }
         catch (JsonException exception)
@@ -507,7 +514,7 @@ public static class NativeSaveSerializer
 
     private static string DefinitionFingerprint(OriginalData definitions) =>
         DefinitionFingerprints.GetValue(definitions, static value => Convert.ToHexStringLower(
-            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value, JsonOptions))));
+            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value, DefinitionsContract))));
 
     /// <summary>
     /// The definition fingerprint this build writes into every save and demands of every save it
@@ -551,7 +558,8 @@ public static class NativeSaveSerializer
             // handler on the load path. With it the same input is a JsonException, which Load
             // already translates into InvalidDataException.
             RespectNullableAnnotations = true,
-            MaxDepth = 64
+            MaxDepth = 64,
+            TypeInfoResolver = CoreJsonContext.Default,
         };
         options.Converters.Add(new PlayerIdJsonConverter());
         options.Converters.Add(new GangIdJsonConverter());

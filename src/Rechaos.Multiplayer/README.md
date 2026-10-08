@@ -53,8 +53,11 @@ cd multiplayer && pnpm codegen
 
 `Generated/WireContracts.cs` comes from the valibot schemas through
 [`@game-infra/valibot-to-csharp`](https://www.npmjs.com/package/@game-infra/valibot-to-csharp), and
-`Generated/RouteTemplates.cs` from the endpoint contracts. Both are committed so that building the
-game never needs Node; CI runs `pnpm codegen:check` to fail when either has drifted.
+`Generated/RouteTemplates.cs` from the endpoint contracts. `Generated/WireJsonContext.cs` names every
+generated record and enum for the source-generated JSON contracts `WireJson` uses, so the
+assembly reads and writes JSON without reflection and can be trimmed into the server's WebAssembly
+resolver. All three are committed so that building the game never needs Node; CI runs
+`pnpm codegen:check` to fail when any has drifted.
 
 ## Dependencies
 

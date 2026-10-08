@@ -6,9 +6,9 @@ build of the rules (`docs/DECISIONS.md`, `docs/MULTIPLAYER.md`, "Resolving turns
 and the multiplayer workflow runs it on every change to the rules or the resolver.
 
 ```sh
-dotnet build src/Rechaos.Resolver.Wasm -c Release
+dotnet publish src/Rechaos.Resolver.Wasm -c Release
 dotnet run --project tools/ResolverDeterminism -c Release -- transcript.json [seed] [turns]
-node tools/ResolverDeterminism/check.mjs src/Rechaos.Resolver.Wasm/bin/Release/net10.0/wwwroot/_framework transcript.json [node|workerd]
+node tools/ResolverDeterminism/check.mjs src/Rechaos.Resolver.Wasm/bin/Release/net10.0/publish/wwwroot/_framework transcript.json [node|workerd]
 ```
 
 | File | What it does |
