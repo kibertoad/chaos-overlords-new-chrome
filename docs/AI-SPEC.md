@@ -1,20 +1,15 @@
 # AI specification
 
-Status: recovered family handlers; reference traces outstanding  
-
-The original executable's complete difficulty branches and evaluation weights
-have not yet been recovered. Static analysis has recovered the outer per-gang
-dispatcher, its 15-value handler map, the distinct zero-based four-valued AI
-Mentality global, all six writes to it, and all eight genuine query consumers.
-Every computer gang plans through its recovered family handler; what remains
-unproven is agreement with controlled runs of the original, so the planner must
-not yet be cited as behavioral parity with the original AI.
+How the rebuild's computer players are built: the Original and Advanced policies,
+what the planner reads and guarantees, and how far recorded runs of the original
+prove it. The original's planner itself is specified in the `AI` area of the
+[spec](../spec/index/by-area/AI.md); this document does not restate it.
 
 <!-- doc-index:begin toc depth=2 -->
 - [Original and Advanced policy architecture](#original-and-advanced-policy-architecture)
 - [Inputs and invariants](#inputs-and-invariants)
 - [Current policy](#current-policy)
-- [Required parity work](#required-parity-work)
+- [How far the planner is proved](#how-far-the-planner-is-proved)
 <!-- doc-index:end -->
 
 ## Original and Advanced policy architecture
@@ -51,16 +46,16 @@ gang-turns, controlled and retained sectors, survival, and scenario progress;
 large combined tournaments supplement these cases but cannot substitute for
 them because one improvement could otherwise conceal another regression.
 The aggregate gates run 12 identical seeds for 15 turns per isolated feature:
-Crime Lord expansion on Power and Criminal idle recovery on Kill 'Em All. Each
+Crime Lord expansion on Power and Criminal idle recovery on Siege. Each
 gate requires Advanced to control at least as many sector-turns, to end with at
 least as many sectors, and to hold at least as many defended sector-turns as
 Original. The expansion gate also requires more outward moves, the idle gate
 fewer idle gang-turns. In the current samples expansion raises outward moves
 from 632 to 840, controlled-sector turns from 3,707 to 4,255, final controlled
 sectors from 542 to 615 and defended controlled-sector turns from 3,676 to
-4,134. Idle recovery removes all 114 idle gang-turns and raises controlled-sector
-turns from 3,972 to 4,003, final controlled sectors from 540 to 553 and defended
-controlled-sector turns from 3,917 to 3,940. Seed pairs execute independently
+4,134. Idle recovery lowers idle gang-turns from 362 to 3 and raises controlled-sector
+turns from 3,215 to 3,292, final controlled sectors from 360 to 386 and defended
+controlled-sector turns from 3,200 to 3,278. Seed pairs execute independently
 with a maximum of two workers.
 
 These transformations consume no RNG and add no cash, statistics, discounts,
@@ -74,8 +69,8 @@ native saves, replays, canonical hashes, and online game settings.
 - It reads authoritative `MatchState` and returns at most one command per active
   gang without mutating state or consuming simulation RNG.
 - Each gang submits the one command its planning record describes, and only
-  when the authoritative command validator accepts it and it fits the shared
-  budget. A record whose action needs a target it does not hold plans nothing.
+  when the authoritative command validator accepts it. A record whose action
+  needs a target it does not hold plans nothing.
 - An Attack is additionally restricted by the same cooperative sector detection
   query exposed to players, so the planner does not target gangs it cannot
   observe.
@@ -117,9 +112,11 @@ native saves, replays, canonical hashes, and online game settings.
   50 or more, and exactly Goon Mentality. Crime is Chaos through Tolerance 3
   and Snitch from 4; every failed gate chooses mode-5 Move. The complete branch,
   including exact item and Move targets, is live and replay-recorded.
-- A shared nonnegative spending budget prevents the planner from intentionally
-  queuing more Bribe/Equip cost than the player currently holds while still
-  allowing validator-approved free actions from a negative balance.
+- No cash is set aside at planning: every planned Bribe and Equip is queued,
+  even when together they cost more than the player holds, and each one is
+  tested against the cash left when it resolves (RULE-EQUIP-001,
+  RULE-BRIBE-001, FND-AI-082). Advanced fallback commands spend only the cash
+  the Original plan's prices leave, floored at 0.
 - `ChooseHire` considers only authoritative `HireRules.Validate` successes in
   controlled sectors and does not mutate state.
 - The client submits every selected command/hire and phase transition through
@@ -179,298 +176,84 @@ encoded `sector + 0x40` is live for family 12. Family 12 encodes the sector of
 its player's roster-slot-0 gang (FND-AI-070), so it steps toward that gang; a
 gang already standing there falls back to the all-zero tie draw.
 
-The test suite drives Greed, Power, Acceptance, and Dominance through complete
-six-computer six-month matches. Each scenario is run twice at a fixed seed and
-must produce the same final state hash; its complete mutation stream must also
-round-trip through the replay serializer to that hash. Kill 'Em All, Big 40,
-Eliminate, Siege, Big Man, and Armageddon each run the same deterministic,
-replay-verified six-computer harness through 20 turns or objective completion.
-Across five fixed seeds, every objective now runs a live-equivalent 40-turn
-campaign which refills the three-offer market before each AI hiring decision.
-Each campaign must resolve at least one hire, expand beyond the six starting
-sectors, remain inside its phase-boundary guard, and replay to the same final
-hash. Additional scenario checks require damaging Eliminate combat, growing
-Big 40/Armageddon/Big Man territorial leadership, and either an important-
-sector capture or resolved contention in Siege. Kill 'Em All must produce
-attack activity whenever any directional computer hostility survives at the
-horizon; an all-neutral all-computer harness remains allowed because the
-recovered Criminal attitude rules do not invent hostility between computers.
-Big Man additionally completes naturally by turn 60 at one guarded seed.
-Reliable completion policy for the other five objective scenarios remains an
-explicit M6 gap rather than an unmeasured claim.
+## How far the planner is proved
 
-## Required parity work
+The Original policy has no planning code of the rebuild's own: every decision
+comes from a spec rule of the `AI` area, and no `PLACEHOLDER` comment remains in
+the planner. What the rebuild still departs from on purpose is listed in
+[`deviations/`](../deviations/): DEV-AI-002 (a planned action no human could
+order gives no command), DEV-AI-004 to DEV-AI-006 (reads and writes outside the
+original's tables), DEV-AI-007 and DEV-AI-008 (Moves to distant sectors and
+hires outside the player's sectors, on by default and switched off for the
+replays), and DEV-AI-003 (Advanced AI, off by default).
 
-1. Finish naming the last subordinate fields feeding shared weighted sector
-   selector `0x00408642`. Its ring search, all direct family call sites,
-   modes 1-5, site Support/Cash/Stealth modes 7-9, human-player count,
-   mode-5 movement weights (neutral/owned/enemy `5:2:1`), maximum-score random
-   ties, and x-then-y one-step routing are now bounded. The routing field at
-   `0x00489950` is the active player's per-sector gang count, so the `<=5`
-   checks are the original six-friendly-gang destination limit. Modes 7 and 8 are
-   confirmed as Support- and Cash-focused Influence routing, while mode 9 seeks
-   influenced-site Stealth for a Hide/Chaos path. Objective modes 12-15 are
-   implemented as exact shared-selector kernels for Big Man's four central
-   sectors and Eliminate's six headquarters candidates, including ownership,
-   six-gang capacity, nearest-ring, tie-RNG, step-routing, and compounded
-   hostile-human weighting. Their family-13/14 off-objective terminal handlers
-   are live: unless an Equip was already selected, they replace the action with
-   an exact objective Move. The upstream equipment blocks cannot run while the
-   gang is off-objective. Family 14 also has a live on-objective terminal
-   continuation: an immediately previous Control changes to Heal at Force below
-   10 and effective Heal at least `-3`, then changes the stored family to 13.
-   Both families also use their shared owned-objective branch to Heal at those
-   same stat boundaries when selector `0x90` finds no visible opposing gang in
-   the sector. Their contested-objective branch is live as well: on even
-   remaining-turn parity with a visible opponent, it makes three bounded target
-   draws, applies the recovered combat retry predicate, and then submits the
-   exact selected visible gang as an Attack at Force 5 or higher. A missing
-   target or lower Force falls back to Heal at the same stat boundary, then
-   Control; odd parity or no visible opponent selects Control directly. The
-   owned-objective opponent path uses the full visible pool and up to five
-   draws without the turn-parity gate. With no visible opponent and no Heal,
-   both families try weapon, armor, and maximum-Control miscellaneous upgrades
-   (selector 0x75, FND-AI-055) in order, then Influence the unfinished local site with the highest positive
-   Support. Exact item/site targets and the objective handlers' fixed two-turn
-   weapon/armor cooldown are live and replay-safe. These observations complete
-   the family-13/14 command handlers; neither contains a Research assignment.
-   The six-by-six directional
-   attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,
-   negative-hostility enumerators, `3..6` non-Homicidal reaction values, exact
-   combat/Control decrements, and the mentality-gated sector Combat + Defense
-   advantage hostility pass are also identified and implemented with their
-   exact pre-city RNG order. The separate per-player resolution band is
-   initialized to 0/1/2 for computer players at Goon/Criminal/higher settings;
-   all nine consumers now drive the recovered Heal, Influence, Research, Chaos,
-   Crackdown, hidden-detection, Attack, and retaliation formulas. Family 11's
-   exact weapon/armor/miscellaneous priority, replacement cooldowns, Heal gate,
-   and first-visible-local-opponent Attack are wired into live planning and
-   replay. Its weapon selector includes the recovered class scoring/ties,
-   research, local-cap, raw-Tech, affordability, strict-improvement,
-   previous-Attack, and cooldown gates. Its blocks-of-six mode-10 formation
-   anchors and mode-16 followers are also live; their separate per-gang
-   formation-sector shorts are authoritative, hashed, saved, and replayed.
-   Both modes apply the common unavailable-sector filter, but—as the native
-   selector's planning-family guard requires—neither applies the strict-Control
-   destination filter reserved for families 0 and 1.
-   Family 3's complete recovered handler is live. Its cash-site core handles
-   previous None, Control, Equip, Heal, Influence, and Snitch. It heals below Force 8 at effective Heal
-   `-3` or better, otherwise retains or selects the first strict maximum
-   positive-Cash unfinished local site for Influence, attempts strict solo
-   Control where applicable, or follows exact mode-8 movement toward the
-   nearest owned sector with the greatest summed unfinished positive Cash.
-   Its previous-Influence equipment opportunity uses the recovered
-   weapon-before-armor selector and cost-scaled cooldowns. After Attack, Hide,
-   or Move, it either repeats the territorial cash-site logic or selects a
-   visible opponent and applies the recovered asymmetric combat comparison.
-   Three consecutive Moves switch the family to 11 in Siege and 2 otherwise;
-   Greed's final three turns overwrite the result with Terminate. Unsupported
-   previous-action cases intentionally preserve None, matching the handler.
-   Family 0's complete general-purpose state machine is live (RULE-AI-019,
-   FND-AI-046, FND-AI-048). Where these branches decide between staying and
-   moving they count the player's gangs in the sector whose previous action was
-   Chaos, the planning gang included. Previous None Heals below Force 8 at
-   effective Heal `-3` or better, otherwise raises Chaos when that count is 0,
-   then Moves through mode 5. Previous Attack makes one weight-10 opponent draw
-   and attacks only on a passing quarter-strength comparison; failure Controls
-   when strict solo Control succeeds and otherwise Moves. Previous Chaos or Equip
-   makes up to five weight-10 draws and attacks the final target even after five
-   failures, then tries the shared nearby-danger weapon/armor opportunity before
-   its owned-sector Heal/Chaos or non-owned Move continuation. Previous Control
-   raises Chaos in owned territory and Moves elsewhere. Previous Heal, Hide, or
-   Move repeats Heal first, makes one weight-10 draw whose failed comparison
-   deliberately preserves no action while clearing both auxiliary shorts, or
-   chooses Control/Chaos/Move locally, raising Chaos while the count is below 1.
-   Previous Snitch always Moves. Previous Research, Influence, Bribe, Give and
-   Sell plan nothing. A newly planned Move paired with an older Move changes the
-   family to 11 in Siege and 2 otherwise. Exact targets, mode-5 destinations,
-   cooldowns, auxiliary writes, family changes, and RNG consumption are live and
-   replay-recorded.
-   Family 4's complete state machine is live as well (RULE-AI-023, FND-AI-046,
-   FND-AI-049). Previous None, Control, or Heal applies the same
-   Force-8/effective-Heal-`-3` gate, then raises Chaos while the previous-Chaos
-   count is below 1 and otherwise Moves through mode 2. Previous Attack, Hide,
-   or Move makes one weight-10 draw whose failed comparison deliberately
-   produces no action and clears both auxiliary shorts. Without weight 10,
-   owned territory raises Chaos while the count is below 1 and Moves otherwise;
-   non-owned territory Controls only when both previous and older actions are
-   Move and strict solo Control succeeds, otherwise it Moves. Previous Chaos or
-   Equip makes up to five weight-10 draws and attacks the final target, then
-   tries nearby-danger weapon/armor equipment. Its remaining owned-sector path
-   raises Chaos while the count is below 2, so a gang that raised Chaos alone
-   there stays, whereas other cases Move through mode 2. Every other previous
-   action plans nothing. The dispatch table does not assign family 4 in a
-   mapped scenario/role cell, but an unmapped role preserves it; that live path
-   is replay-tested. Exact targets, cooldowns, auxiliary writes, mode-2 RNG,
-   and no-action behavior are integrated.
-   Family 2's complete aggressive territorial handler is live. It tries armor
-   before weapon, requires an expired slot cooldown and a previous action other
-   than Attack, and writes a raw-cost-times-three replacement cooldown. It Heals
-   below Force 8 at effective Heal `-3` or better only while the current visible-
-   opponent weight is below 5. Owned sectors Move through mode 6. Elsewhere it
-   draws up to five hostile targets, preferring the human-only pool at weight
-   10, and attacks the final selection even when every quarter-strength combat
-   comparison fails. With no attack it Controls only when strict solo Control
-   is possible, the previous action was not Control, and the scenario is not
-   Armageddon; otherwise it Moves through mode 6. Two terminal hostility gates
-   can replace any prepared command with Control when visible defenders are
-   absent, and Greed's final three turns then force Terminate. Exact targets,
-   cooldowns, focus writes, standing-derived movement, and RNG consumption are
-   replay-recorded.
-   Family 5's complete recovered handler mirrors that sequence around Support
-   rather than Cash. Its local scan and mode-7 movement sum positive Support
-   from unfinished owned sites, and mode 7 excludes any candidate sector where
-   another planning record already has previous Influence. Its equipment,
-   opponent targeting/comparison, three-Move transition, Greed override, and
-   intentional None cases are live at the same replay-recorded boundary.
-   Family 7's complete research-specialist handler is live as well. It makes
-   one conditional hostile Attack draw, otherwise tries the family-1
-   weapon/armor opportunity, then applies the Force-8 Heal gate. Its persisted
-   polymorphic focus value tracks a Research sector or item. The handler moves
-   toward the strictly greatest owned sum of all site Research modifiers,
-   Influences the first unfinished positive-Research local site, repeats or
-   cycles exact Research item categories, and falls back through ranged,
-   blade, melee, armor, and a fixed eight-item miscellaneous priority. Exhausted
-   research changes the gang to family 0 and mode-5 Move; Greed's final three
-   turns still force Terminate. Exact targets, focus writes, and RNG
-   consumption are replay-recorded.
-   Family 9's complete handler tries weapon and armor upgrades without checking
-   their existing cooldowns, then writes a cost-times-three replacement
-   cooldown. Without equipment it moves from owned territory through mode 3,
-   uses the shared five-draw visible-opponent Attack loop in non-owned
-   territory at weight 10, moves after a previous Control, and otherwise
-   Controls. Exact actions, targets, cooldowns, and RNG consumption are live
-   and replay-recorded.
-   Family 10's complete recovered handler prioritizes a strict-Stealth armor
-   upgrade (selector 0x72, FND-AI-055: from the equipped armor or item 1, with
-   no cost test) with a literal two-turn cooldown, then a special researched Smoke
-   Bombs Equip, then Heal below Force 10 only with no visible local opponent.
-   Otherwise it probes mode 9 for a sector whose last finished site has strictly
-   more Stealth than the current sector's (selector 8, FND-AI-071) and calls
-   mode 9 again for the Move destination; without an
-   improvement it chooses Chaos unless another gang in the sector has previous
-   Chaos, in which case it Hides. The intentional second selector call and its
-   independent tie RNG are replay-recorded.
-   Family 12's complete handler branches first on the player's cached weight
-   of the current sector (RULE-AI-030).
-   At weight 0 it prefers weapon, armor, and maximum-Detect
-   miscellaneous upgrades (selector 0x74, FND-AI-055), using raw-cost weapon/armor cooldowns, then Heals
-   below Force 10 at effective Heal `-3` or better, and otherwise steps toward
-   its player's roster-slot-0 gang through the encoded mode (FND-AI-070). At any other weight it
-   makes up to five bounded target draws, from the human players' gangs only at
-   weight 10 in a hostile human's sector and from every visible gang otherwise
-   (EXP-TURN-080), preserves the human-pool/full-pool
-   ordinal asymmetry, and attacks the final target even when every combat
-   comparison fails. Greed's final three turns overwrite the result with
-   Terminate.
-   Exact actions, targets, cooldowns, and RNG consumption are live and
-   replay-recorded.
-   Family 6 is also live. An uncontested gang routes toward the first visible
-   hostile-human sector not covered by another active family-6 gang, falling
-   back to mode 2 when none exists. In combat it makes one preliminary bounded
-   target draw, tries weapon then armor equipment after a failed comparison,
-   and otherwise makes up to five more draws before attacking the final target.
-   Its recovered but stable-state-unreachable Heal and local Control/Move
-   branches remain explicit in the handler. Greed's final three turns overwrite
-   the result with Terminate.
-   The exact ten-scenario by
-   seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
-   including unmapped cells which preserve the current family. AI planning
-   preparation now rolls the current role into the previous role and updates
-   every active gang's authoritative family slot. Mode-4 family assignment
-   copies the gang's current sector into the second auxiliary short. The first
-   auxiliary short is the live family-2/7 focus or family-11 formation value;
-   family 6 uses both shorts for coverage selection. The original objective-specific base
-   turn schedules are isolated in `OriginalAiHireRoleRules`; Dominance alone
-   uses an eleven-turn period, while the other nine objectives use ten. The
-   objective-specific adjustments and hire-attempt gates are also
-   instruction-verified and isolated, including late-game remaps,
-   duration-scaled family quotas, and final mandatory-family overrides. Greed
-   stops at the final duration eighth, Power/Acceptance/Dominance stop with two
-   turns left, most other scenarios use only an inclusive gang limit, and Big
-   Man uniquely bypasses that normal limit gate. The limit itself is exact:
-   it branches on neutral non-Crackdown territory, the strict cash-above-300
-   boundary, owned-sector counts, active gangs, and scenario multipliers of
-   1.5, 2, or 4 before capping at 80. The three-offer helper's six exact
-   role rankings, scenario-specific filters and tie directions, rich-player
-   mode override, post-ranking affordability check, and no-fallback behavior
-   are isolated in `OriginalAiHireRules`. Its failed-hire rejection selector is
-   also exact: Greed rejects slot zero while other scenarios minimize a
-   Stealth-weighted positive-stat efficiency ratio with first-tie priority.
-   Greed's remaining schedule flag is now identified as whether at least one
-   player has a strictly greater scenario score; tied leaders do not set it.
-   Authoritative state now preserves the fixed six current/previous hire roles
-   and six-by-81 family slots. The live planner applies the hire attempt gate,
-   computes the post-command role from the exact schedule and adjustments, and
-   uses its ranking mode for exact three-offer selection. For selector `0x5f`,
-   family-6 coverage uses the live gang sector while the first auxiliary short
-   is active, and the persisted second auxiliary sector otherwise. The hire
-   model now preserves three fixed slots, same-slot tombstones, mutually
-   exclusive actions, and next-planning-entry refill. Exact hire destination
-   selection and its persisted anchor are statically recovered in
-   `FND-AI-010`, covered by pure kernels, and wired into live planning. The
-   encoded anchors are authoritative and persisted.
-   Selector `0x8f` is verified as the previous hire role, exposing a shipped
-   slot-versus-role indexing error in five family-6 scheduling guards. Each guard
-   compares that role with its scenario's special schedule-slot number even
-   though all five slots produce role 4 and therefore family 6; Dominance even
-   compares the bounded 0..6 role with 10. The recreation's documented clean-room
-   exception compares with role 4, preventing consecutive family-6 hires without
-   preserving the original defect.
-   Static analysis now recovers the exact three-generation per-gang action
-   tuples, active-slot rollover, duplicate cleanup, dispatch/anchor ordering,
-   reset/reuse behavior and first-plan flags.
-   All three complete action tuples are authoritative and persisted. Their two
-   target bytes retain the original command-dependent encodings: player/roster
-   slot for Attack, item for Equip/Research, local site slot for Influence,
-   sector for Move, equipment mask plus friendly roster slot for Give, and
-   equipment mask for Sell. The six first-planning flags are now
-   authoritative, hashed, and persisted: a player's first preparation resets
-   all 81 records and skips action rollover; later preparations roll active
-   records normally. Resolved hires reuse the first inactive slot and reset its
-   family and action history. After rollover, each sector with duplicate prior
-   Chaos rewrites only its first ascending matching slot to None; duplicate
-   Influence similarly rewrites only its first match to Snitch.
-   A failed ranking now uses the recovered scenario-specific rejection selector
-   and records the resulting snub. Selectors `0x3f`, `0x3e`, and `0x3d` read
-   the older, immediately previous, and newly planned action bytes. Selectors 0 (scenario), `0x48`
-   (planning-record initialized flag), `0x5a` (mirrored gang projection),
-   `0x7c` (per-player hire role), 3 (player cash), 4 (sector
-   Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
-   `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
-   (Heal), plus action bytes 3 (Chaos), 10 (Move), and 13 (Snitch), are now
-   bounded in the `FND-AI-*` findings in `spec/findings/`. Mode 6 is now live as a
-   family-2 Move route toward the unique scenario leader (or all tied leaders),
-   with an additional two-point preference for hostile human owners when humans
-   participate. The exact scenario scorer and competition-standing bytes are
-   rebuilt for all ten scenarios, including Dominance's final integer division.
-   Its pair flag permits Control—not Attack—when no defending
-   owner gang is visible. The hostility pass counts only visible
-   defenders, requires a strict integer ratio above 75 percent, and writes
-   `-10` in the observer-to-owner direction. Static executable kernels now
-   guard family-1's cash 50/51, Force 8/9, effective-Heal -3/-4, Tolerance
-   3/4, human-owner Mentality-at-least-Criminal, and non-human-owner exact-Goon
-   boundaries, including the original raw-owner-greater-than-zero asymmetry.
-   The complete previous-None/Chaos, previous-Heal, and post-equipment action
-   branches are live, including selector `0x2a` as the current-sector
-   active-Crackdown predicate, selector `0x2c` as strict solo Control, and
-   replay-recorded mode-5 destinations. The post-equipment path also carries
-   selector `0x6c`'s 3-by-3 danger test, selectors `0x61`/`0x64`'s exact weapon/
-   armor choices, and selectors `0x65`/`0x66`'s planning cooldowns into live
-   command submission and resolution. Capture controlled original turns that
-   exercise the recovered family choices through their complete selector
-   context before replacing more recreation policy.
-2. Capture fixed-state decisions for every scenario and difficulty.
-3. Extend the current ten-scenario two-player coverage to larger player counts,
-   difficulty variants, objective completion stress cases, and statistical
-   reference traces.
+### What the recorded runs compare
 
-The persisted simulation now carries the recovered directional attitude matrix
-and reaction values through hashing, saves, and replays, and command resolution
-uses the recovered 0/1/2 calibration. Every gang's order comes from its
-family handler; no command is ranked by recreation weights.
+`OriginalNewGameExperimentTests` replays every `EXP-SETUP-` and `EXP-TURN-`
+run of the original except EXP-TURN-036, which holds measurements taken from
+reruns of the others. For each one the rebuild has to make every draw the
+original made, with the same bound and result in the same order, and reach the
+same state: players, sectors, gangs, attitudes, scores and reports. EXP-TURN-083
+is the one run the rebuild does not follow to its end: under DEV-AI-002 a
+family-7 gang's Influence in a neutral sector gives no command, so the rebuild
+rolls fewer dice in that turn, and the test checks only that the first draw
+that differs is still draw 1420. From EXP-TURN-048 on, every run except
+EXP-TURN-052 also holds the computer players' planning records
+(FMT-STATE-007) where it stops, which the replay compares byte for byte:
+family, the three generations of action and target and the cooldowns. It also
+compares the focus and coverage sector of every active gang of a computer
+player that has planned. A planning pass that draws once more or once less
+fails the replay at that draw; one that picks another family, action, target
+or sector without changing a draw fails where the run stops, when the records
+or the state there differ. The runs cover all ten scenarios and all four
+Mentalities. Some of them write a family, a raider flag or cash into the
+original's memory before a Done press to reach branches no ordinary match
+reaches, and EXP-UI-023 retires players the same way; the replay makes the
+same writes.
 
-The original manual and contemporary developer FAQ corroborate four global
-mentalities, increasing aggression, a player-denial emphasis at Homicidal
-Maniac, and fair play without hidden resources. Exact parity remains blocked on
-completing the consumer trace and reference-decision work above.
+The planning pass (RULE-AI-001), the family dispatch (RULE-AI-002) and the
+hire choice (RULE-AI-008 to RULE-AI-013) run in each replayed turn. A family
+handler (RULE-AI-019 to RULE-AI-031) runs only for the gangs the scenario and
+hire roles put in its family, or the probe writes into it: families 13 and 14
+play for the Big Man and Siege objectives, and nothing in the game writes
+family 4, so only a probe write reaches its handler. Every row of the `AI`
+area in [parity/AI.md](../parity/AI.md) is `validated`. A rule's spec status says
+how much of it the evidence proves: an `established` rule has a static reading
+and the runs in agreement, and a `supported` one does not yet have that
+agreement for the whole rule, so branches of it that no run reaches rest on the
+static reading alone; its Open
+questions and its notes in [parity/AI.md](../parity/AI.md) name them. The current status of each rule is
+in the generated [index by status](../spec/index/by-status/AI.md), which this
+document does not repeat.
+
+### How matches end
+
+RULE-OBJECTIVE-004 gives each scenario's end. Recorded runs reach the end of
+six-month Greed, Acceptance and Dominance matches (EXP-TURN-037 to
+EXP-TURN-039, EXP-TURN-041) and of a Big Man match (EXP-TURN-058), and EXP-UI-023
+ends a Kill 'Em All match with a lone survivor after the probe retires the five
+computer players before the first Done press. No recorded run ends Power,
+Big 40, Siege or Armageddon on its objective, Eliminate on the last player
+left, or Kill 'Em All on the last player left in ordinary play. The recorded
+runs stop when the only human is eliminated, since the original then ends the
+match for that human (RULE-OBJECTIVE-005), so a computer player's win can be
+recorded only while the human survives.
+
+### Tournaments
+
+`AiTournamentTests` (category `LongRunning`, run by
+`.github/workflows/nightly-ai-campaigns.yml` each night after a day with a
+commit) plays matches of six computer players. Power, Acceptance and Dominance
+run to their time limit, and Kill 'Em All, Big 40, Siege, Eliminate, Big Man
+and Armageddon run for 20 and 40 turns at several seeds; Greed is played to its
+time limit in the fast gate by `HeadlessMatchRunnerTests`. The timed matches
+and the 20-turn matches are each played twice and must reach the same state
+hash. Each tournament match must replay from its journal to the same state
+hash, save and load to the same hash and stay within its phase-boundary limit;
+each 40-turn campaign must also resolve a hire, hold more sectors than the six
+it started with and make progress toward its scenario's objective, and one Big
+Man campaign must end on its objective. In Kill 'Em All the progress check asks
+for an attack only while some computer player is hostile to another, so a
+match in which every attitude stays neutral passes without one. These matches
+are not compared with the original: they guard the rebuild against crashes,
+nondeterminism and stalled matches.

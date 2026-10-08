@@ -25,7 +25,11 @@ public static class MatchBootstrapFactory
     /// one; a client that narrowed it would refuse those.
     /// </param>
     /// <param name="settings">The host's choices, from the opaque blob.</param>
-    /// <param name="players">The seated roster, in any order; slots decide the seating.</param>
+    /// <param name="players">
+    /// The seated roster. Slots decide the seating, and a slot with several rows takes the first in
+    /// list order, so a slot's rows must come in the order the server lists them: the order they
+    /// claimed the seat.
+    /// </param>
     public static MatchSetup Setup(
         int seed,
         MultiplayerGameSettings settings,
@@ -45,10 +49,12 @@ public static class MatchBootstrapFactory
                     new PlayerId(slot), DerivedSeatName(slot), PlayerController.Computer,
                     settings.Portraits[slot]);
         }
-        // DEV-AI-007 stays on online: the command line that switches it off reaches local matches.
+        // DEV-AI-007 and DEV-AI-008 keep their defaults online: the command line that switches
+        // them off reaches local matches only. DEV-AI-003 is the host's choice in the settings.
         return new MatchSetup(
-            settings.Scenario, settings.Duration, seed, setups, settings.AiMentality,
-            aiPolicy: settings.AiPolicy);
+            settings.Scenario, settings.Duration, seed, setups,
+            MatchDeviations.Defaults with { AiPolicy = settings.AiPolicy },
+            settings.AiMentality);
     }
 
     /// <summary>The match, generated from the setup, with hire offers drawn for every seat.</summary>
@@ -87,6 +93,13 @@ public static class MatchBootstrapFactory
     /// Whether a seat is still <em>played</em> by its human is a separate question, answered per
     /// turn by the sealed set rather than by the setup: see <see cref="SealedTurnApplier"/>.
     /// </para>
+    /// <para>
+    /// A seat the vote handed to the computer can be claimed again by a late joiner, which adds a
+    /// row for the same slot. The server lists a slot's rows in the order they claimed it, so the
+    /// first is the one the match was generated with, and that is the one taken here. The rows
+    /// before the newest are computer controlled, and a roster with such a row makes the session
+    /// restore from a snapshot rather than play on from the generated city.
+    /// </para>
     /// </remarks>
     private static Dictionary<int, PlayerView> SeatedBySlot(IReadOnlyList<PlayerView> players)
     {
@@ -95,11 +108,7 @@ public static class MatchBootstrapFactory
         {
             // Seating a player still in the lobby would put two players in the same chair.
             if (!IsSeated(player)) continue;
-            if (!seated.TryAdd(player.Slot, player))
-            {
-                throw new MultiplayerProtocolException(
-                    $"the roster seats two players in slot {player.Slot}");
-            }
+            seated.TryAdd(player.Slot, player);
         }
         return seated;
     }

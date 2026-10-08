@@ -86,7 +86,13 @@ internal static class OriginalAiFamilySevenRules
         int previousItemId)
     {
         ValidateGang(state, player, gang);
-        if (IsPendingResearch(state, player, previousItemId)) return previousItemId;
+        // FND-AI-078: the research byte of the previous target, item 0 included, tested against 0.
+        // The rebuild keeps no research for the blank records 53 to 63 and reads them as 0, which
+        // the original's are: setup copies their difficulty word, 0 in every blank record
+        // (FND-RESEARCH-002, FND-DATA-003).
+        if (MatchState.IsActualItem(state.Definitions, previousItemId)
+            && player.RemainingResearch(state.Definitions, checked((short)previousItemId)) != 0)
+            return previousItemId;
 
         var previousType = previousItemId is >= 0
                 && previousItemId < state.Definitions.Items.Count

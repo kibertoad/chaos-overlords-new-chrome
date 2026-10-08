@@ -4,7 +4,7 @@ title: Police presence counts down by one at the end of every turn unless it is 
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [EXP-TURN-010, FND-CHAOS-002, FND-EXE-004, FND-POLICE-001, FND-POLICE-004, FND-SETUP-003, SRC-MANUAL-GOG]
+evidence: [EXP-TURN-010, FND-CHAOS-002, FND-EXE-004, FND-POLICE-001, FND-POLICE-004, FND-SETUP-003, SRC-MANUAL-GOG, EXP-TURN-116, FND-CONTROL-001, FND-PLATFORM-003, FND-UI-035]
 conflicting: []
 split_with: []
 related: [FMT-STATE-002]
@@ -64,4 +64,6 @@ None known.
 
 ## Open questions
 
-None known.
+None known. The runs reach the countdown of a presence from 1 to 99, and
+EXP-TURN-116 a presence of 100 under the island modifier, which the countdown
+leaves at 100.

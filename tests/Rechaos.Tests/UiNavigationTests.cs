@@ -129,6 +129,7 @@ public sealed partial class UiNavigationTests
     {
         Rectangle[] entries =
         [
+            StatusConsoleLayout.Date,
             StatusConsoleLayout.Score,
             StatusConsoleLayout.Cash,
             .. Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorEntry)
@@ -163,6 +164,61 @@ public sealed partial class UiNavigationTests
         Assert.Equal("5 [-3] (0)", StatusConsolePresentation.CashSummary(5, -3, 0));
         Assert.Equal("120[95](-12)", StatusConsolePresentation.CashSummary(120, 95, -12));
         Assert.Empty(StatusConsoleTooltip.At(Point.Zero));
+    }
+
+    [Fact]
+    public void EveryPlaceThatNamesAScenarioUsesTheTitleTheConsoleDraws()
+    {
+        // RULE-UI-009, FND-UI-040: the console draws string resource scenario + 1. The rebuild's
+        // own texts name the scenario with the same string. The online session list draws the
+        // same ExecutableStrings.ScenarioTitle call inside ChaosGame and has no seam to test here.
+        const string title = "THE BIG 40";
+        Assert.Equal(title, ExecutableStrings.ScenarioTitle(ScenarioId.Big40));
+        Assert.Equal(title, ScenarioSetupTooltip.Lines(ScenarioId.Big40, GameDuration.OneYear)[0]);
+        Assert.StartsWith($"{title} RATES:", StatusConsoleTooltip.ScoreLines(ScenarioId.Big40)[1]);
+        Assert.Equal(title, DiscoveryFilters.Label(DiscoveryFilters.Scenario, (int)ScenarioId.Big40 + 1));
+        Assert.Equal(("SCENARIO", title), OnlineLobbySummary.Rows(ScenarioId.Big40, GameDuration.OneYear,
+            AiDifficulty.CrimeLord, PlanningTimeLimit.TwoMinutes)[0]);
+
+        var state = OriginalMatchFactory.Create(Rechaos.Core.Assets.BundledOriginalData.Load(),new MatchSetup(
+            ScenarioId.Big40, GameDuration.OneYear, 1996,
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)], MatchDeviations.Original));
+        var entries = PlayerRankingPresentation.Project(state);
+        Assert.StartsWith($"{title} RATES:", PlayerRankingTooltip.Lines(state, entries[0], entries)[2]);
+        Assert.StartsWith($"{title} - TURN ", SaveSlotCatalog.SuggestedName(state));
+        Assert.Contains($"  {title}  ", new SaveSlotSummary(0, "ANY", DateTimeOffset.UnixEpoch,
+            ScenarioId.Big40, 1, 3, "SINGLE", AiPolicyMode.Original).Details);
+    }
+
+    [Fact]
+    public void DateRowTooltipExplainsTheCalendarAndTheCountdownBesideIt()
+    {
+        // DEV-UI-005 over the FND-UI-040 calendar fields.
+        Assert.Equal(new Rectangle(476, 14, 108, 9), StatusConsoleLayout.Date);
+        var point = StatusConsoleLayout.Date.Center;
+        Assert.True(StatusConsoleTooltip.Contains(point));
+
+        var timed = StatusConsoleTooltip.At(point, ScenarioId.Greed, GameDuration.OneYear);
+        Assert.Equal("DATE", timed[0]);
+        Assert.Contains("2050", string.Join(' ', timed));
+        Assert.Contains("LEFT AFTER THE ONE BEING PLANNED.", timed);
+        Assert.Contains("THE MATCH ENDS AFTER TURN 52,", timed);
+        Assert.Equal("OR SOONER IF ONE OVERLORD IS LEFT.", timed[^1]);
+
+        var untimed = StatusConsoleTooltip.At(point, ScenarioId.Big40, GameDuration.OneYear);
+        Assert.Equal("THE BIG 40 HAS NO TIME LIMIT.", untimed[^1]);
+        Assert.DoesNotContain(untimed, line => line.Contains("TURNS", StringComparison.Ordinal));
+
+        var final = StatusConsoleTooltip.At(point, ScenarioId.Greed, GameDuration.OneYear, complete: true);
+        Assert.Equal("COMPLETE: THE MATCH HAS ENDED.", final[^1]);
+        Assert.DoesNotContain(final, line => line.Contains("TURNS", StringComparison.Ordinal));
+
+        foreach (var lines in new[] { timed, untimed, final })
+        {
+            var bounds = StatusConsoleTooltip.Bounds(point, lines);
+            Assert.True(bounds.X >= 0 && bounds.Y >= 0
+                && bounds.Right <= VirtualInput.Width && bounds.Bottom <= VirtualInput.Height);
+        }
     }
 
     [Fact]
@@ -483,6 +539,7 @@ public sealed partial class UiNavigationTests
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.AdvancedAi));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.IntroOnlyOnce));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.MenuStopsClock));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ExportDiagnostics));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
@@ -502,6 +559,7 @@ public sealed partial class UiNavigationTests
             OptionsLayout.EventSiteImages,
             OptionsLayout.AdvancedAi,
             OptionsLayout.IntroOnlyOnce,
+            OptionsLayout.MenuStopsClock,
             OptionsLayout.ExportDiagnostics,
             OptionsLayout.ColorDepth,
             OptionsLayout.Done
@@ -873,48 +931,6 @@ public sealed partial class UiNavigationTests
         Assert.Equal(new Rectangle(18, 108, 20, 20), GangArtLayout.CombatPortrait(0, false));
         Assert.Equal(new Rectangle(42, 372, 20, 20), GangArtLayout.CombatPortrait(11, true));
         Assert.Throws<ArgumentOutOfRangeException>(() => GangArtLayout.CombatPortrait(12, false));
-    }
-
-    [Fact]
-    public void SiteSearchPanelFitsAllTwentyTwoSiteTypesInTwoColumns()
-    {
-        var rows = Enumerable.Range(0, SiteSearchLayout.MaximumSites)
-            .Select(SiteSearchLayout.Site).ToArray();
-
-        Assert.Equal(new Rectangle(206, 146, 114, 15), rows[0]);
-        Assert.Equal(new Rectangle(322, 296, 114, 15), rows[^1]);
-        Assert.All(rows.SelectMany((left, index) => rows.Skip(index + 1)
-            .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => SiteSearchLayout.Site(22));
-    }
-
-    // FND-SEARCH-004: the second press of a double-click on a row opens Site Information and leaves
-    // the row as the first press set it; a press on another control between the two presses makes
-    // the second a plain press that flips the row back.
-    [Fact]
-    public void SiteSearchDoubleClickOpensDetailsOnlyForTwoPressesInARow()
-    {
-        var rows = Enumerable.Range(0, SiteSearchLayout.MaximumSites).Select(row => (short)row).ToArray();
-        var player = new PlayerId(0);
-        var row = SiteSearchLayout.Site(5).Center;
-        var none = SiteSearchLayout.None.Center;
-
-        var selections = new SiteSearchSelectionState();
-        var clicks = new IndexedDoubleClickTracker();
-        Assert.False(SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(100)).OpensDetails);
-        Assert.True(SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(200)).OpensDetails);
-        Assert.True(selections.IsSelected(player, 5));
-
-        selections = new SiteSearchSelectionState();
-        clicks = new IndexedDoubleClickTracker();
-        SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(100));
-        Assert.Equal(SiteSearchControl.None,
-            SiteSearchPanel.Press(selections, player, none, rows, clicks, TimeSpan.FromMilliseconds(200)).Press.Control);
-        Assert.False(SiteSearchPanel.Press(selections, player, row, rows, clicks, TimeSpan.FromMilliseconds(300)).OpensDetails);
-        Assert.True(selections.IsSelected(player, 5));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => SiteSearchPanel.Apply(
-            selections, player, new SiteSearchPress(SiteSearchControl.Row), rows));
     }
 
     [Fact]

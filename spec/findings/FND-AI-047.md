@@ -13,13 +13,13 @@ locations:
     address: 0x0047278C..0x00472808
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00473EFC..0x00473FB8
+    address: 0x00473EFC..0x00473FC3
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00475740..0x004757BA
+    address: 0x00475740..0x004757C5
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004AB650..0x004AB667
+    address: 0x004AB650..0x004AB668
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -35,22 +35,22 @@ FND-EXE-004), and these are its only writes to the matrix.
 - Recovery, `0x0047278C..0x00472808`: when the Mentality byte `0x00487850` is
   not 3, every cell below 10 is raised by one (the increment at
   `0x0047280B`). This runs first in the resolver, before any action.
-- After an attack, `0x00473EFC..0x00473FB8`, at the end of the attack block's
+- After an attack, `0x00473EFC..0x00473FC3`, at the end of the attack block's
   body (FND-COMBAT-008), reached by every gang whose action is Attack whether
   the attack was evaded, hit, or drew a retaliation. It loads the reaction of
   the player in the attacker's `target` byte (`0x00473EFC`), replaces it with
   the attacker's stored opening damage when that is larger
   (`0x00473F2E..0x00473F53`), subtracts the result from the cell
   `target_player * 6 + attacker_player` (`0x00473F7D`), and sets the cell to
-  -10 when it is below -10 (`0x00473F84..0x00473FB8`). An evaded attack has
+  -10 when it is below -10 (`0x00473F84..0x00473FC3`). An evaded attack has
   opening damage -1, so the reaction is subtracted. The retaliation writes no
   cell.
-- At a Control takeover, `0x00475740..0x004757BA`, reached only when the
+- At a Control takeover, `0x00475740..0x004757C5`, reached only when the
   winner of a sector differs from its owner. When the previous owner is not -1
   (`0x00475740`), after raising the winner's overthrow count (`0x00475753`),
   it doubles the previous owner's reaction (`0x00475762..0x00475769`),
   subtracts it from the cell `previous_owner * 6 + winner` (`0x00475781`) and
-  clamps the cell at -10 (`0x0047579A..0x004757BA`). The owner byte is then
+  clamps the cell at -10 (`0x0047579A..0x004757C5`). The owner byte is then
   written at `0x004757D4` (FND-CONTROL-003).
 
 The other writers of a sector's owner byte (`0x004395D4` in `fn_00439563`,

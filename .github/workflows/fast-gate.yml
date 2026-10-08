@@ -14,9 +14,10 @@
 #
 # `Invoke-Validation.ps1` also checks the generated documentation indexes and the relative links
 # between documents (`tools/update-doc-indexes.mjs --check`), and the spec against the
-# documentation standard (`tools/check-spec.mjs --check`), on both legs, with the runner's own
-# Node.js. Windows checks out with CRLF, so that leg also covers the script's line-ending handling.
-# A stale index fails the leg only after the build and tests have run, so it never hides them.
+# documentation standard (`tools/check-documentation.mjs --check`, which runs the shared checker
+# the root package.json pins), on both legs. Windows checks out with CRLF, so that leg also covers
+# the script's line-ending handling. A stale index fails the leg only after the build and tests
+# have run, so it never hides them.
 name: Fast gate
 
 on:
@@ -53,7 +54,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # Full history, so `check-spec.mjs` can find where a pull request forked from its base
+          # Full history, so the documentation checker can find where a pull request forked from its base
           # branch and fail when it deletes a spec ID or area that exists there.
           fetch-depth: 0
 
@@ -62,14 +63,119 @@ jobs:
         with:
           dotnet-version: 10.0.400
 
-      # `check-spec.mjs` (run by Invoke-Validation.ps1) compiles the `.ksy` definitions with it, and
-      # fails when CI is set and no compiler is found.
+      # Invoke-Validation.ps1 runs the documentation standard's checker (tools/check-documentation.mjs),
+      # which the root package.json pins and `pnpm install` at the root installs.
+      - name: Install the documentation checker
+        uses: $/.github/actions/install-documentation-checker
+
+      # The checker compiles the `.ksy` definitions with it, and fails when CI is set and no
+      # compiler is found.
       - name: Install the Kaitai Struct compiler
         id: kaitai
         uses: $/.github/actions/install-kaitai
 
+      # The recovery token's Secret Service store (libsecret) needs a session bus and an unlocked
+      # keyring, which the runner image does not start. Without them its test skips, and the
+      # binding would never run anywhere in automation.
+      #
+      # The packages are cached per runner image. `apt-get update` and the download usually take
+      # 10-20s, but the Azure Ubuntu mirror the runners use stalls at times, and the step then took
+      # 50-250s before apt fell back to archive.ubuntu.com. With the cache a run reads no package
+      # list and downloads nothing. A new image, or a change to the package list, misses the cache
+      # and downloads them once. The set is saved as soon as it is installed, so a run whose gate
+      # fails still saves it.
+      #
+      # Each saved set gets a key of its own, ending in the run that saved it, and the restore takes
+      # the newest set under the image's prefix. A cached set that does not install is downloaded
+      # again, and the fresh set is saved once it installs from its files, so it replaces the broken
+      # one on the next run. On a runner that does not name its image, nothing is cached.
+      - name: Name the keyring packages
+        if: runner.os == 'Linux'
+        id: keyring-names
+        env:
+          PACKAGES: dbus gnome-keyring libsecret-1-0
+        run: |
+          echo "packages=$PACKAGES" >> "$GITHUB_OUTPUT"
+          if [ -n "${ImageOS:-}" ] && [ -n "${ImageVersion:-}" ]; then
+            echo "prefix=keyring-packages-$ImageOS-$ImageVersion-${PACKAGES// /-}-" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore the keyring packages
+        if: runner.os == 'Linux' && steps.keyring-names.outputs.prefix != ''
+        id: keyring-packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/keyring-packages
+          key: ${{ steps.keyring-names.outputs.prefix }}
+          restore-keys: ${{ steps.keyring-names.outputs.prefix }}
+
+      - name: Install a Secret Service keyring
+        if: runner.os == 'Linux'
+        id: keyring-install
+        env:
+          RESTORED_KEY: ${{ steps.keyring-packages.outputs.cache-matched-key }}
+          PACKAGES: ${{ steps.keyring-names.outputs.packages }}
+        run: |
+          read -ra packages <<< "$PACKAGES"
+          shopt -s nullglob
+          downloaded=false
+          download() {
+            downloaded=true
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends --download-only "${packages[@]}"
+            rm -rf ~/keyring-packages
+            mkdir -p ~/keyring-packages
+            find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp {} ~/keyring-packages/ \;
+          }
+          install_files() {
+            local debs=(~/keyring-packages/*.deb)
+            [ ${#debs[@]} -gt 0 ] && sudo apt-get install -y --no-install-recommends "${debs[@]}"
+          }
+          [ -n "$RESTORED_KEY" ] || download
+          # A cached set that no longer installs on this image is downloaded again. A set this run
+          # has just downloaded is not, so apt reads the package lists once.
+          installed=false
+          if install_files; then
+            installed=true
+          elif [ "$downloaded" = false ]; then
+            download
+            if install_files; then installed=true; fi
+          fi
+          [ "$installed" = true ] || sudo apt-get install -y --no-install-recommends "${packages[@]}"
+          # Only a set this run downloaded and installed from its files is worth saving.
+          if [ "$downloaded" = true ] && [ "$installed" = true ]; then
+            echo "save=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Save the keyring packages
+        if: runner.os == 'Linux' && steps.keyring-names.outputs.prefix != '' && steps.keyring-install.outputs.save == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/keyring-packages
+          key: ${{ steps.keyring-names.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
+
       - name: Verify, build, and test
+        if: runner.os != 'Linux'
         shell: pwsh
         run: ./tools/Invoke-Validation.ps1
         env:
           KSC: ${{ steps.kaitai.outputs.ksc }}
+
+      # The gate runs inside a private session bus with GNOME Keyring's login collection created
+      # and unlocked, and REQUIRE_SECRET_SERVICE makes PlatformSecretStoreTests fail instead of
+      # skipping when the store does not answer. The `default` file names the login collection as
+      # the default one, which a desktop session sets up: without it, libsecret's first write asks
+      # a GUI prompter to create a default collection, which fails on a runner with no display.
+      - name: Verify, build, and test (with a Secret Service keyring)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.local/share/keyrings
+          printf login > ~/.local/share/keyrings/default
+          dbus-run-session -- bash -euo pipefail -c '
+            printf ci-keyring | gnome-keyring-daemon --unlock --components=secrets > /dev/null
+            pwsh -NoProfile -File ./tools/Invoke-Validation.ps1
+          '
+        env:
+          KSC: ${{ steps.kaitai.outputs.ksc }}
+          REQUIRE_SECRET_SERVICE: "1"

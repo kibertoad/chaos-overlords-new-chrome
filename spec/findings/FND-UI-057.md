@@ -10,10 +10,10 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00414D8C..0x004150F1
+    address: 0x00414D8C..0x004150F6
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0041462F..0x00414757
+    address: 0x0041462F..0x0041475C
 tool: Capstone 5.0.7
 environment: null
 ---
@@ -30,9 +30,9 @@ environment: null
   `fn_0042548A`, `fn_0042533F`, `fn_00425F8C` and `fn_0042566D`.
 - None of these functions calls the sound wrapper `fn_00464290`
   (FND-AUDIO-002) or the panel-open helper `fn_0041953E` (FND-UI-011);
-  `fn_00425F4D` (`0x00425F4D..0x00425F8B`) and `fn_00425F8C`
-  (`0x00425F8C..0x00425FAF`) make no call, `fn_00449B78`
-  (`0x00449B78..0x00449BD1`) calls one import, and the greying and enabling
+  `fn_00425F4D` (`0x00425F4D..0x00425F8C`) and `fn_00425F8C`
+  (`0x00425F8C..0x00425FB0`) make no call, `fn_00449B78`
+  (`0x00449B78..0x00449BD2`) calls one import, and the greying and enabling
   helpers call only imports.
 - After the popup, an order with a picker runs it: the Influence picker
   `fn_0043F692` at `0x00415114` in the card handler, and the Attack, Influence

@@ -10,6 +10,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildNodeRuntime, loadConfig, type NodeRuntime, startHttpServer } from '../src'
 
 /**
+ * The keepalive interval of the conformance facade. Short enough to wait one out, and long enough
+ * that the hub's membership check (every fifth beat) does not end the streams the stream-cap case
+ * holds open on purpose.
+ */
+const KEEPALIVE_MS = 2_000
+
+/**
  * The facade over a real HTTP listener: the client SDK's fetch goes over TCP, so the streaming
  * headers, the abort path and the JSON round-trip are the production ones, not app.request().
  *
@@ -36,7 +43,7 @@ function defineFacadeSuite(name: string, databaseUrl: string | undefined): void 
           BUG_REPORT_RATE_LIMIT_PER_MINUTE: '10000',
           MATCH_CREATION_RATE_LIMIT_PER_MINUTE: '10000',
         }),
-        { clock },
+        { clock, sseHeartbeatMs: KEEPALIVE_MS },
       )
       server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
       await new Promise<void>((resolve) => server.once('listening', () => resolve()))
@@ -51,6 +58,7 @@ function defineFacadeSuite(name: string, databaseUrl: string | undefined): void 
     defineHttpConformance({
       fetch: (input, init) => fetch(input.replace('http://conformance', baseUrl), init),
       publicListing: true,
+      keepaliveMs: KEEPALIVE_MS,
       expireDeadlines: async () => {
         clock.advance(61_000)
         await runtime.kernel.turns.sweep()
@@ -166,6 +174,110 @@ if (process.env.REQUIRE_POSTGRES === '1' && !process.env.TEST_DATABASE_URL) {
   throw new Error('REQUIRE_POSTGRES=1 but TEST_DATABASE_URL is empty.')
 }
 defineFacadeSuite('node runtime over postgres', process.env.TEST_DATABASE_URL)
+
+/**
+ * A body refused for its size must not cost the client its connection.
+ *
+ * The listener drains an unread body for half a second after the response and then destroys the
+ * socket. Once anything has opened the request's web body stream, nothing reads that stream, so it
+ * holds the socket paused and the drain never moves; the keep-alive connection was dropped under
+ * whatever request the client sent on it next. `bodyCap` refuses by `Content-Length` without
+ * opening the stream, which leaves the drain free to finish.
+ */
+describe('node runtime body cap', () => {
+  let runtime: NodeRuntime
+  let server: ServerType
+  let baseUrl = ''
+  let connections = 0
+
+  beforeAll(async () => {
+    runtime = await buildNodeRuntime(
+      loadConfig({ DATABASE_URL: 'sqlite::memory:', LOG_LEVEL: 'error' }),
+    )
+    server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
+    server.on('connection', () => {
+      connections += 1
+    })
+    await new Promise<void>((resolve) => server.once('listening', () => resolve()))
+    baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+  })
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+    await runtime.close()
+  })
+
+  it('answers 413 and keeps serving the same keep-alive connection', async () => {
+    const refused = await fetch(`${baseUrl}/api/v1/matches/join`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ joinCode: 'A'.repeat(1024 * 1024) }),
+    })
+    expect(refused.status).toBe(413)
+    expect((await refused.json()).error.code).toBe('payload_too_large')
+
+    // Past the listener's half-second drain deadline, which is when the socket used to be cut.
+    await new Promise((resolve) => setTimeout(resolve, 700))
+    const health = await fetch(`${baseUrl}/health`)
+    expect(health.status).toBe(200)
+    expect(connections).toBe(1)
+  })
+})
+
+/**
+ * Two instances on one Postgres database, as a deployment behind a load balancer runs them: a
+ * caller who spends part of a budget on each has spent it once, not twice.
+ */
+describe.skipIf(!process.env.TEST_DATABASE_URL)('node runtime instances sharing postgres', () => {
+  const instances: Array<{ runtime: NodeRuntime; server: ServerType; baseUrl: string }> = []
+
+  beforeAll(async () => {
+    for (let i = 0; i < 2; i++) {
+      const runtime = await buildNodeRuntime(
+        loadConfig({
+          DATABASE_URL: process.env.TEST_DATABASE_URL,
+          LOG_LEVEL: 'error',
+          // Behind a proxy, so the test can name the caller and stay clear of other suites' keys.
+          TRUST_PROXY: '1',
+          RATE_LIMIT_PER_MINUTE: '3',
+        }),
+      )
+      const server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
+      await new Promise<void>((resolve) => server.once('listening', () => resolve()))
+      instances.push({
+        runtime,
+        server,
+        baseUrl: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+      })
+    }
+  })
+
+  afterAll(async () => {
+    for (const { runtime, server } of instances) {
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+      await runtime.close()
+    }
+  })
+
+  it('spends one anonymous budget across both instances', async () => {
+    // A documentation address with a random last group, so a rerun inside the same minute starts
+    // from an empty window.
+    const address = `2001:db8:${Math.floor(Math.random() * 0xffff).toString(16)}::1`
+    const attempt = (index: number) =>
+      fetch(`${instances[index]?.baseUrl}/api/v1/matches/join`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': address },
+        body: JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'Mallory' }),
+      })
+    expect((await attempt(0)).status).toBe(404)
+    expect((await attempt(1)).status).toBe(404)
+    expect((await attempt(0)).status).toBe(404)
+    const refused = await attempt(1)
+    expect(refused.status).toBe(429)
+    expect(Number(refused.headers.get('retry-after'))).toBeGreaterThan(0)
+    expect((await attempt(0)).status).toBe(429)
+  })
+})
 
 /**
  * Bug reports, over the same listener and into a second database file.

@@ -10,22 +10,22 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042E040..0x0042EE45
+    address: 0x0042E040..0x0042EE46
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043087E..0x00430C22
+    address: 0x0043087E..0x00430C23
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00430C23..0x00431C53
+    address: 0x00430C23..0x00431C54
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042F779..0x0042F98A
+    address: 0x0042F779..0x0042F98B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043066C..0x0043087D
+    address: 0x0043066C..0x0043087E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00470278..0x0047029D
+    address: 0x00470278..0x004702A2
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -52,7 +52,7 @@ its control.
 - It sets the abort byte `0x00494760` to 1 (`0x0042E058`) and lists, in
   ascending order, the sectors where the first word of the viewer's first
   entry is not -1 or the viewer's police flag is set (`0x0042E05F..0x0042E0EC`).
-- `0x0042E0F4..0x0042E1A5`, once, before anything is shown: for every sector,
+- `0x0042E0F4..0x0042E1AC`, once, before anything is shown: for every sector,
   every player's row and every entry whose first word is not -1, it copies
   byte 1 of that gang's combat record into byte 3 (`0x0042E1A5`).
 - With no listed sector it only calls `fn_00464290(4)` when `flag` is 0.

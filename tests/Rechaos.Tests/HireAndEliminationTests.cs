@@ -612,7 +612,8 @@ public sealed class HireAndEliminationTests
             // the sector over the change this test looks at.
             new(new PlayerId(2), "THREE", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Eliminate, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Eliminate, GameDuration.SixMonths, 1996, setups,
+            MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             // The Right Hands definition is 0; under ELIMINATE, losing it is what ends a player.
@@ -657,7 +658,7 @@ public sealed class HireAndEliminationTests
         string playerName = "ONE",
         bool keepOpponentActive = false,
         PlayerController controller = PlayerController.Human,
-        bool computerHiresWhereHumansCan = true)
+        bool computerHiresWhereHumansCan = false)
     {
         var definitions = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -666,7 +667,7 @@ public sealed class HireAndEliminationTests
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups,
-            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
+            MatchDeviations.Original with { ComputerHiresWhereHumansCan = computerHiresWhereHumansCan });
         MatchPlayerState[] players =
         [
             new(setups[0], initialCash,

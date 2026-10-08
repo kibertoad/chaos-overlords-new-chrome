@@ -63,7 +63,7 @@ public sealed partial class OriginalNewGameExperimentTests
                 var rebuilt = planning.SectorWeight(player.Id, sector);
                 if (original != rebuilt) Expect(original, rebuilt, $"sector_weight of player {slot} at sector {sector}");
             }
-            // FND-AI-044: the original writes an aux record only when a planning pass finds the slot
+            // FND-AI-081: the original writes an aux record only when a planning pass finds the slot
             // flagged for a family, and every reader reads a computer player's active gang after
             // that. The rebuild starts every record at -1 or the gang's sector where the original
             // holds 0, which no reader sees, so only the active gangs of computer players whose

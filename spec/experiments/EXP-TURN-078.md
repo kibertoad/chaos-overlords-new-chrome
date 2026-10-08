@@ -47,13 +47,13 @@ The run made 3365 calls of `roll` over nineteen Done presses. At the end
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. The rebuild makes the same calls with the same bounds and results and
-reaches the same state, the planning records included. The rebuild reaches the
-failed first draw with no upgrade to buy, the Heal test that fails at a
-positive weight, and the further draws ending in an Attack. A family-3 gang of
-the same run heals, which no other recorded run reaches either (RULE-AI-022).
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. The rebuild makes the same calls
+with the same bounds and results and reaches the same state, the planning
+records included. The rebuild reaches the failed first draw with no upgrade to
+buy, the Heal test that fails at a positive weight, and the further draws ending
+in an Attack. A family-3 gang of the same run heals, which no other recorded run
+reaches either (RULE-AI-022).
 
 ## Conclusion
 

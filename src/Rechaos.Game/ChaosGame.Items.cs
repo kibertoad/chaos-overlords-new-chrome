@@ -64,8 +64,8 @@ public sealed partial class ChaosGame
 
     private void DrawItems(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        if (CityBackground is not null)
+            batch.Draw(CityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         batch.Draw(pixel, new Rectangle(8, 48, 624, 402), new Color(0, 0, 0, 240));
         var playerId = ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
@@ -78,8 +78,8 @@ public sealed partial class ChaosGame
         if (gang is not null)
         {
             var portrait = GangArtLayout.SelectedEquipmentPortrait;
-            if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, portrait,
+            if (GangPortraits is not null)
+                batch.Draw(GangPortraits, portrait,
                     OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
             DrawBorder(batch, pixel, portrait, PlayerColors[playerId.Value], 1);
         }

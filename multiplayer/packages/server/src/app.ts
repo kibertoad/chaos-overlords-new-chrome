@@ -1,8 +1,8 @@
 import { BUG_REPORT_LIMITS, LIMITS } from '@chaos-overlords/contracts'
 import { Hono } from 'hono'
-import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import type { ServerContainer } from './container'
+import { bodyCap } from './http/bodyCap'
 import { handleError } from './http/errorHandler'
 import {
   bearerAuth,
@@ -72,28 +72,28 @@ function apiRoutes(): Hono<AppEnv> {
   // A backstop sized to the largest legitimate body on the API (a bug report's base64 state), so a
   // route added without a cap of its own is still bounded. Every route below narrows it; Hono
   // composes middleware rather than replacing it, so the tightest cap that matches a path wins.
-  api.use('*', bodyLimit({ maxSize: BUG_REPORT_LIMITS.stateBase64Bytes + SMALL_BODY }))
+  api.use('*', bodyCap(BUG_REPORT_LIMITS.stateBase64Bytes + SMALL_BODY))
 
   // The unauthenticated handshake parses a body before any player identity exists, so it needs the
   // same address budget and small-body cap as the lobby doors it protects.
-  api.use('/handshake', rateLimited, bodyLimit({ maxSize: SMALL_BODY }))
+  api.use('/handshake', rateLimited, bodyCap(SMALL_BODY))
   registerProtocolRoutes(api)
 
   // The doors a stranger can knock on, throttled per client address.
-  api.use('/matches', rateLimited, bodyLimit({ maxSize: LIMITS.gameSettingsBytes + SMALL_BODY }))
+  api.use('/matches', rateLimited, bodyCap(LIMITS.gameSettingsBytes + SMALL_BODY))
   // Creating is also charged to one budget shared by every caller; browsing the same path is not.
   api.on('POST', '/matches', matchCreationRateLimited)
-  api.use('/matches/join', rateLimited, bodyLimit({ maxSize: SMALL_BODY }))
+  api.use('/matches/join', rateLimited, bodyCap(SMALL_BODY))
   // `use(path, ...)` matches the path verbatim, so neither of the two above covers this one. It is
   // a password-gated door like `/matches/join` and needs the same throttle and the same cap on a
   // body that is buffered before anything validates it.
-  api.use('/matches/join-running', rateLimited, bodyLimit({ maxSize: SMALL_BODY }))
+  api.use('/matches/join-running', rateLimited, bodyCap(SMALL_BODY))
   // The third one. It is unauthenticated like the other two and far larger than either, so it gets
   // a budget of its own rather than borrowing the lobby's — see `RateLimiters.bugReport`.
   api.use(
     '/bug-reports',
     bugReportRateLimited,
-    bodyLimit({ maxSize: BUG_REPORT_LIMITS.stateBase64Bytes + SMALL_BODY }),
+    bodyCap(BUG_REPORT_LIMITS.stateBase64Bytes + SMALL_BODY),
   )
 
   registerPublicLobbyRoutes(api)
@@ -107,19 +107,17 @@ function apiRoutes(): Hono<AppEnv> {
   // unauthenticated `POST /matches`, so without these a stranger could make the process buffer and
   // parse a body of any size, a few hundred megabytes at a time, inside the same process that is
   // sealing every other match's turns.
-  api.use(
-    '/matches/:matchId/settings',
-    bodyLimit({ maxSize: LIMITS.gameSettingsBytes + SMALL_BODY }),
-  )
-  api.use('/matches/:matchId/profile', bodyLimit({ maxSize: SMALL_BODY }))
-  api.use('/matches/:matchId/players/:playerId/takeover-vote', bodyLimit({ maxSize: SMALL_BODY }))
-  api.use('/matches/:matchId/turns/:turn/orders', bodyLimit({ maxSize: LIMITS.ordersBytes }))
-  api.use('/matches/:matchId/turns/:turn/report', bodyLimit({ maxSize: SMALL_BODY }))
+  api.use('/matches/:matchId/settings', bodyCap(LIMITS.gameSettingsBytes + SMALL_BODY))
+  api.use('/matches/:matchId/profile', bodyCap(SMALL_BODY))
+  api.use('/matches/:matchId/chat', bodyCap(SMALL_BODY))
+  api.use('/matches/:matchId/players/:playerId/takeover-vote', bodyCap(SMALL_BODY))
+  api.use('/matches/:matchId/turns/:turn/orders', bodyCap(LIMITS.ordersBytes))
+  api.use('/matches/:matchId/turns/:turn/report', bodyCap(SMALL_BODY))
   // A snapshot is a megabyte, so uploads carry their own tighter budget on top of the member one.
   api.use(
     '/matches/:matchId/snapshots',
     memberRateLimited('upload'),
-    bodyLimit({ maxSize: LIMITS.snapshotBase64Bytes + SMALL_BODY }),
+    bodyCap(LIMITS.snapshotBase64Bytes + SMALL_BODY),
   )
 
   registerMemberLobbyRoutes(api)

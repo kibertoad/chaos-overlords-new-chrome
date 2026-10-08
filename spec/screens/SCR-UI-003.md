@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-UI-032, FND-TIMER-003, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-012, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038, FND-UI-039, FND-OBJECTIVE-004, FND-STATE-010, FND-UI-040, FND-UI-041, FND-UI-042, EXP-TURN-042, FND-UI-043, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-051, FND-SAVE-003, EXP-UI-008, EXP-UI-013, EXP-UI-014, FND-UI-059]
+evidence: [FND-UI-032, FND-TIMER-003, FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-019, FND-UI-031, FND-UI-033, FND-UI-035, FND-UI-034, FND-TIMER-001, FND-AUDIO-010, FND-AUDIO-018, FND-AUDIO-001, FND-SEARCH-001, FND-EVENT-006, SRC-MANUAL-GOG, FND-GFX-004, FND-EXE-004, FND-HIRE-008, FND-UI-038, FND-UI-039, FND-OBJECTIVE-004, FND-STATE-010, FND-UI-040, FND-UI-041, FND-UI-042, EXP-TURN-042, FND-UI-043, FND-UI-048, FND-UI-050, EXP-UI-006, EXP-UI-007, FND-UI-051, FND-SAVE-003, EXP-UI-008, EXP-UI-013, EXP-UI-014, FND-UI-059, FND-UI-060, FND-UI-063, EXP-UI-041, EXP-UI-001, EXP-UI-003, EXP-UI-031]
 conflicting: []
 split_with: []
 related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE-UI-011, RULE-UI-012, RULE-TIMER-002, RULE-TIMER-003, RULE-OPTIONS-003, RULE-AUDIO-001, RULE-AUDIO-007, RULE-AUDIO-008, SCR-UI-004, SCR-UI-005, SCR-UI-008, SCR-OPTIONS-001, SCR-HIRE-001, SCR-HIRE-002, SCR-GANG-002]
@@ -17,7 +17,7 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 |---|---|---|---|---|---|
 | City view and right control panel | `DATA/PX16/PX00128` | None | `(0,0,640,460)` | Always | FND-UI-032 |
 | Neutral city map | `DATA/PX16/PX10000` | None | The map surface's `(0,0,432,416)` copied to `(2,42)`; the 8-by-8 grid starts at map `(4,3)`, screen `(6,45)`, with 54-by-52 cells on a 53-by-51 stride | Always | FND-UI-017, FND-UI-033 |
-| Selected-sector frame | `DATA/PX16/PX00129` crop `(236 + 54f, 15, 54, 52)`, keyed on exact white, drawn by the pump for its counter `n` before it advances it, so `f = ((n + 7) % 8) / 4` between passes; while a slid-in panel is open the pump draws no frame, so the one drawn before the panel came in stays | Which sector is selected (`0x004ABC80`), which each player's planning starts from the sector it held when that player's previous planning ended, the sector of roster slot 0 in a new match | Over the selected cell, `(6 + 53*column, 45 + 51*row)` | Always | FND-UI-017, FND-UI-048, FND-UI-051, FND-SAVE-003, EXP-UI-006, EXP-UI-008 |
+| Selected-sector frame | `DATA/PX16/PX00129` crop `(236 + 54f, 15, 54, 52)`, keyed on exact white, drawn by the pump for its counter `n` before it advances it, so `f = ((n + 7) % 8) / 4` between passes; while a slid-in panel is open the pump draws no frame, so the one drawn before the panel came in stays | Which sector is selected (`0x004ABC80`), which each player's planning starts from the sector it held when that player's previous planning ended, the sector of roster slot 0 in a new match | Over the selected cell, `(6 + 53*column, 45 + 51*row)` | Always | FND-UI-017, FND-UI-048, FND-UI-051, FND-SAVE-003, EXP-UI-006, EXP-UI-008, EXP-UI-031 |
 | Grid labels | Tabs at `PX00129` `(276,448)`, `(276,461)`, `(299,448)` and `(312,448)`, keyed on exact white, with the 6-by-7 font | Column letters A to H and row numbers 1 to 8 | Letters at `(21 + 53*column, 42)` and `(21 + 53*column, 444)`; numbers at `(3, 59 + 51*row)` and `(421, 59 + 51*row)` | Always (the switch at `0x00487848` is never cleared) | FND-UI-017 |
 | Owned sector interiors | `DATA/PX16/PX10001` to `DATA/PX16/PX10006`, one per player | The owner of each sector, `sectors[s].owner` | The 52-by-50 interior of each owned cell | For each sector whose owner is not -1 | FND-UI-033 |
 | Objective pylons | `DATA/PX16/PX00129` crop `(344,15,54,52)`, keyed on exact white | Whether the sector is an objective sector (RULE-UI-012) | The whole cell, map `(4 + 53*column, 3 + 51*row, 54, 52)`, screen `(6 + 53*column, 45 + 51*row)` | Siege and Big Man, on each sector RULE-UI-012 marks | FND-UI-017, FND-UI-033 |
@@ -25,11 +25,11 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 | Site markers | `DATA/PX16/PX00150` | The sector's sites the player controls or selected in Search | Inside the sector's cell | See the Search panel | FND-SEARCH-001 |
 | Police badge | `DATA/PX16/PX00129` crop `(317,560,20,28)`, keyed on exact white, over the site markers and under the gang-status marker | Police presence in the sector | Map `(9 + 53*column, 14 + 51*row)`, screen `(11 + 53*column, 56 + 51*row)` | When the sector's `crackdown_turns` is greater than 0, for every player | FND-UI-050, EXP-UI-007 |
 | Overlord bar portraits | `DATA/PX16/PX00129` portraits at source y 480, 32 by 32, opaque | Each player's Overlord; the row at source y 594 for a player with no gang the active player can see in the sector, on SCR-UI-004 | `(18 + 70*n, 5, 32, 32)` for player `n`, with `(50 + 70*n, 5, 20, 20)` filled black; a seat whose `player_active` is 0 shows the 54-by-32 art at `(404 + 27*m, 448)` at `(18 + 70*n, 5)`, `m` stepping 0, 1, 2 every 100 ms | Always | FND-UI-017, FND-UI-031, FND-UI-038 |
-| Active-player marker | `DATA/PX16/PX00129` twelve 20-by-20 frames at source y 626, opaque | The viewed player (`0x00487B8C`), which is the planning player on this screen | `(50 + 70*n, 6, 20, 20)`, one frame every 100 ms (timer slot 1) | While player `n` is viewed | FND-UI-017, FND-UI-031, FND-UI-038 |
+| Active-player marker | `DATA/PX16/PX00129` twelve 20-by-20 frames at source y 626, opaque | The viewed player (`0x00487B8C`), which is the planning player on this screen | `(50 + 70*n, 6, 20, 20)`, one frame every 100 ms (timer slot 1) | While player `n` is viewed | FND-UI-017, FND-UI-031, FND-UI-038, EXP-UI-031 |
 | Planning lights | `DATA/PX16/PX00129` `(66,347,20,6)`, or black | Whether a human seat has yet to complete its orders | `(51 + 70*n, 30, 20, 6)` | For each seat in play; completed local human visits turn it black until the next round reset, including final visits | FND-UI-017, FND-UI-043 |
 | Control lights | `DATA/PX16/PX00129` `(488,512,8,16)`, opaque; the control from the back buffer when dark | Events: `events_unviewed`; Comlink: `comlink_pending`; Done: the end-of-match planning visit | Events `(540,126,8,16)`, Comlink `(592,126,8,16)`, Done `(592,282,8,16)` | While the flag is set, lit on alternate even values of `comlink_blink_step` (see Timing) | FND-EVENT-006 |
 | Scenario and calendar | The font strip | Scenario resource; year and week | Scenario `(481,6)`; year `(481,15)` in four cells, week `(511,15)` in two zero-filled cells | Planning entry; the year and week only there, before its combat and events presentations (FND-UI-059) | FND-UI-040 |
-| Player totals | The numeric font strip | Score and cash | Five cells at `(550,24)` and `(550,42)` | Planning entry only, before its combat and events presentations (FND-UI-059) | FND-UI-040 |
+| Player totals | The numeric font strip | Score and cash | Five cells at `(550,24)` and `(550,42)`, base values, so 0 is the bright 0 (RULE-UI-004) | Planning entry only, before its combat and events presentations (FND-UI-059) | FND-UI-040, FND-UI-060 |
 | Calendar companion field | The font strip | Remaining turns, or resource 19 | Three cells at `(562,15)` when the flag is zero and the scenario index is below 4; resource at `(532,15)` when the flag is nonzero | Planning entry; the remaining turns only there, before its combat and events presentations (FND-UI-059) | FND-UI-040, FND-UI-041 |
 | Sector values | The font strip of `DATA/PX16/PX00129` | Income, Tolerance, Support and Cash of the selected sector (RULE-UI-011) | Sector name, Income word, Tolerance, Support and Cash at x 568, y 60, 69, 78, 87 and 96; Support and Cash show 0 unless the active player owns the sector | When a sector is selected | FND-UI-017, FND-UI-035 |
 | Pressed console tiles | `DATA/PX16/PX00129` 48-by-48 cells at `(0,512)`, `(48,512)`, `(96,512)`, `(144,512)`, `(192,512)` and `(240,512)`; Done `(288,512,100,48)`; Game Info `(190,386,26,34)`; all opaque | None | Over the tile pressed | While a tile is held and the pointer is over it (RULE-UI-001) | FND-UI-032 |
@@ -57,6 +57,8 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 | City sector, double-click | The same | Planning | Makes the sector the selected one and opens SCR-UI-004 for the active player's gangs | FND-UI-015 |
 | Hire dock | `(440,373,196,77)` | Planning | The Hire handler (SCR-HIRE-002): a press drags an offer to a sector or toggles its Reject, a double-click opens the live-gang panel (SCR-GANG-002) | FND-UI-015, FND-UI-032, FND-HIRE-008 |
 
+Every row above is a press or double-click of the left button. The console tiles also take a press or double-click of the right button, which holds the tile until the right button comes up and acts on a release inside as the left button does; the city map and the Hire dock ignore the right button (FND-UI-063).
+
 ## Keyboard input
 
 | Key | Enabled when | Effect | Evidence |
@@ -75,7 +77,7 @@ related: [RULE-GFX-002, RULE-UI-001, RULE-UI-002, RULE-UI-006, RULE-UI-007, RULE
 | Sound | Resource | Played when | Evidence |
 |---|---|---|---|
 | Press | `DATA/SND00202` (slot 2) | A console tile is pressed (RULE-UI-001) | FND-UI-032, FND-AUDIO-010 |
-| Comlink alert | `DATA/Snd00205` (slot 6) | On entry with unread mail, and every 24 ticks while mail is unread (RULE-AUDIO-007, RULE-AUDIO-008) | FND-AUDIO-012 |
+| Comlink alert | `DATA/Snd00205` (slot 6) | Once at planning entry with unread mail, after the Last Turn Events; when a message for the planning player arrives; and every 24 ticks while mail is unread (RULE-AUDIO-007, RULE-AUDIO-008) | FND-AUDIO-018 |
 | Clock warnings | `DATA/Snd00206` and `DATA/Snd00207` (slots 7 and 8) | The last ten seconds and the last second of a timed turn (RULE-TIMER-003) | FND-TIMER-001 |
 | Game music | CD audio tracks 3 to 8, repeated (RULE-AUDIO-001 mode 2) | From the start of the game | FND-AUDIO-001 |
 
@@ -121,3 +123,16 @@ None known.
   than `DATA/PX16`) is not recorded here.
 - The Hire dock's input belongs to the Hire screens; its reject gates are in
   FND-UI-032.
+- No recorded run of the original reaches a single press selecting a sector
+  and the refusal for owner byte -2; the arrow keys and Enter; the pressed
+  console faces; the lit Events, Comlink and Done lights and their blink; the
+  final view as pixels; overflow cells; empty seats; marker frames 2, 7 and 11
+  and the marker and selection-frame cadences; the site markers, the hire
+  stamp and snub cross and a partly run clock bar as pixels; the Comlink alert
+  cadence; the game music and the press sound of most tiles; the waiting and
+  loading states; a final view with several humans. The cash row, the key
+  line and the top two pixel rows (y 444 and 445) of the column-letter tabs
+  along the bottom of the map are not compared with the captures; the letters,
+  drawn from y 449, are (FND-UI-015, FND-UI-017, FND-UI-018, FND-UI-032,
+  FND-UI-038, FND-UI-041, FND-UI-043, FND-EVENT-006).
+  These rest on the static findings named, so the entry stays `supported`.

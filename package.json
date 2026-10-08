@@ -1,0 +1,19 @@
+{
+  "name": "chaos-overlords-new-chrome",
+  "private": true,
+  "description": "Tools the repository root runs: the documentation standard check. The multiplayer server is its own pnpm workspace in multiplayer/.",
+  "type": "module",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.5.1",
+      "onFail": "warn"
+    }
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@scientific-method/standard-checker": "2.7.0"
+  }
+}

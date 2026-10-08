@@ -148,7 +148,7 @@ public sealed class EffectiveStatisticsModifierTests
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var match = OriginalMatchFactory.Create(
-            data, new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups));
+            data, new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original));
 
         Assert.All(match.Players.SelectMany(player => player.Gangs), gang =>
             Assert.Equal(EffectiveStatisticsCalculator.Rebuilt(match, gang), gang.StoredStatistics));
@@ -182,7 +182,7 @@ public sealed class EffectiveStatisticsModifierTests
             new(owner, "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, MatchDeviations.Original);
         MatchPlayerState[] players =
         [
             new(setups[0], 500,

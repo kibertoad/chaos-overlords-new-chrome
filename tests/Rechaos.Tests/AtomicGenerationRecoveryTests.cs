@@ -251,6 +251,6 @@ public sealed class AtomicGenerationRecoveryTests
             [
                 new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human),
                 new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Computer)
-            ]));
+            ], MatchDeviations.Original));
     }
 }

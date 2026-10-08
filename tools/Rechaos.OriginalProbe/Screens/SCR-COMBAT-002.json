@@ -1,6 +1,6 @@
 {
   "screen": "SCR-COMBAT-002",
-  "state": "The console's Detailed Combat control pressed at a planning entry, during the first clip",
+  "state": "The console's Detailed Combat control pressed at a planning entry, during a clip of the presentation",
   "elements": [
     {"element": "Panel", "rect": [104, 124, 344, 209]},
     {"element": "Sector tile", "rect": [135, 135, 54, 52]},

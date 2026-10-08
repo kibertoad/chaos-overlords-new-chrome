@@ -29,6 +29,24 @@ public sealed class AiPolicyTests
         Assert.True(CommandValidator.Validate(advanced, command).IsValid);
     }
 
+    // FND-AI-082: the original plan sets no cash aside, so it can cost more than the player
+    // holds. The fallback budget is then 0, which still lets an idle gang take a free action.
+    [Fact]
+    public void AdvancedRecoversAnIdleGangWhenTheOriginalPlanOverspends()
+    {
+        var match = IdleMatch(AiPolicyMode.Advanced, gangCount: 2);
+        var player = new PlayerId(0);
+        match.Players[0].Cash = 0;
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Bribe);
+
+        var commands = AiPolicyPlanner.Plan(match, player);
+
+        Assert.Equal(GangAction.Bribe, Assert.Single(commands,
+            command => command.Gang == new GangId(10)).Action);
+        Assert.Equal(GangAction.Control, Assert.Single(commands,
+            command => command.Gang == new GangId(11)).Action);
+    }
+
     [Fact]
     public void AdvancedExpertExpandsHealthyIdleGangButCriminalKeepsFallbackOrder()
     {
@@ -138,7 +156,7 @@ public sealed class AiPolicyTests
     }
 
     // DEV-AI-007 and DEV-AI-008: each setting belongs to the match, so the fingerprint, a save and
-    // a replay journal carry it, and switching one off leaves the other on.
+    // a replay journal carry it, and switching one on leaves the other off.
     [Theory]
     [InlineData(false, true)]
     [InlineData(true, false)]
@@ -167,6 +185,37 @@ public sealed class AiPolicyTests
         {
             Assert.Equal(computerMovesToNeighboursOnly, setup.ComputerMovesToNeighboursOnly);
             Assert.Equal(computerHiresWhereHumansCan, setup.ComputerHiresWhereHumansCan);
+        }
+    }
+
+    // DEV-AI-003, DEV-AI-007 and DEV-AI-008: MatchDeviations.Defaults follows the Default item of
+    // each entry in deviations/, and an online match whose host keeps the original policy starts from it.
+    [Fact]
+    public void DeviationDefaultsFollowTheLedgerAndStartOnlineMatches()
+    {
+        Assert.Equal(DefaultIsOn("DEV-AI-003") ? AiPolicyMode.Advanced : AiPolicyMode.Original,
+            MatchDeviations.Defaults.AiPolicy);
+        Assert.Equal(DefaultIsOn("DEV-AI-007"), MatchDeviations.Defaults.ComputerMovesToNeighboursOnly);
+        Assert.Equal(DefaultIsOn("DEV-AI-008"), MatchDeviations.Defaults.ComputerHiresWhereHumansCan);
+        var online = MatchBootstrapFactory.Setup(1996,
+            new MultiplayerGameSettings(
+                ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]),
+            []);
+        Assert.Equal(MatchDeviations.Defaults, online.Deviations);
+
+        bool DefaultIsOn(string id)
+        {
+            var path = Path.Combine(AppContext.BaseDirectory, "deviations", $"{id}.md");
+            Assert.True(File.Exists(path), $"{id} is not in deviations/.");
+            var line = Assert.Single(
+                File.ReadAllText(path).Replace("\r\n", "\n").Split('\n'),
+                text => text.StartsWith("- Default: ", StringComparison.Ordinal));
+            return line["- Default: ".Length..].Trim() switch
+            {
+                "on" => true,
+                "off" => false,
+                var other => throw new InvalidDataException($"{id} has no switchable Default: {other}."),
+            };
         }
     }
 
@@ -239,9 +288,9 @@ public sealed class AiPolicyTests
         bool ownsStartingSector = false,
         int gangCount = 1,
         int rivalSector = 1,
-        bool computerMovesToNeighboursOnly = true,
+        bool computerMovesToNeighboursOnly = false,
         bool ownedNeighbours = false,
-        bool computerHiresWhereHumansCan = true)
+        bool computerHiresWhereHumansCan = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -251,9 +300,8 @@ public sealed class AiPolicyTests
         ];
         var setup = new MatchSetup(
             ScenarioId.Greed, GameDuration.SixMonths, 31, setups,
-            aiMentality: difficulty, aiPolicy: policy,
-            computerMovesToNeighboursOnly: computerMovesToNeighboursOnly,
-            computerHiresWhereHumansCan: computerHiresWhereHumansCan);
+            new MatchDeviations(computerMovesToNeighboursOnly, computerHiresWhereHumansCan, policy),
+            aiMentality: difficulty);
         MatchPlayerState[] players =
         [
             new(setups[0], 50,

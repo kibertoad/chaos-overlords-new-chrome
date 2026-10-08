@@ -23,6 +23,13 @@ public static class ClassicOnlineLobbyLayout
     public static Rectangle Start => new(359, 370, 102, 48);
     public static Rectangle Leave => new(466, 370, 102, 48);
 
+    /// <summary>
+    /// The lobby chat, over the sheet's lower-left panel: its AI mentality and turn limit choices
+    /// are set on the rules screen online, so the panel is free.
+    /// </summary>
+    public static Rectangle ChatLog => new(80, 322, 224, 100);
+    public static Rectangle ChatInput => new(80, 425, 224, 16);
+
     public static Rectangle Roster => new(385, 111, 160, 130);
     public static Rectangle RosterPortrait(int row) => new(390, 119 + row * 19, 16, 16);
 

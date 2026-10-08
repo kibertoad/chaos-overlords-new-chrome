@@ -60,6 +60,8 @@ public sealed partial class ChaosGame
         switch (notice)
         {
             case LobbyNotice.Seated seated:
+                // The session reads the new seat's log from its start, chat included.
+                _online.ClearChat();
                 _online.IsHost = seated.Membership.Player.IsHost;
                 _online.JoinCodeShown = seated.Membership.JoinCode;
                 _online.Match = seated.Membership.Match;
@@ -106,6 +108,9 @@ public sealed partial class ChaosGame
                 // one the server is still starting is left for a later poll.
                 if (_session is null) TryStartOnlineMatch(updated.Match);
                 return;
+            case LobbyNotice.Chatted chatted:
+                _online.RecordChat(chatted.Lines);
+                return;
             case LobbyNotice.Listed listed:
                 _online.Listings = Describe(listed.Matches);
                 _online.DiscoverySelection = 0;
@@ -137,6 +142,14 @@ public sealed partial class ChaosGame
                 if (failed.Operation == nameof(MultiplayerLobbySession.UpdateProfile))
                 {
                     RejectLobbyProfile(failed);
+                    return;
+                }
+                // A refused chat message (the rate limit, a match that has just started) leaves the
+                // seat as it was too. The connection error is drawn only on the connect form, so
+                // taking that path here told the player nothing.
+                if (failed.Operation == nameof(MultiplayerLobbySession.SendChat))
+                {
+                    _online.Status = failed.Reason;
                     return;
                 }
                 RememberOnlineFailure(failed.Error, failed.Operation, lastEventSequence: null);
@@ -242,9 +255,33 @@ public sealed partial class ChaosGame
                     _screens.Show(ClientScreen.City);
                 }
                 return;
+            case MultiplayerNotice.PauseLifted lifted:
+                // The pause ended without this client adopting anything that reopened planning: it
+                // posted the repair, already held it, or the re-reported hashes agreed. Planning
+                // reopens on the open turn, with the draft the server still holds for it.
+                var turnBeforeLift = _online.PlanningTurn;
+                KeepOnlinePlanningSelection();
+                if (AdoptOnlineState(lifted.State, lifted.Submission, lifted.Planning))
+                {
+                    RewindOnlineCombatPresentation(
+                        presentCompletedTurn: _online.PlanningTurn != turnBeforeLift);
+                    _message = lifted.Submission?.Ready == true
+                        ? "MATCH RESUMED  WAITING FOR THE OTHER PLAYERS"
+                        : "MATCH RESUMED";
+                    _screens.Show(ClientScreen.City);
+                }
+                return;
             case MultiplayerNotice.Desynced desynced:
                 _online.Stage = MultiplayerStage.Desynced;
                 CloseOnlinePlanning();
+                // The session found its own report wrong and moved to the state the server's facts
+                // rebuild to. The board shows that state while the pause holds; planning reopens on
+                // `PauseLifted` once the server lifts it.
+                if (desynced.CorrectedState is { } corrected)
+                {
+                    ReplaceMatchState(corrected);
+                    RewindOnlineCombatPresentation(presentCompletedTurn: false);
+                }
                 // A pause is not a silence. The resolution watchdog is waiting for a seal that
                 // cannot come until the repair lands, and a legitimately slow repair on the
                 // previous turn used to trip it.

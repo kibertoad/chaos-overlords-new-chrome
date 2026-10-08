@@ -1,10 +1,10 @@
 ---
 id: RULE-OBJECTIVE-002
 title: Each player's scenario score is rebuilt from what the scenario counts, and a player's standing is the number of players with a higher score
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-OBJECTIVE-003, FND-AI-005, FND-TURN-003, FND-UI-033, FND-CITY-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG, FND-EXE-004, FND-SETUP-015, EXP-TURN-012, EXP-TURN-014, EXP-TURN-028, EXP-TURN-039, EXP-TURN-038, EXP-TURN-058]
+evidence: [FND-OBJECTIVE-003, FND-AI-005, FND-TURN-003, FND-UI-033, FND-CITY-003, FND-SETUP-009, FND-SETUP-012, SRC-MANUAL-GOG, FND-EXE-004, FND-SETUP-015, EXP-TURN-012, EXP-TURN-014, EXP-TURN-028, EXP-TURN-039, EXP-TURN-038, EXP-TURN-058, FND-AI-009, FND-CONTROL-001, FND-EQUIP-006, FND-PLATFORM-003, FND-STATE-004, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035, FND-UPKEEP-001, EXP-TURN-106, EXP-TURN-107, EXP-TURN-108]
 conflicting: []
 split_with: []
 related: [RULE-OBJECTIVE-004, FMT-STATE-002]
@@ -140,3 +140,7 @@ None known.
   active players, then gives the inactive ones -32000; the procedure writes
   the same result in one pass. Big Man scores are set to 0 when a match
   starts (FND-SETUP-015).
+- No recorded run has an active player below -32000 counting inactive slots
+  above it (BUG-OBJECTIVE-001), or a Dominance score with a negative
+  numerator. These rest on FND-AI-005. Until a run reaches them, the entry
+  stays `supported`.
