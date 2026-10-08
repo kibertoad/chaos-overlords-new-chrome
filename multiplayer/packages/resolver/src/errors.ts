@@ -21,9 +21,9 @@ export class MatchNotHeldError extends Error {
 }
 
 /**
- * The resolver refused what it was given: a sealed set that does not match its own digest or is for
- * another turn, a snapshot that does not hash to what it is stored under, settings this build cannot
- * read. Rebuilding does not help; the input is the problem.
+ * The resolver refused what it was given: a seal ahead of the match or without its set, a sealed set
+ * that does not match its digest, a snapshot that does not hash to what it is stored under, settings
+ * this build cannot read. Rebuilding does not help; the input is the problem.
  */
 export class ResolverRefusedError extends Error {
   readonly code = 'resolver_refused'

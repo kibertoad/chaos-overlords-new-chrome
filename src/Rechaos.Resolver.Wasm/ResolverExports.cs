@@ -2,7 +2,6 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using Rechaos.Core.Assets;
-using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Protocol;
 using Rechaos.Multiplayer.Resolution;
@@ -18,13 +17,14 @@ namespace Rechaos.Resolver.Wasm;
 /// A match lives here between calls under an integer handle, because a state is a few megabytes of
 /// managed objects and copying it across the JavaScript boundary on every turn would cost more
 /// than resolving the turn. <see cref="Release"/> drops it. A host that loses its runtime loses
-/// every handle with it and rebuilds the matches it still needs from a snapshot and the sealed
-/// sets after it.
+/// every handle with it and rebuilds the matches it still needs from a snapshot and the events
+/// after it.
 /// </para>
 /// <para>
 /// The payloads are the ones the server already holds: the stored <c>gameSettings</c> blob, the
-/// roster as <c>playerView</c> rows, a sealed set as <c>GET /turns/:n/orders</c> answers it. A
-/// payload this build cannot read throws, and the host sees the message as a JavaScript error.
+/// roster as <c>playerView</c> rows, an event as the log stores it, a sealed set as
+/// <c>GET /turns/:n/orders</c> answers it. A payload this build cannot read throws, and the host
+/// sees the message as a JavaScript error.
 /// </para>
 /// </remarks>
 [SupportedOSPlatform("browser")]
@@ -59,21 +59,32 @@ public static partial class ResolverExports
     /// <remarks>
     /// The payload, not the archive a client uploads: the browser-wasm runtime has no Brotli
     /// codec, so the host takes the archive's header and compression off (and puts them back on
-    /// what <see cref="SavePayload"/> returns) with its own.
+    /// what <see cref="SavePayload"/> returns) with its own. <paramref name="playersJson"/> is the
+    /// roster as the server holds it now, and <paramref name="logTurn"/> the turn the log is on at
+    /// the first event that will be fed, or 0 for the turn the state is on; see
+    /// <see cref="AuthoritativeMatch.FromSnapshot"/>.
     /// </remarks>
     [JSExport]
-    public static int Restore(byte[] savePayload, string stateHash) =>
-        Hold(AuthoritativeMatch.FromSavePayload(Definitions.Value, savePayload, stateHash));
+    public static int Restore(byte[] savePayload, string stateHash, string playersJson, int logTurn) =>
+        Hold(AuthoritativeMatch.FromSavePayload(
+            Definitions.Value,
+            savePayload,
+            stateHash,
+            WireJson.Read<PlayerView[]>(playersJson),
+            logTurn > 0 ? logTurn : null));
 
-    /// <summary>Resolves a sealed set and returns the state hash every client should report.</summary>
+    /// <summary>
+    /// Folds one event of the match's log and returns the state hash after it.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="sealedOrdersJson"/> is the sealed set for a <c>turn.sealed</c> event, and
+    /// may be null for any other; see <see cref="AuthoritativeMatch.Apply"/>.
+    /// </remarks>
     [JSExport]
-    public static string ApplySealedTurn(int handle, string sealedOrdersJson) =>
-        Match(handle).ApplySealedTurn(WireJson.ReadExact<SealedOrdersView>(sealedOrdersJson));
-
-    /// <summary>A seat changing hands at its place in the event log.</summary>
-    [JSExport]
-    public static void HandOverSeat(int handle, int slot, bool toComputer) =>
-        Match(handle).HandOverSeat(slot, toComputer ? PlayerController.Computer : PlayerController.Human);
+    public static string ApplyEvent(int handle, string eventJson, string? sealedOrdersJson) =>
+        Match(handle).Apply(
+            WireJson.Read<MatchEvent>(eventJson),
+            sealedOrdersJson is null ? null : WireJson.ReadExact<SealedOrdersView>(sealedOrdersJson));
 
     /// <summary>The current state hash.</summary>
     [JSExport]

@@ -1,7 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { MatchNotHeldError, ResolverRefusedError } from '../dist/errors.js'
 import { startNodeMatchResolver } from '../dist/node/index.js'
-import { apply, expectNativeHashes, missing, playToSnapshot, transcript } from './hosts.js'
+import {
+  apply,
+  expectNativeHashes,
+  missing,
+  playToSnapshot,
+  restoreInput,
+  seals,
+  transcript,
+} from './hosts.js'
 
 describe.skipIf(missing)('the Node host', () => {
   let resolver: Awaited<ReturnType<typeof startNodeMatchResolver>>
@@ -20,28 +28,33 @@ describe.skipIf(missing)('the Node host', () => {
   })
 
   it('answers MatchNotHeldError for a match it never built', async () => {
-    await expect(resolver.applySealedTurn('nobody', {})).rejects.toBeInstanceOf(MatchNotHeldError)
+    await expect(resolver.applyEvent('nobody', {})).rejects.toBeInstanceOf(MatchNotHeldError)
     expect(await resolver.status('nobody')).toBeNull()
   })
 
   it('answers ResolverRefusedError for a snapshot stored under another hash', async () => {
     const { snapshotStep } = await playToSnapshot(resolver, 'refused')
     await expect(
-      resolver.restore('refused-copy', {
-        body: snapshotStep.archive,
-        stateHash: transcript.bootstrapHash,
-      }),
+      resolver.restore(
+        'refused-copy',
+        {
+          body: snapshotStep.archive,
+          stateHash: transcript.bootstrapHash,
+        },
+        restoreInput(),
+      ),
     ).rejects.toBeInstanceOf(ResolverRefusedError)
     await resolver.release('refused')
   })
 
-  it('answers ResolverRefusedError for a sealed set for another turn, and keeps the match', async () => {
+  it('answers ResolverRefusedError for a seal ahead of the match, and keeps the match', async () => {
     const { rest } = await playToSnapshot(resolver, 'wrong-turn')
     const before = await resolver.status('wrong-turn')
-    const later = rest.filter((step: { kind: string }) => step.kind === 'sealed')[1]
-    await expect(resolver.applySealedTurn('wrong-turn', later.sealedOrders)).rejects.toBeInstanceOf(
-      ResolverRefusedError,
-    )
+    const [, later] = seals(rest)
+    expect(later).toBeDefined()
+    await expect(
+      resolver.applyEvent('wrong-turn', later?.event, later?.sealedOrders),
+    ).rejects.toBeInstanceOf(ResolverRefusedError)
     expect(await resolver.status('wrong-turn')).toEqual(before)
     await resolver.release('wrong-turn')
   })
@@ -60,7 +73,7 @@ describe.skipIf(missing)('the Node host', () => {
       await expect(apply(small, 'first', rest[0])).rejects.toBeInstanceOf(MatchNotHeldError)
       expect((await small.info()).held).toBe(1)
 
-      await small.restore('first', snapshot)
+      await small.restore('first', snapshot, restoreInput())
       let last
       for (const step of rest) last = (await apply(small, 'first', step)) ?? last
       expect(last?.stateHash).toBe(rest.at(-1).hash)

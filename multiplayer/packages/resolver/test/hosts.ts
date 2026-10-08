@@ -29,15 +29,20 @@ export async function playToSnapshot(resolver: MatchResolver, matchId: string) {
 
 interface TranscriptStep {
   kind: string
+  event?: { type: string; payload: { turn?: number } }
   sealedOrders?: unknown
-  slot?: number
-  toComputer?: boolean
 }
 
+/** Feeds one event step to a match; a snapshot step does nothing. */
 export async function apply(resolver: MatchResolver, matchId: string, step: TranscriptStep) {
-  if (step.kind === 'sealed') return resolver.applySealedTurn(matchId, step.sealedOrders)
-  if (step.kind === 'handOver') {
-    return resolver.handOverSeat(matchId, step.slot ?? -1, step.toComputer ?? false)
-  }
-  return undefined
+  if (step.kind !== 'event') return undefined
+  return resolver.applyEvent(matchId, step.event, step.sealedOrders)
 }
+
+/** The seals among `steps`. */
+export function seals(steps: TranscriptStep[]) {
+  return steps.filter((step) => step.event?.type === 'turn.sealed')
+}
+
+/** The roster the transcript's match is played with, as a restore takes it. */
+export const restoreInput = () => ({ players: transcript.players })

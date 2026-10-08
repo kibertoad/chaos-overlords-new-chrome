@@ -63,6 +63,7 @@ public sealed class MatchReplayRecorder
     private readonly bool _verifying;
     private readonly bool _journaling;
     private string _currentStateFingerprint;
+    private int _mutationCount;
 
     public MatchReplayRecorder(MatchState state)
         : this(state, verifying: true, journaling: true)
@@ -149,6 +150,7 @@ public sealed class MatchReplayRecorder
         _initialSnapshot = initialSnapshot;
         _initialStateFingerprint = initialStateFingerprint;
         _steps.AddRange(steps);
+        _mutationCount = steps.Count;
         _currentStateFingerprint = MatchReplaySerializer.EndingFingerprint(
             initialStateFingerprint, steps);
         // The state has to be the one the journal ends at, or the first mutation would append a
@@ -161,6 +163,15 @@ public sealed class MatchReplayRecorder
 
     /// <summary>How many mutations this journal holds; the cost of carrying it, at a glance.</summary>
     public int StepCount => _steps.Count;
+
+    /// <summary>
+    /// How many mutations this recorder has recorded, whether or not it keeps them in a journal.
+    /// </summary>
+    /// <remarks>
+    /// Equal to <see cref="StepCount"/> for a journaling recorder. A holder that caches something
+    /// derived from the state reads this to know when the cache is stale.
+    /// </remarks>
+    public int MutationCount => _mutationCount;
 
     /// <summary>
     /// Resumes recording into an existing journal.
@@ -378,6 +389,7 @@ public sealed class MatchReplayRecorder
         if (step.Recipients is not null)
             step = step with { Recipients = Array.AsReadOnly(step.Recipients.ToArray()) };
         if (_journaling) _steps.Add(step);
+        _mutationCount++;
         _currentStateFingerprint = step.ResultingStateFingerprint;
     }
 

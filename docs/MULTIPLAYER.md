@@ -619,20 +619,26 @@ projection of the state per seat, and a client that renders and plans from a pro
 
 ### What the resolver is fed
 
-The resolver applies the facts that change the state, in event-log order, exactly as a reconnecting
-client replays them:
+The resolver is fed the event log in order and folds it through `MatchHistory`
+(`src/Rechaos.Multiplayer/Session`), the class a reconnecting client's session folds it with, so the
+two cannot rebuild a match differently. The facts that change the state:
 
 - `match.started`: bootstrap from the seed, the stored `gameSettings` and the seated roster.
 - `match.playerTakenOver`: the seat goes to the computer. `match.playerReturned` that replaced the
   computer, and `match.latePlayerJoined`: the seat goes to a human. A handover on a finished match is
   ignored, as on every client.
-- `turn.sealed`: the frozen set, checked against its own digest, then resolved. A set sealed after
-  the match has finished is ignored, as on every client. A set for a turn already resolved is
-  refused rather than ignored, because the hash it would return belongs to a later turn: the host
-  feeds each set once, and after a restore reads the resolver's turn to know where to resume.
+- `turn.opened`: moves the log's turn, which dates the handovers after it.
+- `turn.sealed`: the frozen set, checked against the digest the event announced and its own, then
+  resolved.
 
-It keeps the state in memory, under a handle per match, and checkpoints it, every ten turns as the host does today and at
-every desync it settles. A checkpoint is the snapshot archive clients already read, so the server's
+Every other event is accepted and changes nothing. A seal for a turn the state already holds, or one
+on a finished match, is passed over; a handover is dated by the turn the log was on when it
+happened, so a walk of the whole log over a newer snapshot leaves out the handovers the snapshot
+already reflects. A match picked up from a snapshot takes the roster as the server holds it, so that
+late joins before the snapshot are known seats.
+
+It keeps the state in memory, under a handle per match, and checkpoints it, every ten turns as the
+host does today and at every desync it settles. A checkpoint is the snapshot archive clients already read, so the server's
 checkpoints replace the host's uploads. A host that lost its runtime restores the newest checkpoint
 and replays the facts after it. The browser-wasm runtime has no Brotli codec, so the resolver hands
 out and takes the uncompressed save payload, and its host writes and reads the archive's header and
@@ -642,7 +648,7 @@ A host holds a bounded number of matches and releases the least recently used be
 runtime's live managed heap passes a budget (forcing a collection before it releases anything). A
 call for a match the host no longer holds fails with `MatchNotHeldError`, and the caller rebuilds the
 match from its newest checkpoint and the facts after it. A call whose input the build refuses (a
-sealed set for another turn, a snapshot that does not hash to what it is stored under) fails with
+seal ahead of the match, a snapshot that does not hash to what it is stored under) fails with
 `ResolverRefusedError`, and rebuilding does not help.
 
 ### Versions

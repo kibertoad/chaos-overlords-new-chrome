@@ -1,5 +1,5 @@
 import { type BrotliCodec, readSnapshotArchive, writeSnapshotArchive } from './archive.js'
-import type { BootstrapInput, MatchStatus } from './core.js'
+import type { BootstrapInput, MatchStatus, RestoreInput } from './core.js'
 import { ResolverRefusedError } from './errors.js'
 
 /** What a resolver build plays. */
@@ -21,9 +21,13 @@ export interface ResolverDescription {
 export interface PayloadResolver {
   describe(): Promise<ResolverDescription>
   bootstrap(matchId: string, input: BootstrapInput): Promise<MatchStatus>
-  restore(matchId: string, savePayload: Uint8Array, stateHash: string): Promise<MatchStatus>
-  applySealedTurn(matchId: string, sealedOrders: unknown): Promise<MatchStatus>
-  handOverSeat(matchId: string, slot: number, toComputer: boolean): Promise<MatchStatus>
+  restore(
+    matchId: string,
+    savePayload: Uint8Array,
+    stateHash: string,
+    input: RestoreInput,
+  ): Promise<MatchStatus>
+  applyEvent(matchId: string, event: unknown, sealedOrders?: unknown): Promise<MatchStatus>
   status(matchId: string): Promise<MatchStatus | null>
   savePayload(matchId: string): Promise<{ payload: Uint8Array; status: MatchStatus }>
   release(matchId: string): Promise<void>
@@ -45,14 +49,15 @@ export interface MatchResolver {
   /** Builds a match from the facts of `match.started`, replacing any held under the id. */
   bootstrap(matchId: string, input: BootstrapInput): Promise<MatchStatus>
   /** Picks a match up from a stored snapshot, refused unless it hashes to `stateHash`. */
-  restore(matchId: string, snapshot: StoredSnapshot): Promise<MatchStatus>
-  /** Resolves a sealed set as `GET /turns/:n/orders` answers it. */
-  applySealedTurn(matchId: string, sealedOrders: unknown): Promise<MatchStatus>
+  restore(matchId: string, snapshot: StoredSnapshot, input: RestoreInput): Promise<MatchStatus>
   /**
-   * A seat changing hands: `match.playerTakenOver` hands it to the computer, `match.playerReturned`
-   * that replaced the computer and `match.latePlayerJoined` to a human.
+   * Folds one event of the match's log, as the server stores it, in log order: the client's own
+   * fold of the log (`MatchHistory` in `src/Rechaos.Multiplayer`). The facts that change the state
+   * are `match.playerTakenOver`, `match.playerReturned` that replaced the computer,
+   * `match.latePlayerJoined`, `turn.opened` and `turn.sealed`, which comes with its sealed set as
+   * `GET /turns/:n/orders` answers it. Every other event is accepted and ignored.
    */
-  handOverSeat(matchId: string, slot: number, toComputer: boolean): Promise<MatchStatus>
+  applyEvent(matchId: string, event: unknown, sealedOrders?: unknown): Promise<MatchStatus>
   /** Where a held match stands, or `null` when the host does not hold it. */
   status(matchId: string): Promise<MatchStatus | null>
   /** The held match as a snapshot every client can adopt. */
@@ -67,17 +72,16 @@ export function withArchives(host: PayloadResolver, codec: BrotliCodec): MatchRe
     bootstrap: (matchId, input) => host.bootstrap(matchId, input),
     // An archive this host cannot read is refused like a payload the build refuses: rebuilding from
     // the same stored body would fail the same way. Async, so the refusal rejects the promise.
-    restore: async (matchId, snapshot) => {
+    restore: async (matchId, snapshot, input) => {
       let payload: Uint8Array
       try {
         payload = readSnapshotArchive(snapshot.body, codec)
       } catch (error: unknown) {
         throw new ResolverRefusedError(error instanceof Error ? error.message : String(error))
       }
-      return host.restore(matchId, payload, snapshot.stateHash)
+      return host.restore(matchId, payload, snapshot.stateHash, input)
     },
-    applySealedTurn: (matchId, sealedOrders) => host.applySealedTurn(matchId, sealedOrders),
-    handOverSeat: (matchId, slot, toComputer) => host.handOverSeat(matchId, slot, toComputer),
+    applyEvent: (matchId, event, sealedOrders) => host.applyEvent(matchId, event, sealedOrders),
     status: (matchId) => host.status(matchId),
     snapshot: async (matchId) => {
       const { payload, status } = await host.savePayload(matchId)

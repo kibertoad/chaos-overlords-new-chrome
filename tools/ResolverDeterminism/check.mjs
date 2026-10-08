@@ -68,8 +68,7 @@ async function snapshotAtStep(resolver) {
   })
   for (const step of transcript.steps) {
     if (step.kind === 'snapshot') break
-    if (step.kind === 'sealed') await resolver.applySealedTurn(id, step.sealedOrders)
-    else await resolver.handOverSeat(id, step.slot, step.toComputer)
+    await resolver.applyEvent(id, step.event, step.sealedOrders)
   }
   return resolver.snapshot(id)
 }

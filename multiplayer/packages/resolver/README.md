@@ -26,15 +26,21 @@ import { startNodeMatchResolver } from '@chaos-overlords/resolver/node'
 
 const resolver = await startNodeMatchResolver({ maxMatches: 64 })
 await resolver.bootstrap(matchId, { seed, gameSettings, players })
-const { stateHash } = await resolver.applySealedTurn(matchId, sealedOrders)
+// Every event of the match's log after `match.started`, in order; a seal with its sealed set.
+const { stateHash } = await resolver.applyEvent(matchId, event, sealedOrders)
 const checkpoint = await resolver.snapshot(matchId) // { body, stateHash }, the archive clients read
-await resolver.restore(matchId, checkpoint)
+await resolver.restore(matchId, checkpoint, { players })
 await resolver.close()
 ```
 
-`sealedOrders` is the body `GET /turns/:n/orders` answers, `gameSettings` the stored settings blob
-and `players` the roster as `PlayerView` rows. `startNodeResolverHost` is the same host with bare save
-payloads in place of archives.
+`event` is a row of the event log as the server stores it, `sealedOrders` the body
+`GET /turns/:n/orders` answers for a `turn.sealed` event, `gameSettings` the stored settings blob
+and `players` the roster as `PlayerView` rows. The resolver folds the log the way a reconnecting
+client does (`MatchHistory` in `src/Rechaos.Multiplayer`): only seats changing hands, late joins,
+`turn.opened` and seals change the state, and a seal the state already holds is passed over without
+its set. A match restored from a checkpoint is fed the events after it; `logTurn: 1` feeds it the log
+from its start instead. `startNodeResolverHost` is the same host with bare save payloads in place of
+archives.
 
 ## Cloudflare
 
@@ -70,8 +76,8 @@ the `RESOLVER_MAX_MATCHES` and `RESOLVER_MANAGED_HEAP_MIB` vars.
 
 A host holds a bounded number of matches and releases the least recently used. A call for a match it
 does not hold rejects with `MatchNotHeldError` (code `match_not_held`): rebuild the match from its
-newest checkpoint and the facts after it. A call whose input the build refuses, such as a sealed set
-for another turn or a snapshot that does not hash to the state it is stored under, rejects with
+newest checkpoint and the facts after it. A call whose input the build refuses, such as a seal ahead
+of the match or a snapshot that does not hash to the state it is stored under, rejects with
 `ResolverRefusedError` (code `resolver_refused`). Across the service binding both arrive as plain
 errors; `resolverErrorCode(error)` reads the code back.
 

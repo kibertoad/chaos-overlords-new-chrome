@@ -34,7 +34,7 @@ function fakeRuntime(matchBytes = 10, garbagePerTurn = 0) {
       matches.set(nextHandle, { turn: payload[0] ?? 0 })
       return nextHandle++
     },
-    ApplySealedTurn: (handle, json) => {
+    ApplyEvent: (handle, json) => {
       const match = held(handle)
       if (JSON.parse(json).turn !== match.turn)
         throw new ManagedError('the sealed set is for another turn')
@@ -42,7 +42,6 @@ function fakeRuntime(matchBytes = 10, garbagePerTurn = 0) {
       garbage += garbagePerTurn
       return `turn-${match.turn}`
     },
-    HandOverSeat: () => {},
     StateHash: (handle) => `turn-${held(handle).turn}`,
     Turn: (handle) => held(handle).turn,
     IsFinished: () => false,
@@ -74,10 +73,10 @@ describe('ResolverCore', () => {
     const { booted } = fakeRuntime()
     const core = new ResolverCore(booted, { maxMatches: 4, managedHeapBudgetBytes: 1000 })
     expect(core.bootstrap('a', input)).toEqual({ stateHash: 'turn-1', turn: 1, finished: false })
-    expect(core.applySealedTurn('a', { turn: 1 }).stateHash).toBe('turn-2')
+    expect(core.applyEvent('a', { turn: 1 }).stateHash).toBe('turn-2')
     const { payload, status } = core.savePayload('a')
     expect([...payload]).toEqual([2])
-    expect(core.restore('b', payload, status.stateHash).turn).toBe(2)
+    expect(core.restore('b', payload, status.stateHash, { players: [] }).turn).toBe(2)
     expect(core.info()).toMatchObject({ sessionVersion: 7, snapshotFormatVersion: 3, held: 2 })
   })
 
@@ -87,7 +86,7 @@ describe('ResolverCore', () => {
       managedHeapBudgetBytes: 1000,
     })
     expect(core.status('a')).toBeNull()
-    expect(() => core.applySealedTurn('a', { turn: 1 })).toThrow(MatchNotHeldError)
+    expect(() => core.applyEvent('a', { turn: 1 })).toThrow(MatchNotHeldError)
     expect(() => core.savePayload('a')).toThrow(MatchNotHeldError)
     expect(() => core.release('a')).not.toThrow()
   })
@@ -100,7 +99,7 @@ describe('ResolverCore', () => {
     core.bootstrap('a', input)
     const error = (() => {
       try {
-        core.applySealedTurn('a', { turn: 5 })
+        core.applyEvent('a', { turn: 5 })
       } catch (thrown) {
         return thrown
       }
@@ -108,7 +107,9 @@ describe('ResolverCore', () => {
     expect(error).toBeInstanceOf(ResolverRefusedError)
     expect(resolverErrorCode(error)).toBe('resolver_refused')
     expect(core.status('a')?.turn).toBe(1)
-    expect(() => core.restore('b', new Uint8Array([3]), 'turn-4')).toThrow(ResolverRefusedError)
+    expect(() => core.restore('b', new Uint8Array([3]), 'turn-4', { players: [] })).toThrow(
+      ResolverRefusedError,
+    )
     expect(() => core.bootstrap('c', { ...input, seed: -1 })).toThrow(ResolverRefusedError)
     expect(core.heldMatches()).toEqual(['a'])
   })
@@ -127,18 +128,18 @@ describe('ResolverCore', () => {
     const core = new ResolverCore(booted, { maxMatches: 2, managedHeapBudgetBytes: 1000 })
     core.bootstrap('a', input)
     core.bootstrap('b', input)
-    core.applySealedTurn('a', { turn: 1 })
+    core.applyEvent('a', { turn: 1 })
     core.bootstrap('c', input)
     expect(core.heldMatches()).toEqual(['a', 'c'])
     expect(matches.size).toBe(2)
-    expect(() => core.applySealedTurn('b', { turn: 1 })).toThrow(MatchNotHeldError)
+    expect(() => core.applyEvent('b', { turn: 1 })).toThrow(MatchNotHeldError)
   })
 
   it('replaces the match held under an id and releases the old handle', () => {
     const { booted, matches } = fakeRuntime()
     const core = new ResolverCore(booted, { maxMatches: 4, managedHeapBudgetBytes: 1000 })
     core.bootstrap('a', input)
-    core.applySealedTurn('a', { turn: 1 })
+    core.applyEvent('a', { turn: 1 })
     expect(core.bootstrap('a', input).turn).toBe(1)
     expect(matches.size).toBe(1)
   })
@@ -150,7 +151,7 @@ describe('ResolverCore', () => {
     core.bootstrap('b', input)
     core.bootstrap('c', input)
     collections.length = 0
-    core.applySealedTurn('a', { turn: 1 })
+    core.applyEvent('a', { turn: 1 })
     expect(collections).toEqual([false, true])
     expect(core.heldMatches()).toEqual(['b', 'c', 'a'])
   })

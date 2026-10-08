@@ -27,12 +27,10 @@ export function cloudflareResolverHost(binding: ResolverService): PayloadResolve
   return {
     describe: () => binding.describe(),
     bootstrap: (matchId, input) => call(matchId, () => binding.bootstrap(matchId, input)),
-    restore: (matchId, payload, stateHash) =>
-      call(matchId, () => binding.restore(matchId, payload, stateHash)),
-    applySealedTurn: (matchId, sealedOrders) =>
-      call(matchId, () => binding.applySealedTurn(matchId, sealedOrders)),
-    handOverSeat: (matchId, slot, toComputer) =>
-      call(matchId, () => binding.handOverSeat(matchId, slot, toComputer)),
+    restore: (matchId, payload, stateHash, input) =>
+      call(matchId, () => binding.restore(matchId, payload, stateHash, input)),
+    applyEvent: (matchId, event, sealedOrders) =>
+      call(matchId, () => binding.applyEvent(matchId, event, sealedOrders ?? null)),
     status: (matchId) => call(matchId, () => binding.status(matchId)),
     savePayload: (matchId) => call(matchId, () => binding.savePayload(matchId)),
     release: (matchId) => call(matchId, () => binding.release(matchId)),
