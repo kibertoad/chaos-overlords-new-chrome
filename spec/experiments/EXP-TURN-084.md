@@ -52,14 +52,13 @@ was corrected, and that the corrected rebuild does not reach in this match.
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run with
-DEV-AI-007 switched off and writes the same families before the same Done
-press. The rebuild makes the same calls with the same bounds and results and
-reaches the same state, the planning records included. Before the rebuild was
-corrected it made no draw there, as RULE-AI-031 then gave, and diverged at
-call 805. The corrected rebuild draws once with a bound of 0, which rolls as 1
-(RULE-RNG-002), and the lookup in the empty list gives no gang, which ends the
-loop.
+A test of the rebuild replays the run with DEV-AI-007 switched off and writes
+the same families before the same Done press. The rebuild makes the same calls
+with the same bounds and results and reaches the same state, the planning
+records included. Before the rebuild was corrected it made no draw there, as
+RULE-AI-031 then gave, and diverged at call 805. The corrected rebuild draws
+once with a bound of 0, which rolls as 1 (RULE-RNG-002), and the lookup in the
+empty list gives no gang, which ends the loop.
 
 ## Conclusion
 

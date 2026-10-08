@@ -4,7 +4,7 @@ title: The display is a 640-by-480 window or screen whose drawing area of 640 by
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-GFX-004, FND-PLATFORM-009, FND-PLATFORM-007, FND-PLATFORM-008, FND-UI-020, FND-EXE-004]
+evidence: [FND-GFX-004, FND-PLATFORM-009, FND-PLATFORM-007, FND-PLATFORM-015, FND-UI-020, FND-EXE-004]
 conflicting: []
 split_with: []
 related: [RULE-UI-013, RULE-UI-014]
@@ -76,7 +76,7 @@ are put back.
 ## Edge cases
 
 - A copy between rectangles of different sizes is stretched with
-  `COLORONCOLOR`, and any transparent copy mode is dropped (FND-PLATFORM-008).
+  `COLORONCOLOR`, and any transparent copy mode is dropped (FND-PLATFORM-015).
 - Nothing replaces the Windows system colours, although the code to do it is
   present behind a flag that is never set.
 - In a window the client area is a few rows taller than 460 on usual system

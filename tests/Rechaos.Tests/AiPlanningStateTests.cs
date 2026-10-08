@@ -116,6 +116,25 @@ public sealed class AiPlanningStateTests
         Assert.Equal(new AiActionTarget(3, 0), planning.PlannedTarget(player, 0));
     }
 
+    // FND-AI-079: no handler plans a Bribe, Give or Sell, so plan has no target byte to store for
+    // them, and a computer player's order of one keeps the targets an earlier write stored.
+    [Theory]
+    [InlineData(GangAction.Bribe)]
+    [InlineData(GangAction.Give)]
+    [InlineData(GangAction.Sell)]
+    public void ActionsNoHandlerPlansStoreNoTargetByte(GangAction action)
+    {
+        var planning = AiPlanningState.Initialize();
+        var player = new PlayerId(1);
+
+        planning.SetPlannedAction(player, 0, GangAction.Attack, new AiActionTarget(1, 4));
+        planning.SetPlannedAction(player, 0, action, new AiActionTarget(7, 1));
+
+        Assert.Equal(0, OriginalAiActionTargetEncoding.TargetBytesWritten(action));
+        Assert.Equal(action, planning.PlannedAction(player, 0));
+        Assert.Equal(new AiActionTarget(1, 4), planning.PlannedTarget(player, 0));
+    }
+
     [Fact]
     public void PlanningStartRollsCurrentRoleIntoPreviousRole()
     {

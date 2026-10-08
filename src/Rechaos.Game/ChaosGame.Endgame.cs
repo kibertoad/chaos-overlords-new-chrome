@@ -28,10 +28,10 @@ public sealed partial class ChaosGame
     }
 
     private static readonly Rectangle EndgameDone = EndgameLayout.Done;
-    private Texture2D? _endgameBackground;
-    private Texture2D? _endgameSprites;
-    private Texture2D? _victoryBackground;
-    private Texture2D? _eliminationBackground;
+    private Texture2D? EndgameBackground => Texture(OriginalBitmap.EndgameBackground);
+    private Texture2D? EndgameSprites => Texture(OriginalBitmap.EndgameSprites);
+    private Texture2D? VictoryBackground => Texture(OriginalBitmap.VictoryBackground);
+    private Texture2D? EliminationBackground => Texture(OriginalBitmap.EliminationBackground);
     private bool _showEndgameStats;
 
     /// <summary>
@@ -40,15 +40,15 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawEndgameNoticeCard(
         SpriteBatch batch, Texture2D pixel, PixelFont font, Texture2D? background,
-        PlayerId player, int portraitId, string name, bool victory = false)
+        PlayerId player, int portraitId, string name)
     {
         DrawPanelArtwork(batch, pixel, background, EndgameNoticeLayout.Panel, 255);
-        if (victory)
-            foreach (var band in EndgameNoticeLayout.VictoryColourBands)
-                // FND-AWARDS-004: the same slot colour as the table's colour fill.
-                batch.Draw(pixel, band, SetupPlayerCardArtLayout.Colours[player.Value]);
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites, EndgameNoticeLayout.Portrait,
+        // FND-AWARDS-004: the same slot colour as the table's colour fill, on the victory splash and,
+        // in the same three areas, on the elimination card (SCR-OBJECTIVE-002, EXP-UI-032).
+        foreach (var band in EndgameNoticeLayout.ColourBands)
+            batch.Draw(pixel, band, SetupPlayerCardArtLayout.Colours[player.Value]);
+        if (UiSprites is not null)
+            batch.Draw(UiSprites, EndgameNoticeLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(portraitId), Color.White);
         // SCR-OBJECTIVE-002, EXP-UI-018: the elimination card's name is in the plain font, and the
         // frame around the portrait is the splash's own. SCR-AWARDS-002: the victory splash draws
@@ -57,7 +57,7 @@ public sealed partial class ChaosGame
     }
 
     // FND-AWARDS-004: resource 201 with its white keyed out, for the award icons.
-    private Texture2D? _endgameKeyedSprites;
+    private Texture2D? EndgameKeyedSprites => Texture(OriginalBitmap.EndgameKeyedSprites);
 
     private void DrawEndgame(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
@@ -66,8 +66,8 @@ public sealed partial class ChaosGame
         // player's victory splash in place of the table.
         if (!_showEndgameStats && EndgameNoticePresentation.Survivor(state) is { } survivor)
         {
-            DrawEndgameNoticeCard(batch, pixel, font, _victoryBackground, survivor.Player,
-                survivor.PortraitId, state.FindPlayer(survivor.Player)!.Setup.Name, victory: true);
+            DrawEndgameNoticeCard(batch, pixel, font, VictoryBackground, survivor.Player,
+                survivor.PortraitId, state.FindPlayer(survivor.Player)!.Setup.Name);
             DrawEndgameTabMark(batch, stats: false);
             return;
         }
@@ -82,11 +82,11 @@ public sealed partial class ChaosGame
             // portrait, the name in the plain font, and the score caption and five-digit score of a
             // ranked row.
             batch.Draw(pixel, EndgameLayout.ColourFill(index), SetupPlayerCardArtLayout.Colours[row.Player.Value]);
-            if (_endgameSprites is not null && row.Place > 0)
-                batch.Draw(_endgameSprites, EndgameLayout.PlayerMarker(index),
+            if (EndgameSprites is not null && row.Place > 0)
+                batch.Draw(EndgameSprites, EndgameLayout.PlayerMarker(index),
                     EndgameLayout.PlayerMarkerSource(player.Id, row.Place), Color.White);
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, EndgameLayout.Portrait(index),
+            if (UiSprites is not null)
+                batch.Draw(UiSprites, EndgameLayout.Portrait(index),
                     OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
             font.Copy(batch, row.Label, EndgameLayout.Name(index).ToPoint(), OriginalFontLayout.PlainStrip);
             if (row.Place > 0)
@@ -107,23 +107,23 @@ public sealed partial class ChaosGame
     // FND-AWARDS-004: the 8-by-16 mark of the selected tab, copied from the interface sheet.
     private void DrawEndgameTabMark(SpriteBatch batch, bool stats)
     {
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites, EndgameLayout.TabMark(stats), OriginalSelectionLightLayout.CityLightSource,
+        if (UiSprites is not null)
+            batch.Draw(UiSprites, EndgameLayout.TabMark(stats), OriginalSelectionLightLayout.CityLightSource,
                 Color.White);
     }
 
     /// <summary>
     /// The results frame, loaded opaque into <c>(106, 25, 428, 410)</c> (FND-AWARDS-004), under any
     /// private victory or elimination card. The screen around it is black, as captured when the
-    /// endgame follows the last turn's resolution (SCR-AWARDS-001, EXP-UI-017) and when the
-    /// elimination card does (SCR-OBJECTIVE-002, EXP-UI-018). It is drawn black as well when the
-    /// endgame follows an elimination card and when the card follows an earlier human's planning,
-    /// cases no capture shows (the entries' open questions).
+    /// endgame follows the last turn's resolution (SCR-AWARDS-001, EXP-UI-017) or an elimination
+    /// card (EXP-UI-034), and when the elimination card follows the resolution (SCR-OBJECTIVE-002,
+    /// EXP-UI-018) or another human's planning, after the Ready card that blanks the screen
+    /// (EXP-UI-032).
     /// </summary>
     private void DrawEndgameBackground(SpriteBatch batch, Texture2D pixel)
     {
         batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
-        DrawPanelArtwork(batch, pixel, _endgameBackground, EndgameLayout.Panel, 255);
+        DrawPanelArtwork(batch, pixel, EndgameBackground, EndgameLayout.Panel, 255);
     }
 
     private static void DrawEndgameNoticeName(SpriteBatch batch, PixelFont font, string name)
@@ -140,15 +140,15 @@ public sealed partial class ChaosGame
         int row)
     {
         // FND-AWARDS-004: the awards strip of resource 201 behind the row's icons.
-        if (_endgameSprites is not null)
-            batch.Draw(_endgameSprites, EndgameLayout.StripDestination(row), EndgameLayout.AwardsSource,
+        if (EndgameSprites is not null)
+            batch.Draw(EndgameSprites, EndgameLayout.StripDestination(row), EndgameLayout.AwardsSource,
                 Color.White);
         var awards = EndgamePresentation.AwardsForPlayer(outcome, player);
         for (var index = 0; index < awards.Count; index++)
         {
             var destination = EndgameLayout.Award(row, index);
-            if (_endgameKeyedSprites is not null)
-                batch.Draw(_endgameKeyedSprites, destination,
+            if (EndgameKeyedSprites is not null)
+                batch.Draw(EndgameKeyedSprites, destination,
                     EndgameLayout.AwardSource(awards[index].Award), Color.White);
             else
                 font.Draw(batch, EndgamePresentation.AwardAbbreviation(awards[index].Award),
@@ -162,8 +162,8 @@ public sealed partial class ChaosGame
         MatchPlayerState player,
         int row)
     {
-        if (_endgameSprites is not null)
-            batch.Draw(_endgameSprites, EndgameLayout.StripDestination(row),
+        if (EndgameSprites is not null)
+            batch.Draw(EndgameSprites, EndgameLayout.StripDestination(row),
                 EndgameLayout.StatisticsSource, Color.White);
 
         long[] statistics =
@@ -240,8 +240,11 @@ public static class EndgameNoticeLayout
     public static Rectangle Panel => new(110, 30, 311, 393);
     public static Rectangle Portrait => new(126, 54, 64, 64);
 
-    /// <summary>SCR-AWARDS-002: the splash's areas painted in the survivor's colour.</summary>
-    public static IReadOnlyList<Rectangle> VictoryColourBands { get; } =
+    /// <summary>
+    /// SCR-AWARDS-002, SCR-OBJECTIVE-002: the splash's areas painted in the colour of the survivor
+    /// or of the eliminated player.
+    /// </summary>
+    public static IReadOnlyList<Rectangle> ColourBands { get; } =
     [
         new(110, 30, 40, 12),
         new(110, 42, 13, 79),

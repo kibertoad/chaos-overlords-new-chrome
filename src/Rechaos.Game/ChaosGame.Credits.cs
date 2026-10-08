@@ -20,7 +20,7 @@ public static class CreditsLayout
 
 public sealed partial class ChaosGame
 {
-    private Texture2D? _creditsBackground;
+    private Texture2D? CreditsBackground => Texture(OriginalBitmap.CreditsBackground);
     private bool _creditsOpen;
 
     /// <summary>
@@ -30,26 +30,27 @@ public sealed partial class ChaosGame
     /// </summary>
     private void OpenCredits()
     {
-        _creditsBackground ??= LoadTexture("PX00100.bmp");
         _creditsOpen = true;
     }
 
     /// <summary>
-    /// SCR-UI-002: a click, a press of either button, or any key closes the credits and leaves the
-    /// screen they covered as it was. The screen plays no sound.
+    /// SCR-UI-002, FND-UI-063: a press or a release of either button, or any key, closes the
+    /// credits and leaves the screen they covered as it was. The screen plays no sound.
     /// </summary>
     private void UpdateCredits(KeyboardState keyboard, MouseState mouse)
     {
         var clicked = PointerButtonEdges.Pressed(mouse.LeftButton, _previousMouse.LeftButton)
-            || PointerButtonEdges.Pressed(mouse.RightButton, _previousMouse.RightButton);
+            || PointerButtonEdges.Pressed(mouse.RightButton, _previousMouse.RightButton)
+            || PointerButtonEdges.Released(mouse.LeftButton, _previousMouse.LeftButton)
+            || PointerButtonEdges.Released(mouse.RightButton, _previousMouse.RightButton);
         if (clicked || CreditsLayout.AnyKeyPressed(keyboard, _previousKeyboard))
             _creditsOpen = false;
     }
 
     private void DrawCredits(SpriteBatch batch, Texture2D pixel)
     {
-        if (_creditsBackground is not null)
-            batch.Draw(_creditsBackground, CreditsLayout.Screen, Color.White);
+        if (CreditsBackground is not null)
+            batch.Draw(CreditsBackground, CreditsLayout.Screen, Color.White);
         else
             batch.Draw(pixel, CreditsLayout.Screen, Color.Black);
     }

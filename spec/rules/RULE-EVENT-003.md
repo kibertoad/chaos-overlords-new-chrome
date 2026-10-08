@@ -1,7 +1,7 @@
 ---
 id: RULE-EVENT-003
 title: An elimination is reported to all six player slots
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-TURN-003, FND-EVENT-001, FND-EVENT-004, EXP-TURN-017]
@@ -60,5 +60,8 @@ None known.
 
 ## Open questions
 
-None known. The report's first argument is the eliminated player
-[FND-EVENT-004].
+- The report's first argument is the eliminated player
+  [FND-EVENT-004].
+- No recorded run eliminates two players in one turn, or reports to a slot no
+  player ever held. These rest on FND-TURN-003 and FND-EVENT-004. Until a run
+  reaches them, the entry stays `supported`.

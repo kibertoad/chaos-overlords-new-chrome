@@ -4,7 +4,7 @@ title: The instant phase carries out Bribe, Heal, Hide, Influence, Research and 
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-TURN-001, FND-TURN-008, FND-SNITCH-001, FND-GANG-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-009, EXP-TURN-059]
+evidence: [FND-TURN-001, FND-TURN-008, FND-SNITCH-001, FND-GANG-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-TURN-009, EXP-TURN-059, EXP-TURN-007, EXP-TURN-024, EXP-TURN-032, EXP-TURN-103, EXP-TURN-104, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-BRIBE-001, RULE-HEAL-001, RULE-HIDE-001, RULE-INFLUENCE-001, RULE-RESEARCH-001, RULE-SNITCH-001, RULE-TOLERANCE-002, FMT-STATE-001]
@@ -88,4 +88,10 @@ None known.
 
 ## Open questions
 
-- None beyond the step rules' own questions.
+- None beyond the step rules' own questions. The recorded runs reach every
+  edge case above: an Influence that finds its site completed earlier in the
+  phase (EXP-TURN-007, EXP-TURN-009 and most runs with computer Influence),
+  a Heal (EXP-TURN-009), an Influence (EXP-TURN-007) and a Research
+  (EXP-TURN-104) acting after a site of their sector with a value they use was
+  completed earlier in the phase, and a sector below 1 (EXP-TURN-024,
+  EXP-TURN-032) or above 40 (EXP-TURN-103) while later gangs act.

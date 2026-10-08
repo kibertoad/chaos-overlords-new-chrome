@@ -46,6 +46,9 @@ public sealed partial class ChaosGame
             ShowTurnReportsOrCity();
             return;
         }
+        // RULE-TIMER-002: the planning entry redraws the console, so the panels it opens before the
+        // clock starts show the console's full bar, not the bar the previous turn left (EXP-UI-035).
+        _planningTimer.Clear();
         if (_state is null || PlanningViewer is not { } playerId)
         {
             _screens.Show(ClientScreen.City);
@@ -54,6 +57,14 @@ public sealed partial class ChaosGame
         }
         PrepareCurrentHireOffers();
         _deferComlinkAlertUntilPlanningVisible = true;
+        // A reference frame's Ready click goes on as its first planning entry does: past the panels
+        // whose Exit presses a shot step's clicks leave out, or to Last Turn Events with EntryPanels.
+        if (_referenceFrame is not null)
+        {
+            _managementReturnScreen = ClientScreen.City;
+            PresentReferenceFrameEntryPanels(_state, playerId);
+            return;
+        }
         // RULE-SETUP-008: after the Ready card, Game Information for each local human who plans in
         // the round a loaded match resumed on, then combat results, Last Turn Events and the Comlink.
         if (_resumedMatchTurn == _state.Coordinator.Turn && _resumedGameInfoShown.Add(playerId))
@@ -84,7 +95,7 @@ public sealed partial class ChaosGame
                 // but starts over the city rather than after the private event review.
                 _openEventsAfterCombat = reports.Count > 0;
                 _managementReturnScreen = ClientScreen.City;
-                if (_detailedCombat && _combatAnimationTextures.Count > 0)
+                if (_detailedCombat && CombatAnimations.Count > 0)
                 {
                     _automaticDetailedCombatPresentation = true;
                     _screens.Show(ClientScreen.City);
@@ -174,7 +185,7 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// A press on the panel (SCR-EVENT-001, FND-EVENT-005). Previous and Next play slot 3 and
+    /// A press on the panel (SCR-EVENT-001, FND-EVENT-007). Previous and Next play slot 3 and
     /// hold their pressed face when a step is allowed, and play slot 4 without holding on the
     /// first or last report. Exit plays slot 3 and holds its face through <c>fn_00418821</c>. All
     /// three act on a release inside themselves.
@@ -319,7 +330,7 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawBoard(batch, pixel, font, state);
-        DrawPanelArtwork(batch, pixel, _lastTurnEventsBackground, LastTurnEventsLayout.Panel);
+        DrawPanelArtwork(batch, pixel, LastTurnEventsBackground, LastTurnEventsLayout.Panel);
         var playerId = ViewingPlayer(state);
         var notifications = ReviewableReports(state, playerId);
         ClearLastTurnEventFields(batch, pixel);
@@ -363,18 +374,18 @@ public sealed partial class ChaosGame
             LastTurnEventsLayout.PageNumber);
         DrawDigitCells(batch, pixel, font, $"{Math.Min(reportCount, 99):00}",
             LastTurnEventsLayout.PageCount);
-        if (_uiSprites is not null)
+        if (UiSprites is not null)
         {
-            batch.Draw(_uiSprites, LastTurnEventsLayout.Previous,
+            batch.Draw(UiSprites, LastTurnEventsLayout.Previous,
                 LastTurnEventsLayout.PreviousSource(firstPage: _eventCursor == 0), Color.White);
-            batch.Draw(_uiSprites, LastTurnEventsLayout.Next,
+            batch.Draw(UiSprites, LastTurnEventsLayout.Next,
                 LastTurnEventsLayout.NextSource(lastPage: _eventCursor == reportCount - 1),
                 Color.White);
             // SCR-EVENT-001: a held button shows its pressed face while the pointer is inside
             // it, and its plain face otherwise.
             if (_pressedEventsButton is { } pressed && _hoverPoint is { } hover
                 && LastTurnEventsLayout.Hit(pressed).Contains(hover))
-                batch.Draw(_uiSprites, LastTurnEventsLayout.Face(pressed),
+                batch.Draw(UiSprites, LastTurnEventsLayout.Face(pressed),
                     LastTurnEventsLayout.PressedSource(pressed), Color.White);
         }
         // The report's FMT-STATE-006 record, built once for the frame's fields.
@@ -392,7 +403,7 @@ public sealed partial class ChaosGame
         font.Draw(batch, LastTurnEventPresentation.Subject(state, record),
             LastTurnEventsLayout.Subject.ToVector2(), Color.Lime, 1);
         // SCR-EVENT-001: the caption is STRING/33 to STRING/44 by the record's type and arg1, cut
-        // to 35 characters (FND-EVENT-005).
+        // to 35 characters (FND-EVENT-007).
         if (LastTurnEventPresentation.Caption(record) is { } caption)
         {
             if (caption.Length > LastTurnEventsLayout.CaptionColumns)
@@ -416,9 +427,9 @@ public sealed partial class ChaosGame
     {
         if (LastTurnEventPresentation.InfluenceSiteId(notification, related) is not { } siteId
             || state.FindSite(siteId) is not { } site
-            || _sitePortraits is null)
+            || SitePortraits is null)
             return false;
-        batch.Draw(_sitePortraits, LastTurnEventsLayout.Artwork,
+        batch.Draw(SitePortraits, LastTurnEventsLayout.Artwork,
             LastTurnEventPresentation.SiteBackgroundSource(site.DefinitionId), Color.White);
         return true;
     }
@@ -433,23 +444,23 @@ public sealed partial class ChaosGame
         var artworkIndex = LastTurnEventPresentation.ArtworkIndex(notification, related);
         // DEV-GFX-002: a short illustration keeps its native scale and bottom edge; the rows above
         // it keep the black that DrawLastTurnEventsFrame fills the artwork area with.
-        if (artworkIndex > 0 && _lastTurnEventArtwork[artworkIndex] is { } artwork)
+        if (artworkIndex > 0 && LastTurnEventArtwork[artworkIndex] is { } artwork)
             batch.Draw(artwork,
                 LastTurnEventsLayout.ArtworkDestination(artwork.Width, artwork.Height), Color.White);
         // SCR-EVENT-001: the researched item starts at frame 0 when the panel opens and after
         // each page change, and steps on the ticks the event pump takes, so a held face stops it
         // and a page turned by a held arrow shows frame 1 at once (FND-UI-047).
         if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId
-            && itemId >= 0 && itemId < _itemRotationTextures.Length
-            && _itemRotationTextures[itemId] is { } rotation)
+            && itemId >= 0 && itemId < ItemRotationTextures.Length
+            && ItemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, LastTurnEventsLayout.ResearchItem,
                 ItemRotationPresentation.FrameAfter(_eventPump.Ticks - _eventPageShownTick),
                 Color.White);
         // SCR-EVENT-001: an elimination report adds the eliminated player's 32-by-32 portrait,
         // stretched to 48 by 48 over its illustration.
-        if (record.Type == LastTurnReportRecord.Elimination && _uiSprites is not null
+        if (record.Type == LastTurnReportRecord.Elimination && UiSprites is not null
             && state.FindPlayer(new PlayerId(record.Arg1)) is { } eliminated)
-            batch.Draw(_uiSprites, LastTurnEventsLayout.EliminatedPortrait,
+            batch.Draw(UiSprites, LastTurnEventsLayout.EliminatedPortrait,
                 OriginalSpriteLayout.OverlordPortrait(eliminated.Setup.PortraitId), Color.White);
     }
 

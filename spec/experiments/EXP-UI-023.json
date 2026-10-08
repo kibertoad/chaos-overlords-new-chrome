@@ -15,7 +15,6 @@
     {"tick":null,"name":"planning","value":"turn 1: player 4 player_active 0"},
     {"tick":null,"name":"planning","value":"turn 1: player 5 player_active 0"},
     {"tick":null,"name":"left_click","value":"Done (550, 306), turn 1"},
-    {"tick":null,"name":"left_click","value":"Done (550, 306) with no orders, turn 2"},
     {"tick":null,"name":"left_click","value":"capture for SCR-AWARDS-002 after the dump"}
   ],
   "seeds": [6161],

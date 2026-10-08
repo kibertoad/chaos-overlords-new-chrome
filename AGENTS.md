@@ -19,8 +19,23 @@ The authorized canonical repository is
 Before every push, inspect the repository's configured push destination with
 `git remote get-url --push origin` (and `git remote -v` when additional context
 is useful), and verify that it resolves to this canonical repository. Push
-through the configured remote name and an explicit refspec, for example
-`git push origin HEAD:main`.
+through the configured remote name and an explicit refspec that names the
+destination branch: `git push origin HEAD:<branch>`, where `<branch>` is the
+pull request's head branch, or `main` where a push to `main` is allowed.
+
+Never run a bare `git push` or `git push origin`. A branch created from
+`origin/main`, as `git worktree add -b <branch> <path> origin/main` creates
+one, tracks `origin/main`, so a bare push goes to `main` or is refused, and
+`-q` hides the refusal. A branch checked out without `-b` may track nothing.
+Give `-u` on the first push (`git push -u origin HEAD:<branch>`) so the branch
+tracks its own remote branch from then on.
+
+After every push, confirm that it landed before reporting it or reading CI:
+`git ls-remote origin refs/heads/<branch>` must print what
+`git rev-parse HEAD` prints, and for a pull request
+`gh pr view <number> --json headRefOid` must name the same commit. CI results
+and mergeability belong to the pull request's head commit; until that is the
+local commit, they describe an older one.
 
 Never rewrite, replace, or temporarily override a remote URL in order to push.
 This prohibition includes `git remote set-url`, changing `remote.*.url` or
@@ -59,7 +74,7 @@ version 1 of the
 published at dinorefurb.com. This section summarizes them; where they differ,
 the published pages win. `docs/upstream/` holds a copy of the standard, the
 methodology and the work protocol as published at refurbished-dinosaurs
-`11dbbc5`, the revision this repository follows.
+`ef0d758`, the revision this repository follows.
 
 ### The spec
 
@@ -67,11 +82,13 @@ methodology and the work protocol as published at refurbished-dinosaurs
 after its ID: builds (`BLD-`), sources (`SRC-`), findings (`FND-`),
 experiments (`EXP-`), formats (`FMT-`, binary ones with a Kaitai `.ksy`
 definition next to them), rules (`RULE-`), bugs (`BUG-`) and screens (`SCR-`).
-`spec/README.md` holds the scope and the area list, `spec/glossary.md` the terms
-the pseudocode uses, and `docs/SPEC-ENTRY-TEMPLATES.md` a blank entry of each
-kind. The spec never names a class, file or setting of the rebuild, and never
-reproduces content: texts, images, sounds, or the names and statistics of
-individual gangs, items and sites. Constants the code does arithmetic with are
+`spec/README.md` holds the scope and the area list, `spec/glossary/` the terms
+the pseudocode uses (one file per term), and `docs/SPEC-ENTRY-TEMPLATES.md` a
+blank entry of each kind. The spec never names a class, file or setting of the
+rebuild, and never reproduces content: texts, images, sounds, or the names and
+statistics of individual gangs, items and sites. An experiment's Results say
+what the rebuild's replay compares and finds without naming the test; the
+parity row lists the test file. Constants the code does arithmetic with are
 written down in full.
 
 Record new evidence as a new entry: a static reading of the executable or a
@@ -106,8 +123,8 @@ the repository. Tool procedure is in `docs/GHIDRA.md`.
 
 ### The rebuild's ledgers
 
-- `DEVIATIONS.md` lists every place the rebuild departs from the spec on
-  purpose, as `DEV-AREA-NNN` entries with a Default of `off`, `on` or
+- `deviations/` lists every place the rebuild departs from the spec on
+  purpose, one `DEV-AREA-NNN` entry per file, with a Default of `off`, `on` or
   `mandatory`. A setting starts `off`, with the original's behaviour, unless the
   entry's Justification argues that the rebuild's behaviour is strictly better:
   then it starts `on`, and a player who wants the original switches it off. A
@@ -117,37 +134,66 @@ the repository. Tool procedure is in `docs/GHIDRA.md`.
   deliberate or that players rely on is never strictly better, so its deviation
   starts `off`. The validation suite runs with every setting switched off, and a
   test that reaches a mandatory deviation cites its ID and allows for it.
-- `PARITY.md` has one row per rule, format and screen entry that is not
+  The checker reads an item from its own line only, so the Departs from,
+  Replaces and Tests items are each written on one line, however long.
+  Default always describes the deviation, never the option it is carried by:
+  when the deviation is to start an option off that the original starts on, the
+  Setting item says the setting is inverted and which value is the original's.
+- `parity/<AREA>.md` has one row per rule, format and screen entry that is not
   superseded, with how much of it the rebuild does and which tests compare the
   rebuild with evidence from the original. Behaviour without a spec entry gets
   an `unknown` entry before any code. Manual play never counts as a test.
   A complete row that a `mandatory` deviation's Replaces item names, because
   nothing of it is left to compare with the original, is `deviated` once each
   `mandatory` deviation it lists has a Tests item naming the tests that check
-  the rebuild does what the deviation's Reason says.
+  the rebuild does what the deviation's Reason says. `PARITY.md` at the root is
+  generated from these files and is not edited by hand.
+- `VALIDATION.md` records the SHA-256 of each test file of a `validated` row
+  that carries a `needs: GAME_DIR` comment, as it was when its tests last
+  passed against the original's files. After changing such a file, commit,
+  run its tests with `GAME_DIR` set (all must pass, none skipped) and record
+  them with `node tools/check-documentation.mjs --record-validation
+  BLD-GOG-EN-1.1`, which needs a clean tree, then commit `VALIDATION.md`.
 - `docs/DECISIONS.md` keeps dated product and scope decisions that are not
   departures from the original (network play, saves, bug reports).
 
 Code comments and tests cite the spec IDs they implement or check. A
 placeholder, such as a guessed formula, carries a `PLACEHOLDER: <spec ID>`
-comment, and that row of `PARITY.md` cannot be `complete` while it does.
+comment, and that row of `parity/` cannot be `complete` while it does.
 
 ### Checks
 
-`node tools/check-spec.mjs` runs the standard's checks over `spec/`,
-`PARITY.md` and `DEVIATIONS.md`, checks that every spec and deviation ID cited
-in the code resolves and that every executable address a code comment in a
-`.cs`, `.ts`, `.js` or `.mjs` file gives (`0x…` inside the image, `fn_…` or
-`g_…`) is recorded in an entry the comment cites or in its evidence, as the
-toolkit's documentation check does, and
-rewrites the generated indexes in `spec/index/`;
-`--check` fails on a stale index instead of writing it. It compiles the Kaitai
-definitions when `kaitai-struct-compiler` (or the path in `KSC`) is available;
-the CI fast gate installs a pinned release, so there they always compile.
-The script is written to move into the shared toolkit.
-`node tools/spec-coverage.mjs` writes `spec/index/functions.md`, which lists
-every game function of FND-EXE-004 with the entries that cite it (`--check`
-fails on a stale index); with `--inventory <file>` it also reports what the
+`node tools/check-documentation.mjs` runs the shared toolkit's checker
+(`@scientific-method/standard-checker`, pinned in the root `package.json`;
+run `pnpm install` at the root first) with this game's settings: the
+executable image's extent and `multiplayer/` as a directory that may cite IDs.
+It runs the standard's checks over `spec/`, `parity/` and `deviations/`, checks
+that every spec and deviation ID cited in the code resolves and that every
+executable address (`0x…` inside the image, `fn_…` or `g_…`) a code comment
+gives, or the code uses as a number or inside a string, is recorded in an
+entry that the comment on its line or the nearest comment above it cites, or
+in that entry's evidence.
+`PARITY.md` and the generated indexes in `spec/index/` are updated on main
+only, by the nightly workflow `nightly-generated.yml`: a branch leaves them
+as they were where it forked, and the check fails a change that edits one.
+`--regenerate` writes fresh copies to read; do not commit them on a branch,
+and restore them afterwards (`git checkout -- spec/index PARITY.md`, then
+`git clean -f -- spec/index`), since the check also fails on uncommitted
+edits to them. When the repository variable `GENERATED_FILES_SCHEDULE` is
+`on-demand`, the workflow skips its nightly runs; after a change to `spec/`,
+`parity/` or `deviations/` reaches main, run it with
+`gh workflow run nightly-generated.yml`.
+It compiles the Kaitai definitions
+when `kaitai-struct-compiler` (or the path in `KSC`) is available; in CI it
+requires the compiler, and the workflows install a pinned release.
+The same check fails a spec line that names a file of the rebuild, a path
+into `src/`, `tests/` or `multiplayer/` or a source file found there.
+`node tools/spec-coverage.mjs` writes `docs/FUNCTION-INDEX.md`, a local report
+that lists every game function of FND-EXE-004 with the entries that cite it.
+The report is not committed (`.gitignore` lists it); generate it when you want
+it. `--check` computes the index and prints the coverage line without writing
+anything, and fails when FND-EXE-004's function table is missing; the fast gate
+and the pre-commit hook run that mode. With `--inventory <file>` it also reports what the
 spec leaves uncovered, from an inventory written by
 `tools/ghidra/ReportFunctionInventory.java` (see `docs/GHIDRA.md`).
 
@@ -156,11 +202,15 @@ decision index are generated blocks between `<!-- doc-index:begin ... -->` and
 `<!-- doc-index:end -->` comments; after editing headings in a document that
 carries one, run `node tools/update-doc-indexes.mjs` (`--check` reports stale
 blocks and broken relative links without writing). The fast gate
-(`tools/Invoke-Validation.ps1`) runs all three scripts in `--check` mode whenever
+(`tools/Invoke-Validation.ps1`) runs these scripts in `--check` mode whenever
 `node` is on the path and requires them in CI, so a stale block, a broken link
 or a spec problem fails validation after the tests have run.
-`.githooks/pre-commit` runs the same three checks on the staged tree before
-every commit, in a few seconds. Enable it once in each clone, before the first commit, with
+`.githooks/pre-commit` runs the same checks on the staged tree before
+every commit, in a few seconds, and lets a missing or stale `VALIDATION.md`
+record through, since the record can only be written after the commit. In a
+linked worktree without its own `pnpm install` it uses the main checkout's
+checker when that is the pinned version. Enable it once in each clone, before
+the first commit, with
 `git config core.hooksPath .githooks`; do not bypass it with `--no-verify`.
 `docs/ASSET-CATALOG.md` is generated by `Rechaos.Extractor --catalog` and is
 not edited by hand.
@@ -177,6 +227,32 @@ player can do or what the rules produce. Screens match the original pixel for
 pixel except where a documented interface change draws something new. When a
 bug cannot be told from a design decision, the original behaviour stays and any
 fix becomes a setting.
+
+## Runs of the original
+
+Running the original game is part of the normal work here and needs no
+approval beyond the task itself. When a change needs a dynamic finding, an
+experiment or a capture, run the original through
+`tools/Rechaos.OriginalProbe` (`docs/validation/experiments.md`) without
+asking first.
+That includes posting input to its window, capturing its screen, and reading
+or writing its process memory to set up a state a run needs, as long as the
+finding or experiment entry the run supports records every write.
+
+Run the staged copy of the executable that `docs/validation/experiments.md`
+describes,
+not the one in the installation at `C:\GOG Games\Chaos Overlords`, and leave
+the installation and the registry unchanged. Only one process may run the
+original on this machine at a time: the game holds a mutex named after its
+window title, and a second start brings the first window to the front and
+exits (FND-PLATFORM-009). Other agents working on this repository in parallel
+worktrees share the machine. The probe holds a machine-wide lock for its run
+and refuses to start while another probe holds it or while any
+`Chaos Overlords` process is running; when it refuses, wait and try again, and
+stop your own process when the runs are done. Never stop a `Chaos Overlords`
+process you did not start: it may be another agent's run or someone playing.
+If the original is still running after 30 minutes of waiting, report the runs
+as blocked instead of waiting longer.
 
 ## Multiplayer protocol version
 
@@ -252,7 +328,8 @@ reaches, then pin the new set.
 
 After every commit in this repository, inspect running processes for orphaned
 work created by this repository's tasks. Check at least PowerShell
-(`powershell` and `pwsh`), Ghidra/Java, .NET (`dotnet` and `testhost`), and any
+(`powershell` and `pwsh`), Ghidra/Java, .NET (`dotnet` and `testhost`), the
+original game (`Chaos Overlords`, including a staged copy), and any
 other process families that the agent launched while building, testing,
 validating, or analyzing this repository.
 

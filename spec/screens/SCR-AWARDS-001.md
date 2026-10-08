@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-AWARDS-004, FND-AWARDS-003, FND-AWARDS-001, FND-GFX-003, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-017]
+evidence: [FND-AWARDS-004, FND-AWARDS-003, FND-AWARDS-001, FND-GFX-003, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-017, EXP-UI-034]
 conflicting: []
 split_with: []
 related: [RULE-AWARDS-001, RULE-AWARDS-002, SCR-AWARDS-002]
@@ -19,7 +19,7 @@ whose standing is 0xFF.
 
 | Element | Resource | Shows | Position | Shown when | Evidence |
 |---|---|---|---|---|---|
-| City screen, left as it was | None | None | Whole screen | Always; black when the endgame follows the last turn's resolution | FND-AWARDS-003, EXP-UI-017 |
+| City screen, left as it was | None | None | Whole screen | Always; black when the endgame follows the last turn's resolution or an elimination card | FND-AWARDS-003, EXP-UI-017, EXP-UI-034 |
 | Endgame frame with the Awards, Stats and Done controls | `DATA/PX16/PX00200` | None | `(106, 25, 428, 410)` | Always | FND-AWARDS-003, FND-AWARDS-004, FND-GFX-003 |
 | Tab mark | Interface sheet, source `(488, 512, 8, 16)` | The selected tab | `(468, 33, 8, 16)` for Awards, `(520, 33, 8, 16)` for Stats | Always | FND-AWARDS-004 |
 | Colour fill, per row | None | The row player's colour | `(111, 31 + 66 * row, 20, 62)` | Always | FND-AWARDS-004 |
@@ -79,6 +79,11 @@ None known.
   an eliminated player's cash or damage of a million or more does not fit its
   six-digit field.
 - The text of the score caption at `0x00487704` is not recorded here.
-- What the screen around the frame shows when the endgame follows an
-  elimination card or another screen was not captured.
+- What the screen around the frame shows when the endgame follows a screen
+  other than the resolution or an elimination card was not captured.
 - In 256-colour mode the game uses the `DATA/PX08` files of the same names.
+- No recorded run of the original reaches eliminated rows; award icons at the
+  second and third positions; Done and the Left state; menu command 9; an
+  Awards press with one player left; the push cue (FND-AWARDS-001,
+  FND-AWARDS-003, FND-AWARDS-004, FND-AUDIO-010). These rest on the static
+  findings named, so the entry stays `supported`.

@@ -51,6 +51,12 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     /// </summary>
     internal bool CloseStreamOnOpen { get; set; }
 
+    /// <summary>
+    /// When set, every response carries a <c>Date</c> header this far from this machine's clock, as
+    /// a server whose clock differs would send.
+    /// </summary>
+    internal TimeSpan? ServerClockOffset { get; set; }
+
     /// <summary>Ends the connection being read, as a server dropping it would.</summary>
     internal void DropStream()
     {
@@ -199,10 +205,12 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         // path while the backend restarts, a tunnel that has gone stale. Those produce a status
         // with no error envelope, which is a different fact from the server refusing.
         var reply = Next(request.Method, path);
-        if (reply is { Unbuffered: { } unbuffered }) return Unbuffered(reply, unbuffered);
-        if (reply is not null) return Json(reply.Status, reply.Body);
-        if (path.EndsWith("/stream", StringComparison.Ordinal)) return Streaming();
-        return Json(HttpStatusCode.NotFound, UnroutedEnvelope);
+        var response = reply is { Unbuffered: { } unbuffered } ? Unbuffered(reply, unbuffered)
+            : reply is not null ? Json(reply.Status, reply.Body)
+            : path.EndsWith("/stream", StringComparison.Ordinal) ? Streaming()
+            : Json(HttpStatusCode.NotFound, UnroutedEnvelope);
+        if (ServerClockOffset is { } offset) response.Headers.Date = DateTimeOffset.UtcNow + offset;
+        return response;
     }
 
     /// <inheritdoc />

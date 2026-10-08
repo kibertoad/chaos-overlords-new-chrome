@@ -35,7 +35,7 @@ shot is taken and its counters read as in EXP-UI-009. While the warning's
 handler runs, the probe reads its tick count `[ebp-0x2c]` and shown flag
 `[ebp-0xc]` (FND-UI-054) before and after the capture, from the frame pointer
 it records at `0x00448730`, and keeps the ticks since the open modulo 8 as the
-shot's item frame when the two reads agree.
+shot's `idle_phase` when the two reads agree.
 
 ## Observations
 
@@ -43,7 +43,7 @@ The run made the same 14892 calls of `roll` with the same bounds and results
 as EXP-TURN-026. The Done press opened the warning, and the shot was kept with
 sector 33 selected and every light byte 0:
 
-| Step | Screens | Marker frame | Pump counter | Frame counter | Item frame |
+| Step | Screens | Marker frame | Pump counter | Frame counter | Idle phase |
 |---|---|---|---|---|---|
 | 5 | SCR-OPTIONS-001, SCR-UI-003 | 9 | 0 | 3 | 5 |
 
@@ -51,16 +51,15 @@ The capture shows the warning panel over the city, with its red line shown.
 
 ## Results
 
-`TheRebuildDrawsWhatTheOriginalDrew` in
-`tests/Rechaos.Tests/ScreenCaptureTests.cs` compares the capture as for
-EXP-UI-009, with the rebuild's Warn if Idle Gangs at its default, on, and the
-recorded item frame as the line's phase. The digest of the Warning line
-element was taken from the capture's bitmap after the run, as the probe's
-`digest` command does for a run's own capture. The rebuild's Done press on the
-replayed state, where the human's gang has no order, opens the warning.
-Leaving out the cash row (DEV-UI-006) and the city's key line (DEV-UI-023),
-every element matches. A first run of the comparison, which blinked the line on
-the presentation clock's ticks since the program started, drew the line black.
+A test of the rebuild compares the capture as for EXP-UI-009, with the rebuild's
+Warn if Idle Gangs at its default, on, and the recorded idle phase as the line's
+phase. The digest of the Warning line element was taken from the capture's
+bitmap after the run, as the probe's `digest` command does for a run's own
+capture. The rebuild's Done press on the replayed state, where the human's gang
+has no order, opens the warning. Leaving out the cash row (DEV-UI-006) and the
+city's key line (DEV-UI-023), every element matches. A first run of the
+comparison, which blinked the line on the presentation clock's ticks since the
+program started, drew the line black.
 
 ## Conclusion
 

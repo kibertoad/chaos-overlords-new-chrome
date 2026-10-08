@@ -1,10 +1,10 @@
 ---
 id: RULE-ATTACK-002
 title: An Attack can target only an enemy gang the attacker's player sees in the attacker's sector
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-ATTACK-001, FND-ATTACK-006, FND-COMBAT-006, FND-DETECT-001, EXP-ATTACK-001, EXP-ATTACK-002, EXP-ATTACK-003, SRC-MANUAL-GOG]
+evidence: [FND-ATTACK-001, FND-ATTACK-006, FND-COMBAT-006, FND-DETECT-001, EXP-ATTACK-001, EXP-ATTACK-002, EXP-ATTACK-003, SRC-MANUAL-GOG, FND-HIRE-002, FND-PLATFORM-003, FND-UI-036]
 conflicting: []
 split_with: []
 related: [RULE-DETECT-001, SCR-ATTACK-001, FMT-STATE-001]
@@ -84,3 +84,7 @@ None known.
   does not bound its count, so a seventh target is stored past the six entries
   [FND-ATTACK-006]; what that does is not recorded. Hires keep a player to six
   gangs in a sector, but some moves are not checked against that limit.
+- No recorded list holds a hidden gang the player still sees; EXP-ATTACK-001
+  to EXP-ATTACK-003 record 15 lists. With the seventh target above, this rests
+  on FND-ATTACK-006 and FND-DETECT-001. Until a run reaches them, the entry
+  stays `supported`.
