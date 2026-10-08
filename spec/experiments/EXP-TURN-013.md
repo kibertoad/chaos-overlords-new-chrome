@@ -67,9 +67,8 @@ as (definition, progress), were:
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results and reaches the
-same generator position and state.
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results and reaches the same generator position and state.
 
 A rebuild that passed the acting gang's sector in family 12's encoded mode made
 a call of `roll(258)` for player 1's slot 1 in turn 5, where the original made

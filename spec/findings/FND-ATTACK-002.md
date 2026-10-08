@@ -10,10 +10,10 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043D073..0x0043D131
+    address: 0x0043D073..0x0043D132
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043D93C..0x0043DAD8
+    address: 0x0043D93C..0x0043DAD9
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -24,7 +24,7 @@ Both functions are called only by the Attack picker `fn_0043B290`, each from
 eleven call sites, always as a pair after the picker has copied part of its
 panel from surface 7 back to the screen. Ranges are in FND-EXE-004. Surface 6
 holds `PX00129` (FND-UI-031); the copy wrapper `fn_00427864` with mode 1 keys
-out exact white (FND-PLATFORM-008). Positions are screen coordinates; the
+out exact white (FND-PLATFORM-015). Positions are screen coordinates; the
 panel's top-left corner is `(104,124)`, the origin the picker subtracts
 before its own rectangle tests.
 

@@ -4,7 +4,7 @@ title: Heal rolls four dice plus the gang's Heal and adds each success to Force,
 status: established
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-HEAL-001, FND-TURN-007, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-059, EXP-TURN-062, EXP-TURN-063, EXP-TURN-068, FND-HEAL-002, FND-UI-021]
+evidence: [FND-HEAL-001, FND-TURN-007, FND-AI-007, FND-GANG-001, FND-TURN-001, FND-TURN-004, FND-EXE-004, SRC-MANUAL-GOG, EXP-TURN-059, EXP-TURN-062, EXP-TURN-063, EXP-TURN-068, FND-HEAL-002, FND-UI-021, EXP-TURN-110, FND-PLATFORM-003]
 conflicting: []
 split_with: []
 related: [RULE-RNG-002, FMT-STATE-001]
@@ -64,7 +64,7 @@ Makes one `roll(6)`, three draws from `rng`, for each die of the pool of
   `turn_start` once the gang is at Force 10 (FND-TURN-004), and every computer
   Heal plan needs Force below 10 (RULE-AI-019 to RULE-AI-031), so a gang meets
   this case only if its Force rose after the order was given, which no finding
-  records.
+  records. EXP-TURN-110 sets it up by writing the Force after the order.
 
 ## What the sources say
 
@@ -79,8 +79,8 @@ None known.
 
 ## Open questions
 
-- No recorded run reaches a Heal by a gang at Force 10, which play does not
-  give (see Edge cases); that case rests on the static readings
-  [FND-HEAL-001], [FND-HEAL-002] and [FND-UI-021]. The runs of
-  EXP-TURN-059, EXP-TURN-062 and EXP-TURN-063 reach the three bands and a Heal
-  capped at 10, and EXP-TURN-068 a pool of 0 or less.
+None known. The runs reach every case: EXP-TURN-059, EXP-TURN-062 and
+EXP-TURN-063 the three bands and a Heal capped at 10, EXP-TURN-068 a pool of 0
+or less, and EXP-TURN-110 a Heal by a gang at Force 10, which rolls its pool of
+4 and stays at 10. That run writes the Force into the original's memory after
+the order, as no order path gives the case.

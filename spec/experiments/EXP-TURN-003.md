@@ -43,15 +43,15 @@ The copies held 2 in `elapsed_turns`.
 
 ## Results
 
-Every result is the one RULE-RNG-002 computes from the recorded seed.
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the two turns
-of each run, and the rebuild makes the same calls with the same bounds and
-results and reaches the same generator position and state.
+Every result is the one RULE-RNG-002 computes from the recorded seed. A test of
+the rebuild replays the two turns of each run, and the rebuild makes the same
+calls with the same bounds and results and reaches the same generator position
+and state.
 
 ## Conclusion
 
 In the run with seed 25081 a computer player with a mode 0 hire role hired,
 in turn 1, an offer whose Chaos is at least 0 and whose Control is below 0.
-A ranking that tested Control, as FND-AI-008 gave it, refuses that offer and
-leads to a snub instead; the ranking that tests Chaos, as FND-AI-064 reads it,
+A ranking that tested Control would refuse that offer and lead to a snub
+instead; the ranking that tests Chaos, as FND-AI-064 reads it,
 hires it. The three runs agree with RULE-AI-008 as FND-AI-064 gives it.

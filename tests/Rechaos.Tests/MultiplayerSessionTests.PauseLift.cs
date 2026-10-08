@@ -208,13 +208,6 @@ public sealed partial class MultiplayerSessionTests
         Assert.Equal(string.Empty, online.TurnSyncError);
     }
 
-    private static void ApplyNotice(ChaosGame game, MultiplayerNotice notice) =>
-        (typeof(ChaosGame).GetMethod(
-                "Apply",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-                [typeof(MultiplayerNotice)])
-            ?? throw new MissingMethodException(nameof(ChaosGame), "Apply")).Invoke(game, [notice]);
-
     private static string RepairFrame(int seq, string stateHash) => Frame(
         seq,
         "snapshot.available",

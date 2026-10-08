@@ -10,31 +10,31 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00425850..0x00425D96
+    address: 0x00425850..0x00425D97
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00425D97..0x00425E98
+    address: 0x00425D97..0x00425E99
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00425E99..0x00426F76
+    address: 0x00425E99..0x00426F77
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042773E..0x00427A08
+    address: 0x0042773E..0x00427A09
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00427E60..0x004282A9
+    address: 0x00427E60..0x004282AA
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00428E6A..0x00428EEC
+    address: 0x00428E6A..0x00428EED
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042B7E3..0x0042B7F2
+    address: 0x0042B7E3..0x0042B7F3
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00449B20..0x00449B77
+    address: 0x00449B20..0x00449B78
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004935F8..0x00493A2B
+    address: 0x004935F8..0x00493A2C
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x004874E0..0x004874FF
@@ -99,8 +99,8 @@ Copies:
 
 - `fn_0042773E(src, dst, src_rect, dst_rect)` copies with `BitBlt(SRCCOPY)` when
   the two rectangles have the same size and otherwise sets `COLORONCOLOR` and
-  calls `StretchBlt(SRCCOPY)` (FND-PLATFORM-008). `fn_00427864` adds the copy
-  mode of FND-PLATFORM-008.
+  calls `StretchBlt(SRCCOPY)` (FND-PLATFORM-015). `fn_00427864` adds the copy
+  mode of FND-PLATFORM-015.
 - `fn_00449B20(value)` sets `0x00494868` to 2 below 86, 0 from 86 to 170 and 1
   above; `fn_00427E60` loads bitmap 143 for 0, 146 for 1, 147 for 2 and 143 for
   anything else.

@@ -72,7 +72,6 @@ public sealed class FadePointerReleaseTests
     private static ChaosGame GameHoldingSectorBack(Action close)
     {
         var game = (ChaosGame)RuntimeHelpers.GetUninitializedObject(typeof(ChaosGame));
-        GC.SuppressFinalize(game);
         Field("_pressedPanelFace").SetValue(game,
             (SectorDetailLayout.Back, ClientScreen.Sector, close));
         Field("_previousMouse").SetValue(game, Mouse(ButtonState.Pressed, ButtonState.Pressed));
