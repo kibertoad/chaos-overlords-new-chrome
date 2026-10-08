@@ -48,14 +48,14 @@ completed items (type 5) and three Controls of sectors no one owned before
 
 ## Results
 
-`tests/Rechaos.Tests/OriginalNewGameExperimentTests.cs` replays the run. The
-rebuild makes the same calls with the same bounds and results, reaches the same
-generator position and state, and builds the same Last Turn reports for every
-player. In its replay the human's cash at the planning of turns 2 to 11 is 18,
-16, 14, 12, 10, 8, 6, 4, 2 and 3: each turn adds 1 and the first nine Bribes
-take 3, and the tenth, at 2 cash, fails. The base Tolerance of 29 is 11 plus 3
-for each of the nine paid Bribes, less the nine one-point returns toward 11
-after the first turn (RULE-TOLERANCE-001).
+A test of the rebuild replays the run. The rebuild makes the same calls with the
+same bounds and results, reaches the same generator position and state, and
+builds the same Last Turn reports for every player. In its replay the human's
+cash at the planning of turns 2 to 11 is 18, 16, 14, 12, 10, 8, 6, 4, 2 and 3:
+each turn adds 1 and the first nine Bribes take 3, and the tenth, at 2 cash,
+fails. The base Tolerance of 29 is 11 plus 3 for each of the nine paid Bribes,
+less the nine one-point returns toward 11 after the first turn
+(RULE-TOLERANCE-001).
 
 ## Conclusion
 

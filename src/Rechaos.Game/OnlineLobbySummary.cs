@@ -41,7 +41,7 @@ public static class OnlineLobbySummary
         PlanningTimeLimit turnTimer,
         int? spectatorDelayTurns) =>
     [
-        ("SCENARIO", ScenarioCatalog.Get(scenario).Name),
+        ("SCENARIO", ExecutableStrings.ScenarioTitle(scenario)),
         ("LENGTH", DurationSetupTooltip.Label(duration)),
         ("OPPONENTS", DifficultyPresentation.Label(mentality)),
         ("TURN TIMER", PlanningTimerPolicy.Label(turnTimer)),

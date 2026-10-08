@@ -1,8 +1,8 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// The two command-dependent bytes stored beside each original AI action.
-/// Their meaning is defined by <see cref="OriginalAiActionTargetEncoding"/>.
+/// The two target bytes stored beside each original AI action. Which of them an action stores,
+/// and what they hold, is defined by <see cref="OriginalAiActionTargetEncoding"/>.
 /// </summary>
 public readonly record struct AiActionTarget(byte First, byte Second)
 {
@@ -504,9 +504,9 @@ public sealed class AiPlanningState
 
     /// <summary>
     /// FMT-STATE-007, RULE-AI-004: <c>plan</c> writes the action and only the target bytes the
-    /// action uses. An Attack writes both, a Move, Equip, Influence or Research the first, and any
-    /// other action neither, so a later write in the same pass, such as a Control override or the
-    /// Greed Terminate, keeps the targets an earlier one stored.
+    /// action uses (<see cref="OriginalAiActionTargetEncoding.TargetBytesWritten"/>), so a later
+    /// write in the same pass, such as a Control override or the Greed Terminate, keeps the
+    /// targets an earlier one stored.
     /// </summary>
     internal void SetPlannedAction(
         PlayerId player,
@@ -517,11 +517,10 @@ public sealed class AiPlanningState
         if (!IsValidAction(action)) throw new ArgumentOutOfRangeException(nameof(action));
         var index = GangSlotIndex(player, gangSlot);
         _plannedActions[index] = action;
-        _plannedTargets[index] = action switch
+        _plannedTargets[index] = OriginalAiActionTargetEncoding.TargetBytesWritten(action) switch
         {
-            GangAction.Attack => target,
-            GangAction.Move or GangAction.Equip or GangAction.Influence or GangAction.Research =>
-                new AiActionTarget(target.First, _plannedTargets[index].Second),
+            2 => target,
+            1 => new AiActionTarget(target.First, _plannedTargets[index].Second),
             _ => _plannedTargets[index],
         };
     }

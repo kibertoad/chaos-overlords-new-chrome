@@ -843,7 +843,7 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
         .limit(1)
       return firstOrNull(rows.map(toSnapshotSummary))
     },
-    async prune(matchId, keep, retainTurn) {
+    async prune(matchId, keep, retainFrom) {
       // The turns to keep are the newest `keep`; everything strictly below the oldest of them goes.
       const kept = await db
         .select({ turn: snapshots.turn })
@@ -859,8 +859,8 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
           and(
             eq(snapshots.matchId, matchId),
             lt(snapshots.turn, oldestKept),
-            // The snapshot a spectator starts from stays, however old; see `prune`.
-            retainTurn === undefined ? undefined : ne(snapshots.turn, retainTurn),
+            // The snapshot a spectator starts from and every later one stay; see `prune`.
+            retainFrom === undefined ? undefined : lt(snapshots.turn, retainFrom),
           ),
         )
         .returning({ turn: snapshots.turn })

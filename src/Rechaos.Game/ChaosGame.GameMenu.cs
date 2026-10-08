@@ -112,6 +112,9 @@ public sealed partial class ChaosGame
     private void OpenGameMenu()
     {
         CancelCurrentInteraction();
+        // A panel that stays open under the menu, such as Combat Results, must not close on the
+        // release of a face the left button holds.
+        LetGoOfLeftHeldPanelFace();
         _gameMenuOpen = true;
         _bugReportOpen = false;
         _quitToMainMenuConfirmationOpen = false;

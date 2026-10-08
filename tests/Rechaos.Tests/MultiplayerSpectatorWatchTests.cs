@@ -106,7 +106,10 @@ public sealed class MultiplayerSpectatorWatchTests
         await using var __ = watch;
         server.Answer(HttpMethod.Get, $"/spectate/{MatchId}", ViewOf(MatchStatus.Abandoned, 2, 1));
         server.Answer(HttpMethod.Get, "/snapshots/latest", SnapshotOf(0, Bootstrap().State));
-        server.Answer(HttpMethod.Get, "/events", Page(2, Opened(1, 1), Sealed(2, 1)));
+        // The fake answers by path, not by cursor, so the released page is served once and every
+        // later read is the drained page a real server gives after it.
+        server.AnswerOnce(HttpMethod.Get, "/events", Page(2, Opened(1, 1), Sealed(2, 1)));
+        server.Answer(HttpMethod.Get, "/events", Page(2));
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
 
         watch.Resume(MatchId, "cos_s1");

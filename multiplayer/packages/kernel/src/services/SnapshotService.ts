@@ -6,7 +6,7 @@ import {
   type UploadSnapshotRequest,
 } from '@chaos-overlords/contracts'
 import { safeParse } from 'valibot'
-import type { Snapshot, Turn } from '../domain/entities'
+import type { Match, Snapshot, Turn } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError } from '../domain/errors'
 import { authoritativeCandidates, tieBreaker } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
@@ -135,7 +135,7 @@ export class SnapshotService {
     if (current) mergeSeatSummaries(current.settings.gameSettings, request.seatSummaries)
     await this.deps.storage.snapshots.put(this.snapshotOf(match, uploadedByPlayerId, request))
     await this.writeSeatSummaries(match.id, request.seatSummaries)
-    await this.pruneOldSnapshots(match.id)
+    await this.pruneOldSnapshots(match.id, current)
   }
 
   private snapshotOf(
@@ -245,15 +245,15 @@ export class SnapshotService {
    * from the turn it happened on, and a reconnecting client bootstraps from the newest — so the
    * older ones are dead weight. Failing to prune must never fail the upload that just succeeded.
    */
-  private async pruneOldSnapshots(matchId: string): Promise<void> {
+  private async pruneOldSnapshots(matchId: string, match: Match | null): Promise<void> {
     try {
-      // A match that can be watched keeps the snapshot its spectators start from, however old.
-      const match = await this.deps.storage.matches.get(matchId)
-      const retainTurn = match ? await spectatorStartTurn(this.deps.storage, match) : undefined
+      // A match that can be watched keeps the snapshot its spectators start from, however old, and
+      // every later one, which a later released turn will start from.
+      const retainFrom = match ? await spectatorStartTurn(this.deps.storage, match) : undefined
       const dropped = await this.deps.storage.snapshots.prune(
         matchId,
         SNAPSHOTS_KEPT_PER_MATCH,
-        retainTurn,
+        retainFrom,
       )
       if (dropped > 0) this.deps.logger.debug('pruned old snapshots', { matchId, dropped })
     } catch (error) {

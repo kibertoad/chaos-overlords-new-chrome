@@ -9,12 +9,15 @@ This package ships TypeScript sources rather than a bundle, because wrangler bun
 itself. A deployment re-exports both the handler and the Durable Object class:
 
 ```ts
-export { MatchHub } from '@chaos-overlords/worker'
+export { MatchHub, RateLimitCounter } from '@chaos-overlords/worker'
 export { default } from '@chaos-overlords/worker'
 ```
 
-It needs two D1 bindings (`DB`, `BUG_DB`), an R2 bucket (`BUG_BLOBS`) and the `MATCH_HUB` Durable
-Object namespace, whose migration lineage starts at tag `v1` with `new_sqlite_classes = ["MatchHub"]`.
+It needs two D1 bindings (`DB`, `BUG_DB`), an R2 bucket (`BUG_BLOBS`) and two Durable Object
+namespaces: `MATCH_HUB`, whose migration lineage starts at tag `v1` with
+`new_sqlite_classes = ["MatchHub"]`, and `RATE_LIMITS`, the `RateLimitCounter` class added at tag
+`v2` with `new_sqlite_classes = ["RateLimitCounter"]`. `RATE_LIMITS` is what makes the rate limits
+global; without it every isolate counts on its own, and the Worker logs `RATE_LIMITS is not bound`.
 The D1 migration lineages ship in `@chaos-overlords/storage` and `@chaos-overlords/bug-reports`; point
 `wrangler d1 migrations apply` at them rather than copying them.
 

@@ -10,13 +10,13 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0042F779..0x0042F98A
+    address: 0x0042F779..0x0042F98B
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x0043066C..0x0043087D
+    address: 0x0043066C..0x0043087E
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x00454251..0x004543ED
+    address: 0x00454251..0x004543EE
 tool: Ghidra 12.1.3
 environment: null
 ---
@@ -53,7 +53,7 @@ Combat Results handler `fn_00451F80`, each after the page renderer
 `fn_00453087` (FND-COMBAT-007) or a restore of the panel from surface 7. It
 does nothing for -1. For `n` from 0 to 4 it copies the 34-by-34 cell
 `(120,171)` of surface 6 with the keyed mode 1 of `fn_00427864`
-(FND-PLATFORM-008) to the screen at `(305, 139 + 36 * n)`, one pixel outside
+(FND-PLATFORM-015) to the screen at `(305, 139 + 36 * n)`, one pixel outside
 the opponent portrait `(306, 140 + 36 * n, 32, 32)`.
 
 ## Interpretation

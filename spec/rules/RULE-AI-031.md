@@ -4,7 +4,7 @@ title: Family-13 and family-14 computer gangs move to the Big Man or Siege objec
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-AI-039, FND-AI-069, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-062, FND-AI-063, FND-SETUP-018, EXP-TURN-058, EXP-TURN-084]
+evidence: [FND-AI-039, FND-AI-069, FND-AI-033, FND-AI-013, FND-EXE-004, FND-OBJECTIVE-003, FND-AI-055, FND-AI-062, FND-AI-063, FND-SETUP-018, EXP-TURN-058, EXP-TURN-084, FND-AI-001, FND-AI-015, FND-AI-019, FND-AI-021, FND-AI-042, FND-AI-081, FND-CONTROL-001, FND-EQUIP-006, FND-HIRE-002, FND-PLATFORM-003, FND-RESEARCH-002, FND-STATE-006, FND-STATE-007, FND-STATE-011, FND-TURN-001, FND-TURN-006, FND-UI-035, FND-UI-036, FND-UPKEEP-001, EXP-TURN-012, EXP-TURN-060, EXP-TURN-079, EXP-TURN-087, EXP-TURN-088, EXP-TURN-089, EXP-COMBAT-002, EXP-TURN-101]
 conflicting: []
 split_with: []
 related: [RULE-AI-004, RULE-AI-005, RULE-AI-006, RULE-AI-022, RULE-RNG-002, FMT-STATE-001, FMT-STATE-002]
@@ -174,7 +174,8 @@ one `roll(0)` and then heals or does nothing. After the draws the last drawn
 gang is attacked even when every strength test failed, and the strength test
 can be made on a different gang from the one attacked (BUG-AI-003). In a scenario other than 6 and 8 no sector
 is an objective, and the gang writes Move with the planned target left from the
-start of the turn, sector 0.
+start of the turn, sector 0, every turn, so such gangs gather in sector 0
+(EXP-TURN-101).
 
 The Support scan starts from a threshold the handler never sets (BUG-AI-006).
 The stack slot it reads always holds the 0 the selector left there
@@ -198,3 +199,13 @@ None known.
   start of the turn (RULE-AI-001); whether the gang record's action from the
   previous turn is cleared elsewhere before the turn resolves is not recorded.
 - The Support field read through selector `0xC` is taken from FND-AI-039.
+- No run reaches the human pool on an objective the player owns. The pool is
+  taken when the sector weight is 10 and `hostile_owner` holds, and on an
+  owned objective that tests the player's attitude toward itself. That cell
+  starts at 0, or +10 at Homicidal Maniac (RULE-AI-014), and only RULE-AI-016
+  lowers it, after an Attack on one of the player's own gangs, which no run
+  has shown. The Big Man runs (EXP-TURN-058,
+  EXP-TURN-084 and others) and the Siege runs (EXP-TURN-012, EXP-TURN-060,
+  EXP-TURN-079, EXP-TURN-087, EXP-TURN-088, EXP-TURN-089 and EXP-COMBAT-002)
+  reach every other branch of the handler in at least one of the two
+  scenarios, the human pool on a contested objective among them in Siege.

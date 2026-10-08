@@ -2,7 +2,7 @@ namespace Rechaos.OriginalProbe;
 
 /// <summary>
 /// The list the Equip panel offers one of the first human's gangs for one category, as the list
-/// builder of FND-EQUIP-008 fills it: the item record numbers of its non-empty entries, in order.
+/// builder of FND-EQUIP-012 fills it: the item record numbers of its non-empty entries, in order.
 /// </summary>
 internal sealed record EquipListRecord(int Slot, int Category, int TechLevel, List<int> Items);
 
@@ -30,7 +30,7 @@ internal sealed partial class NewGameSession
                     var entries = _process.Read(OriginalAddresses.EquipListEntries, 4 * OriginalAddresses.EquipListLength);
                     record.Items.AddRange(Enumerable.Range(0, OriginalAddresses.EquipListLength)
                         .Select(index => BitConverter.ToInt32(entries, 4 * index)).Where(item => item != -1));
-                    // FND-EQUIP-008: the builder's count has no upper bound, so a full list may have
+                    // FND-EQUIP-012: the builder's count has no upper bound, so a full list may have
                     // run past the sixteen entries read here.
                     if (record.Items.Count == OriginalAddresses.EquipListLength)
                         _notes.Add($"Equip list of slot {record.Slot} category {record.Category} fills all {record.Items.Count} entries and may be longer.");

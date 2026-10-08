@@ -5,7 +5,7 @@ status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 resolution: 640x480
-evidence: [FND-EQUIP-005, FND-EQUIP-009, FND-EQUIP-010, FND-EQUIP-006, FND-EQUIP-008, FND-EQUIP-001, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-009]
+evidence: [FND-EQUIP-005, FND-EQUIP-009, FND-EQUIP-010, FND-EQUIP-006, FND-EQUIP-012, FND-EQUIP-001, FND-OPTIONS-001, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-009, FND-EQUIP-011, EXP-UI-041]
 conflicting: []
 split_with: []
 related: [RULE-EQUIP-001, RULE-EQUIP-003, RULE-EQUIP-004, RULE-UI-003, SCR-GANG-001, SCR-UI-006]
@@ -20,7 +20,7 @@ related: [RULE-EQUIP-001, RULE-EQUIP-003, RULE-EQUIP-004, RULE-UI-003, SCR-GANG-
 | Carried item icons | `DATA/PX16/PX04999` 20-by-20 cells | The gang's `weapon`, `armor` and `misc` | `(130, 206, 20, 20)`, `(152, 206, 20, 20)`, `(174, 206, 20, 20)` | For each item that is not -1 | FND-EQUIP-010 |
 | Item list | The font of `fn_00413FD5`; the price in two number cells | The entries of RULE-EQUIP-004 for the chosen category, one per row of 9 pixels starting at y = 150, each with its price from `item_price` (RULE-EQUIP-003) | `(252, 150, 180, 143)` | While the panel is open | FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-001 |
 | Category frame | `DATA/PX16/PX00129` crop `(120,171,34,34)`, keyed on exact white | The chosen category | `(207, 139 + 36 * n, 34, 34)`, one pixel outside category cell `n` | Always; the panel opens on category 0, or on the category of the item in `target` when the gang's `action` is already Equip | FND-EQUIP-009 |
-| Chosen row mark | The row's 30-character text in the second font of `DATA/PX16/PX00129` (glyph row y 441), inside a one-pixel frame of the colour `(0, 255, 0)`, composed above the panel in the work surface | The item currently chosen; the strip covers the row's price | `(251, 149 + 9 * n, 181, 9)` for row `n` | Once an item is chosen, and on opening when the gang's pending item is listed | FND-EQUIP-010 |
+| Chosen row mark | The row's 30-character text in the second font of `DATA/PX16/PX00129` (glyph row y 441), inside a one-pixel frame of the colour `(0, 255, 0)`, composed above the panel in the work surface | The item currently chosen: the name in the first 28 characters and the price in the last two, over the list's price cells, its tens digit a space when it is 0 | `(251, 149 + 9 * n, 181, 9)` for row `n` | Once an item is chosen, and on opening when the gang's pending item is listed | FND-EQUIP-010, FND-EQUIP-011, EXP-UI-041 |
 | Confirm face | Enabled or disabled state drawn by `fn_00418E66` | Whether the order can be confirmed | `(137, 293, 50, 23)` | Drawn enabled when a row is chosen and on opening when the gang already has an Equip order, disabled after a category change or a click on an empty row; not drawn on opening otherwise | FND-EQUIP-010 |
 
 ## Mouse input
@@ -83,3 +83,11 @@ None known.
   (FND-EQUIP-010).
 - The look of the glyphs at y 441 of `PX00129` has not been checked against the
   image.
+- No recorded run of the original reaches carried item icons, category frames
+  1 to 3, the chosen-row mark, the Confirm face and opening on a pending Equip
+  order; presses on a category, a row and an empty row; Confirm with and
+  without a choice; Enter, Execute and Escape; a press outside the panel; the
+  carried-icon double-click; the Item chosen state; the slide and rejected
+  sounds and the slide's timing (FND-EQUIP-005, FND-EQUIP-006, FND-EQUIP-009,
+  FND-EQUIP-010, FND-OPTIONS-001). These rest on the static findings named, so
+  the entry stays `supported`.

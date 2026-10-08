@@ -10,7 +10,7 @@ method: static
 locations:
   - build: BLD-GOG-EN-1.1
     file: winmm.dll
-    address: 0x6AB41360..0x6AB41541
+    address: 0x6AB41360..0x6AB41542
 tool: Capstone 5.0.7 and pefile 2024.8.26
 environment: null
 ---

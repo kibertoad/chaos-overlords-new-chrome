@@ -228,15 +228,8 @@ public sealed partial class MultiplayerMatchSession
                 $"the latest snapshot is for turn {snapshot.Turn}, but the server is on turn "
                 + currentTurn);
         }
-        var restored = ReadVerifiedSnapshot(snapshot);
-        if (restored.Outcome is null
-            && (restored.Coordinator.Phase != TurnPhase.Command
-                || restored.Coordinator.Turn != snapshot.Turn + 1))
-        {
-            throw new MultiplayerProtocolException(
-                $"the snapshot for turn {snapshot.Turn} resumes at "
-                + $"{restored.Coordinator.Phase} turn {restored.Coordinator.Turn}");
-        }
+        var restored = ReadVerifiedSnapshot(snapshot, _definitions);
+        RequireResumesAfter(restored, snapshot.Turn);
         _replay = new MatchReplayRecorder(restored);
         _canonicalThroughTurn = snapshot.Turn;
     }

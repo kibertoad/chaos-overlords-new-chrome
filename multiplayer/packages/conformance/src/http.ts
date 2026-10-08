@@ -1,5 +1,11 @@
 import { type FetchLike, MultiplayerApiError, MultiplayerClient } from '@chaos-overlords/client'
-import type { MatchEvent, MatchEventType, OrderDocument } from '@chaos-overlords/contracts'
+import {
+  LIMITS,
+  type MatchEvent,
+  type MatchEventType,
+  type OrderDocument,
+  SSE_HEARTBEAT_COMMENT,
+} from '@chaos-overlords/contracts'
 import { describe, expect, it } from 'vitest'
 
 export interface HttpConformanceHarness {
@@ -9,6 +15,12 @@ export interface HttpConformanceHarness {
   publicListing: boolean
   /** Make every open deadline due and run the sweep, when the harness controls time. */
   expireDeadlines?: () => Promise<void>
+  /**
+   * The interval between event stream keepalive frames, when the harness has shortened it enough
+   * for a test to wait one out. Left out, the keepalive case is skipped, and the stream-cap case
+   * leaves its streams unread.
+   */
+  keepaliveMs?: number
 }
 
 const HASH_A = 'a'.repeat(32)
@@ -45,6 +57,48 @@ async function collect(
 const types = (events: MatchEvent[]): MatchEventType[] => events.map((event) => event.type)
 
 /**
+ * Reads a raw response body as text until `until` holds or `timeoutMs` passes, then cancels it.
+ *
+ * The client SDK parses frames and drops comments, so the frames the SDK hides (the keepalive) and
+ * the ids it consumes (the resume point) are read here byte for byte.
+ */
+async function readText(
+  response: Response,
+  until: (text: string) => boolean,
+  timeoutMs = 5000,
+): Promise<string> {
+  const body = response.body
+  if (!body) throw new Error('the response has no body')
+  const reader = body.getReader()
+  const decoder = new TextDecoder()
+  let text = ''
+  const timer = setTimeout(() => {
+    void reader.cancel().catch(() => undefined)
+  }, timeoutMs)
+  try {
+    for (;;) {
+      const { value, done } = await reader.read()
+      if (done) break
+      text += decoder.decode(value, { stream: true })
+      if (until(text)) break
+    }
+  } finally {
+    clearTimeout(timer)
+    await reader.cancel().catch(() => undefined)
+  }
+  return text
+}
+
+/** The sequence numbers of the event frames in a raw stream, in order. */
+const frameIds = (text: string): number[] =>
+  [...text.matchAll(/^id: ?(\d+)$/gm)].map((match) => Number(match[1]))
+
+/** Every response carries a correlation id, refusals and the event stream included. */
+function expectRequestId(response: Response): void {
+  expect(response.headers.get('x-request-id')).toMatch(/^[A-Za-z0-9_-]+$/)
+}
+
+/**
  * Drives the whole protocol through the public client against a facade: every runtime runs it,
  * so a route only one facade mounts, or a container wired differently, fails the same test.
  */
@@ -59,6 +113,34 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
     visibility: 'public' as const,
     gameSettings: { scenario: 'smg-islands' },
   }
+
+  /** A raw JSON POST, for the refusals the typed client never sends. */
+  const post = (path: string, body: string, token?: string) =>
+    harness.fetch(`http://conformance/api/v1${path}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+      body,
+    })
+
+  /** A raw event stream request, so the status, the headers and every frame can be read. */
+  const openStream = (
+    matchId: string,
+    token: string,
+    options: { query?: string; lastEventId?: number; signal: AbortSignal },
+  ) =>
+    harness.fetch(`http://conformance/api/v1/matches/${matchId}/stream${options.query ?? ''}`, {
+      headers: {
+        authorization: `Bearer ${token}`,
+        accept: 'text/event-stream',
+        ...(options.lastEventId === undefined
+          ? {}
+          : { 'last-event-id': String(options.lastEventId) }),
+      },
+      signal: options.signal,
+    })
 
   async function lobbyOfTwo(turnTimerSeconds = 0) {
     const anonymous = client()
@@ -431,6 +513,12 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
             reason: 'turn_not_released',
           })
           expect((await spectator.get()).seed).toBeNull()
+          // Turn 2 is open: the bootstrap is one turn old, inside the delay.
+          await expect(spectator.latestSnapshot()).rejects.toMatchObject({
+            status: 404,
+            reason: 'no_snapshot',
+          })
+          expect((await spectator.events(0)).events).toEqual([])
         }
       }
       const view = await spectator.get()
@@ -507,11 +595,10 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
     })
 
     it('names the refused field without echoing what was sent, and caps every body', async () => {
-      const response = await harness.fetch('http://conformance/api/v1/matches/join', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ joinCode: 'ABCDEFGH', displayName: '', password: 'hunter2' }),
-      })
+      const response = await post(
+        '/matches/join',
+        JSON.stringify({ joinCode: 'ABCDEFGH', displayName: '', password: 'hunter2' }),
+      )
       expect(response.status).toBe(422)
       const body = await response.json()
       expect(body.error.details.reason).toBe('invalid_request')
@@ -519,11 +606,10 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(issues.some((issue) => issue.path.join('.') === 'displayName')).toBe(true)
       expect(JSON.stringify(body)).not.toContain('hunter2')
 
-      const oversized = await harness.fetch('http://conformance/api/v1/matches/join', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'x'.repeat(20 * 1024) }),
-      })
+      const oversized = await post(
+        '/matches/join',
+        JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'x'.repeat(20 * 1024) }),
+      )
       expect(oversized.status).toBe(413)
       expect((await oversized.json()).error.code).toBe('payload_too_large')
     })
@@ -537,6 +623,203 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       const sealed = await host.api.sealedOrders(1)
       expect(sealed.players.map((p) => p.slot)).toEqual([1])
       expect((await host.api.get()).match.currentTurn).toBe(2)
+    })
+
+    it('admits a joiner to a password-protected match only with the password', async () => {
+      const anonymous = client()
+      const host = await anonymous.createMatch({
+        settings: { ...settings, name: 'Gated city' },
+        hostDisplayName: 'Ada',
+        password: 'opensesame',
+      })
+      if (harness.publicListing) {
+        const listed = (await anonymous.listLobbies()).matches.find((l) => l.id === host.match.id)
+        expect(listed?.passwordProtected).toBe(true)
+      }
+      await expect(
+        anonymous.join({ joinCode: host.joinCode, displayName: 'Grace' }),
+      ).rejects.toMatchObject({ status: 401, reason: 'password_required' })
+      await expect(
+        anonymous.join({ joinCode: host.joinCode, displayName: 'Grace', password: 'opensesamf' }),
+      ).rejects.toMatchObject({ status: 401, reason: 'wrong_password' })
+      const guest = await anonymous.join({
+        joinCode: host.joinCode,
+        displayName: 'Grace',
+        password: 'opensesame',
+      })
+      const detail = await anonymous.withToken(guest.token).match(host.match.id).get()
+      expect(detail.match.players.map((p) => p.displayName)).toEqual(['Ada', 'Grace'])
+      // A password the contract refuses is refused before anything is stored.
+      await expect(
+        anonymous.createMatch({ settings, hostDisplayName: 'Ada', password: 'short' }),
+      ).rejects.toMatchObject({ status: 422, reason: 'invalid_request' })
+    })
+
+    it('does not echo a secret of the wrong type', async () => {
+      // A number fails on its type rather than its length, and the validator's default message for
+      // a type refusal quotes the value it received.
+      const secret = 902_137_465
+      for (const [path, body] of [
+        ['/matches/join', { joinCode: 'ABCDEFGH', displayName: 'Grace', password: secret }],
+        ['/matches', { settings, hostDisplayName: 'Ada', password: secret }],
+      ] as const) {
+        const response = await post(path, JSON.stringify(body))
+        expect(response.status).toBe(422)
+        expectRequestId(response)
+        const text = await response.text()
+        expect(text).not.toContain(String(secret))
+        const issues = JSON.parse(text).error.details.issues as Array<{ path: string[] }>
+        expect(issues.some((issue) => issue.path.join('.') === 'password')).toBe(true)
+      }
+    })
+
+    it('answers malformed JSON with 422', async () => {
+      const response = await post('/matches/join', '{"joinCode": "ABCDEFGH", "displayName":')
+      expect(response.status).toBe(422)
+      expectRequestId(response)
+      expect((await response.json()).error).toMatchObject({
+        code: 'validation_failed',
+        requestId: response.headers.get('x-request-id'),
+      })
+    })
+
+    it('puts a request id on every response, the event stream included', async () => {
+      const health = await harness.fetch('http://conformance/health')
+      expectRequestId(health)
+      const created = await post('/matches', JSON.stringify({ settings, hostDisplayName: 'Ada' }))
+      expect(created.status).toBe(201)
+      expectRequestId(created)
+      const { match, token } = (await created.json()) as { match: { id: string }; token: string }
+      const refused = await harness.fetch(`http://conformance/api/v1/matches/${match.id}`)
+      expect(refused.status).toBe(401)
+      expectRequestId(refused)
+      const controller = new AbortController()
+      try {
+        const stream = await openStream(match.id, token, { signal: controller.signal })
+        expect(stream.status).toBe(200)
+        expect(stream.headers.get('content-type')).toMatch(/^text\/event-stream/)
+        expectRequestId(stream)
+        // A caller's own correlation id is adopted rather than replaced.
+        const tagged = await harness.fetch('http://conformance/health', {
+          headers: { 'x-request-id': 'conformance-tag-1' },
+        })
+        expect(tagged.headers.get('x-request-id')).toBe('conformance-tag-1')
+      } finally {
+        controller.abort()
+      }
+    })
+
+    it('resumes from Last-Event-ID when ?after= says otherwise', async () => {
+      const { matchId, host, guest } = await lobbyOfTwo()
+      await host.api.start()
+      const lastSeq = (await guest.api.events(0)).events.at(-1)?.seq ?? 0
+      expect(lastSeq).toBeGreaterThan(1)
+      const controller = new AbortController()
+      try {
+        const response = await openStream(matchId, guest.token, {
+          query: '?after=0',
+          lastEventId: lastSeq - 1,
+          signal: controller.signal,
+        })
+        expect(response.status).toBe(200)
+        const text = await readText(response, (seen) => frameIds(seen).includes(lastSeq))
+        expect(frameIds(text)).toEqual([lastSeq])
+      } finally {
+        controller.abort()
+      }
+    })
+
+    it('refuses a stream past the per-match cap with 429', async () => {
+      // A player's own stale streams make room for their next one, so the cap a client cannot talk
+      // its way past is the match's: every seat holding its three, plus a stream that outlived the
+      // membership it was opened under. A lobby leaver's stream is one of those until the hub's
+      // periodic membership check catches up with it.
+      const anonymous = client()
+      const host = await anonymous.createMatch({
+        settings: { ...settings, maxPlayers: LIMITS.maxPlayers },
+        hostDisplayName: 'Ada',
+      })
+      const members = [host]
+      for (let n = 1; n < LIMITS.maxPlayers; n += 1) {
+        members.push(await anonymous.join({ joinCode: host.joinCode, displayName: `Seat ${n}` }))
+      }
+      const controller = new AbortController()
+      try {
+        for (const member of members) {
+          for (let n = 0; n < 3; n += 1) {
+            const response = await openStream(host.match.id, member.token, {
+              signal: controller.signal,
+            })
+            expect(response.status).toBe(200)
+            // Read and thrown away, so the hub does not drop the stream as stalled: unread, an
+            // in-process stream fills its queue within a couple of seconds of 50 ms keepalives, and
+            // one dropped stream leaves room for the stream this case expects refused. A harness
+            // on the default keepalive takes minutes to fill the queue, and is left unread: on
+            // workerd, aborting a stream that is being read leaves rejections unhandled inside the
+            // runtime, which Vitest counts as errors of the run.
+            if (harness.keepaliveMs !== undefined) {
+              void response.body?.pipeTo(new WritableStream()).catch(() => undefined)
+            }
+          }
+        }
+        const leaver = members.at(-1)
+        if (!leaver) throw new Error('no members')
+        await anonymous.withToken(leaver.token).match(host.match.id).leave()
+        const late = await anonymous.join({ joinCode: host.joinCode, displayName: 'Late' })
+        const refused = await openStream(host.match.id, late.token, { signal: controller.signal })
+        expect(refused.status).toBe(429)
+        expectRequestId(refused)
+        expect((await refused.json()).error).toMatchObject({
+          code: 'rate_limited',
+          details: { reason: 'too_many_streams', scope: 'match' },
+        })
+      } finally {
+        controller.abort()
+      }
+    })
+
+    it.skipIf(harness.keepaliveMs === undefined)(
+      'sends a keepalive frame on an idle stream',
+      async () => {
+        const { matchId, host } = await lobbyOfTwo()
+        const controller = new AbortController()
+        try {
+          const response = await openStream(matchId, host.token, { signal: controller.signal })
+          expect(response.status).toBe(200)
+          const text = await readText(
+            response,
+            (seen) => seen.includes(`: ${SSE_HEARTBEAT_COMMENT}\n\n`),
+            (harness.keepaliveMs ?? 0) * 3 + 2000,
+          )
+          expect(text).toContain(`: ${SSE_HEARTBEAT_COMMENT}\n\n`)
+        } finally {
+          controller.abort()
+        }
+      },
+    )
+
+    // Last on purpose. The refusal goes out before the body is read, and the Node listener destroys
+    // a connection whose unread body has not drained within half a second, which fails whatever
+    // request the client queued on that connection next; docs/MULTIPLAYER-REVIEW.md tracks it.
+    it('answers an oversized snapshot with 413 before reading it', async () => {
+      const { matchId, host } = await lobbyOfTwo()
+      // The cap is the snapshot limit plus an allowance for the rest of the envelope (16 KB in
+      // packages/server/src/app.ts). Going over it by 32 KB keeps the case on the 413 path; an
+      // allowance of 32 KB or more would let the body through to the schema and answer 422.
+      const response = await post(
+        `/matches/${matchId}/snapshots`,
+        JSON.stringify({
+          turn: 0,
+          formatVersion: 1,
+          stateHash: HASH_A,
+          body: 'A'.repeat(LIMITS.snapshotBase64Bytes + 32 * 1024),
+          seatSummaries: [],
+        }),
+        host.token,
+      )
+      expect(response.status).toBe(413)
+      expectRequestId(response)
+      expect((await response.json()).error.code).toBe('payload_too_large')
     })
   })
 }

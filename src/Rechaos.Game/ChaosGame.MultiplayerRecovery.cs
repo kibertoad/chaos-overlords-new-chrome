@@ -102,7 +102,13 @@ public sealed partial class ChaosGame
             MultiplayerRecoveryStore.TrySaveAll(SpectatorRecoveryPath,
                 _multiplayerRecoveries.Where(recovery => recovery.Spectating), durable);
         }
+        _onlineTokensInClear = OnlineTokensInClear();
     }
+
+    /// <summary>Whether either history holds a token in clear, because no keyring took it.</summary>
+    private bool OnlineTokensInClear() =>
+        MultiplayerRecoveryStore.KeepsTokensInClear(_multiplayerRecoveryPath)
+        || MultiplayerRecoveryStore.KeepsTokensInClear(SpectatorRecoveryPath);
 
     private static bool SameMembership(MultiplayerRecovery left, MultiplayerRecovery right) =>
         string.Equals(left.Server, right.Server, StringComparison.OrdinalIgnoreCase)

@@ -280,7 +280,8 @@ public sealed class InstantResolutionTests
             new(new PlayerId(0), "ONE", controller),
             new(new PlayerId(1), "TWO", PlayerController.Human)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups, mentality);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups,
+            MatchDeviations.Original, mentality);
         MatchPlayerState[] players =
         [
             new(setups[0], 500, [new MatchGangState(new GangId(10), setups[0].Id, influencer.Id, 0, 1)]),
@@ -344,7 +345,8 @@ public sealed class InstantResolutionTests
             new(new PlayerId(0), "ONE", PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups,
+            MatchDeviations.Original);
         var influencer = data.Gangs.OrderByDescending(gang => gang.Stats.Influence).First();
         MatchPlayerState[] players =
         [

@@ -362,8 +362,8 @@ public sealed partial class ChaosGame
             DrawSpectatorWaiting(batch, pixel, font);
             return;
         }
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        if (CityBackground is not null)
+            batch.Draw(CityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         var followed = state.Players.FirstOrDefault(player => player.Id.Value == _spectatorFollowedSeat)
             ?? state.Players[0];
         _overlordMarkerClock.OtherView();
@@ -371,8 +371,8 @@ public sealed partial class ChaosGame
         DrawPreparedCityMap(batch, pixel, state, followed.Id,
             CityMapLayout.Bounds with { X = 0, Y = 0 }, CityMapLayout.Bounds.Location,
             new CityMapCaches(_spectatorGangSight, _spectatorGangMarkers, NoSiteSearchSelections));
-        if (_uiKeyedSprites is not null)
-            batch.Draw(_uiKeyedSprites, CityMapLayout.Destination(_spectatorCursor),
+        if (UiKeyedSprites is not null)
+            batch.Draw(UiKeyedSprites, CityMapLayout.Destination(_spectatorCursor),
                 CityMapLayout.SelectionFrameSource(SelectionFrameShown()), Color.White);
         else
             DrawBorder(batch, pixel, CityMapLayout.Destination(_spectatorCursor), Color.Gold, 2);
