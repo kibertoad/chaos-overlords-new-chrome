@@ -190,7 +190,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `GET /matches/:id/events?after=N` | member | The log, paged. |
 | `GET /matches/:id/stream` | member | The same log as SSE; `Last-Event-ID` or `?after=` resumes. Every frame is `id:` the sequence number, `event: message`, and `data:` the event JSON — one event name for the whole stream, so a browser's stock `EventSource` reads it from `onmessage` and branches on the `type` inside the payload. A `: keepalive` comment every 20 seconds is the only other frame. |
 
-The order document is `{ schemaVersion: 1, ops: [...] }`, where each op is one of the five
+The order document is `{ schemaVersion: 1, ops: [...] }`, where each op is one of the seven
 operations the core's replay recorder accepts as player intent, in the core's own vocabulary:
 
 ```jsonc
@@ -200,10 +200,14 @@ operations the core's replay recorder accepts as player intent, in the core's ow
 { "op": "queueHire", "player": 0, "gangDefinitionId": 44, "sectorId": 27 }
 { "op": "snubHireOffer", "player": 0, "gangDefinitionId": 44 }
 { "op": "dismissNotification", "player": 0 }
+{ "op": "sendComlinkMessage", "player": 0, "recipients": [2, 4], "text": "MEET AT DAWN." }
+{ "op": "markComlinkRead", "player": 0, "sequence": 3 }
 ```
 
 These mirror `MatchReplayRecorder.Submit` / `Cancel` / `QueueHire` / `SnubHireOffer` /
-`TryDismissNotification`. The phase transitions (`FinishCommand` and the rest) and the `Prepare*`
+`TryDismissNotification` / `SendComlinkMessage` / `MarkComlinkRead`. A Comlink message's text is 1
+to 160 characters from space to `Z` (0x20 to 0x5A), the characters the Send panel types, and it
+names 1 to 5 recipient slots. The phase transitions (`FinishCommand` and the rest) and the `Prepare*`
 steps are driven by the turn structure on every client and are refused over the wire. Every id is
 bounded by the capacity it indexes and every op must name the submitter's own slot; unknown ops and
 unknown fields are refused. See "What the server does and does not defend against" for why this
@@ -554,9 +558,9 @@ stating exactly. `packages/contracts/src/orders.ts` is the enforcement point.
 
 **Checked on every submission, by the one party all clients trust:**
 
-- **The op vocabulary is closed.** An order document may only contain the five operations the game
+- **The op vocabulary is closed.** An order document may only contain the seven operations the game
   core records as player intent — `submitCommand`, `cancelCommand`, `queueHire`, `snubHireOffer`,
-  `dismissNotification`. Phase transitions and the `Prepare*` steps are driven by the turn structure
+  `dismissNotification`, `sendComlinkMessage`, `markComlinkRead`. Phase transitions and the `Prepare*` steps are driven by the turn structure
   on every client and are refused over the wire; so is any op name the game does not have.
 - **Every field is present, typed, and in range.** A sector is 0..63, a site 0..191, an item 0..63,
   a player 0..5, a gang action 0..14, a gang definition a signed 16-bit id — the capacities of
@@ -938,13 +942,16 @@ dock a player plans against the dock the sealed turn grants.
   `lobby.chatMessage` events the lobby poll reads when the log has grown; a player who arrives later
   reads what was said before them. Inside a match the Comlink is the channel, under its own rules.
   The game draws chat in the original font, so its input takes only characters that font can draw.
-- **Comlink is closed in an online match.** The original's player-to-player messaging writes hashed
-  state on both sides: a message lands in a recipient's inbox, and merely opening the view clears
-  that inbox's read mark. Either done on one client alone is a desync rather than a lost message, so
-  the door refuses with a reason instead. Carrying it needs an order kind on the wire that the server
-  relays with the rest of the sealed turn and every client applies at the same point. It is another
-  authenticated simultaneous operation and wants its own determinism run rather than a local
-  interface mutation.
+- **Comlink travels in the sealed turn.** Sending a message and reading one are the order ops
+  `sendComlinkMessage` and `markComlinkRead`, which every client applies at the seal in the seat's
+  place in slot order, because each inbox is hashed state. A message therefore reaches its
+  recipient when the turn seals: a recipient in a higher slot than the sender reads it a turn later
+  than hot-seat play would let them (DEV-NET-001). Reading marks the player's own planning copy at
+  once, so the panel and the alert behave as in hot-seat play.
+- **Comlink is not private from other seats.** The server relays every sealed set to every seat and
+  every client holds every inbox to hash it, so a modified client, or anyone who can read a seat's
+  traffic, can read messages addressed to other players. The game shows each player only their own
+  inbox. Private delivery is [#484](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/484).
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
   that follows a desync pause or the closing of an absence vote.
 - **Desync recovery is decided by a count of reports.** A client that finds its own report wrong

@@ -115,19 +115,26 @@ public sealed class ItemInformationLayoutTests
     [Fact]
     public void CutsTheSourceColumnOfAnOffStripCellToSixteenBits()
     {
-        // FND-UI-045: the helper computes 6 * (16 + q) in 32 bits and the rectangle packer keeps
+        // FND-UI-065: the helper computes 6 * (16 + q) in 32 bits and the rectangle packer keeps
         // its low 16 bits, which the copy reads as a signed number. From 6 * 5462 = 32772 the
         // column is negative, and from 6 * 10923 = 65538 it lands inside the bitmap again.
         Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(5462, false, 512));
         Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(2, 0, 6, 7), 0), NativeTwoCellNumberPresentation.AtlasCell(10923, false, 512));
         Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(506, 8, 6, 7), 0), NativeTwoCellNumberPresentation.AtlasCell(11007, true, 512));
         // Glyph 10922 starts at column -4, so its two right pixel columns come from columns 0 and 1
-        // and land four pixels into the cell; glyph 5461 starts at column 32766, where the copy
-        // becomes a StretchBlt (FND-UI-045) of nothing inside the bitmap (EXP-UI-027, EXP-UI-028).
+        // and land four pixels into the cell, as the four of column -2 land two pixels in
+        // (EXP-UI-038, EXP-UI-040); EXP-UI-027's run at -4 drew black over the black console, which
+        // cannot tell the clipped copy from none. Glyphs 16383, 27306 and 5461 start at
+        // columns 32762, 32764 and 32766, where the copy becomes a StretchBlt (FND-UI-065) that
+        // changes nothing, over the console or an earlier glyph (EXP-UI-028, EXP-UI-038,
+        // EXP-UI-039, EXP-UI-040).
         Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(0, 0, 2, 7), 4), NativeTwoCellNumberPresentation.AtlasCell(10922, false, 512));
         Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(5461, false, 512));
+        Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(16383, true, 512));
+        Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(27306, true, 512));
         // RULE-UI-004: the other two partly inside columns, 508 from glyph 21930 and -2 from
-        // glyph 21845, keep four of the cell's six pixel columns.
+        // glyph 21845, keep four of the cell's six pixel columns (EXP-UI-038, EXP-UI-039,
+        // EXP-UI-040).
         Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(508, 0, 4, 7), 0), NativeTwoCellNumberPresentation.AtlasCell(21930, false, 512));
         Assert.Equal(new NativeTwoCellNumberPresentation.CellCopy(new Rectangle(0, 8, 4, 7), 2), NativeTwoCellNumberPresentation.AtlasCell(21845, true, 512));
         Assert.Null(NativeTwoCellNumberPresentation.AtlasCell(11008, false, 512));
@@ -143,21 +150,23 @@ public sealed class ItemInformationLayoutTests
     [Fact]
     public void DrawsAPartlyInsideCellAtItsOffsetWithinTheCell()
     {
-        // RULE-UI-004, EXP-UI-027: at column -4 the two inside pixel columns land four pixels into
-        // the cell, and at column -2 the four inside columns land two pixels in; at 510 the copy
-        // starts at the cell's left edge.
+        // RULE-UI-004, EXP-UI-038, EXP-UI-040: at column -4 the two inside pixel columns land four
+        // pixels into the cell, and at column -2 the four inside columns land two pixels in; at 510
+        // and 508 the copy starts at the cell's left edge (EXP-UI-002, EXP-UI-039).
         Assert.Equal(new Rectangle(104, 40, 2, 7),
             NativeTwoCellNumberPresentation.AtlasCell(10922, false, 512)!.Value.Destination(100, 40));
         Assert.Equal(new Rectangle(102, 40, 4, 7),
             NativeTwoCellNumberPresentation.AtlasCell(21845, true, 512)!.Value.Destination(100, 40));
         Assert.Equal(new Rectangle(100, 40, 2, 7),
             NativeTwoCellNumberPresentation.AtlasCell(85, false, 512)!.Value.Destination(100, 40));
+        Assert.Equal(new Rectangle(100, 40, 4, 7),
+            NativeTwoCellNumberPresentation.AtlasCell(21930, false, 512)!.Value.Destination(100, 40));
     }
 
     [Fact]
     public void KeepsTheOriginalsThirtyTwoBitArithmeticForTheMostNegativeValue()
     {
-        // FND-UI-045: negating int.MinValue leaves it negative, so the signed divide gives the
+        // FND-UI-065: negating int.MinValue leaves it negative, so the signed divide gives the
         // quotient -214748364 (glyph -214748348, off the strip) and the remainder -8, which
         // selects glyph 8, the character '(' of the strip, from the red row.
         Assert.Equal(new NativeTwoCellNumberPresentation.Value(" (", true, false, -214748348),

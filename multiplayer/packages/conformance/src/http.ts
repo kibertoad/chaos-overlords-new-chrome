@@ -271,6 +271,44 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(paged).toEqual(events)
     })
 
+    it('relays Comlink ops in the sealed set and refuses one for another seat or untypeable text', async () => {
+      const { host, guest } = await lobbyOfTwo()
+      await host.api.start()
+      const send: OrderDocument = {
+        schemaVersion: 1,
+        ops: [{ op: 'sendComlinkMessage', player: 0, recipients: [1], text: 'MEET AT "DAWN".' }],
+      }
+      const read: OrderDocument = {
+        schemaVersion: 1,
+        ops: [{ op: 'markComlinkRead', player: 1, sequence: 0 }],
+      }
+
+      await expect(
+        guest.api.submitOrders(1, {
+          orders: { schemaVersion: 1, ops: [{ ...send.ops[0], player: 0 }] } as OrderDocument,
+          ready: false,
+        }),
+      ).rejects.toMatchObject({ status: 422, reason: 'foreign_slot_ops' })
+      await expect(
+        host.api.submitOrders(1, {
+          orders: {
+            schemaVersion: 1,
+            ops: [{ op: 'sendComlinkMessage', player: 0, recipients: [1], text: 'lower case' }],
+          },
+          ready: false,
+        }),
+      ).rejects.toMatchObject({ status: 422 })
+
+      await host.api.submitOrders(1, { orders: send, ready: true })
+      await guest.api.submitOrders(1, { orders: read, ready: true })
+
+      const sealed = await guest.api.sealedOrders(1)
+      expect(sealed.players.map((p) => [p.slot, p.orders])).toEqual([
+        [0, send],
+        [1, read],
+      ])
+    })
+
     it('resumes the stream from Last-Event-ID without replaying delivered events', async () => {
       const { host, guest } = await lobbyOfTwo()
       await host.api.start()

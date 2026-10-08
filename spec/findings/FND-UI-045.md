@@ -1,9 +1,9 @@
 ---
 id: FND-UI-045
 title: The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-UI-065]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

@@ -170,6 +170,30 @@ describe('canonicalJson', () => {
     )
   })
 
+  /**
+   * The same pin over the Comlink ops, whose text is the only string an order carries. A quote in
+   * it is escaped by `JSON.stringify` and by the C# canonical writer alike, and the C# side pins
+   * this digest too (`MultiplayerCanonicalJsonTests`).
+   */
+  it('pins the order digest of a document carrying Comlink ops', async () => {
+    const document: OrderDocument = {
+      schemaVersion: 1,
+      ops: [
+        {
+          op: 'sendComlinkMessage',
+          player: 2,
+          recipients: [0, 4],
+          text: 'MEET AT "DAWN", SECTOR 27.',
+        },
+        { op: 'markComlinkRead', player: 2, sequence: 5 },
+      ],
+    }
+    expect(safeParse(orderDocumentSchema, document).success).toBe(true)
+    expect(await hashOrderDocument(document)).toBe(
+      'ad6e418f5fa21054c41fbb9360ff793cd5dc6f956c0d1d5aa547ca79bc3e55ef',
+    )
+  })
+
   it('hashes equal documents equally regardless of serializer ordering', async () => {
     const left = await hashOrderDocument({
       schemaVersion: 1,

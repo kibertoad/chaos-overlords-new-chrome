@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | Date | Decision |
 |---|---|
 | 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
+| 2026-10-06 | [Comlink in an online match travels in the sealed turn](#2026-10-06--comlink-in-an-online-match-travels-in-the-sealed-turn) |
 | 2026-10-06 | [Let a late joiner take a seat the vote handed to the computer](#2026-10-06--let-a-late-joiner-take-a-seat-the-vote-handed-to-the-computer) |
 | 2026-10-06 | [Establish an entry only when its runs reach everything it describes](#2026-10-06--establish-an-entry-only-when-its-runs-reach-everything-it-describes) |
 | 2026-10-06 | [Let the other players remove a seat by unanimous vote](#2026-10-06--let-the-other-players-remove-a-seat-by-unanimous-vote) |
@@ -65,6 +66,61 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
   README's Gatekeeper steps are the supported install. A Linux desktop with neither `zenity` nor
   `kdialog` gets no dialog and imports with `chaos-overlords-new-chrome-import`. An explicit
   `--assets` folder and test runs are never offered an import.
+
+## 2026-10-06 — Comlink in an online match travels in the sealed turn
+
+- Decision: Comlink opens in an online match. Sending a message and reading
+  one are recorded as two new ops in the player's order document,
+  `sendComlinkMessage` (recipient slots and the text) and `markComlinkRead`
+  (the message's sequence number). Every client applies them when the turn
+  seals, in the sender's or reader's place in slot order, through the same
+  core calls hot-seat play makes (RULE-COMLINK-001, RULE-COMLINK-003,
+  RULE-COMLINK-005). Each player's inbox is part of the state every client
+  hashes, so applying them anywhere else would be a desync.
+- What the rules produce is unchanged. The sealed turn applies every seat's
+  ops and then finishes its planning in slot order, which is the order a
+  hot-seat turn takes, so a message is stored for each recipient, the 16-message
+  cap drops the oldest, and the read messages at the front of a reader's
+  inbox are dropped when its planning ends (RULE-COMLINK-007), exactly as a
+  hot-seat turn with the same actions would do. The recipients must be other
+  human players still in the match (RULE-COMLINK-002); every client checks
+  that when it applies the op, and one that fails is refused the same way
+  everywhere. A message of spaces only is dropped as RULE-COMLINK-003 says,
+  and the game sends no op for it.
+- Timing: a player plans on the state the turn started from, so a message
+  reaches its recipient's inbox when the turn seals. A recipient in a higher
+  slot than the sender would read it during the same turn in hot-seat play,
+  and in the original's network game, where a message went to the
+  recipient's computer at once; online they read it on the next turn. A
+  message to a lower slot arrives after the recipient's planning in hot-seat
+  play and online alike. This is recorded in
+  DEV-NET-001, which already departs from the original's network delivery
+  of RULE-COMLINK-001. It has no setting: delivering a message before the
+  seal would need a second channel outside the sealed log, and a message
+  that one client had stored and another had not would be a desync.
+- Read marks: opening a message in Comlink View marks it read at once on the
+  player's own planning copy, so the panel and the unread alert behave as in
+  hot-seat play, and records `markComlinkRead` for the seal.
+- Takeovers: a seat whose human sent messages can now pass to the computer.
+  The rebuild used to refuse that, because a restored inbox had to show every
+  sender as a human seat. A message from a seat the computer took over is
+  kept, as the original keeps a delivered message, and a restored inbox now
+  accepts a sender that is human or that the computer took over (the seat's
+  raider mode, RULE-AI-027, marks the takeover).
+- Privacy: the server relays every sealed set to every seat, and every client
+  holds every inbox to hash it. The game shows a player only their own inbox,
+  but a modified client, or anyone who can read a seat's traffic, can read
+  messages addressed to others. The original's network game sent a message
+  only to its recipient. We accept this for now and say so in
+  [MULTIPLAYER.md](MULTIPLAYER.md). Private delivery needs the text out of
+  the hashed state, with a commitment in its place and a ciphertext per
+  recipient; issue #484 holds that design.
+- Wire: the order document gains the two ops. The text is 1 to 160
+  characters from space to `Z` (0x20 to 0x5A), the characters the Send panel
+  can type (RULE-COMLINK-006). Protocol version 27 and session version 53,
+  because the order document's schema changed; the state fingerprint's
+  encoding did not, so the save and replay formats stay.
+- Status: implemented and tested.
 
 ## 2026-10-06 — Let a late joiner take a seat the vote handed to the computer
 
