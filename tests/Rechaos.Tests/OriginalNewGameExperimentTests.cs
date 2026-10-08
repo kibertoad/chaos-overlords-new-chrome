@@ -198,6 +198,7 @@ public sealed partial class OriginalNewGameExperimentTests
         "EXP-COMBAT-009",
 
         "EXP-AUDIO-001",
+        "EXP-AUDIO-002",
 
         "EXP-VIDEO-001",
     ];
