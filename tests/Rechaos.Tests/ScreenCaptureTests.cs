@@ -9,7 +9,8 @@ namespace Rechaos.Tests;
 /// Screens against captures of the original. An experiment run recorded with the probe's
 /// <c>--capture</c> holds a capture of the drawing area at its endpoint, with the xxh3 and the
 /// count of exact white pixels of each screen element it is compared at. The rebuild replays the
-/// run, draws its endpoint with <c>--reference-frame</c> at the capture's marker frame, and has to
+/// run, draws its endpoint with <c>--reference-frame</c> at the capture's marker frame and pump
+/// counter, and has to
 /// draw every element as the original did, outside the areas a deviation draws
 /// (<see cref="ScreenCaptureMasks"/>). docs/validation/screen-captures.md and
 /// docs/validation/screen-comparison.md give the workflow.
@@ -49,9 +50,13 @@ public sealed partial class ScreenCaptureTests
     // (FND-COMBAT-011). EXP-UI-041 and EXP-UI-042 hold a button across their shots: console
     // tiles, close, Cancel and confirm faces held under the pointer and off it (FND-UI-062,
     // FND-UI-067), a hire offer in flight (FND-HIRE-010), and the order panels with a choice made
-    // (FND-EQUIP-011). EXP-UI-051 compares the setup screen the game drew under the name
+    // (FND-EQUIP-011). EXP-UI-045 and EXP-UI-050 compare the site progress meters of SCR-UI-004,
+    // left out in sectors other players own and drawn in the active player's own (FND-UI-070).
+    // EXP-UI-051 compares the setup screen the game drew under the name
     // dialog SCR-SETUP-003, which Windows draws, with card 0's name row left to the editor of
     // DEV-SETUP-003.
+    // EXP-UI-031 compares the first planning entry at every frame of the active-player marker
+    // and both frames of the selected sector's outline.
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Captures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
@@ -169,9 +174,10 @@ public sealed partial class ScreenCaptureTests
         }
     }
 
-    // The comparison needs a frame that depends on nothing but the state and the marker frame:
-    // two runs of the game at different marker frames differ only in the marker (FND-UI-038), at
-    // (50 + 70n, 6, 20, 20) for viewed player n, so nothing else on the screen moves with time.
+    // The comparison needs a frame that depends on nothing but the state, the marker frame and the
+    // pump's counter: two renders at different marker frames differ only in the marker
+    // (FND-UI-038), at (50 + 70n, 6, 20, 20) for viewed player n. The selected sector's outline
+    // moves with the pump's counter (FND-UI-048), which each capture records beside its marker frame.
     [Fact]
     public void OnlyTheMarkerFrameChangesAReplayedEndpoint()
     {

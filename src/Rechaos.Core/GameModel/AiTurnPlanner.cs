@@ -31,17 +31,16 @@ public static partial class AiTurnPlanner
             throw new InvalidOperationException(
                 "AI planning requires the player's planning pass for this turn first.");
 
-        var cashBudget = Math.Max(0, player.Cash);
+        // RULE-AI-004, FND-AI-074: the handlers write each planned action straight into the gang
+        // record, so every gang carries out what it planned. No cash is set aside at planning:
+        // the transaction pass tests each Equip against the cash left when the gang's turn comes
+        // (RULE-EQUIP-001), so one gang's plan never stops another's (FND-AI-082).
         var commands = new List<GameCommand>();
         for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
         {
             var gang = player.Gangs[gangSlot];
             if (!gang.IsActive) continue;
-            if (PreparedCommand(state, player.Id, gang, gangSlot) is not { } command) continue;
-            var cost = EstimatedCost(state, command);
-            if (cost > cashBudget) continue;
-            commands.Add(command);
-            cashBudget -= cost;
+            if (PreparedCommand(state, player.Id, gang, gangSlot) is { } command) commands.Add(command);
         }
         return commands;
     }
