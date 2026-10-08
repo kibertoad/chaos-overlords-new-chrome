@@ -152,7 +152,9 @@ public static class ReplayAnonymizer
                 }
             }
         }
-        return JsonSerializer.SerializeToUtf8Bytes(root);
+        using var rewritten = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(rewritten)) root.WriteTo(writer);
+        return rewritten.ToArray();
     }
 
     /// <summary>Applies one recorded operation to the rebuilt journal, with its text redacted.</summary>

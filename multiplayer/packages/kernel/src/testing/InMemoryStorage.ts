@@ -80,7 +80,9 @@ export class InMemoryStorage implements MultiplayerStorage {
           settings: match.settings,
           availableSlots: [],
           availableSeatSummaries: [],
-          hasSnapshot: [...this.snapshotRows.values()].some((row) => row.matchId === match.id),
+          hasSnapshot:
+            match.seatViews ||
+            [...this.snapshotRows.values()].some((row) => row.matchId === match.id),
           createdAt: match.createdAt.toISOString(),
         })
       }
@@ -348,6 +350,12 @@ export class InMemoryStorage implements MultiplayerStorage {
       const turn = this.turnRows.get(turnKey(matchId, number))
       if (turn?.status !== 'desynced' || turn.desyncedAt !== null) return false
       turn.desyncedAt = at
+      return true
+    },
+    recordResolution: async (matchId, number, resolution) => {
+      const turn = this.turnRows.get(turnKey(matchId, number))
+      if (!turn || turn.status === 'open' || turn.resolvedHash !== null) return false
+      Object.assign(turn, resolution)
       return true
     },
     markSettled: async (matchId, number, at) => {

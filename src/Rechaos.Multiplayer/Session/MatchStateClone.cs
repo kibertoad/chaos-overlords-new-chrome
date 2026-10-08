@@ -28,7 +28,10 @@ public static class MatchStateClone
     private const int ArchiveVersion = 1;
     private static ReadOnlySpan<byte> ArchiveMagic => "RCHS"u8;
 
-    /// <summary>An independent copy of <paramref name="state"/>.</summary>
+    /// <summary>
+    /// An independent copy of <paramref name="state"/>. A seat's view copies as that seat's view
+    /// (<see cref="SeatView"/>), so the copy refuses to resolve as the original does.
+    /// </summary>
     public static MatchState Of(MatchState state, OriginalData definitions)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -36,7 +39,9 @@ public static class MatchStateClone
         using var stream = new MemoryStream();
         NativeSaveSerializer.Save(stream, state);
         stream.Position = 0;
-        return NativeSaveSerializer.Load(stream, definitions);
+        return state.ViewedBy is { } seat
+            ? SeatView.Load(stream, definitions, seat)
+            : NativeSaveSerializer.Load(stream, definitions);
     }
 
     /// <summary>A compressed native snapshot for bootstrap or desync repair, base64-encoded.</summary>

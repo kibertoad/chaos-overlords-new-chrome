@@ -1,0 +1,1 @@
+ALTER TABLE "matches" ADD COLUMN "seat_views" boolean DEFAULT false NOT NULL;

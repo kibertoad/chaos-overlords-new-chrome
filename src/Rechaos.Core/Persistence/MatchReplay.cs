@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 
@@ -367,14 +368,15 @@ public static class MatchReplaySerializer
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
-    private static readonly JsonSerializerOptions JsonOptions = NativeSaveSerializer.CreateCompatibleJsonOptions();
+    private static readonly JsonTypeInfo<ReplayDocument> DocumentContract =
+        NativeSaveSerializer.Contract<ReplayDocument>(NativeSaveSerializer.CreateCompatibleJsonOptions());
 
     public static void Save(Stream destination, MatchReplayRecorder recorder)
     {
         ArgumentNullException.ThrowIfNull(destination);
         ArgumentNullException.ThrowIfNull(recorder);
         if (!destination.CanWrite) throw new ArgumentException("Destination stream is not writable.", nameof(destination));
-        JsonSerializer.Serialize(destination, recorder.Capture(), JsonOptions);
+        JsonSerializer.Serialize(destination, recorder.Capture(), DocumentContract);
     }
 
     public static MatchState LoadAndReplay(Stream source, OriginalData definitions)
@@ -500,7 +502,7 @@ public static class MatchReplaySerializer
                 return null;
             }
             declaredFormatVersion = CurrentFormatVersion;
-            return JsonSerializer.Deserialize<ReplayDocument>(bounded, JsonOptions)
+            return JsonSerializer.Deserialize(bounded, DocumentContract)
                 ?? throw new InvalidDataException("Replay is empty.");
         }
         catch (JsonException exception)

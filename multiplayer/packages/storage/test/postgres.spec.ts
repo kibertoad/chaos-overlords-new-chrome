@@ -98,6 +98,7 @@ describe.skipIf(!url)('postgres', () => {
       currentTurn: 0,
       seatCount: playerCount,
       joinCounter: playerCount,
+      seatViews: false,
       createdAt: now,
       updatedAt: now,
     }
@@ -260,6 +261,9 @@ describe.skipIf(!url)('postgres', () => {
         stateHash: null,
         desyncedAt: null,
         settledAt: null,
+        resolvedHash: null,
+        resolvedFinished: null,
+        resolvedSeq: null,
       },
       [playerId],
     )

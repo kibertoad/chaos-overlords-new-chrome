@@ -8,7 +8,9 @@ on:
       - "src/Rechaos.Multiplayer/Generated/**"
       - "src/Rechaos.Core/**"
       - "src/Rechaos.Multiplayer/**"
+      - "src/Rechaos.Resolver.Wasm/**"
       - "tools/OnlineSmoke/**"
+      - "tools/ResolverDeterminism/**"
       - ".github/workflows/multiplayer.yml"
   pull_request:
     paths: *watched
@@ -92,6 +94,14 @@ jobs:
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level=high
 
+      # The resolver package ships the WebAssembly build of the game's rules (bundle/, built from
+      # src/Rechaos.Resolver.Wasm), and its host tests replay a match the native build played.
+      - name: Bundle the WebAssembly resolver and write a native transcript
+        shell: bash
+        run: |
+          pnpm --filter @chaos-overlords/resolver bundle
+          dotnet run --project ../tools/ResolverDeterminism/ResolverDeterminism.csproj -c Release -- "${RUNNER_TEMP}/resolver-transcript.json"
+
       - name: Build and typecheck
         run: pnpm exec turbo run build typecheck
 
@@ -101,6 +111,9 @@ jobs:
           TEST_DATABASE_URL: postgres://chaos:chaos@localhost:5432/chaos
           # Turns a missing URL from a green skip into a failure; see postgres.spec.ts.
           REQUIRE_POSTGRES: "1"
+          # The same for the resolver's bundle and transcript; see packages/resolver/test/harness.
+          REQUIRE_RESOLVER: "1"
+          RESOLVER_TRANSCRIPT: ${{ runner.temp }}/resolver-transcript.json
 
       # The game's C# wire types are generated from these schemas and committed, so building the
       # game never needs Node. This is what stops the two from drifting apart in the meantime — which
@@ -126,6 +139,15 @@ jobs:
           done
           curl --fail http://127.0.0.1:8787/health
           dotnet run --project ../tools/OnlineSmoke/OnlineSmoke.csproj -- http://127.0.0.1:8787 3
+
+      # The coordination server resolves turns with a WebAssembly build of the game's rules
+      # (docs/MULTIPLAYER.md, "Resolving turns on the server"). The transcript is a whole match played
+      # natively, with real orders, a takeover and a return; this holds the build, in the Node host
+      # and in the Cloudflare host under workerd, to the same state hash after every step, including
+      # a match picked up from a snapshot, and has the native client read each host's own snapshot.
+      - name: Hold the WebAssembly resolver to the native build's hashes
+        shell: bash
+        run: node ../tools/ResolverDeterminism/check.mjs "${RUNNER_TEMP}/resolver-transcript.json"
 
       # The same match against the Worker, served by `wrangler dev` in local mode: the workspace's own
       # wrangler, so the workerd build that `pnpm dev:worker` and a deploy use, with local D1, R2 and

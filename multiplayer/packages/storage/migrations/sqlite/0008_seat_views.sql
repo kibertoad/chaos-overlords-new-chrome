@@ -1,0 +1,1 @@
+ALTER TABLE `matches` ADD `seat_views` integer DEFAULT false NOT NULL;

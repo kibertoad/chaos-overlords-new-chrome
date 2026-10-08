@@ -34,6 +34,7 @@ function matchFixture(overrides: Partial<Match> = {}): Match {
     currentTurn: 0,
     seatCount: 1,
     joinCounter: 1,
+    seatViews: false,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -68,6 +69,9 @@ function turnFixture(match: Match, number: number, overrides: Partial<Turn> = {}
     stateHash: null,
     desyncedAt: null,
     settledAt: null,
+    resolvedHash: null,
+    resolvedFinished: null,
+    resolvedSeq: null,
     ...overrides,
   }
 }

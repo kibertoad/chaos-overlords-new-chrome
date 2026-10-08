@@ -39,6 +39,7 @@ export interface MatchRow {
   currentTurn: number
   seatCount: number
   joinCounter: number
+  seatViews: unknown
   createdAt: Date
   updatedAt: Date
 }
@@ -67,6 +68,9 @@ export interface TurnRow {
   stateHash: string | null
   desyncedAt: Date | null
   settledAt: Date | null
+  resolvedHash: string | null
+  resolvedFinished: boolean | null
+  resolvedSeq: number | null
 }
 
 export interface TurnOrdersRow {
@@ -121,6 +125,7 @@ export const toMatch = (row: MatchRow): Match => ({
   currentTurn: row.currentTurn,
   seatCount: row.seatCount,
   joinCounter: row.joinCounter,
+  seatViews: booleanColumn(row.seatViews),
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
 })
@@ -141,6 +146,7 @@ export const toMatchInsert = (match: Match) => ({
   currentTurn: match.currentTurn,
   seatCount: match.seatCount,
   joinCounter: match.joinCounter,
+  seatViews: match.seatViews,
   createdAt: match.createdAt,
   updatedAt: match.updatedAt,
 })

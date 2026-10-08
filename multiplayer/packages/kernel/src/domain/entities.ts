@@ -39,6 +39,14 @@ export interface Match {
    * takes the seat; gaps in that order carry no meaning.
    */
   joinCounter: number
+  /**
+   * Whether the match is played from per-seat views (docs/MULTIPLAYER.md, "Per-seat views"): the
+   * server resolves every turn and serves each seat only what the original shows that player, and
+   * withholds the seed, other seats' orders and whole-match snapshots until the match ends.
+   * Stamped at creation from the deployment's `SEAT_VIEWS` setting and never changed, so a match
+   * keeps one mode for its life.
+   */
+  seatViews: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -123,6 +131,30 @@ export interface Turn {
    * this still null is what `TurnRepository.listUnannouncedVerdicts` hands the sweep to finish.
    */
   settledAt: Date | null
+  /**
+   * The state the server's own resolver reached by applying the sealed set, or null when the turn
+   * was not resolved on the server: the deployment has no resolver, the match was stored under a
+   * session version it does not play, or the resolver failed. Written once, by
+   * `TurnRepository.recordResolution`.
+   *
+   * When it is set it decides the turn: the verdict confirms the turn on it whatever the reports
+   * say, and a report that differs is that seat's divergence alone.
+   */
+  resolvedHash: string | null
+  /** Whether the resolved state is the end of the match; null while `resolvedHash` is. */
+  resolvedFinished: boolean | null
+  /**
+   * The sequence number of this turn's `turn.sealed` event. A match the resolver holds after this
+   * turn has been fed the log through exactly that event, so the next feed starts after it.
+   */
+  resolvedSeq: number | null
+}
+
+/** What the server's resolver reached for a sealed turn; see `Turn.resolvedHash`. */
+export interface TurnResolution {
+  resolvedHash: string
+  resolvedFinished: boolean
+  resolvedSeq: number
 }
 
 /** One player's row for a turn. Rows are pre-created when the turn opens (see TurnRepository). */
@@ -175,6 +207,7 @@ export type SnapshotSummary = Omit<Snapshot, 'body'>
  *
  * `playerCount` is already the count the reader wants — seats taken for a lobby, humans still in
  * the match for a running one — and `hasSnapshot` answers "could a late joiner bootstrap here"
+ * (a snapshot is stored, or the match is played from views, which a late joiner is sent instead)
  * without a second read. The listing is unauthenticated and rate limited per address, and it used
  * to cost up to two extra queries for every running match it returned.
  */
@@ -235,6 +268,14 @@ export function isHumanParticipant(player: Pick<Player, 'status'>): boolean {
 /** Human-controlled seats, including an absent player the lobby elected to keep waiting for. */
 export function humanParticipants(players: readonly Player[]): Player[] {
   return players.filter(isHumanParticipant)
+}
+
+/**
+ * Whether a match played from views has ended, so that nothing in it is hidden any more: the seed,
+ * every seat's sealed sets and the whole state are released to its members.
+ */
+export function isConcluded(match: Pick<Match, 'status'>): boolean {
+  return match.status === 'finished' || match.status === 'abandoned'
 }
 
 /** A started match that has not ended. A desync pause counts: the match resumes from it. */

@@ -57,6 +57,20 @@
       "when": 1791313322273,
       "tag": "0007_cultured_mongu",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791320212730,
+      "tag": "0008_turn_resolution",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791322946018,
+      "tag": "0009_seat_views",
+      "breakpoints": true
     }
   ]
 }

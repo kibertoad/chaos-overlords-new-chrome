@@ -1,3 +1,4 @@
+import type { ResolverService } from '@chaos-overlords/resolver/cloudflare'
 import type { D1Database, DurableObjectNamespace, R2Bucket } from '@cloudflare/workers-types'
 
 export interface Env {
@@ -63,4 +64,22 @@ export interface Env {
   BUG_REPORT_RETENTION_DAYS?: string
   /** Attached journal megabytes accepted per rolling day across every reporter. 0 lifts the cap. */
   BUG_REPORT_DAILY_STATE_MB?: string
+  /**
+   * `true` to resolve every sealed turn on the server so that its state decides the turn
+   * (docs/MULTIPLAYER.md, "Resolving turns on the server"). Unset or `false` decides turns by the
+   * players' reports agreeing, which is all the free Workers plan can run.
+   */
+  RESOLVE_TURNS?: string
+  /**
+   * `true` to play every match created from now on from per-seat views, so that each seat is sent
+   * only what the original shows that player (docs/MULTIPLAYER.md, "Per-seat views"). Needs a
+   * working `RESOLVE_TURNS`, since the server then resolves every turn alone.
+   */
+  SEAT_VIEWS?: string
+  /**
+   * The resolver Worker (`@chaos-overlords/resolver/worker`), over a service binding. A turn costs
+   * it about half a second of CPU, so it needs the Workers Paid plan; without the binding,
+   * `RESOLVE_TURNS` is ignored and logged.
+   */
+  RESOLVER?: ResolverService
 }

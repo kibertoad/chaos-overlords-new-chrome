@@ -57,6 +57,7 @@
     "@chaos-overlords/bug-reports": "workspace:*",
     "@chaos-overlords/contracts": "workspace:*",
     "@chaos-overlords/kernel": "workspace:*",
+    "@chaos-overlords/resolver": "workspace:*",
     "@chaos-overlords/server": "workspace:*",
     "@chaos-overlords/storage": "workspace:*",
     "@hono/node-server": "^2.1.3",

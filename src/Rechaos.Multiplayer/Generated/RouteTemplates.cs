@@ -47,6 +47,8 @@ public static class RouteTemplates
     public const string OwnSubmission = "GET /matches/:matchId/turns/:turn/orders/mine";
     /// <summary><c>GET /matches/:matchId/turns/:turn/orders</c></summary>
     public const string SealedOrders = "GET /matches/:matchId/turns/:turn/orders";
+    /// <summary><c>GET /matches/:matchId/view</c></summary>
+    public const string SeatView = "GET /matches/:matchId/view";
     /// <summary><c>POST /matches/:matchId/turns/:turn/report</c></summary>
     public const string ReportTurn = "POST /matches/:matchId/turns/:turn/report";
     /// <summary><c>POST /matches/:matchId/snapshots</c></summary>
@@ -82,6 +84,7 @@ public static class RouteTemplates
         SubmitOrders,
         OwnSubmission,
         SealedOrders,
+        SeatView,
         ReportTurn,
         UploadSnapshot,
         LatestSnapshot,

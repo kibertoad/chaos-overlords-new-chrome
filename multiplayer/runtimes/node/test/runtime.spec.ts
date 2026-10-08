@@ -2,9 +2,12 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { defineHttpConformance } from '@chaos-overlords/conformance'
+import { existsSync } from 'node:fs'
+import { defineHttpConformance, defineRefereeConformance } from '@chaos-overlords/conformance'
+import { MULTIPLAYER_SESSION_VERSION } from '@chaos-overlords/contracts'
 import { DEFAULT_RETENTION_DAYS } from '@chaos-overlords/kernel'
-import { ManualClock } from '@chaos-overlords/kernel/testing'
+import { FakeTurnResolver, ManualClock } from '@chaos-overlords/kernel/testing'
+import { defaultBundleDir } from '@chaos-overlords/resolver/node'
 import { type ServerType, serve } from '@hono/node-server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildNodeRuntime, loadConfig, type NodeRuntime, startHttpServer } from '../src'
@@ -221,6 +224,167 @@ describe('node runtime body cap', () => {
     const health = await fetch(`${baseUrl}/health`)
     expect(health.status).toBe(200)
     expect(connections).toBe(1)
+  })
+})
+
+/**
+ * Refereed turns over a real listener and real storage, with the game's rules replaced by the
+ * kernel's digest-chain resolver: what the runtime owns is the wiring, the storage of resolutions
+ * and server snapshots, and the routes, and the rules are held to the native build elsewhere
+ * (tools/ResolverDeterminism and the resolver package's host tests).
+ */
+describe('node runtime refereeing turns', () => {
+  let runtime: NodeRuntime
+  let server: ServerType
+  let baseUrl = ''
+
+  beforeAll(async () => {
+    runtime = await buildNodeRuntime(
+      loadConfig({
+        DATABASE_URL: 'sqlite::memory:',
+        LOG_LEVEL: 'error',
+        RATE_LIMIT_PER_MINUTE: '10000',
+        MEMBER_RATE_LIMIT_PER_MINUTE: '10000',
+        UPLOAD_RATE_LIMIT_PER_MINUTE: '10000',
+      }),
+      { resolver: new FakeTurnResolver() },
+    )
+    server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
+    await new Promise<void>((resolve) => server.once('listening', () => resolve()))
+    baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+  })
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+    await runtime.close()
+  })
+
+  defineRefereeConformance({
+    fetch: (input, init) => fetch(input.replace('http://conformance', baseUrl), init),
+  })
+})
+
+const bundleBuilt = existsSync(join(defaultBundleDir(), 'manifest.json'))
+if (process.env.REQUIRE_RESOLVER === '1' && !bundleBuilt) {
+  throw new Error('REQUIRE_RESOLVER=1 but the resolver bundle is not built.')
+}
+
+describe('node runtime turn resolver', () => {
+  it('reads RESOLVE_TURNS as off unless it is set', () => {
+    expect(loadConfig({}).resolveTurns).toBe(false)
+    expect(loadConfig({ RESOLVE_TURNS: 'true' }).resolveTurns).toBe(true)
+    expect(loadConfig({ RESOLVER_MAX_MATCHES: '8' }).resolverMaxMatches).toBe(8)
+    expect(() => loadConfig({ RESOLVER_MAX_MATCHES: '0' })).toThrow(/at least 1/)
+  })
+
+  it('reads SEAT_VIEWS as off unless it is set', () => {
+    expect(loadConfig({}).seatViews).toBe(false)
+    expect(loadConfig({ SEAT_VIEWS: 'true' }).seatViews).toBe(true)
+  })
+
+  it.skipIf(!bundleBuilt)('starts the WebAssembly resolver when RESOLVE_TURNS is set', async () => {
+    const runtime = await buildNodeRuntime(
+      loadConfig({ DATABASE_URL: 'sqlite::memory:', LOG_LEVEL: 'error', RESOLVE_TURNS: 'true' }),
+    )
+    try {
+      const resolver = runtime.kernel.deps.resolver
+      expect(resolver).toBeDefined()
+      expect((await resolver?.describe())?.sessionVersion).toBe(MULTIPLAYER_SESSION_VERSION)
+    } finally {
+      await runtime.close()
+    }
+  })
+
+  it.skipIf(!bundleBuilt)(
+    'serves each seat its view from the WebAssembly resolver when SEAT_VIEWS is set',
+    async () => {
+      const runtime = await buildNodeRuntime(
+        loadConfig({
+          DATABASE_URL: 'sqlite::memory:',
+          LOG_LEVEL: 'error',
+          RESOLVE_TURNS: 'true',
+          SEAT_VIEWS: 'true',
+        }),
+      )
+      const server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
+      await new Promise<void>((resolve) => server.once('listening', () => resolve()))
+      const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+      try {
+        const call = async (
+          path: string,
+          init: { method?: string; body?: unknown; token?: string },
+        ) => {
+          const response = await fetch(`${baseUrl}/api/v1${path}`, {
+            method: init.method ?? 'GET',
+            headers: {
+              'content-type': 'application/json',
+              ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
+            },
+            ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+          })
+          const text = await response.text()
+          // oxlint-disable-next-line typescript/no-explicit-any
+          return { status: response.status, body: (text ? JSON.parse(text) : null) as any }
+        }
+        const created = await call('/matches', {
+          method: 'POST',
+          body: {
+            settings: {
+              name: 'Views',
+              maxPlayers: 2,
+              turnTimerSeconds: 0,
+              visibility: 'private',
+              // The settings the game sends: the resolver builds the city from them.
+              gameSettings: {
+                scenario: 0,
+                duration: 0,
+                aiMentality: 1,
+                portraits: [0, 1, 2, 3, 4, 5],
+              },
+            },
+            hostDisplayName: 'Ada',
+            sessionVersion: MULTIPLAYER_SESSION_VERSION,
+          },
+        })
+        expect(created.body.match.seatViews).toBe(true)
+        const guest = await call('/matches/join', {
+          method: 'POST',
+          body: { joinCode: created.body.joinCode, displayName: 'Grace' },
+        })
+        const matchId = created.body.match.id
+        expect(
+          (await call(`/matches/${matchId}/start`, { method: 'POST', token: created.body.token }))
+            .status,
+        ).toBe(204)
+
+        const view = await call(`/matches/${matchId}/view`, { token: guest.body.token })
+        expect(view.status).toBe(200)
+        expect(view.body).toMatchObject({
+          turn: 1,
+          slot: 1,
+          sessionVersion: MULTIPLAYER_SESSION_VERSION,
+        })
+        // The archive snapshots travel in: `RCHS`, then the compressed save payload.
+        expect(Buffer.from(view.body.body, 'base64').subarray(0, 4).toString('latin1')).toBe('RCHS')
+        expect(
+          (await call(`/matches/${matchId}`, { token: guest.body.token })).body.match.seed,
+        ).toBe(null)
+      } finally {
+        await new Promise<void>((resolve) => server.close(() => resolve()))
+        await runtime.close()
+      }
+    },
+  )
+
+  it('runs without a resolver unless one is asked for', async () => {
+    const runtime = await buildNodeRuntime(
+      loadConfig({ DATABASE_URL: 'sqlite::memory:', LOG_LEVEL: 'error' }),
+    )
+    try {
+      expect(runtime.kernel.deps.resolver).toBeUndefined()
+    } finally {
+      await runtime.close()
+    }
   })
 })
 

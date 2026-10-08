@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 
@@ -18,7 +19,13 @@ public static class NativeSaveSerializer
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
+    private static readonly JsonTypeInfo<NativeSaveDocument> DocumentContract = Contract<NativeSaveDocument>(JsonOptions);
+    private static readonly JsonTypeInfo<OriginalData> DefinitionsContract = Contract<OriginalData>(JsonOptions);
     internal static JsonSerializerOptions CreateCompatibleJsonOptions() => new(JsonOptions);
+
+    /// <summary>The contract of <typeparamref name="T"/> under <paramref name="options"/>.</summary>
+    internal static JsonTypeInfo<T> Contract<T>(JsonSerializerOptions options) =>
+        (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
 
     /// <summary>Writes a snapshot, refusing one the reader would later refuse.</summary>
     /// <remarks>
@@ -35,7 +42,7 @@ public static class NativeSaveSerializer
         ArgumentNullException.ThrowIfNull(state);
         if (!destination.CanWrite) throw new ArgumentException("Destination stream is not writable.", nameof(destination));
         using var buffer = new MemoryStream();
-        JsonSerializer.Serialize(buffer, Capture(state), JsonOptions);
+        JsonSerializer.Serialize(buffer, Capture(state), DocumentContract);
         if (buffer.Length > MaximumSaveBytes)
         {
             throw new InvalidDataException(
@@ -68,8 +75,12 @@ public static class NativeSaveSerializer
     internal static MatchState LoadRewritten(Stream source, OriginalData definitions) =>
         Load(source, definitions, verifyStateFingerprint: false);
 
+    /// <summary>Restores a seat's view that <see cref="SeatView.Save"/> wrote.</summary>
+    internal static MatchState LoadView(Stream source, OriginalData definitions, PlayerId seat) =>
+        Load(source, definitions, verifyStateFingerprint: true, seat);
+
     private static MatchState Load(
-        Stream source, OriginalData definitions, bool verifyStateFingerprint)
+        Stream source, OriginalData definitions, bool verifyStateFingerprint, PlayerId? viewedBy = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(definitions);
@@ -84,7 +95,7 @@ public static class NativeSaveSerializer
         NativeSaveDocument document;
         try
         {
-            document = JsonSerializer.Deserialize<NativeSaveDocument>(bounded, JsonOptions)
+            document = JsonSerializer.Deserialize(bounded, DocumentContract)
                 ?? throw new InvalidDataException("Native save is empty.");
         }
         catch (JsonException exception)
@@ -93,7 +104,7 @@ public static class NativeSaveSerializer
         }
         try
         {
-            return RestoreDocument(document, definitions, verifyStateFingerprint);
+            return RestoreDocument(document, definitions, verifyStateFingerprint, viewedBy);
         }
         catch (InvalidDataException)
         {
@@ -161,8 +172,9 @@ public static class NativeSaveSerializer
         }
     }
 
-    private static MatchState RestoreDocument(
-        NativeSaveDocument document, OriginalData definitions, bool verifyStateFingerprint)
+    internal static MatchState RestoreDocument(
+        NativeSaveDocument document, OriginalData definitions, bool verifyStateFingerprint,
+        PlayerId? viewedBy = null)
     {
         if (document.FormatVersion != CurrentFormatVersion)
             throw UnsupportedFormat(document.FormatVersion);
@@ -267,7 +279,8 @@ public static class NativeSaveSerializer
             document.Runtime.PhaseHashes,
             document.Runtime.Outcome,
             aiStrategy,
-            aiPlanning);
+            aiPlanning,
+            viewedBy);
         var state = new MatchState(definitions, setup, players, sectors, runtime);
         if (verifyStateFingerprint
             && !string.Equals(
@@ -294,10 +307,15 @@ public static class NativeSaveSerializer
                 : IncompatibleSaveReason.OlderFormat,
             $"Unsupported native save format {declared}.");
 
-    private static NativeSaveDocument Capture(MatchState state) => new(
+    /// <summary>
+    /// The document a save of <paramref name="state"/> holds. Without
+    /// <paramref name="fingerprint"/> its state fingerprint is left empty, for a caller that
+    /// rewrites the document before restoring it unverified.
+    /// </summary>
+    internal static NativeSaveDocument Capture(MatchState state, bool fingerprint = true) => new(
         CurrentFormatVersion,
         DefinitionFingerprint(state.Definitions),
-        MatchStateHasher.ComputeFingerprint(state),
+        fingerprint ? MatchStateHasher.ComputeFingerprint(state) : string.Empty,
         new MatchSetupDocument(
             state.Setup.Scenario,
             state.Setup.Duration,
@@ -330,33 +348,36 @@ public static class NativeSaveSerializer
             new AiStrategyDocument(
                 state.AiStrategy.CaptureReactions(),
                 state.AiStrategy.CaptureAttitudes()),
-            new AiPlanningDocument(
-                state.AiPlanning.CaptureCurrentHireRoles(),
-                state.AiPlanning.CapturePreviousHireRoles(),
-                state.AiPlanning.CaptureFamilies(),
-                state.AiPlanning.CaptureSectorAnchors(),
-                state.AiPlanning.CaptureOlderActions(),
-                state.AiPlanning.CapturePreviousActions(),
-                state.AiPlanning.CapturePlannedActions(),
-                state.AiPlanning.CaptureOlderTargets(),
-                state.AiPlanning.CapturePreviousTargets(),
-                state.AiPlanning.CapturePlannedTargets(),
-                state.AiPlanning.CaptureHasPlanned(),
-                state.AiPlanning.CaptureWeaponCooldowns(),
-                state.AiPlanning.CaptureArmorCooldowns(),
-                state.AiPlanning.CaptureFormationSectors(),
-                state.AiPlanning.CaptureCoverageSectors(),
-                state.AiPlanning.CaptureNeedsFamily(),
-                state.AiPlanning.CaptureRaiderMode(),
-                checked((byte)state.AiPlanning.FirstCombatRecordDefinition),
-                state.AiPlanning.CaptureSectorWeights(),
-                state.AiPlanning.CaptureSectorChoiceScores()),
+            CaptureAiPlanning(state.AiPlanning),
             state.Players.Select(player => new PlayerComlinkDocument(
                 player.Id.Value,
                 state.ComlinkFor(player.Id).NextSequence,
                 state.ComlinkFor(player.Id).LegacyReadThroughSequence,
                 state.ComlinkFor(player.Id).Messages,
                 state.ComlinkFor(player.Id).ReadSequences)).ToArray()));
+
+    /// <summary>The document <paramref name="planning"/> is saved as.</summary>
+    internal static AiPlanningDocument CaptureAiPlanning(AiPlanningState planning) => new(
+        planning.CaptureCurrentHireRoles(),
+        planning.CapturePreviousHireRoles(),
+        planning.CaptureFamilies(),
+        planning.CaptureSectorAnchors(),
+        planning.CaptureOlderActions(),
+        planning.CapturePreviousActions(),
+        planning.CapturePlannedActions(),
+        planning.CaptureOlderTargets(),
+        planning.CapturePreviousTargets(),
+        planning.CapturePlannedTargets(),
+        planning.CaptureHasPlanned(),
+        planning.CaptureWeaponCooldowns(),
+        planning.CaptureArmorCooldowns(),
+        planning.CaptureFormationSectors(),
+        planning.CaptureCoverageSectors(),
+        planning.CaptureNeedsFamily(),
+        planning.CaptureRaiderMode(),
+        checked((byte)planning.FirstCombatRecordDefinition),
+        planning.CaptureSectorWeights(),
+        planning.CaptureSectorChoiceScores());
 
     private static PlayerDocument CapturePlayer(MatchPlayerState player) => new(
         player.Id.Value,
@@ -507,7 +528,7 @@ public static class NativeSaveSerializer
 
     private static string DefinitionFingerprint(OriginalData definitions) =>
         DefinitionFingerprints.GetValue(definitions, static value => Convert.ToHexStringLower(
-            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value, JsonOptions))));
+            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value, DefinitionsContract))));
 
     /// <summary>
     /// The definition fingerprint this build writes into every save and demands of every save it
@@ -551,7 +572,8 @@ public static class NativeSaveSerializer
             // handler on the load path. With it the same input is a JsonException, which Load
             // already translates into InvalidDataException.
             RespectNullableAnnotations = true,
-            MaxDepth = 64
+            MaxDepth = 64,
+            TypeInfoResolver = CoreJsonContext.Default,
         };
         options.Converters.Add(new PlayerIdJsonConverter());
         options.Converters.Add(new GangIdJsonConverter());

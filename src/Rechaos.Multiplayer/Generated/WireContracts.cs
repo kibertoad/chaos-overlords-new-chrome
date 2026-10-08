@@ -33,6 +33,7 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonDerivedType(typeof(TurnSealedEvent), "turn.sealed")]
 [JsonDerivedType(typeof(TurnConfirmedEvent), "turn.confirmed")]
 [JsonDerivedType(typeof(TurnDesyncedEvent), "turn.desynced")]
+[JsonDerivedType(typeof(TurnDivergedEvent), "turn.diverged")]
 [JsonDerivedType(typeof(SnapshotAvailableEvent), "snapshot.available")]
 public abstract record MatchEvent(
     [property: JsonPropertyName("seq")] int Seq,
@@ -52,7 +53,7 @@ public sealed record LobbyPlayerJoinedEvent(
     [property: JsonPropertyName("payload")] LobbyPlayerJoinedEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "lobby.playerJoined");
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<LobbyPlayerLeftEventPayloadReason>))]
 public enum LobbyPlayerLeftEventPayloadReason
 {
     [JsonStringEnumMemberName("left")]
@@ -108,7 +109,7 @@ public sealed record LobbyHostChangedEvent(
 ) : MatchEvent(Seq, MatchId, CreatedAt, "lobby.hostChanged");
 
 public sealed record MatchStartedEventPayload(
-    [property: JsonPropertyName("seed")] int Seed,
+    [property: JsonPropertyName("seed")] int? Seed,
     [property: JsonPropertyName("players")] IReadOnlyList<PlayerView> Players
 );
 
@@ -142,7 +143,7 @@ public sealed record MatchTakeoverVoteRequestedEvent(
     [property: JsonPropertyName("payload")] MatchTakeoverVoteRequestedEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "match.takeoverVoteRequested");
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<MatchTakeoverVoteCastEventPayloadDecision>))]
 public enum MatchTakeoverVoteCastEventPayloadDecision
 {
     [JsonStringEnumMemberName("computer")]
@@ -290,6 +291,20 @@ public sealed record TurnDesyncedEvent(
     [property: JsonPropertyName("payload")] TurnDesyncedEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "turn.desynced");
 
+public sealed record TurnDivergedEventPayload(
+    [property: JsonPropertyName("turn")] int Turn,
+    [property: JsonPropertyName("playerId")] string PlayerId,
+    [property: JsonPropertyName("stateHash")] string StateHash,
+    [property: JsonPropertyName("reportedStateHash")] string ReportedStateHash
+);
+
+public sealed record TurnDivergedEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] TurnDivergedEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "turn.diverged");
+
 public sealed record SnapshotAvailableEventPayload(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("formatVersion")] int FormatVersion,
@@ -385,7 +400,7 @@ public sealed record MarkComlinkReadOp(
     [property: JsonPropertyName("sequence")] int Sequence
 ) : OrderOp(Player, "markComlinkRead");
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<BugReportCodec>))]
 public enum BugReportCodec
 {
     [JsonStringEnumMemberName("none")]
@@ -396,7 +411,7 @@ public enum BugReportCodec
     Zstd
 }
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<BugReportMatchType>))]
 public enum BugReportMatchType
 {
     [JsonStringEnumMemberName("single")]
@@ -438,7 +453,7 @@ public sealed record SubmitBugReportRequest(
     [property: JsonPropertyName("state"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] BugReportState? State
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<BugReportReceiptStateStored>))]
 public enum BugReportReceiptStateStored
 {
     [JsonStringEnumMemberName("stored")]
@@ -455,7 +470,7 @@ public sealed record BugReportReceipt(
     [property: JsonPropertyName("stateStored")] BugReportReceiptStateStored StateStored
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<ErrorCode>))]
 public enum ErrorCode
 {
     [JsonStringEnumMemberName("bad_request")]
@@ -556,7 +571,7 @@ public sealed record SubmitOrdersRequest(
     [property: JsonPropertyName("ready")] bool Ready
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<TakeoverVoteRequestDecision>))]
 public enum TakeoverVoteRequestDecision
 {
     [JsonStringEnumMemberName("computer")]
@@ -592,7 +607,7 @@ public sealed record UploadSnapshotRequest(
     [property: JsonPropertyName("seatSummaries")] IReadOnlyList<AiSeatSummary> SeatSummaries
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<MatchStatus>))]
 public enum MatchStatus
 {
     [JsonStringEnumMemberName("lobby")]
@@ -607,7 +622,7 @@ public enum MatchStatus
     Abandoned
 }
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<PlayerStatus>))]
 public enum PlayerStatus
 {
     [JsonStringEnumMemberName("active")]
@@ -622,7 +637,7 @@ public enum PlayerStatus
     Kicked
 }
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<TurnStatus>))]
 public enum TurnStatus
 {
     [JsonStringEnumMemberName("open")]
@@ -668,6 +683,8 @@ public sealed record MatchView(
     [property: JsonPropertyName("turn")] TurnView? Turn,
     [property: JsonPropertyName("previousTurn")] TurnView? PreviousTurn,
     [property: JsonPropertyName("lastEventSeq")] int LastEventSeq,
+    [property: JsonPropertyName("refereed"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? Refereed,
+    [property: JsonPropertyName("seatViews"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? SeatViews,
     [property: JsonPropertyName("createdAt")] string CreatedAt
 );
 
@@ -731,11 +748,19 @@ public sealed record SnapshotView(
     [property: JsonPropertyName("body")] string Body
 );
 
+public sealed record ServedSeatView(
+    [property: JsonPropertyName("turn")] int Turn,
+    [property: JsonPropertyName("slot")] int Slot,
+    [property: JsonPropertyName("formatVersion")] int FormatVersion,
+    [property: JsonPropertyName("sessionVersion")] int SessionVersion,
+    [property: JsonPropertyName("body")] string Body
+);
+
 public sealed record LobbyList(
     [property: JsonPropertyName("matches")] IReadOnlyList<LobbyListing> Matches
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<MatchVisibility>))]
 public enum MatchVisibility
 {
     [JsonStringEnumMemberName("public")]

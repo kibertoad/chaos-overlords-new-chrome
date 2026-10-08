@@ -1,0 +1,78 @@
+{
+  "name": "@chaos-overlords/resolver",
+  "version": "0.9.9",
+  "description": "The game's turn resolver, compiled from its C# rules to WebAssembly, with a Node host (a worker thread) and a Cloudflare host (a Worker of its own with a Durable Object per match). The coordination server runs it to referee online turns.",
+  "keywords": [
+    "chaos-overlords",
+    "multiplayer",
+    "game-server",
+    "turn-based",
+    "webassembly",
+    "dotnet",
+    "worker-threads",
+    "cloudflare-workers",
+    "durable-objects",
+    "lockstep"
+  ],
+  "license": "MIT",
+  "author": "kibertoad",
+  "homepage": "https://github.com/kibertoad/chaos-overlords-new-chrome/tree/main/multiplayer/packages/resolver#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kibertoad/chaos-overlords-new-chrome.git",
+    "directory": "multiplayer/packages/resolver"
+  },
+  "bugs": {
+    "url": "https://github.com/kibertoad/chaos-overlords-new-chrome/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "default": "./dist/node/index.js"
+    },
+    "./cloudflare": {
+      "types": "./dist/cloudflare/index.d.ts",
+      "default": "./dist/cloudflare/index.js"
+    },
+    "./worker": "./worker/index.js",
+    "./bundle/manifest.json": "./bundle/manifest.json"
+  },
+  "files": [
+    "dist",
+    "!dist/.tsbuildinfo",
+    "bundle",
+    "worker",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "bundle": "node scripts/bundle.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "prepublishOnly": "pnpm run build && node ../../scripts/prepublish.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260930.2",
+    "@types/node": "^26.6.3",
+    "miniflare": "5.20260925.0-alpha",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  }
+}

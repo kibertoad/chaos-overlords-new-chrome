@@ -193,3 +193,6 @@ export function assignSlots(
 export function turnDeadline(openedAt: Date, turnTimerSeconds: number): Date | null {
   return turnTimerSeconds > 0 ? new Date(openedAt.getTime() + turnTimerSeconds * 1000) : null
 }
+
+/** Turns are numbered from 1; 0 is the lobby's `currentTurn`, before any turn exists. */
+export const FIRST_TURN = 1

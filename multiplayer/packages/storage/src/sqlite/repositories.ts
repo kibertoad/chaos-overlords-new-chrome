@@ -126,12 +126,13 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
           sessionVersion: matches.sessionVersion,
           settings: matches.settings,
           createdAt: matches.createdAt,
-          hasSnapshot: exists(
+          // A late joiner of a match played from views is sent a view, not a snapshot.
+          hasSnapshot: sql<unknown>`(${matches.seatViews} or ${exists(
             db
               .select({ one: sql`1` })
               .from(snapshots)
               .where(eq(snapshots.matchId, matches.id)),
-          ),
+          )})`,
         })
         .from(matches)
         .innerJoin(players, eq(players.id, matches.hostPlayerId))
@@ -435,6 +436,21 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
       return rows.length === 1
     },
     ...sqliteVerdictReceipts(db),
+    async recordResolution(matchId, number, resolution) {
+      const rows = await db
+        .update(turns)
+        .set(resolution)
+        .where(
+          and(
+            eq(turns.matchId, matchId),
+            eq(turns.number, number),
+            ne(turns.status, 'open'),
+            isNull(turns.resolvedHash),
+          ),
+        )
+        .returning({ number: turns.number })
+      return rows.length === 1
+    },
     async claimDesyncAnnouncement(matchId, number, at) {
       const rows = await db
         .update(turns)
