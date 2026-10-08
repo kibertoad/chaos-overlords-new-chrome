@@ -26,6 +26,7 @@
     },
     "@chaos-overlords/resolver#test:run": {
       "dependsOn": ["build", "^build"],
+      "cache": false,
       "passThroughEnv": ["REQUIRE_RESOLVER", "RESOLVER_TRANSCRIPT", "DOTNET"]
     },
     "@chaos-overlords/node-server#test:run": {

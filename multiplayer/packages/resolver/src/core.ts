@@ -153,8 +153,15 @@ export class ResolverCore {
     const handle = this.use(matchId)
     const sealed =
       sealedOrders === undefined || sealedOrders === null ? null : JSON.stringify(sealedOrders)
-    this.refused(() => this.exports.ApplyEvent(handle, JSON.stringify(event), sealed))
-    const status = this.statusOf(handle)
+    const stateHash = this.refused(() =>
+      this.exports.ApplyEvent(handle, JSON.stringify(event), sealed),
+    )
+    // The hash it answers with is the one `StateHash` would read back.
+    const status: MatchStatus = {
+      stateHash,
+      turn: this.exports.Turn(handle),
+      finished: this.exports.IsFinished(handle),
+    }
     this.fit(matchId)
     return status
   }
@@ -183,11 +190,14 @@ export class ResolverCore {
           step.sealedOrders === undefined || step.sealedOrders === null
             ? null
             : JSON.stringify(step.sealedOrders)
-        this.refused(() => this.exports.ApplyEvent(handle, JSON.stringify(step.event), sealed))
+        // The hash it answers with is the one `StateHash` would read back.
+        const stateHash = this.refused(() =>
+          this.exports.ApplyEvent(handle, JSON.stringify(step.event), sealed),
+        )
         if (!finished && sealedTurnOf(step.event) === turn) {
           seals.push({
             turn,
-            stateHash: this.exports.StateHash(handle),
+            stateHash,
             finished: this.exports.IsFinished(handle),
           })
         }

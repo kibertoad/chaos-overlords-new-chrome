@@ -131,22 +131,33 @@ public sealed class MatchHistory
     /// <summary>A seal met in the log: the turn it is for, if the state still has to apply it.</summary>
     private TurnSealedEventPayload? Sealed(TurnSealedEventPayload seal)
     {
-        // Whether or not the state already holds it, the log has moved past this turn.
-        LogTurn = Math.Max(LogTurn, seal.Turn + 1);
         var current = Replay.State.Coordinator.Turn;
-        if (seal.Turn < current) return null;
-        // A finished match has no turn left to apply. A turn can still seal on its deadline after
-        // the last one, when the server cannot finish the match because a seat has not reported,
-        // and the live session and a desync rebuild both pass over it, so the walk does too.
-        if (Replay.State.Outcome is not null) return null;
-        if (seal.Turn > current)
+        var needed = NeedsSeal(seal.Turn);
+        // Refused before the log's turn moves, so a refused seal leaves the fold as it was.
+        if (needed && seal.Turn > current)
         {
             throw new MultiplayerProtocolException(
                 $"the event history sealed turn {seal.Turn} while the reconstructed match was still "
                 + $"on turn {current}");
         }
-        return seal;
+        // Whether or not the state already holds it, the log has moved past this turn.
+        LogTurn = Math.Max(LogTurn, seal.Turn + 1);
+        return needed ? seal : null;
     }
+
+    /// <summary>
+    /// Whether a seal for <paramref name="turn"/> still has a set for the state to apply: the state
+    /// has not passed that turn and the match has not finished.
+    /// </summary>
+    /// <remarks>
+    /// The live session asks this of every seal it is delivered, and the walk through
+    /// <see cref="Apply"/>, so the two pass over the same seals. Delivery is at least once, and
+    /// applying turn N leaves the coordinator on N+1, so a repeat is passed over. A finished match
+    /// has no turn left to apply: a turn can still seal on its deadline after the last one, when the
+    /// server cannot finish the match because a seat has not reported.
+    /// </remarks>
+    public bool NeedsSeal(int turn) =>
+        turn >= Replay.State.Coordinator.Turn && Replay.State.Outcome is null;
 
     /// <summary>
     /// Applies the sealed set for the turn the state is on.

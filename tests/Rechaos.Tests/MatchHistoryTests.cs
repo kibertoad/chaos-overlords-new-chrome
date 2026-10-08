@@ -105,6 +105,39 @@ public sealed class MatchHistoryTests
         Assert.Equal(2, history.LogTurn);
         Assert.Throws<MultiplayerProtocolException>(
             () => history.Apply(new TurnSealedEvent(3, "m", "t", new(2, "digest"))));
+        // A refused seal leaves the log's turn where it was.
+        Assert.Equal(2, history.LogTurn);
         Assert.Null(history.Apply(new TurnReadinessEvent(4, "m", "t", new(1, "p1", true))));
+    }
+
+    /// <summary>
+    /// A turn can seal on its deadline after the one that ended the match, when the server cannot
+    /// finish the match because a seat has not reported. The walk passes over that seal, as the live
+    /// session does, and the log's turn still moves past it.
+    /// </summary>
+    [Fact]
+    public void PassesOverASealAfterTheMatchFinished()
+    {
+        var history = NewHistory();
+        var empty = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);
+        var limit = ScenarioCatalog.Turns(GameDuration.SixMonths) + 2;
+        var last = 0;
+        for (var turn = 1; turn <= limit && history.Replay.State.Outcome is null; turn++)
+        {
+            SealedPlayerOrders[] players =
+            [
+                new("p1", 0, empty, OrderDigest.OfDocument(empty)),
+                new("p2", 1, empty, OrderDigest.OfDocument(empty)),
+            ];
+            history.ApplySealedSet(new SealedOrdersView(turn, OrderDigest.OfSet(players), players));
+            last = turn;
+        }
+        Assert.NotNull(history.Replay.State.Outcome);
+        var hash = MatchStateHasher.ComputeFingerprint(history.Replay.State);
+
+        Assert.False(history.NeedsSeal(last + 1));
+        Assert.Null(history.Apply(new TurnSealedEvent(1, "m", "t", new(last + 1, "digest"))));
+        Assert.Equal(last + 2, history.LogTurn);
+        Assert.Equal(hash, MatchStateHasher.ComputeFingerprint(history.Replay.State));
     }
 }

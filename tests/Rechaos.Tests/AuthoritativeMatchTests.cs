@@ -209,8 +209,11 @@ public sealed class AuthoritativeMatchTests
         Assert.Throws<MultiplayerProtocolException>(() => resolver.Apply(seal));
         Assert.Throws<MultiplayerProtocolException>(
             () => resolver.Apply(seal with { Payload = seal.Payload with { OrderSetHash = new string('1', 64) } }, set));
+        var broken = new string('0', 64);
         Assert.Throws<MultiplayerProtocolException>(
-            () => resolver.Apply(seal, set with { OrderSetHash = new string('0', 64) }));
+            () => resolver.Apply(
+                seal with { Payload = seal.Payload with { OrderSetHash = broken } },
+                set with { OrderSetHash = broken }));
         // A seal for a turn ahead of the state.
         Assert.Throws<MultiplayerProtocolException>(
             () => resolver.Apply(seal with { Payload = seal.Payload with { Turn = 2 } }, set with { Turn = 2 }));

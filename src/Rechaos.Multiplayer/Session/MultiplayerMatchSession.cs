@@ -519,12 +519,12 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         string announcedOrderSetHash,
         CancellationToken cancellationToken)
     {
-        if (turn < Replay.State.Coordinator.Turn) return;
-        // A finished match has no turn left to apply. The coordinator stops short of Command when
-        // the match ends, so a successor turn that seals on its deadline — which happens when the
-        // server cannot finish the match because a seat has not reported — would throw inside
-        // SealedTurnApplier and throw the player off the endgame screen into an error modal.
-        if (Replay.State.Outcome is not null) return;
+        // The seals the restore walk passes over: one for a turn already applied, and any after the
+        // match finished. The coordinator stops short of Command when the match ends, so a successor
+        // turn that seals on its deadline — which happens when the server cannot finish the match
+        // because a seat has not reported — would throw inside SealedTurnApplier and throw the player
+        // off the endgame screen into an error modal.
+        if (!_history.NeedsSeal(turn)) return;
         var (stateHash, includedOwnOrders) = await FetchAndApplySealedTurnAsync(
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
