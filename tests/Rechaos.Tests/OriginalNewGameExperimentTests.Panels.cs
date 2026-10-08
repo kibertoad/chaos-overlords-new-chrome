@@ -31,8 +31,8 @@ public sealed partial class OriginalNewGameExperimentTests
     }
 
     // RULE-SETUP-008, RULE-EVENT-005: the probe records each call of the Combat Results and Last
-    // Turn Events panels at the human's planning entries, and whether the panel stayed open until
-    // Exit was pressed; Combat Results returns at once when no fight qualifies. At each planning
+    // Turn Events panels at the human's planning entries, and whether the call showed its panel
+    // (FND-UI-061); Combat Results returns at once when no fight qualifies. At each planning
     // entry the rebuild shows Combat Results when the viewer has combat results and then Last Turn
     // Events when the viewer has reports, or the city when neither applies, and the panels it
     // shows match the original's at that entry, in the same order.
