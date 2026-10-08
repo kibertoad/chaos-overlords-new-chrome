@@ -1,9 +1,9 @@
 ---
 id: FND-AUDIO-012
 title: An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read
-status: recorded
+status: superseded
 builds: [BLD-GOG-EN-1.1]
-superseded_by: []
+superseded_by: [FND-AUDIO-018]
 recorded_by: kibertoad
 reproduced_by: []
 method: static

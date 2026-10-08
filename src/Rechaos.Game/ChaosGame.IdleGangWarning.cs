@@ -126,7 +126,7 @@ public sealed partial class ChaosGame
                 ConfirmIdleGangWarning);
         else
             PressPanelFace(point, IdleGangWarningLayout.Panel, IdleGangWarningLayout.Cancel,
-                CancelIdleGangWarning);
+                CancelIdleGangWarning, HeldButtonKind.Cancel);
     }
 
     /// <summary>
@@ -140,6 +140,10 @@ public sealed partial class ChaosGame
         if (_pressedPanelFace is { } held
             && (held.Face == IdleGangWarningLayout.Ok || held.Face == IdleGangWarningLayout.Cancel))
             _pressedPanelFace = null;
+        // The warning is not a screen of its own, so the screen change cannot clear its face.
+        if (_releasedPanelFace is { } released
+            && (released.Face == IdleGangWarningLayout.Ok || released.Face == IdleGangWarningLayout.Cancel))
+            _releasedPanelFace = null;
     }
 
     /// <summary>
@@ -167,8 +171,8 @@ public sealed partial class ChaosGame
 
     private void DrawIdleGangWarning(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        if (_idleGangWarningBackground is not null)
-            batch.Draw(_idleGangWarningBackground, IdleGangWarningLayout.Panel, Color.White);
+        if (IdleGangWarningBackground is not null)
+            batch.Draw(IdleGangWarningBackground, IdleGangWarningLayout.Panel, Color.White);
         else
         {
             batch.Draw(pixel, IdleGangWarningLayout.Panel, new Color(10, 23, 25, 252));

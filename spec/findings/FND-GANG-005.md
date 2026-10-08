@@ -13,7 +13,7 @@ locations:
     address: 0x0047476F..0x00474890
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004AB620..0x004AB637
+    address: 0x004AB620..0x004AB638
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
     address: 0x00476045
@@ -46,7 +46,7 @@ runs. Police damage therefore reaches the same subtraction and the same
 increment as attack damage; no other instruction in the resolver writes
 `0x004AB620`.
 
-Every reference to `0x004AB620..0x004AB637` in the game code:
+Every reference to `0x004AB620..0x004AB638` in the game code:
 
 | Instruction | Function | Access |
 |---|---|---|
@@ -83,7 +83,7 @@ subtraction is stored before the comparison.
 
 ## How to reproduce
 
-List the references to `0x004AB620..0x004AB637`. The only write that adds is
+List the references to `0x004AB620..0x004AB638`. The only write that adds is
 `INC dword ptr [EAX*0x4 + 0x4AB620]` at `0x00474889`, inside `fn_00472775`.
 Read backwards from it to the store of 100 at `0x0047487B`, the comparison with
 1 at `0x0047485A` and the Force store at `0x00474827`; the loop head at

@@ -1,7 +1,7 @@
 ---
 id: RULE-AWARDS-001
 title: The endgame awards go to every player tied at the extreme of each statistic, with activity thresholds for the first three
-status: established
+status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
 evidence: [FND-AWARDS-004, FND-AWARDS-001, FND-AWARDS-002, FND-COMBAT-003, SRC-MANUAL-GOG, EXP-TURN-037, EXP-TURN-039, EXP-TURN-038, EXP-TURN-058]
@@ -99,4 +99,10 @@ None known.
 
 ## Open questions
 
-- None.
+- No recorded run gives the Fist or the Skull, meets a nonzero threshold
+  exactly, gives one player more than three awards (BUG-AWARDS-001), or has a
+  player spend 999,999. The procedure's equality pass gives the Safe to a
+  player who spent exactly 999,999 when nobody spent less, while the Edge
+  cases say nobody gets it; no run decides between them. These rest on
+  FND-AWARDS-001, FND-AWARDS-002 and FND-AWARDS-004. Until a run reaches them,
+  the entry stays `supported`.

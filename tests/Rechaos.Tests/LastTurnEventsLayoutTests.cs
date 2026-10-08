@@ -72,7 +72,7 @@ public sealed class LastTurnEventsLayoutTests
             LastTurnEventsLayout.PressedSource(LastTurnEventsButton.Previous));
         Assert.Equal(new Rectangle(92, 363, 26, 23),
             LastTurnEventsLayout.PressedSource(LastTurnEventsButton.Next));
-        Assert.Equal(new Rectangle(50, 386, 50, 23),
+        Assert.Equal(new Rectangle(0, 386, 50, 23),
             LastTurnEventsLayout.PressedSource(LastTurnEventsButton.Exit));
         Assert.Equal(new Rectangle(135, 157, 26, 23), LastTurnEventsLayout.Face(LastTurnEventsButton.Previous));
         Assert.Equal(new Rectangle(163, 157, 26, 23), LastTurnEventsLayout.Face(LastTurnEventsButton.Next));

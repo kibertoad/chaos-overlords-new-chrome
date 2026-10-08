@@ -20,39 +20,39 @@ public sealed partial class ChaosGame
         SpriteBatch batch, Texture2D pixel, MatchState state, PlayerId viewer, Rectangle crop, Point destination)
     {
         var map = new CroppedMap(batch, pixel, crop, destination);
-        var neutralLayer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
+        var neutralLayer = CityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
         var whole = CityMapLayout.Bounds with { X = 0, Y = 0 };
         if (neutralLayer is not null)
             map.Draw(neutralLayer, whole, whole);
         for (var sectorId = 0; sectorId < state.Sectors.Count; sectorId++)
         {
             var sector = state.Sectors[sectorId];
-            var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
+            var layer = CityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
             if (sector.Owner is not null && layer is not null)
                 map.Draw(layer, CityMapLayout.OwnershipSource(sectorId), CityMapLayout.OwnershipSource(sectorId));
             else if (neutralLayer is null)
                 map.Fill(CityMapLayout.Source(sectorId), sector.Owner is { } owner
                     ? PlayerColors[owner.Value] * .68f
                     : new Color(24, 37, 39));
-            if (_uiKeyedSprites is not null
+            if (UiKeyedSprites is not null
                 && ObjectiveSectorMarkerPresentation.IsMarked(state.Setup.Scenario, sectorId, sector.IsImportant))
-                map.Draw(_uiKeyedSprites, OriginalSpriteLayout.ObjectiveSectorPylons, CityMapLayout.Source(sectorId));
+                map.Draw(UiKeyedSprites, OriginalSpriteLayout.ObjectiveSectorPylons, CityMapLayout.Source(sectorId));
         }
         foreach (var marker in CitySiteMarkerProjection.Project(
                      state, viewer, _siteSearchSelections.For(viewer)))
         {
             var area = CityMapLayout.MapArea(CitySiteMarkerProjection.Destination(marker));
-            if (_siteMarkerSprites is not null)
-                map.Draw(_siteMarkerSprites, CitySiteMarkerProjection.Source(marker), area);
+            if (SiteMarkerSprites is not null)
+                map.Draw(SiteMarkerSprites, CitySiteMarkerProjection.Source(marker), area);
             else
                 map.Outline(area, marker.Controlled ? Color.Lime : Color.Cyan);
         }
         // The markers have no drawn stand-in: without the sheet the map carries none, as before.
-        if (_uiKeyedSprites is null) return;
+        if (UiKeyedSprites is null) return;
         // FND-UI-050: police presence puts a badge over the site markers, under the gang marker.
         for (var sectorId = 0; sectorId < state.Sectors.Count; sectorId++)
             if (state.Sectors[sectorId].CrackdownTurnsRemaining > 0)
-                map.Draw(_uiKeyedSprites, OriginalSpriteLayout.PoliceBadge,
+                map.Draw(UiKeyedSprites, OriginalSpriteLayout.PoliceBadge,
                     CityMapLayout.MapArea(PoliceBadgeLayout.Destination(sectorId)));
         // RULE-UI-006: the markers the map keeps through the planning phase, and outside it those of
         // a draw of every sector in number order.
@@ -61,7 +61,7 @@ public sealed partial class ChaosGame
             : GangStatusMarkerPresentation.MapFrames(state, viewer, _gangSight.For(state, viewer));
         for (var sectorId = 0; sectorId < markerFrames.Length; sectorId++)
             if (markerFrames[sectorId] >= 0)
-                map.Draw(_uiKeyedSprites, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]),
+                map.Draw(UiKeyedSprites, OriginalSpriteLayout.GangStatus(markerFrames[sectorId]),
                     CityMapLayout.MapArea(GangStatusMarkerLayout.Destination(sectorId)));
     }
 
@@ -109,8 +109,8 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawGridLabel(SpriteBatch batch, PixelFont font, GridLabel label)
     {
-        if (_uiKeyedSprites is not null)
-            batch.Draw(_uiKeyedSprites,
+        if (UiKeyedSprites is not null)
+            batch.Draw(UiKeyedSprites,
                 new Rectangle(label.Destination.X, label.Destination.Y, label.Source.Width, label.Source.Height),
                 label.Source, Color.White);
         font.Draw(batch, label.Text,
@@ -128,7 +128,7 @@ public sealed partial class ChaosGame
     private void DrawOverlordBar(
         SpriteBatch batch, Texture2D pixel, MatchState state, PlayerId? viewed, IReadOnlyList<bool>? seatsSeen)
     {
-        if (_uiSprites is null) return;
+        if (UiSprites is null) return;
         var markerFrame = MarkerFrameShown();
         var emptySeatSource = OverlordBarLayout.EmptySeatSource(EmptySeatFrameShown());
         for (var seat = 0; seat < MatchLimits.PlayerCount; seat++)
@@ -136,20 +136,20 @@ public sealed partial class ChaosGame
             var player = state.Players.FirstOrDefault(candidate => candidate.Id.Value == seat);
             if (player is null || player.Status == PlayerStatus.Eliminated)
             {
-                batch.Draw(_uiSprites, OverlordBarLayout.EmptySeat(seat), emptySeatSource, Color.White);
+                batch.Draw(UiSprites, OverlordBarLayout.EmptySeat(seat), emptySeatSource, Color.White);
                 continue;
             }
-            batch.Draw(_uiSprites, OverlordBarLayout.Portrait(seat),
+            batch.Draw(UiSprites, OverlordBarLayout.Portrait(seat),
                 seatsSeen is not null && !seatsSeen[seat]
                     ? OverlordBarLayout.UnseenPortraitSource(player.Setup.PortraitId)
                     : OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId),
                 Color.White);
             batch.Draw(pixel, OverlordBarLayout.MarkerBackground(seat), Color.Black);
             if (viewed == player.Id)
-                batch.Draw(_uiSprites, OverlordBarLayout.Marker(seat),
+                batch.Draw(UiSprites, OverlordBarLayout.Marker(seat),
                     OriginalSpriteLayout.ActivePlayerMarker(markerFrame), Color.White);
             if (PlanningLightLit(state, player))
-                batch.Draw(_uiSprites, OverlordBarLayout.PlanningLight(seat),
+                batch.Draw(UiSprites, OverlordBarLayout.PlanningLight(seat),
                     OverlordBarLayout.PlanningLightSource, Color.White);
             else
                 batch.Draw(pixel, OverlordBarLayout.PlanningLight(seat), Color.Black);

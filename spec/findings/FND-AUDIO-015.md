@@ -22,7 +22,7 @@ locations:
     address: 0x00461E87..0x004620A0
   - build: BLD-GOG-EN-1.1
     file: Chaos Overlords.exe
-    address: 0x004637B8..0x00463819
+    address: 0x004637B8..0x0046381A
 tool: Ghidra 12.1.3
 environment: null
 ---

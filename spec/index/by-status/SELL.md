@@ -6,20 +6,20 @@ Entries by status.
 
 ## supported
 
-1 entries.
-
-| ID | Title |
-|---|---|
-| [SCR-SELL-001](../../screens/SCR-SELL-001.md) | Sell panel |
-
-## established
-
 2 entries.
 
 | ID | Title |
 |---|---|
-| [BUG-SELL-001](../../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 | [RULE-SELL-001](../../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot |
+| [SCR-SELL-001](../../screens/SCR-SELL-001.md) | Sell panel |
+
+## established
+
+1 entries.
+
+| ID | Title |
+|---|---|
+| [BUG-SELL-001](../../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
 
 ## recorded
 
@@ -37,7 +37,6 @@ Entries whose status is established and whose findings and experiments are all o
 | ID | Title |
 |---|---|
 | [BUG-SELL-001](../../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them |
-| [RULE-SELL-001](../../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot |
 
 ## Open questions
 
@@ -46,5 +45,5 @@ Entries whose Open questions section says more than None known.
 | ID | Title | Status |
 |---|---|---|
 | [BUG-SELL-001](../../bugs/BUG-SELL-001.md) | Selling several items at once pays for only one of them | established |
-| [RULE-SELL-001](../../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | established |
+| [RULE-SELL-001](../../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | supported |
 | [SCR-SELL-001](../../screens/SCR-SELL-001.md) | Sell panel | supported |
