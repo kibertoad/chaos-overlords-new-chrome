@@ -520,6 +520,74 @@ describe('LocalEventHub fan-out cost', () => {
   })
 })
 
+describe('LocalEventHub announcements from other processes', () => {
+  /** Opens a stream and returns a function that reads until `id: <seq>` arrives. */
+  async function streamOf(hub: LocalEventHub) {
+    const controller = new AbortController()
+    const response = await hub.open({
+      matchId: 'm',
+      playerId: 'p1',
+      afterSeq: 0,
+      signal: controller.signal,
+    })
+    const reader = (response.body as ReadableStream<Uint8Array>).getReader()
+    const decoder = new TextDecoder()
+    let text = ''
+    return {
+      until: async (seq: number) => {
+        for (let i = 0; i < 10 && !text.includes(`id: ${seq}`); i += 1) {
+          const frame = await reader.read()
+          if (frame.value) text += decoder.decode(frame.value)
+        }
+        return text
+      },
+      close: async () => {
+        controller.abort()
+        await reader.cancel().catch(() => {})
+      },
+    }
+  }
+
+  /**
+   * A stream that holds everything this process published counts as caught up, and a bare wake
+   * would be answered from memory with "nothing further". The announcement has to move what this
+   * process knows, or an event another instance appended waits for the periodic catch-up read.
+   */
+  it('reads the log for an append another process announced', async () => {
+    const durable: PersistedEvent[] = [eventAt(1)]
+    const hub = new LocalEventHub(countingLog(durable).repository, 60_000)
+    const stream = await streamOf(hub)
+    await hub.notify(eventAt(1))
+    expect(await stream.until(1)).toContain('id: 1')
+
+    durable.push(eventAt(2))
+    hub.announce('m', 2, 'lobby.playerJoined')
+    expect(await stream.until(2)).toContain('id: 2')
+    await stream.close()
+  })
+
+  it('re-reads the log for every stream after announcements may have been lost', async () => {
+    const durable: PersistedEvent[] = [eventAt(1)]
+    const hub = new LocalEventHub(countingLog(durable).repository, 60_000)
+    const stream = await streamOf(hub)
+    await hub.notify(eventAt(1))
+    expect(await stream.until(1)).toContain('id: 1')
+
+    // Appended elsewhere while the announcement channel was down: nobody said anything.
+    durable.push(eventAt(2))
+    hub.resync()
+    expect(await stream.until(2)).toContain('id: 2')
+    await stream.close()
+  })
+
+  it('ignores an announcement for a match it holds no stream of', () => {
+    const log = countingLog([])
+    const hub = new LocalEventHub(log.repository, 60_000)
+    hub.announce('elsewhere', 4, 'lobby.playerJoined')
+    expect(log.reads).toEqual([])
+  })
+})
+
 describe('MatchLog catch-up', () => {
   /**
    * The periodic catch-up exists for an append another process made against the same database, and
