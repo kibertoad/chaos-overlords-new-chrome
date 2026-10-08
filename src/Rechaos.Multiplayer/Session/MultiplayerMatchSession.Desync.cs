@@ -95,6 +95,101 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private int _canonicalThroughTurn;
 
+    /// <summary>
+    /// Whether the interface was last told the match is paused, so it is standing on the Desynced
+    /// stage with planning closed.
+    /// </summary>
+    /// <remarks>
+    /// Set by <see cref="ShowPause"/>, and cleared by every notice that reopens planning:
+    /// <see cref="MultiplayerNotice.Resumed"/>, <see cref="MultiplayerNotice.TurnResolved"/>,
+    /// <see cref="MultiplayerNotice.Resynced"/> and <see cref="MultiplayerNotice.PauseLifted"/>.
+    /// The server lifts the pause once no turn of the match is unsettled and says so with
+    /// <c>match.statusChanged</c>, which <see cref="LiftPauseAsync"/> answers. A pause that ends
+    /// with this client adopting a repair it did not hold reopens planning through
+    /// <see cref="MultiplayerNotice.Resynced"/>; every other ending used to leave the interface on
+    /// the Desynced stage for good.
+    /// </remarks>
+    private bool _pauseShown;
+
+    /// <summary>Tells the interface the match is paused.</summary>
+    private void ShowPause(MultiplayerNotice.Desynced notice)
+    {
+        _pauseShown = true;
+        _notices.Enqueue(notice);
+    }
+
+    /// <summary>Hands the interface a state with planning reopened on it.</summary>
+    private void ReopenPlanning(MultiplayerNotice notice)
+    {
+        _pauseShown = false;
+        _notices.Enqueue(notice);
+    }
+
+    /// <summary>
+    /// The server says the match is running again. Reopen planning when the interface is still
+    /// showing the pause.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The lift is logged after everything that settled the pause: a posted repair's
+    /// <c>snapshot.available</c> and every <c>turn.confirmed</c> come first, and the pump handles
+    /// events in log order. So by the time this runs, a client that needed the repair has adopted
+    /// it and said so with <see cref="MultiplayerNotice.Resynced"/>, and the clients still showing
+    /// the pause are the ones whose state was already the one the match settled on.
+    /// </para>
+    /// <para>
+    /// Orders were refused for the whole pause, but a draft saved before it is still the server's
+    /// for the open turn, so the planning copy is built from it the way a restore builds one. A
+    /// draft that no longer applies is one this client saved on a state it has since corrected; it
+    /// is left out of the planning copy, and the next edit replaces it on the server. A finished
+    /// document that no longer applies cannot be replaced, so the seat stays finished.
+    /// </para>
+    /// </remarks>
+    private async Task LiftPauseAsync(CancellationToken cancellationToken)
+    {
+        if (!_pauseShown) return;
+        var state = MatchStateClone.Of(Replay.State, _definitions);
+        var turn = state.Coordinator.Turn;
+        if (!IsPlannable(state))
+        {
+            ReopenPlanning(new MultiplayerNotice.PauseLifted(turn, state, null, null));
+            return;
+        }
+        var submission = await CallAsync(
+                token => _match.OwnSubmissionAsync(turn, token), _pumpLane, cancellationToken)
+            .ConfigureAwait(false);
+        ValidateResumeSubmission(submission, turn);
+        SpeculativeTurn? planning = null;
+        if (submission.Orders is { } document)
+        {
+            // Another schema or another seat's ops fail the session here as they do on a restore;
+            // only a document written on a state this client has since corrected is let go below.
+            SpeculativeTurn.EnsureReadable(document, Slot);
+            try
+            {
+                planning = SpeculativeTurn.Restore(state, _definitions, Slot, document);
+            }
+            catch (MultiplayerProtocolException)
+            {
+                // A finished document stays finished: the server answers a later draft with the
+                // document that stands. So a ready seat keeps its readiness and digest and waits for
+                // the seal; only a plain draft is dropped for the next edit to replace.
+                submission = new OwnSubmissionView(
+                    turn,
+                    null,
+                    submission.Ready,
+                    submission.Ready ? submission.OrdersHash : null);
+            }
+        }
+        planning ??= SpeculativeTurn.For(state, _definitions, Slot);
+        // A finished turn queued before the pause was refused with `match_desynced`, which leaves
+        // its readiness in the outbox. Carried forward, the first draft after the lift would end
+        // the turn for a player who is being shown it open. A ready document still queued for the
+        // turn is newer than the server's answer and keeps its readiness.
+        if (!submission.Ready) WithdrawReadiness(turn);
+        ReopenPlanning(new MultiplayerNotice.PauseLifted(turn, state, submission, planning));
+    }
+
     /// <summary>The match paused because clients disagreed about a turn.</summary>
     private Task HandleDesyncAsync(TurnDesyncedEvent desynced, CancellationToken cancellationToken)
     {
@@ -162,7 +257,7 @@ public sealed partial class MultiplayerMatchSession
             // costs a round trip, but saying "automatic repair in progress" and then not repairing
             // costs the player the truth.
             && (pending.Candidates.Count == 1 || IsTieBreaker(pending));
-        _notices.Enqueue(new MultiplayerNotice.Desynced(
+        ShowPause(new MultiplayerNotice.Desynced(
             pending.Turn,
             IsHost,
             mayRepair,
@@ -221,6 +316,13 @@ public sealed partial class MultiplayerMatchSession
     /// the pause with nobody uploading anything.
     /// </para>
     /// <para>
+    /// Lifting the pause is the server's call. The corrected report is one more for it to judge:
+    /// when that makes the reports agree, the server confirms the turn and lifts the pause, and
+    /// <see cref="LiftPauseAsync"/> reopens planning then; when other seats still disagree, the
+    /// match stays paused and orders are still refused. So the interface gets the corrected state
+    /// with the pause still showing, and no planning copy the server would refuse.
+    /// </para>
+    /// <para>
     /// A rebuild that agrees with the report shows the divergence is in the rules every client
     /// runs rather than in this client's history, and only a snapshot can settle that. Nothing is
     /// changed, and the caller goes on to post or wait as before.
@@ -261,9 +363,12 @@ public sealed partial class MultiplayerMatchSession
         _selfChecked.Add((pending.Turn, rebuiltHash));
         var reports = Task.WhenAll(rebuilt.Reports.Select(QueueReportAsync).ToArray());
         await AwaitRepairReportsAsync(reports, cancellationToken).ConfigureAwait(false);
-        var current = MatchStateHasher.ComputeFingerprint(Replay.State);
-        var (state, planning) = HandOver();
-        _notices.Enqueue(new MultiplayerNotice.Resynced(pending.Turn, state, current, planning));
+        ShowPause(new MultiplayerNotice.Desynced(
+            pending.Turn,
+            IsHost,
+            IsRepairing: false,
+            $"LOCAL {ShortHash(rebuiltHash)}  REPORTS {pending.Details}",
+            MatchStateClone.Of(Replay.State, _definitions)));
         return true;
     }
 
@@ -375,7 +480,7 @@ public sealed partial class MultiplayerMatchSession
         await AwaitRepairReportsAsync(reports, cancellationToken).ConfigureAwait(false);
         var current = MatchStateHasher.ComputeFingerprint(Replay.State);
         var (state, planning) = HandOver();
-        _notices.Enqueue(new MultiplayerNotice.Resynced(snapshot.Turn, state, current, planning));
+        ReopenPlanning(new MultiplayerNotice.Resynced(snapshot.Turn, state, current, planning));
     }
 
     /// <summary>

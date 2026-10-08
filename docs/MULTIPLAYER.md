@@ -129,8 +129,9 @@ than it looks: the number and the row become visible together, so a committed `s
 lower one is committed too. A counter handed out before the write could leave a hole that a cursor
 moving forward would skip forever.
 
-The fan-out (an in-process hub on Node, a per-match Durable Object on Cloudflare) is only a wake-up
-hint: every wake and heartbeat drains the log from the last delivered sequence, so a lost
+The fan-out (an in-process hub on Node, announced to the other instances over Postgres
+`LISTEN/NOTIFY` when several share a database; a per-match Durable Object on Cloudflare) is only a
+wake-up hint: every wake and heartbeat drains the log from the last delivered sequence, so a lost
 notification costs at most one heartbeat, never an event, and a reconnecting client resumes from
 the last `seq` it saw. A stored row the server's own build cannot validate (a payload reshaped by
 another build) is withheld from both the stream and `GET /events`, so a jump in the sequence numbers
@@ -222,6 +223,17 @@ bounded by the capacity it indexes and every op must name the submitter's own sl
 unknown fields are refused. See "What the server does and does not defend against" for why this
 stops short of judging legality, which stays with the core on each client while it applies the
 sealed set, exactly as a replay is verified.
+
+A document holds at most `LIMITS.ordersMaxOps` (512) ops, and the server answers a longer one with
+422, which would lose the seat every order of its turn. The client keeps well inside that bound
+(DEV-NET-002). Its document leaves out the ops a later one makes moot: a gang's later order replaces
+its earlier op, cancelling an order given this turn removes it, and the hire dock keeps only the op
+that leaves it in its final state when it starts the turn clear, as hire resolution leaves it every
+turn (a dock that starts with a hire or snub keeps every hire op). A turn then holds at most one op per gang, one for the dock and
+one per dismissed notification, 145 at most. An action that would still grow a full document is
+refused on the planning copy before the copy changes, with "TOO MANY ORDERS THIS TURN.", so the copy
+never shows an order the document lacks. The generated `WireLimits` class carries the bound to the
+C# client from `limits.ts`.
 
 Numbers are **safe integers only**, and `-0` is refused. The order digest is SHA-256 over
 canonical JSON, so a client in another language has to reproduce that text byte for byte, and a
@@ -1093,6 +1105,13 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    as an exceptional repair (the same state as a quick-save), declaring the **native save** format
    version — the replay format's says nothing about those bytes. Every other client refuses a version
    newer than it reads, and otherwise loads it, recomputes the hash and re-reports.
+   Planning stays closed for the whole pause, including on a client that corrected its own
+   report: the corrected state is shown, but the server still refuses orders. It reopens when the
+   client adopts a repair it did not hold, or on `match.statusChanged` to `running`, which the
+   server logs after every confirmation that settled the pause. A client that reopens on the status
+   change restores the draft the server holds for the open turn, as a reconnect does. A draft written
+   on a state the client has since corrected is dropped and the next edit replaces it; a finished
+   document cannot be replaced, so the seat stays finished and waits for the seal.
 6. On `turn.deadlineExtended`, replace the countdown for that turn. A null deadline pauses it for an
    absence vote; a later timestamp restarts it after that vote or a desync pause closes. Show that
    countdown and warn against it — the client runs no planning clock of its own online, so the
@@ -1244,14 +1263,14 @@ dock a player plans against the dock the sealed turn grants.
 
 ## Limitations and next steps
 
-- **One server process.** The Node runtime fans events out in memory, so two instances behind a
-  load balancer would each wake only their own subscribers: a client on instance A would sit silent
-  through everything written on instance B, with no error to show for it. Rate limits do not
-  fragment: on Postgres every instance counts in one shared table. Postgres is offered for
-  durability and operational familiarity, not as a way to scale out; running more than one
-  instance needs a shared fan-out (the Cloudflare runtime's
-  Durable Object is the worked example) before it is safe. The `GET /events?after=` fallback is the
-  one path that does work under it, because it reads the log directly. Tracked in
+- **Several Node instances need Postgres, and some limits stay per instance.** Instances that share a
+  Postgres database announce each event and each kick to one another over `LISTEN/NOTIFY`, so a
+  stream held by any instance is woken at once, and they take the turn sweep and the retention pass
+  in turn through advisory locks. Rate limits are counted in one shared table, so a budget is spent
+  once across every instance. The stream caps count one instance's streams, a player's stale
+  stream on another instance is not replaced by their reconnect (it ends at its stall check or when
+  its socket closes), and the bug report intake is a SQLite file per instance. A SQLite store
+  serves one process. Tracked in
   [#454](https://github.com/kibertoad/chaos-overlords-new-chrome/issues/454).
 - **Late joining is offered, and narrowly.** A host may set `allowLateJoin`, and once the match
   has its bootstrap snapshot a newcomer can take a slot the AI plays, whether no human ever held it

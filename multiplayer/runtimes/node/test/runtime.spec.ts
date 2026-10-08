@@ -179,6 +179,55 @@ if (process.env.REQUIRE_POSTGRES === '1' && !process.env.TEST_DATABASE_URL) {
 defineFacadeSuite('node runtime over postgres', process.env.TEST_DATABASE_URL)
 
 /**
+ * A body refused for its size must not cost the client its connection.
+ *
+ * The listener drains an unread body for half a second after the response and then destroys the
+ * socket. Once anything has opened the request's web body stream, nothing reads that stream, so it
+ * holds the socket paused and the drain never moves; the keep-alive connection was dropped under
+ * whatever request the client sent on it next. `bodyCap` refuses by `Content-Length` without
+ * opening the stream, which leaves the drain free to finish.
+ */
+describe('node runtime body cap', () => {
+  let runtime: NodeRuntime
+  let server: ServerType
+  let baseUrl = ''
+  let connections = 0
+
+  beforeAll(async () => {
+    runtime = await buildNodeRuntime(
+      loadConfig({ DATABASE_URL: 'sqlite::memory:', LOG_LEVEL: 'error' }),
+    )
+    server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
+    server.on('connection', () => {
+      connections += 1
+    })
+    await new Promise<void>((resolve) => server.once('listening', () => resolve()))
+    baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+  })
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+    await runtime.close()
+  })
+
+  it('answers 413 and keeps serving the same keep-alive connection', async () => {
+    const refused = await fetch(`${baseUrl}/api/v1/matches/join`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ joinCode: 'A'.repeat(1024 * 1024) }),
+    })
+    expect(refused.status).toBe(413)
+    expect((await refused.json()).error.code).toBe('payload_too_large')
+
+    // Past the listener's half-second drain deadline, which is when the socket used to be cut.
+    await new Promise((resolve) => setTimeout(resolve, 700))
+    const health = await fetch(`${baseUrl}/health`)
+    expect(health.status).toBe(200)
+    expect(connections).toBe(1)
+  })
+})
+
+/**
  * Refereed turns over a real listener and real storage, with the game's rules replaced by the
  * kernel's digest-chain resolver: what the runtime owns is the wiring, the storage of resolutions
  * and server snapshots, and the routes, and the rules are held to the native build elsewhere

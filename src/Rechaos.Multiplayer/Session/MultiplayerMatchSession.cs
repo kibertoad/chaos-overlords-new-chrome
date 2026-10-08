@@ -470,6 +470,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             case MatchStatusChangedEvent status:
                 HandleStatus(status.Payload.Status);
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                if (status.Payload.Status == MatchStatus.Running)
+                    await LiftPauseAsync(cancellationToken).ConfigureAwait(false);
                 return;
             case LobbyPlayerLeftEvent:
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
@@ -558,7 +560,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         // frame it arrived still flushes the hash the rest of the table is waiting for.
         Forget(QueueReportAsync(turn, stateHash));
         var (state, planning) = HandOver();
-        _notices.Enqueue(new MultiplayerNotice.TurnResolved(
+        ReopenPlanning(new MultiplayerNotice.TurnResolved(
             turn, state, stateHash, includedOwnOrders, planning));
     }
 
