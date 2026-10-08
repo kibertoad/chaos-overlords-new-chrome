@@ -289,14 +289,14 @@ importers:
   packages/resolver:
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^5.20260927.1
-        version: 5.20260927.1
+        specifier: ^5.20260930.2
+        version: 5.20260930.2
       '@types/node':
         specifier: ^26.6.3
         version: 26.6.3
       miniflare:
-        specifier: 5.20260925.0-alpha
-        version: 5.20260925.0-alpha(@types/node@26.6.3)
+        specifier: 5.20260930.0-alpha
+        version: 5.20260930.0-alpha(@types/node@26.6.3)
       typescript:
         specifier: ^7.0.2
         version: 7.0.2

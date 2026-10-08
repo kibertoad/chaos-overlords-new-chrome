@@ -69,9 +69,9 @@
     "prepublishOnly": "pnpm run build && node ../../scripts/prepublish.mjs"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260927.1",
+    "@cloudflare/workers-types": "^5.20260930.2",
     "@types/node": "^26.6.3",
-    "miniflare": "5.20260925.0-alpha",
+    "miniflare": "5.20260930.0-alpha",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   }
