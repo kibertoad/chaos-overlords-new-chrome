@@ -4,7 +4,7 @@ title: A press on a setup player card selects it first, then works its portrait 
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-015, FND-AI-004, FND-OBJECTIVE-004, FND-PLATFORM-003, FND-SETUP-002, FND-SETUP-017, FND-STATE-004, FND-STATE-012, FND-TURN-005, FND-UI-003, FND-UI-022, FND-UI-064, EXP-UI-053, EXP-UI-051]
+evidence: [FND-SETUP-013, FND-SETUP-005, FND-AUDIO-002, FND-AUDIO-010, SRC-MANUAL-GOG, FND-EXE-004, EXP-UI-015, FND-AI-004, FND-OBJECTIVE-004, FND-PLATFORM-003, FND-SETUP-002, FND-SETUP-017, FND-STATE-004, FND-STATE-012, FND-TURN-005, FND-UI-003, FND-UI-022, FND-UI-064, EXP-UI-053, EXP-UI-030, EXP-UI-051]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-001, SCR-SETUP-003]
@@ -102,7 +102,10 @@ slots, or changes one slot's `portrait` or name. Makes no draws.
 A name typed with Shift and a number-pad digit gets nothing from that key,
 and `_`, `^`, `` ` ``, `~` and the bracket characters become spaces
 (EXP-UI-053). A release outside every card after a drag changes nothing. A drag onto an
-empty card moves the player there and leaves its old slot empty. A press in
+empty card moves the player there and leaves its old slot empty. EXP-UI-030
+repeats a swap of two players, a move to an empty card in both directions and
+a drag that stays within the box, which acts as a press, three times with the
+same result. A press in
 the middle of a selected card, between the two portrait bands and above the
 name band, does nothing. With six humans on six different portraits the
 arrows still find one of the nine free ones.
@@ -123,3 +126,5 @@ None known.
 - `fn_0040F63D` keeps its neutral name; it opens the name dialog SCR-SETUP-003
   describes and copies the name from it.
 - What a press or a drag that starts on an empty card does is not recorded.
+- No run releases a drag outside every card, so that branch rests on
+  FND-SETUP-005 alone and the status stays `supported`.

@@ -23,7 +23,7 @@ Entries by status.
 
 ## recorded
 
-8 entries.
+9 entries.
 
 | ID | Title |
 |---|---|
@@ -35,6 +35,7 @@ Entries by status.
 | [FND-SEARCH-004](../../findings/FND-SEARCH-004.md) | Search rows show the controlled-site icon and the site name, a press flips a row between 0 and 1, the filter is not saved, and the city counts a site as controlled when its progress reaches its Resistance in a sector the viewer owns |
 | [FND-SEARCH-005](../../findings/FND-SEARCH-005.md) | The save file does not hold the Search filter table, and every load enters the match function, which clears the table on entry |
 | [FND-SEARCH-006](../../findings/FND-SEARCH-006.md) | The city redraw passes each site marker's definition, sector, ordinal and controlled flag to fn_00412AC4 from two calls, and takes the viewing player as its first argument |
+| [FND-SEARCH-007](../../findings/FND-SEARCH-007.md) | Every argument the city redraw and the site marker renderer take is pushed as a full dword with no leftover high bits |
 
 ## Established on unreproduced evidence
 
