@@ -8,7 +8,7 @@
 - Default: mandatory
 - Justification: Both lines add information and change nothing the player can do. The original
   answers a refused order with the reject sound alone, which the rebuild still plays; the line
-  says which rule refused it. The key line names keys DEV-UI-020 adds, which the original's
-  screens cannot show, and online it replaces them with the turn's state, which a player waiting
-  on others needs. A setting that hid them would only take information away.
+  says which rule refused it. The key line names keys DEV-UI-020 and DEV-UI-028 add, which the
+  original's screens cannot show, and online it replaces them with the turn's state, which a
+  player waiting on others needs. A setting that hid them would only take information away.
 - Dropped: no
