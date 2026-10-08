@@ -693,7 +693,9 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    report: the corrected state is shown, but the server still refuses orders. It reopens when the
    client adopts a repair it did not hold, or on `match.statusChanged` to `running`, which the
    server logs after every confirmation that settled the pause. A client that reopens on the status
-   change restores the draft the server holds for the open turn, as a reconnect does.
+   change restores the draft the server holds for the open turn, as a reconnect does. A draft written
+   on a state the client has since corrected is dropped and the next edit replaces it; a finished
+   document cannot be replaced, so the seat stays finished and waits for the seal.
 6. On `turn.deadlineExtended`, replace the countdown for that turn. A null deadline pauses it for an
    absence vote; a later timestamp restarts it after that vote or a desync pause closes. Show that
    countdown and warn against it — the client runs no planning clock of its own online, so the

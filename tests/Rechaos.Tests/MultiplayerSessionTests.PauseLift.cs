@@ -82,6 +82,42 @@ public sealed partial class MultiplayerSessionTests
     }
 
     /// <summary>
+    /// A finished document that no longer applies to the state the match settled on cannot be
+    /// replaced, because the server answers a later draft with the document that stands. The seat
+    /// stays finished with the server's digest and gets no draft to edit.
+    /// </summary>
+    [Fact]
+    public async Task AFinishedDocumentThatNoLongerAppliesKeepsTheSeatFinishedWhenThePauseLifts()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
+        var ours = await ResolveTurnOneAsync(session, server);
+        var fresh = FreshMatch().Replay;
+        var builder = new OrderDocumentBuilder(new PlayerId(0));
+        // Nothing is queued for the gang, so the cancellation is refused on replay.
+        builder.Cancel(new PlayerId(0), fresh.State.Players[0].Gangs[0].Id);
+        var stale = builder.Build();
+        server.Answer(
+            HttpMethod.Get,
+            "/turns/2/orders/mine",
+            new OwnSubmissionView(2, stale, Ready: true, OrderDigest.OfDocument(stale)));
+        server.Events.Write(Frame(9, "turn.desynced", Desync(ours)));
+        await WaitFor<MultiplayerNotice.Desynced>(session);
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 2, "the repair upload");
+
+        server.Events.Write(RepairFrame(10, ours));
+        server.Events.Write(Frame(11, "turn.confirmed", $$"""{"turn":1,"stateHash":"{{ours}}"}"""));
+        server.Events.Write(Frame(12, "match.statusChanged", Lifted));
+        var lifted = await WaitFor<MultiplayerNotice.PauseLifted>(session);
+
+        Assert.True(lifted.Submission!.Ready);
+        Assert.Null(lifted.Submission.Orders);
+        Assert.Equal(OrderDigest.OfDocument(stale), lifted.Submission.OrdersHash);
+    }
+
+    /// <summary>
     /// A client that corrected its own report stays paused: the other seats may still disagree,
     /// and the server refuses orders until it says the match runs again.
     /// </summary>

@@ -120,27 +120,12 @@ public sealed class SpeculativeTurn
         int slot,
         OrderDocument document)
     {
-        ArgumentNullException.ThrowIfNull(document);
-        if (document.SchemaVersion != OrderDocumentBuilder.OrderDocumentSchemaVersion)
-        {
-            throw new MultiplayerProtocolException(
-                $"the saved draft uses order schema {document.SchemaVersion}, but this build reads "
-                + OrderDocumentBuilder.OrderDocumentSchemaVersion);
-        }
+        EnsureReadable(document, slot);
         var turn = For(authoritative, definitions, slot);
         // Every op is read before any is applied, so a draft this build cannot read is refused whole.
         var decoded = new DecodedOrderOp[document.Ops.Count];
         for (var index = 0; index < decoded.Length; index++)
-        {
-            var operation = document.Ops[index];
-            if (operation.Player != slot)
-            {
-                throw new MultiplayerProtocolException(
-                    $"the saved draft attributes {operation.Op} to slot {operation.Player}, "
-                    + $"not this client's slot {slot}");
-            }
-            decoded[index] = OrderOpDecoder.Decode(operation, turn.Player, Document);
-        }
+            decoded[index] = OrderOpDecoder.Decode(document.Ops[index], turn.Player, Document);
         for (var index = 0; index < decoded.Length; index++)
         {
             var accepted = decoded[index] switch
@@ -159,6 +144,35 @@ public sealed class SpeculativeTurn
             }
         }
         return turn;
+    }
+
+    /// <summary>
+    /// Refuses a document this build cannot read as this seat's on any state: another order
+    /// schema, or an op attributed to another slot.
+    /// </summary>
+    /// <remarks>
+    /// Either means the server answered for another build or another seat. A document that passes
+    /// and still fails <see cref="Restore"/> was written on a different state from the one it is
+    /// replayed on.
+    /// </remarks>
+    internal static void EnsureReadable(OrderDocument document, int slot)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        if (document.SchemaVersion != OrderDocumentBuilder.OrderDocumentSchemaVersion)
+        {
+            throw new MultiplayerProtocolException(
+                $"the saved draft uses order schema {document.SchemaVersion}, but this build reads "
+                + OrderDocumentBuilder.OrderDocumentSchemaVersion);
+        }
+        foreach (var operation in document.Ops)
+        {
+            if (operation.Player != slot)
+            {
+                throw new MultiplayerProtocolException(
+                    $"the saved draft attributes {operation.Op} to slot {operation.Player}, "
+                    + $"not this client's slot {slot}");
+            }
+        }
     }
 
     /// <summary>Queues a command, and records it when the core accepted it.</summary>

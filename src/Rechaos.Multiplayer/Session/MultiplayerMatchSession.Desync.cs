@@ -103,11 +103,11 @@ public sealed partial class MultiplayerMatchSession
     /// Set by <see cref="ShowPause"/>, and cleared by every notice that reopens planning:
     /// <see cref="MultiplayerNotice.Resumed"/>, <see cref="MultiplayerNotice.TurnResolved"/>,
     /// <see cref="MultiplayerNotice.Resynced"/> and <see cref="MultiplayerNotice.PauseLifted"/>.
-    /// The pause belongs to the match, not to a turn: the server lifts it once no turn is
-    /// unsettled and says so with <c>match.statusChanged</c>, which <see cref="LiftPauseAsync"/>
-    /// answers. A pause that ends with this client adopting a repair it did not hold reopens
-    /// planning through <see cref="MultiplayerNotice.Resynced"/>; every other ending used to leave
-    /// the interface on the Desynced stage for good.
+    /// The server lifts the pause once no turn of the match is unsettled and says so with
+    /// <c>match.statusChanged</c>, which <see cref="LiftPauseAsync"/> answers. A pause that ends
+    /// with this client adopting a repair it did not hold reopens planning through
+    /// <see cref="MultiplayerNotice.Resynced"/>; every other ending used to leave the interface on
+    /// the Desynced stage for good.
     /// </remarks>
     private bool _pauseShown;
 
@@ -141,7 +141,8 @@ public sealed partial class MultiplayerMatchSession
     /// Orders were refused for the whole pause, but a draft saved before it is still the server's
     /// for the open turn, so the planning copy is built from it the way a restore builds one. A
     /// draft that no longer applies is one this client saved on a state it has since corrected; it
-    /// is left out of the planning copy, and the next edit replaces it on the server.
+    /// is left out of the planning copy, and the next edit replaces it on the server. A finished
+    /// document that no longer applies cannot be replaced, so the seat stays finished.
     /// </para>
     /// </remarks>
     private async Task LiftPauseAsync(CancellationToken cancellationToken)
@@ -158,18 +159,34 @@ public sealed partial class MultiplayerMatchSession
                 token => _match.OwnSubmissionAsync(turn, token), _pumpLane, cancellationToken)
             .ConfigureAwait(false);
         ValidateResumeSubmission(submission, turn);
-        var planning = SpeculativeTurn.For(state, _definitions, Slot);
+        SpeculativeTurn? planning = null;
         if (submission.Orders is { } document)
         {
+            // Another schema or another seat's ops fail the session here as they do on a restore;
+            // only a document written on a state this client has since corrected is let go below.
+            SpeculativeTurn.EnsureReadable(document, Slot);
             try
             {
                 planning = SpeculativeTurn.Restore(state, _definitions, Slot, document);
             }
             catch (MultiplayerProtocolException)
             {
-                submission = new OwnSubmissionView(turn, null, Ready: false, OrdersHash: null);
+                // A finished document stays finished: the server answers a later draft with the
+                // document that stands. So a ready seat keeps its readiness and digest and waits for
+                // the seal; only a plain draft is dropped for the next edit to replace.
+                submission = new OwnSubmissionView(
+                    turn,
+                    null,
+                    submission.Ready,
+                    submission.Ready ? submission.OrdersHash : null);
             }
         }
+        planning ??= SpeculativeTurn.For(state, _definitions, Slot);
+        // A finished turn queued before the pause was refused with `match_desynced`, which leaves
+        // its readiness in the outbox. Carried forward, the first draft after the lift would end
+        // the turn for a player who is being shown it open. A ready document still queued for the
+        // turn is newer than the server's answer and keeps its readiness.
+        if (!submission.Ready) WithdrawReadiness(turn);
         ReopenPlanning(new MultiplayerNotice.PauseLifted(turn, state, submission, planning));
     }
 
