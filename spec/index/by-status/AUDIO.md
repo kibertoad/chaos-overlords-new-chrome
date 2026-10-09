@@ -24,21 +24,14 @@ Entries by status.
 | [RULE-AUDIO-009](../../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat |
 | [RULE-AUDIO-010](../../rules/RULE-AUDIO-010.md) | The startup drive check always passes and the game never looks for its disc |
 
-## superseded
-
-1 entries.
-
-| ID | Title |
-|---|---|
-| [FND-AUDIO-012](../../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read |
-
 ## recorded
 
-16 entries.
+18 entries.
 
 | ID | Title |
 |---|---|
 | [EXP-AUDIO-001](../../experiments/EXP-AUDIO-001.md) | Does a game started with New Game play the turn-start sound? |
+| [EXP-AUDIO-002](../../experiments/EXP-AUDIO-002.md) | With sound effects off, does a game started with New Game play the turn-start sound, and does the effects wrapper pass any request on? |
 | [FND-AUDIO-001](../../findings/FND-AUDIO-001.md) | Music plays one of three CD track programs, restarts each when it ends, and pauses while the window is inactive |
 | [FND-AUDIO-002](../../findings/FND-AUDIO-002.md) | Nine general sound effects load into slots 0 to 9 with slot 5 left empty, and a wrapper plays them only while effects are enabled |
 | [FND-AUDIO-003](../../findings/FND-AUDIO-003.md) | The turn-start sound plays at every turn start after the first, and every effect interrupts the one playing |
@@ -54,6 +47,7 @@ Entries by status.
 | [FND-AUDIO-016](../../findings/FND-AUDIO-016.md) | The CD fade uses zero-based wait deadlines and dispatches window messages without handling game events |
 | [FND-AUDIO-017](../../findings/FND-AUDIO-017.md) | The CD fade runs inside the event pump's music poll and mute command, and never touches timer slot 0 |
 | [FND-AUDIO-018](../../findings/FND-AUDIO-018.md) | An unread Comlink message sounds slot 6 on arrival and once at planning entry, and repeats it every 24 timer ticks until read |
+| [FND-AUDIO-019](../../findings/FND-AUDIO-019.md) | Only the level setup writes effects_enabled, and the wrapper's one call of the play helper is at 0x004642AB |
 
 ## Open questions
 
@@ -65,6 +59,7 @@ Entries whose Open questions section says more than None known.
 | [FMT-AUDIO-001](../../formats/FMT-AUDIO-001.md) | Sound effect files DATA/SNDnnnnn | supported |
 | [FMT-AUDIO-002](../../formats/FMT-AUDIO-002.md) | Ogg pages of the music tracks MUSIC/TrackNN.ogg | supported |
 | [RULE-AUDIO-003](../../rules/RULE-AUDIO-003.md) | Applying the music and effects levels | supported |
+| [RULE-AUDIO-005](../../rules/RULE-AUDIO-005.md) | Playing a sound effect, which cuts off the one playing | supported |
 | [RULE-AUDIO-006](../../rules/RULE-AUDIO-006.md) | The turn-start sound | supported |
 | [RULE-AUDIO-008](../../rules/RULE-AUDIO-008.md) | The Comlink alert repeats every 24 presentation ticks | supported |
 | [RULE-AUDIO-009](../../rules/RULE-AUDIO-009.md) | The sound of an attack in Detailed Combat | supported |

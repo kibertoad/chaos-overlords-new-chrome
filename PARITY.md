@@ -13,13 +13,13 @@ How much of the spec in `spec/` the rebuild does. The rows are in `parity/`, one
 | disputed | 0 |
 | implemented | 0 |
 | deviated | 14 |
-| validated | 207 |
+| validated | 208 |
 
 | Code | Rows |
 |---|---|
 | missing | 0 |
 | partial | 3 |
-| complete | 221 |
+| complete | 222 |
 
 ## Areas
 
@@ -34,7 +34,7 @@ How much of the spec in `spec/` the rebuild does. The rows are in `parity/`, one
 | [STATE](parity/STATE.md) | 9 |
 | [RNG](parity/RNG.md) | 2 |
 | [TURN](parity/TURN.md) | 6 |
-| [SETUP](parity/SETUP.md) | 12 |
+| [SETUP](parity/SETUP.md) | 13 |
 | [CITY](parity/CITY.md) | 4 |
 | [HIRE](parity/HIRE.md) | 6 |
 | [HIDE](parity/HIDE.md) | 1 |

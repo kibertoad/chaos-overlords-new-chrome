@@ -38,17 +38,29 @@ Entries by area.
 | [EXP-UI-028](../../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-029](../../experiments/EXP-UI-029.md) | Does the Detailed Combat panel look the same in the rebuild through the second clip of a presentation? | recorded |
 | [EXP-UI-030](../../experiments/EXP-UI-030.md) | Do drags between setup player cards move and swap whole players, and does the rebuild draw the cards the same afterwards? | recorded |
+| [EXP-UI-031](../../experiments/EXP-UI-031.md) | At the first planning entry, does the rebuild draw every active-player marker frame and both selected-sector frames as the original does? | recorded |
+| [EXP-UI-032](../../experiments/EXP-UI-032.md) | What does the elimination card show behind it after an earlier human has planned? | recorded |
+| [EXP-UI-034](../../experiments/EXP-UI-034.md) | What does the endgame show behind it after an elimination card? | recorded |
+| [EXP-UI-035](../../experiments/EXP-UI-035.md) | What does the planning clock bar show at the next planning entry? | recorded |
+| [EXP-UI-036](../../experiments/EXP-UI-036.md) | What does the drawing area show at the state dump when the planning entry has a report? | recorded |
+| [EXP-UI-038](../../experiments/EXP-UI-038.md) | What does the original draw over an earlier glyph for a number cell at the StretchBlt column 32766, and for a red cell at column -2? | recorded |
+| [EXP-UI-039](../../experiments/EXP-UI-039.md) | What does the original draw over an earlier glyph for a number cell at column 508, and for a red cell at the StretchBlt column 32762? | recorded |
+| [EXP-UI-040](../../experiments/EXP-UI-040.md) | What does the original draw over an earlier glyph for a number cell at column -2, and for a red cell at the StretchBlt column 32764? | recorded |
 | [EXP-UI-041](../../experiments/EXP-UI-041.md) | Do the held faces, a dragged hire offer and the chosen rows of the order panels look the same in the rebuild, and do the panels stop their ticks while a face is held? | recorded |
 | [EXP-UI-042](../../experiments/EXP-UI-042.md) | Do the Give, Sell and Influence panels look the same in the rebuild with a choice made and a face held, and does Sell stop its ticks while the face is held? | recorded |
 | [EXP-UI-043](../../experiments/EXP-UI-043.md) | What do the city console's tiles and the sector view's back control show while the right button is held on them? | recorded |
 | [EXP-UI-044](../../experiments/EXP-UI-044.md) | Does the Comlink Send panel look the same in the rebuild while Send is held, and does its caret stop for the hold? | recorded |
+| [EXP-UI-045](../../experiments/EXP-UI-045.md) | Does the detailed sector screen draw the site progress meter for a sector another player owns? | recorded |
 | [EXP-UI-046](../../experiments/EXP-UI-046.md) | Does the Detailed Combat panel look the same in the rebuild through an armed and an unarmed attack on the viewer's gang? | recorded |
 | [EXP-UI-047](../../experiments/EXP-UI-047.md) | Does the Detailed Combat panel look the same in the rebuild through a bare-handed Martial Arts attack? | recorded |
 | [EXP-UI-048](../../experiments/EXP-UI-048.md) | Does the Detailed Combat panel look the same in the rebuild through an attack of the viewer's that its target evades? | recorded |
 | [EXP-UI-049](../../experiments/EXP-UI-049.md) | Does the Detailed Combat panel look the same in the rebuild through two evaded attacks on the viewer's gang? | recorded |
+| [EXP-UI-050](../../experiments/EXP-UI-050.md) | Does the detailed sector screen draw the site progress meter for the active player's own sector? | recorded |
+| [EXP-UI-051](../../experiments/EXP-UI-051.md) | What do the keys, presses, OK and Cancel of the player name dialog do to the edit control's text, selection and the name kept, and what does the game draw under the dialog? | recorded |
 | [EXP-UI-052](../../experiments/EXP-UI-052.md) | Which character does the window procedure store for each number-pad key and each main-keyboard key, with Shift held and not? | recorded |
 | [EXP-UI-053](../../experiments/EXP-UI-053.md) | Which name does the setup name editor give for each number-pad key and each main-keyboard key, with Shift held and not? | recorded |
 | [EXP-UI-054](../../experiments/EXP-UI-054.md) | What do the Detailed Combat apertures show before the second clip's first strip frame? | recorded |
+| [EXP-UI-055](../../experiments/EXP-UI-055.md) | Does the setup screen New Game first opens after a GOG installation look the same in the rebuild? | recorded |
 | [FND-UI-001](../../findings/FND-UI-001.md) | Detailed Combat advances one frame per tick of a 6 Hz multimedia timer and draws the frames in two 64-by-64 apertures | recorded |
 | [FND-UI-002](../../findings/FND-UI-002.md) | The Gangs in Sector panel shows every active gang of a roster in the sector at once, one 32-pixel column each | recorded |
 | [FND-UI-003](../../findings/FND-UI-003.md) | Game Information uses the 320-pixel alternate panel, lists all six player slots and picks its texts from string tables | recorded |
@@ -91,7 +103,7 @@ Entries by area.
 | [FND-UI-042](../../findings/FND-UI-042.md) | The seeded completed match enters its final city without an open report panel | recorded |
 | [FND-UI-043](../../findings/FND-UI-043.md) | Local human planning completion clears the seat's waiting light | recorded |
 | [FND-UI-044](../../findings/FND-UI-044.md) | A left press on a gang card's portrait holds the individual command handler in its own loops until the button is released, so the planning loop does not run while a gang is held | recorded |
-| [FND-UI-045](../../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits | recorded |
+| [FND-UI-045](../../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits | superseded |
 | [FND-UI-046](../../findings/FND-UI-046.md) | The pointer hold loops of the console tiles, the held-button helper and the event page arrows never reach the event pump, and no hold loop touches timer slot 0 | recorded |
 | [FND-UI-047](../../findings/FND-UI-047.md) | The panels that animate on timer slot 0 take the flag after their event switch, so a held face stops the animation and the release pass takes one tick | recorded |
 | [FND-UI-048](../../findings/FND-UI-048.md) | The pump draws the selection frame from its counter before it advances the counter, so the frame on screen is the one for the counter less one | recorded |
@@ -107,11 +119,16 @@ Entries by area.
 | [FND-UI-058](../../findings/FND-UI-058.md) | A byte marks the match as saved; a save or a load sets it, a resolved turn and each accepted order clear it, and File, End and File, Exit offer dialog 129 while it is clear | recorded |
 | [FND-UI-059](../../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation | recorded |
 | [FND-UI-060](../../findings/FND-UI-060.md) | The planning entry draws the console's year, week, countdown, score and cash with the base-value number helper | recorded |
+| [FND-UI-061](../../findings/FND-UI-061.md) | The Combat Results and Last Turn Events handlers slide their panel in only on the branch that shows it, once per call | recorded |
 | [FND-UI-062](../../findings/FND-UI-062.md) | The held-button helper draws the lit face of its kind while the pointer is inside and the plain face when it leaves and when the button comes up | recorded |
 | [FND-UI-063](../../findings/FND-UI-063.md) | Only the About screen, the main console and the detailed sector screen take the right button, and the held-button helper acts at once on a right press | recorded |
 | [FND-UI-064](../../findings/FND-UI-064.md) | The key handler tests Shift once and stores its event at one join, and the name editor's edit control upper-cases what is typed | recorded |
+| [FND-UI-065](../../findings/FND-UI-065.md) | The number helpers copy each glyph cell from the 512-by-646 sheet surface at a source column cut to 16 bits, which every even column can take | recorded |
 | [FND-UI-066](../../findings/FND-UI-066.md) | Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the handler that opened the panel | recorded |
 | [FND-UI-067](../../findings/FND-UI-067.md) | Every information panel holds its close face through the held-button helper, closes only on a release inside it and refuses a press outside its test rectangle | recorded |
+| [FND-UI-068](../../findings/FND-UI-068.md) | The player name dialog holds an edit control with no text limit, and the game reads its text at every notification and keeps ten characters | recorded |
+| [FND-UI-069](../../findings/FND-UI-069.md) | The gang card draws its action strip only for the active player's gang while a match is in play | recorded |
+| [FND-UI-070](../../findings/FND-UI-070.md) | The detailed sector screen draws a site's progress meter only when the sector's owner is the active player | recorded |
 | [RULE-UI-001](../../rules/RULE-UI-001.md) | A push-button control acts only when released inside | supported |
 | [RULE-UI-002](../../rules/RULE-UI-002.md) | Routing a press on the main console | supported |
 | [RULE-UI-003](../../rules/RULE-UI-003.md) | Panels slide in from the right and out to the right | supported |

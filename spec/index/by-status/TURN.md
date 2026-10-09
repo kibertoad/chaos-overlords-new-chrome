@@ -26,7 +26,7 @@ Entries by status.
 
 ## recorded
 
-119 entries.
+125 entries.
 
 | ID | Title |
 |---|---|
@@ -130,12 +130,18 @@ Entries by status.
 | [EXP-TURN-099](../../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? |
 | [EXP-TURN-100](../../experiments/EXP-TURN-100.md) | Does the Move repair's neighbour draw from corner sector 56 draw again when only the test of the western edge refuses the result? |
 | [EXP-TURN-101](../../experiments/EXP-TURN-101.md) | Where does a family-13 or family-14 computer gang move in a scenario without objective sectors? |
+| [EXP-TURN-102](../../experiments/EXP-TURN-102.md) | Does the planning clock run while the menu bar is open? |
 | [EXP-TURN-103](../../experiments/EXP-TURN-103.md) | Does the clamp after the instant phase bring a base Tolerance above 40 back to 40, after the later gangs have acted? |
 | [EXP-TURN-104](../../experiments/EXP-TURN-104.md) | Does a Research gang that acts after a site of its sector is completed in the same instant phase roll without the site's Research? |
 | [EXP-TURN-105](../../experiments/EXP-TURN-105.md) | Do the Greed Terminate branches of the family 1, 5, 6 and 12 handlers flag the record for a new family? |
+| [EXP-TURN-106](../../experiments/EXP-TURN-106.md) | Does a six-month Power match at Criminal end with the same scores, ranking and awards, a tie for the lead included? |
+| [EXP-TURN-107](../../experiments/EXP-TURN-107.md) | Does a Big 40 match at Goon end on the turn a computer player takes its fortieth sector? |
+| [EXP-TURN-108](../../experiments/EXP-TURN-108.md) | Does an Armageddon match at Goon end on the turn a computer player holds all 64 sectors? |
 | [EXP-TURN-109](../../experiments/EXP-TURN-109.md) | Does a family-7 gang whose focus names its own best research sector research there while a Research site in it is unfinished? |
 | [EXP-TURN-110](../../experiments/EXP-TURN-110.md) | Does a Heal by a gang at Force 10 roll its pool and leave the Force at 10? |
 | [EXP-TURN-111](../../experiments/EXP-TURN-111.md) | Does a Bribe that takes the base Tolerance past 127 wrap the signed byte? |
+| [EXP-TURN-112](../../experiments/EXP-TURN-112.md) | Does a Siege match at Goon run as the rebuild runs it until the hiding human is eliminated? |
+| [EXP-TURN-113](../../experiments/EXP-TURN-113.md) | Does a Kill 'Em All match at Goon run as the rebuild runs it for 150 turns? |
 | [EXP-TURN-114](../../experiments/EXP-TURN-114.md) | Does a Snitch that takes the base Tolerance below -128 wrap the signed byte? |
 | [EXP-TURN-115](../../experiments/EXP-TURN-115.md) | Does a base Tolerance held at 40 step to 39 each resolution and return to 40 with a Bribe? |
 | [EXP-TURN-116](../../experiments/EXP-TURN-116.md) | Does the end-of-turn police countdown leave the island modifier's permanent Crackdowns at 100? |

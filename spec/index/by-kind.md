@@ -14,15 +14,21 @@ Entries by kind.
 
 ## sources
 
-5 entries.
+11 entries.
 
 | ID | Title | Status |
 |---|---|---|
 | [SRC-HELP-GOG](../sources/SRC-HELP-GOG.md) | Chaos Overlords in-game WinHelp file, read as a document | None |
+| [SRC-INSTALLER-GOG](../sources/SRC-INSTALLER-GOG.md) | GOG's offline installer for Chaos Overlords, which writes the game's registry preferences | None |
 | [SRC-MANUAL-GOG](../sources/SRC-MANUAL-GOG.md) | Chaos Overlords manual, image scan shipped with the GOG release | None |
 | [SRC-MCI-PLAY](../sources/SRC-MCI-PLAY.md) | Microsoft MCI_PLAY command reference | None |
 | [SRC-MCI-STOP](../sources/SRC-MCI-STOP.md) | Microsoft MCI_STOP command reference | None |
 | [SRC-RECHAOS-3561D41](../sources/SRC-RECHAOS-3561D41.md) | RE: Chaos Overlords (1996) | None |
+| [SRC-WIN32-CARETS](../sources/SRC-WIN32-CARETS.md) | Microsoft About Carets reference | None |
+| [SRC-WIN32-DIALOG](../sources/SRC-WIN32-DIALOG.md) | Microsoft Dialog Box Programming Considerations reference | None |
+| [SRC-WIN32-EDIT](../sources/SRC-WIN32-EDIT.md) | Microsoft About Edit Controls reference | None |
+| [SRC-WIN32-EDIT-TEXT](../sources/SRC-WIN32-EDIT-TEXT.md) | Microsoft Edit Control Text Operations reference | None |
+| [SRC-WIN32-EM-LIMITTEXT](../sources/SRC-WIN32-EM-LIMITTEXT.md) | Microsoft EM_LIMITTEXT message reference | None |
 
 ## formats
 
@@ -181,7 +187,7 @@ Entries by kind.
 | [RULE-SEARCH-002](../rules/RULE-SEARCH-002.md) | The city shows a marker for each site the viewer controls and for each other site of a type the viewer's Search filter selects | established |
 | [RULE-SELL-001](../rules/RULE-SELL-001.md) | Sell removes every selected item but pays half the Cost of only the last selected slot | supported |
 | [RULE-SETUP-001](../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported |
-| [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported |
+| [RULE-SETUP-002](../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Kill 'Em All after a GOG installation, and a one-year time limit | supported |
 | [RULE-SETUP-003](../rules/RULE-SETUP-003.md) | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | established |
 | [RULE-SETUP-004](../rules/RULE-SETUP-004.md) | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported |
 | [RULE-SETUP-005](../rules/RULE-SETUP-005.md) | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | established |
@@ -225,7 +231,7 @@ Entries by kind.
 
 ## findings
 
-396 entries.
+402 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -299,6 +305,7 @@ Entries by kind.
 | [FND-AI-079](../findings/FND-AI-079.md) | Only the family handlers and their dispatcher store a planned action, and none stores Bribe, Give or Sell | recorded |
 | [FND-AI-080](../findings/FND-AI-080.md) | The family-0 owned-sector tests after previous Control and after previous Heal, Hide or Move read the owner query, which gives -2 under police presence | recorded |
 | [FND-AI-081](../findings/FND-AI-081.md) | The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order | recorded |
+| [FND-AI-082](../findings/FND-AI-082.md) | A computer player's planned Equips are all carried out, with no cash set aside at planning | recorded |
 | [FND-ASSET-001](../findings/FND-ASSET-001.md) | The executable names its data files by fixed relative paths and five-digit templates | recorded |
 | [FND-ATTACK-001](../findings/FND-ATTACK-001.md) | The Attack picker's opponent portraits and six target regions are fixed hit rectangles in handler 0x0043B290 | recorded |
 | [FND-ATTACK-002](../findings/FND-ATTACK-002.md) | The Attack picker marks the chosen opponent with a 34-by-34 frame and the chosen target with a 48-by-48 keyed overlay from PX00129 | recorded |
@@ -316,13 +323,13 @@ Entries by kind.
 | [FND-AUDIO-007](../findings/FND-AUDIO-007.md) | CD music opens a shareable cdaudio device in TMSF format, a timer poll restarts a stopped program, and the MCI notification changes nothing | recorded |
 | [FND-AUDIO-010](../findings/FND-AUDIO-010.md) | Slot 2 is the sound of pressing a push-button control, and setup plays slots 3 and 4 for accepted and refused choices | recorded |
 | [FND-AUDIO-011](../findings/FND-AUDIO-011.md) | Panels play slot 3 for an accepted choice and slot 4 for a refused one, and the pagers stop at both ends | recorded |
-| [FND-AUDIO-012](../findings/FND-AUDIO-012.md) | An unread Comlink message sounds slot 6 on arrival and at planning entry, and repeats it every 24 timer ticks until read | superseded |
 | [FND-AUDIO-013](../findings/FND-AUDIO-013.md) | Detailed Combat loads each attack's sound into slot 5 and picks the attack and hit strips from the weapon, Martial Arts and outcome | recorded |
 | [FND-AUDIO-014](../findings/FND-AUDIO-014.md) | The shipped GOG CD wrapper rejects MCI_PAUSE and treats MCI_PLAY without MCI_FROM as a successful no-op | recorded |
 | [FND-AUDIO-015](../findings/FND-AUDIO-015.md) | Title music is requested after successful game entry and return, not after cancelled preparation or loading | recorded |
 | [FND-AUDIO-016](../findings/FND-AUDIO-016.md) | The CD fade uses zero-based wait deadlines and dispatches window messages without handling game events | recorded |
 | [FND-AUDIO-017](../findings/FND-AUDIO-017.md) | The CD fade runs inside the event pump's music poll and mute command, and never touches timer slot 0 | recorded |
 | [FND-AUDIO-018](../findings/FND-AUDIO-018.md) | An unread Comlink message sounds slot 6 on arrival and once at planning entry, and repeats it every 24 timer ticks until read | recorded |
+| [FND-AUDIO-019](../findings/FND-AUDIO-019.md) | Only the level setup writes effects_enabled, and the wrapper's one call of the play helper is at 0x004642AB | recorded |
 | [FND-AWARDS-001](../findings/FND-AWARDS-001.md) | The award builder takes five categories in a fixed order with fixed starting thresholds and keeps every tied player, but only three awards per row are drawn | recorded |
 | [FND-AWARDS-002](../findings/FND-AWARDS-002.md) | Every Hide the resolver carries out adds one to the player's Hide count, hidden or not | recorded |
 | [FND-AWARDS-003](../findings/FND-AWARDS-003.md) | The endgame shows a victory splash to a lone human and goes straight to the shared standings with several, whose rows have fixed positions | recorded |
@@ -599,7 +606,7 @@ Entries by kind.
 | [FND-UI-042](../findings/FND-UI-042.md) | The seeded completed match enters its final city without an open report panel | recorded |
 | [FND-UI-043](../findings/FND-UI-043.md) | Local human planning completion clears the seat's waiting light | recorded |
 | [FND-UI-044](../findings/FND-UI-044.md) | A left press on a gang card's portrait holds the individual command handler in its own loops until the button is released, so the planning loop does not run while a gang is held | recorded |
-| [FND-UI-045](../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits | recorded |
+| [FND-UI-045](../findings/FND-UI-045.md) | The number helpers copy each glyph cell with a GDI BitBlt from the 512-by-646 sheet surface, at a source column cut to 16 bits | superseded |
 | [FND-UI-046](../findings/FND-UI-046.md) | The pointer hold loops of the console tiles, the held-button helper and the event page arrows never reach the event pump, and no hold loop touches timer slot 0 | recorded |
 | [FND-UI-047](../findings/FND-UI-047.md) | The panels that animate on timer slot 0 take the flag after their event switch, so a held face stops the animation and the release pass takes one tick | recorded |
 | [FND-UI-048](../findings/FND-UI-048.md) | The pump draws the selection frame from its counter before it advances the counter, so the frame on screen is the one for the counter less one | recorded |
@@ -615,11 +622,16 @@ Entries by kind.
 | [FND-UI-058](../findings/FND-UI-058.md) | A byte marks the match as saved; a save or a load sets it, a resolved turn and each accepted order clear it, and File, End and File, Exit offer dialog 129 while it is clear | recorded |
 | [FND-UI-059](../findings/FND-UI-059.md) | Only the planning entry draws the console's calendar, score and cash, before any presentation | recorded |
 | [FND-UI-060](../findings/FND-UI-060.md) | The planning entry draws the console's year, week, countdown, score and cash with the base-value number helper | recorded |
+| [FND-UI-061](../findings/FND-UI-061.md) | The Combat Results and Last Turn Events handlers slide their panel in only on the branch that shows it, once per call | recorded |
 | [FND-UI-062](../findings/FND-UI-062.md) | The held-button helper draws the lit face of its kind while the pointer is inside and the plain face when it leaves and when the button comes up | recorded |
 | [FND-UI-063](../findings/FND-UI-063.md) | Only the About screen, the main console and the detailed sector screen take the right button, and the held-button helper acts at once on a right press | recorded |
 | [FND-UI-064](../findings/FND-UI-064.md) | The key handler tests Shift once and stores its event at one join, and the name editor's edit control upper-cases what is typed | recorded |
+| [FND-UI-065](../findings/FND-UI-065.md) | The number helpers copy each glyph cell from the 512-by-646 sheet surface at a source column cut to 16 bits, which every even column can take | recorded |
 | [FND-UI-066](../findings/FND-UI-066.md) | Each of the 23 calls of the panel-open helper sits in a different panel handler, so its return address names the handler that opened the panel | recorded |
 | [FND-UI-067](../findings/FND-UI-067.md) | Every information panel holds its close face through the held-button helper, closes only on a release inside it and refuses a press outside its test rectangle | recorded |
+| [FND-UI-068](../findings/FND-UI-068.md) | The player name dialog holds an edit control with no text limit, and the game reads its text at every notification and keeps ten characters | recorded |
+| [FND-UI-069](../findings/FND-UI-069.md) | The gang card draws its action strip only for the active player's gang while a match is in play | recorded |
+| [FND-UI-070](../findings/FND-UI-070.md) | The detailed sector screen draws a site's progress meter only when the sector's owner is the active player | recorded |
 | [FND-UPKEEP-001](../findings/FND-UPKEEP-001.md) | Upkeep charges each active gang its definition's Upkeep and pays each owned sector's rebuilt Cash byte, from the second turn on | recorded |
 | [FND-UPKEEP-002](../findings/FND-UPKEEP-002.md) | Case 6 of the selector fn_00402D70 returns the sector's cash_yield byte at offset 0x03, but no call passes 6; the computer players read Income through case 7, offset 0x04 | recorded |
 | [FND-VIDEO-001](../findings/FND-VIDEO-001.md) | MVINTRO and MVLOGOS are Smacker version 2 files of 480 by 256 at 10 frames per second whose frame table covers the file | recorded |
@@ -628,7 +640,7 @@ Entries by kind.
 
 ## experiments
 
-179 entries.
+198 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -636,6 +648,7 @@ Entries by kind.
 | [EXP-ATTACK-002](../experiments/EXP-ATTACK-002.md) | Which of an opponent's gangs in the sector does the Attack picker list when the player sees only some of them? | recorded |
 | [EXP-ATTACK-003](../experiments/EXP-ATTACK-003.md) | Which gangs does the Attack picker list when several opponents share the acting gang's sector? | recorded |
 | [EXP-AUDIO-001](../experiments/EXP-AUDIO-001.md) | Does a game started with New Game play the turn-start sound? | recorded |
+| [EXP-AUDIO-002](../experiments/EXP-AUDIO-002.md) | With sound effects off, does a game started with New Game play the turn-start sound, and does the effects wrapper pass any request on? | recorded |
 | [EXP-COMBAT-001](../experiments/EXP-COMBAT-001.md) | Does Detailed Combat present an attack by the viewer's gang as the original does? | recorded |
 | [EXP-COMBAT-002](../experiments/EXP-COMBAT-002.md) | Does Detailed Combat present attacks that the viewer's hiding gang evades as the original does? | recorded |
 | [EXP-COMBAT-003](../experiments/EXP-COMBAT-003.md) | Does Detailed Combat present several armed and unarmed attackers on one gang as the original does? | recorded |
@@ -759,12 +772,18 @@ Entries by kind.
 | [EXP-TURN-099](../experiments/EXP-TURN-099.md) | Does the Move repair's neighbour draw from a corner in column 0 draw again past the western edge? | recorded |
 | [EXP-TURN-100](../experiments/EXP-TURN-100.md) | Does the Move repair's neighbour draw from corner sector 56 draw again when only the test of the western edge refuses the result? | recorded |
 | [EXP-TURN-101](../experiments/EXP-TURN-101.md) | Where does a family-13 or family-14 computer gang move in a scenario without objective sectors? | recorded |
+| [EXP-TURN-102](../experiments/EXP-TURN-102.md) | Does the planning clock run while the menu bar is open? | recorded |
 | [EXP-TURN-103](../experiments/EXP-TURN-103.md) | Does the clamp after the instant phase bring a base Tolerance above 40 back to 40, after the later gangs have acted? | recorded |
 | [EXP-TURN-104](../experiments/EXP-TURN-104.md) | Does a Research gang that acts after a site of its sector is completed in the same instant phase roll without the site's Research? | recorded |
 | [EXP-TURN-105](../experiments/EXP-TURN-105.md) | Do the Greed Terminate branches of the family 1, 5, 6 and 12 handlers flag the record for a new family? | recorded |
+| [EXP-TURN-106](../experiments/EXP-TURN-106.md) | Does a six-month Power match at Criminal end with the same scores, ranking and awards, a tie for the lead included? | recorded |
+| [EXP-TURN-107](../experiments/EXP-TURN-107.md) | Does a Big 40 match at Goon end on the turn a computer player takes its fortieth sector? | recorded |
+| [EXP-TURN-108](../experiments/EXP-TURN-108.md) | Does an Armageddon match at Goon end on the turn a computer player holds all 64 sectors? | recorded |
 | [EXP-TURN-109](../experiments/EXP-TURN-109.md) | Does a family-7 gang whose focus names its own best research sector research there while a Research site in it is unfinished? | recorded |
 | [EXP-TURN-110](../experiments/EXP-TURN-110.md) | Does a Heal by a gang at Force 10 roll its pool and leave the Force at 10? | recorded |
 | [EXP-TURN-111](../experiments/EXP-TURN-111.md) | Does a Bribe that takes the base Tolerance past 127 wrap the signed byte? | recorded |
+| [EXP-TURN-112](../experiments/EXP-TURN-112.md) | Does a Siege match at Goon run as the rebuild runs it until the hiding human is eliminated? | recorded |
+| [EXP-TURN-113](../experiments/EXP-TURN-113.md) | Does a Kill 'Em All match at Goon run as the rebuild runs it for 150 turns? | recorded |
 | [EXP-TURN-114](../experiments/EXP-TURN-114.md) | Does a Snitch that takes the base Tolerance below -128 wrap the signed byte? | recorded |
 | [EXP-TURN-115](../experiments/EXP-TURN-115.md) | Does a base Tolerance held at 40 step to 39 each resolution and return to 40 with a Bribe? | recorded |
 | [EXP-TURN-116](../experiments/EXP-TURN-116.md) | Does the end-of-turn police countdown leave the island modifier's permanent Crackdowns at 100? | recorded |
@@ -799,17 +818,29 @@ Entries by kind.
 | [EXP-UI-028](../experiments/EXP-UI-028.md) | What does the original draw for a number cell at a source column where the copy goes to StretchBlt, and for a red cell wholly outside the glyph sheet's bitmap? | recorded |
 | [EXP-UI-029](../experiments/EXP-UI-029.md) | Does the Detailed Combat panel look the same in the rebuild through the second clip of a presentation? | recorded |
 | [EXP-UI-030](../experiments/EXP-UI-030.md) | Do drags between setup player cards move and swap whole players, and does the rebuild draw the cards the same afterwards? | recorded |
+| [EXP-UI-031](../experiments/EXP-UI-031.md) | At the first planning entry, does the rebuild draw every active-player marker frame and both selected-sector frames as the original does? | recorded |
+| [EXP-UI-032](../experiments/EXP-UI-032.md) | What does the elimination card show behind it after an earlier human has planned? | recorded |
+| [EXP-UI-034](../experiments/EXP-UI-034.md) | What does the endgame show behind it after an elimination card? | recorded |
+| [EXP-UI-035](../experiments/EXP-UI-035.md) | What does the planning clock bar show at the next planning entry? | recorded |
+| [EXP-UI-036](../experiments/EXP-UI-036.md) | What does the drawing area show at the state dump when the planning entry has a report? | recorded |
+| [EXP-UI-038](../experiments/EXP-UI-038.md) | What does the original draw over an earlier glyph for a number cell at the StretchBlt column 32766, and for a red cell at column -2? | recorded |
+| [EXP-UI-039](../experiments/EXP-UI-039.md) | What does the original draw over an earlier glyph for a number cell at column 508, and for a red cell at the StretchBlt column 32762? | recorded |
+| [EXP-UI-040](../experiments/EXP-UI-040.md) | What does the original draw over an earlier glyph for a number cell at column -2, and for a red cell at the StretchBlt column 32764? | recorded |
 | [EXP-UI-041](../experiments/EXP-UI-041.md) | Do the held faces, a dragged hire offer and the chosen rows of the order panels look the same in the rebuild, and do the panels stop their ticks while a face is held? | recorded |
 | [EXP-UI-042](../experiments/EXP-UI-042.md) | Do the Give, Sell and Influence panels look the same in the rebuild with a choice made and a face held, and does Sell stop its ticks while the face is held? | recorded |
 | [EXP-UI-043](../experiments/EXP-UI-043.md) | What do the city console's tiles and the sector view's back control show while the right button is held on them? | recorded |
 | [EXP-UI-044](../experiments/EXP-UI-044.md) | Does the Comlink Send panel look the same in the rebuild while Send is held, and does its caret stop for the hold? | recorded |
+| [EXP-UI-045](../experiments/EXP-UI-045.md) | Does the detailed sector screen draw the site progress meter for a sector another player owns? | recorded |
 | [EXP-UI-046](../experiments/EXP-UI-046.md) | Does the Detailed Combat panel look the same in the rebuild through an armed and an unarmed attack on the viewer's gang? | recorded |
 | [EXP-UI-047](../experiments/EXP-UI-047.md) | Does the Detailed Combat panel look the same in the rebuild through a bare-handed Martial Arts attack? | recorded |
 | [EXP-UI-048](../experiments/EXP-UI-048.md) | Does the Detailed Combat panel look the same in the rebuild through an attack of the viewer's that its target evades? | recorded |
 | [EXP-UI-049](../experiments/EXP-UI-049.md) | Does the Detailed Combat panel look the same in the rebuild through two evaded attacks on the viewer's gang? | recorded |
+| [EXP-UI-050](../experiments/EXP-UI-050.md) | Does the detailed sector screen draw the site progress meter for the active player's own sector? | recorded |
+| [EXP-UI-051](../experiments/EXP-UI-051.md) | What do the keys, presses, OK and Cancel of the player name dialog do to the edit control's text, selection and the name kept, and what does the game draw under the dialog? | recorded |
 | [EXP-UI-052](../experiments/EXP-UI-052.md) | Which character does the window procedure store for each number-pad key and each main-keyboard key, with Shift held and not? | recorded |
 | [EXP-UI-053](../experiments/EXP-UI-053.md) | Which name does the setup name editor give for each number-pad key and each main-keyboard key, with Shift held and not? | recorded |
 | [EXP-UI-054](../experiments/EXP-UI-054.md) | What do the Detailed Combat apertures show before the second clip's first strip frame? | recorded |
+| [EXP-UI-055](../experiments/EXP-UI-055.md) | Does the setup screen New Game first opens after a GOG installation look the same in the rebuild? | recorded |
 | [EXP-VIDEO-001](../experiments/EXP-VIDEO-001.md) | How many steps does the intro show of each movie when it plays out? | recorded |
 
 ## bugs
@@ -822,7 +853,7 @@ Entries by kind.
 | [BUG-AI-002](../bugs/BUG-AI-002.md) | The computer players' neighbourhood scans read one element past the last sector, and a failed placement anchor reads before the first | supported |
 | [BUG-AI-003](../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list | supported |
 | [BUG-AI-004](../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 | supported |
-| [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
+| [BUG-AI-005](../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | established |
 | [BUG-AI-006](../bugs/BUG-AI-006.md) | An objective gang with nothing else to do picks its Influence site against a threshold the planner never sets | supported |
 | [BUG-AI-007](../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector | established |
 | [BUG-AI-008](../bugs/BUG-AI-008.md) | Family 2's late Control gates test the sector numbered like the item of a planned Equip | established |
@@ -840,7 +871,7 @@ Entries by kind.
 
 ## screens
 
-39 entries.
+40 entries.
 
 | ID | Title | Status |
 |---|---|---|
@@ -874,6 +905,7 @@ Entries by kind.
 | [SCR-SELL-001](../screens/SCR-SELL-001.md) | Sell panel | supported |
 | [SCR-SETUP-001](../screens/SCR-SETUP-001.md) | Full local game setup screen with scenario, settings and six player cards | supported |
 | [SCR-SETUP-002](../screens/SCR-SETUP-002.md) | Hot-seat handoff card that waits for the next local player to press Ready | supported |
+| [SCR-SETUP-003](../screens/SCR-SETUP-003.md) | Player name dialog with one edit control, OK and Cancel, opened from a setup player card | supported |
 | [SCR-UI-001](../screens/SCR-UI-001.md) | Title screen | supported |
 | [SCR-UI-002](../screens/SCR-UI-002.md) | Credits screen | supported |
 | [SCR-UI-003](../screens/SCR-UI-003.md) | City screen and main console | supported |

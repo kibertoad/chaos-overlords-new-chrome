@@ -33,7 +33,7 @@ Entries by area.
 | [FND-SETUP-018](../../findings/FND-SETUP-018.md) | Every match entry sets the turn limit to 65535 when the scenario number is above 3 | recorded |
 | [FND-SETUP-019](../../findings/FND-SETUP-019.md) | The setup screen breaks the scenario description at the last space at or before the 37th character and starts the next line after it | recorded |
 | [RULE-SETUP-001](../../rules/RULE-SETUP-001.md) | A new match gives every player $20, or $500 in Armageddon, and $1,500 to a player with the cash modifier name | supported |
-| [RULE-SETUP-002](../../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Greed when nothing is stored, and a one-year time limit | supported |
+| [RULE-SETUP-002](../../rules/RULE-SETUP-002.md) | A fresh local setup selects the stored scenario preference, which is Kill 'Em All after a GOG installation, and a one-year time limit | supported |
 | [RULE-SETUP-003](../../rules/RULE-SETUP-003.md) | Begin turns every empty setup slot into a computer player with an unused random portrait and that portrait's name | established |
 | [RULE-SETUP-004](../../rules/RULE-SETUP-004.md) | A new match draws every slot's reaction, sets the research, generates the city, the headquarters and the Right Hands, then applies the name modifiers | supported |
 | [RULE-SETUP-005](../../rules/RULE-SETUP-005.md) | A player named with the island modifier puts every neutral sector under a Crackdown that never ends | established |
@@ -44,3 +44,4 @@ Entries by area.
 | [RULE-SETUP-010](../../rules/RULE-SETUP-010.md) | The first local setup of a session starts with one human, later ones with the last roster begun, and Add and Remove change the number of local humans from one to six | supported |
 | [SCR-SETUP-001](../../screens/SCR-SETUP-001.md) | Full local game setup screen with scenario, settings and six player cards | supported |
 | [SCR-SETUP-002](../../screens/SCR-SETUP-002.md) | Hot-seat handoff card that waits for the next local player to press Ready | supported |
+| [SCR-SETUP-003](../../screens/SCR-SETUP-003.md) | Player name dialog with one edit control, OK and Cancel, opened from a setup player card | supported |

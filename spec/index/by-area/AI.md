@@ -12,7 +12,7 @@ Entries by area.
 | [BUG-AI-002](../../bugs/BUG-AI-002.md) | The computer players' neighbourhood scans read one element past the last sector, and a failed placement anchor reads before the first | supported |
 | [BUG-AI-003](../../bugs/BUG-AI-003.md) | A computer gang's pre-attack strength test is made on the gang at the same position in a different list | supported |
 | [BUG-AI-004](../../bugs/BUG-AI-004.md) | At Goon, family-1 computer gangs never commit crimes in sectors of player 0 | supported |
-| [BUG-AI-005](../../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | supported |
+| [BUG-AI-005](../../bugs/BUG-AI-005.md) | A computer player far behind the leader late in a match never switches its gangs to family 9, because the flag store uses the wrong index | established |
 | [BUG-AI-006](../../bugs/BUG-AI-006.md) | An objective gang with nothing else to do picks its Influence site against a threshold the planner never sets | supported |
 | [BUG-AI-007](../../bugs/BUG-AI-007.md) | Five attack draws test the strength of the record whose slot number is the gang's sector | established |
 | [BUG-AI-008](../../bugs/BUG-AI-008.md) | Family 2's late Control gates test the sector numbered like the item of a planned Equip | established |
@@ -86,6 +86,7 @@ Entries by area.
 | [FND-AI-079](../../findings/FND-AI-079.md) | Only the family handlers and their dispatcher store a planned action, and none stores Bribe, Give or Sell | recorded |
 | [FND-AI-080](../../findings/FND-AI-080.md) | The family-0 owned-sector tests after previous Control and after previous Heal, Hide or Move read the owner query, which gives -2 under police presence | recorded |
 | [FND-AI-081](../../findings/FND-AI-081.md) | The strategic refresh fills per-sector records at 0x0048E310, player-pair records at 0x0048F810 and new gangs' auxiliary records at 0x0048C0B0, in that order | recorded |
+| [FND-AI-082](../../findings/FND-AI-082.md) | A computer player's planned Equips are all carried out, with no cash set aside at planning | recorded |
 | [RULE-AI-001](../../rules/RULE-AI-001.md) | A computer player's planning pass rolls its gangs' action history, dispatches every gang, then hires | supported |
 | [RULE-AI-002](../../rules/RULE-AI-002.md) | The per-gang AI dispatcher sets the gang's family from scenario and hire role, then runs that family's handler | supported |
 | [RULE-AI-003](../../rules/RULE-AI-003.md) | Each planning pass refreshes a computer player's gang counts, sector danger and combat-advantage hostility | supported |
