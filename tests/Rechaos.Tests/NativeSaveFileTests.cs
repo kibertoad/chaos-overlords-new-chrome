@@ -107,8 +107,12 @@ public sealed class NativeSaveFileTests : IDisposable
         Assert.Throws<InvalidDataException>(() => NativeSaveStore.Load(SavePath, match.Definitions));
     }
 
+    /// <summary>
+    /// A codec this build does not know is a newer build's file, so the recovery paths leave it
+    /// alone instead of replacing it from the backup.
+    /// </summary>
     [Fact]
-    public void AnUnknownCodecIsRefused()
+    public void AnUnknownCodecIsRefusedAsANewerFormat()
     {
         var match = NativeSaveSerializerTests.CreateMatch();
         NativeSaveStore.SaveAtomic(SavePath, match);
@@ -118,5 +122,21 @@ public sealed class NativeSaveFileTests : IDisposable
 
         var error = Assert.Throws<InvalidDataException>(() => NativeSaveStore.Load(SavePath, match.Definitions));
         Assert.Contains("codec 2", error.Message);
+        Assert.Equal(IncompatibleSaveReason.NewerFormat, IncompatibleSave.ReasonOf(error));
+    }
+
+    /// <summary>A reserved header byte this build does not write is a newer build's file as well.</summary>
+    [Fact]
+    public void ASetReservedByteIsRefusedAsANewerFormat()
+    {
+        var match = NativeSaveSerializerTests.CreateMatch();
+        NativeSaveStore.SaveAtomic(SavePath, match);
+        var file = File.ReadAllBytes(SavePath);
+        Assert.Equal(new byte[3], file[5..8]);
+        file[6] = 1;
+        File.WriteAllBytes(SavePath, file);
+
+        var error = Assert.Throws<InvalidDataException>(() => NativeSaveStore.Load(SavePath, match.Definitions));
+        Assert.Equal(IncompatibleSaveReason.NewerFormat, IncompatibleSave.ReasonOf(error));
     }
 }

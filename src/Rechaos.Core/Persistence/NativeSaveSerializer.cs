@@ -18,9 +18,9 @@ public static class NativeSaveSerializer
 
     /// <summary>The largest snapshot JSON this writes or reads.</summary>
     /// <remarks>
-    /// The bound guards the reader against a hostile or damaged file, not against long matches. A
-    /// 124-turn six-player match the original plays to its end (EXP-TURN-108) saves to about 24 MB
-    /// of JSON, so the bound sits well above that. The file on disk is compressed by
+    /// The bound keeps a hostile or damaged file from making the reader allocate without limit. It
+    /// sits well above the longest match on record: a 124-turn six-player match the original plays
+    /// to its end (EXP-TURN-108) saves to about 24 MB of JSON. The file on disk is compressed by
     /// <see cref="NativeSaveStore"/> and is several times smaller.
     /// </remarks>
     public const int MaximumSaveBytes = 64 * 1024 * 1024;
@@ -42,15 +42,34 @@ public static class NativeSaveSerializer
         ArgumentNullException.ThrowIfNull(destination);
         ArgumentNullException.ThrowIfNull(state);
         if (!destination.CanWrite) throw new ArgumentException("Destination stream is not writable.", nameof(destination));
-        using var buffer = new MemoryStream();
+        using var buffer = SaveToMemory(state);
+        buffer.CopyTo(destination);
+    }
+
+    /// <summary>
+    /// The snapshot JSON in a rewound memory stream, refused over the limit as <see cref="Save"/>
+    /// refuses it.
+    /// </summary>
+    /// <remarks>
+    /// For a caller that needs the bytes in memory anyway: copying them out of
+    /// <see cref="Save"/> into a second stream costs a full copy of a snapshot that runs to tens
+    /// of megabytes.
+    /// </remarks>
+    /// <exception cref="InvalidDataException">The snapshot is over the size limit.</exception>
+    internal static MemoryStream SaveToMemory(MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var buffer = new MemoryStream();
         JsonSerializer.Serialize(buffer, Capture(state), JsonOptions);
         if (buffer.Length > MaximumSaveBytes)
         {
+            var length = buffer.Length;
+            buffer.Dispose();
             throw new InvalidDataException(
-                $"Native save is {buffer.Length} bytes, over the {MaximumSaveBytes} byte limit.");
+                $"Native save is {length} bytes, over the {MaximumSaveBytes} byte limit.");
         }
         buffer.Position = 0;
-        buffer.CopyTo(destination);
+        return buffer;
     }
 
     public static MatchState Load(Stream source, OriginalData definitions) =>
@@ -485,11 +504,27 @@ public static class NativeSaveSerializer
     /// <see cref="InvalidDataException"/> with <paramref name="overLimitMessage"/> once more than
     /// <paramref name="maximumBytes"/> have been read.
     /// </summary>
+    /// <remarks>
+    /// A memory stream that exposes its buffer is not copied: the result is a read-only view of
+    /// what is left of it, and the source is moved to its end as a copy would leave it. A native
+    /// save file passes through here twice, once as the file and once as the JSON decompressed
+    /// from it, and copying the JSON again doubled the memory a long match's load takes.
+    /// </remarks>
     internal static MemoryStream ReadBounded(Stream source, int maximumBytes, string overLimitMessage)
     {
         if (source.CanSeek && source.Length - source.Position > maximumBytes)
             throw new InvalidDataException(overLimitMessage);
-        var memory = new MemoryStream();
+        if (source is MemoryStream inMemory && inMemory.TryGetBuffer(out var exposed))
+        {
+            var start = checked((int)Math.Min(inMemory.Position, inMemory.Length));
+            inMemory.Position = inMemory.Length;
+            return new MemoryStream(
+                exposed.Array!, exposed.Offset + start, exposed.Count - start,
+                writable: false, publiclyVisible: true);
+        }
+        var memory = source.CanSeek
+            ? new MemoryStream(checked((int)Math.Max(0, source.Length - source.Position)))
+            : new MemoryStream();
         var buffer = new byte[81920];
         while (true)
         {

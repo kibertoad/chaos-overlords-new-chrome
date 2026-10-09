@@ -21,7 +21,7 @@ public static class NativeSaveStore
     /// <remarks>
     /// Every atomic writer in this namespace creates <c>.&lt;name&gt;.&lt;guid&gt;.tmp</c> beside
     /// its target and renames it into place. A process killed between the two leaves the file, up to
-    /// 16 or 32 MiB of it, and nothing used to remove it. Best effort throughout: this runs at
+    /// tens of megabytes of it, and nothing used to remove it. Best effort throughout: this runs at
     /// startup and must never be the reason the game does not open.
     /// </remarks>
     public static void DeleteStaleTemporaryFiles(string directory)
@@ -65,7 +65,11 @@ public static class NativeSaveStore
         AtomicGenerationRecovery.SaveAtomic(
             fullPath, BackupSuffix,
             "The save was written but could not be read back, so it was not promoted.",
-            stream => WriteFile(stream, Serialize(state)),
+            stream =>
+            {
+                using var json = NativeSaveSerializer.SaveToMemory(state);
+                WriteFile(stream, json.GetBuffer().AsSpan(0, checked((int)json.Length)));
+            },
             candidate => _ = Load(candidate, state.Definitions));
     }
 
@@ -79,9 +83,8 @@ public static class NativeSaveStore
     public static byte[] Serialize(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        using var stream = new MemoryStream();
-        NativeSaveSerializer.Save(stream, state);
-        return stream.ToArray();
+        using var json = NativeSaveSerializer.SaveToMemory(state);
+        return json.ToArray();
     }
 
     /// <summary>Durably saves an already captured snapshot.</summary>
@@ -148,6 +151,7 @@ public static class NativeSaveStore
             throw new InvalidDataException(
                 $"Native save is {json.Length} bytes, over the {NativeSaveSerializer.MaximumSaveBytes} byte limit.");
         Span<byte> header = stackalloc byte[FileHeaderBytes];
+        header.Clear();
         FileMagic.CopyTo(header);
         header[4] = BrotliCodec;
         BinaryPrimitives.WriteInt32LittleEndian(header[8..12], json.Length);
@@ -170,14 +174,25 @@ public static class NativeSaveStore
     {
         var file = NativeSaveSerializer.ReadBounded(
             source, MaximumFileBytes, "Native save exceeds the size limit.");
-        var bytes = file.GetBuffer().AsSpan(0, checked((int)file.Length));
+        ReadOnlySpan<byte> bytes = file.TryGetBuffer(out var buffer) ? buffer : file.ToArray();
         if (!bytes.StartsWith(FileMagic)) return file;
         using (file)
         {
             if (bytes.Length < FileHeaderBytes)
                 throw new InvalidDataException("Native save file is truncated.");
+            // A codec this build does not know was written by a newer one. The file is intact, so it
+            // is refused as incompatible: reported as damage, the recovery paths would replace it
+            // from the older backup generation and a save over the slot would overwrite it.
             if (bytes[4] != BrotliCodec)
-                throw new InvalidDataException($"Native save file codec {bytes[4]} is not supported.");
+                throw IncompatibleSave.Create(
+                    IncompatibleSaveReason.NewerFormat,
+                    $"Native save file codec {bytes[4]} is not supported.");
+            // This build writes the reserved bytes as zero. A build that gives them a meaning writes
+            // something else there, and this one cannot know whether ignoring it is safe.
+            if (bytes[5..8].IndexOfAnyExcept((byte)0) >= 0)
+                throw IncompatibleSave.Create(
+                    IncompatibleSaveReason.NewerFormat,
+                    "Native save file uses header fields this build does not know.");
             var length = BinaryPrimitives.ReadInt32LittleEndian(bytes[8..12]);
             if (length is < 0 or > NativeSaveSerializer.MaximumSaveBytes)
                 throw new InvalidDataException("Native save file declares an unusable size.");
