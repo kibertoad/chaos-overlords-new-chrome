@@ -22,7 +22,16 @@ original's address-shaped layout or partial-read behavior.
 ## Container and limits
 
 - UTF-8 JSON with camel-case property names and `formatVersion: 26`.
-- Maximum accepted size: 16 MiB.
+- Maximum accepted size: 64 MiB of JSON. A 124-turn six-player match saves to
+  about 24 MB.
+- On disk the JSON is stored in a file container: the signature `RCHN`, a codec
+  byte (`1`, Brotli), three reserved bytes, the JSON length as a little-endian
+  32-bit integer, then the compressed JSON. The reader refuses an unknown
+  codec, a declared length over the limit, and a body that decompresses to any
+  other length. A file without the signature is read as bare JSON, which is
+  how builds before the container wrote it. Match copies and the opening
+  snapshot of a replay journal carry the bare JSON; a multiplayer snapshot
+  compresses it in its own archive.
 - Unknown properties, missing constructor fields, invalid identifiers, invalid
   enum/phase combinations, and inconsistent sequence counters are rejected.
 - `definitionsSha256` fingerprints the complete supplied site/gang/item model;
@@ -33,9 +42,9 @@ original's address-shaped layout or partial-read behavior.
   It is a checksum against corruption and divergence, not a cryptographic
   digest; `definitionsSha256` stays a SHA-256 because it is computed once.
 
-`NativeSaveSerializer` reads and writes streams. `NativeSaveStore` writes and
-flushes a same-directory temporary file, reads it back through the bounded
-serializer, then atomically promotes it. A valid previous primary becomes
+`NativeSaveSerializer` reads and writes the JSON. `NativeSaveStore` wraps it in
+the file container, writes and flushes a same-directory temporary file, reads
+it back through the bounded serializer, then atomically promotes it. A valid previous primary becomes
 `<save>.bak`; an invalid primary is replaced without overwriting an existing
 good backup. Recovery loads the backup only when the primary is missing,
 unreadable, or invalid.

@@ -135,18 +135,18 @@ public sealed class SaveSlotCatalogTests
             state.FinishUpkeep();
             SaveSlotCatalog.Save(directory, 2, "Newer build", state, online: false);
             // Stand in for a save written by a build whose format version this one does not know.
-            var newer = File.ReadAllText(path).Replace(
+            NativeSaveFileText.Rewrite(path, json => json.Replace(
                 $"\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion}",
                 $"\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion + 1}",
-                StringComparison.Ordinal);
-            File.WriteAllText(path, newer);
+                StringComparison.Ordinal));
+            var newer = File.ReadAllBytes(path);
 
             var summary = Assert.IsType<SaveSlotSummary>(
                 SaveSlotCatalog.Read(directory, 2, definitions));
 
             Assert.Equal(SaveSlotStatus.Incompatible, summary.Status);
             Assert.False(summary.IsPlayable);
-            Assert.Equal(newer, File.ReadAllText(path));
+            Assert.Equal(newer, File.ReadAllBytes(path));
         }
         finally
         {
@@ -182,18 +182,20 @@ public sealed class SaveSlotCatalogTests
             var written = File.GetLastWriteTimeUtc(path);
             // Stand in for the pair a build with a format version this one does not know would have
             // left: the save declares that version, the sidecar was written by that same build, and
-            // the write it takes fits in the digits the current version already occupies, so the
-            // length and write time the sidecar records are exactly the file's own.
-            File.WriteAllText(path, File.ReadAllText(path).Replace(
+            // the length and write time the sidecar records are exactly the file's own.
+            var rewritten = NativeSaveFileText.Rewrite(path, json => json.Replace(
                 $"\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion}",
                 $"\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion + 1}",
                 StringComparison.Ordinal));
             File.SetLastWriteTimeUtc(path, written);
-            File.WriteAllText(sidecar, File.ReadAllText(sidecar).Replace(
-                $"\"FormatVersion\":{NativeSaveSerializer.CurrentFormatVersion}",
-                $"\"FormatVersion\":{NativeSaveSerializer.CurrentFormatVersion + 1}",
-                StringComparison.Ordinal));
-            Assert.Equal(length, new FileInfo(path).Length);
+            File.WriteAllText(sidecar, File.ReadAllText(sidecar)
+                .Replace(
+                    $"\"FormatVersion\":{NativeSaveSerializer.CurrentFormatVersion}",
+                    $"\"FormatVersion\":{NativeSaveSerializer.CurrentFormatVersion + 1}",
+                    StringComparison.Ordinal)
+                .Replace($"\"SaveLength\":{length}", $"\"SaveLength\":{rewritten}",
+                    StringComparison.Ordinal));
+            Assert.Contains($"\"SaveLength\":{rewritten}", File.ReadAllText(sidecar), StringComparison.Ordinal);
             Assert.Equal(written, File.GetLastWriteTimeUtc(path));
             Assert.Contains(
                 $"\"FormatVersion\":{NativeSaveSerializer.CurrentFormatVersion + 1}",

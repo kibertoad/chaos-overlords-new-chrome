@@ -50,8 +50,8 @@ public sealed partial class OriginalNewGameExperimentTests
 
     // The game played once, kept as a native save. Each caller gets a match loaded from those bytes,
     // so a test that changes its match changes nothing another test reads. A game too long to save
-    // within NativeSaveSerializer.MaximumSaveBytes (EXP-TURN-108 plays 124 turns) is played again
-    // for each caller instead.
+    // within NativeSaveSerializer.MaximumSaveBytes is played again for each caller instead; the
+    // longest recorded game, EXP-TURN-108's 124 turns, fits.
     private sealed class CachedReplay(Func<MatchState> copy, int donePresses, IReadOnlyList<(int Bound, int Result)> rolls)
     {
         // The definitions are read-only records, so every copy can share one parsed set instead of

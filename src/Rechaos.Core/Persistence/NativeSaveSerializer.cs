@@ -15,12 +15,20 @@ public static class NativeSaveSerializer
     // phase-hash history a save carries are written in the encoding of their day, so a save from
     // format 27 could only be restored on trust, and its fights would name gangs no event recorded.
     public const int CurrentFormatVersion = 40;
-    public const int MaximumSaveBytes = 16 * 1024 * 1024;
+
+    /// <summary>The largest snapshot JSON this writes or reads.</summary>
+    /// <remarks>
+    /// The bound guards the reader against a hostile or damaged file, not against long matches. A
+    /// 124-turn six-player match the original plays to its end (EXP-TURN-108) saves to about 24 MB
+    /// of JSON, so the bound sits well above that. The file on disk is compressed by
+    /// <see cref="NativeSaveStore"/> and is several times smaller.
+    /// </remarks>
+    public const int MaximumSaveBytes = 64 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
     internal static JsonSerializerOptions CreateCompatibleJsonOptions() => new(JsonOptions);
 
-    /// <summary>Writes a snapshot, refusing one the reader would later refuse.</summary>
+    /// <summary>Writes a snapshot as JSON, refusing one the reader would later refuse.</summary>
     /// <remarks>
     /// Every save carries the whole event history and the whole phase-hash history, and neither is
     /// trimmed, so a long six-player match grows towards <see cref="MaximumSaveBytes"/>. The writer
