@@ -1,5 +1,3 @@
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -674,88 +672,6 @@ public sealed partial class ChaosGame
         _deferComlinkAlertUntilPlanningVisible = false;
         if (_referenceFrame is not null) PresentReferenceFramePlanningEntry();
         else PresentHotSeatPlanningEntry();
-    }
-
-    private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)
-    {
-        if (TitleBackground is not null)
-        {
-            batch.Draw(TitleBackground, new Rectangle(0, 0, 640, 460), Color.White);
-            // The copyright line moves left with the menu, cut from the art and drawn again.
-            batch.Draw(pixel, TitleCopyrightArt, Color.Black);
-            batch.Draw(TitleBackground, TitleCopyright, TitleCopyrightArt, Color.White);
-        }
-        else
-        {
-            batch.Draw(pixel, new Rectangle(92, 72, 456, 112), new Color(0, 0, 0, 210));
-            DrawCentered(font, batch, "CHAOS OVERLORDS", 103, Color.Gold, 3);
-        }
-        DrawButton(batch, pixel, font, TitleNewGame, "NEW GAME", true);
-        DrawButton(batch, pixel, font, TitleLoadGame, "LOAD", true);
-        DrawButton(batch, pixel, font, TitleOnline, "ONLINE", true);
-        DrawButton(batch, pixel, font, TitleOptions, "OPTIONS", true);
-        DrawButton(batch, pixel, font, TitleHelp, "HELP", true);
-        DrawButton(batch, pixel, font, TitleIntro, "INTRO", true);
-        DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
-        DrawTitleDinoLogo(batch);
-        DrawTitleMessage(batch, pixel, font);
-        DrawTitleVersion(batch, font);
-    }
-
-    /// <summary>
-    /// Prints the build's version in the corner the logo leaves free.
-    /// </summary>
-    /// <remarks>
-    /// The title screen is the one place every player passes through, so it is where the number a
-    /// bug report will be filed against has to be readable without opening anything.
-    /// </remarks>
-    private static void DrawTitleVersion(SpriteBatch batch, PixelFont font)
-    {
-        font.Draw(batch, GameVersion.Display, new Vector2(TitleVersionMargin, TitleVersionTop),
-            new Color(150, 160, 160), 1);
-    }
-
-    /// <summary>
-    /// DEV-UI-019: the "restored by" line and the Refurbished Dinosaurs logo under it, gold under
-    /// the pointer. A panel open over the title takes the pointer, so the logo stays grey under it.
-    /// </summary>
-    private void DrawTitleDinoLogo(SpriteBatch batch)
-    {
-        if (_restoredBy is not null)
-            batch.Draw(_restoredBy, TitleDinoLogo.CaptionBounds, TitleDinoLogo.CaptionColor);
-        if (_dinoLogo is null) return;
-        batch.Draw(_dinoLogo, TitleDinoLogo.Bounds,
-            TitleDinoLogo.Tint(_gameMenuOpen ? null : _hoverPoint));
-    }
-
-    /// <summary>Opens the project's site in the player's browser.</summary>
-    private void OpenTitleDinoLogoSite()
-    {
-        try
-        {
-            using var _ = Process.Start(new ProcessStartInfo(TitleDinoLogo.Url) { UseShellExecute = true });
-        }
-        catch (Exception exception) when (exception is Win32Exception or InvalidOperationException)
-        {
-            _message = $"OPEN {TitleDinoLogo.Url} IN A BROWSER";
-        }
-    }
-
-    /// <summary>Draws whatever the last screen left to say, wrapped into the margin.</summary>
-    private void DrawTitleMessage(SpriteBatch batch, Texture2D pixel, PixelFont font)
-    {
-        if (string.IsNullOrWhiteSpace(_message)) return;
-        var columns = TitleMessage.Width / OriginalFontLayout.CellWidth;
-        var lines = HelpTextLayout.Wrap(_message, columns)
-            .Take(TitleMessage.Height / OriginalFontLayout.LineHeight)
-            .ToArray();
-        var panel = new Rectangle(TitleMessage.X - 5, TitleMessage.Y - 5, TitleMessage.Width + 10,
-            lines.Length * OriginalFontLayout.LineHeight + 9);
-        batch.Draw(pixel, panel, new Color(0, 0, 0, 200));
-        for (var row = 0; row < lines.Length; row++)
-            font.Draw(batch, lines[row],
-                new Vector2(TitleMessage.X, TitleMessage.Y + row * OriginalFontLayout.LineHeight),
-                new Color(185, 195, 195), 1);
     }
 
     /// <summary>

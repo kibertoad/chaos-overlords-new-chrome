@@ -7,7 +7,10 @@
   with F1 (DEV-HELP-001), full screen with F11 (DEV-OPTIONS-003), and About, which shows the
   credits screen, with Shift+F1. On the title screen, buttons for New Game, Load, Online, Options,
   Help, Intro and Quit stand in for the menu, drawn over the title art with a box for notices left
-  by the previous screen. The buttons and the copyright line of the title art sit 13 pixels left
+  by the previous screen. Each button is the face of the setup screen's Begin button, its edges and
+  blank inside repeated to the button's size, with its label at the top left in the yellow
+  lettering of the setup and console buttons, cut letter by letter from their labels; the Q, which
+  none of them has, is their O with a tail. The buttons and the copyright line of the title art sit 13 pixels left
   of centre, with as much space between the logo and the top row of buttons as between the bottom
   row and the copyright line. The lower right corner carries the Refurbished Dinosaurs logo under
   a "restored by" line, its foot on the copyright line's baseline; the logo turns gold under the
@@ -23,5 +26,5 @@
   the intro movies land on the title; if a press anywhere started a new game, those clicks would
   carry a player past the menu into setup. New Game stays one button or one key away. The rebuild
   draws none of the original's Windows controls (DEV-UI-029).
-- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs, tests/Rechaos.Tests/ProgramShellParityTests.cs
+- Tests: tests/Rechaos.Tests/DeviationBehaviourTests.cs, tests/Rechaos.Tests/GameMenuLayoutTests.cs, tests/Rechaos.Tests/ProgramShellParityTests.cs, tests/Rechaos.Tests/TitleButtonArtTests.cs
 - Dropped: no
