@@ -23,6 +23,22 @@ public sealed partial class ChaosGame
         return texture;
     }
 
+    /// <summary>
+    /// A bitmap of the rebuild's own, shipped inside the executable since the asset folder holds
+    /// only what was extracted from the original. Its alpha is premultiplied for the sprite batch.
+    /// </summary>
+    private Texture2D LoadBrandingTexture(string fileName)
+    {
+        var name = $"Rechaos.Game.Branding.{fileName}";
+        using var stream = typeof(ChaosGame).Assembly.GetManifestResourceStream(name)
+            ?? throw new InvalidOperationException($"Missing embedded bitmap: {name}");
+        return Texture2D.FromStream(GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
+    }
+
+    private Texture2D? _dinoHead;
+    private Texture2D? _dinoText;
+    private readonly TitleDinoLogo _titleDinoLogo = new();
+
     private string ImagePath(string fileName) => Path.Combine(_assetRoot, "images", fileName);
 
     // The player's game decodes every bitmap of OriginalBitmap.All in LoadContent, so a bitmap that

@@ -175,6 +175,71 @@ public sealed partial class DeviationBehaviourTests
     }
 
     [Fact]
+    public void TheTitleDinosaurHeadLetsItsNameOutUnderThePointer()
+    {
+        // DEV-UI-019: the head shows alone, the name slides out while the pointer is on the logo
+        // and back in once it leaves, and the logo covers none of the title buttons.
+        var logo = new TitleDinoLogo();
+        var onHead = new Point(TitleDinoLogo.Head.Center.X, TitleDinoLogo.Head.Center.Y);
+        var onName = new Point(TitleDinoLogo.Text.Center.X, TitleDinoLogo.Text.Center.Y);
+        var now = TimeSpan.Zero;
+        void Hold(Point point, TimeSpan duration)
+        {
+            for (var end = now + duration; now < end;)
+            {
+                now += TimeSpan.FromMilliseconds(10);
+                logo.Update(point, now);
+            }
+        }
+        Hold(onName, TitleDinoLogo.RevealTime);
+        Assert.Equal(0, logo.Progress);
+        Assert.Null(logo.TextFrame());
+        Assert.False(logo.Contains(onName));
+
+        Hold(onHead, TitleDinoLogo.RevealTime / 2);
+        Assert.Equal(0.5f, logo.Progress, 2);
+        var (partSource, partDestination, _) = logo.TextFrame()!.Value;
+        Assert.Equal(TitleDinoLogo.EmergeLine, partDestination.X);
+        Assert.Equal(TitleDinoLogo.Text.Width, partSource.Right);
+        Assert.True(partSource.Width < TitleDinoLogo.Text.Width);
+
+        Hold(onName, TitleDinoLogo.RevealTime);
+        Assert.Equal(1, logo.Progress);
+        var (source, destination, opacity) = logo.TextFrame()!.Value;
+        Assert.Equal(new Rectangle(0, 0, TitleDinoLogo.Text.Width, TitleDinoLogo.Text.Height), source);
+        Assert.Equal(TitleDinoLogo.Text, destination);
+        Assert.Equal(1, opacity);
+
+        // A late frame moves the name no further than a short one would.
+        logo.Update(new Point(320, 300), now + TitleDinoLogo.RevealTime * 10);
+        Assert.True(logo.Progress > 0.8f);
+        Hold(new Point(320, 300), TitleDinoLogo.RevealTime);
+        Assert.Equal(0, logo.Progress);
+        Assert.Null(ChaosGame.TitleActionAt(onHead));
+        Assert.Null(ChaosGame.TitleActionAt(onName));
+        for (var x = TitleDinoLogo.Bounds.Left; x < TitleDinoLogo.Bounds.Right; x++)
+        for (var y = TitleDinoLogo.Bounds.Top; y < TitleDinoLogo.Bounds.Bottom; y++)
+            Assert.Null(ChaosGame.TitleActionAt(new Point(x, y)));
+    }
+
+    [Theory]
+    [InlineData("dino-head.png", 34, 32)]
+    [InlineData("dino-text.png", 106, 32)]
+    public void TheTitleDinosaurBitmapsMatchTheirPlaces(string fileName, int width, int height)
+    {
+        // DEV-UI-019: the logo is drawn pixel for pixel, so each bitmap is the size of its place.
+        using var stream = typeof(ChaosGame).Assembly
+            .GetManifestResourceStream($"Rechaos.Game.Branding.{fileName}");
+        Assert.NotNull(stream);
+        var header = new byte[24];
+        stream.ReadExactly(header);
+        Assert.Equal(width, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(16)));
+        Assert.Equal(height, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(20)));
+        Assert.Equal(new Point(width, height),
+            fileName == "dino-head.png" ? TitleDinoLogo.Head.Size : TitleDinoLogo.Text.Size);
+    }
+
+    [Fact]
     public void EscapeOpensThePauseMenuInAMatch()
     {
         // DEV-UI-011, DEV-UI-019: Escape is the shell's key for the pause menu, which holds saving,

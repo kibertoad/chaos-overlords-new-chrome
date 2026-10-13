@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -642,6 +644,7 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, TitleIntro, "INTRO", true);
         DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
         DrawCentered(font, batch, "NEW CHROME", 282, new Color(210, 52, 43), 1);
+        DrawTitleDinoLogo(batch);
         DrawTitleMessage(batch, pixel, font);
         DrawCentered(font, batch, "RESTORED BY KIBERTOAD", 430,
             new Color(185, 195, 195), 1);
@@ -661,6 +664,31 @@ public sealed partial class ChaosGame
         font.Draw(batch, GameVersion.Display,
             new Vector2(VirtualInput.Width - width - TitleVersionMargin, 430),
             new Color(150, 160, 160), 1);
+    }
+
+    /// <summary>
+    /// DEV-UI-019: the Refurbished Dinosaurs head, and as much of the name as has come out of it.
+    /// The name goes first so the head covers the part still behind it.
+    /// </summary>
+    private void DrawTitleDinoLogo(SpriteBatch batch)
+    {
+        if (_dinoHead is null || _dinoText is null) return;
+        if (_titleDinoLogo.TextFrame() is var (source, destination, opacity))
+            batch.Draw(_dinoText, destination, source, Color.White * opacity);
+        batch.Draw(_dinoHead, TitleDinoLogo.Head, Color.White);
+    }
+
+    /// <summary>Opens the project's site in the player's browser.</summary>
+    private void OpenTitleDinoLogoSite()
+    {
+        try
+        {
+            using var _ = Process.Start(new ProcessStartInfo(TitleDinoLogo.Url) { UseShellExecute = true });
+        }
+        catch (Exception exception) when (exception is Win32Exception or InvalidOperationException)
+        {
+            _message = $"OPEN {TitleDinoLogo.Url} IN A BROWSER";
+        }
     }
 
     /// <summary>Draws whatever the last screen left to say, wrapped into the margin.</summary>
