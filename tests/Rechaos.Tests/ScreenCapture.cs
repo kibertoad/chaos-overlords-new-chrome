@@ -491,14 +491,18 @@ public static class ScreenCaptureMasks
                 // DEV-UI-019: the rebuild's line under the logo, its buttons, which stand in for the
                 // menu bar, and the Refurbished Dinosaurs logo with the line over it. The notice
                 // box is drawn only with a message.
-                new("DEV-UI-019", new Rectangle(290, 282, 60, 9)),
-                new("DEV-UI-019", new Rectangle(220, 292, 200, 76)),
-                new("DEV-UI-019", new Rectangle(154, 376, 164, 34)),
-                new("DEV-UI-019", new Rectangle(406, 376, 80, 34)),
+                // The menu and the copyright line sit left of centre, and the copyright line's
+                // place in the art is black.
+                new("DEV-UI-019", new Rectangle(290 - ChaosGame.TitleMenuShift, 282, 60, 9)),
+                new("DEV-UI-019", new Rectangle(220 - ChaosGame.TitleMenuShift, 292, 200, 76)),
+                new("DEV-UI-019", new Rectangle(154 - ChaosGame.TitleMenuShift, 376, 164, 34)),
+                new("DEV-UI-019", new Rectangle(406 - ChaosGame.TitleMenuShift, 376, 80, 34)),
+                new("DEV-UI-019", ChaosGame.TitleCopyrightArt),
+                new("DEV-UI-019", ChaosGame.TitleCopyright),
                 new("DEV-UI-019", TitleDinoLogo.CaptionBounds),
                 new("DEV-UI-019", TitleDinoLogo.Bounds),
                 // DEV-VIDEO-003: the Intro button.
-                new("DEV-VIDEO-003", new Rectangle(322, 376, 80, 34)),
+                new("DEV-VIDEO-003", new Rectangle(322 - ChaosGame.TitleMenuShift, 376, 80, 34)),
                 // DEV-UI-012: the version, 6 pixels from the left edge, as wide as the build's
                 // version string.
                 new("DEV-UI-012", new Rectangle(

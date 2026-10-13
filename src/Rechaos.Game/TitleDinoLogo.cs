@@ -20,10 +20,10 @@ internal static class TitleDinoLogo
     /// letters are drawn for the rebuild in the manner of the copyright line baked into the title
     /// art, wide small caps that no font of the game has.
     /// </summary>
-    public static readonly Rectangle CaptionBounds = new(Bounds.X, Bounds.Y - 11, 95, 8);
+    public static readonly Rectangle CaptionBounds = new(Bounds.X, Bounds.Y - 13, 100, 10);
 
-    /// <summary>The grey of the copyright line's letters.</summary>
-    public static readonly Color CaptionColor = new(197, 197, 197);
+    /// <summary>The grey of the copyright line's letters at their brightest.</summary>
+    public static readonly Color CaptionColor = new(205, 205, 205);
 
     /// <summary>The grey of the title's other added text, so the logo sits back until the pointer
     /// finds it.</summary>

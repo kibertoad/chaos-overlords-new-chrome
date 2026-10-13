@@ -17,13 +17,27 @@ public sealed partial class ChaosGame
     // DEV-AI-007 and DEV-AI-008, for the local matches this session starts. A new match takes
     // DEV-AI-003 from _defaultAiPolicy, the Advanced AI option, in place of this AiPolicy.
     private readonly MatchDeviations _localDeviations;
-    private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
-    private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
-    internal static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
-    private static readonly Rectangle TitleOptions = new(154, 376, 80, 34);
-    private static readonly Rectangle TitleHelp = new(238, 376, 80, 34);
-    private static readonly Rectangle TitleIntro = new(322, 376, 80, 34);
-    private static readonly Rectangle TitleQuit = new(406, 376, 80, 34);
+    /// <summary>
+    /// How far left of the screen's centre the menu sits: the buttons, the line over them and the
+    /// copyright line under them, so they stand clear of the logo in the lower right corner.
+    /// </summary>
+    internal const int TitleMenuShift = 40;
+
+    private static readonly Rectangle TitleNewGame = new(220 - TitleMenuShift, 292, 200, 34);
+    private static readonly Rectangle TitleLoadGame = new(220 - TitleMenuShift, 334, 98, 34);
+    internal static readonly Rectangle TitleOnline = new(322 - TitleMenuShift, 334, 98, 34);
+    private static readonly Rectangle TitleOptions = new(154 - TitleMenuShift, 376, 80, 34);
+    private static readonly Rectangle TitleHelp = new(238 - TitleMenuShift, 376, 80, 34);
+    private static readonly Rectangle TitleIntro = new(322 - TitleMenuShift, 376, 80, 34);
+    private static readonly Rectangle TitleQuit = new(406 - TitleMenuShift, 376, 80, 34);
+
+    /// <summary>The copyright line where the title art has it, on black.</summary>
+    internal static readonly Rectangle TitleCopyrightArt = new(162, 446, 313, 10);
+
+    /// <summary>Where the title screen draws the copyright line.</summary>
+    internal static readonly Rectangle TitleCopyright = new(
+        TitleCopyrightArt.X - TitleMenuShift, TitleCopyrightArt.Y,
+        TitleCopyrightArt.Width, TitleCopyrightArt.Height);
 
     /// <summary>
     /// The strip right of the menu, where a notice can be read without covering a button.
@@ -631,7 +645,12 @@ public sealed partial class ChaosGame
     private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         if (TitleBackground is not null)
+        {
             batch.Draw(TitleBackground, new Rectangle(0, 0, 640, 460), Color.White);
+            // The copyright line moves left with the menu, cut from the art and drawn again.
+            batch.Draw(pixel, TitleCopyrightArt, Color.Black);
+            batch.Draw(TitleBackground, TitleCopyright, TitleCopyrightArt, Color.White);
+        }
         else
         {
             batch.Draw(pixel, new Rectangle(92, 72, 456, 112), new Color(0, 0, 0, 210));
@@ -644,7 +663,10 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, TitleHelp, "HELP", true);
         DrawButton(batch, pixel, font, TitleIntro, "INTRO", true);
         DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
-        DrawCentered(font, batch, "NEW CHROME", 282, new Color(210, 52, 43), 1);
+        const string edition = "NEW CHROME";
+        font.Draw(batch, edition,
+            new Vector2(TitleNewGame.Center.X - edition.Length * OriginalFontLayout.CellWidth / 2, 282),
+            new Color(210, 52, 43), 1);
         DrawTitleDinoLogo(batch);
         DrawTitleMessage(batch, pixel, font);
         DrawTitleVersion(batch, font);
