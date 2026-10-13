@@ -13,14 +13,14 @@ internal static class TitleDinoLogo
 
     /// <summary>The logo, at the size of its bitmap, clear of the button row above it and of the
     /// copyright line below.</summary>
-    public static readonly Rectangle Bounds = new(VirtualInput.Width - 144 - 16, 412, 144, 32);
+    public static readonly Rectangle Bounds = new(VirtualInput.Width - 117 - 16, 418, 117, 26);
 
     /// <summary>
     /// The "restored by" line over the logo, from its left edge, at the size of its bitmap. The
     /// letters are drawn for the rebuild in the manner of the copyright line baked into the title
     /// art, wide small caps that no font of the game has.
     /// </summary>
-    public static readonly Rectangle CaptionBounds = new(Bounds.X, Bounds.Y - 13, 100, 10);
+    public static readonly Rectangle CaptionBounds = new(Bounds.X, Bounds.Y - 11, 80, 8);
 
     /// <summary>The grey of the copyright line's letters at their brightest.</summary>
     public static readonly Color CaptionColor = new(205, 205, 205);

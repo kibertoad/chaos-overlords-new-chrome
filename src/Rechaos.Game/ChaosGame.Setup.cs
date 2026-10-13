@@ -21,7 +21,7 @@ public sealed partial class ChaosGame
     /// How far left of the screen's centre the menu sits: the buttons and the copyright line under
     /// them, so they stand clear of the logo in the lower right corner.
     /// </summary>
-    internal const int TitleMenuShift = 40;
+    internal const int TitleMenuShift = 13;
 
     private static readonly Rectangle TitleNewGame = new(220 - TitleMenuShift, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220 - TitleMenuShift, 334, 98, 34);
