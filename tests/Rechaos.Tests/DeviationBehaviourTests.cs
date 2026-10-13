@@ -178,13 +178,13 @@ public sealed partial class DeviationBehaviourTests
     public void TheTitleDinosaurLogoLightsUpUnderThePointer()
     {
         // DEV-UI-019: the logo is grey until the pointer is on it and gold while it is, and it and
-        // the line over it cover none of the title buttons.
+        // the lines over it cover none of the title buttons.
         var onLogo = TitleDinoLogo.Bounds.Center;
         Assert.Equal(TitleDinoLogo.Rest, TitleDinoLogo.Tint(null));
         Assert.Equal(TitleDinoLogo.Rest, TitleDinoLogo.Tint(new Point(320, 300)));
         Assert.Equal(TitleDinoLogo.Highlight, TitleDinoLogo.Tint(onLogo));
         Assert.Equal(TitleDinoLogo.Rest, TitleDinoLogo.Tint(TitleDinoLogo.CaptionBounds.Center));
-        foreach (var area in new[] { TitleDinoLogo.Bounds, TitleDinoLogo.CaptionBounds })
+        foreach (var area in new[] { TitleDinoLogo.Bounds, TitleDinoLogo.CaptionBounds, TitleDinoLogo.EditionBounds })
             for (var x = area.Left; x < area.Right; x++)
             for (var y = area.Top; y < area.Bottom; y++)
                 Assert.Null(ChaosGame.TitleActionAt(new Point(x, y)));

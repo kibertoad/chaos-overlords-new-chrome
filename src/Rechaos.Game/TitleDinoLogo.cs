@@ -3,8 +3,8 @@ using Microsoft.Xna.Framework;
 namespace Rechaos.Game;
 
 /// <summary>
-/// The Refurbished Dinosaurs logo in the title screen's lower right corner under a "restored by"
-/// line (DEV-UI-019). It turns gold while the pointer is on it, and a click on it opens the
+/// The Refurbished Dinosaurs logo in the title screen's lower right corner under the rebuild's
+/// name and a "restored by" line (DEV-UI-019). It turns gold while the pointer is on it, and a click on it opens the
 /// project's site.
 /// </summary>
 internal static class TitleDinoLogo
@@ -13,7 +13,7 @@ internal static class TitleDinoLogo
 
     /// <summary>The logo, at the size of its bitmap, clear of the button row above it and of the
     /// copyright line below.</summary>
-    public static readonly Rectangle Bounds = new(VirtualInput.Width - 144 - 6, 412, 144, 32);
+    public static readonly Rectangle Bounds = new(VirtualInput.Width - 144 - 16, 412, 144, 32);
 
     /// <summary>
     /// The "restored by" line over the logo, from its left edge, at the size of its bitmap. The
@@ -21,6 +21,12 @@ internal static class TitleDinoLogo
     /// art, wide small caps that no font of the game has.
     /// </summary>
     public static readonly Rectangle CaptionBounds = new(Bounds.X, Bounds.Y - 13, 100, 10);
+
+    public const string Edition = "NEW CHROME";
+
+    /// <summary>The rebuild's name, in the game's font, over the "restored by" line.</summary>
+    public static readonly Rectangle EditionBounds = new(Bounds.X, CaptionBounds.Y - 12,
+        Edition.Length * OriginalFontLayout.CellWidth, OriginalFontLayout.LineHeight);
 
     /// <summary>The grey of the copyright line's letters at their brightest.</summary>
     public static readonly Color CaptionColor = new(205, 205, 205);

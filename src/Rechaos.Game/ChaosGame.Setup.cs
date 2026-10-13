@@ -18,8 +18,8 @@ public sealed partial class ChaosGame
     // DEV-AI-003 from _defaultAiPolicy, the Advanced AI option, in place of this AiPolicy.
     private readonly MatchDeviations _localDeviations;
     /// <summary>
-    /// How far left of the screen's centre the menu sits: the buttons, the line over them and the
-    /// copyright line under them, so they stand clear of the logo in the lower right corner.
+    /// How far left of the screen's centre the menu sits: the buttons and the copyright line under
+    /// them, so they stand clear of the logo in the lower right corner.
     /// </summary>
     internal const int TitleMenuShift = 40;
 
@@ -46,9 +46,9 @@ public sealed partial class ChaosGame
     /// Notices arrive on this screen from somewhere else (a match that ended, an online session that
     /// was left), so they are as long as whatever happened, and a centred line of that length ran
     /// straight through the row of buttons underneath it. The strip ends where its panel stays
-    /// clear of the "restored by" line over the logo.
+    /// clear of the rebuild's name over the logo.
     /// </remarks>
-    private static readonly Rectangle TitleMessage = new(494, 292, 138, 99);
+    private static readonly Rectangle TitleMessage = new(494, 292, 138, 81);
 
     /// <summary>How far the version line stays clear of the left edge of the title screen.</summary>
     private const int TitleVersionMargin = 6;
@@ -663,9 +663,7 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, TitleHelp, "HELP", true);
         DrawButton(batch, pixel, font, TitleIntro, "INTRO", true);
         DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
-        const string edition = "NEW CHROME";
-        font.Draw(batch, edition,
-            new Vector2(TitleNewGame.Center.X - edition.Length * OriginalFontLayout.CellWidth / 2, 282),
+        font.Draw(batch, TitleDinoLogo.Edition, TitleDinoLogo.EditionBounds.Location.ToVector2(),
             new Color(210, 52, 43), 1);
         DrawTitleDinoLogo(batch);
         DrawTitleMessage(batch, pixel, font);

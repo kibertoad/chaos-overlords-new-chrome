@@ -488,12 +488,11 @@ public static class ScreenCaptureMasks
             ["SCR-GANG-002"] = [],
             ["SCR-UI-001"] =
             [
-                // DEV-UI-019: the rebuild's line under the logo, its buttons, which stand in for the
-                // menu bar, and the Refurbished Dinosaurs logo with the line over it. The notice
-                // box is drawn only with a message.
-                // The menu and the copyright line sit left of centre, and the copyright line's
-                // place in the art is black.
-                new("DEV-UI-019", new Rectangle(290 - ChaosGame.TitleMenuShift, 282, 60, 9)),
+                // DEV-UI-019: the buttons, which stand in for the menu bar, and the Refurbished
+                // Dinosaurs logo under the rebuild's name and a "restored by" line. The notice box
+                // is drawn only with a message. The menu and the copyright line sit left of centre,
+                // and the copyright line's place in the art is black.
+                new("DEV-UI-019", TitleDinoLogo.EditionBounds),
                 new("DEV-UI-019", new Rectangle(220 - ChaosGame.TitleMenuShift, 292, 200, 76)),
                 new("DEV-UI-019", new Rectangle(154 - ChaosGame.TitleMenuShift, 376, 164, 34)),
                 new("DEV-UI-019", new Rectangle(406 - ChaosGame.TitleMenuShift, 376, 80, 34)),
