@@ -489,12 +489,8 @@ public sealed partial class ChaosGame
         DrawOptionToggle(batch, pixel, font, OptionsLayout.OnlineLobbyPresentation,
             $"ONLINE LOBBY: {(_onlineLobbyPresentation == OnlineLobbyPresentation.Classic ? "CLASSIC" : "MODERN")}", 11);
 
-        DrawCentered(font, batch,
-            string.IsNullOrEmpty(_optionsStatus)
-                ? "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS"
-                : _optionsStatus,
-            391,
-            new Color(185, 195, 195), 1);
+        if (!string.IsNullOrEmpty(_optionsStatus))
+            DrawCentered(font, batch, _optionsStatus, 391, new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
         if (_hoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, OptionsTooltip.At(hover));

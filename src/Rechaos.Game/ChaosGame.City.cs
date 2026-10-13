@@ -296,12 +296,9 @@ public sealed partial class ChaosGame
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition)
             DrawHireDragImage(batch, draggedDefinition);
-        // Online, the footer says where the turn stands instead of which keys save: a match nobody
-        // can save is one where the only thing worth knowing is whether it is waiting on you.
-        var footer = _session is null
-            ? "ARROWS ENTER/H/SPACE  1-3 HIRE  F5/F9 SAVE  F6/F10 REPLAY"
-            : OnlineTurnStatus();
-        font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
+        // Online, the footer says where the turn stands: whether the match is waiting on you.
+        if (_session is not null)
+            font.Draw(batch, OnlineTurnStatus(), new Vector2(18, 439), new Color(180, 190, 190), 1);
         DrawPressedCityConsole(batch);
         DrawStatusConsoleTooltip(batch, pixel, font);
         // The sector view draws its workspace over the board, and this tooltip after it.
