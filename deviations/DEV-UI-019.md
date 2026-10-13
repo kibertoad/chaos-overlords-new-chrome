@@ -10,7 +10,9 @@
   by the previous screen. Each button is the face of the setup screen's Begin button, its edges and
   blank inside repeated to the button's size, with its label at the top left in the yellow
   lettering of the setup and console buttons, cut letter by letter from their labels; the Q, which
-  none of them has, is their O with a tail. The buttons and the copyright line of the title art sit 13 pixels left
+  none of them has, is their O with a tail. The buttons stand in two stone housings cut from the one that
+  holds Begin and Cancel, one around New Game, Load and Online and a wider one under it around the
+  bottom row. The buttons and the copyright line of the title art sit 13 pixels left
   of centre, with as much space between the logo and the top row of buttons as between the bottom
   row and the copyright line. The lower right corner carries the Refurbished Dinosaurs logo under
   a "restored by" line, its foot on the copyright line's baseline; the logo turns gold under the

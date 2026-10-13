@@ -22,6 +22,13 @@ public sealed partial class ChaosGame
             batch.Draw(pixel, new Rectangle(92, 72, 456, 112), new Color(0, 0, 0, 210));
             DrawCentered(font, batch, "CHAOS OVERLORDS", 103, Color.Gold, 3);
         }
+        if (SetupBackground is { } stone)
+        {
+            // The housings stand behind the buttons as Begin's does behind it, the lower one over
+            // the foot of the upper.
+            DrawStoneFrame(batch, stone, TitleButtonArt.Housing, TitleUpperHousing);
+            DrawStoneFrame(batch, stone, TitleButtonArt.Housing, TitleLowerHousing);
+        }
         foreach (var (button, label) in TitleButtons)
             DrawTitleButton(batch, pixel, font, button, label);
         DrawTitleDinoLogo(batch);
@@ -34,6 +41,23 @@ public sealed partial class ChaosGame
         (TitleNewGame, "NEW GAME"), (TitleLoadGame, "LOAD"), (TitleOnline, "ONLINE"),
         (TitleOptions, "OPTIONS"), (TitleHelp, "HELP"), (TitleIntro, "INTRO"), (TitleQuit, "QUIT")
     ];
+
+    /// <summary>The line between the two housings, halfway between the rows they hold.</summary>
+    private static int TitleHousingSeam => (TitleOnline.Bottom + TitleOptions.Y) / 2;
+
+    /// <summary>The housing of New Game, Load and Online.</summary>
+    internal static Rectangle TitleUpperHousing => Rectangle.Union(TitleNewGame, TitleOnline) is var rows
+        ? new Rectangle(rows.X - TitleButtonArt.HousingMargin.X, rows.Y - TitleButtonArt.HousingMargin.Y,
+            rows.Width + 2 * TitleButtonArt.HousingMargin.X,
+            TitleHousingSeam - rows.Y + TitleButtonArt.HousingMargin.Y)
+        : default;
+
+    /// <summary>The housing of the bottom row.</summary>
+    internal static Rectangle TitleLowerHousing => Rectangle.Union(TitleOptions, TitleQuit) is var row
+        ? new Rectangle(row.X - TitleButtonArt.HousingMargin.X, TitleHousingSeam,
+            row.Width + 2 * TitleButtonArt.HousingMargin.X,
+            row.Bottom + TitleButtonArt.HousingMargin.Y - TitleHousingSeam)
+        : default;
 
     private Texture2D? _titleLettering;
     private Dictionary<char, Rectangle> _titleLetterCells = [];
@@ -51,7 +75,7 @@ public sealed partial class ChaosGame
         }
         if (_titleLettering is null)
             (_titleLettering, _titleLetterCells) = TitleButtonArt.Cut(GraphicsDevice, console, controls);
-        DrawTitleButtonFace(batch, stone, button);
+        DrawStoneFrame(batch, stone, TitleButtonArt.Face, button);
         var x = button.X + TitleButtonArt.LabelOffset.X;
         var y = button.Y + TitleButtonArt.LabelOffset.Y;
         foreach (var letter in label)
@@ -68,29 +92,29 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Begin's face at the size of <paramref name="button"/>: its corners as they are, its edges
-    /// and its blank inside repeated to fill the length between them.
+    /// <paramref name="art"/> at the size of <paramref name="area"/>: its corners as they are, its
+    /// edges and its inside repeated to fill the length between them.
     /// </summary>
-    private static void DrawTitleButtonFace(SpriteBatch batch, Texture2D stone, Rectangle button)
+    private static void DrawStoneFrame(SpriteBatch batch, Texture2D stone, TitleButtonArt.Frame art, Rectangle area)
     {
-        const int edge = TitleButtonArt.Edge;
-        var face = TitleButtonArt.Face;
-        var inside = new Rectangle(button.X + edge, button.Y + edge, button.Width - 2 * edge, button.Height - 2 * edge);
-        Tile(batch, stone, TitleButtonArt.Interior, inside);
-        Tile(batch, stone, TitleButtonArt.TopEdge, new Rectangle(inside.X, button.Y, inside.Width, edge));
-        Tile(batch, stone, new Rectangle(face.X + edge, face.Bottom - edge, face.Width - 2 * edge, edge),
+        var edge = art.Edge;
+        var source = art.Source;
+        var inside = new Rectangle(area.X + edge, area.Y + edge, area.Width - 2 * edge, area.Height - 2 * edge);
+        Tile(batch, stone, art.Interior, inside);
+        Tile(batch, stone, art.TopEdge, new Rectangle(inside.X, area.Y, inside.Width, edge));
+        Tile(batch, stone, new Rectangle(source.X + edge, source.Bottom - edge, source.Width - 2 * edge, edge),
             new Rectangle(inside.X, inside.Bottom, inside.Width, edge));
-        var sideRows = TitleButtonArt.Interior with { Width = edge };
-        Tile(batch, stone, sideRows with { X = face.X }, new Rectangle(button.X, inside.Y, edge, inside.Height));
-        Tile(batch, stone, sideRows with { X = face.Right - edge }, new Rectangle(inside.Right, inside.Y, edge, inside.Height));
+        var sideRows = new Rectangle(source.X, source.Y + edge, edge, source.Height - 2 * edge);
+        Tile(batch, stone, sideRows, new Rectangle(area.X, inside.Y, edge, inside.Height));
+        Tile(batch, stone, sideRows with { X = source.Right - edge }, new Rectangle(inside.Right, inside.Y, edge, inside.Height));
         var corner = new Point(edge, edge);
-        batch.Draw(stone, new Rectangle(button.Location, corner), new Rectangle(face.Location, corner), Color.White);
-        batch.Draw(stone, new Rectangle(new Point(inside.Right, button.Y), corner),
-            new Rectangle(new Point(face.Right - edge, face.Y), corner), Color.White);
-        batch.Draw(stone, new Rectangle(new Point(button.X, inside.Bottom), corner),
-            new Rectangle(new Point(face.X, face.Bottom - edge), corner), Color.White);
+        batch.Draw(stone, new Rectangle(area.Location, corner), new Rectangle(source.Location, corner), Color.White);
+        batch.Draw(stone, new Rectangle(new Point(inside.Right, area.Y), corner),
+            new Rectangle(new Point(source.Right - edge, source.Y), corner), Color.White);
+        batch.Draw(stone, new Rectangle(new Point(area.X, inside.Bottom), corner),
+            new Rectangle(new Point(source.X, source.Bottom - edge), corner), Color.White);
         batch.Draw(stone, new Rectangle(new Point(inside.Right, inside.Bottom), corner),
-            new Rectangle(new Point(face.Right - edge, face.Bottom - edge), corner), Color.White);
+            new Rectangle(new Point(source.Right - edge, source.Bottom - edge), corner), Color.White);
     }
 
     /// <summary>Repeats <paramref name="source"/> across <paramref name="area"/> at its own size,

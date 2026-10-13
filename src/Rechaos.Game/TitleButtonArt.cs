@@ -24,20 +24,38 @@ internal static class TitleButtonArt
     /// <summary>Where a label starts inside its button, as Begin's does.</summary>
     public static readonly Point LabelOffset = new(4, 3);
 
-    /// <summary>The face of the setup screen's Begin button in its background art.</summary>
-    public static readonly Rectangle Face = SetupButtonLayout.Start;
+    /// <summary>
+    /// A piece of the setup screen's background drawn at any size: its corners as they are, and its
+    /// edges and inside repeated between them.
+    /// </summary>
+    /// <param name="Source">The piece in the background art.</param>
+    /// <param name="Edge">How far its bevelled edge reaches in.</param>
+    /// <param name="TopEdge">The stretch of its top edge that is repeated.</param>
+    /// <param name="Interior">The stretch of its inside that is repeated.</param>
+    public readonly record struct Frame(Rectangle Source, int Edge, Rectangle TopEdge, Rectangle Interior);
 
-    /// <summary>The width of the face's bevelled edge.</summary>
-    public const int Edge = 3;
+    private static readonly Rectangle BeginFace = SetupButtonLayout.Start;
 
     /// <summary>
-    /// The part of the face's top edge right of its label, so tiling the edge does not repeat
-    /// the top of Begin's letters.
+    /// The face of the setup screen's Begin button. Its top edge is taken right of the label, so
+    /// the top of Begin's letters is not repeated, and its inside from the blank stone under it.
     /// </summary>
-    public static readonly Rectangle TopEdge = new(Face.X + 30, Face.Y, Face.Width - 30 - Edge, Edge);
+    public static readonly Frame Face = new(BeginFace, 3,
+        new Rectangle(BeginFace.X + 30, BeginFace.Y, BeginFace.Width - 33, 3),
+        new Rectangle(BeginFace.X + 3, BeginFace.Y + 14, BeginFace.Width - 6, BeginFace.Height - 17));
 
-    /// <summary>The face's blank stone under its label, tiled over a button's inside.</summary>
-    public static readonly Rectangle Interior = new(Face.X + Edge, Face.Y + 14, Face.Width - 2 * Edge, Face.Height - 14 - Edge);
+    private static readonly Rectangle BeginHousing = new(358, 366, 216, 63);
+
+    /// <summary>
+    /// The stone housing that holds Begin and Cancel. Its inside is the marble left of Begin, which
+    /// is what shows of it between the title's buttons.
+    /// </summary>
+    public static readonly Frame Housing = new(BeginHousing, 8,
+        new Rectangle(BeginHousing.X + 8, BeginHousing.Y, BeginHousing.Width - 16, 8),
+        new Rectangle(364, 376, 6, 44));
+
+    /// <summary>How far a housing reaches past the buttons it holds, as Begin's housing does.</summary>
+    public static readonly Point HousingMargin = new(11, 8);
 
     public enum Sheet
     {

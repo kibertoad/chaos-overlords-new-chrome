@@ -16,8 +16,8 @@ public sealed class TitleButtonArtTests
         foreach (var (button, label) in ChaosGame.TitleButtons)
         {
             Assert.True(TitleButtonArt.CanSpell(label), label);
-            Assert.True(TitleButtonArt.LabelOffset.X + TitleButtonArt.Width(label) < button.Width - TitleButtonArt.Edge, label);
-            Assert.True(TitleButtonArt.LabelOffset.Y + TitleButtonArt.GlyphHeight + 1 < button.Height - TitleButtonArt.Edge, label);
+            Assert.True(TitleButtonArt.LabelOffset.X + TitleButtonArt.Width(label) < button.Width - TitleButtonArt.Face.Edge, label);
+            Assert.True(TitleButtonArt.LabelOffset.Y + TitleButtonArt.GlyphHeight + 1 < button.Height - TitleButtonArt.Face.Edge, label);
         }
     }
 
@@ -37,11 +37,29 @@ public sealed class TitleButtonArtTests
     }
 
     [Fact]
-    public void FaceIsBeginsButtonAndItsTiledPartsStayOnIt()
+    public void FramesAreBeginsFaceAndHousingAndTheirTiledPartsStayOnThem()
     {
-        Assert.Equal(SetupButtonLayout.Start, TitleButtonArt.Face);
-        Assert.True(TitleButtonArt.Face.Contains(TitleButtonArt.TopEdge));
-        Assert.True(TitleButtonArt.Face.Contains(TitleButtonArt.Interior));
+        Assert.Equal(SetupButtonLayout.Start, TitleButtonArt.Face.Source);
+        foreach (var frame in new[] { TitleButtonArt.Face, TitleButtonArt.Housing })
+        {
+            Assert.True(frame.Source.Contains(frame.TopEdge));
+            Assert.True(frame.Source.Contains(frame.Interior));
+        }
+        // Begin and Cancel sit inside the housing by its margin at least.
+        var housing = TitleButtonArt.Housing.Source;
+        Assert.True(SetupButtonLayout.Start.X - housing.X >= TitleButtonArt.HousingMargin.X);
+        Assert.True(SetupButtonLayout.Start.Y - housing.Y >= TitleButtonArt.HousingMargin.Y);
+    }
+
+    [Fact]
+    public void HousingsHoldEveryButtonMeetAtTheSeamAndClearTheCopyrightLine()
+    {
+        var upper = ChaosGame.TitleUpperHousing;
+        var lower = ChaosGame.TitleLowerHousing;
+        Assert.Equal(upper.Bottom, lower.Y);
+        foreach (var (button, label) in ChaosGame.TitleButtons)
+            Assert.True(upper.Contains(button) || lower.Contains(button), label);
+        Assert.True(lower.Bottom <= ChaosGame.TitleCopyright.Y);
     }
 
     [Theory]
