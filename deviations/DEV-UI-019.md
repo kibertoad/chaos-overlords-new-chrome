@@ -5,16 +5,16 @@
 - Reason: The rebuild has no menu bar. Its commands are reached elsewhere: saving, loading and
   quitting from the Escape menu (DEV-UI-011), the options from the Options screen, Help Topics
   with F1 (DEV-HELP-001), full screen with F11 (DEV-OPTIONS-003), and About, which shows the
-  credits screen, with Shift+F1. On the title screen, buttons for New Game, Load, Online,
-  Options, Help, Intro and Quit stand in for the menu, drawn over the title art with a box for
-  notices left by the previous screen. The buttons and the copyright line of the title art sit 13
-  pixels left of centre, with as much space between the logo and the top row of buttons as
-  between the bottom row and the copyright line. The lower right corner carries the Refurbished Dinosaurs logo under a
-  "restored by" line; the logo turns gold under the pointer,
-  and a click on it opens https://dinorefurb.com/ in the player's browser. Ctrl+H and Ctrl+J open the
-  Online screen, where hosting and joining happen, and Enter and F9 also start a new game and
-  open a saved one. A left press on the title outside the buttons does nothing, where the
-  original's title loop takes a press anywhere as New Game.
+  credits screen, with Shift+F1. On the title screen, buttons for New Game, Load, Online, Options,
+  Help, Intro and Quit stand in for the menu, drawn over the title art with a box for notices left
+  by the previous screen. The buttons and the copyright line of the title art sit 13 pixels left
+  of centre, with as much space between the logo and the top row of buttons as between the bottom
+  row and the copyright line. The lower right corner carries the Refurbished Dinosaurs logo under
+  a "restored by" line, its foot on the copyright line's baseline; the logo turns gold under the
+  pointer, and a click on it opens https://dinorefurb.com/ in the player's browser. Ctrl+H and
+  Ctrl+J open the Online screen, where hosting and joining happen, and Enter and F9 also start a
+  new game and open a saved one. A left press on the title outside the buttons does nothing, where
+  the original's title loop takes a press anywhere as New Game.
 - Setting: None
 - Default: mandatory
 - Justification: Every command of the menu bar stays reachable, and the drawing area is drawn

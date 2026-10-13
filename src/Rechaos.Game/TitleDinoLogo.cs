@@ -11,9 +11,12 @@ internal static class TitleDinoLogo
 {
     public const string Url = "https://dinorefurb.com/";
 
-    /// <summary>The logo, at the size of its bitmap, clear of the button row above it and of the
-    /// copyright line below.</summary>
-    public static readonly Rectangle Bounds = new(VirtualInput.Width - 117 - 16, 418, 117, 26);
+    /// <summary>
+    /// The logo, at the size of its bitmap. The lowest row of its ink, the foot of "DINOSAURS",
+    /// is the bitmap's 26th, and it stands on the copyright line's baseline.
+    /// </summary>
+    public static readonly Rectangle Bounds =
+        new(VirtualInput.Width - 117 - 16, ChaosGame.TitleCopyrightBaseline - 25, 117, 26);
 
     /// <summary>
     /// The "restored by" line over the logo, flush with its right edge, at the size of its

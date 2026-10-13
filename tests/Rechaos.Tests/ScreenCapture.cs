@@ -506,7 +506,7 @@ public static class ScreenCaptureMasks
                     ChaosGame.TitleMenuTop + 2 * ChaosGame.TitleRowPitch, 80, 34)),
                 // DEV-UI-012: the version, under the left edge of the title art's logo, as wide as
                 // the build's version string.
-                new("DEV-UI-012", new Rectangle(ChaosGame.TitleVersionMargin, 430,
+                new("DEV-UI-012", new Rectangle(ChaosGame.TitleVersionMargin, ChaosGame.TitleVersionTop,
                     GameVersion.Display.Length * OriginalFontLayout.CellWidth, 9)),
             ],
             ["SCR-UI-002"] = [],

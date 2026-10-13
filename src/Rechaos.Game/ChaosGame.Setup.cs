@@ -75,6 +75,18 @@ public sealed partial class ChaosGame
     /// <summary>Where the version line starts: the left edge of the title art's logo.</summary>
     internal const int TitleVersionMargin = 14;
 
+    /// <summary>
+    /// The last row of the copyright line's capitals, eight rows under the top of its strip. The
+    /// version line and the logo stand on it.
+    /// </summary>
+    internal static readonly int TitleCopyrightBaseline = TitleCopyright.Y + 8;
+
+    /// <summary>
+    /// The top of the version line, whose letters are seven rows tall, so they end on the copyright
+    /// line's baseline.
+    /// </summary>
+    internal static readonly int TitleVersionTop = TitleCopyrightBaseline - 6;
+
     private const string ObjectiveDurationWarning =
         "OBJECTIVES DISABLE TIME LIMITS";
 
@@ -699,7 +711,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private static void DrawTitleVersion(SpriteBatch batch, PixelFont font)
     {
-        font.Draw(batch, GameVersion.Display, new Vector2(TitleVersionMargin, 430),
+        font.Draw(batch, GameVersion.Display, new Vector2(TitleVersionMargin, TitleVersionTop),
             new Color(150, 160, 160), 1);
     }
 
