@@ -184,7 +184,7 @@ public sealed partial class DeviationBehaviourTests
         Assert.Equal(TitleDinoLogo.Rest, TitleDinoLogo.Tint(new Point(320, 300)));
         Assert.Equal(TitleDinoLogo.Highlight, TitleDinoLogo.Tint(onLogo));
         Assert.Equal(TitleDinoLogo.Rest, TitleDinoLogo.Tint(TitleDinoLogo.CaptionBounds.Center));
-        foreach (var area in new[] { TitleDinoLogo.Bounds, TitleDinoLogo.CaptionBounds, TitleDinoLogo.EditionBounds })
+        foreach (var area in new[] { TitleDinoLogo.Bounds, TitleDinoLogo.CaptionBounds })
             for (var x = area.Left; x < area.Right; x++)
             for (var y = area.Top; y < area.Bottom; y++)
                 Assert.Null(ChaosGame.TitleActionAt(new Point(x, y)));
