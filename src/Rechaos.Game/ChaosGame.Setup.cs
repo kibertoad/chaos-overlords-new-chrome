@@ -50,8 +50,8 @@ public sealed partial class ChaosGame
     /// </remarks>
     private static readonly Rectangle TitleMessage = new(494, 292, 138, 99);
 
-    /// <summary>How far the version line stays clear of the left edge of the title screen.</summary>
-    private const int TitleVersionMargin = 6;
+    /// <summary>Where the version line starts: the left edge of the title art's logo.</summary>
+    internal const int TitleVersionMargin = 14;
 
     private const string ObjectiveDurationWarning =
         "OBJECTIVES DISABLE TIME LIMITS";

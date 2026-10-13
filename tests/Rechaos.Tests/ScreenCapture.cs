@@ -501,10 +501,10 @@ public static class ScreenCaptureMasks
                 new("DEV-UI-019", TitleDinoLogo.Bounds),
                 // DEV-VIDEO-003: the Intro button.
                 new("DEV-VIDEO-003", new Rectangle(322 - ChaosGame.TitleMenuShift, 376, 80, 34)),
-                // DEV-UI-012: the version, 6 pixels from the left edge, as wide as the build's
-                // version string.
-                new("DEV-UI-012", new Rectangle(
-                    6, 430, GameVersion.Display.Length * OriginalFontLayout.CellWidth, 9)),
+                // DEV-UI-012: the version, under the left edge of the title art's logo, as wide as
+                // the build's version string.
+                new("DEV-UI-012", new Rectangle(ChaosGame.TitleVersionMargin, 430,
+                    GameVersion.Display.Length * OriginalFontLayout.CellWidth, 9)),
             ],
             ["SCR-UI-002"] = [],
             ["SCR-SETUP-001"] = [],
