@@ -31,11 +31,12 @@ public sealed partial class ChaosGame
     /// <remarks>
     /// Notices arrive on this screen from somewhere else (a match that ended, an online session that
     /// was left), so they are as long as whatever happened, and a centred line of that length ran
-    /// straight through the row of buttons underneath it.
+    /// straight through the row of buttons underneath it. The strip ends where its panel stays
+    /// clear of the "restored by" line over the logo.
     /// </remarks>
-    private static readonly Rectangle TitleMessage = new(494, 292, 138, 118);
+    private static readonly Rectangle TitleMessage = new(494, 292, 138, 99);
 
-    /// <summary>How far the version line stays clear of the right edge of the title screen.</summary>
+    /// <summary>How far the version line stays clear of the left edge of the title screen.</summary>
     private const int TitleVersionMargin = 6;
 
     private const string ObjectiveDurationWarning =
@@ -644,15 +645,13 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, TitleIntro, "INTRO", true);
         DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
         DrawCentered(font, batch, "NEW CHROME", 282, new Color(210, 52, 43), 1);
-        DrawTitleDinoLogo(batch);
+        DrawTitleDinoLogo(batch, font);
         DrawTitleMessage(batch, pixel, font);
-        DrawCentered(font, batch, "RESTORED BY KIBERTOAD", 430,
-            new Color(185, 195, 195), 1);
         DrawTitleVersion(batch, font);
     }
 
     /// <summary>
-    /// Prints the build's version in the corner the credit line leaves free.
+    /// Prints the build's version in the corner the logo leaves free.
     /// </summary>
     /// <remarks>
     /// The title screen is the one place every player passes through, so it is where the number a
@@ -660,22 +659,21 @@ public sealed partial class ChaosGame
     /// </remarks>
     private static void DrawTitleVersion(SpriteBatch batch, PixelFont font)
     {
-        var width = GameVersion.Display.Length * OriginalFontLayout.CellWidth;
-        font.Draw(batch, GameVersion.Display,
-            new Vector2(VirtualInput.Width - width - TitleVersionMargin, 430),
+        font.Draw(batch, GameVersion.Display, new Vector2(TitleVersionMargin, 430),
             new Color(150, 160, 160), 1);
     }
 
     /// <summary>
-    /// DEV-UI-019: the Refurbished Dinosaurs head, and as much of the name as has come out of it.
-    /// The name goes first so the head covers the part still behind it.
+    /// DEV-UI-019: the "restored by" line and the Refurbished Dinosaurs logo under it, gold under
+    /// the pointer. A panel open over the title takes the pointer, so the logo stays grey under it.
     /// </summary>
-    private void DrawTitleDinoLogo(SpriteBatch batch)
+    private void DrawTitleDinoLogo(SpriteBatch batch, PixelFont font)
     {
-        if (_dinoHead is null || _dinoText is null) return;
-        if (_titleDinoLogo.TextFrame() is var (source, destination, opacity))
-            batch.Draw(_dinoText, destination, source, Color.White * opacity);
-        batch.Draw(_dinoHead, TitleDinoLogo.Head, Color.White);
+        font.Draw(batch, TitleDinoLogo.Caption, TitleDinoLogo.CaptionBounds.Location.ToVector2(),
+            TitleDinoLogo.Rest, 1);
+        if (_dinoLogo is null) return;
+        batch.Draw(_dinoLogo, TitleDinoLogo.Bounds,
+            TitleDinoLogo.Tint(_gameMenuOpen ? null : _hoverPoint));
     }
 
     /// <summary>Opens the project's site in the player's browser.</summary>

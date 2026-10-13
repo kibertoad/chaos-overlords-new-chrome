@@ -375,8 +375,7 @@ public sealed partial class ChaosGame
         _batch = new SpriteBatch(GraphicsDevice);
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData([Color.White]);
-        _dinoHead = LoadBrandingTexture("dino-head.png");
-        _dinoText = LoadBrandingTexture("dino-text.png");
+        _dinoLogo = LoadBrandingTexture("dino-logo.png");
         _eventSiteDitherOverlay = LastTurnEventPresentation.CreateEventSiteDitherOverlay(
             GraphicsDevice);
 
@@ -804,7 +803,7 @@ public sealed partial class ChaosGame
         switch (_screens.Current)
         {
             case ClientScreen.Title:
-                if (_titleDinoLogo.Contains(point)) OpenTitleDinoLogoSite();
+                if (TitleDinoLogo.Bounds.Contains(point)) OpenTitleDinoLogoSite();
                 else if (TitleActionAt(point) is { } titleAction) RunTitleAction(titleAction);
                 break;
             case ClientScreen.Options:

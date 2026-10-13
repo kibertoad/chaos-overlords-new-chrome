@@ -7,10 +7,9 @@
   with F1 (DEV-HELP-001), full screen with F11 (DEV-OPTIONS-003), and About, which shows the
   credits screen, with Shift+F1. On the title screen, buttons for New Game, Load, Online,
   Options, Help, Intro and Quit stand in for the menu, drawn over the title art with the rebuild's
-  name, its credit line and a box for notices left by the previous screen. The lower left corner
-  carries the head of the Refurbished Dinosaurs logo; while the pointer rests on it, the project's
-  name slides out of the head, and a click on the logo opens https://dinorefurb.com/ in the
-  player's browser. Ctrl+H and Ctrl+J open the
+  name and a box for notices left by the previous screen. The lower right corner carries the
+  Refurbished Dinosaurs logo under a "restored by" line; the logo turns gold under the pointer,
+  and a click on it opens https://dinorefurb.com/ in the player's browser. Ctrl+H and Ctrl+J open the
   Online screen, where hosting and joining happen, and Enter and F9 also start a new game and
   open a saved one. A left press on the title outside the buttons does nothing, where the
   original's title loop takes a press anywhere as New Game.

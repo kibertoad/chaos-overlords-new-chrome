@@ -35,9 +35,7 @@ public sealed partial class ChaosGame
         return Texture2D.FromStream(GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
     }
 
-    private Texture2D? _dinoHead;
-    private Texture2D? _dinoText;
-    private readonly TitleDinoLogo _titleDinoLogo = new();
+    private Texture2D? _dinoLogo;
 
     private string ImagePath(string fileName) => Path.Combine(_assetRoot, "images", fileName);
 

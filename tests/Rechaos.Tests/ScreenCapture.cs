@@ -489,19 +489,20 @@ public static class ScreenCaptureMasks
             ["SCR-UI-001"] =
             [
                 // DEV-UI-019: the rebuild's line under the logo, its buttons, which stand in for the
-                // menu bar, and its credit line. The notice box is drawn only with a message.
+                // menu bar, and the Refurbished Dinosaurs logo with the line over it. The notice
+                // box is drawn only with a message.
                 new("DEV-UI-019", new Rectangle(290, 282, 60, 9)),
                 new("DEV-UI-019", new Rectangle(220, 292, 200, 76)),
                 new("DEV-UI-019", new Rectangle(154, 376, 164, 34)),
                 new("DEV-UI-019", new Rectangle(406, 376, 80, 34)),
-                new("DEV-UI-019", new Rectangle(257, 430, 126, 9)),
+                new("DEV-UI-019", TitleDinoLogo.CaptionBounds),
+                new("DEV-UI-019", TitleDinoLogo.Bounds),
                 // DEV-VIDEO-003: the Intro button.
                 new("DEV-VIDEO-003", new Rectangle(322, 376, 80, 34)),
-                // DEV-UI-012: the version, right-aligned 6 pixels from the edge, as wide as the
-                // build's version string.
+                // DEV-UI-012: the version, 6 pixels from the left edge, as wide as the build's
+                // version string.
                 new("DEV-UI-012", new Rectangle(
-                    VirtualInput.Width - 6 - GameVersion.Display.Length * OriginalFontLayout.CellWidth, 430,
-                    GameVersion.Display.Length * OriginalFontLayout.CellWidth, 9)),
+                    6, 430, GameVersion.Display.Length * OriginalFontLayout.CellWidth, 9)),
             ],
             ["SCR-UI-002"] = [],
             ["SCR-SETUP-001"] = [],

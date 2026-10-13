@@ -18,9 +18,6 @@ public sealed partial class ChaosGame
     private void UpdateHoverPoint(Point? point)
     {
         _hoverPoint = point;
-        if (_screens.Current == ClientScreen.Title && !_gameMenuOpen)
-            _titleDinoLogo.Update(point, _inputTime);
-        else _titleDinoLogo.Reset();
         UpdateCommandTooltipDwell();
         _sectorOwnerDwell.Update(HoveredOwnerSector(), _inputTime);
     }

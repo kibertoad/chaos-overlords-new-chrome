@@ -175,68 +175,35 @@ public sealed partial class DeviationBehaviourTests
     }
 
     [Fact]
-    public void TheTitleDinosaurHeadLetsItsNameOutUnderThePointer()
+    public void TheTitleDinosaurLogoLightsUpUnderThePointer()
     {
-        // DEV-UI-019: the head shows alone, the name slides out while the pointer is on the logo
-        // and back in once it leaves, and the logo covers none of the title buttons.
-        var logo = new TitleDinoLogo();
-        var onHead = new Point(TitleDinoLogo.Head.Center.X, TitleDinoLogo.Head.Center.Y);
-        var onName = new Point(TitleDinoLogo.Text.Center.X, TitleDinoLogo.Text.Center.Y);
-        var now = TimeSpan.Zero;
-        void Hold(Point point, TimeSpan duration)
-        {
-            for (var end = now + duration; now < end;)
-            {
-                now += TimeSpan.FromMilliseconds(10);
-                logo.Update(point, now);
-            }
-        }
-        Hold(onName, TitleDinoLogo.RevealTime);
-        Assert.Equal(0, logo.Progress);
-        Assert.Null(logo.TextFrame());
-        Assert.False(logo.Contains(onName));
-
-        Hold(onHead, TitleDinoLogo.RevealTime / 2);
-        Assert.Equal(0.5f, logo.Progress, 2);
-        var (partSource, partDestination, _) = logo.TextFrame()!.Value;
-        Assert.Equal(TitleDinoLogo.EmergeLine, partDestination.X);
-        Assert.Equal(TitleDinoLogo.Text.Width, partSource.Right);
-        Assert.True(partSource.Width < TitleDinoLogo.Text.Width);
-
-        Hold(onName, TitleDinoLogo.RevealTime);
-        Assert.Equal(1, logo.Progress);
-        var (source, destination, opacity) = logo.TextFrame()!.Value;
-        Assert.Equal(new Rectangle(0, 0, TitleDinoLogo.Text.Width, TitleDinoLogo.Text.Height), source);
-        Assert.Equal(TitleDinoLogo.Text, destination);
-        Assert.Equal(1, opacity);
-
-        // A late frame moves the name no further than a short one would.
-        logo.Update(new Point(320, 300), now + TitleDinoLogo.RevealTime * 10);
-        Assert.True(logo.Progress > 0.8f);
-        Hold(new Point(320, 300), TitleDinoLogo.RevealTime);
-        Assert.Equal(0, logo.Progress);
-        Assert.Null(ChaosGame.TitleActionAt(onHead));
-        Assert.Null(ChaosGame.TitleActionAt(onName));
-        for (var x = TitleDinoLogo.Bounds.Left; x < TitleDinoLogo.Bounds.Right; x++)
-        for (var y = TitleDinoLogo.Bounds.Top; y < TitleDinoLogo.Bounds.Bottom; y++)
-            Assert.Null(ChaosGame.TitleActionAt(new Point(x, y)));
+        // DEV-UI-019: the logo is grey until the pointer is on it and gold while it is, and it and
+        // the line over it cover none of the title buttons.
+        var onLogo = TitleDinoLogo.Bounds.Center;
+        Assert.Equal(TitleDinoLogo.Rest, TitleDinoLogo.Tint(null));
+        Assert.Equal(TitleDinoLogo.Rest, TitleDinoLogo.Tint(new Point(320, 300)));
+        Assert.Equal(TitleDinoLogo.Highlight, TitleDinoLogo.Tint(onLogo));
+        Assert.Equal(TitleDinoLogo.Rest, TitleDinoLogo.Tint(TitleDinoLogo.CaptionBounds.Center));
+        foreach (var area in new[] { TitleDinoLogo.Bounds, TitleDinoLogo.CaptionBounds })
+            for (var x = area.Left; x < area.Right; x++)
+            for (var y = area.Top; y < area.Bottom; y++)
+                Assert.Null(ChaosGame.TitleActionAt(new Point(x, y)));
+        Assert.True(TitleDinoLogo.Bounds.Right <= VirtualInput.Width);
     }
 
-    [Theory]
-    [InlineData("dino-head.png", 34, 32)]
-    [InlineData("dino-text.png", 106, 32)]
-    public void TheTitleDinosaurBitmapsMatchTheirPlaces(string fileName, int width, int height)
+    [Fact]
+    public void TheTitleDinosaurBitmapMatchesItsPlace()
     {
-        // DEV-UI-019: the logo is drawn pixel for pixel, so each bitmap is the size of its place.
+        // DEV-UI-019: the logo is drawn pixel for pixel, so its bitmap is the size of its place.
         using var stream = typeof(ChaosGame).Assembly
-            .GetManifestResourceStream($"Rechaos.Game.Branding.{fileName}");
+            .GetManifestResourceStream("Rechaos.Game.Branding.dino-logo.png");
         Assert.NotNull(stream);
         var header = new byte[24];
         stream.ReadExactly(header);
-        Assert.Equal(width, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(16)));
-        Assert.Equal(height, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(20)));
-        Assert.Equal(new Point(width, height),
-            fileName == "dino-head.png" ? TitleDinoLogo.Head.Size : TitleDinoLogo.Text.Size);
+        Assert.Equal(TitleDinoLogo.Bounds.Width,
+            System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(16)));
+        Assert.Equal(TitleDinoLogo.Bounds.Height,
+            System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(20)));
     }
 
     [Fact]
