@@ -8,7 +8,8 @@
   credits screen, with Shift+F1. On the title screen, buttons for New Game, Load, Online,
   Options, Help, Intro and Quit stand in for the menu, drawn over the title art with a box for
   notices left by the previous screen. The buttons and the copyright line of the title art sit 13
-  pixels left of centre. The lower right corner carries the Refurbished Dinosaurs logo under a
+  pixels left of centre, with as much space between the logo and the top row of buttons as
+  between the bottom row and the copyright line. The lower right corner carries the Refurbished Dinosaurs logo under a
   "restored by" line; the logo turns gold under the pointer,
   and a click on it opens https://dinorefurb.com/ in the player's browser. Ctrl+H and Ctrl+J open the
   Online screen, where hosting and joining happen, and Enter and F9 also start a new game and

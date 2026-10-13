@@ -193,9 +193,9 @@ public sealed class ProgramShellParityTests
     [Fact]
     public void TheRebuildsTitleButtonsKeepTheirCommands()
     {
-        Assert.Equal(ChaosGame.TitleAction.NewGame, ChaosGame.TitleActionAt(new Point(230, 300)));
-        Assert.Equal(ChaosGame.TitleAction.LoadGame, ChaosGame.TitleActionAt(new Point(230, 340)));
-        Assert.Equal(ChaosGame.TitleAction.Quit, ChaosGame.TitleActionAt(new Point(410, 380)));
+        Assert.Equal(ChaosGame.TitleAction.NewGame, ChaosGame.TitleActionAt(new Point(230, 310)));
+        Assert.Equal(ChaosGame.TitleAction.LoadGame, ChaosGame.TitleActionAt(new Point(230, 350)));
+        Assert.Equal(ChaosGame.TitleAction.Quit, ChaosGame.TitleActionAt(new Point(410, 390)));
     }
 
     [Fact]

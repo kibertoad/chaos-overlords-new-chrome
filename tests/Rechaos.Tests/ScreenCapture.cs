@@ -492,15 +492,18 @@ public static class ScreenCaptureMasks
                 // Dinosaurs logo under a "restored by" line. The notice box
                 // is drawn only with a message. The menu and the copyright line sit left of centre,
                 // and the copyright line's place in the art is black.
-                new("DEV-UI-019", new Rectangle(220 - ChaosGame.TitleMenuShift, 292, 200, 76)),
-                new("DEV-UI-019", new Rectangle(154 - ChaosGame.TitleMenuShift, 376, 164, 34)),
-                new("DEV-UI-019", new Rectangle(406 - ChaosGame.TitleMenuShift, 376, 80, 34)),
+                new("DEV-UI-019", new Rectangle(220 - ChaosGame.TitleMenuShift, ChaosGame.TitleMenuTop, 200, 76)),
+                new("DEV-UI-019", new Rectangle(154 - ChaosGame.TitleMenuShift,
+                    ChaosGame.TitleMenuTop + 2 * ChaosGame.TitleRowPitch, 164, 34)),
+                new("DEV-UI-019", new Rectangle(406 - ChaosGame.TitleMenuShift,
+                    ChaosGame.TitleMenuTop + 2 * ChaosGame.TitleRowPitch, 80, 34)),
                 new("DEV-UI-019", ChaosGame.TitleCopyrightArt),
                 new("DEV-UI-019", ChaosGame.TitleCopyright),
                 new("DEV-UI-019", TitleDinoLogo.CaptionBounds),
                 new("DEV-UI-019", TitleDinoLogo.Bounds),
                 // DEV-VIDEO-003: the Intro button.
-                new("DEV-VIDEO-003", new Rectangle(322 - ChaosGame.TitleMenuShift, 376, 80, 34)),
+                new("DEV-VIDEO-003", new Rectangle(322 - ChaosGame.TitleMenuShift,
+                    ChaosGame.TitleMenuTop + 2 * ChaosGame.TitleRowPitch, 80, 34)),
                 // DEV-UI-012: the version, under the left edge of the title art's logo, as wide as
                 // the build's version string.
                 new("DEV-UI-012", new Rectangle(ChaosGame.TitleVersionMargin, 430,

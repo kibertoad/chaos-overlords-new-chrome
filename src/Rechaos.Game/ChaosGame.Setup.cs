@@ -23,20 +23,42 @@ public sealed partial class ChaosGame
     /// </summary>
     internal const int TitleMenuShift = 13;
 
-    private static readonly Rectangle TitleNewGame = new(220 - TitleMenuShift, 292, 200, 34);
-    private static readonly Rectangle TitleLoadGame = new(220 - TitleMenuShift, 334, 98, 34);
-    internal static readonly Rectangle TitleOnline = new(322 - TitleMenuShift, 334, 98, 34);
-    private static readonly Rectangle TitleOptions = new(154 - TitleMenuShift, 376, 80, 34);
-    private static readonly Rectangle TitleHelp = new(238 - TitleMenuShift, 376, 80, 34);
-    private static readonly Rectangle TitleIntro = new(322 - TitleMenuShift, 376, 80, 34);
-    private static readonly Rectangle TitleQuit = new(406 - TitleMenuShift, 376, 80, 34);
+    /// <summary>The first row under the title art's logo.</summary>
+    private const int TitleArtBottom = 279;
+
+    /// <summary>
+    /// The empty rows between the logo and the top row of buttons, and again between the bottom
+    /// row and the copyright line.
+    /// </summary>
+    private const int TitleMenuGap = 24;
+
+    /// <summary>The top of the New Game button.</summary>
+    internal const int TitleMenuTop = TitleArtBottom + TitleMenuGap;
+
+    /// <summary>How far each row of buttons sits below the one over it.</summary>
+    internal const int TitleRowPitch = 42;
+
+    private const int TitleMiddleRow = TitleMenuTop + TitleRowPitch;
+    private const int TitleBottomRow = TitleMenuTop + 2 * TitleRowPitch;
+    private const int TitleButtonHeight = 34;
+
+    private static readonly Rectangle TitleNewGame = new(220 - TitleMenuShift, TitleMenuTop, 200, TitleButtonHeight);
+    private static readonly Rectangle TitleLoadGame = new(220 - TitleMenuShift, TitleMiddleRow, 98, TitleButtonHeight);
+    internal static readonly Rectangle TitleOnline = new(322 - TitleMenuShift, TitleMiddleRow, 98, TitleButtonHeight);
+    private static readonly Rectangle TitleOptions = new(154 - TitleMenuShift, TitleBottomRow, 80, TitleButtonHeight);
+    private static readonly Rectangle TitleHelp = new(238 - TitleMenuShift, TitleBottomRow, 80, TitleButtonHeight);
+    private static readonly Rectangle TitleIntro = new(322 - TitleMenuShift, TitleBottomRow, 80, TitleButtonHeight);
+    private static readonly Rectangle TitleQuit = new(406 - TitleMenuShift, TitleBottomRow, 80, TitleButtonHeight);
 
     /// <summary>The copyright line where the title art has it, on black.</summary>
     internal static readonly Rectangle TitleCopyrightArt = new(162, 446, 313, 10);
 
-    /// <summary>Where the title screen draws the copyright line.</summary>
+    /// <summary>
+    /// Where the title screen draws the copyright line: under the menu by the gap the menu keeps
+    /// from the logo, which puts it a row above its place in the art.
+    /// </summary>
     internal static readonly Rectangle TitleCopyright = new(
-        TitleCopyrightArt.X - TitleMenuShift, TitleCopyrightArt.Y,
+        TitleCopyrightArt.X - TitleMenuShift, TitleQuit.Bottom + TitleMenuGap,
         TitleCopyrightArt.Width, TitleCopyrightArt.Height);
 
     /// <summary>
@@ -48,7 +70,7 @@ public sealed partial class ChaosGame
     /// straight through the row of buttons underneath it. The strip ends where its panel stays
     /// clear of the "restored by" line over the logo.
     /// </remarks>
-    private static readonly Rectangle TitleMessage = new(494, 292, 138, 99);
+    private static readonly Rectangle TitleMessage = new(494, TitleMenuTop, 138, 90);
 
     /// <summary>Where the version line starts: the left edge of the title art's logo.</summary>
     internal const int TitleVersionMargin = 14;

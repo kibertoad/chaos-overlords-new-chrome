@@ -163,7 +163,7 @@ public sealed partial class DeviationBehaviourTests
     {
         // DEV-UI-019, DEV-UI-029: the title screen's drawn buttons stand in for the Windows menu
         // bar, and a press outside them does nothing.
-        Assert.Equal(ChaosGame.TitleAction.NewGame, ChaosGame.TitleActionAt(new Point(320, 300)));
+        Assert.Equal(ChaosGame.TitleAction.NewGame, ChaosGame.TitleActionAt(new Point(320, 310)));
         Assert.Equal(ChaosGame.TitleAction.LoadGame, ChaosGame.TitleActionAt(new Point(260, 350)));
         Assert.Equal(ChaosGame.TitleAction.Online, ChaosGame.TitleActionAt(new Point(370, 350)));
         Assert.Equal(ChaosGame.TitleAction.Options, ChaosGame.TitleActionAt(new Point(190, 390)));
