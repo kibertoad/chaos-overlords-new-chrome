@@ -376,6 +376,7 @@ public sealed partial class ChaosGame
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData([Color.White]);
         _dinoLogo = LoadBrandingTexture("dino-logo.png");
+        _restoredBy = LoadBrandingTexture("restored-by.png");
         _eventSiteDitherOverlay = LastTurnEventPresentation.CreateEventSiteDitherOverlay(
             GraphicsDevice);
 

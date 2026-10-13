@@ -645,7 +645,7 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, TitleIntro, "INTRO", true);
         DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
         DrawCentered(font, batch, "NEW CHROME", 282, new Color(210, 52, 43), 1);
-        DrawTitleDinoLogo(batch, font);
+        DrawTitleDinoLogo(batch);
         DrawTitleMessage(batch, pixel, font);
         DrawTitleVersion(batch, font);
     }
@@ -667,10 +667,10 @@ public sealed partial class ChaosGame
     /// DEV-UI-019: the "restored by" line and the Refurbished Dinosaurs logo under it, gold under
     /// the pointer. A panel open over the title takes the pointer, so the logo stays grey under it.
     /// </summary>
-    private void DrawTitleDinoLogo(SpriteBatch batch, PixelFont font)
+    private void DrawTitleDinoLogo(SpriteBatch batch)
     {
-        font.Draw(batch, TitleDinoLogo.Caption, TitleDinoLogo.CaptionBounds.Location.ToVector2(),
-            TitleDinoLogo.Rest, 1);
+        if (_restoredBy is not null)
+            batch.Draw(_restoredBy, TitleDinoLogo.CaptionBounds, TitleDinoLogo.CaptionColor);
         if (_dinoLogo is null) return;
         batch.Draw(_dinoLogo, TitleDinoLogo.Bounds,
             TitleDinoLogo.Tint(_gameMenuOpen ? null : _hoverPoint));

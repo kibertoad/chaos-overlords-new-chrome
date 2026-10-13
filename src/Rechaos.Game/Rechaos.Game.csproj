@@ -15,7 +15,7 @@
     <!-- DPAPI, for sealing the multiplayer membership token in the local recovery file to the
          current user account. Windows only at runtime; MultiplayerRecoveryStore guards the call. -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.12" />
-    <EmbeddedResource Include="Branding/*.png" LogicalName="Rechaos.Game.Branding.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../assets/clean-room/branding/*.png" LogicalName="Rechaos.Game.Branding.%(Filename)%(Extension)" />
     <None Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest"
           Condition="'$(IncludeOriginalAssets)' != 'false'" />
   </ItemGroup>

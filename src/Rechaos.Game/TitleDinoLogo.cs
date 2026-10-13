@@ -15,11 +15,15 @@ internal static class TitleDinoLogo
     /// copyright line below.</summary>
     public static readonly Rectangle Bounds = new(VirtualInput.Width - 144 - 6, 412, 144, 32);
 
-    public const string Caption = "RESTORED BY";
+    /// <summary>
+    /// The "restored by" line over the logo, from its left edge, at the size of its bitmap. The
+    /// letters are drawn for the rebuild in the manner of the copyright line baked into the title
+    /// art, wide small caps that no font of the game has.
+    /// </summary>
+    public static readonly Rectangle CaptionBounds = new(Bounds.X, Bounds.Y - 11, 95, 8);
 
-    /// <summary>The line over the logo, from its left edge.</summary>
-    public static readonly Rectangle CaptionBounds = new(Bounds.X, Bounds.Y - 11,
-        Caption.Length * OriginalFontLayout.CellWidth, OriginalFontLayout.LineHeight);
+    /// <summary>The grey of the copyright line's letters.</summary>
+    public static readonly Color CaptionColor = new(197, 197, 197);
 
     /// <summary>The grey of the title's other added text, so the logo sits back until the pointer
     /// finds it.</summary>

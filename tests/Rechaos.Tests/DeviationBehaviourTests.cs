@@ -191,19 +191,21 @@ public sealed partial class DeviationBehaviourTests
         Assert.True(TitleDinoLogo.Bounds.Right <= VirtualInput.Width);
     }
 
-    [Fact]
-    public void TheTitleDinosaurBitmapMatchesItsPlace()
+    [Theory]
+    [InlineData("dino-logo.png")]
+    [InlineData("restored-by.png")]
+    public void TheTitleDinosaurBitmapsMatchTheirPlaces(string fileName)
     {
-        // DEV-UI-019: the logo is drawn pixel for pixel, so its bitmap is the size of its place.
+        // DEV-UI-019: the logo and its caption are drawn pixel for pixel, so each bitmap is the
+        // size of its place.
         using var stream = typeof(ChaosGame).Assembly
-            .GetManifestResourceStream("Rechaos.Game.Branding.dino-logo.png");
+            .GetManifestResourceStream($"Rechaos.Game.Branding.{fileName}");
         Assert.NotNull(stream);
         var header = new byte[24];
         stream.ReadExactly(header);
-        Assert.Equal(TitleDinoLogo.Bounds.Width,
-            System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(16)));
-        Assert.Equal(TitleDinoLogo.Bounds.Height,
-            System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(20)));
+        var place = fileName == "dino-logo.png" ? TitleDinoLogo.Bounds : TitleDinoLogo.CaptionBounds;
+        Assert.Equal(place.Width, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(16)));
+        Assert.Equal(place.Height, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(20)));
     }
 
     [Fact]

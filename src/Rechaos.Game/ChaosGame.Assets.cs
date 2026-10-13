@@ -36,6 +36,7 @@ public sealed partial class ChaosGame
     }
 
     private Texture2D? _dinoLogo;
+    private Texture2D? _restoredBy;
 
     private string ImagePath(string fileName) => Path.Combine(_assetRoot, "images", fileName);
 
