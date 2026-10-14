@@ -305,13 +305,19 @@ internal sealed class MultiplayerUiState
     internal bool ReconnectPopupShown { get; private set; }
 
     /// <summary>
-    /// Raises the reconnect modal once the server has been unanswered for longer than the grace.
+    /// Raises the reconnect modal once the server has been unanswered for longer than the grace,
+    /// unless the player is still planning their turn.
     /// </summary>
+    /// <remarks>
+    /// The grace counts from the first failed attempt, so a player who ends their turn while the
+    /// connection has been down longer than that gets the modal at once. See
+    /// <see cref="ShowsConnectionTrouble"/> for why planning is left alone.
+    /// </remarks>
     /// <param name="now">The <see cref="MonotonicClock"/> reading for this frame.</param>
     /// <returns>True on the frame the modal first appears.</returns>
     internal bool UpdateReconnectPopup(TimeSpan now)
     {
-        var shown = !IsConnected
+        var shown = ShowsConnectionTrouble
             && DisconnectedSince is { } since
             && now - since >= ReconnectPopupGrace;
         var appeared = shown && !ReconnectPopupShown;
@@ -322,17 +328,16 @@ internal sealed class MultiplayerUiState
     /// <summary>Whether the latest failed attempt was the server limiting this client, not an outage.</summary>
     internal bool IsRateLimited => ReconnectLog.Count > 0 && ReconnectLog[^1].IsRateLimited;
 
-    /// <summary>The turn whose draft has not reached the server yet, if one is being retried.</summary>
-    internal int? DelayedDraftTurn { get; set; }
-
     /// <summary>
-    /// Whether the turn on screen has a draft the server has not taken yet.
+    /// Whether the status line reports the retries, which it does only once the turn is ended.
     /// </summary>
     /// <remarks>
-    /// Worked out from the turn rather than cleared when it changes: the session stops retrying a
-    /// draft once its turn seals, and a delayed draft of an earlier turn simply stops matching.
+    /// A player planning a turn has nothing to do about a lost connection: the sessions keep
+    /// reconnecting in the background, the draft goes out once a retry gets through, and the most
+    /// an outage can cost them is the part of the turn the server's clock sealed without. Once they
+    /// have ended it, the outage is why nothing is resolving, and the reconnect modal follows it.
     /// </remarks>
-    internal bool OpenTurnDraftUnsaved => DelayedDraftTurn is { } turn && turn == PlanningTurn;
+    internal bool ShowsConnectionTrouble => !IsConnected && !PlanningIsOpen;
 
     /// <summary>Recent automatic reconnect attempts, newest last, for the modal status log.</summary>
     internal List<ReconnectAttemptEntry> ReconnectLog { get; } = [];
@@ -431,7 +436,6 @@ internal sealed class MultiplayerUiState
         IsConnected = true;
         DisconnectedSince = null;
         ReconnectPopupShown = false;
-        DelayedDraftTurn = null;
         ReconnectLog.Clear();
         ReconnectCopyStatus = string.Empty;
         ReconnectAttempt = 0;

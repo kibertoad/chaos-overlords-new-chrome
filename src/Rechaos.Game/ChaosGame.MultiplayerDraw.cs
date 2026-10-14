@@ -82,9 +82,10 @@ public sealed partial class ChaosGame
     /// A line for the city screen saying where the online turn stands.
     /// </summary>
     /// <remarks>
-    /// A disconnection takes the line over, because it explains everything else on it: a countdown
-    /// that is still running and a turn that is not resolving mean something quite different when the
-    /// server has stopped answering, and the player is the one who can do something about it.
+    /// Once the turn is ended, a disconnection takes the line over, because it explains everything
+    /// else on it: a turn that is not resolving means something quite different when the server has
+    /// stopped answering. While the player plans it says nothing; see
+    /// <see cref="MultiplayerUiState.ShowsConnectionTrouble"/>.
     ///
     /// An open vote on this player's own seat takes the line over from the stage it is planned in,
     /// and it is the only place they are told: the modal that asks everyone else about them is
@@ -95,7 +96,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private string OnlineTurnStatus()
     {
-        if (!_online.IsConnected)
+        if (_online.ShowsConnectionTrouble)
         {
             return _online.IsRateLimited
                 ? $"THE SERVER IS LIMITING REQUESTS  RETRY {_online.ReconnectAttempt}"
@@ -116,11 +117,6 @@ public sealed partial class ChaosGame
                     : _online.SeatedSeats > 0 && _online.ReadySeats >= _online.SeatedSeats
                         ? "ALL PLAYERS READY"
                         : $"WAITING FOR OTHER PLAYERS  {OnlineSeatTally()} {OnlineCountdown()}".TrimEnd(),
-            // Here rather than on the message line, which anything else said since would have
-            // taken over: the warning lasts exactly as long as the draft it is about.
-            MultiplayerStage.Playing when _online.OpenTurnDraftUnsaved =>
-                $"TURN {_online.PlanningTurn}  ORDERS NOT SAVED YET  RETRYING  {OnlineTurnClock()}"
-                    .TrimEnd(),
             MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineTurnClock()}".TrimEnd(),
             _ => string.Empty,
         };

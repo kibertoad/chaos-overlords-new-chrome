@@ -343,15 +343,11 @@ public sealed partial class ChaosGame
                         ["detail"] = delayed.Detail,
                     });
                 // Quietly: the draft is retried on its own and superseded by the next change, and
-                // the player can go on planning. The footer says so while it is the turn on screen;
-                // see `OnlineTurnStatus`.
-                _online.DelayedDraftTurn = delayed.Turn;
+                // the player can go on planning.
                 return;
             case MultiplayerNotice.OrdersAccepted accepted:
                 // A draft needs no announcement; the submission that ends a turn already said so.
                 _online.TurnSyncError = string.Empty;
-                if (_online.DelayedDraftTurn is { } delayedTurn && accepted.Turn >= delayedTurn)
-                    _online.DelayedDraftTurn = null;
                 if (accepted.Ready && accepted.Turn == _online.PlanningTurn)
                 {
                     _online.ReadySubmissionPending = false;

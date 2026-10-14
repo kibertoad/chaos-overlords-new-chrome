@@ -102,4 +102,35 @@ public sealed class ReconnectPopupTests
         state.UpdateReconnectPopup(lost + MultiplayerUiState.ReconnectPopupGrace * 3);
         Assert.False(state.ReconnectPopupShown);
     }
+
+    /// <summary>
+    /// A player still planning is told nothing about an outage of any length; the status line and
+    /// the modal come up when they end the turn, the modal at once if the grace has already run out.
+    /// </summary>
+    [Fact]
+    public void AnOutageIsShownOnlyOnceThePlayerEndsTheirTurn()
+    {
+        var lost = TimeSpan.FromHours(3);
+        var state = new MultiplayerUiState
+        {
+            Stage = MultiplayerStage.Playing,
+            IsConnected = false,
+            DisconnectedSince = lost,
+        };
+
+        Assert.False(state.ShowsConnectionTrouble);
+        Assert.False(state.UpdateReconnectPopup(lost + MultiplayerUiState.ReconnectPopupGrace * 10));
+        Assert.False(state.ReconnectPopupShown);
+
+        state.Stage = MultiplayerStage.WaitingForSeal;
+        Assert.True(state.ShowsConnectionTrouble);
+        Assert.True(state.UpdateReconnectPopup(lost + MultiplayerUiState.ReconnectPopupGrace * 11));
+        Assert.True(state.ReconnectPopupShown);
+
+        // A refused turn handed back to plan again takes the modal down with it.
+        state.Stage = MultiplayerStage.Playing;
+        Assert.False(state.ShowsConnectionTrouble);
+        state.UpdateReconnectPopup(lost + MultiplayerUiState.ReconnectPopupGrace * 12);
+        Assert.False(state.ReconnectPopupShown);
+    }
 }
