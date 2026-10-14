@@ -112,11 +112,9 @@ public sealed partial class ChaosGame
                 $"YOU MISSED TURN {ownVote.Turn}  THE OTHER PLAYERS ARE VOTING ON "
                     + "COMPUTER CONTROL OF YOUR SEAT",
             MultiplayerStage.WaitingForSeal =>
-                _online.ReadySubmissionPending
-                    ? "FINISHING TURN"
-                    : _online.SeatedSeats > 0 && _online.ReadySeats >= _online.SeatedSeats
-                        ? "ALL PLAYERS READY"
-                        : $"WAITING FOR OTHER PLAYERS  {OnlineSeatTally()} {OnlineCountdown()}".TrimEnd(),
+                _online.SeatedSeats > 0 && _online.ReadySeats >= _online.SeatedSeats
+                    ? "ALL PLAYERS READY"
+                    : $"WAITING FOR OTHER PLAYERS  {OnlineSeatTally()} {OnlineCountdown()}".TrimEnd(),
             // The date in the info panel already says which turn it is.
             MultiplayerStage.Playing => OnlineTurnClock(),
             _ => string.Empty,

@@ -220,7 +220,7 @@ public sealed partial class ChaosGame
                         ? resolved.IncludedOwnOrders
                             ? "TIME UP  THE TURN SEALED WITH THE ORDERS YOU HAD SENT"
                             : "TIME UP  YOUR SEAT GAVE NO ORDERS THIS TURN"
-                        : "NEW TURN STARTED";
+                        : string.Empty;
                     // RULE-AUDIO-006, BUG-AUDIO-001: the cue skips the effects-enabled test.
                     if (AudioRouting.TurnStartSound(networkGame: true) is { } cue)
                         PlayGeneralSound(cue, ignoresEffectsEnabled: true);
