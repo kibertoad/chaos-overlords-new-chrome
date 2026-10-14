@@ -108,10 +108,11 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// The player whose view is drawn: the one in its end-of-match final view, else the active one,
-    /// or the first seat between turns.
+    /// or the first seat between turns. While a computer plans in a local match it is the local
+    /// human who planned last (<see cref="BoardViewer"/>).
     /// </summary>
     private PlayerId ViewingPlayer(MatchState state) =>
-        PlanningViewer ?? new PlayerId(0);
+        BoardViewer.For(state, PlanningViewer, _session is not null) ?? new PlayerId(0);
 
     private void PlayGeneralSound(int slot, bool ignoresEffectsEnabled = false) =>
         PlaySound(SoundEffectCue.General(slot), ignoresEffectsEnabled);

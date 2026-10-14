@@ -203,8 +203,8 @@ public sealed partial class ChaosGame
     {
         if (CityBackground is not null)
             batch.Draw(CityBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        var playerIndex = PlanningViewer?.Value ?? 0;
-        var player = state.Players[playerIndex];
+        var viewer = BoardViewer.For(state, PlanningViewer, _session is not null);
+        var player = state.Players[viewer?.Value ?? 0];
         // FND-UI-017, FND-UI-018: the marker follows the viewed player, which on the sector view is
         // the player whose cards are shown, and there a portrait dims when the active player sees
         // none of that player's gangs in the sector. When it sees no gang of any seat there, the
@@ -217,7 +217,7 @@ public sealed partial class ChaosGame
         else
         {
             _overlordMarkerClock.OtherView();
-            DrawOverlordBar(batch, pixel, state, PlanningViewer, seatsSeen: null);
+            DrawOverlordBar(batch, pixel, state, viewer, seatsSeen: null);
         }
         if (sectorView is null)
         {
@@ -282,12 +282,12 @@ public sealed partial class ChaosGame
         DrawSectorNumber(font, batch, sectorValues.Cash, StatusConsoleLayout.SectorValueY(4), Color.Lime);
         font.Draw(batch, CityStatusMessage.Clip(_message),
             new Vector2(438, 354), Color.Gold, 1);
-        if (_state is not null && PlanningViewer is { } reportPlayer
+        if (_state is not null && viewer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
             && LampInLitPhase(_referenceFrame?.Lamps?.Events))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
-        if (_state is not null && PlanningViewer is { } activePlayer
-            && state.ComlinkFor(activePlayer).HasUnread
+        if (_state is not null && viewer is { } comlinkPlayer
+            && state.ComlinkFor(comlinkPlayer).HasUnread
             && LampInLitPhase(_referenceFrame?.Lamps?.Comlink))
             DrawCityLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         // FND-EVENT-006, FND-UI-039: the Done light blinks through every final view.
