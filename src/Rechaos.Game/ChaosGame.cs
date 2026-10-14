@@ -143,7 +143,6 @@ public sealed partial class ChaosGame
     private bool _commandRepeats;
     private ClientScreen _commandReturnScreen = ClientScreen.City;
     private ClientScreen _managementReturnScreen = ClientScreen.City;
-    private int _hireCursor;
     private int _itemCursor;
     private int _combatSummaryCursor;
     private int _combatSummarySector = -1;
@@ -630,9 +629,7 @@ public sealed partial class ChaosGame
                         AcceptAndInvoke(BackFromCommands);
                     break;
                 case ClientScreen.Hire:
-                    if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
-                    if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveHireCursor(1);
-                    if (Pressed(keyboard, Keys.S)) SnubSelectedHireOffer();
+                    // SCR-HIRE-001: the panel gives no order. A snub is the dock's reject cross.
                     if (Pressed(keyboard, Keys.Back)) AcceptAndShow(_managementReturnScreen);
                     // FND-HIRE-009: Enter or Execute presses the OK face for one tick, then closes.
                     else if (PressedEnterOrExecute(keyboard))

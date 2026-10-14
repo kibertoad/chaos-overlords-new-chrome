@@ -127,8 +127,7 @@ public sealed partial class ChaosGame
         }
         var player = _state.FindPlayer(playerId)!;
         PrepareCurrentHireOffers();
-        _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, -1, 1);
-        if (_hireCursor < 0)
+        if (HireDockLayout.MoveCursor(player.HireOfferSlots, -1, 1) < 0)
         {
             RejectInput("NO HIRE OFFER AVAILABLE");
             return;
@@ -292,18 +291,22 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
-    /// <summary>Lets go of a hire offer held under the pointer, without a word to the player.</summary>
+    /// <summary>
+    /// Lets go of a hire offer or a reject cross held under the pointer, without a word to the
+    /// player.
+    /// </summary>
     /// <remarks>
     /// The hire counterpart of <see cref="ForgetGangDrag"/>, called from the same paths. An offer
-    /// picked up on a turn that has ended (or in a match that has been replaced) belongs to that
-    /// turn's dock: released afterwards it queued a hire for the next player, or into a state the
-    /// offer never came from.
+    /// or a cross pressed on a turn that has ended (or in a match that has been replaced) belongs to
+    /// that turn's dock: released afterwards, the offer queued a hire and the cross snubbed whatever
+    /// offer the next planning turn had put in that slot.
     /// </remarks>
     private void ForgetHireDrag()
     {
         _draggedHireDefinitionId = null;
         _draggedHireSlot = null;
         _hireDragStarted = false;
+        CancelHireReject();
     }
 
     private void BeginHireReject(int slot, ClientScreen screen)
@@ -324,13 +327,6 @@ public sealed partial class ChaosGame
     }
 
     private void CancelHireReject() => _pressedHireRejectSlot = null;
-
-    private void MoveHireCursor(int delta)
-    {
-        if (_state is null || PlanningViewer is not { } playerId) return;
-        var offers = _state.FindPlayer(playerId)!.HireOfferSlots;
-        _hireCursor = HireDockLayout.MoveCursor(offers, _hireCursor, delta);
-    }
 
     /// <summary>
     /// SCR-HIRE-001, FND-UI-067: the held close face closes on a release inside it, and a press
@@ -353,23 +349,6 @@ public sealed partial class ChaosGame
             player.Cash, projection);
         _message = HireReservationWarning.For(projectedHireBalance);
         PlayGeneralSound(AudioRouting.InputResultSound(true));
-    }
-
-    private void SnubSelectedHireOffer()
-    {
-        if (_state is null || PlanningViewer is not { } playerId) return;
-        if (_actions is null)
-        {
-            RejectInput(OnlinePlanningClosed);
-            return;
-        }
-        var player = _state.FindPlayer(playerId)!;
-        _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
-        if (_hireCursor < 0) return;
-        var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
-        var result = _actions.SnubHireOffer(playerId, offer);
-        ReportInputResult(result.Accepted, result.Validation.Message);
-        _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
     }
 
     private void SnubHireDockOffer(int slot, bool pointerButton = false)
