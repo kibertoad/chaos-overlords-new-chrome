@@ -117,7 +117,8 @@ public sealed partial class ChaosGame
                     : _online.SeatedSeats > 0 && _online.ReadySeats >= _online.SeatedSeats
                         ? "ALL PLAYERS READY"
                         : $"WAITING FOR OTHER PLAYERS  {OnlineSeatTally()} {OnlineCountdown()}".TrimEnd(),
-            MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineTurnClock()}".TrimEnd(),
+            // The date in the info panel already says which turn it is.
+            MultiplayerStage.Playing => OnlineTurnClock(),
             _ => string.Empty,
         };
     }
