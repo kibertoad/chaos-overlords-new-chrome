@@ -31,7 +31,7 @@ internal static class TitleButtonArt
     /// <param name="Source">The piece in the background art.</param>
     /// <param name="Edge">How far its bevelled edge reaches in.</param>
     /// <param name="TopEdge">The stretch of its top edge that is repeated.</param>
-    /// <param name="Interior">The stretch of its inside that is repeated.</param>
+    /// <param name="Interior">The stone repeated over its inside.</param>
     public readonly record struct Frame(Rectangle Source, int Edge, Rectangle TopEdge, Rectangle Interior);
 
     private static readonly Rectangle BeginFace = SetupButtonLayout.Start;
@@ -47,12 +47,13 @@ internal static class TitleButtonArt
     private static readonly Rectangle BeginHousing = new(358, 366, 216, 63);
 
     /// <summary>
-    /// The stone housing that holds Begin and Cancel. Its inside is the marble left of Begin, which
-    /// is what shows of it between the title's buttons.
+    /// The stone housing that holds Begin and Cancel. What shows of its inside between the title's
+    /// buttons is filled from the marble band along the top of the setup screen's left panel, wide
+    /// enough to run under New Game without repeating.
     /// </summary>
     public static readonly Frame Housing = new(BeginHousing, 8,
         new Rectangle(BeginHousing.X + 8, BeginHousing.Y, BeginHousing.Width - 16, 8),
-        new Rectangle(364, 376, 6, 44));
+        new Rectangle(76, 24, 232, 10));
 
     /// <summary>How far a housing reaches past the buttons it holds, as Begin's housing does.</summary>
     public static readonly Point HousingMargin = new(11, 8);

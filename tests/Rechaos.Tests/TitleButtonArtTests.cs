@@ -41,10 +41,11 @@ public sealed class TitleButtonArtTests
     {
         Assert.Equal(SetupButtonLayout.Start, TitleButtonArt.Face.Source);
         foreach (var frame in new[] { TitleButtonArt.Face, TitleButtonArt.Housing })
-        {
             Assert.True(frame.Source.Contains(frame.TopEdge));
-            Assert.True(frame.Source.Contains(frame.Interior));
-        }
+        Assert.True(TitleButtonArt.Face.Source.Contains(TitleButtonArt.Face.Interior));
+        // The housing's fill runs the width of the gap under New Game in one piece.
+        Assert.True(TitleButtonArt.Housing.Interior.Width
+            >= ChaosGame.TitleUpperHousing.Width - 2 * TitleButtonArt.Housing.Edge);
         // Begin and Cancel sit inside the housing by its margin at least.
         var housing = TitleButtonArt.Housing.Source;
         Assert.True(SetupButtonLayout.Start.X - housing.X >= TitleButtonArt.HousingMargin.X);
