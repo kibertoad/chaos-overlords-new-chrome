@@ -36,8 +36,8 @@
     <!-- The capture coverage table, for the check that it names every compared capture. -->
     <None Include="../../docs/validation/screen-capture-coverage.md" Link="docs/validation/screen-capture-coverage.md" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
-    <PackageReference Include="xunit.v3" Version="4.0.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />
+    <PackageReference Include="xunit.v3" Version="4.0.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
     <ProjectReference Include="../../src/Rechaos.Core/Rechaos.Core.csproj" />
     <ProjectReference Include="../../src/Rechaos.Extractor/Rechaos.Extractor.csproj" />
     <ProjectReference Include="../../src/Rechaos.Game/Rechaos.Game.csproj" />
