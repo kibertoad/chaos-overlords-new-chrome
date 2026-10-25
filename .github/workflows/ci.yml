@@ -181,7 +181,7 @@ jobs:
           if (Test-Path -LiteralPath $shortcut) { throw "Uninstaller left the Start menu shortcut behind." }
 
       - name: Upload clean-room Windows package
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ChaosOverlordsNewChrome-win-x64
           path: artifacts/ChaosOverlordsNewChrome-win-x64
@@ -189,7 +189,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Windows installer
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ChaosOverlords-NewChrome-Setup
           path: artifacts/ChaosOverlords-NewChrome-Setup-*.exe
@@ -235,7 +235,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Installed Debian game smoke test failed.' }
 
       - name: Upload Linux installer
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ChaosOverlords-NewChrome-linux-x64-Setup
           path: artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-*.deb
@@ -294,7 +294,7 @@ jobs:
           if (-not $executable) { throw 'macOS package does not contain the game executable.' }
 
       - name: Upload macOS installer
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup
           path: artifacts/ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup-*.pkg
