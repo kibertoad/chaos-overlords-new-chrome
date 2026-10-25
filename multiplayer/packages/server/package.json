@@ -60,11 +60,11 @@
     "@chaos-overlords/kernel": "workspace:*",
     "@toad-contracts/core": "1.0.0",
     "@toad-contracts/hono": "1.0.0",
-    "hono": "^4.13.12"
+    "hono": "^4.13.13"
   },
   "devDependencies": {
     "@chaos-overlords/conformance": "workspace:*",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   }
 }
