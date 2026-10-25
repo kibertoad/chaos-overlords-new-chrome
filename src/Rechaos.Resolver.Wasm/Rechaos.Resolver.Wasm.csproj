@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- The coordination server's turn resolver: Rechaos.Core and the client's sealed-turn path,
+       built for the browser-wasm runtime so a Node or workerd process can host them. It is kept
+       out of Rechaos.slnx because restoring it fetches the browser-wasm runtime pack, and the game
+       has to build offline. docs/MULTIPLAYER.md, "Resolving turns on the server". -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <WasmEnableThreads>false</WasmEnableThreads>
+    <!-- Rechaos.Core reads its data and its saves through reflection-based System.Text.Json. The
+         SDK switches that off for browser-wasm by default; source-generated contracts are the
+         follow-up that also lets the bundle be trimmed. -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Rechaos.Multiplayer/Rechaos.Multiplayer.csproj" />
+  </ItemGroup>
+</Project>

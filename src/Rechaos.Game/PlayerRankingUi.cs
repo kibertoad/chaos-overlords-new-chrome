@@ -10,7 +10,7 @@ public static class PlayerRankingLayout
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 
     /// <summary>The length of a rail, in pixels, over which the scores are spread (SCR-OBJECTIVE-001).</summary>
-    public const int RailLength = 140;
+    public const int RailLength = ScenarioScoreRail.Length;
 
     /// <summary>
     /// SCR-OBJECTIVE-001: the portrait of slot <paramref name="player"/>, <paramref name="offset"/>
@@ -65,11 +65,6 @@ public static class PlayerRankingPresentation
     /// SCR-OBJECTIVE-001, FND-OBJECTIVE-005: the score's distance from the highest, scaled by a
     /// single-precision 140 / (high - low + 1) and cut toward zero; 70 when every score is equal.
     /// </summary>
-    public static int RailOffset(long score, long high, long low)
-    {
-        var range = high - low + 1;
-        if (range == 1) return PlayerRankingLayout.RailLength / 2;
-        var factor = (float)((double)PlayerRankingLayout.RailLength / range);
-        return (int)((double)(high - score) * factor);
-    }
+    public static int RailOffset(long score, long high, long low) =>
+        ScenarioScoreRail.Offset(score, high, low);
 }

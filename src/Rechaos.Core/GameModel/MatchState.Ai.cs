@@ -31,6 +31,7 @@ public sealed partial class MatchState
 
     public void PrepareAiPlanning(PlayerId player)
     {
+        RefuseOnView();
         if (Coordinator.Phase != TurnPhase.Command || Coordinator.ActivePlayer != player)
             throw new InvalidOperationException("AI preparation requires that player's active Command phase.");
         if (!IsPlannedByComputer(player))
@@ -73,6 +74,7 @@ public sealed partial class MatchState
 
     public AiTurnPlanner.HirePreparation PrepareAiHiring(PlayerId player)
     {
+        RefuseOnView();
         if (Coordinator.Phase != TurnPhase.Command || Coordinator.ActivePlayer != player)
             throw new InvalidOperationException("AI hiring preparation requires that player's active Command phase.");
         if (!IsPlannedByComputer(player))

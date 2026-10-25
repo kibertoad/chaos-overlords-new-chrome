@@ -7,28 +7,6 @@ namespace Rechaos.Multiplayer.Session;
 public sealed partial class MultiplayerMatchSession
 {
     /// <summary>
-    /// Whether a seat can still change hands on this state.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A match that has reached its outcome has no further turn for anyone to play, so who controls
-    /// a seat can no longer change any state — and the core refuses the transfer outright, because
-    /// a finished match is not the clean Command boundary control transfers at. That refusal used
-    /// to end the session: a player who ran out of time on the very turn that decided the match was
-    /// left <c>takeoverPending</c>, the vote about them stayed on screen over the endgame, and the
-    /// moment the remaining players approved computer control every client threw and replaced the
-    /// endgame with a connection failure. In a two-player match that approval is one click.
-    /// </para>
-    /// <para>
-    /// Ignoring it is safe for the lockstep. The decision is read from <see cref="MatchState.Outcome"/>,
-    /// which is part of the hashed state every client has already agreed on at that point in the
-    /// log, so every client — live or replaying the same events on reconnect — ignores exactly the
-    /// same transfers.
-    /// </para>
-    /// </remarks>
-    private static bool CanTransferControl(MatchState state) => state.Outcome is null;
-
-    /// <summary>
     /// Who holds a seat, in the copy of the match this session drives.
     /// </summary>
     /// <remarks>
@@ -116,23 +94,9 @@ public sealed partial class MultiplayerMatchSession
         }
     }
 
-    /// <summary>
-    /// Hands a seat over on one state, unless it is already held that way or cannot change hands.
-    /// </summary>
-    /// <remarks>
-    /// Guarded on the state it is applied to, not on the live one: see <see cref="CanTransferControl"/>
-    /// for why a finished match ignores the transfer.
-    /// </remarks>
-    private static void ApplyHandover(MatchReplayRecorder recorder, ControlHandover handover)
-    {
-        if (!CanTransferControl(recorder.State)) return;
-        var player = recorder.State.FindPlayer(new PlayerId(handover.Slot));
-        if (player is null || player.Setup.Controller == handover.Controller) return;
-        if (handover.Controller == PlayerController.Computer)
-            recorder.TransferPlayerToComputer(player.Id);
-        else
-            recorder.TransferPlayerToHuman(player.Id);
-    }
+    /// <summary>Hands a seat over on a rebuilt or live state; see <see cref="SeatControl.HandOver"/>.</summary>
+    private static void ApplyHandover(MatchReplayRecorder recorder, ControlHandover handover) =>
+        SeatControl.HandOver(recorder, handover.Slot, handover.Controller);
 
     private void AddLatePlayer(string playerId, int slot) =>
         AddLatePlayer(playerId, slot, _replay.State.Coordinator.Turn);
@@ -154,7 +118,7 @@ public sealed partial class MultiplayerMatchSession
         }
         else if (_slotsByPlayerId.Values.Contains(slot)
                  && beforeTurn >= _replay.State.Coordinator.Turn
-                 && CanTransferControl(_replay.State)
+                 && SeatControl.CanTransfer(_replay.State)
                  && ControllerOfSlot(slot) != PlayerController.Computer)
             throw new MultiplayerProtocolException("a late player claimed a human-owned seat");
         else
