@@ -742,17 +742,25 @@ status of each spec entry is in [PARITY.md](../PARITY.md).
   player-facing entries in the original contents order and omits 21 unlisted
   internal fragments; documents without a contents table safely fall back to
   all decoded topics. Mouse-wheel scrolling follows the topic-list/content pane
-  under the pointer. Asset-pack format 6 preserves all 80 native `|CONTEXT`
+  under the pointer. Asset-pack format 8 preserves all 80 native `|CONTEXT`
   hash/target pairs, verifies every one of the 59 `CHAOS.CNT` context names, and
   records that this file's `|CTXOMAP` contains no numeric IDs. Contextual F1
   routing now uses those exact symbols rather than ambiguous topic-title
   matching; title matching remains only as a bounded fallback. Extracted-help
-  format 3 also preserves 779 normalized authored runs from nine legacy font
+  format 4 stores each topic as its paragraphs, split at the help file's
+  end-of-paragraph commands, each with its record's spacing, indents and
+  alignment (FND-HELP-006) and its styled runs; the topic's plain text is worked
+  out from them when read and is not stored. The runs keep the nine legacy font
   descriptors and all 93 internal hotspots: 67 topic jumps navigate in place
   and 26 popup links expose the unlisted definition fragments modally. Bold,
   italic, underline, double-underline, strikeout, small-caps, and source size
   metadata are retained; the pixel viewer renders emphasis, link underlines,
-  and popup modality without executing macro or external-file commands. The Attack topic
+  and popup modality without executing macro or external-file commands. Paragraphs
+  are laid out with the help file's indents, centring, paragraph spacing and line
+  spacing converted to the pixel-font grid by the rules of DEV-HELP-003, so each
+  line has a pixel position and scrolling, paging and link hit-testing follow
+  those positions. A font descriptor naming a face past the face table takes the
+  first face and the extractor prints a warning (DEV-HELP-001). The Attack topic
   carries the corrected Force-inclusive simultaneous-combat explanation.
 
 - Music and sound effects have independent recovered 0-10 controls and persisted
