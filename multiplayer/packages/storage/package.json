@@ -66,18 +66,18 @@
   "dependencies": {
     "@chaos-overlords/contracts": "workspace:*",
     "@chaos-overlords/kernel": "workspace:*",
-    "drizzle-orm": "^0.45.3"
+    "drizzle-orm": "^0.45.4"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260930.2",
+    "@cloudflare/workers-types": "^5.20261018.1",
     "@types/better-sqlite3": "^9.6.0",
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "better-sqlite3": "^13.0.3",
     "drizzle-kit": "^0.31.11",
     "pg": "^8.23.1",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.11",
+    "vitest": "^4.1.12",
     "@chaos-overlords/conformance": "workspace:*"
   },
   "peerDependencies": {
