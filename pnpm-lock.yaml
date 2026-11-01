@@ -167,16 +167,16 @@ importers:
   .:
     devDependencies:
       '@scientific-method/standard-checker':
-        specifier: 3.0.0
-        version: 3.0.0
+        specifier: 6.0.1
+        version: 6.0.1
 
 packages:
 
-  '@scientific-method/standard-checker@3.0.0':
-    resolution: {integrity: sha512-AIwEWGdjp098bhOHjNn5vzLJiBF4mjRqYmJckMGC1txFAyIFS1lyDAyKyfY2000WKdzAMR2yIfZ0jXgXVdJx8Q==}
+  '@scientific-method/standard-checker@6.0.1':
+    resolution: {integrity: sha512-ukrzevYcHlRwnbd5kTB30vOww2vJvyb8GQa1b6dFzdScxXzj8HYo2CEByBomXz8MvsA+3t9nUxMftL/PZEZOJw==}
     engines: {node: '>=22'}
     hasBin: true
 
 snapshots:
 
-  '@scientific-method/standard-checker@3.0.0': {}
+  '@scientific-method/standard-checker@6.0.1': {}
