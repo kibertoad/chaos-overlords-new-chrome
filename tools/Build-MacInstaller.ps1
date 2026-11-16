@@ -72,7 +72,7 @@ Copy-Item -LiteralPath (Join-Path $portableRoot 'NOTICE') -Destination $resource
 #!/bin/sh
 set -eu
 if [ "$#" -ne 1 ]; then
-  echo "Usage: Install Original Resources /path/to/ChaosOverlords" >&2
+  echo "Usage: Install Original Resources /path/to/ChaosOverlords-or-setup_chaos_overlords_2.1.0.17.exe" >&2
   exit 2
 fi
 contents="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"

@@ -34,7 +34,7 @@ public sealed class FirstLaunchImportTests : IDisposable
     [Fact]
     public void ImportsFromTheChosenFolderWithoutItsTrailingSlash()
     {
-        var dialogs = new FakeDialogs(asks: [true], folders: ["/games/Chaos Overlords/"]);
+        var dialogs = new FakeDialogs(picks: [1], folders: ["/games/Chaos Overlords/"]);
         var sources = new List<string>();
 
         var result = FirstLaunchImport.Run(AssetPackState.Missing, AssetRoot, dialogs, source =>
@@ -51,9 +51,31 @@ public sealed class FirstLaunchImportTests : IDisposable
     }
 
     [Fact]
+    public void ImportsFromTheChosenInstaller()
+    {
+        var installer = "/home/player/Downloads/" + GogInstallerFile.Name;
+        var dialogs = new FakeDialogs(picks: [0], folders: [], installers: [installer]);
+        var sources = new List<string>();
+
+        var result = FirstLaunchImport.Run(AssetPackState.Missing, AssetRoot, dialogs, source =>
+        {
+            sources.Add(source);
+            WriteManifest(AssetManifest.CurrentFormatVersion);
+            return new ExtractorRun(0, null);
+        });
+
+        Assert.Equal(FirstLaunchImportResult.Imported, result);
+        Assert.Equal([installer], sources);
+        Assert.Equal(
+            [FirstLaunchImport.ChooseInstallerLabel, FirstLaunchImport.ChooseFolderLabel, FirstLaunchImport.QuitLabel],
+            dialogs.Choices[0]);
+        Assert.Contains(GogInstallerFile.Name, dialogs.Messages[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void OffersAnotherFolderAfterAFailedImport()
     {
-        var dialogs = new FakeDialogs(asks: [true, true], folders: ["/wrong", "/right"]);
+        var dialogs = new FakeDialogs(picks: [1, 1], folders: ["/wrong", "/right"]);
 
         var result = FirstLaunchImport.Run(AssetPackState.Missing, AssetRoot, dialogs, source =>
         {
@@ -66,13 +88,13 @@ public sealed class FirstLaunchImportTests : IDisposable
         Assert.Equal(FirstLaunchImportResult.Imported, result);
         Assert.Contains("/wrong", dialogs.Messages[1], StringComparison.Ordinal);
         Assert.Contains("DATA/PX16 is missing", dialogs.Messages[1], StringComparison.Ordinal);
-        Assert.Equal("Choose Another Folder", dialogs.AcceptLabels[1]);
+        Assert.Equal(dialogs.Choices[0], dialogs.Choices[1]);
     }
 
     [Fact]
     public void ASuccessfulExitWithoutAUsablePackCountsAsAFailure()
     {
-        var dialogs = new FakeDialogs(asks: [true, false], folders: ["/games"]);
+        var dialogs = new FakeDialogs(picks: [1, null], folders: ["/games"]);
 
         var result = FirstLaunchImport.Run(AssetPackState.Missing, AssetRoot, dialogs,
             _ => new ExtractorRun(0, null));
@@ -84,7 +106,7 @@ public sealed class FirstLaunchImportTests : IDisposable
     [Fact]
     public void AnOutputThatCannotBeWrittenIsRetriedWithTheSameFolder()
     {
-        var dialogs = new FakeDialogs(asks: [true, true], folders: ["/games"]);
+        var dialogs = new FakeDialogs(picks: [1, 0], folders: ["/games"]);
         var sources = new List<string>();
 
         var result = FirstLaunchImport.Run(AssetPackState.Missing, AssetRoot, dialogs, source =>
@@ -98,7 +120,7 @@ public sealed class FirstLaunchImportTests : IDisposable
 
         Assert.Equal(FirstLaunchImportResult.Imported, result);
         Assert.Equal(["/games", "/games"], sources);
-        Assert.Equal("Try Again", dialogs.AcceptLabels[1]);
+        Assert.Equal([FirstLaunchImport.TryAgainLabel, FirstLaunchImport.QuitLabel], dialogs.Choices[1]);
         Assert.Contains(AssetRoot, dialogs.Messages[1], StringComparison.Ordinal);
         Assert.Contains("disk full", dialogs.Messages[1], StringComparison.Ordinal);
         Assert.DoesNotContain("DATA folder", dialogs.Messages[1], StringComparison.Ordinal);
@@ -134,9 +156,11 @@ public sealed class FirstLaunchImportTests : IDisposable
         }
 
         Assert.Equal(FirstLaunchImportResult.Declined, FirstLaunchImport.Run(
-            AssetPackState.Missing, AssetRoot, new FakeDialogs(asks: [false], folders: []), Extract));
+            AssetPackState.Missing, AssetRoot, new FakeDialogs(picks: [null], folders: []), Extract));
         Assert.Equal(FirstLaunchImportResult.Declined, FirstLaunchImport.Run(
-            AssetPackState.Missing, AssetRoot, new FakeDialogs(asks: [true], folders: [null]), Extract));
+            AssetPackState.Missing, AssetRoot, new FakeDialogs(picks: [1], folders: [null]), Extract));
+        Assert.Equal(FirstLaunchImportResult.Declined, FirstLaunchImport.Run(
+            AssetPackState.Missing, AssetRoot, new FakeDialogs(picks: [0], folders: [], installers: [null]), Extract));
         Assert.Equal(0, calls);
     }
 
@@ -189,25 +213,28 @@ public sealed class FirstLaunchImportTests : IDisposable
             new AssetManifest(formatVersion, "test", "fingerprint", DateTimeOffset.UnixEpoch, [])));
     }
 
-    private sealed class FakeDialogs(bool[] asks, string?[] folders) : INativeDialogs
+    private sealed class FakeDialogs(int?[] picks, string?[] folders, string?[]? installers = null) : INativeDialogs
     {
-        private int _ask;
+        private int _pick;
         private int _folder;
+        private int _installer;
 
         public List<string> Messages { get; } = [];
 
-        public List<string> AcceptLabels { get; } = [];
+        public List<IReadOnlyList<string>> Choices { get; } = [];
 
         public int ProgressShown { get; private set; }
 
-        public bool Ask(string message, string accept, string decline)
+        public int? Choose(string message, IReadOnlyList<string> choices)
         {
             Messages.Add(message);
-            AcceptLabels.Add(accept);
-            return asks[_ask++];
+            Choices.Add(choices);
+            return picks[_pick++];
         }
 
         public string? ChooseFolder(string title) => folders[_folder++];
+
+        public string? ChooseInstaller(string title) => installers![_installer++];
 
         public void ShowError(string message) => Messages.Add(message);
 
