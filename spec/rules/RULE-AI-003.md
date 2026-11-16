@@ -27,7 +27,7 @@ starts or is loaded, from the step that caches the site sums (RULE-AI-026).
 
 ## Parameters
 
-`player`: the computer player planning.
+- `player`: the computer player planning.
 
 ## Inputs
 

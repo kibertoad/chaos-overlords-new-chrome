@@ -4,7 +4,7 @@ title: A local human's planning opens with the Ready card when several humans sh
 status: supported
 builds: [BLD-GOG-EN-1.1]
 superseded_by: []
-evidence: [FND-SETUP-010, FND-SETUP-015, FND-OBJECTIVE-004, FND-AUDIO-002, FND-AUDIO-018, FND-EXE-004, EXP-TURN-011, EXP-TURN-031, SRC-MANUAL-GOG, FND-COMLINK-001, FND-COMLINK-004, FND-COMLINK-006, FND-STATE-012, FND-UI-023, FND-UI-024, FND-UI-036]
+evidence: [FND-SETUP-010, FND-COMBAT-010, FND-SETUP-015, FND-OBJECTIVE-004, FND-AUDIO-002, FND-AUDIO-018, FND-EXE-004, EXP-TURN-011, EXP-TURN-031, SRC-MANUAL-GOG, FND-COMLINK-001, FND-COMLINK-004, FND-COMLINK-006, FND-STATE-012, FND-UI-023, FND-UI-024, FND-UI-036]
 conflicting: []
 split_with: []
 related: [SCR-SETUP-002, SCR-UI-008, SCR-COMBAT-001, RULE-COMBAT-004, RULE-EVENT-005]
@@ -45,11 +45,11 @@ if resumed_match:
     # the Game Information panel, SCR-UI-008
     fn_0045519D()
 if pref_detailed_combat:
-    call RULE-COMBAT-004(player)
+    call RULE-COMBAT-004(player, 1)
 else:
     # the Combat Results panel, SCR-COMBAT-001; returns at once when no
     # sector qualifies
-    fn_00451F80()
+    fn_00451F80(player, 1)
 # the Last Turn Events read-state table is rebuilt here
 call RULE-EVENT-005()
 comlink_pending = 0

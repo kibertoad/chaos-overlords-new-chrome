@@ -26,6 +26,19 @@ public sealed partial class ScreenCaptureTests
         return data;
     }
 
+    /// <summary>
+    /// The captures the rebuild can be compared with on a machine that has an asset pack. The
+    /// others are left out, so they do not skip on every run; CapturesLeftOutOfTheComparison lists
+    /// them.
+    /// </summary>
+    public static TheoryData<string, int, int> ComparableCaptures()
+    {
+        var data = new TheoryData<string, int, int>();
+        foreach (var capture in ScreenCaptureRecord.LoadAll().Where(capture => NoComparison(capture) is null))
+            data.Add(capture.Experiment, capture.Run, capture.Step);
+        return data;
+    }
+
     private static ScreenCaptureRecord Capture(string experiment, int run, int step) =>
         ScreenCaptureRecord.LoadAll().Single(record =>
             record.Experiment == experiment && record.Run == run && record.Step == step);
@@ -61,7 +74,7 @@ public sealed partial class ScreenCaptureTests
     // EXP-UI-031 compares the first planning entry at every frame of the active-player marker
     // and both frames of the selected sector's outline.
     [Theory(SkipTestWithoutData = true)]
-    [MemberData(nameof(Captures))]
+    [MemberData(nameof(ComparableCaptures))]
     public void TheRebuildDrawsWhatTheOriginalDrew(string experiment, int run, int step)
     {
         var capture = Capture(experiment, run, step);
@@ -103,7 +116,12 @@ public sealed partial class ScreenCaptureTests
     private static readonly RowPrefetch<ScreenCaptureRecord, ScreenFrame> Renders = new(
         () => ScreenCaptureRecord.LoadAll().Where(capture => SkipReason(capture) is null), Render);
 
-    private static string? SkipReason(ScreenCaptureRecord capture)
+    private static string? SkipReason(ScreenCaptureRecord capture) =>
+        // Without an asset pack no frame is drawn, so no replay is copied and nothing is queued.
+        NoComparison(capture) ?? RebuildFrame.MissingAssetPack();
+
+    /// <summary>Why the capture cannot be compared on any machine, or null when it can.</summary>
+    private static string? NoComparison(ScreenCaptureRecord capture)
     {
         if (capture.BeforeMatch is null && !OriginalNewGameExperimentTests.IsReplayed(capture.Experiment))
             return $"{capture} comes from a run that is not replayed, so the rebuild has no endpoint to draw.";
@@ -119,8 +137,39 @@ public sealed partial class ScreenCaptureTests
             return $"{capture} shows the Detailed Combat panel without a clip tick: the tick moved during every copy, or the shot fell between two clips.";
         if (Repainted.TryGetValue((capture.Experiment, capture.Run, capture.Step), out var repaint))
             return $"{capture} cannot be compared: {repaint}.";
-        // Without an asset pack no frame is drawn, so no replay is copied and nothing is queued.
-        return RebuildFrame.MissingAssetPack();
+        return null;
+    }
+
+    // The captures TheRebuildDrawsWhatTheOriginalDrew leaves out, with the reason for each. A
+    // capture that newly cannot be compared, or one that now can, fails here until this list is
+    // updated, so none leaves the comparison unnoticed.
+    // EXP-UI-002, EXP-UI-027, EXP-UI-028 and EXP-UI-038 to EXP-UI-040 set the glyph columns with
+    // memory writes no replay makes; ItemInformationLayoutTests checks what they recorded
+    // (RULE-UI-004, FND-UI-065). EXP-TURN-041 and EXP-TURN-042 stand at the final city view before
+    // the awards (FND-OBJECTIVE-004), which the reference frame does not draw for a decided match,
+    // and they record neither the pump counter nor the lamps a comparison needs.
+    [Fact]
+    public void CapturesLeftOutOfTheComparison()
+    {
+        string[] expected =
+        [
+            "EXP-TURN-041 run 0 records no screen elements; the probe's digest command adds them.",
+            "EXP-TURN-042 run 0 records no screen elements; the probe's digest command adds them.",
+            "EXP-UI-002 run 0 comes from a run that is not replayed, so the rebuild has no endpoint to draw.",
+            "EXP-UI-002 run 1 comes from a run that is not replayed, so the rebuild has no endpoint to draw.",
+            "EXP-UI-027 run 0 comes from a run that is not replayed, so the rebuild has no endpoint to draw.",
+            "EXP-UI-028 run 0 comes from a run that is not replayed, so the rebuild has no endpoint to draw.",
+            "EXP-UI-029 run 0 step 7 shows the Detailed Combat panel without a clip tick: the tick moved during every copy, or the shot fell between two clips.",
+            "EXP-UI-038 run 0 comes from a run that is not replayed, so the rebuild has no endpoint to draw.",
+            "EXP-UI-039 run 0 comes from a run that is not replayed, so the rebuild has no endpoint to draw.",
+            "EXP-UI-040 run 0 comes from a run that is not replayed, so the rebuild has no endpoint to draw.",
+            "EXP-UI-043 run 0 step 10 cannot be reached in the rebuild: step 2 presses the right button, which the replay does not press yet (#525).",
+            "EXP-UI-043 run 0 step 3 cannot be reached in the rebuild: step 2 presses the right button, which the replay does not press yet (#525).",
+            "EXP-UI-043 run 0 step 7 cannot be reached in the rebuild: step 2 presses the right button, which the replay does not press yet (#525).",
+            "EXP-UI-049 run 0 step 13 cannot be compared: its apertures are black at tick 2 of the second clip, as a paint before tick 3 leaves them (FND-COMBAT-032).",
+        ];
+        Assert.Equal(expected, ScreenCaptureRecord.LoadAll()
+            .Select(NoComparison).OfType<string>().Order(StringComparer.Ordinal));
     }
 
     private static ScreenFrame Render(ScreenCaptureRecord capture)

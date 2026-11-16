@@ -31,7 +31,8 @@ cleared when a new match starts.
 
 ## Parameters
 
-`player`: the computer player. `slot`: the gang's roster slot.
+- `player`: the computer player.
+- `slot`: the gang's roster slot.
 
 ## Inputs
 

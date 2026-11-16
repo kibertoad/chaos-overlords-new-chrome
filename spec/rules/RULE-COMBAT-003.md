@@ -23,8 +23,8 @@ target's damage for the phase [FND-COMBAT-003].
 
 ## Parameters
 
-- `player`, the attacking gang's player slot.
-- `damage`, the opening attack's damage.
+- `player`: the attacking gang's player slot.
+- `damage`: the opening attack's damage.
 
 ## Inputs
 

@@ -26,7 +26,7 @@ two bytes of `turn` swapped back from the order they travel in
 ## Parameters
 
 - `recipient`: the player slot the message is for.
-- `message`, of type FMT-STATE-005: the message record to store.
+- `message`: the message record to store, of type FMT-STATE-005.
 
 ## Inputs
 

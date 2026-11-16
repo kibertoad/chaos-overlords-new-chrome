@@ -27,7 +27,7 @@ During `planning_phase`, when the slot being planned is a computer player's.
 
 ## Parameters
 
-`player`: the computer player planning.
+- `player`: the computer player planning.
 
 ## Inputs
 

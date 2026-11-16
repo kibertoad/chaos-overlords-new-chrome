@@ -26,7 +26,8 @@ uncovered sector.
 
 ## Parameters
 
-`player`: the computer player. `slot`: the gang's roster slot.
+- `player`: the computer player.
+- `slot`: the gang's roster slot.
 
 ## Inputs
 

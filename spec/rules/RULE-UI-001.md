@@ -25,8 +25,10 @@ controls of the endgame screens.
 
 ## Parameters
 
-- `x` (`INT32`), `y` (`INT32`), `w` (`INT32`), `h` (`INT32`): the control's rectangle,
-  half-open.
+- `x`: an `INT32`, the left edge of the control's half-open rectangle.
+- `y`: an `INT32`, its top edge.
+- `w`: an `INT32`, its width.
+- `h`: an `INT32`, its height.
 
 ## Inputs
 
