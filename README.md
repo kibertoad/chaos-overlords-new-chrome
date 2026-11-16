@@ -61,14 +61,22 @@ the same way, or clear the flag from the whole bundle:
 xattr -dr com.apple.quarantine "/Applications/Chaos Overlords New Chrome.app"
 ```
 
-The first time the game starts, it asks for the folder that holds your copy of
-*Chaos Overlords* and imports the original assets from it into
-`~/Library/Application Support/ChaosOverlordsNewChrome/Assets`. To import from
-Terminal instead, run:
+GOG sells *Chaos Overlords* as a Windows installer only. Download
+`setup_chaos_overlords_2.1.0.17.exe` from your
+[GOG library](https://www.gog.com/account); the game imports its assets straight
+from that file, without installing it. The first time the game starts, it asks
+for your copy of *Chaos Overlords*: choose **Choose Installer** and pick the
+file, or **Choose Folder** for a copy installed another way. It imports the
+original assets into `~/Library/Application Support/ChaosOverlordsNewChrome/Assets`.
+To import from Terminal instead, run:
 
 ```shell
-"/Applications/Chaos Overlords New Chrome.app/Contents/MacOS/Install Original Resources" "/path/to/Chaos Overlords"
+"/Applications/Chaos Overlords New Chrome.app/Contents/MacOS/Install Original Resources" ~/Downloads/setup_chaos_overlords_2.1.0.17.exe
 ```
+
+The game reads that one version of the installer. For another version, unpack it
+with `innoextract` (`brew install innoextract`) as the [Linux](#linux) steps
+describe, and choose the folder it writes.
 
 ### Linux
 
@@ -78,7 +86,7 @@ out; pick one from [GitHub Releases](https://github.com/kibertoad/chaos-overlord
 that lists it. The package installs the game into `/opt/chaos-overlords-new-chrome`,
 the `chaos-overlords-new-chrome` and `chaos-overlords-new-chrome-import`
 commands, and a desktop menu entry. Installing takes three steps: install the
-game, unpack your GOG copy of *Chaos Overlords*, and import its assets.
+game, download GOG's installer of *Chaos Overlords*, and import its assets.
 
 #### 1. Install the game
 
@@ -142,10 +150,11 @@ sudo rm /usr/local/bin/chaos-overlords-new-chrome /usr/local/bin/chaos-overlords
 sudo rm /usr/local/share/applications/chaos-overlords-new-chrome.desktop
 ```
 
-#### 2. Unpack the GOG installer
+#### 2. Download the GOG installer
 
-GOG sells *Chaos Overlords* as a Windows installer only, a file named like
-`setup_chaos_overlords_<version>.exe`. Download it from your
+GOG sells *Chaos Overlords* as a Windows installer only,
+`setup_chaos_overlords_2.1.0.17.exe`. The game imports its assets straight from
+that file, without installing it. Download it from your
 [GOG library](https://www.gog.com/account) in a browser, or from a terminal with
 `lgogdownloader`. Install it first with `sudo apt install lgogdownloader` or
 `sudo dnf install lgogdownloader`; on Arch it is in the AUR (for example
@@ -158,48 +167,37 @@ lgogdownloader --login
 lgogdownloader --download --game '^chaos_overlords$' --platform windows --include installers --directory ~/Downloads
 ```
 
-Unpack it with `innoextract`, which needs no Wine. Install it with the command
-for your distribution:
-
-```shell
-sudo apt install innoextract      # Debian, Ubuntu
-sudo dnf install innoextract      # Fedora
-sudo pacman -S innoextract        # Arch
-```
-
-Then point it at the installer. The example uses the file name of GOG's
-installer version 2.1.0.17 in `~/Downloads`, where a browser saves it; change
-the name if your download has a different version, and add `chaos_overlords/`
-to the path if lgogdownloader fetched it:
-
-```shell
-innoextract --gog --output-dir ~/Games/chaos-overlords ~/Downloads/setup_chaos_overlords_2.1.0.17.exe
-```
-
-innoextract writes the game's files to `~/Games/chaos-overlords/app`, the folder
-that holds `DATA`, `HELP` and `MUSIC`, and the installer's own images to
-`~/Games/chaos-overlords/tmp`, which the game does not need. GOG's installer
-version 2.1.0.17 unpacks with innoextract 1.8 (Ubuntu 22.04) and later.
-
-A copy installed another way works as well: running the installer under Wine
-puts it in `~/.wine/drive_c/GOG Games/Chaos Overlords`, and the Heroic Games
-Launcher puts it in `~/Games/Heroic/Chaos Overlords` by default.
-
 #### 3. Import the assets
 
 Start the game from the desktop menu or with `chaos-overlords-new-chrome`. The
-first time it starts, it asks for the folder that holds your copy of
-*Chaos Overlords* and imports the original assets from it into
-`~/.local/share/ChaosOverlordsNewChrome/Assets`. The folder picker needs `zenity`
-or `kdialog`. Without either, or to import before the first start, run the
-import from a terminal:
+first time it starts, it asks for your copy of *Chaos Overlords*: choose
+**Choose Installer** and pick `setup_chaos_overlords_2.1.0.17.exe`. It imports
+the original assets into `~/.local/share/ChaosOverlordsNewChrome/Assets`. The
+dialogs need `zenity` or `kdialog`. Without either, or to import before the
+first start, run the import from a terminal, adding `chaos_overlords/` to the
+path if lgogdownloader fetched the installer:
 
 ```shell
+chaos-overlords-new-chrome-import ~/Downloads/setup_chaos_overlords_2.1.0.17.exe
+```
+
+The import only reads the installer, so you can delete it afterwards.
+
+The game reads that one version of GOG's installer. If GOG gives you a different
+one, the import says so; unpack it with `innoextract`, which needs no Wine, and
+import the folder instead:
+
+```shell
+sudo apt install innoextract      # Debian, Ubuntu; dnf on Fedora, pacman -S on Arch
+innoextract --gog --output-dir ~/Games/chaos-overlords ~/Downloads/setup_chaos_overlords_<version>.exe
 chaos-overlords-new-chrome-import ~/Games/chaos-overlords/app
 ```
 
-The import reads the folder and copies nothing back into it, so you can delete
-the unpacked copy afterwards.
+innoextract writes the game's files to `~/Games/chaos-overlords/app`, the folder
+that holds `DATA`, `HELP` and `MUSIC`. A copy installed another way works as
+well: pick **Choose Folder** and the folder of the installation. Running the
+installer under Wine puts it in `~/.wine/drive_c/GOG Games/Chaos Overlords`, and
+the Heroic Games Launcher puts it in `~/Games/Heroic/Chaos Overlords` by default.
 
 ## Project status
 

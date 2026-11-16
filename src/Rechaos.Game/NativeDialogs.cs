@@ -5,11 +5,18 @@ namespace Rechaos.Game;
 /// <summary>The few dialogs the game shows before it has a window of its own.</summary>
 public interface INativeDialogs
 {
-    /// <summary>Shows <paramref name="message"/> with two buttons; true when the player picks <paramref name="accept"/>.</summary>
-    bool Ask(string message, string accept, string decline);
+    /// <summary>
+    /// Shows <paramref name="message"/> with a button for each of <paramref name="choices"/>, two or
+    /// three of them, the last of which declines. Returns the index of the button the player picked,
+    /// or null when they declined or closed the dialog.
+    /// </summary>
+    int? Choose(string message, IReadOnlyList<string> choices);
 
     /// <summary>The folder the player picked, or null when they cancelled.</summary>
     string? ChooseFolder(string title);
+
+    /// <summary>The installer file the player picked, or null when they cancelled.</summary>
+    string? ChooseInstaller(string title);
 
     void ShowError(string message);
 
@@ -119,11 +126,14 @@ public static class NativeDialogs
 /// </summary>
 internal sealed class AppleScriptDialogs(string osascript) : INativeDialogs
 {
-    private static readonly string[] AskScript =
+    // The buttons arrive declining one first and the default last, the order macOS draws them in
+    // from the left. The script prints the label of the button picked.
+    private static readonly string[] ChooseScript =
     [
         "on run argv",
         "activate",
-        "display alert (item 1 of argv) message (item 2 of argv) buttons {item 4 of argv, item 3 of argv} default button 2 cancel button 1",
+        "set labels to items 3 thru -1 of argv",
+        "button returned of (display alert (item 1 of argv) message (item 2 of argv) buttons labels default button (count of labels) cancel button 1)",
         "end run"
     ];
 
@@ -132,6 +142,14 @@ internal sealed class AppleScriptDialogs(string osascript) : INativeDialogs
         "on run argv",
         "activate",
         "POSIX path of (choose folder with prompt (item 1 of argv))",
+        "end run"
+    ];
+
+    private static readonly string[] ChooseFileScript =
+    [
+        "on run argv",
+        "activate",
+        "POSIX path of (choose file with prompt (item 1 of argv))",
         "end run"
     ];
 
@@ -151,14 +169,24 @@ internal sealed class AppleScriptDialogs(string osascript) : INativeDialogs
         "end run"
     ];
 
-    // The cancel button ends the script with error -128, so only the accept button exits with 0.
-    public bool Ask(string message, string accept, string decline) =>
-        NativeDialogs.Run(osascript, Script(AskScript,
-            StartupFailureReporter.ApplicationTitle, message, accept, decline)).ExitCode == 0;
+    // The cancel button ends the script with error -128, so only the other buttons exit with 0.
+    public int? Choose(string message, IReadOnlyList<string> choices)
+    {
+        var (exitCode, output) = NativeDialogs.Run(osascript, Script(ChooseScript,
+            [StartupFailureReporter.ApplicationTitle, message, .. choices.Reverse()]));
+        var picked = choices.Take(choices.Count - 1).ToList().IndexOf(output);
+        return exitCode == 0 && picked >= 0 ? picked : null;
+    }
 
     public string? ChooseFolder(string title)
     {
         var (exitCode, output) = NativeDialogs.Run(osascript, Script(ChooseFolderScript, title));
+        return exitCode == 0 && output.Length > 0 ? output : null;
+    }
+
+    public string? ChooseInstaller(string title)
+    {
+        var (exitCode, output) = NativeDialogs.Run(osascript, Script(ChooseFileScript, title));
         return exitCode == 0 && output.Length > 0 ? output : null;
     }
 
@@ -177,14 +205,36 @@ internal sealed class ZenityDialogs(string zenity) : INativeDialogs
 {
     private static readonly string Title = $"--title={StartupFailureReporter.ApplicationTitle}";
 
-    public bool Ask(string message, string accept, string decline) =>
-        NativeDialogs.Run(zenity, ["--question", "--no-markup", "--width=480", Title,
-            $"--text={message}", $"--ok-label={accept}", $"--cancel-label={decline}"]).ExitCode == 0;
+    // The first choice is the OK button and the last the cancel button. The ones between are extra
+    // buttons, which exit like cancel but print their label.
+    public int? Choose(string message, IReadOnlyList<string> choices)
+    {
+        var middle = choices.Skip(1).Take(choices.Count - 2).ToList();
+        var (exitCode, output) = NativeDialogs.Run(zenity,
+        [
+            "--question", "--no-markup", "--width=480", Title, $"--text={message}",
+            $"--ok-label={choices[0]}", $"--cancel-label={choices[^1]}",
+            .. middle.Select(label => $"--extra-button={label}")
+        ]);
+        if (exitCode == 0) return 0;
+        var picked = middle.IndexOf(output);
+        return picked >= 0 ? picked + 1 : null;
+    }
 
     public string? ChooseFolder(string title)
     {
         var (exitCode, output) = NativeDialogs.Run(zenity,
             ["--file-selection", "--directory", $"--title={title}"]);
+        return exitCode == 0 && output.Length > 0 ? output : null;
+    }
+
+    public string? ChooseInstaller(string title)
+    {
+        var (exitCode, output) = NativeDialogs.Run(zenity,
+        [
+            "--file-selection", $"--title={title}",
+            "--file-filter=GOG installer | *.exe *.EXE", "--file-filter=All files | *"
+        ]);
         return exitCode == 0 && output.Length > 0 ? output : null;
     }
 
@@ -201,15 +251,31 @@ internal sealed class KDialogDialogs(string kdialog) : INativeDialogs
 {
     private const string TitleFlag = "--title";
 
-    public bool Ask(string message, string accept, string decline) =>
-        NativeDialogs.Run(kdialog, [TitleFlag, StartupFailureReporter.ApplicationTitle,
-            "--yesno", message, "--yes-label", accept, "--no-label", decline]).ExitCode == 0;
+    // Two choices are a yes/no question; three a yes/no/cancel one, which exits 0, 1 or 2.
+    public int? Choose(string message, IReadOnlyList<string> choices)
+    {
+        if (choices.Count == 2)
+            return NativeDialogs.Run(kdialog, [TitleFlag, StartupFailureReporter.ApplicationTitle,
+                "--yesno", message, "--yes-label", choices[0], "--no-label", choices[1]]).ExitCode == 0 ? 0 : null;
+        var exitCode = NativeDialogs.Run(kdialog, [TitleFlag, StartupFailureReporter.ApplicationTitle,
+            "--yesnocancel", message, "--yes-label", choices[0], "--no-label", choices[1],
+            "--cancel-label", choices[2]]).ExitCode;
+        return exitCode is 0 or 1 ? exitCode : null;
+    }
 
     public string? ChooseFolder(string title)
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var (exitCode, output) = NativeDialogs.Run(kdialog,
             [TitleFlag, title, "--getexistingdirectory", home]);
+        return exitCode == 0 && output.Length > 0 ? output : null;
+    }
+
+    public string? ChooseInstaller(string title)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var (exitCode, output) = NativeDialogs.Run(kdialog,
+            [TitleFlag, title, "--getopenfilename", home, "*.exe *.EXE|GOG installer"]);
         return exitCode == 0 && output.Length > 0 ? output : null;
     }
 

@@ -71,7 +71,7 @@ exec /opt/chaos-overlords-new-chrome/Game/Rechaos.Game "$@"
 #!/bin/sh
 set -eu
 if [ "$#" -ne 1 ]; then
-  echo "Usage: chaos-overlords-new-chrome-import /path/to/ChaosOverlords" >&2
+  echo "Usage: chaos-overlords-new-chrome-import /path/to/ChaosOverlords-or-setup_chaos_overlords_2.1.0.17.exe" >&2
   exit 2
 fi
 data_root="${XDG_DATA_HOME:-$HOME/.local/share}/ChaosOverlordsNewChrome/Assets"

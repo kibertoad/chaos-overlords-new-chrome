@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Rechaos.Core;
 using Rechaos.Core.Assets;
+using Rechaos.Extractor.Installer;
 
 namespace Rechaos.Extractor;
 
@@ -68,7 +69,8 @@ public static class ExtractorProgram
             {
                 var gameDataSource = options.Source
                     ?? throw new UsageException("--source is required when generating gameplay data.");
-                var gameDataSourcePack = await VerifySourceAsync(gameDataSource);
+                using var gameDataFolder = await SourceFolder.OpenAsync(gameDataSource);
+                var gameDataSourcePack = await VerifySourceAsync(gameDataFolder.Path);
                 var data = OriginalDataReader.Read(gameDataSourcePack.DataDirectory);
                 await GameplayDataGenerator.WriteAsync(data, options.GameDataOutput!);
                 Console.WriteLine(
@@ -80,8 +82,12 @@ public static class ExtractorProgram
             var source = options.Source
                 ?? throw new UsageException("--source is required; the port does not distribute original assets.");
             if (options.Mode == ExtractorMode.Extract) AssetPackInstaller.EnsureWritable(options.Output);
-            Console.WriteLine($"Checking the original Chaos Overlords installation at {Path.GetFullPath(source)}...");
-            var sourcePack = await VerifySourceAsync(source);
+            using var sourceFolder = await SourceFolder.OpenAsync(source,
+                options.Mode == ExtractorMode.Extract ? options.Output : null);
+            Console.WriteLine(sourceFolder.IsUnpackedInstaller
+                ? "Checking the unpacked files..."
+                : $"Checking the original Chaos Overlords installation at {Path.GetFullPath(source)}...");
+            var sourcePack = await VerifySourceAsync(sourceFolder.Path);
             if (options.Mode == ExtractorMode.VerifySource)
             {
                 Console.WriteLine($"Supported original asset pack: {sourcePack.Fingerprint}");
@@ -272,7 +278,9 @@ public static class ExtractorProgram
     }
 
     internal const string UsageText =
-        "Usage:\n  Rechaos.Extractor --source <original install> [--output <assets>] [--force]\n  Rechaos.Extractor --verify-source --source <original install>\n  Rechaos.Extractor --verify-output [--output <assets>] [--quick] [--json]\n  Rechaos.Extractor --catalog [--output <assets>] [--catalog-output <markdown>]\n  Rechaos.Extractor --analyze-px [--output <assets>]\n  Rechaos.Extractor --generate-game-data <json> --source <original install>\n\nExit codes: 0 success, 1 failure, 2 usage error, 3 the output folder cannot be written.";
+        "Usage:\n  Rechaos.Extractor --source <original install> [--output <assets>] [--force]\n  Rechaos.Extractor --verify-source --source <original install>\n" +
+        "  <original install> is the folder of an installed copy, or GOG's installer " + GogInstaller.FileName + ".\n" +
+        "  Rechaos.Extractor --verify-output [--output <assets>] [--quick] [--json]\n  Rechaos.Extractor --catalog [--output <assets>] [--catalog-output <markdown>]\n  Rechaos.Extractor --analyze-px [--output <assets>]\n  Rechaos.Extractor --generate-game-data <json> --source <original install>\n\nExit codes: 0 success, 1 failure, 2 usage error, 3 the output folder cannot be written.";
 
     /// <summary>A problem with the command line, as opposed to a problem with the assets.</summary>
     /// <remarks>

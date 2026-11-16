@@ -17,6 +17,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-11-16 | [Import the assets straight from GOG's installer](#2026-11-16--import-the-assets-straight-from-gogs-installer) |
 | 2026-10-07 | [Draw the game's own controls in place of the Windows controls](#2026-10-07--draw-the-games-own-controls-in-place-of-the-windows-controls) |
 | 2026-10-07 | [Import the assets on first start on macOS and Linux](#2026-10-07--import-the-assets-on-first-start-on-macos-and-linux) |
 | 2026-10-06 | [Comlink in an online match travels in the sealed turn](#2026-10-06--comlink-in-an-online-match-travels-in-the-sealed-turn) |
@@ -52,6 +53,28 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-11-16 — Import the assets straight from GOG's installer
+
+- Decision: the extractor takes GOG's offline installer, `setup_chaos_overlords_2.1.0.17.exe`
+  (SRC-INSTALLER-GOG), as its source as well as an installed copy's folder. It checks the
+  installer's SHA-256, reads the files Inno Setup stores under `{app}\DATA`, `{app}\HELP` and
+  `{app}\MUSIC` with its own reader and LZMA decoder, checks each against the SHA-1 the installer
+  stores, writes them to a work folder and imports from there as from an installation. An import
+  unpacks into a hidden folder beside the asset pack's output, on the disk the pack is written
+  to, so a disk that is full or read-only is reported as the output's problem and the player is
+  asked to free space there, without being sent back to choose another source; the modes that write
+  no asset pack, such as `--verify-source`, unpack into the system's temporary folder. The work folder is
+  deleted when the import ends. The first-start import on macOS and Linux offers the installer next to the folder, and both import
+  helpers accept either.
+- Reason: GOG sells the game as a Windows installer only, so a player on macOS or Linux had to
+  get innoextract or Wine and unpack it before the game could import anything. The installer is
+  usually the only copy such a player has.
+- Boundary: only that one installer is read. Inno Setup's layout differs between versions, and
+  the reader follows the one Inno Setup 5.5.0 writes; any other file is refused with a message
+  that points at innoextract and the folder import. Nothing outside the three game folders is
+  read, and the installer's setup program is never run. Downloading the installer from GOG stays
+  the player's job.
 
 ## 2026-10-07 — Draw the game's own controls in place of the Windows controls
 

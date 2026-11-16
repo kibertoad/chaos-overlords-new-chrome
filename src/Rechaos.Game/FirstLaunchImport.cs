@@ -27,8 +27,10 @@ public sealed record ExtractorRun(int ExitCode, string? FailureMessage);
 /// <c>.deb</c> cannot: a package script runs as root, with no player to ask for a folder and no
 /// home folder of theirs to write to. Both used to leave the player to run the import helper from
 /// a terminal, and a player who started the game from Finder or a desktop menu without doing so
-/// saw nothing at all, since the startup failure went to stderr. Here the game asks for the
-/// folder itself and runs the bundled extractor on it, with the same arguments the helpers pass.
+/// saw nothing at all, since the startup failure went to stderr. Here the game asks for GOG's
+/// installer or an installed copy's folder itself and runs the bundled extractor on it, with the
+/// same arguments the helpers pass. GOG sells the game as a Windows installer only, so on these
+/// systems the installer is usually all the player has.
 /// </remarks>
 public static class FirstLaunchImport
 {
@@ -56,9 +58,9 @@ public static class FirstLaunchImport
               $"{StartupFailureReporter.ApplicationTitle} or cannot be read, and have to be imported again."
             : $"{StartupFailureReporter.ApplicationTitle} needs the art, sound, music and video of " +
               "the original Chaos Overlords, and does not include them.") +
-        "\n\nChoose the folder of your Chaos Overlords installation, for example the one GOG " +
-        "installed. The original files are only read, never changed. The imported copy is " +
-        $"stored in {assetRoot}.";
+        "\n\nChoose the installer you downloaded from GOG, " + GogInstallerFile.Name + ", or the " +
+        "folder of an installed copy. The original files are only read, never changed. The " +
+        $"imported copy is stored in {assetRoot}.";
 
     public static string OutputFailureMessage(string assetRoot, ExtractorRun run) =>
         $"The imported assets could not be written to {assetRoot}.\n\n" +
@@ -70,7 +72,16 @@ public static class FirstLaunchImport
         (!string.IsNullOrWhiteSpace(run.FailureMessage) ? run.FailureMessage
             : run.ExitCode == 0 ? "The importer finished, but left no usable asset pack."
             : $"The importer stopped with exit code {run.ExitCode}.") +
-        "\n\nChoose the folder that holds the original game's DATA folder.";
+        "\n\nChoose GOG's installer, " + GogInstallerFile.Name + ", or the folder that holds the " +
+        "original game's DATA folder.";
+
+    public const string ChooseInstallerLabel = "Choose Installer";
+    public const string ChooseFolderLabel = "Choose Folder";
+    public const string TryAgainLabel = "Try Again";
+    public const string QuitLabel = "Quit";
+
+    private static readonly string[] SourceChoices = [ChooseInstallerLabel, ChooseFolderLabel, QuitLabel];
+    private static readonly string[] RetryChoices = [TryAgainLabel, QuitLabel];
 
     public static FirstLaunchImportResult Run(
         AssetPackState state,
@@ -81,17 +92,19 @@ public static class FirstLaunchImport
         ArgumentNullException.ThrowIfNull(dialogs);
         ArgumentNullException.ThrowIfNull(extract);
         var message = IntroMessage(state, assetRoot);
-        var accept = "Choose Folder";
         // A source that was fine but could not be written out is used again, so the player who
-        // freed space or fixed a permission is not asked for the folder a second time.
+        // freed space or fixed a permission is not asked for the source a second time.
         string? retrySource = null;
         while (true)
         {
-            if (!dialogs.Ask(message, accept, "Quit")) return FirstLaunchImportResult.Declined;
-            var source = retrySource ?? dialogs.ChooseFolder("Choose your Chaos Overlords folder");
+            var picked = dialogs.Choose(message, retrySource is null ? SourceChoices : RetryChoices);
+            if (picked is null) return FirstLaunchImportResult.Declined;
+            var source = retrySource ?? (picked == 0
+                ? dialogs.ChooseInstaller("Choose the GOG installer of Chaos Overlords")
+                : dialogs.ChooseFolder("Choose your Chaos Overlords folder"));
             if (source is null) return FirstLaunchImportResult.Declined;
-            // osascript ends the path with a slash, and the extractor takes the parent of a picked
-            // DATA folder as the installation, which a trailing slash would make DATA itself.
+            // osascript ends a folder's path with a slash, and the extractor takes the parent of a
+            // picked DATA folder as the installation, which a trailing slash would make DATA itself.
             source = Path.TrimEndingDirectorySeparator(source);
             ExtractorRun run;
             using (dialogs.ShowProgress("Importing the game assets. This can take a minute."))
@@ -101,12 +114,10 @@ public static class FirstLaunchImport
             if (run.ExitCode == ExtractorExitCodes.OutputNotWritable)
             {
                 message = OutputFailureMessage(assetRoot, run);
-                accept = "Try Again";
                 retrySource = source;
                 continue;
             }
             message = FailureMessage(source, run);
-            accept = "Choose Another Folder";
             retrySource = null;
         }
     }
