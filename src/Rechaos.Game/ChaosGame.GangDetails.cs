@@ -211,10 +211,9 @@ public sealed partial class ChaosGame
         // FMT-DATA-002: the description is drawn as three fixed rows of 30 characters.
         foreach (var entry in ItemInformationLayout.DescriptionLines(definition.Description)
                      .Select((text, row) => (text, row)))
-            if (entry.text is not null)
-                font.Draw(batch, entry.text, new Vector2(nameLeft, compact
-                    ? GangDefinitionInformationLayout.DescriptionY(entry.row)
-                    : GangInformationLayout.DescriptionY(entry.row)), Color.Lime, 1);
+            font.Draw(batch, entry.text, new Vector2(nameLeft, compact
+                ? GangDefinitionInformationLayout.DescriptionY(entry.row)
+                : GangInformationLayout.DescriptionY(entry.row)), Color.Lime, 1);
 
         var leftValueLeft = compact
             ? GangDefinitionInformationLayout.LeftValueLeft : GangInformationLayout.LeftValueLeft;

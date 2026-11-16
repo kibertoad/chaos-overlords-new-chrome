@@ -22,7 +22,8 @@ public static class ItemInformationLayout
 
     /// <summary>
     /// The original item table stores three fixed 30-byte description fields.
-    /// Preserve those authored row boundaries instead of reflowing the words.
+    /// Preserve those authored row boundaries instead of reflowing the words. A row past the end of
+    /// a shorter description is empty.
     /// </summary>
     public static IReadOnlyList<string> DescriptionLines(string description)
     {
@@ -31,8 +32,7 @@ public static class ItemInformationLayout
         for (var row = 0; row < lines.Length; row++)
         {
             var offset = row * DescriptionColumns;
-            if (offset >= description.Length) continue;
-            lines[row] = description.Substring(offset,
+            lines[row] = offset >= description.Length ? string.Empty : description.Substring(offset,
                 Math.Min(DescriptionColumns, description.Length - offset)).TrimEnd();
         }
         return lines;
