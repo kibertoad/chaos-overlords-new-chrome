@@ -131,7 +131,7 @@ jobs:
           # $LASTEXITCODE of the last one, so neither of these was checked and the attestation
           # check was a defence that did nothing.
           if ($LASTEXITCODE -ne 0) { throw "Downloading the Inno Setup installer failed with $LASTEXITCODE." }
-          gh release verify-asset $installer --repo jrsoftware/issrc
+          gh release verify-asset is-7_1_0 $installer --repo jrsoftware/issrc
           if ($LASTEXITCODE -ne 0) { throw "Attestation verification of the Inno Setup installer failed with $LASTEXITCODE." }
           $signature = Get-AuthenticodeSignature -LiteralPath $installer
           if ($signature.Status -ne 'Valid' -or
