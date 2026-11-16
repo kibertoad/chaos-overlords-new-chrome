@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Rechaos.Core.Assets;
 using Rechaos.Game;
 using Xunit;
 
@@ -53,6 +54,30 @@ public sealed class ItemInformationLayoutTests
             "GOOD FOR BUSTING IN A FEW",
             "HARD HEADS."
         ], ItemInformationLayout.DescriptionLines(description));
+    }
+
+    [Fact]
+    public void LeavesTheRowsPastAShortDescriptionEmpty()
+    {
+        // FMT-DATA-003: a description whose text ends in its second row, with the padding trimmed
+        // as the bundled data stores it, draws an empty third row.
+        Assert.Equal(["FIRST ROW.", "SECOND ROW.", ""],
+            ItemInformationLayout.DescriptionLines("FIRST ROW.                    SECOND ROW."));
+        Assert.Equal(["", "", ""], ItemInformationLayout.DescriptionLines(string.Empty));
+    }
+
+    [Fact]
+    public void EveryBundledDescriptionLaysOutAsThreeDrawableRows()
+    {
+        // Item Information and the gang panels hand each row to the font, which cannot take null.
+        var data = BundledOriginalData.Load();
+        foreach (var description in data.Items.Where(item => item.Type != 99).Select(item => item.Description)
+                     .Concat(data.Gangs.Select(gang => gang.Description)))
+        {
+            var lines = ItemInformationLayout.DescriptionLines(description);
+            Assert.Equal(3, lines.Count);
+            Assert.All(lines, Assert.NotNull);
+        }
     }
 
     [Fact]
