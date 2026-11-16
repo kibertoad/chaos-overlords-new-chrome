@@ -302,10 +302,10 @@ media state never enters Core, saves, replays, commands, events, or deterministi
 hashes.
 
 Platform distribution scripts publish self-contained game and extractor
-payloads while forcing original assets out of every package. On Windows the
-game uses a directory deployment so MonoGame's SDL2 and OpenAL libraries remain
-adjacent to `Rechaos.Game.exe`; a platform-initialization smoke test enforces
-that runtime boundary. The extractor remains a single-file utility.
+payloads while forcing original assets out of every package. On every
+platform the game uses a directory deployment so MonoGame's SDL2 and OpenAL
+libraries remain adjacent to the game executable, where MonoGame's loader looks
+for them; a platform-initialization smoke test enforces that runtime boundary. The extractor remains a single-file utility.
 `Build-WindowsInstaller.ps1` produces an Inno Setup `.exe`,
 `Build-LinuxInstaller.ps1` produces an amd64 Debian package, and
 `Build-MacInstaller.ps1` produces native x64/arm64 application-bundle `.pkg`

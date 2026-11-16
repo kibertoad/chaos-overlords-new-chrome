@@ -89,6 +89,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not mark macOS executables as executable
 if ($LASTEXITCODE -ne 0) { throw 'Generated Info.plist is invalid.' }
 & (Join-Path $macRoot 'Rechaos.Game') --smoke-test
 if ($LASTEXITCODE -ne 0) { throw 'macOS app bundle smoke check failed.' }
+& (Join-Path $PSScriptRoot 'Test-PlatformStartup.ps1') -GameExecutable (Join-Path $macRoot 'Rechaos.Game')
+if ($LASTEXITCODE -ne 0) { throw 'macOS app bundle could not initialize its native platform libraries.' }
 
 $installer = Join-Path $artifactsRoot "ChaosOverlords-NewChrome-$Runtime-Setup-$Version.pkg"
 if (Test-Path -LiteralPath $installer) { Remove-Item -LiteralPath $installer -Force }
