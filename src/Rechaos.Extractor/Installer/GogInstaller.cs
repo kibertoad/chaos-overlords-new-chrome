@@ -52,6 +52,8 @@ public static class GogInstaller
             if (file.Location >= setup.DataEntries.Count)
                 throw new InvalidDataException($"The installer has no data for {file.Destination}.");
             var data = setup.DataEntries[(int)file.Location];
+            // Checked for every file, since files that share a chunk reuse the one already read.
+            CheckStorage(data);
             if (data.ChunkOffset != chunkOffset)
             {
                 chunk = ReadChunk(installer, setup, data);
@@ -65,8 +67,17 @@ public static class GogInstaller
             var target = Path.GetFullPath(Path.Combine(destination, relative));
             if (!target.StartsWith(destination + Path.DirectorySeparatorChar, StringComparison.Ordinal))
                 throw new InvalidDataException($"{file.Destination} would be written outside {destination}.");
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            await File.WriteAllBytesAsync(target, bytes.ToArray());
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                await File.WriteAllBytesAsync(target, chunk.AsMemory((int)data.FileOffset, (int)data.FileSize));
+            }
+            // The installer was read whole before this loop, so an I/O failure here is the
+            // destination's: a full disk, a lost permission, a volume that went away.
+            catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+            {
+                throw new UnpackNotWritableException(destination, exception);
+            }
             written++;
         }
         if (written == 0) throw new InvalidDataException("The installer holds none of the game's folders.");
@@ -274,8 +285,8 @@ public static class GogInstaller
         return new Setup(fileEntries, data, dataStart);
     }
 
-    /// <summary>A chunk of file data: the signature <c>zlb</c> and 0x1A, then the stored or LZMA2 bytes.</summary>
-    private static byte[] ReadChunk(byte[] installer, Setup setup, DataEntry data)
+    /// <summary>Refuses a file kept in another slice, in an encrypted chunk or with the executable filter.</summary>
+    private static void CheckStorage(DataEntry data)
     {
         if (data.FirstSlice != 0 || data.LastSlice != 0)
             throw new InvalidDataException("The installer keeps a file outside its executable.");
@@ -283,6 +294,11 @@ public static class GogInstaller
             throw new InvalidDataException("The installer's files are encrypted.");
         if ((data.Flags & CallInstructionOptimized) != 0)
             throw new InvalidDataException("A game file in the installer is stored with the executable filter.");
+    }
+
+    /// <summary>A chunk of file data: the signature <c>zlb</c> and 0x1A, then the stored or LZMA2 bytes.</summary>
+    private static byte[] ReadChunk(byte[] installer, Setup setup, DataEntry data)
+    {
         var start = setup.DataStart + data.ChunkOffset;
         if (start + ChunkMagic.Length + (long)data.ChunkSize > installer.Length)
             throw new InvalidDataException("A chunk of the installer runs past its end.");
@@ -330,3 +346,7 @@ public static class GogInstaller
         }
     }
 }
+
+/// <summary>The unpacked files could not be written to the folder the installer is unpacked into.</summary>
+public sealed class UnpackNotWritableException(string destination, Exception inner)
+    : IOException($"Cannot write the unpacked installer to {destination}: {inner.Message}", inner);

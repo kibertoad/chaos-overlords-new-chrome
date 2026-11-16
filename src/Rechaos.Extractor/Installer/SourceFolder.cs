@@ -20,15 +20,29 @@ public sealed class SourceFolder : IDisposable
 
     public bool IsUnpackedInstaller => _temporary is not null;
 
-    public static async Task<SourceFolder> OpenAsync(string source)
+    /// <summary>
+    /// Opens <paramref name="source"/>. An installer is unpacked beside <paramref name="output"/>
+    /// when one is given, where the asset pack is staged as well, so a disk that cannot hold the
+    /// unpacked files is reported as the output's problem (<see cref="OutputNotWritableException"/>)
+    /// and the first-start import asks the player to free space there instead of choosing another
+    /// source. Without an output the installer is unpacked into the system's temporary folder.
+    /// </summary>
+    public static async Task<SourceFolder> OpenAsync(string source, string? output = null)
     {
         if (!File.Exists(source)) return new SourceFolder(source, null);
-        var temporary = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"rechaos-installer-{Guid.NewGuid():N}");
+        var temporary = output is not null
+            ? AssetPackInstaller.WorkFolderBeside(output, "installer")
+            : System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"rechaos-installer-{Guid.NewGuid():N}");
         try
         {
             Console.WriteLine($"Unpacking the game's folders from the GOG installer {System.IO.Path.GetFullPath(source)}...");
             var count = await GogInstaller.UnpackGameFoldersAsync(source, temporary);
             Console.WriteLine($"Unpacked {count} files.");
+        }
+        catch (UnpackNotWritableException exception) when (output is not null)
+        {
+            Delete(temporary);
+            throw new OutputNotWritableException(output, exception.InnerException!);
         }
         catch
         {

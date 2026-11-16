@@ -21,7 +21,7 @@ public static class LzmaDecoder
         if (input.Length < 5) throw new InvalidDataException("The LZMA stream is shorter than its properties.");
         var output = new OutputWindow(maximumLength);
         var decoder = new LzmaState(PropertiesFrom(input[0]));
-        var range = new RangeDecoder(input[5..].ToArray(), 0, input.Length - 5);
+        var range = new RangeDecoder(input[5..]);
         decoder.DecodeUntilInputEnds(ref range, output);
         return output.ToArray();
     }
@@ -34,7 +34,7 @@ public static class LzmaDecoder
     {
         if (input.Length < 1) throw new InvalidDataException("The LZMA2 stream has no dictionary property.");
         if (input[0] > 40) throw new InvalidDataException($"LZMA2 dictionary property {input[0]} is out of range.");
-        var data = input[1..].ToArray();
+        var data = input[1..];
         var output = new OutputWindow(maximumLength);
         LzmaState? state = null;
         var position = 0;
@@ -50,7 +50,7 @@ public static class LzmaDecoder
                 if (first && control != 1) throw new InvalidDataException("The first LZMA2 chunk does not reset the dictionary.");
                 var size = ReadBigEndian16(data, ref position) + 1;
                 if (position + size > data.Length) throw new InvalidDataException("An LZMA2 chunk runs past the input.");
-                output.Append(data.AsSpan(position, size));
+                output.Append(data.Slice(position, size));
                 position += size;
                 first = false;
                 continue;
@@ -71,15 +71,16 @@ public static class LzmaDecoder
             else if (state is null) throw new InvalidDataException("An LZMA2 chunk has no properties to continue from.");
             else if (reset == 1) state.Reset();
             if (position + packed > data.Length) throw new InvalidDataException("An LZMA2 chunk runs past the input.");
-            var range = new RangeDecoder(data, position, packed);
+            var range = new RangeDecoder(data.Slice(position, packed));
             state!.Decode(ref range, output, output.Length + unpacked);
+            if (!range.AtCleanEnd()) throw new InvalidDataException("An LZMA2 chunk does not end where its packed size says.");
             position += packed;
             first = false;
         }
         return output.ToArray();
     }
 
-    private static int ReadBigEndian16(byte[] data, ref int position)
+    private static int ReadBigEndian16(ReadOnlySpan<byte> data, ref int position)
     {
         if (position + 2 > data.Length) throw new InvalidDataException("The LZMA2 stream ended early.");
         var value = (data[position] << 8) | data[position + 1];
@@ -143,22 +144,20 @@ public static class LzmaDecoder
     /// <summary>Thrown inside the range decoder when it needs a byte past the end of its input.</summary>
     private sealed class InputEndedException : Exception;
 
-    private struct RangeDecoder
+    private ref struct RangeDecoder
     {
-        private readonly byte[] _data;
-        private readonly int _end;
+        private readonly ReadOnlySpan<byte> _data;
         private int _position;
         private uint _range;
         private uint _code;
 
-        public RangeDecoder(byte[] data, int start, int length)
+        public RangeDecoder(ReadOnlySpan<byte> data)
         {
             _data = data;
-            _position = start;
-            _end = start + length;
+            _position = 0;
             _range = uint.MaxValue;
             _code = 0;
-            if (length < 5) throw new InvalidDataException("An LZMA range coder needs five bytes to start.");
+            if (data.Length < 5) throw new InvalidDataException("An LZMA range coder needs five bytes to start.");
             if (data[_position++] != 0) throw new InvalidDataException("An LZMA range coder does not start with 0.");
             for (var i = 0; i < 4; i++) _code = (_code << 8) | data[_position++];
             if (_code == _range) throw new InvalidDataException("An LZMA range coder starts out of range.");
@@ -167,7 +166,7 @@ public static class LzmaDecoder
         private void Normalize()
         {
             if (_range >= 1u << 24) return;
-            if (_position >= _end) throw new InputEndedException();
+            if (_position >= _data.Length) throw new InputEndedException();
             _range <<= 8;
             _code = (_code << 8) | _data[_position++];
         }
@@ -222,8 +221,16 @@ public static class LzmaDecoder
             return symbol;
         }
 
-        /// <summary>True once every input byte is read and the code is back to 0, LZMA's clean end.</summary>
-        public readonly bool IsFinished => _position == _end && _code == 0;
+        /// <summary>
+        /// True once every input byte is read and the code is back to 0, LZMA's clean end. The
+        /// byte that the last symbol's normalization still owes is read first, as LzmaDec does
+        /// after its last symbol; reading it now instead of before the next bit changes nothing.
+        /// </summary>
+        public bool AtCleanEnd()
+        {
+            if (_position < _data.Length) Normalize();
+            return _position == _data.Length && _code == 0;
+        }
     }
 
     /// <summary>The adaptive probabilities and match state of one LZMA stream.</summary>
@@ -295,7 +302,7 @@ public static class LzmaDecoder
         {
             try
             {
-                while (!range.IsFinished && DecodeSymbol(ref range, output, int.MaxValue))
+                while (!range.AtCleanEnd() && DecodeSymbol(ref range, output, int.MaxValue))
                 {
                 }
             }

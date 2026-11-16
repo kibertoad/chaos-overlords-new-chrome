@@ -44,6 +44,16 @@ public static class AssetPackInstaller
         }
     }
 
+    /// <summary>
+    /// A new folder name beside <paramref name="output"/>, on the disk the pack is staged on, for
+    /// work files the import deletes when it ends.
+    /// </summary>
+    public static string WorkFolderBeside(string output, string purpose)
+    {
+        var (parent, leaf) = Split(output);
+        return Path.Combine(parent, $".{leaf}.{purpose}-{Guid.NewGuid():N}");
+    }
+
     private static (string Parent, string Leaf) Split(string output)
     {
         output = Path.GetFullPath(output).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);

@@ -82,7 +82,8 @@ public static class ExtractorProgram
             var source = options.Source
                 ?? throw new UsageException("--source is required; the port does not distribute original assets.");
             if (options.Mode == ExtractorMode.Extract) AssetPackInstaller.EnsureWritable(options.Output);
-            using var sourceFolder = await SourceFolder.OpenAsync(source);
+            using var sourceFolder = await SourceFolder.OpenAsync(source,
+                options.Mode == ExtractorMode.Extract ? options.Output : null);
             Console.WriteLine(sourceFolder.IsUnpackedInstaller
                 ? "Checking the unpacked files..."
                 : $"Checking the original Chaos Overlords installation at {Path.GetFullPath(source)}...");

@@ -81,6 +81,20 @@ public sealed class LzmaDecoderTests
     }
 
     [Fact]
+    public void AnLzma2ChunkWhosePackedSizeRunsPastItsDataIsRefused()
+    {
+        var compressed = Convert.FromBase64String(Lzma2);
+        // The packed size, big-endian after the control byte and the unpacked size, grows by one
+        // to take in a stray byte placed before the end byte.
+        var packed = (compressed[4] << 8 | compressed[5]) + 1;
+        compressed[4] = (byte)(packed >> 8);
+        compressed[5] = (byte)packed;
+        byte[] stream = [.. compressed[..^1], 0xFF, 0x00];
+
+        Assert.Throws<InvalidDataException>(() => LzmaDecoder.DecodeLzma2(stream, 1 << 20));
+    }
+
+    [Fact]
     public void ATruncatedLzma2StreamIsRefused()
     {
         var compressed = Convert.FromBase64String(Lzma2);

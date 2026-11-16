@@ -80,17 +80,29 @@ public sealed class GogInstallerTests : IDisposable
     }
 
     [Fact]
-    public async Task TheExtractorTakesTheInstallerAsItsSourceAndLeavesNoUnpackedCopy()
+    public async Task AFolderThatCannotBeWrittenIsReportedAsTheDestinations()
     {
         var installer = OriginalGameFiles.RequireCapture(InstallerXxh3);
-        var before = UnpackedCopies();
+        Directory.CreateDirectory(_root);
+        // A file where the DATA folder has to go.
+        File.WriteAllText(Path.Combine(_root, "DATA"), "");
 
-        var exitCode = await ExtractorProgram.RunAsync(["--verify-source", "--source", installer]);
+        var error = await Assert.ThrowsAsync<UnpackNotWritableException>(() =>
+            GogInstaller.UnpackGameFoldersAsync(installer, _root));
 
-        Assert.Equal(0, exitCode);
-        Assert.Equal(before, UnpackedCopies());
+        Assert.Contains(_root, error.Message, StringComparison.Ordinal);
     }
 
-    private static string[] UnpackedCopies() =>
-        [.. Directory.EnumerateDirectories(Path.GetTempPath(), "rechaos-installer-*").Order()];
+    [Fact]
+    public async Task TheExtractorImportsFromTheInstallerAndLeavesNoUnpackedCopy()
+    {
+        var installer = OriginalGameFiles.RequireCapture(InstallerXxh3);
+        var output = Path.Combine(_root, "Assets");
+
+        var exitCode = await ExtractorProgram.RunAsync(["--source", installer, "--output", output]);
+
+        Assert.Equal(0, exitCode);
+        // The installer is unpacked beside the output, so only the asset pack is left there.
+        Assert.Equal([output], Directory.EnumerateFileSystemEntries(_root));
+    }
 }
