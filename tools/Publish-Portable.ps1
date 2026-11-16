@@ -45,8 +45,6 @@ $common = @(
     '--configuration', 'Release',
     '--runtime', $Runtime,
     '--self-contained', 'true',
-    '-p:PublishSingleFile=true',
-    '-p:IncludeNativeLibrariesForSelfExtract=true',
     '-p:DebugType=None',
     '-p:DebugSymbols=false',
     '-p:UseSharedCompilation=false',
@@ -54,11 +52,16 @@ $common = @(
     '--artifacts-path', $buildRoot,
     '--verbosity', 'minimal'
 )
+# The game is published as a folder, not a single file. MonoGame loads SDL and OpenAL with dlopen
+# from AppContext.BaseDirectory (the executable's folder) and then the system library path. A
+# single file with IncludeNativeLibrariesForSelfExtract extracts them to ~/.net instead, where
+# MonoGame never looks, so the game failed to start with "The type initializer for 'Sdl' threw an
+# exception" on every Mac without a system-wide SDL2. Publish-Windows.ps1 does the same.
 & dotnet publish (Join-Path $repositoryRoot 'src/Rechaos.Game/Rechaos.Game.csproj') @common `
     '-p:IncludeOriginalAssets=false' --output $gameOutput
 if ($LASTEXITCODE -ne 0) { throw 'Game publish failed.' }
 & dotnet publish (Join-Path $repositoryRoot 'src/Rechaos.Extractor/Rechaos.Extractor.csproj') @common `
-    --output $toolOutput
+    '-p:PublishSingleFile=true' '-p:IncludeNativeLibrariesForSelfExtract=true' --output $toolOutput
 if ($LASTEXITCODE -ne 0) { throw 'Extractor publish failed.' }
 Remove-Item -LiteralPath $buildRoot -Recurse -Force
 
@@ -81,6 +84,20 @@ if (-not (Test-Path -LiteralPath $extractorExecutable -PathType Leaf)) {
 if ($LASTEXITCODE -ne 0) { throw 'Could not mark packaged executables as executable.' }
 & $gameExecutable --smoke-test
 if ($LASTEXITCODE -ne 0) { throw 'Packaged game smoke check failed.' }
+
+$nativeLibraries = if ($Runtime.StartsWith('osx-', [StringComparison]::Ordinal)) {
+    @('libSDL2-2.0.0.dylib', 'libopenal.dylib')
+}
+else {
+    @('libSDL2-2.0.so.0', 'libopenal.so')
+}
+foreach ($nativeLibrary in $nativeLibraries) {
+    if (-not (Test-Path -LiteralPath (Join-Path $gameOutput $nativeLibrary) -PathType Leaf)) {
+        throw "Packaged game is missing native library '$nativeLibrary' next to its executable."
+    }
+}
+& (Join-Path $PSScriptRoot 'Test-PlatformStartup.ps1') -GameExecutable $gameExecutable
+if ($LASTEXITCODE -ne 0) { throw 'Packaged game could not initialize its native platform libraries.' }
 
 # The number the game prints is the number on the installer only if the build actually picked up
 # version.txt, so the packaged executable is asked before anything is wrapped around it.
