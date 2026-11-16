@@ -27,7 +27,7 @@ is repainted.
 
 ## Parameters
 
-- `want` (`INT32`): the depth asked for, 8, 16 or 0.
+- `want`: an `INT32`, the depth asked for, 8, 16 or 0.
 
 ## Inputs
 

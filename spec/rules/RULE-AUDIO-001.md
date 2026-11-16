@@ -29,7 +29,7 @@ the Options menu or Help, or opens and closes panels during a game.
 
 ## Parameters
 
-- `mode` (`INT32`): 0 for the title program, 1 for the endgame program, 2 for the
+- `mode`: an `INT32`, 0 for the title program, 1 for the endgame program, 2 for the
   game program, or -1 to keep the stored program.
 
 ## Inputs

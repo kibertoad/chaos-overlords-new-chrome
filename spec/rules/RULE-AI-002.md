@@ -24,7 +24,8 @@ roster slot order.
 
 ## Parameters
 
-`player`: the computer player planning. `slot`: the gang's roster slot.
+- `player`: the computer player planning.
+- `slot`: the gang's roster slot.
 
 ## Inputs
 

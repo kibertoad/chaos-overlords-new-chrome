@@ -35,8 +35,8 @@ EXP-UI-046, EXP-UI-049, EXP-UI-054].
 
 ## Parameters
 
-- `viewer`, the viewing player's slot.
-- `flag`, 1 when the presentation opens by itself at planning, 0 when the
+- `viewer`: the viewing player's slot.
+- `flag`: 1 when the presentation opens by itself at planning, 0 when the
   player asked for it.
 
 ## Inputs

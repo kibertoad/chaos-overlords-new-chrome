@@ -25,22 +25,25 @@ the whole-turn resolver [FND-EVENT-004].
 ## Parameters
 
 - `player`: the player slot that receives the report, or -1.
-- `report_type`: the kind of report, from the list below.
-- `arg1`, `arg2`, `arg3`: the report's arguments, of type `INT16`, as the
-  list gives them for each type.
+- `report_type`: the kind of report, from this table, which also gives the
+  three arguments of each kind:
 
-| Value | Recorded when | Recipients | `arg1`, `arg2`, `arg3` | Recorded through |
-|---|---|---|---|---|
-| 0 | Never recorded; the compositor's empty case | None | None | None |
-| 1 | A Crackdown is created in a sector | Each player with a gang in the sector when resolution began | sector, 0, 0 | RULE-EVENT-004 |
-| 2 | A player takes control of a sector | The new owner | sector, previous owner (-1 for none), 0 | RULE-EVENT-012 |
-| 3 | A player loses control of a sector | The previous owner | sector, new owner (0 after a third Crackdown), 0 | RULE-EVENT-013 |
-| 4 | An Influence completes a site | The influencing player | sector, site slot, 0 | RULE-EVENT-006 |
-| 5 | Research completes an item | The researching player | item, 0, 0 | RULE-EVENT-007 |
-| 6 | Bribe, Equip or Hire fails for lack of cash | The player whose order failed | 1, sector, 0 for Bribe; 2, sector, gang definition for Equip; 4, gang definition, 0 for Hire | RULE-EVENT-008 (Bribe), RULE-EVENT-014 (Equip), RULE-EVENT-009 (Hire) |
-| 7 | A Hire fails because the sector is full | The hiring player | sector, 0, 0 | RULE-EVENT-010 |
-| 8 | A Hire fails because the player has the most gangs allowed | The hiring player | gang definition, 0, 0 | RULE-EVENT-011 |
-| 9 | A player is eliminated | All six player slots | eliminated player, 0, 0 | RULE-EVENT-003 |
+  | Value | Recorded when | Recipients | `arg1`, `arg2`, `arg3` | Recorded through |
+  |---|---|---|---|---|
+  | 0 | Never recorded; the compositor's empty case | None | None | None |
+  | 1 | A Crackdown is created in a sector | Each player with a gang in the sector when resolution began | sector, 0, 0 | RULE-EVENT-004 |
+  | 2 | A player takes control of a sector | The new owner | sector, previous owner (-1 for none), 0 | RULE-EVENT-012 |
+  | 3 | A player loses control of a sector | The previous owner | sector, new owner (0 after a third Crackdown), 0 | RULE-EVENT-013 |
+  | 4 | An Influence completes a site | The influencing player | sector, site slot, 0 | RULE-EVENT-006 |
+  | 5 | Research completes an item | The researching player | item, 0, 0 | RULE-EVENT-007 |
+  | 6 | Bribe, Equip or Hire fails for lack of cash | The player whose order failed | 1, sector, 0 for Bribe; 2, sector, gang definition for Equip; 4, gang definition, 0 for Hire | RULE-EVENT-008 (Bribe), RULE-EVENT-014 (Equip), RULE-EVENT-009 (Hire) |
+  | 7 | A Hire fails because the sector is full | The hiring player | sector, 0, 0 | RULE-EVENT-010 |
+  | 8 | A Hire fails because the player has the most gangs allowed | The hiring player | gang definition, 0, 0 | RULE-EVENT-011 |
+  | 9 | A player is eliminated | All six player slots | eliminated player, 0, 0 | RULE-EVENT-003 |
+
+- `arg1`: the report's first argument, an `INT16`.
+- `arg2`: its second argument, an `INT16`.
+- `arg3`: its third argument, an `INT16`.
 
 ## Inputs
 

@@ -29,8 +29,8 @@ In `combat_phase`, called by RULE-COMBAT-002 for each active gang whose
 
 ## Parameters
 
-- `attacker`, of FMT-STATE-001: the attacking gang.
-- `attacker_index`, its element number in `gangs`, `player * 81 + roster_slot`.
+- `attacker`: the attacking gang, of FMT-STATE-001.
+- `attacker_index`: its element number in `gangs`, `player * 81 + roster_slot`.
 
 ## Inputs
 

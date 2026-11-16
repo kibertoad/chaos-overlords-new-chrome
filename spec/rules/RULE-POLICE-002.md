@@ -26,7 +26,7 @@ exceeds its Tolerance, after that sector's Crackdown reports, in the resolver
 
 ## Parameters
 
-- `s`, the sector.
+- `s`: the sector.
 
 ## Inputs
 

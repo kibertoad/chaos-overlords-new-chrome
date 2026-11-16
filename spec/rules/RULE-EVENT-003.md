@@ -22,7 +22,7 @@ each eliminated player and before the end of the match is evaluated.
 
 ## Parameters
 
-- `was_active`, of type `UINT8[6]`: each player's `player_active` as it was before the
+- `was_active`: a `UINT8[6]` holding each player's `player_active` as it was before the
   elimination check.
 
 ## Inputs

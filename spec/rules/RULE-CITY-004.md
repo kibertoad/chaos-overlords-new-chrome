@@ -21,7 +21,7 @@ Once per new match, inside RULE-SETUP-004, after RULE-CITY-003.
 
 ## Parameters
 
-- `assigned`, an `INT32` array giving each player's headquarters sector, as
+- `assigned`: an `INT32` array giving each player's headquarters sector, as
   RULE-CITY-003 returns it.
 
 ## Inputs

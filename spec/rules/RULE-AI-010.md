@@ -31,7 +31,7 @@ at the start of that pass.
 
 ## Parameters
 
-`player`: the computer player planning.
+- `player`: the computer player planning.
 
 ## Inputs
 

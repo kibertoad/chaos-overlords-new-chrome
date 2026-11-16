@@ -27,7 +27,8 @@ From RULE-AI-002, for a gang whose family is 3.
 
 ## Parameters
 
-`player`: the computer player. `slot`: the gang's roster slot.
+- `player`: the computer player.
+- `slot`: the gang's roster slot.
 
 ## Inputs
 

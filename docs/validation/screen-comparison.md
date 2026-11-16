@@ -66,7 +66,7 @@ The rebuild's orders are a panel (DEV-UI-021): a `card` step whose menu 1
 choice runs a picker (Attack, Equip, Give, Influence, Move, Research or Sell,
 FND-UI-021) becomes the card press and a press on that order's row of the
 panel. Any other step that opened a popup menu makes the capture
-unreplayable, and the test skips it. With `RECHAOS_KEEP_FRAMES` set to a directory, the test copies
+unreplayable, and the test leaves it out. With `RECHAOS_KEEP_FRAMES` set to a directory, the test copies
 each frame the rebuild drew there as `<experiment>-<run>-<step>.bmp`, step -1
 being the endpoint, and as `<experiment>-<run>-<screen>.bmp` for a screen before the match. Preferences, saves and logs of that run go to a
 `rechaos-reference-frame-*` directory beside the bitmap, never to the player's.
@@ -95,7 +95,10 @@ The test then compares each element:
   names the screen.
 
 The test prints every element's verdict and fails on an element that differs.
-It skips a capture that records no screen elements, and skips the rendering
+It leaves out a capture that no machine can compare: one that records no
+screen elements, comes from a run that is not replayed, cannot be reached in
+the rebuild or was changed by a repaint. `CapturesLeftOutOfTheComparison` lists
+each with its reason and fails when that list changes. It skips the rendering
 when no asset pack is installed: the gate builds with
 `IncludeOriginalAssets=false`, so it finds the pack only in the player's
 application data (`ChaosOverlordsNewChrome/Assets`). A plain
